@@ -302,6 +302,10 @@ would look exactly the same.
 
 *Run against the next release candidate.*
 
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-267"></a>
@@ -15359,6 +15363,12 @@ narrowing below and is built - the count was already in the popup, the list is n
 
 *Run against a build after `3f829ced`.*
 
+**Adam, 2026-09-13 (triage).** Could not run this.
+
+re-file with single, self-contained tests if needed
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-261"></a>
@@ -16093,6 +16103,10 @@ It sits inside the sidebar without widening it, at the same width as the control
 Two shortcut buttons where there was one: **Use current** for the train parked on that square, and
 **Use active** for the one you are driving. Only one of them appears when they are the same train.
 
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-285"></a>
@@ -16334,6 +16348,10 @@ Fixed, and the mechanism is the one your report names exactly - the dropdown is 
 `LayoutEditor.setAutonomyMode` asks the panel again from the same posted block that redraws the grid, and for the reason already written there: the first draw happens before the window knows what it is.
 
 `regression.testARememberedNoneOpensWithTheCaptionsOff` opens the editor three times - Station Names, None, Station Names - and reads the captions off the built window. Seen red first with the fix removed: 26 station names drawn under a None dropdown, which is your screenshot. The two openings around it are the controls: without the first, the None claim is satisfied by a page that draws nothing; without the third, by a switch that latches off and stays off.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -17571,6 +17589,12 @@ silent about all 116.
 do. I deliberately have NOT worked out which of the 116 are already covered - that needs the derived
 graph, and a report naming a lock that turns out to be reproduced is wrong in the safe direction.
 
+**Adam, 2026-09-13 (triage).** Could not run this.
+
+no idea what this is talking about, re-file as a clear test if needed, otherwise close.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-326"></a>
@@ -17899,6 +17923,12 @@ the bug.
 lengths from the working diagram, so the track behind a train is no longer blocked by anything and this
 test would pass without the rule being asked at all.
 
+**Adam, 2026-09-13 (triage).** Does not work.
+
+doesn't work, see other MT, from current config that is EN57-947 that shouldn't be allowed to bottommainb because of 75 407 DB's placement.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-334"></a>
@@ -18021,6 +18051,12 @@ be wrong is it settling on the wrong state and staying there.
 Four tests hold it: testTheDiagramRefreshDoesNotWaitOnTheRailway measures each door with the railway's
 monitor held by a helper, and testNothingOnTheEventThreadAsksWhetherAnythingIsAwayFromHome refuses a
 new call site in the source. Both were seen red first.
+
+**Adam, 2026-09-13 (triage).** Does not work.
+
+Does not work.  With 75 407 DB at bottommaina, length 5, segment length 1+1 between bottommaina and bottommainapre, and 1 between tunnel and bottommainapre past the previous station, EN57-947 may still be manually sent to botommainb, and the orange blocked track is not extended to the segment between tunnel and bottommaina pre.  so, the planner is consistent with what the layout shows, but the layout shouldn't allow this if cleanly possible.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -18435,6 +18471,10 @@ It used to be autonomy's alone, so a hand-driven send ignored it.
 station that square holds back - otherwise it could never leave, and the station would be shut to
 everybody while it sat there. Worth checking both.
 
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-346"></a>
@@ -18472,6 +18512,12 @@ It was taken out for a reason that expired the next day. On 2026-09-09 you ruled
 The replay oracle asks it again now, so every plan the class produces is graded rather than the two cases named after it. Measured: dropping the rule from `canRest` fails four claims, one of them the plan OB-073 was reported against.
 
 Nothing about what you check here changes - this is the automated half getting its guard back.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+seems OK, just needs to be easier for the user to debug as noted in the other MT.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -18529,6 +18575,12 @@ did before this was corrected. Untick **Can Be Chosen in Full Autonomy** and it 
 
 Your ruling: **"autonomy should only allow a turn at a point if the 'allow in autonomy' option is
 checked."** Turning round says what happens when a train arrives; that switch says who may send one.
+
+**Adam, 2026-09-13 (triage).** Works, with notes.
+
+I think this is OK, but autonomy will never choose a reversing point in the middle of a routing, because it would cause edges to overlap. So the question is moot- you need to use the return home planner or manual actions to reverse a train and move it back over where it came.  which is fine.  the "can be chosen in full autonomy" therefore effectively talks about whether a train should be allowed to stop there in autonomy, or only while maneuvering to park.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -18876,6 +18928,12 @@ Not automated this round, and it is a fair ask.
 
 Still `needs test`, and now for a written-down reason rather than by omission.
 
+**Adam, 2026-09-13 (triage).** Could not run this.
+
+Make a test case for this, it should be possible to deterministically validate.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-358"></a>
@@ -19012,6 +19070,12 @@ It does now.  Three places in `TrainControlUI.repaintLoc` decided which buttons 
 `regression.testTheFunctionButtonsFollowTheConsist` drives the real window through `repaintLoc` and reads the buttons back - whether one is enabled is decided there, and every model-level question answers the same before and after.  Seen red on f6 for the mixed consist; the control links two MM2s and requires f6 to stay greyed, so lighting everything fails it too.  Both mutations run.
 
 **Still wants your hands on it:** build the mixed consist, check f6 is now pressable AND that it turns the member's function on and off, and check the F20-F31 tab is there for an MFX member.
+
+**Adam, 2026-09-13 (triage).** Does not work.
+
+The described behavior here is incorrect, but I think it's OK in the app.  Pressing F6 on the MM2 head, if it has a MFX/DCC member, should simply propagate a F6 command to all the consist's locomotives as per normal.  The CS will figure out whether that means anything.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -19462,6 +19526,10 @@ That is the SIXTH site of this one confusion (OB-205 claims 1, 2 and 3, MT-368, 
 
 *Covered by* `core.testAMayTurnStationIsNotATerminus.testTheReversingCopyOfACompulsoryTurnIsRefusedToo`. It has to BUILD the state: you set `mustReverse` on BottomMainC today, and the checked-in snapshot still has it as `canReverse`, so the claim arranges the compulsory case and puts it back. Mutation - reading `isTerminus()` alone again - fails it.
 
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-368"></a>
@@ -19591,6 +19659,12 @@ Control+X takes the train OFF the running layout. So at paste time `facingByPath
 The heading is known at the moment of the cut and nowhere afterwards, so it now travels on the clipboard beside the locomotive, and the paste prefers it where the landing can hold it - your Option 1 rule from MT-377, applied to cut and paste. An ordinary drag of a train still on the railway keeps the walked answer, which is the better one there.
 
 **So: run 1 and 4 again, and expect 2 to still be wrong until the reservation is fixed.**
+
+**Adam, 2026-09-13 (triage).** Does not work.
+
+Popup correctly appears, but the direction does not follow the user's selection, as noted on the other related MT.  again, check why tests were green.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -19778,6 +19852,10 @@ If that reads right, this closes.
 
 *Covered by* `core.testAStationsSizeIsAnAllowance`, six claims, each seen red first; the mutations - spending the allowance in either budget - fail it.
 
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-372"></a>
@@ -19946,6 +20024,12 @@ been cleared.
 
 It failed again in the battery of 2026-09-13, which is why this is still open. The next failure will say which of the two it is.
 
+**Adam, 2026-09-13 (triage).** Works.
+
+capture seems to work. repopen as a new MT if there is something to test.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-375"></a>
@@ -20071,6 +20155,12 @@ A name is not a station: a caption square, an approach guard, or a plain piece o
 **One exception, and it is the one that would otherwise lose data.** An entry ALREADY stored is still offered even if it is not a station. This dialog is the only way to edit `blockedPoints`, and `chosen` is built from what the list shows - so hiding a stored entry would delete it the moment you pressed OK. That is FBR-A2, which this dialog has done once before.
 
 So: non-stations are gone from the list unless one is already ticked, in which case it stays visible so you can untick it.
+
+**Adam, 2026-09-13 (triage).** Works, with notes.
+
+Works, but if there are no stations on the diagram yet, the "choose on diagram" button should be greyed out to match the message.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 

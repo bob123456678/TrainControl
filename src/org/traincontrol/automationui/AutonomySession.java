@@ -1225,6 +1225,16 @@ public class AutonomySession
     }
 
     /**
+     * The pages the last import described that this layout does not have, and so left out (MT-380).
+     *
+     * @return the page names, empty when nothing was left out
+     */
+    public java.util.List<String> getPagesLeftOutOfLastImport()
+    {
+        return store.getPagesLeftOutOfLastImport();
+    }
+
+    /**
      * Shuts any page that repeats a sensor an earlier page already carries.
      *
      * A layout whose pages draw the same track twice - an overview and a detail view of one yard, say -

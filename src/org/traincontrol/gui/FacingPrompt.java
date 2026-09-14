@@ -49,6 +49,27 @@ public class FacingPrompt
     }
 
     /**
+     * The answer the next question gets, for a test that has to drive a real paste (MT-394).
+     *
+     * A modal dialog in a test hung this suite for twenty minutes on 2026-09-13, and the only claim
+     * written for this question read the source instead - which is how a paste that ignored the answer
+     * passed.  Null, the default, means the dialog is shown.
+     */
+    private static volatile org.traincontrol.automationui.TilePorts.Side answeredByATest;
+
+    /**
+     * Makes every facing question answer this without showing a dialog, until reset with null.
+     *
+     * For tests only.  Nothing in the application calls it.
+     *
+     * @param answer the heading to answer with, or null to put the dialog back
+     */
+    public static void answerForTests(org.traincontrol.automationui.TilePorts.Side answer)
+    {
+        answeredByATest = answer;
+    }
+
+    /**
      * Asks which way a train being put down should face, where that is a real question.
      *
      * @param canHold the headings this square can hold, from `AutonomySession.facingsFor`
@@ -61,6 +82,11 @@ public class FacingPrompt
         Component parent)
     {
         if (!wouldAsk(canHold)) return null;
+
+        if (answeredByATest != null)
+        {
+            return choicesFor(canHold).contains(answeredByATest) ? answeredByATest : null;
+        }
 
         return ask(parent, station, choicesFor(canHold), suggested);
     }
@@ -104,6 +130,32 @@ public class FacingPrompt
     }
 
     /**
+     * What a heading is called on a button: "To the North (up)", not "From the North (up)" (OB-215).
+     *
+     * Adam, 2026-09-13: the first cut borrowed `ArrivalSidePrompt.labelFor`, whose words answer "where
+     * did the train come from" - so a question about which way a train FACES offered "from the north".
+     * The two questions are about opposite ends of the train and need opposite words.
+     *
+     * WHOLE KEYS, one per case, for the reason `ArrivalSidePrompt.keyFor` gives: the bundle check reads
+     * the source for the keys it must find, and a concatenated one would read as a key in no bundle.
+     *
+     * @param heading the way the train would face
+     * @return the button label, in the running language
+     */
+    public static String labelFor(org.traincontrol.automationui.TilePorts.Side heading)
+    {
+        if (heading == null) return I18n.t("autolayout.ui.headingN");
+
+        switch (heading)
+        {
+            case E: return I18n.t("autolayout.ui.headingE");
+            case S: return I18n.t("autolayout.ui.headingS");
+            case W: return I18n.t("autolayout.ui.headingW");
+            default: return I18n.t("autolayout.ui.headingN");
+        }
+    }
+
+    /**
      * Puts the question.
      *
      * `showOptionDialog` for the reason every dialog in this application uses it: the buttons of the
@@ -131,7 +183,7 @@ public class FacingPrompt
 
                 for (int i = 0; i < sides.size(); i++)
                 {
-                    options[i] = ArrivalSidePrompt.labelFor(sides.get(i).name());
+                    options[i] = labelFor(sides.get(i));
                 }
 
                 int preferred = suggested == null ? 0 : Math.max(0, sides.indexOf(suggested));

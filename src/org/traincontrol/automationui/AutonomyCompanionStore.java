@@ -404,6 +404,25 @@ public class AutonomyCompanionStore
     private final Map<String, String> pageNameToId = new LinkedHashMap<>();
     private final Map<String, String> pageIdToName = new LinkedHashMap<>();
 
+    /**
+     * The pages the last `importBundle` left out because this layout does not have them (MT-380).
+     *
+     * Kept so the import door can say which, which is the half of Adam's ruling that is not the
+     * dropping: *"keep only the pages, and alert the user."*
+     */
+    private final List<String> pagesLeftOutOfLastImport = new ArrayList<>();
+
+    /**
+     * The pages the last import described that this layout does not have, in the order the store
+     * recorded them.  Empty when nothing was left out, or before any import.
+     *
+     * @return the page names, as a copy
+     */
+    public List<String> getPagesLeftOutOfLastImport()
+    {
+        return Collections.unmodifiableList(new ArrayList<>(pagesLeftOutOfLastImport));
+    }
+
     // The name each page id had when the setup was last written, so a renumber can be told from a rename
     private final Map<String, String> pageNamesWhenWritten = new LinkedHashMap<>();
     private final Map<String, String> pageIdConflicts = new LinkedHashMap<>();
@@ -1930,6 +1949,8 @@ public class AutonomyCompanionStore
      */
     public int importBundle(String name, JSONObject file)
     {
+        pagesLeftOutOfLastImport.clear();
+
         JSONObject configuration = file.optJSONObject(EXPORT_CONFIGURATION);
 
         // The bare form, written before exporting carried the shared half
@@ -2062,11 +2083,50 @@ public class AutonomyCompanionStore
             // and was not.
             JSONObject wasThere = sharedFields();
 
+            // WHAT THIS SETUP ALREADY KNEW, loaded or not, taken before the read replaces it.  A page
+            // in here that is not loaded is one this layout HAS and cannot see right now - a OneDrive
+            // page still downloading - and must never be dropped by an import.
+            Set<String> knownBefore = new LinkedHashSet<>(pageNamesWhenWritten.values());
+
+            knownBefore.addAll(pageIdToName.values());
+
             try
             {
                 // Through the same door load() uses, so the page-id translation happens once and here
                 clearShared();
                 readShared(merged);
+
+                // ONLY THE PAGES THIS LAYOUT HAS (Adam, 2026-09-13: "keep only the pages, and alert
+                // the user").
+                //
+                // An export describes the exporter's railway, and the read above took every page it
+                // names.  On 2026-09-13 an export of his five-page railway went into a one-page layout,
+                // which then recorded five pages it will never have - and a page the setup knows and
+                // cannot load is exactly what `AutonomySession.save` refuses to tidy around, so every
+                // save declined and said so.  The settings the file carried for those pages were held
+                // for them as well, and written back on every save.
+                //
+                // Dropped here through `forgetHeldPages`, which removes a page's held settings and its
+                // recorded name together and is the only way this store does that.  Inside the try, so
+                // an import that cannot be finished is rolled back whole rather than half pruned.
+                List<String> notHere = new ArrayList<>();
+
+                for (String page : new ArrayList<>(pageNamesWhenWritten.values()))
+                {
+                    if (page == null || knownBefore.contains(page) || pageNameToId.containsKey(page))
+                    {
+                        continue;
+                    }
+
+                    if (!notHere.contains(page)) notHere.add(page);
+                }
+
+                if (!notHere.isEmpty())
+                {
+                    forgetHeldPages(notHere);
+
+                    pagesLeftOutOfLastImport.addAll(notHere);
+                }
             }
             catch (RuntimeException e)
             {

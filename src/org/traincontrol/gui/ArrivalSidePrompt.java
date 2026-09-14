@@ -50,6 +50,25 @@ public class ArrivalSidePrompt
     }
 
     /**
+     * The answer the next arrival-side question gets, for a test that drives a real paste (MT-394).
+     *
+     * A may-reverse square puts this question before the facing one, so a test of the second cannot
+     * reach it without an answer to the first.  Null, the default, means the dialog is shown.
+     */
+    private static volatile String answeredByATest;
+
+    /**
+     * Makes every arrival-side question answer this side without showing a dialog, until reset with
+     * null.  For tests only; nothing in the application calls it.
+     *
+     * @param side "N", "E", "S" or "W", or null to put the dialog back
+     */
+    public static void answerForTests(String side)
+    {
+        answeredByATest = side;
+    }
+
+    /**
      * The side a hand-placed train should be recorded as having arrived from, asking if it must.
      *
      * **Two halves, because there are now two surfaces** (Adam, 2026-09-11).  This door puts the
@@ -272,6 +291,16 @@ public class ArrivalSidePrompt
      */
     private static String ask(Component parent, Point at, List<String> sides)
     {
+        if (answeredByATest != null)
+        {
+            for (String side : sides)
+            {
+                if (answeredByATest.equalsIgnoreCase(side)) return side;
+            }
+
+            return sides.isEmpty() ? null : sides.get(0);
+        }
+
         final String[] answer = {null};
 
         try

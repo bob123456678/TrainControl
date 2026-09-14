@@ -1157,6 +1157,52 @@ in the autonomy editor, Set Segment Length needs a tooltip that says "Control+E"
 
 autonomy station labels should be deduped per page, not globally- that way, other pages' stations can be tracked from a main page if desired.
 
+### FR-077 - 2026-09-13 - spinner for return home
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-13 22:51  
+**Build:** commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+there needs to be a spinner on the return home button while it is calculating
+
+### FR-078 - 2026-09-13 - simplify debugging return home
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-13 22:52  
+**Build:** commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+if a return home plan fails, state the reason why the layout doesn't allow a locomotive to go to its home in the log (length, blocked, etc.)
+
+### OB-215 - 2026-09-13 - which way should the train face wording is confusing
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-13 22:59  
+**Build:** commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+options for "which way should the train face" are "from the north (up)" or "from the south (down)".  these options make sense for "where did the train come from", but for "which way does it face", it should be "to the north (up)" or "to the south (down)" and similary for E/W
+
+### OB-216 - 2026-09-13 - orange route line misaligned over the switch at 12,13
+
+**Kind:** bug  
+**Raised from:** noticed while testing - Test a path, BottomMainB to BottomMainC  
+**Filed:** 2026-09-13  
+
+Adam, 2026-09-13: "When running Test a path from BottomMainB to BottomMainC, the orange lines over the switch at 12,13 are misaligned.  A small offset as on the other tiles is OK."
+
+Seen on the track diagram, page 1 - Main: the orange line for the tested path runs level along the BottomMainB row, then takes the diverging leg down to the BottomMainC row.  On the switch square at 12,13 the line and its diamond markers sit visibly off the rail they belong to, further out than the small offset every other square on the same route shows.  Reported with a screenshot in the conversation.
+
+### OB-217 - 2026-09-13 - autonomy editor consistency cosmetics
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-13 23:18  
+**Build:** commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+move "one way run" and "name everything" into the bulk tools menu, available only in the autonomy editor itself (not track diagram).  update "path type" to use the blue label style, and move it below "why not moving" as it belongs.  Also, add a "page settings" label above "exclude page"
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

@@ -1336,7 +1336,8 @@ public class TileAnnotation
 
         java.util.Set<String> drawn = new java.util.LinkedHashSet<>();
 
-        int index = 0;
+        // Which RAILS already carry a line, whichever way along them it ran.
+        java.util.Set<String> rails = new java.util.HashSet<>();
 
         for (Trace trace : traces)
         {
@@ -1356,10 +1357,22 @@ public class TileAnnotation
                 : Boolean.TRUE.equals(shared.get(at)) ? TRACE
                 : trace.forward ? TRACE : TRACE_RETURN);
 
-            // A square crossed more than once - a switch a route passes through on its way out and
-            // again on its way round - carries two segments that share a side.  Nudged apart so they
-            // read as what they are, which is two passes, rather than as one shape.
-            double nudge = drawn.size() == 1 || shared.size() < 2 ? 0 : span / 9.0 * (index - 0.5);
+            // THE SECOND PASS ALONG THE SAME RAIL IS NUDGED, BY HALF A NINTH, AND NO MORE.
+            //
+            // Out along a rail and back along it are two segments - E to W, W to E - and the second is
+            // moved a little aside so the two read as two passes.  Anything on a DIFFERENT rail is left
+            // where it is: a switch's straight and diverging legs are already different lines.
+            //
+            // It was a ninth times the segment's position in the square's list, and that list grows
+            // with every pass.  A tested path crosses a switch four times when it goes out through it,
+            // round a loop and back in by its diverging leg, and the route back does the same - so the
+            // fourth segment, the straight rail again, went two and a half ninths off it.  Adam, OB-216:
+            // "the orange lines over the switch at 12,13 are misaligned.  A small offset as on the other
+            // tiles is OK."  Half a ninth is that small offset, which an ordinary square had all along.
+            String rail = String.valueOf(trace.from).compareTo(String.valueOf(trace.to)) <= 0
+                ? trace.from + ":" + trace.to : trace.to + ":" + trace.from;
+
+            double nudge = rails.add(rail) ? 0 : span / 18.0;
 
             double dx = b[0] - a[0];
             double dy = b[1] - a[1];
@@ -1377,8 +1390,6 @@ public class TileAnnotation
             // way does this route run" was drawn across the very rails it was answering about.
             g.drawLine((int) Math.round(a[0] + px), (int) Math.round(a[1] + py),
                 (int) Math.round(b[0] + px), (int) Math.round(b[1] + py));
-
-            index++;
         }
 
         // Which way, as chevrons on the line.  Two of them, pointing opposite ways, is a route that

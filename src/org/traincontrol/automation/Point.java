@@ -38,6 +38,9 @@ public class Point
      */
     private String arrivedFrom;
 
+    /** The route the standing train arrived along, or null (MT-335).  See `getArrivedAlong`. */
+    private java.util.List<Edge> arrivedAlong;
+
     // volatile: setLocomotive is synchronized but getCurrentLocomotive is not, and both are called
     // across autonomy/UI threads.  volatile gives the unsynchronized reader visibility of the latest write.
     private volatile Locomotive currentLoc;
@@ -486,6 +489,39 @@ public class Point
         this.arrivedFrom = side;
     }
 
+    /**
+     * The route the standing train arrived along, which its tail follows back past a junction (MT-335).
+     *
+     * Adam, 2026-09-13: *"if the train was driven there, keep claiming along the road it actually arrived
+     * on, through the junction.  A train placed by hand (no route) still stops at the fork, as now."*
+     *
+     * `arrivedFrom` answers the first hop: which way the tail leaves the platform.  Past that the walk
+     * had only the graph, and at a junction the graph offers several roads and cannot say which the
+     * train is lying on - so it stopped.  The train's own route CAN say, for as long as the train is the
+     * one that drove it.
+     *
+     * Cleared on the same change of occupant that clears `arrivedFrom`, for the same reason: a route
+     * describes the train that arrived, not whoever stands here next.  NOT saved with the setup - a
+     * rebuild loses it, and the walk then falls back to the fork rule, which is what it did before.
+     *
+     * @return the edges in the order they were driven, or null when nothing was driven here
+     */
+    public java.util.List<Edge> getArrivedAlong()
+    {
+        return this.arrivedAlong;
+    }
+
+    /**
+     * Records the route a train arrived along, so its tail can be followed past a junction.
+     *
+     * @param path the edges in the order they were driven, or null to forget
+     */
+    public void setArrivedAlong(java.util.List<Edge> path)
+    {
+        this.arrivedAlong = path == null ? null
+            : java.util.Collections.unmodifiableList(new java.util.ArrayList<>(path));
+    }
+
     public Point setLocomotive(Locomotive l)
     {
         final Locomotive previousOccupant = this.getCurrentLocomotive();
@@ -532,6 +568,10 @@ public class Point
         // Cleared on every change of occupant rather than only on removal: a platform handed straight
         // from one train to another is where the stale value is least visible and most wrong.
         if (l != previousOccupant) this.arrivedFrom = null;
+
+        // AND THE ROUTE IT CAME ALONG, for the same reason (MT-335): it describes the train that
+        // arrived, and a train placed here by hand has none.
+        if (l != previousOccupant) this.arrivedAlong = null;
         return this;
     }
 

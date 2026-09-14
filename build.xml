@@ -279,6 +279,12 @@
         <test-one-class class="testAStationsSizeIsAnAllowance"/>
         <test-one-class class="testWhatCountsAsAParkingSquare"/>
         <test-one-class class="testWhatHasAWayThrough"/>
+        <test-one-class class="testAPastedTrainFacesTheWayTheOperatorChose"/>
+        <test-one-class class="testAnImportKeepsOnlyThisLayoutsPages"/>
+        <test-one-class class="testTheLeftAloneWarningIsSaidOnce"/>
+        <test-one-class class="testATailFollowsTheRouteItCameIn"/>
+        <test-one-class class="testATestedPathStaysOnItsRail"/>
+        <test-one-class class="testBulkToolsHoldsTheWholeLayoutTools"/>
         <test-one-class class="testFiftyLocomotiveMappingPages"/>
         <test-one-class class="testALegacyImportMatchesTheFileItCameFrom"/>
         <test-one-class class="testAnImportDoesNotSwitchYourRoutesOff"/>

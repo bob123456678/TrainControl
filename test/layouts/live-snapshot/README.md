@@ -112,3 +112,5 @@ before anything reads it, so the checked-in fixture is never written to either.
 - `core.testABerthAndAPlatformJudgeAnOverhangDifferently`
 - `core.testAMayTurnStationIsNotATerminus`
 - `core.testWhatCountsAsAParkingSquare`
+- `ui.testAPastedTrainFacesTheWayTheOperatorChose`
+- `ui.testBulkToolsHoldsTheWholeLayoutTools`

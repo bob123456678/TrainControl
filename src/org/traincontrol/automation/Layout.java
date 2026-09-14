@@ -3274,6 +3274,10 @@ public class Layout
 
             sibling.setArrivedFrom(tail);
 
+            // AND THE ROUTE, which describes the same arrival from this copy as from the one it
+            // declined (MT-335).
+            sibling.setArrivedAlong(arrived.getArrivedAlong());
+
             // THE STATION, NOT THE COPY (Adam, 2026-09-13: "the whole copy thing needs to be masked
             // from the user").  Both Points are one square; which of them the graph keeps the train on
             // is bookkeeping, and naming them told the operator about machinery they cannot see.
@@ -6355,6 +6359,55 @@ public class Layout
                         if (neighbours.add(other.getName())) segment = candidate;
                     }
 
+                    // PAST A JUNCTION, THE ROAD IT CAME IN ON (Adam, MT-335, 2026-09-13).
+                    //
+                    // *"With 75 407 DB at bottommaina, length 5 ... EN57-947 may still be manually sent
+                    // to botommainb, and the orange blocked track is not extended to the segment between
+                    // tunnel and bottommaina pre."*  Five units with two measured behind the platform
+                    // reach past BottomMainAPre, where several roads lead back, and the rule below - his
+                    // own of 2026-09-07, "end locking at the switch and call it a day" - stopped there.
+                    //
+                    // His ruling now: a train that was DRIVEN here follows the route it arrived along,
+                    // through the junction.  The route is the edge that ended where the walk is now; the
+                    // candidate taken is the one reaching back to where that edge started.  Matched by
+                    // place rather than by object, because a square is several Points and the walk may
+                    // stand on a different copy of it than the route passed through.
+                    //
+                    // A train placed by hand has no route and keeps the fork rule, unchanged.
+                    if (neighbours.size() > 1 && standingHere.getArrivedAlong() != null)
+                    {
+                        Edge along = null;
+
+                        for (Edge driven : standingHere.getArrivedAlong())
+                        {
+                            if (driven.getEnd() != null && driven.getEnd().isSamePlaceAs(here)
+                                && driven.getStart() != null
+                                && !walked.contains(driven.getStart().getName()))
+                            {
+                                along = driven;
+                            }
+                        }
+
+                        if (along != null)
+                        {
+                            for (Edge candidate : back)
+                            {
+                                Point other = candidate.getStart() == here
+                                    ? candidate.getEnd() : candidate.getStart();
+
+                                if (other != null && other.isSamePlaceAs(along.getStart()))
+                                {
+                                    segment = candidate;
+
+                                    neighbours.clear();
+                                    neighbours.add(other.getName());
+
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
                     if (neighbours.size() != 1) break;
                 }
 
@@ -7621,6 +7674,10 @@ public class Layout
                 // one it came in on, so the side it entered by is that edge’s - which the build
                 // knows exactly and the geometry only approximates.
                 arrived.setArrivedFrom(entrySideOf(path.get(path.size() - 1), arrived));
+
+                // AND THE ROUTE ITSELF, so the tail can be followed past a junction (Adam, MT-335,
+                // 2026-09-13: "keep claiming along the road it actually arrived on").
+                arrived.setArrivedAlong(path);
 
         // AND THE SQUARE IT LEFT NO LONGER HAS A TAIL ON IT.  Without this the track behind an empty
         // platform stays blocked by a train that drove away from it - which is worse than never

@@ -1055,6 +1055,19 @@ public class AutonomyViewerPanel extends JPanel
 
             int filled = session().importBundle(name.trim(), file);
 
+            // AND WHICH PAGES WERE LEFT OUT, said before the save (Adam, 2026-09-13: "keep only the
+            // pages, and alert the user").  An export describes the railway it came from; pages this
+            // layout does not have are not brought in, because a page the setup knows about and cannot
+            // load stops every later save from tidying anything.
+            java.util.List<String> notHere = session().getPagesLeftOutOfLastImport();
+
+            if (!notHere.isEmpty())
+            {
+                JOptionPane.showMessageDialog(ui,
+                    I18n.f("autosetup.ui.warnImportPagesNotHere", String.join(", ", notHere)),
+                    I18n.t("autosetup.ui.titleImportPagesNotHere"), JOptionPane.WARNING_MESSAGE);
+            }
+
             save();
 
             // Said out loud, because the alternative is somebody wondering whether their station names

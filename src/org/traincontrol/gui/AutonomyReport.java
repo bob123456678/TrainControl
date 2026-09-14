@@ -28,6 +28,35 @@ import org.traincontrol.util.I18n;
 public class AutonomyReport
 {
     /**
+     * The sets of missing pages already warned about in this session (MT-380).
+     *
+     * Keyed by the sorted page names, so the same refusal is recognised however the report lists them,
+     * and a DIFFERENT set - another page gone, or one back - is a new thing to say.
+     */
+    private static final java.util.Set<String> ALREADY_SAID =
+        java.util.Collections.synchronizedSet(new java.util.LinkedHashSet<String>());
+
+    /**
+     * Whether a declined save is worth a dialog: yes the first time a set of missing pages is reported
+     * in this session, and no after that until the set changes.
+     *
+     * Adam, 2026-09-13, on the warning appearing twice at import and then on every open of the editor:
+     * it *"should stop repeating"*.  Separated from the dialog so the rule can be tested without one.
+     *
+     * @param report what the save returned
+     * @return true when this refusal has not been shown before, and records that it now has been
+     */
+    public static boolean worthSaying(AutonomyCompanionStore.Reconciliation report)
+    {
+        if (report == null || !report.wasDeclined()) return false;
+
+        List<String> pages = new java.util.ArrayList<>(report.getDeclinedBecauseAbsent());
+
+        java.util.Collections.sort(pages);
+
+        return ALREADY_SAID.add(String.join("\n", pages));
+    }
+    /**
      * Says what the save did, if anything worth saying.
      *
      * Silent when the reconciliation was clean and not declined, which is almost every save - this
@@ -38,6 +67,8 @@ public class AutonomyReport
      */
     public static void show(Component owner, AutonomyCompanionStore.Reconciliation report)
     {
+        // (The declined branch below asks `worthSaying` before it shows anything - MT-380.)
+
         if (report == null) return;
 
         // DECLINED comes first, and is not the same message as "nothing changed".
@@ -47,6 +78,12 @@ public class AutonomyReport
         // one of them is worth interrupting somebody for.
         if (report.wasDeclined())
         {
+            // ONCE PER SET OF MISSING PAGES, NOT ON EVERY SAVE (Adam, 2026-09-13: "should stop
+            // repeating").  The refusal is still made every time - that is what protects a page that
+            // has not downloaded - and still logged by the doors that log; only the dialog is spared
+            // when it would say exactly what it said last time.
+            if (!worthSaying(report)) return;
+
             StringBuilder names = new StringBuilder();
 
             for (String page : report.getDeclinedBecauseAbsent())

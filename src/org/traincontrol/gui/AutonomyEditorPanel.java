@@ -565,7 +565,12 @@ public class AutonomyEditorPanel extends JPanel
         // stops both, a must-turn square turns both.  The only delta is what counts as somewhere to
         // GO, so the radio changes the destination test and nothing about how the track is walked.
         pathTypeLabel = new JLabel(I18n.t("autosetup.ui.labelPathType"));
-        pathTypeLabel.setFont(FONT_CONTROL);
+
+        // THE WINDOW'S BLUE GROUP HEADING (Adam, OB-217): Segoe UI Semibold in navy, the style every
+        // other section label in this application uses - so it reads as the heading of the pair below
+        // it rather than as a third control.
+        pathTypeLabel.setFont(AutonomyViewerPanel.FONT_GROUP);
+        pathTypeLabel.setForeground(AutonomyViewerPanel.HEADING_COLOUR);
 
         pathTypeAuto = new javax.swing.JRadioButton(I18n.t("autosetup.ui.pathTypeAuto"), true);
         pathTypeManual = new javax.swing.JRadioButton(I18n.t("autosetup.ui.pathTypeManual"), false);
@@ -620,22 +625,29 @@ public class AutonomyEditorPanel extends JPanel
 
         panel.add(row(testButton));
 
-        // Directly under the button it governs, and above nothing else - MT-098 is two comments down
-        // and is the same panel forgetting to add a control it had finished building. The label goes
-        // in its own row above the pair, as Adam asked: two radios and a caption on one line set this
-        // column's width from their combined length, which is what the comment above testButton says
-        // about stacking rather than sitting side by side.
+        panel.add(row(whyButton));
+
+        // BELOW "WHY NOT MOVING?", AS A HEADING OF ITS OWN (Adam, OB-217: "move it below 'why not
+        // moving' as it belongs").  The label keeps its own row above the pair, for the reason given
+        // when it moved the first time: two radios and a caption on one line set this column's width
+        // from their combined length.
         panel.add(row(pathTypeLabel));
         panel.add(row(pathTypeAuto));
         panel.add(row(pathTypeManual));
 
-        panel.add(row(whyButton));
+        // ONE-WAY RUN AND NAME EVERYTHING ARE IN BULK TOOLS NOW (Adam, OB-217), and only where this
+        // panel has a page - the autonomy editor.  Both objects still exist: the refresh keeps Name
+        // Everything's state and tooltip, and the disarm path un-presses One-Way Run.  MT-098 is the
+        // warning about an unmounted control that nothing reaches; these are reached from the menu.
 
-        // MT-098: this was built, given a tooltip, wired into the Tool enum and into the disarm path,
-        // and never added to anything. Adam: "I don't see such a button." Nothing failed and nothing
-        // warned - an unmounted Swing component is simply a live object with no parent.
-        panel.add(row(oneWayButton));
-        panel.add(row(nameAll));
+        // AND A HEADING FOR WHAT FOLLOWS (Adam, OB-217: "add a 'page settings' label above 'exclude
+        // page'").
+        JLabel pageSettings = new JLabel(I18n.t("autosetup.ui.labelPageSettings"));
+
+        pageSettings.setFont(AutonomyViewerPanel.FONT_GROUP);
+        pageSettings.setForeground(AutonomyViewerPanel.HEADING_COLOUR);
+
+        panel.add(row(pageSettings));
         panel.add(row(excludePage));
 
         // The toggles change what is drawn, not what is decided, so all they do is redraw.  They live
@@ -2014,6 +2026,42 @@ public class AutonomyEditorPanel extends JPanel
         javax.swing.JMenu bulk = new javax.swing.JMenu(I18n.t("autosetup.ui.menuBulkTools"));
 
         bulk.setToolTipText(wrapped(I18n.t("autosetup.ui.hintBulkTools")));
+
+        // ONE-WAY RUN AND NAME EVERYTHING, IN THE AUTONOMY EDITOR ONLY (Adam, OB-217: "available only in
+        // the autonomy editor itself (not track diagram)").
+        //
+        // The track diagram's tile menus are this panel's menus served with no page, so `page` is
+        // what tells the two apart.  Both items drive the objects the column used to show, so their
+        // state is the one the refresh and the disarm path already keep.
+        if (page != null)
+        {
+            if (oneWayButton != null)
+            {
+                javax.swing.JMenuItem oneWay = item(I18n.t("autosetup.ui.toolOneWay"), () ->
+                {
+                    // Through the button's own action, which un-presses every other tool and clears
+                    // the gesture - the arming rules live there and are not repeated here.
+                    if (!oneWayButton.isSelected()) oneWayButton.doClick();
+                });
+
+                oneWay.setToolTipText(oneWayButton.getToolTipText());
+
+                bulk.add(oneWay);
+            }
+
+            if (nameAll != null)
+            {
+                javax.swing.JMenuItem nameEverythingItem =
+                    item(I18n.t("autosetup.ui.btnNameEverything"), () -> nameEverything());
+
+                nameEverythingItem.setEnabled(nameAll.isEnabled());
+                nameEverythingItem.setToolTipText(nameAll.getToolTipText());
+
+                bulk.add(nameEverythingItem);
+            }
+
+            bulk.addSeparator();
+        }
 
         // The same set the bulk home door writes (SEV-C3): `tilesWithALocomotive` reads every page and
         // the door skips excluded ones, so the two disagreed on a layout with a page left out.

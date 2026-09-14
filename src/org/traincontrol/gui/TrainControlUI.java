@@ -6861,6 +6861,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
             }
 
+            // AND THE TRAIN GOES ONTO THE COPY THAT FACES THAT WAY (MT-394).
+            //
+            // Adam, 2026-09-13: *"Pasting 75 407 DB on BottomMainB makes it face east regardless of
+            // the user's choice."*  `point` was chosen before either question, by
+            // `getAutonomyPointForTile` - "with none [occupied], any copy will do" - which on an empty
+            // square is the first copy, and on BottomMainB that one faces east.  The answer was written
+            // into the SETUP only, and the railway encodes a train's direction by which copy it stands
+            // on, so the live train stayed on the east copy whatever was chosen.
+            //
+            // It passed the suite because the claim written for it read the source for the lines that
+            // record the answer, and they were there.  `ui.testAPastedTrainFacesTheWayTheOperatorChose`
+            // drives a real paste and asks which way the train is standing.
+            if (facingChosenAtTheLanding != null)
+            {
+                org.traincontrol.automation.Point facingThatWay =
+                    copyFacing(aimed, facingChosenAtTheLanding);
+
+                if (facingThatWay != null) point = facingThatWay;
+            }
+
             // THE RAILWAY'S ANSWER DECIDES, HERE TOO (TWV-B4, after W21-B3).
             //
             // `isAutonomyBusy()` above closes the "autonomy started in between" door for this path, which
@@ -6974,6 +6994,55 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * side of a call that returns in three places.
      */
     private org.traincontrol.automationui.TilePorts.Side facingChosenAtTheLanding;
+
+    /**
+     * The copy of a square a train facing this way stands on, preferring one that does not turn it.
+     *
+     * A square is emitted as one Point per way of arriving, and which of them a train stands on IS
+     * which way it faces - `facingsFor` names each copy's heading.  More than one copy can face the
+     * same way (a plain copy and its turning twin); the plain one is where a train could have come to
+     * rest facing on, which is the same preference the paste walk makes (MT-368).
+     *
+     * @param square the square being pasted onto
+     * @param facing the heading asked for
+     * @return that copy on the running layout, or null when no copy faces that way
+     */
+    private org.traincontrol.automation.Point copyFacing(
+        org.traincontrol.automationui.TileGraph.TileKey square,
+        org.traincontrol.automationui.TilePorts.Side facing)
+    {
+        if (square == null || facing == null || getAutonomySession() == null
+            || this.model == null || !this.model.hasAutoLayout())
+        {
+            return null;
+        }
+
+        org.traincontrol.automation.Layout running = this.model.getAutoLayout();
+
+        org.traincontrol.automation.Point turning = null;
+
+        for (java.util.Map.Entry<String, org.traincontrol.automationui.TilePorts.Side> copy
+            : getAutonomySession().facingsFor(square).entrySet())
+        {
+            if (copy.getValue() != facing) continue;
+
+            org.traincontrol.automation.Point candidate = running.getPoint(copy.getKey());
+
+            // ONLY A COPY A TRAIN MAY BE PUT DOWN ON (MT-394, second half).
+            //
+            // `moveLocomotive` refuses a copy that is not a destination, and a square's copies are not
+            // all destinations.  Measured on BottomMainB: the plain westbound copy is not one, and the
+            // only copy a train can stand on facing west is the turning copy - so preferring the plain
+            // copy regardless made every west paste place nothing at all.
+            if (candidate == null || !candidate.isDestination()) continue;
+
+            if (!candidate.isTerminus() && !candidate.isReversing()) return candidate;
+
+            if (turning == null) turning = candidate;
+        }
+
+        return turning;
+    }
 
     /**
      * Levels the direction baseline whenever the railway is idle, so nothing is followed twice.

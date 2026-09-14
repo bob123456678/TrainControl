@@ -656,6 +656,35 @@ public class testAPasteDoesNotTurnTheTrainRound
     }
 
     /**
+     * The facing question's buttons say where the train points, not where it came from (OB-215).
+     *
+     * Adam, 2026-09-13: *'options for "which way should the train face" are "from the north (up)" ...
+     * for "which way does it face", it should be "to the north (up)"'*.  The facing prompt borrowed the
+     * arrival-side labels, which answer the opposite question about the opposite end of the train.
+     *
+     * Asked of every heading and against the arrival label for the same compass point, in the running
+     * language, so a later edit that points one prompt back at the other's words is caught.
+     */
+    @Test
+    public void testTheFacingButtonsNameAHeadingNotAnArrival()
+    {
+        for (Side heading : Side.values())
+        {
+            String facing = org.traincontrol.gui.FacingPrompt.labelFor(heading);
+
+            String arrival = org.traincontrol.gui.ArrivalSidePrompt.labelFor(heading.name());
+
+            assertFalse(facing == null || facing.trim().isEmpty(),
+                "the facing question has no label for " + heading);
+
+            assertFalse(facing.equals(arrival),
+                "the facing question labels " + heading + " \"" + facing + "\", which is the arrival-side"
+                + " label - an answer to \"where did the train come from\" offered for \"which way does it"
+                + " face\". Adam, OB-215: it should read \"to the north (up)\", not \"from\".");
+        }
+    }
+
+    /**
      * A cut train's remembered heading is preferred only while it is off the railway.
      *
      * **SVX-C4, and what this can and cannot say.**  Nothing under `test/` named `cutFacing` at all,
