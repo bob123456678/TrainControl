@@ -21409,6 +21409,12 @@ The tool is put down - nothing armed, the status line back to normal - and the e
 
 #### Comments
 
+**Adam, 2026-09-14 (triage).** Works, with notes.
+
+Escape works, but it seems a one-way run (or any other edits to arrows) persist after I press cancel.  They are not undone by cancelling.
+
+*Run against commit c6cb2932, build\classes, compiled 14 Sep 10:31 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-407"></a>
@@ -21435,6 +21441,10 @@ Your FR-065: *"escape closes autonomy/track editor - same as closing via button,
 
 #### Comments
 
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit c6cb2932, build\classes, compiled 14 Sep 10:31 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-408"></a>
@@ -21457,6 +21467,10 @@ Your note on MT-264: *"when the loading finishes, the menu options ungrey at dif
 Every menu that was greyed during the connect comes back at the same moment, not one after another.
 
 #### Comments
+
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit c6cb2932, build\classes, compiled 14 Sep 10:31 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -21481,6 +21495,10 @@ From OB-202: the Autonomy heading used to appear part-way through start-up, afte
 
 #### Comments
 
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit c6cb2932, build\classes, compiled 14 Sep 10:31 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-410"></a>
@@ -21503,6 +21521,10 @@ Your OB-188: *"add some spacing between the two buttons, as they currently touch
 The "use current" and "use active" buttons have a visible gap between them.
 
 #### Comments
+
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit c6cb2932, build\classes, compiled 14 Sep 10:31 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -21531,6 +21553,10 @@ If the route to BottomMainPost passes a square that turns every train, a compuls
 
 #### Comments
 
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit c6cb2932, build\classes, compiled 14 Sep 10:31 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-412"></a>
@@ -21555,6 +21581,12 @@ The arrow turns round when the train does, within a moment - not only after some
 
 #### Comments
 
+**Adam, 2026-09-14 (triage).** Works, with notes.
+
+Works.  But we should make a FR to track fixing this behavior so that the pre-arrival arrow just matches.
+
+*Run against commit c6cb2932, build\classes, compiled 14 Sep 10:31 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-413"></a>
@@ -21577,6 +21609,10 @@ Your OB-191: *"when i click on DRG 06 001, 'why not moving' in the autonomy edit
 The banner opens with the reasons written in it - readable text, not an empty strip.
 
 #### Comments
+
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit c6cb2932, build\classes, compiled 14 Sep 10:31 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -21601,6 +21637,10 @@ Its label reads **Train Arrived**, in the same style as the labels above it, and
 
 #### Comments
 
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit c6cb2932, build\classes, compiled 14 Sep 10:31 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-415"></a>
@@ -21623,6 +21663,10 @@ Your note on MT-311: *"clearning locomotives in the autonomy editor cannot be un
 The tooltip and the confirmation both name the locomotives it will lift, say how many squares it empties, and say that Cancel will not put them back.  Answer No.
 
 #### Comments
+
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit c6cb2932, build\classes, compiled 14 Sep 10:31 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -21904,6 +21948,10 @@ Your OB-220: *"the first or is read as an and here. also, the first condition fo
 
 #### Comments
 
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit c6cb2932, build\classes, compiled 14 Sep 10:31 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-426"></a>
@@ -21931,6 +21979,10 @@ Your FR-081: *"In the 'reads as', can we also bold the operators, make on/straig
 *What this is:* FR-081.  The colour follows the word, because the same setting is "on" for a sensor and "turn" for a switch.  `ui.testRouteEditorValidation.testReadsAsBoldsTheWordsAndColoursTheSettings`.
 
 #### Comments
+
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit c6cb2932, build\classes, compiled 14 Sep 10:31 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -21961,6 +22013,10 @@ Your OB-221: *"I start with Switch 1.  Then I set address to 40, which makes it 
 *What this is:* the Kind box reset the line to its kind's first address on every close, whether or not the kind changed.  `ui.testRouteEditorValidation.testChoosingTheKindALineAlreadyIsKeepsIt` and `testSwitchingBetweenSwitchAndSignalKeepsTheAddress`, both seen red first.
 
 #### Comments
+
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit c6cb2932, build\classes, compiled 14 Sep 10:31 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -21993,5 +22049,9 @@ Your FR-082: *"For the red operators, can we add a warning triangle icon with a 
 *What this is:* FR-082.  The two reasons are put right differently, so the tooltip names the one that applies.  `core.testConditionOutline.testEachFlagSaysWhy`; `ui.testRouteEditorValidation.testARedWordCarriesAWarningThatSaysWhy`, mutation-checked with the triangle removed and with it left on the next line painted.
 
 #### Comments
+
+**Adam, 2026-09-14 (triage).** Works.
+
+*Run against commit c6cb2932, build\classes, compiled 14 Sep 10:31 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
