@@ -828,6 +828,12 @@ places, or no length, both halves fall back to the answer 5a already gives.
 - **It stops at a fork.** *"If entering a switch from the fork direction where it splits, just end
   locking at the switch and call it a day."* One way back means the tail certainly lies there;
   several means the graph cannot say which.
+  - **Unless the train was driven there** (Adam, MT-333/MT-335, 2026-09-13: *"Follow its last route"*).
+    A train that arrived by a run remembers the route (`Point.arrivedAlong`), and past a junction the
+    walk takes the road that route came in on. A train placed by hand has no route and still stops at
+    the fork. The route is kept **in memory only**: a rebuild or a restart forgets it and the fork rule
+    applies again. `core.testATailFollowsTheRouteItCameIn` drives a real run through a junction and has
+    the placed train as its control.
 - **It stops at unmeasured track.** Only positive lengths are determinate.
 - **The square the train is standing on is an allowance, not track it lies over.** Adam, 2026-09-13:
   *"if the segment length is shorter, more should be blocked. The station size is an allowance, not a

@@ -31,37 +31,21 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-247](#mt-247) | 2026-09-01 | A refused route still cuts the power at the two human doors | fixed unvalidated | FX2-2, SVN-A4 |
 | [MT-254](#mt-254) | 2026-09-02 | Clearing every home locomotive at once | fixed unvalidated | R28-C1 |
 | [MT-256](#mt-256) | 2026-09-02 | Switching a signal by hand while a train stands at its platform | fixed unvalidated | SVN-B16, WK3-B1 |
-| [MT-260](#mt-260) | 2026-09-02 | Six rulings the review rounds are holding | fixed unvalidated | RTG-B2, TCX-B2, D24-C7, D24-C8, R28-A1, SV2-A1, DY3-C8 |
 | [MT-263](#mt-263) | 2026-09-03 | The three refusals, when the graph will not build | needs test | V31-C1, V32-C1, DY3-C7 |
-| [MT-266](#mt-266) | 2026-09-03 | The destination menu, split in two | needs test | FR-058, VD11-B1, VD11-C2, VD11-C3, VD11-C10 |
 | [MT-267](#mt-267) | 2026-09-04 | A setup edit made the instant autonomy starts | needs test | VD11-C8 |
-| [MT-284](#mt-284) | 2026-09-07 | The home dialog offers the parked train and the active one separately | needs test | FR-057 (split from MT-274) |
 | [MT-291](#mt-291) | 2026-09-07 | The Grid tooltip, in a language you read | needs test | FR-057 (split from MT-274) |
-| [MT-292](#mt-292) | 2026-09-07 | A remembered None comes back with the captions actually off | fixed unvalidated | RGD-C3 (split from MT-275) |
 | [MT-298](#mt-298) | 2026-09-07 | A second import fills gaps and does not overwrite | needs test | IPR-A1 (split from MT-243) |
-| [MT-325](#mt-325) | 2026-09-07 | The import names the hand-written locks it cannot reproduce | needs test | ACC-B1 (split from MT-269) |
 | [MT-326](#mt-326) | 2026-09-07 | A declined setup edit survives quitting | needs test | ACC-B3 (split from MT-269) |
-| [MT-333](#mt-333) | 2026-09-08 | The track behind a train is still blocked after the prompt change | needs test | OB-182 |
+| [MT-333](#mt-333) | 2026-09-08 | The track behind a train is still blocked after the prompt change | fixed unvalidated | OB-182 |
 | [MT-335](#mt-335) | 2026-09-08 | Return Home will not plan through track a train is lying across | fixed unvalidated | OB-184 |
-| [MT-345](#mt-345) | 2026-09-10 | A station held back by an occupied square is refused by hand too | needs test | FR-001 |
-| [MT-346](#mt-346) | 2026-09-10 | Return Home does not stage a train into a held-back home | needs test | FR-001 |
-| [MT-348](#mt-348) | 2026-09-10 | A compulsory turn you allow in autonomy is chosen like any other station | needs test | OB-195 |
-| [MT-357](#mt-357) | 2026-09-11 | A page that cannot be read shows why, and keeps its autonomy setup | needs test | NSV-B3, FV3-A1 |
-| [MT-359](#mt-359) | 2026-09-11 | A function the consist head does not have is not sent to its members | fixed unvalidated | S14-B1 |
-| [MT-367](#mt-367) | 2026-09-12 | A train that cannot reverse is not offered a terminus it could not leave | fixed unvalidated | OB-205 claims 1 and 2 |
 | [MT-368](#mt-368) | 2026-09-12 | The direction prompt appears at a station trains MAY turn round at | fixed unvalidated | OB-205 claim 3 |
-| [MT-371](#mt-371) | 2026-09-12 | A long train may stand across the points at a platform, but not at a berth | fixed unvalidated | Adam's ruling of 2026-09-12 (out of OB-207) |
-| [MT-374](#mt-374) | 2026-09-12 | The timetable capture test under a loaded machine | needs test | OB-209 |
 | [MT-376](#mt-376) | 2026-09-12 | The Unavailable While Occupied list, sorted and shaded | fixed unvalidated | FR-074 |
 | [MT-380](#mt-380) | 2026-09-13 | Autonomy can be set up by importing, from the menu, with nothing set up yet | fixed unvalidated | FR-007 |
-| [MT-383](#mt-383) | 2026-09-13 | Fifty locomotive mapping pages, and the menu greys at the limit | fixed unvalidated | FR-033 |
-| [MT-384](#mt-384) | 2026-09-13 | The label chooser opens on the nearest station, and the last one is spent | fixed unvalidated | FR-034 |
-| [MT-393](#mt-393) | 2026-09-13 | The caption menu says what it does on a station square | fixed unvalidated | - |
 | [MT-394](#mt-394) | 2026-09-13 | Pasting onto a may-reverse square asks which way the train faces | fixed unvalidated | your ruling of 2026-09-13 |
-| [MT-395](#mt-395) | 2026-09-13 | Return Home stages a platform whose approach holds the train | fixed unvalidated | your ruling of 2026-09-13 on PRW-B2 leg 2 |
+| [MT-396](#mt-396) | 2026-09-14 | A function pressed on a consist is sent to every locomotive in it | fixed unvalidated | MT-359 (your ruling of 2026-09-13) |
 
-Everything else - 363 of 395 - needs nothing from you unless the area changes again:
-322 **fixed validated** and 41 **superseded**.
+Everything else - 380 of 396 - needs nothing from you unless the area changes again:
+335 **fixed validated** and 45 **superseded**.
 
 ---
 
@@ -267,7 +251,7 @@ code the test covers**, which is four short checks rather than four tests.
 
 ### MT-266 - 2026-09-03 - The destination menu, split in two
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-058, VD11-B1, VD11-C2, VD11-C3, VD11-C10
 
 **Written:** 2026-09-03
@@ -15225,7 +15209,7 @@ Worth writing down next to the fix.
 
 ### MT-260 - 2026-09-02 - Six rulings the review rounds are holding
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** RTG-B2, TCX-B2, D24-C7, D24-C8, R28-A1, SV2-A1, DY3-C8
 
 **Written:** 2026-09-02
@@ -15368,6 +15352,19 @@ narrowing below and is built - the count was already in the popup, the list is n
 re-file with single, self-contained tests if needed
 
 *Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-14.**
+
+**Claude: superseded - all six were answered on 2026-09-02, and what was built from them is pinned by tests.**  You asked to re-file anything that still needs a test; nothing here does, so nothing is re-filed.
+
+1. **A train backing into a berth over a switch** (RTG-B2) - your ruling that the stretch between the switch and the station must hold the train, later given a second bound for the track it waits on while reversing.  Pinned by `core.testNonReversibleTrains` (`testTheRoomIsMeasuredFromTheLastSwitch`, `testATrainTooLongForTheBerthIsNotBackedOverTheSwitch`, `testTheRoomIsBoundedAtTheReversalAndAtTheBerth`).
+2. **The length notice asking for the approach** (TCX-B2) - *"20 warnings sounds OK"*, built.  Pinned by `core.testAutonomyDiagramReducer.testTheEditorAsksOnlyForTheSquaresAfterTheLastSwitch`.
+3. **A signal left red over a platform emptied by hand** (D24-C8) - *"OK, because it will be set correctly later"*; closed with no code.
+4. **Deleting a locomotive edits routes silently** (R28-A1) - *"Say how many in the popup and which in the log"*, built.  Pinned by `regression.testARouteDoesNotThrowSwitchesUnderATrain.testTheDeleteDialogNamesTheRoutesThatWillLoseCommands`.
+5. **A non-reversible train in a berth** (SV2-A1) - made moot on 2026-09-04 when the back-in rule for homing came out.  `core.testReturnHomeSequencesAReversal.testALeavingTerminusDoesNotCountAsHavingBackedIn` holds what remains.
+6. **ParkingTrack12 on the frozen fixture** (DY3-C8) - *"yes, for testing"*; closed with no code.
+
+The bundle was the wrong shape for a test entry - six questions, one disposition - which is why the five-step check at its foot could not be run as one thing.
 
 ---
 
@@ -16089,7 +16086,7 @@ It sits inside the sidebar without widening it, at the same width as the control
 
 ### MT-284 - 2026-09-07 - The home dialog offers the parked train and the active one separately
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-057 (split from MT-274)
 
 **Written:** 2026-09-07
@@ -16312,7 +16309,7 @@ one looks wrong, it probably is.
 
 ### MT-292 - 2026-09-07 - A remembered None comes back with the captions actually off
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RGD-C3 (split from MT-275)
 
 **Written:** 2026-09-07
@@ -17566,7 +17563,7 @@ cover that and by his ruling it should not.
 
 ### MT-325 - 2026-09-07 - The import names the hand-written locks it cannot reproduce
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** ACC-B1 (split from MT-269)
 
 **Written:** 2026-09-07
@@ -17594,6 +17591,10 @@ graph, and a report naming a lock that turns out to be reproduced is wrong in th
 no idea what this is talking about, re-file as a clear test if needed, otherwise close.
 
 *Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-14.**
+
+**Claude: superseded by the automated test - there is nothing here for you to judge.**  An old 2.8.1 `autonomy.json` could lock one connection against another by hand; the 3.0.0 diagram works locks out from shared track and cannot reproduce a lock between connections that share none.  The import now adds one line saying how many connections carried such locks, so they are not dropped in silence.  `core.testAutonomyDiagramSession.testALegacyImportSaysItIsLeavingHandWrittenLocksBehind` imports a sample with two and asserts that line.  Whether any of your 116 was doing work the geometry does not is a question for the day you notice a collision the old file prevented - not a test to run now.
 
 ---
 
@@ -17895,7 +17896,7 @@ value, so the label and the protection cannot disagree.
 
 ### MT-333 - 2026-09-08 - The track behind a train is still blocked after the prompt change
 
-**Disposition:** needs test
+**Disposition:** fixed unvalidated
 **From:** OB-182
 
 **Written:** 2026-09-08
@@ -17928,6 +17929,22 @@ test would pass without the rule being asked at all.
 doesn't work, see other MT, from current config that is EN57-947 that shouldn't be allowed to bottommainb because of 75 407 DB's placement.
 
 *Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-14.**
+
+**Claude: fixed - a driven train's tail now follows the road it came in on, past the junction.**
+
+Your ruling of 2026-09-13: a train that was DRIVEN there keeps claiming along the route it actually arrived on, through the junction; a train placed by hand still stops at the fork.  The walk used to end at the first switch behind the train, which on your railway is BottomMainAPre - so five units of 75 407 DB with two measured behind the platform claimed nothing beyond it, and EN57-947 was let through.
+
+Checked on a sandbox copy of your railway as it stands: with the arrival from Tunnel known, the Tunnel to BottomMainAPre segment is covered and EN57-947 is refused BottomMainB.
+
+**Run it by DRIVING 75 407 DB there, not by placing it.**  The route is remembered in memory only, so a train placed by hand - or any train after a restart - falls back to stopping at the fork.
+
+**Steps:** drive 75 407 DB from Tunnel to BottomMainA (length 5, your measured segments); then try to send EN57-947 to BottomMainB.
+
+**Expected:** refused, and the orange line runs back past BottomMainAPre towards Tunnel.
+
+`core.testATailFollowsTheRouteItCameIn` drives a real run through a junction, and was red first.
 
 ---
 
@@ -18057,6 +18074,18 @@ new call site in the source. Both were seen red first.
 Does not work.  With 75 407 DB at bottommaina, length 5, segment length 1+1 between bottommaina and bottommainapre, and 1 between tunnel and bottommainapre past the previous station, EN57-947 may still be manually sent to botommainb, and the orange blocked track is not extended to the segment between tunnel and bottommaina pre.  so, the planner is consistent with what the layout shows, but the layout shouldn't allow this if cleanly possible.
 
 *Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-14.**
+
+**Claude: fixed with MT-333 - the planner reads the same covered track, so it now sees the longer tail too.**
+
+You found the planner consistent with the layout and the layout wrong; the layout is what changed.  A train DRIVEN to BottomMainA from Tunnel now covers the road back past BottomMainAPre, and Return Home asks that same covering.
+
+**Steps:** drive 75 407 DB from Tunnel to BottomMainA as in MT-333, then try to Return Home a train whose only way home runs through Tunnel to BottomMainAPre.
+
+**Expected:** no plan through that segment; with FR-078 the log now says why for each train it could not bring home.
+
+The same caveat as MT-333: a train placed by hand, or after a restart, has no remembered route and stops the tail at the fork.
 
 ---
 
@@ -18447,7 +18476,7 @@ seven already did this.
 
 ### MT-345 - 2026-09-10 - A station held back by an occupied square is refused by hand too
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-001
 
 **Written:** 2026-09-10
@@ -18481,7 +18510,7 @@ everybody while it sat there. Worth checking both.
 
 ### MT-346 - 2026-09-10 - Return Home does not stage a train into a held-back home
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-001
 
 **Written:** 2026-09-10
@@ -18518,6 +18547,10 @@ Nothing about what you check here changes - this is the automated half getting i
 seems OK, just needs to be easier for the user to debug as noted in the other MT.
 
 *Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-14.**
+
+**Claude: validated on your run, and the debugging half is built as FR-078.**  A failed Return Home plan now writes a line per train to the log saying why: its home too short (with both lengths), out of service, excluding it, no route, two homes on one detection section, or - where the search only ran out of room - the home another train is standing on.
 
 ---
 
@@ -18557,7 +18590,7 @@ Set the small length back to 0 and the destination comes back: an unmeasured str
 
 ### MT-348 - 2026-09-10 - A compulsory turn you allow in autonomy is chosen like any other station
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-195
 
 **Written:** 2026-09-10
@@ -18581,6 +18614,12 @@ checked."** Turning round says what happens when a train arrives; that switch sa
 I think this is OK, but autonomy will never choose a reversing point in the middle of a routing, because it would cause edges to overlap. So the question is moot- you need to use the return home planner or manual actions to reverse a train and move it back over where it came.  which is fine.  the "can be chosen in full autonomy" therefore effectively talks about whether a train should be allowed to stop there in autonomy, or only while maneuvering to park.
 
 *Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-14.**
+
+**Claude: your claim holds, and the hint now says it your way.**
+
+Full autonomy never turns a train part-way through a run - `pickPath` refuses a route that `reversesAlongTheWay`, and `testFullAutonomyDoesNotDriveThroughAReversingPoint` pins it.  So what **Can Be Chosen in Full Autonomy** decides in practice is whether a train may END a run there in autonomy, or only while it is being parked - by Return Home or by hand.  The hint says that now, in eight languages, and behaviour.md section 3 carries your reading.  Validated on your run; the wording needs no second one.
 
 ---
 
@@ -18883,7 +18922,7 @@ page in the alphabet the moment you pressed OK, which took the choice away from 
 
 ### MT-357 - 2026-09-11 - A page that cannot be read shows why, and keeps its autonomy setup
 
-**Disposition:** needs test
+**Disposition:** superseded
 **From:** NSV-B3, FV3-A1
 
 **Written:** 2026-09-11
@@ -18933,6 +18972,10 @@ Still `needs test`, and now for a written-down reason rather than by omission.
 Make a test case for this, it should be possible to deterministically validate.
 
 *Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-14.**
+
+**Claude: superseded by the automated test, as you asked.**  `core.testAutonomyDiagramSession.testAPageThatWouldNotReadIsNotJudged` builds a layout with a page that will not read and asserts a save neither judges nor prunes that page's autonomy setup; the method after it is the control, with every page loaded.  Both run in every battery.  Nothing here is left for the railway.
 
 ---
 
@@ -18991,7 +19034,7 @@ Your note about ID design is not covered by this and is worth its own entry when
 
 ### MT-359 - 2026-09-11 - A function the consist head does not have is not sent to its members
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** S14-B1
 
 **Written:** 2026-09-11
@@ -19076,6 +19119,10 @@ It does now.  Three places in `TrainControlUI.repaintLoc` decided which buttons 
 The described behavior here is incorrect, but I think it's OK in the app.  Pressing F6 on the MM2 head, if it has a MFX/DCC member, should simply propagate a F6 command to all the consist's locomotives as per normal.  The CS will figure out whether that means anything.
 
 *Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-14.**
+
+**Claude: superseded by MT-396.**  Your ruling changed what this entry expects: it says nothing should happen when F6 is pressed on an MM2 head, and you want F6 sent to every locomotive in the consist.  An entry's instructions are never rewritten, so MT-396 asks the new question, and the change is built.
 
 ---
 
@@ -19450,7 +19497,7 @@ Both halves want your eyes again: raise a terminus with two ways in, check the s
 
 ### MT-367 - 2026-09-12 - A train that cannot reverse is not offered a terminus it could not leave
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-205 claims 1 and 2
 
 **Written:** 2026-09-12
@@ -19666,6 +19713,18 @@ Popup correctly appears, but the direction does not follow the user's selection,
 
 *Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-14.**
+
+**Claude: the paste half is fixed, with MT-394; one earlier point is still open and filed.**
+
+*"the direction does not follow the user's selection, as noted on the other related MT"* - MT-394's step 4.  The answer was recorded and the train was then stood on the square's first destination copy, which faces east whatever was chosen.  It now lands on the copy facing the way you chose.
+
+**Why the tests were green:** the claim confirmed the facing question was asked and its answer handed on; nothing drove a paste end to end, so nothing saw the answer thrown away at the last step.  `ui.testAPastedTrainFacesTheWayTheOperatorChose` now drives a real Control+V with the question answered west and then east, and was red against the old code.
+
+**If the direction also fails to follow your answer when you SEND a train** to a may-turn square, rather than paste one, that is a different path and I have not changed it - say so and it gets its own entry.
+
+**Still open:** point 2 of your earlier run, the in-progress badge showing the turned facing until the train arrives.  Filed as its own bug so it is not lost in this entry.
+
 ---
 
 <a id="mt-369"></a>
@@ -19745,7 +19804,7 @@ Reworded to yours.
 
 ### MT-371 - 2026-09-12 - A long train may stand across the points at a platform, but not at a berth
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam's ruling of 2026-09-12 (out of OB-207)
 
 **Written:** 2026-09-12
@@ -19983,7 +20042,7 @@ No code changed for this; what changed is a test that had drifted from the drawi
 
 ### MT-374 - 2026-09-12 - The timetable capture test under a loaded machine
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** OB-209
 
 **Written:** 2026-09-12
@@ -20162,6 +20221,26 @@ Works, but if there are no stations on the diagram yet, the "choose on diagram" 
 
 *Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-14.**
+
+**Claude: done - greyed, and a click on the diagram now agrees with the list.**
+
+The button could not simply be greyed on its own: a click on the diagram still accepted any square autonomy routes over, so on a diagram with no other station it would still have found something.  It now refuses a square that is not a station - unless that square is already stored against this one, the list's own exception - and says so.
+
+**Steps**
+
+1. On a page with no other station yet, open **Unavailable While Occupied** on a station.
+2. On a page with stations, open it again, choose **Pick on the Diagram**, and click a plain sensor that is not a station.
+3. Click a station instead.
+
+**Expected**
+
+- Step 1: the message says there is nothing to choose, and Pick on the Diagram is there and greyed.
+- Step 2: refused, naming the square and saying only a station can hold another back.
+- Step 3: accepted.
+
+`ui.testOnlyAStationHoldsAnotherBack`, mutation-checked.
+
 ---
 
 <a id="mt-377"></a>
@@ -20335,6 +20414,23 @@ Base functionality works, but the "the setup was left alone" popup shows twice (
 
 *Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-14.**
+
+**Claude: both halves done.**
+
+Your rulings: *"keep only the pages, and alert the user"*, and then the warning *"should stop repeating"*.
+
+1. An import brings in only the pages this layout has, and a warning at import names the ones it left out.  Pages this setup already knew, loaded or not, are never dropped - that is what protects a OneDrive page that has not downloaded yet.
+2. "The setup was left alone" is shown once per set of missing pages in a session, and again only if that set changes.
+
+**Start from a layout with no autonomy setup.**  `random_test_layout` already recorded the five page names from the earlier import, and because the setup knew them BEFORE this import they count as its own and are protected - so on that folder the warning will still appear once per session.  Clearing its `config/autonomy` folder, or using a fresh layout, is your call.
+
+**Steps:** import the export of your five-page railway into a one-page layout with nothing set up; open the autonomy editor; close and open it again.
+
+**Expected:** one warning at import naming the pages left out; no "setup was left alone" popup at import or on either open.
+
+`core.testAnImportKeepsOnlyThisLayoutsPages`, `core.testTheLeftAloneWarningIsSaidOnce`, both mutation-checked.
+
 ---
 
 <a id="mt-381"></a>
@@ -20399,7 +20495,7 @@ FR-011, built 2026-08-23. Reconstructed from the receipt. Its point is that the 
 
 ### MT-383 - 2026-09-13 - Fifty locomotive mapping pages, and the menu greys at the limit
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-033
 
 **Written:** 2026-09-13
@@ -20453,7 +20549,7 @@ Closing on assumption that your tests passed.
 
 ### MT-384 - 2026-09-13 - The label chooser opens on the nearest station, and the last one is spent
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-034
 
 **Written:** 2026-09-13
@@ -20741,7 +20837,7 @@ passed happily while the label said "F6", which is why the two are separate.
 
 ### MT-393 - 2026-09-13 - The caption menu says what it does on a station square
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 
 **Written:** 2026-09-13
 
@@ -20834,13 +20930,25 @@ rule and why the two questions are different questions.
 
 *Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-14.**
+
+**Claude: step 4 fixed, and why it passed our tests.**
+
+The facing question was asked and answered, and the paste then stood the train on the square's first destination copy - eastbound on BottomMainB - whatever you had chosen.  It now lands on the copy facing the way you picked.
+
+**How it passed:** the claim covering this was about the question - that it was offered, with the right headings - and never pasted a train and looked at which way it ended up.  `ui.testAPastedTrainFacesTheWayTheOperatorChose` drives a real Control+V through the editor with the question answered west and then east, and asserts each.  It was red against the old code for exactly the failure you saw.
+
+The facing buttons also say **To the North (up)** now rather than From - OB-215.
+
+Run step 4 again; steps 3, 6 and 7 passed and nothing on their paths changed.
+
 ---
 
 <a id="mt-395"></a>
 
 ### MT-395 - 2026-09-13 - Return Home stages a platform whose approach holds the train
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** your ruling of 2026-09-13 on PRW-B2 leg 2
 
 **Written:** 2026-09-13
@@ -20882,5 +20990,40 @@ that test was added and taken out the same hour.
 **Adam, 2026-09-13 (triage).** Works.
 
 *Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-396"></a>
+
+### MT-396 - 2026-09-14 - A function pressed on a consist is sent to every locomotive in it
+
+**Disposition:** fixed unvalidated
+**From:** MT-359 (your ruling of 2026-09-13)
+
+**Written:** 2026-09-14
+
+Your ruling on MT-359: *"Pressing F6 on the MM2 head, if it has a MFX/DCC member, should simply
+propagate a F6 command to all the consist's locomotives as per normal.  The CS will figure out whether
+that means anything."*  Asked whether the range stays: **"Send to all, keep the cap."**
+
+**Steps**
+
+1. Make a multi-unit whose head is an MM2 locomotive and whose member is MFX or DCC.
+2. Select the head and press **F6**.
+3. Watch the member on the railway, and the head's F6 button.
+4. Press **F6** again.
+
+**Expected**
+
+- Step 3: the member does whatever its F6 does, and the head's F6 button shows on.
+- Step 4: the member's F6 goes off again.
+
+*What this is:* the first repair asked each member through that member's own function count, so the
+MM2 member of an MFX-headed consist never heard f6, and an MM2 head skipped its own copy.  Every
+locomotive in the consist is now sent the command; a function above every member's range is still
+refused.  `core.testMultiUnitMembership.testAFunctionInTheConsistsRangeIsSentToEveryLocomotive` reads
+the commands handed to the station, and was red before the change.
+
+#### Comments
 
 ---
