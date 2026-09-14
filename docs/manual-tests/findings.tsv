@@ -1203,29 +1203,57 @@ PARITY-901	2026-09-03-parity-report.md	Closed	2 of 2 variant(s) gone
 PARITY-902	2026-09-03-parity-report.md	Closed	2 of 2 variant(s) gone
 PARITY-903	2026-09-03-parity-report.md	Closed	2 of 2 variant(s) gone
 PARITY-904	2026-09-03-parity-report.md	Closed	1 of 2 variant(s) gone
-PFX-A1	2026-09-12-PFX-fix-round.md	Closed	Fixed 2026-09-12: the replay asks Point.heldBackBy again; mutation fails four claims
-PFX-B1	2026-09-12-PFX-fix-round.md	Closed	Fixed 2026-09-12 as MT-377
-PFX-C1	2026-09-12-PFX-fix-round.md	Closed	Fixed 2026-09-12, later in the same round: thirteen sentences rather than the eight first 
-PRV-B1	2026-09-12-PRV-fix-validation.md	Closed	Fixed 2026-09-12: a turning copy may be reached and not driven through
-PRV-B2	2026-09-12-PRV-fix-validation.md	Closed	Fixed 2026-09-12: the move happens after the unlock, and the redundant clear is gone
-PRV-C1	2026-09-12-PRV-fix-validation.md	Closed	Answered 2026-09-12: the emission-order assumption is asserted, so a change to it shows up
-PRV-C10	2026-09-12-PRV-fix-validation.md	Closed	Fixed 2026-09-12: PRW-B4 repaired and MT-371 carries the note
-PRV-C2	2026-09-12-PRV-fix-validation.md	Closed	Fixed 2026-09-12: a claim uses a placed train that cannot be driven to the target
-PRV-C3	2026-09-12-PRV-fix-validation.md	Closed	Fixed 2026-09-12: testTheTailComesWithIt
-PRV-C4	2026-09-12-PRV-fix-validation.md	Closed	Fixed 2026-09-12: a second plain copy on the other arrival side, and a claim for it
-PRV-C5	2026-09-12-PRV-fix-validation.md	Closed	Fixed 2026-09-12 with the rest of PFX-C1: thirteen sentences, eight languages
-PRV-C6	2026-09-12-PRV-fix-validation.md	Closed	Fixed 2026-09-12
-PRV-C7	2026-09-12-PRV-fix-validation.md	Closed	Fixed 2026-09-13: the re-stand says so when it can find no plain copy at a square where tu
-PRV-C8	2026-09-12-PRV-fix-validation.md	Closed	Fixed 2026-09-13: walkTo prefers a match the railway reports as OCCUPIED, so a locked path
-PRV-C9	2026-09-12-PRV-fix-validation.md	Closed	Answered 2026-09-12 alongside PRV-C1
-PRW-A1	2026-09-12-PRW-three-day-review.md	Closed	Fixed 2026-09-12: Layout.standOnTheCopyItDidNotTurnOn, red first in core.testTheArrivalHon
-PRW-B1	2026-09-12-PRW-three-day-review.md	Closed	Fixed 2026-09-12: an unmeasured approach is not judged. Measured 26 invented refusals -> 0
-PRW-B2	2026-09-12-PRW-three-day-review.md	Closed	Fixed 2026-09-13 on Adam's instruction ("Do it"). Leg 1: the planner narrows shared metal 
-PRW-B3	2026-09-12-PRW-three-day-review.md	Closed	Fixed 2026-09-12: it reads the copy, falling back to the square
-PRW-B4	2026-09-12-PRW-three-day-review.md	Closed	Closed 2026-09-13 by Adam's ruling: "the station size is an allowance, not a length". The 
-PRW-C1	2026-09-12-PRW-three-day-review.md	Closed	Fixed 2026-09-12: LayoutLabel passes the SHAPE already faded rather than a tile-wide flag,
-PRW-C2	2026-09-12-PRW-three-day-review.md	Closed	Fixed 2026-09-12 at both doors: AutoLocomotiveStatus and LayoutRightclickAutonomyMenu each
-PRW-C3	2026-09-12-PRW-three-day-review.md	Closed	Fixed 2026-09-13: there is one budget now - what the places walk charges IS what the hop c
+PFX-A1	2026-09-12-PFX-fix-round.md	Closed	Fixed (stated in the body)
+PFX-B1	2026-09-12-PFX-fix-round.md	Closed	Fixed (stated in the body)
+PFX-B2	2026-09-12-PFX-fix-round.md	-	Fixed (stated in the body)
+PFX-B3	2026-09-12-PFX-fix-round.md	-	Fixed (stated in the body)
+PFX-B4	2026-09-12-PFX-fix-round.md	-	Fixed (stated in the body)
+PFX-C1	2026-09-12-PFX-fix-round.md	Closed	**fixed** (thirteen, in eight languages)
+PFX-C2	2026-09-12-PFX-fix-round.md	-	Fixed (stated in the body)
+PFX-D1	2026-09-12-PFX-fix-round.md	-	The `getNeighbors` shuffle at its other ten callers
+PFX-D2	2026-09-12-PFX-fix-round.md	-	MT-346's expectation against the shipped planner
+PFX-D3	2026-09-12-PFX-fix-round.md	-	PRW-B2's third leg, as reported
+PFX-D4	2026-09-12-PFX-fix-round.md	-	The two battery failures that were not the code
+PRV-B1	2026-09-12-PRV-fix-validation.md	Closed	`AutonomySession.walkTo` (`src/org/traincontrol/automationui/AutonomySession.java:5721`)
+PRV-B2	2026-09-12-PRV-fix-validation.md	Closed	`Layout.standOnTheCopyItDidNotTurnOn` (`src/org/traincontrol/automation/Layout.java:3272`)
+PRV-C1	2026-09-12-PRV-fix-validation.md	Closed	`core/testAPasteDoesNotTurnTheTrainRound` - "prefer the plain copy" is unpinned
+PRV-C10	2026-09-12-PRV-fix-validation.md	Closed	MT-371 step 4 asks Adam to produce PRW-B4's symptom
+PRV-C2	2026-09-12-PRV-fix-validation.md	Closed	the same class - the no-path arm's "keep the heading" branch is never entered
+PRV-C3	2026-09-12-PRV-fix-validation.md	Closed	`core/testTheArrivalHonoursTheAnswer` - the tail carry is unpinned
+PRV-C4	2026-09-12-PRV-fix-validation.md	Closed	the same class - "chosen by the approach" is unpinned
+PRV-C5	2026-09-12-PRV-fix-validation.md	Closed	`Layout.java:3276` - a hard-coded English operator log line
+PRV-C6	2026-09-12-PRV-fix-validation.md	Closed	`Point.java:717-721` - the javadoc fix 5 depends on is stale
+PRV-C7	2026-09-12-PRV-fix-validation.md	Closed	a may-turn dead end has no plain sibling and the re-stand no-ops silently
+PRV-C8	2026-09-12-PRV-fix-validation.md	Closed	`AutonomySession.facingOf(String, Layout)` / `walkTo` take the first Point holding the tra
+PRV-C9	2026-09-12-PRV-fix-validation.md	Closed	the new test's oracle implements a different rule from the code
+PRV-D1	2026-09-12-PRV-fix-validation.md	-	PRW-B1, the berth rule's unmeasured-approach arm
+PRV-D2	2026-09-12-PRV-fix-validation.md	-	fix 5, the staging oracle's restored FR-001 assertion
+PRV-D3	2026-09-12-PRV-fix-validation.md	-	fix 6, the two diagnostics in the timetable capture test
+PRV-D4	2026-09-12-PRV-fix-validation.md	-	PRW-B3, `facingOf(String, Layout)` and both its callers
+PRV-D5	2026-09-12-PRV-fix-validation.md	-	PRW-A1 at a compulsory turn and at a real terminus
+PRV-D6	2026-09-12-PRV-fix-validation.md	-	the self-paste (distance 0) behaviour change
+PRV-D7	2026-09-12-PRV-fix-validation.md	-	PFX-D3's reading of PRW-B2's third leg
+PRV-D8	2026-09-12-PRV-fix-validation.md	-	`unlockPath` after the re-stand, both branches
+PRV-D9	2026-09-12-PRV-fix-validation.md	-	leaving PRW-B2, B4, C1, C2, C3 open
+PRW-A1	2026-09-12-PRW-three-day-review.md	Closed	`Layout.turnsOnArrival` / `executePathInternal` arrival block
+PRW-B1	2026-09-12-PRW-three-day-review.md	Closed	`Layout.whyABerthCannotHoldIt`
+PRW-B2	2026-09-12-PFX-fix-round.md	-	-
+PRW-B2	2026-09-12-PRW-three-day-review.md	Closed	`HomeStaging.firstClearRoute` / `passesTheTailsOfTrainsThatHaveNotMoved`
+PRW-B3	2026-09-12-PRW-three-day-review.md	Closed	`AutonomySession.facingOf(String, Layout)` and its two callers
+PRW-B4	2026-09-12-PRW-three-day-review.md	Closed	`AutonomySession.walkBackFrom` against `Layout.walkStandingTrains`
+PRW-C1	2026-09-12-PRW-three-day-review.md	Closed	`LayoutLabel.paintComponent` -> `TileAnnotation.paint` / `TileOverlay.paintRun`
+PRW-C2	2026-09-12-PRW-three-day-review.md	Closed	the two hand-driven send doors
+PRW-C3	2026-09-12-PRW-three-day-review.md	Closed	`Layout.walkStandingTrains`, turned-train hop
+PRW-D1	2026-09-12-PRW-three-day-review.md	-	`Layout.getNeighbors` shuffle, all eleven callers
+PRW-D10	2026-09-12-PRW-three-day-review.md	-	`whatTheOperatorMayChoose` on the event thread
+PRW-D2	2026-09-12-PRW-three-day-review.md	-	consist function buttons
+PRW-D3	2026-09-12-PRW-three-day-review.md	-	the ellipsis rule
+PRW-D4	2026-09-12-PRW-three-day-review.md	-	the other `isTerminus()` sites
+PRW-D5	2026-09-12-PRW-three-day-review.md	-	MT-364: `unmeasuredAfterTheLastSwitch` and `reversalsWithoutLength`
+PRW-D6	2026-09-12-PRW-three-day-review.md	-	`places` end to end
+PRW-D7	2026-09-12-PRW-three-day-review.md	-	the platform relaxation's safety claim
+PRW-D8	2026-09-12-PRW-three-day-review.md	-	the editor's one-argument `facingOf`
+PRW-D9	2026-09-12-PRW-three-day-review.md	-	smaller working-tree changes
 PV-B1	2026-07-27-post-cycle-verification.md	Closed	Fixed (stated in the body)
 PV-C1	2026-07-27-post-cycle-verification.md	Closed	Fixed (stated in the body)
 PV-C2	2026-07-27-post-cycle-verification.md	Closed	**Fixed 2026-07-27**. Fix validated, including a deadlock audit of the new lock scope
@@ -1645,13 +1673,24 @@ SA-V5	2026-08-18-station-arrivals-review.md	Closed	NOT a defect - see below
 SA-V6	2026-08-18-station-arrivals-review.md	Closed	accepted, measured - see below
 SA-V7	2026-08-18-station-arrivals-review.md	Closed	accepted, matches findPath - see below
 SA-V8	2026-08-18-station-arrivals-review.md	Closed	recorded here, history left alone
-SEV-B1	2026-09-13-SEV-seven-day-review.md	Closed	Fixed 2026-09-13: the berth's own square is an allowance there too
-SEV-B2	2026-09-13-SEV-seven-day-review.md	Closed	Fixed 2026-09-13: fenced the way shouldReverseAt fences the same question - a plan is not 
-SEV-B3	2026-09-13-SEV-seven-day-review.md	Closed	Fixed 2026-09-13: the hop budget skips it too
-SEV-C1	2026-09-13-SEV-seven-day-review.md	Closed	Fixed 2026-09-13: harmless at both callers, a trap for the third
-SEV-C2	2026-09-13-SEV-seven-day-review.md	Closed	Fixed 2026-09-13: writeHome writes without deriving, one rule, both callers
-SEV-C3	2026-09-13-SEV-seven-day-review.md	Closed	Fixed 2026-09-13, and swept to clearAllPlacements which had the same split unreported
-SEV-C4	2026-09-13-SEV-seven-day-review.md	Closed	Answered 2026-09-13: autonomy cannot run while this editor is open (whyAutonomyEditorCanno
+SEV-B1	2026-09-13-SEV-seven-day-review.md	Closed	`Layout.whyABerthCannotHoldIt` 8084-8086 against `walkStandingTrains` 6263
+SEV-B2	2026-09-13-SEV-seven-day-review.md	Closed	`Layout.turnsOnArrival` 5831 against `HomeStaging` 162/807/1128 and `executePathInternal` 
+SEV-B3	2026-09-13-SEV-seven-day-review.md	Closed	`Layout.walkStandingTrains` 6263 against 6271
+SEV-C1	2026-09-13-SEV-seven-day-review.md	Closed	`Layout.hasAWayThrough` 4646 / `turnsOnArrival` 5831
+SEV-C2	2026-09-13-SEV-seven-day-review.md	Closed	`AutonomySession.homeEveryPlacedTrain` 6200-6220
+SEV-C3	2026-09-13-SEV-seven-day-review.md	Closed	`AutonomyEditorPanel.bulkTools` 2018, `homeEveryPlacedTrain` 2107 against `AutonomySession
+SEV-C4	2026-09-13-SEV-seven-day-review.md	Closed	`AutonomySession.homeEveryPlacedTrain` reads the setup's placements
+SEV-D1	2026-09-13-SEV-seven-day-review.md	-	the re-stand's position among the arrival's callbacks
+SEV-D10	2026-09-13-SEV-seven-day-review.md	-	smaller working-tree changes
+SEV-D11	2026-09-13-SEV-seven-day-review.md	-	the two `HomeStaging` snapshots
+SEV-D2	2026-09-13-SEV-seven-day-review.md	-	the cut clipboard's heading
+SEV-D3	2026-09-13-SEV-seven-day-review.md	-	`ManualReversalPrompt.forJourney`'s new clause; MT-368 point 2 known
+SEV-D4	2026-09-13-SEV-seven-day-review.md	-	the caption menu's "shows itself" test
+SEV-D5	2026-09-13-SEV-seven-day-review.md	-	the three washes after PRW-C1
+SEV-D6	2026-09-13-SEV-seven-day-review.md	-	guard/affordance pairs at the hand doors and the planner
+SEV-D7	2026-09-13-SEV-seven-day-review.md	-	the picture against the guard after the ruling
+SEV-D8	2026-09-13-SEV-seven-day-review.md	-	the blocker-list filter, sort and grey
+SEV-D9	2026-09-13-SEV-seven-day-review.md	-	the PFX/PRV fixes re-read
 SF-B1	2026-08-01-simulation-feedback-race-review.md	Closed	Fixed - epoch-guarded clears (`simAnnounce`/`simClearBehind` in `Layout`); each announceme
 SF-C1	2026-08-01-simulation-feedback-race-review.md	Closed	Closed, remedy withdrawn - the recommendation inverted when reversing stations stopped bei
 SF-D1	2026-08-01-simulation-feedback-race-review.md	Closed	Withdrawn by the author before implementation - the `reversible` flag gates TERMINUS arriv
@@ -1757,52 +1796,55 @@ SVN-C7	2026-09-01-week-of-commits-review.md	Closed	open
 SVN-C8	2026-09-01-week-of-commits-review.md	Closed	open
 SVN-C9	2026-09-01-week-of-commits-review.md	Closed	open
 SVN-C9	2026-09-03-c-sweep-report.md	Closed	Same class, same reason. Narrow: needs the editor, a curved feedback station, and shut
-SVV-B1	2026-09-13-SVV-fix-validation.md	Closed	Fixed 2026-09-13: the guard's bound skips the berth's own place, and SVX-C5 restored the a
-SVV-B2	2026-09-13-SVV-fix-validation.md	Closed	Fixed 2026-09-13: the measurement moved to the place behind the berth, and SVX-C5 put the 
-SVV-C1	2026-09-13-SVV-fix-validation.md	Closed	Fixed 2026-09-13, and pinned under SVX-C3: null means no caller has an opinion and the rai
-SVV-C2	2026-09-13-SVV-fix-validation.md	Closed	Answered 2026-09-13: the outcome is right and the reason was not; the dead-end case is nam
-SVV-C3	2026-09-13-SVV-fix-validation.md	Closed	Fixed 2026-09-13: testTheTailReachesPastTheFirstEdgeBehindIt, on TopMainR1 - the park has 
-SVV-C4	2026-09-13-SVV-fix-validation.md	Closed	Fixed 2026-09-13 on Adam's instruction ("make it public and add the tests"): hasAWayThroug
-SVV-C5	2026-09-13-SVV-fix-validation.md	Closed	Fixed 2026-09-13 (stillLifted), and pinned under SVX-C4 as far as a private key handler al
-SVV-C6	2026-09-13-SVV-fix-validation.md	Closed	Fixed 2026-09-13, over-corrected the same day and repaired again under SVX-B2: a station s
-SVV-C7	2026-09-13-SVV-fix-validation.md	Closed	Fixed 2026-09-13; the second half was still wrong and is SVX-C2, now repaired
-SVV-C8	2026-09-13-SVV-fix-validation.md	Closed	Fixed 2026-09-13 under SVX-C1: the javadoc describes the allowance, and Automation.md's be
-SVV-C9	2026-09-13-SVV-fix-validation.md	Closed	Fixed 2026-09-13 across SVX-C6 and SVX-C7: the unbounded fill is gone, the accessors fail 
-SVV-D1	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
-SVV-D10	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
-SVV-D11	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
-SVV-D12	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
-SVV-D2	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
-SVV-D3	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
-SVV-D4	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
-SVV-D5	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
-SVV-D6	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
-SVV-D7	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
-SVV-D8	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
-SVV-D9	2026-09-13-SVV-fix-validation.md	Closed	Closed 2026-09-13: checked clean
-SVX-B1	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13: spendableAllowance is one definition and both the measurement test and t
-SVX-B2	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13: three states, and only a square already showing its own name is greyed
-SVX-C1	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13: the javadoc says the berth's square is skipped and that the two walks ar
-SVX-C2	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13: the javadoc names writeHome as the method the loop calls
-SVX-C3	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13: a claim with a null policy at a may-turn square, red under the mutation.
-SVX-C4	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13 as far as is safe: the landing question is pinned on the railway and the 
-SVX-C5	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13: both arrangements are kept - the tile behind the berth measured (refuse)
-SVX-C6	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13: the read goes through getNumLocMappings, a reflective miss fails rather 
-SVX-C7	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13: the stored count is read in setup and put back in the teardown, whatever
-SVX-C8	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13: the guard is back above the block
-SVX-C9	2026-09-13-SVX-fix-validation-round-two.md	Closed	Fixed 2026-09-13: a places list with a hole is refused whole and the edge falls back to be
-SVX-D1	2026-09-13-SVX-fix-validation-round-two.md	Closed	Closed 2026-09-13: checked clean
-SVX-D10	2026-09-13-SVX-fix-validation-round-two.md	Closed	Closed 2026-09-13: checked clean
-SVX-D2	2026-09-13-SVX-fix-validation-round-two.md	Closed	Closed 2026-09-13: checked clean
-SVX-D3	2026-09-13-SVX-fix-validation-round-two.md	Closed	Closed 2026-09-13: checked clean
-SVX-D4	2026-09-13-SVX-fix-validation-round-two.md	Closed	Closed 2026-09-13: checked clean
-SVX-D5	2026-09-13-SVX-fix-validation-round-two.md	Closed	Closed 2026-09-13: checked clean
-SVX-D6	2026-09-13-SVX-fix-validation-round-two.md	Closed	Closed 2026-09-13: checked clean
-SVX-D7	2026-09-13-SVX-fix-validation-round-two.md	Closed	Closed 2026-09-13: checked clean
-SVX-D8	2026-09-13-SVX-fix-validation-round-two.md	Closed	Closed 2026-09-13: checked clean
-SVX-D9	2026-09-13-SVX-fix-validation-round-two.md	Closed	Closed 2026-09-13: checked clean
-SVZ-B1	2026-09-13-SVZ-fix-round-three.md	Closed	Fixed 2026-09-13: the first hop prefers the copy that arrives at the standing square. Pinn
-SVZ-C1	2026-09-13-SVZ-fix-round-three.md	Open	Open: nothing inside Layout can make the comparison - Edge carries tile ids and Point does
+SVV-B1	2026-09-13-SVV-fix-validation.md	Closed	`Layout.whyABerthCannotHoldIt` 8118-8125 against 8147
+SVV-B2	2026-09-13-SVV-fix-validation.md	Closed	`core/testABerthAndAPlatformJudgeAnOverhangDifferently` 334-345
+SVV-C1	2026-09-13-SVV-fix-validation.md	Closed	`Layout.turnsOnArrival` 5857 against `shouldReverseAt` 5924
+SVV-C2	2026-09-13-SVV-fix-validation.md	Closed	`ManualReversalPrompt.forJourney` 145 against `Layout.turnsOnArrival` 5857
+SVV-C2	2026-09-13-SVX-fix-validation-round-two.md	-	`ManualReversalPrompt.forJourney` 145 - file untouched this round
+SVV-C3	2026-09-13-SVV-fix-validation.md	Closed	SEV-B3's fix (`Layout` 6320) is pinned by nothing
+SVV-C3	2026-09-13-SVX-fix-validation-round-two.md	-	SEV-B3's fix at `Layout` 6324 - still pinned by nothing
+SVV-C4	2026-09-13-SVV-fix-validation.md	Closed	SEV-C1's fix (`Layout.hasAWayThrough` 4657) is pinned by nothing
+SVV-C4	2026-09-13-SVX-fix-validation-round-two.md	-	SEV-C1's fix at `Layout.hasAWayThrough` - still pinned by nothing
+SVV-C5	2026-09-13-SVV-fix-validation.md	Closed	`TrainControlUI` 6765-6770, the clipboard heading's condition
+SVV-C6	2026-09-13-SVV-fix-validation.md	Closed	`AutonomyEditorPanel.addCaptionItems` 2455 against `promptStationLabel` 2786
+SVV-C7	2026-09-13-SVV-fix-validation.md	Closed	`AutonomyEditorPanel` 2078 and `AutonomySession` 6229 - two comments SEV named, unrepaired
+SVV-C8	2026-09-13-SVV-fix-validation.md	Closed	`Layout.whyABerthCannotHoldIt` javadoc 8058-8062, and `Automation.md`'s berth example
+SVV-C9	2026-09-13-SVV-fix-validation.md	Closed	`regression/testFiftyLocomotiveMappingPages` - an unbounded EDT loop, a loose dialog match
+SVV-D1	2026-09-13-SVV-fix-validation.md	Closed	isReversing()`, and the berth exemption
+SVV-D10	2026-09-13-SVV-fix-validation.md	Closed	the eight new bundle keys
+SVV-D11	2026-09-13-SVV-fix-validation.md	Closed	the new claims that CAN fail
+SVV-D12	2026-09-13-SVV-fix-validation.md	Closed	PRV-C5's hard-coded log line, repaired in passing
+SVV-D2	2026-09-13-SVV-fix-validation.md	Closed	MT-367: the three sibling sites that still read the flag alone
+SVV-D3	2026-09-13-SVV-fix-validation.md	Closed	SEV-B1: the last place really is the berth
+SVV-D4	2026-09-13-SVV-fix-validation.md	Closed	SEV-B3: the arithmetic, on every hop
+SVV-D5	2026-09-13-SVV-fix-validation.md	Closed	MT-368 item 1: the `ALWAYS_REVERSE` fence closes SEV-B2, and turning beats stranding
+SVV-D6	2026-09-13-SVV-fix-validation.md	Closed	SEV-C1/C2: `writeHome` skips only the re-derive
+SVV-D7	2026-09-13-SVV-fix-validation.md	Closed	SEV-C3: `placementsAutonomyWillWrite` is right for the CLEAR door too
+SVV-D8	2026-09-13-SVV-fix-validation.md	Closed	FR-075: `homeEveryPlacedTrain`, its item and its confirmation
+SVV-D9	2026-09-13-SVV-fix-validation.md	Closed	MT-376: the blocker list's filter, and FR-074's sort and grey
+SVX-B1	2026-09-13-SVX-fix-validation-round-two.md	Closed	`Layout.walkStandingTrains` 6225 against `whyABerthCannotHoldIt` 8134
+SVX-B2	2026-09-13-SVX-fix-validation-round-two.md	Closed	`AutonomyEditorPanel.addCaptionItems` 2463/2469 against `promptStationLabel` 2794
+SVX-C1	2026-09-13-SVX-fix-validation-round-two.md	Closed	`Layout.whyABerthCannotHoldIt` javadoc 8054/8062-8065, `Automation.md` 178 - SVV-C8 unrepa
+SVX-C2	2026-09-13-SVX-fix-validation-round-two.md	Closed	`AutonomySession.homeEveryPlacedTrain` javadoc 6231 - SVV-C7 half-repaired
+SVX-C3	2026-09-13-SVX-fix-validation-round-two.md	Closed	`Layout.turnsOnArrival` 5861 - SVV-C1's fix is pinned by nothing
+SVX-C4	2026-09-13-SVX-fix-validation-round-two.md	Closed	`TrainControlUI` 6775-6781 - SVV-C5's fix is pinned by nothing
+SVX-C5	2026-09-13-SVX-fix-validation-round-two.md	Closed	`core/testABerthAndAPlatformJudgeAnOverhangDifferently` 344-359 - the repaired claim does 
+SVX-C6	2026-09-13-SVX-fix-validation-round-two.md	Closed	`regression/testFiftyLocomotiveMappingPages` 184-196, 202-236 - SVV-C9 points 2 and 3 unre
+SVX-C7	2026-09-13-SVX-fix-validation-round-two.md	Closed	`regression/testFiftyLocomotiveMappingPages` 118-130 - the preference claim is false under
+SVX-C8	2026-09-13-SVX-fix-validation-round-two.md	Closed	`regression/testTheTurnAtTheDestinationReachesTheDiagram` 194-198 - the new block was inse
+SVX-C9	2026-09-13-SVX-fix-validation-round-two.md	Closed	`Layout` 10330-10341 - a skipped `places` entry moves which square the allowance lands on
+SVX-D1	2026-09-13-SVX-fix-validation-round-two.md	Closed	SVV-B1: the `anyMeasured` bound, at both edges
+SVX-D10	2026-09-13-SVX-fix-validation-round-two.md	Closed	which of the new and changed claims CAN fail
+SVX-D2	2026-09-13-SVX-fix-validation-round-two.md	Closed	SVV-B2: the place behind the berth is present, reached and spent
+SVX-D3	2026-09-13-SVX-fix-validation-round-two.md	Closed	SVV-C1: the fence, and its comment
+SVX-D4	2026-09-13-SVX-fix-validation-round-two.md	Closed	SVV-C5: `getLocomotiveLocation` is the right question at the right moment
+SVX-D5	2026-09-13-SVX-fix-validation-round-two.md	Closed	SVV-C7 bullet 1: the menu's count and its citation
+SVX-D6	2026-09-13-SVX-fix-validation-round-two.md	Closed	FR-075's apostrophe: all eight bundles clean, and the convention matched
+SVX-D7	2026-09-13-SVX-fix-validation-round-two.md	Closed	the window-class ratchet at 38
+SVX-D8	2026-09-13-SVX-fix-validation-round-two.md	Closed	the reversible fixture: right repair, restored on every path, cannot reach the real databa
+SVX-D9	2026-09-13-SVX-fix-validation-round-two.md	Closed	the reflection fixture reads the field the two rules actually read
+SVZ-B1	2026-09-13-SVZ-fix-round-three.md	Closed	`Layout.walkStandingTrains` - the first hop took whichever copy of the rail sorted first
+SVZ-C1	2026-09-13-SVZ-fix-round-three.md	Open	`Layout.walkStandingTrains` and `whyABerthCannotHoldIt` still read "the last place" positi
 SWC-B1	2026-07-29-switch-command-review.md	Closed	**Partly fixed.** The first-match `setDelay(address, ms)` is fixed; the three-way semantic
 SWC-B2	2026-07-29-switch-command-review.md	Closed	Fixed
 SWC-B3	2026-07-29-switch-command-review.md	Closed	**Fixed (ordering half); closed by decision (delay half.)** The dedup now keeps the last-w
@@ -1962,6 +2004,16 @@ TD-6	2026-08-23-three-day-history.md	Closed	High
 TD-7	2026-08-23-three-day-history.md	Closed	High (both packaged) / Medium (which wins)
 TD-8	2026-08-23-three-day-history.md	Closed	High
 TD-9	2026-08-23-three-day-history.md	Closed	High
+TDR-B1	2026-09-14-TDR-ten-day-review.md	-	Fixed (stated in the body)
+TDR-B2	2026-09-14-TDR-ten-day-review.md	-	Fixed (stated in the body)
+TDR-B3	2026-09-14-TDR-ten-day-review.md	-	Fixed (stated in the body)
+TDR-B4	2026-09-14-TDR-ten-day-review.md	-	Fixed (stated in the body)
+TDR-B5	2026-09-14-TDR-ten-day-review.md	-	Open
+TDR-C1	2026-09-14-TDR-ten-day-review.md	-	Fixed (stated in the body)
+TDR-C2	2026-09-14-TDR-ten-day-review.md	-	Fixed (stated in the body)
+TDR-C3	2026-09-14-TDR-ten-day-review.md	-	Fixed (stated in the body)
+TDR-C4	2026-09-14-TDR-ten-day-review.md	-	Fixed (stated in the body)
+TDR-C5	2026-09-14-TDR-ten-day-review.md	-	Fixed (stated in the body)
 TR-A1	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
 TR-A10	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
 TR-A11	2026-08-21-review-dispositions.md	Closed	-
