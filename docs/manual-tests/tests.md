@@ -43,8 +43,16 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-380](#mt-380) | 2026-09-13 | Autonomy can be set up by importing, from the menu, with nothing set up yet | fixed unvalidated | FR-007 |
 | [MT-394](#mt-394) | 2026-09-13 | Pasting onto a may-reverse square asks which way the train faces | fixed unvalidated | your ruling of 2026-09-13 |
 | [MT-396](#mt-396) | 2026-09-14 | A function pressed on a consist is sent to every locomotive in it | fixed unvalidated | MT-359 (your ruling of 2026-09-13) |
+| [MT-397](#mt-397) | 2026-09-14 | The editor's keyboard shortcuts are named in their tooltips | fixed unvalidated | OB-214 |
+| [MT-398](#mt-398) | 2026-09-14 | The facing question's buttons say which way the train points | fixed unvalidated | OB-215 |
+| [MT-399](#mt-399) | 2026-09-14 | The tested path's line stays on its rail over the switch at 12,13 | fixed unvalidated | OB-216 |
+| [MT-400](#mt-400) | 2026-09-14 | One-Way Run and Name Everything are in Bulk Tools, and the editor column has its headings | fixed unvalidated | OB-217 |
+| [MT-401](#mt-401) | 2026-09-14 | Return Home shows it is working while it plans | fixed unvalidated | FR-077 |
+| [MT-402](#mt-402) | 2026-09-14 | A Return Home plan that fails says why in the log, by square | fixed unvalidated | FR-078 |
+| [MT-403](#mt-403) | 2026-09-14 | The function buttons follow the locomotive you switched to last | fixed unvalidated | TDR-B5 |
+| [MT-404](#mt-404) | 2026-09-14 | A square cannot be named with the editor's own direction heading | fixed unvalidated | TDR-C11 |
 
-Everything else - 380 of 396 - needs nothing from you unless the area changes again:
+Everything else - 380 of 404 - needs nothing from you unless the area changes again:
 335 **fixed validated** and 45 **superseded**.
 
 ---
@@ -17946,6 +17954,17 @@ Checked on a sandbox copy of your railway as it stands: with the arrival from Tu
 
 `core.testATailFollowsTheRouteItCameIn` drives a real run through a junction, and was red first.
 
+**Claude, 2026-09-14.**
+
+**Claude: two changes since my note of yesterday, both from the review - run it as that note says.**
+
+1. **The route now survives the train being re-stood** (TDR-B1, TDR-B2).  At a square trains may turn at, the
+   arrival stands the train on another copy of the square - whether it turns or keeps direction - and that move
+   used to lose the route it came in on, so the tail went back to stopping at the fork.  Worth one run with the
+   train arriving at a may-turn square as well as at BottomMainA.
+2. **The refusal names squares** (TDR-C5): expect "standing across Tunnel -> BottomMainAPre", with no "(southbound)"
+   or "(eastbound)".
+
 ---
 
 <a id="mt-334"></a>
@@ -18086,6 +18105,12 @@ You found the planner consistent with the layout and the layout wrong; the layou
 **Expected:** no plan through that segment; with FR-078 the log now says why for each train it could not bring home.
 
 The same caveat as MT-333: a train placed by hand, or after a restart, has no remembered route and stops the tail at the fork.
+
+**Claude, 2026-09-14.**
+
+**Claude: the same two changes as MT-333's latest note** - the route survives a re-stand at a may-turn square
+(TDR-B1, TDR-B2), and refusals and Return Home reasons name squares (TDR-C5, TDR-C8, TDR-C9).  The log now says
+why Return Home could not bring each train home (MT-402).
 
 ---
 
@@ -20241,6 +20266,12 @@ The button could not simply be greyed on its own: a click on the diagram still a
 
 `ui.testOnlyAStationHoldsAnotherBack`, mutation-checked.
 
+**Claude, 2026-09-14.**
+
+**Claude: one wording change since my note of yesterday** (TDR-C1).  The message beside the greyed **Pick on the
+Diagram** button now says **"No other stations have been named yet"** - it said "points", and the list is
+stations only.  Steps and the rest of the expected result are unchanged.
+
 ---
 
 <a id="mt-377"></a>
@@ -20430,6 +20461,19 @@ Your rulings: *"keep only the pages, and alert the user"*, and then the warning 
 **Expected:** one warning at import naming the pages left out; no "setup was left alone" popup at import or on either open.
 
 `core.testAnImportKeepsOnlyThisLayoutsPages`, `core.testTheLeftAloneWarningIsSaidOnce`, both mutation-checked.
+
+**Claude, 2026-09-14.**
+
+**Claude: the import changed again today, underneath the same steps** (TDR-A1, TDR-B7, TDR-C6, TDR-C7).
+
+An export's pages are now matched to this layout's by **name**, whatever number either side gave them.  Before,
+a page with the same number but a different name could have its settings put on the wrong page here - and a page
+still downloading from OneDrive could lose its protection.  Also, an import made while no page is loaded behaves
+the same, and a setting added by a newer version of TrainControl is left out without a message, as you ruled.
+
+Run the steps as yesterday's note says.  If you have a second layout whose pages share names with your railway's
+but are in a different order, importing between the two is the case that was wrong; the automated tests build
+that case, so it is not a separate entry.
 
 ---
 
@@ -21023,6 +21067,248 @@ MM2 member of an MFX-headed consist never heard f6, and an MM2 head skipped its 
 locomotive in the consist is now sent the command; a function above every member's range is still
 refused.  `core.testMultiUnitMembership.testAFunctionInTheConsistsRangeIsSentToEveryLocomotive` reads
 the commands handed to the station, and was red before the change.
+
+#### Comments
+
+---
+
+<a id="mt-397"></a>
+
+### MT-397 - 2026-09-14 - The editor's keyboard shortcuts are named in their tooltips
+
+**Disposition:** fixed unvalidated
+**From:** OB-214
+
+**Written:** 2026-09-14
+
+Your OB-214: *"Set Segment Length needs a tooltip that says 'Control+E'.  change for other missing tooltip hints."*
+
+**Steps**
+
+1. Open the autonomy editor on **1 - Main**.
+2. Hover over the **Track Lengths** check box.
+3. Right-click a station square and hover over **Segment Length...**, **Rename...** and the **Home** item in turn.
+
+**Expected**
+
+- Step 2: the tooltip says **Control+G**.
+- Step 3: **Control+E**, **Control+S** and **Control+H** respectively.
+
+*What this is:* the four keys the editor answers to that no tooltip named.  Text Labels, Addresses, Grid and
+Max Train Length already said Control+L, D, K and B, and are unchanged.  `ui.testTheEditorNamesItsShortcuts`.
+
+#### Comments
+
+---
+
+<a id="mt-398"></a>
+
+### MT-398 - 2026-09-14 - The facing question's buttons say which way the train points
+
+**Disposition:** fixed unvalidated
+**From:** OB-215
+
+**Written:** 2026-09-14
+
+Your OB-215: *"for 'which way does it face', it should be 'to the north (up)' or 'to the south (down)'"*.
+
+**Steps**
+
+1. Select a locomotive standing on the railway and press **Control+X**.
+2. Hover over **BottomMainB** - a square trains may turn at - and press **Control+V**.
+
+**Expected**
+
+The question offers buttons reading **To the East (right)** and **To the West (left)** (whichever headings the
+square can hold) - "To", not "From".
+
+*What this is:* the facing question used the arrival question's labels.  Which way the train then faces is
+MT-394's step 4, and is not asked again here.  `core.testAPasteDoesNotTurnTheTrainRound.testTheFacingButtonsNameAHeadingNotAnArrival`.
+
+#### Comments
+
+---
+
+<a id="mt-399"></a>
+
+### MT-399 - 2026-09-14 - The tested path's line stays on its rail over the switch at 12,13
+
+**Disposition:** fixed unvalidated
+**From:** OB-216
+
+**Written:** 2026-09-14
+
+Your OB-216: *"When running Test a path from BottomMainB to BottomMainC, the orange lines over the switch at 12,13 are misaligned.  A small offset as on the other tiles is OK."*
+
+**Steps**
+
+1. In the autonomy editor on **1 - Main**, run **Test a path** from **BottomMainB** to **BottomMainC**.
+2. Look at the switch at **12,13**.
+
+**Expected**
+
+Its lines sit on the rails they belong to, offset no more than the lines on the squares either side of it.
+
+*What this is:* that route crosses the switch four times between going and coming back, and each further
+line was pushed a little further aside - the fourth by more than a quarter of the square.  Only the second
+line along the same rail is offset now, by the small amount every other square already had.
+`core.testATestedPathStaysOnItsRail` measures the pixels.
+
+#### Comments
+
+---
+
+<a id="mt-400"></a>
+
+### MT-400 - 2026-09-14 - One-Way Run and Name Everything are in Bulk Tools, and the editor column has its headings
+
+**Disposition:** fixed unvalidated
+**From:** OB-217
+
+**Written:** 2026-09-14
+
+Your OB-217: *"move 'one way run' and 'name everything' into the bulk tools menu, available only in the autonomy editor itself (not track diagram).  update 'path type' to use the blue label style, and move it below 'why not moving' as it belongs.  Also, add a 'page settings' label above 'exclude page'"*.
+
+**Steps**
+
+1. Open the autonomy editor and read down the column on the right.
+2. Right-click any square in the editor and open **Bulk Tools**.
+3. Choose **One-Way Run** there and draw one; then open Bulk Tools again and choose **Name Everything**.
+4. Close the editor, right-click a square on the ordinary track diagram, and open **Bulk Tools** if it is offered.
+
+**Expected**
+
+- Step 1: no One-Way Run or Name Everything buttons.  **Why Not Moving?**, then a blue **Path Type** heading over
+  Auto and Manual, then a blue **Page Settings** heading over **Exclude Page**.
+- Step 2: **One-Way Run** and **Name Everything** at the top.
+- Step 3: both work as the buttons did.
+- Step 4: neither item is there.
+
+*What this is:* OB-217 as you wrote it.  `ui.testBulkToolsHoldsTheWholeLayoutTools`.
+
+#### Comments
+
+---
+
+<a id="mt-401"></a>
+
+### MT-401 - 2026-09-14 - Return Home shows it is working while it plans
+
+**Disposition:** fixed unvalidated
+**From:** FR-077
+
+**Written:** 2026-09-14
+
+Your FR-077: *"there needs to be a spinner on the return home button while it is calculating"*.
+
+**Steps**
+
+1. With the power on and at least one train away from its home, press **Return Home**.
+2. Watch the button until the run starts or a message appears.
+
+**Expected**
+
+A small turning mark on the button while the plan is worked out, gone the moment there is an answer.  On a small
+or tidy railway the plan can take a fraction of a second, so the mark may only flash.
+
+*What this is:* FR-077.  `ui.testReturnHomeShowsItIsWorking` holds the planning up to see the mark.
+
+#### Comments
+
+---
+
+<a id="mt-402"></a>
+
+### MT-402 - 2026-09-14 - A Return Home plan that fails says why in the log, by square
+
+**Disposition:** fixed unvalidated
+**From:** FR-078
+
+**Written:** 2026-09-14
+
+Your FR-078: *"if a return home plan fails, state the reason why the layout doesn't allow a locomotive to go to its home in the log (length, blocked, etc.)"*.
+
+**Steps**
+
+1. Pick a train with a home, and give that home a **Max Train Length** shorter than the train - for example 2
+   for a train of length 5.
+2. Move the train somewhere else and press **Return Home**.
+3. Read the log.
+4. Put the Max Train Length back, press **Return Home** again and let it plan.
+
+**Expected**
+
+- Step 2: refused, as before.
+- Step 3: a line naming the train that says it is **5 long** and its home **takes at most 2**, with the station
+  named as it is on the diagram - never "(eastbound)" or "(westbound, reverse)".
+- Step 4: the "planned" lines name stations the same way.
+
+*What this is:* FR-078, plus two fixes from today's review: the length reason was shown as "no route" at a
+platform with one arrival side barred (TDR-B3), and the log named the builder's direction copies (TDR-C8,
+TDR-C9).  `core.testReturnHomeSaysWhy` covers every sentence the planner can reach.
+
+#### Comments
+
+---
+
+<a id="mt-403"></a>
+
+### MT-403 - 2026-09-14 - The function buttons follow the locomotive you switched to last
+
+**Disposition:** fixed unvalidated
+**From:** TDR-B5
+
+**Written:** 2026-09-14
+
+Found while running the tests on 2026-09-14, and fixed on your instruction: *"Fix B5"*.
+
+**Steps**
+
+1. Put two locomotives with different function sets on keys - an MM2 locomotive and an MFX one, or the MM2
+   head of a mixed consist and an ordinary MM2 locomotive.
+2. Press the two keys alternately, as fast as you can, several times, and stop on one.
+3. Look at the function buttons.
+
+**Expected**
+
+The buttons are the ones for the locomotive you stopped on - lit and greyed for its decoder, not the other's.
+
+*What this is:* a request to redraw the locomotive panel that arrived while the previous redraw was still
+finishing was thrown away, so the panel could keep showing the previous locomotive's buttons.  It is kept and
+run now.  `regression.testTheFunctionButtonsFollowTheConsist.testTheLastLocomotiveAskedForIsTheOneDrawn` holds the
+redraw at the exact moment the request used to be lost.
+
+#### Comments
+
+---
+
+<a id="mt-404"></a>
+
+### MT-404 - 2026-09-14 - A square cannot be named with the editor's own direction heading
+
+**Disposition:** fixed unvalidated
+**From:** TDR-C11
+
+**Written:** 2026-09-14
+
+Your instruction of 2026-09-14: *"refuse and close, but make sure the words are uncommon."*
+
+**Steps**
+
+1. In the autonomy editor, rename a square to **Test (eastbound)**.
+2. Rename it to **Test (eastbound, reverse)**.
+3. Rename it to **Test Eastbound**, then to **Test (Eastbound)**.
+4. Start **Name Everything** and type **Test (westbound)** for the first square it asks about.
+
+**Expected**
+
+- Steps 1 and 2: refused, with a message saying the name ends the way the editor tells the two directions of a
+  square apart; the square keeps its old name.
+- Step 3: both accepted - only the lowercase bracketed form is refused.
+- Step 4: the same message, and then the same square is asked for again.
+
+*What this is:* such a name read as another square wherever a message names squares.  Names already in your
+setup are left alone.  `core.testANameCannotEndInAHeading`.
 
 #### Comments
 
