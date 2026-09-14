@@ -4890,7 +4890,8 @@ public class AutonomySession
      * A name ending in the builder's own direction heading - "Main (eastbound)" - reads as another square
      * wherever a message names squares, because that heading is exactly what is stripped from a copy's name.
      * Adam, 2026-09-14: *"refuse and close, but make sure the words are uncommon"* - so only the builder's
-     * exact form is refused; see `StationIndex.endsWithAnArrivalHeading`.
+     * form is refused, and exactly the form the stripping removes; `StationIndex.endsWithAnArrivalHeading`
+     * says what that is (FTN-C1).
      *
      * @param name the name as typed
      * @return the sentence to show, or null

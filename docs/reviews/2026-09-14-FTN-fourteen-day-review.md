@@ -1,6 +1,6 @@
 # Fourteen days of commits, reviewed while the MT sweep of 2026-09-14 waits for its run
 
-**Status:** open 2026-09-14 - round 1 fixed, validation running
+**Status:** closed 2026-09-14 - two rounds of fixes and validation; FTN-C2 held for MT-376
 
 **Prefix:** FTN (checked free: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`)
 
@@ -54,7 +54,7 @@ to where the test hook sits, and changes nothing a person can see.
 |---|---|
 | **Disposition** | Fixed |
 
-`followDirectionChanges`, called from the `synchronized` `repaintLoc`, guards on `getAutonomySession() == null`.
+`followDirectionChanges`, called from the `synchronized` `repaintLoc`, guarded on `getAutonomySession() == null`.
 That getter is the lazy builder - it parses every page, can rewrite `.cs2` files and raise a dialog - and the rule
 written for exactly this is at `repaintTimetable`: *"never getAutonomySession() ... (SV-B2)"*.  After
 `initializeTrackDiagram` resets the session without clearing the layout, the next locomotive message from the
@@ -62,6 +62,11 @@ Central Station builds the session on `locMessageProcessor` while holding the wi
 (`73bc2be8`) the event thread takes that monitor at the end of every locomotive render, so it queues behind the
 whole parse; and a message-thread build can race an event-thread build of the same session.  No deadlock traced.
 Introduced `03f58b29`, 2026-09-06.
+
+**Corrected by the validator:** the scenario above overstates it.  `initializeTrackDiagram` rebuilds the session on
+the event thread in the same task that resets it, as do the other resets, so the window in which a message could
+find the field null is short, not "until the next message".  The fix stands on the rule (SV-B2) and on that race,
+not on a long stall; and the lazy build was never load-bearing - every reset is followed by an event-thread rebuild.
 
 
 **Fixed, round 1.** The guard reads the `autonomySession` field instead of the lazy getter; with no session there is nothing to follow, and the event thread builds one when something there needs it.  `testADirectionEchoDoesNotBuildTheSession` first proves the fixture can build a session, clears the field as `initializeTrackDiagram` leaves it, sends the repaint from an ordinary thread, and asserts nothing was built - red before the fix, green after.
@@ -97,9 +102,27 @@ javadoc, `whyNotAPointName`, the TDR review and `core.testANameCannotEndInAHeadi
 
 The list offers named squares that are stations; the click accepts any station.  A station square not yet named
 is not offered by the list and is accepted by a click - after which it appears in the list through the stored-entry
-path, drawn by its sensor or coordinates.  Harmless, but the comment that the two doors "must refuse the same
-squares", and `ui.testOnlyAStationHoldsAnotherBack`, whose plain square is both unnamed and not a station, overstate
-it.  **Held, not changed:** it touches MT-376, which Adam has not run since that behaviour last changed.
+path, drawn by its sensor or coordinates.  Nearly harmless: where the only other stations are unnamed, the list is
+empty and Pick on the Diagram is greyed although a click would be accepted.  The comment that the two doors "must
+refuse the same squares" overstates it, and `ui.testOnlyAStationHoldsAnotherBack` picks the first square that is not
+a station without checking its name, so which of the two rules it tells apart depends on the fixture.  **Held, not changed:** it touches MT-376, which Adam has not run since that behaviour last changed.
+
+---
+
+## Round 2 - the validator's points on round 1
+
+All severity C, and all applied:
+
+- The renderer hook runs inside the `try`, so a hook that throws still clears the in-flight flag.
+- `testADirectionEchoDoesNotBuildTheSession` puts the window's session back when it is done, and its comments say
+  what the fixture proves - the window had already built the session - rather than that it builds one from nothing.
+- The name rule is described the same way in `testANameCannotEndInAHeading`'s class javadoc and in
+  `whyNotAPointName`, which now points at the rule rather than restating it.
+- The TDR-B5 record names the moved hook and FTN-B1.
+
+Noted and not changed: the B1 claim's hook holds whichever render is submitted first after it is set, so a render
+from elsewhere asked for every locomotive in that microsecond would pass it without the re-run.  It is not reachable
+in the sandbox and would need a test-only filter in product code to close.
 
 ---
 

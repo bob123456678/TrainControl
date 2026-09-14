@@ -265,6 +265,8 @@ public class testTheFunctionButtonsFollowTheConsist
     {
         MarklinLocomotive anyone = model.newMM2Locomotive("MU echo UI", 95);
 
+        final Object[] built = new Object[1];
+
         try
         {
             Field session = TrainControlUI.class.getDeclaredField("autonomySession");
@@ -276,13 +278,11 @@ public class testTheFunctionButtonsFollowTheConsist
 
             if (!model.hasAutoLayout()) throw new org.testng.SkipException("no autonomy layout to follow directions on");
 
-            // What the getter WOULD build here, asked on purpose, so the claim below is not about a fixture that
-            // could never build one.
+            // A session the getter can give here - the window built one when it was set up - so the claim below is
+            // not about a fixture that has none to build.  The window keeps it; it is put back at the end.
             java.lang.reflect.Method getter = TrainControlUI.class.getDeclaredMethod("getAutonomySession");
 
             getter.setAccessible(true);
-
-            final Object[] built = new Object[1];
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
@@ -298,7 +298,8 @@ public class testTheFunctionButtonsFollowTheConsist
 
             if (built[0] == null) throw new org.testng.SkipException("this sandbox builds no autonomy session at all");
 
-            // As `initializeTrackDiagram` leaves it: the session reset, the railway graph still there.
+            // The session gone and the railway graph still there - the moment between a reset and the event
+            // thread's rebuild, which is when a message used to build one itself.
             session.set(ui, null);
 
             // On an ordinary thread, the way a locomotive message arrives.
@@ -318,6 +319,16 @@ public class testTheFunctionButtonsFollowTheConsist
         finally
         {
             waitForTheRender();
+
+            // PUT BACK, so the window and its viewer panel still agree about the session for anything after this.
+            if (built[0] != null)
+            {
+                Field restore = TrainControlUI.class.getDeclaredField("autonomySession");
+
+                restore.setAccessible(true);
+
+                if (restore.get(ui) == null) restore.set(ui, built[0]);
+            }
 
             model.deleteLoc("MU echo UI");
         }

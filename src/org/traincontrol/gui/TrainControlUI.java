@@ -12142,12 +12142,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.locFutures.add(
             this.LocRenderer.submit(() ->
             {
+              try
+              {
+                // Inside the try, so a hook that throws still clears the flag below rather than leaving a render
+                // in flight for ever (FTN round 2).
                 Runnable hook = beforeARenderIsPosted;
 
                 if (hook != null) hook.run();
 
-              try
-              {
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
                   try

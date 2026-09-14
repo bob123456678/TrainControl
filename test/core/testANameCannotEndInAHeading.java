@@ -23,8 +23,9 @@ import org.traincontrol.automationui.TileGraph.TileKey;
  * read as "Main", the same as the real Main's copies, and two different places became one in every refusal
  * and every Return Home reason.
  *
- * **Why the words are uncommon.**  Only the builder's exact form is refused: a lowercase heading in brackets
- * at the very end, with or without ", reverse".  Each control below is a name a real railway might use and
+ * **Why the words are uncommon.**  Only the builder's form is refused: a lowercase heading in brackets at the
+ * very end, after a space - with anything after a comma inside the bracket, of which ", reverse" is the
+ * builder's own (FTN-C1).  Each control below is a name a real railway might use and
  * that must still be allowed.
  *
  * @author Adam

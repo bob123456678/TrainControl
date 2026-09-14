@@ -114,7 +114,8 @@ a check of the last future: a request made while a render is in flight is kept -
 locomotive if any asked for every one - and run when the painting finishes, which clears the flag in a
 `finally`. Direction changes are still followed once per request, not again when the deferred render runs.
 The window in which a request was dropped depends on the scheduler, so the claim holds the renderer there
-through a hook it calls after posting (`TrainControlUI.afterARenderIsPosted`, null in the program):
+through a hook (null in the program) - first placed after posting, which FTN-B1 found left the deferral itself
+untested, and moved before posting as `TrainControlUI.beforeARenderIsPosted`:
 `regression.testTheFunctionButtonsFollowTheConsist.testTheLastLocomotiveAskedForIsTheOneDrawn`, seen red
 against the old guard with only the hook added.
 
