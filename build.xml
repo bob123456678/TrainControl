@@ -289,6 +289,7 @@
         <test-one-class class="testTheEditorNamesItsShortcuts"/>
         <test-one-class class="testOnlyAStationHoldsAnotherBack"/>
         <test-one-class class="testReturnHomeShowsItIsWorking"/>
+        <test-one-class class="testARefusalNamesTheSquare"/>
         <test-one-class class="testFiftyLocomotiveMappingPages"/>
         <test-one-class class="testALegacyImportMatchesTheFileItCameFrom"/>
         <test-one-class class="testAnImportDoesNotSwitchYourRoutesOff"/>

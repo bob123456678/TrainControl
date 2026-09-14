@@ -2304,7 +2304,7 @@ public class Layout
             if (e.isOccupied(loc))
             {
                 logPathError(loc, path, logFailures,
-                    I18n.f("autolayout.errorEdgeOccupied", e.getName())
+                    I18n.f("autolayout.errorEdgeOccupied", placeNameOf(e))
                 );
                 return false;
             }
@@ -2327,7 +2327,7 @@ public class Layout
             if (!e.getStart().isDestination() && e.getStart().getExcludedLocs().contains(loc))
             {
                 logPathError(loc, path, logFailures,
-                    I18n.f("autolayout.errorIntermediatePointExcluded", e.getStart().getName())
+                    I18n.f("autolayout.errorIntermediatePointExcluded", placeNameOf(e.getStart()))
                 );
                 return false;
             }
@@ -2379,7 +2379,7 @@ public class Layout
                 if (e2.isLockHeld(loc))
                 {
                     logPathError(loc, path, logFailures,
-                        I18n.f("autolayout.errorLockEdgeOccupied", e2.getName())
+                        I18n.f("autolayout.errorLockEdgeOccupied", placeNameOf(e2))
                     );
                     return false;
                 }
@@ -2401,7 +2401,7 @@ public class Layout
             if (!path.get(i).getEnd().isActive())
             {
                 logPathError(loc, path, logFailures,
-                    I18n.f("autolayout.errorInactiveIntermediatePoint", path.get(i).getEnd().getName())
+                    I18n.f("autolayout.errorInactiveIntermediatePoint", placeNameOf(path.get(i).getEnd()))
                 );
                 return false;
             }
@@ -2445,7 +2445,7 @@ public class Layout
                 loc,
                 path,
                 logFailures,
-                I18n.f("autolayout.errorInactiveStation", path.get(path.size() - 1).getEnd().getName())
+                I18n.f("autolayout.errorInactiveStation", placeNameOf(path.get(path.size() - 1).getEnd()))
             );
             return false;
         }
@@ -2611,7 +2611,7 @@ public class Layout
                 path,
                 logFailures,
                 I18n.f("autolayout.errorTrackCoveredByStandingTrain", lyingAcross.getName(),
-                    e.getName())
+                    placeNameOf(e))
             );
 
             return false;
@@ -2736,7 +2736,7 @@ public class Layout
             {
                 logPathError(loc, path, logFailures,
                     I18n.f("autolayout.errorDestinationBlockedByPoint",
-                        destination.getName(), watched.getName()));
+                        placeNameOf(destination), placeNameOf(watched)));
 
                 return false;
             }
@@ -3309,6 +3309,25 @@ public class Layout
         {
             this.control.logf("autolayout.log.noPlainCopyToStandOn", placeNameOf(arrived));
         }
+    }
+
+    /**
+     * What a person calls the track an edge runs over: the two squares it joins, without the heading a
+     * builder-emitted copy carries in its name.
+     *
+     * Adam, on the translations: the whole "copy" business "needs to be masked from the user".  An edge is
+     * named after its two copies - "Tunnel (southbound) -> BottomMainAPre (eastbound)" - and every refusal
+     * `isPathClear` logs printed that name, on his own railway on 2026-09-13.  The headings are how the
+     * builder tells two directions of one square apart, not anything on the diagram.
+     *
+     * @param edge the edge
+     * @return "From -> To", by square
+     */
+    private static String placeNameOf(Edge edge)
+    {
+        if (edge == null) return "";
+
+        return placeNameOf(edge.getStart()) + " -> " + placeNameOf(edge.getEnd());
     }
 
     /**
