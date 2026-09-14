@@ -21,12 +21,14 @@ import org.traincontrol.marklin.MarklinLocomotive;
 /**
  * A train is judged for room where it stops, and not at a square it only passes (Adam, MT-333, 2026-09-14).
  *
- * **THIS CLASS USED TO SAY THE OPPOSITE**, as `testATrainMustFitEverySquareOnItsRoute`, and the history is kept
+ * **THIS CLASS USED TO CLAIM MORE**, as `testATrainMustFitEverySquareOnItsRoute`, and the history is kept
  * below because it is the reason the fixture is shaped as it is.  Adam, 2026-09-14, on 75 407 DB refused from
  * Tunnel to BottomMainA at a square it only runs past: *"this SHOULD be allowed per the standing rule that this
  * switch blocking should only affect berthes."*  The standing rule is his of 2026-09-12 - *"make a rule that
  * parking berths cant block any other edges, but not make that check for active stations"* - and a train passing
- * a square stands across nothing there.  So the pass-through half of the ruling below is withdrawn, and the same
+ * a square stands across nothing there.  So the ruling below is read as meant - its mechanic is a STANDING train's,
+ * which is unchanged and still blocks other roads wherever it is measured - and, Adam confirming it with no separate
+ * rule for a running train (*"This is all correct as stated ... No separate rule."*), the same
  * railway now claims the reverse: one measured unit past the switch at a square the train only passes does NOT
  * refuse it.  The destination and a square the train turns at are still judged.
  *
@@ -180,7 +182,7 @@ public class testATrainIsJudgedOnlyWhereItStops
     /**
      * One measured unit past the switch at a square the train only passes does not refuse it (MT-333).
      *
-     * The reverse of what this claim said until 2026-09-14.  Approach is not where the train stops: it runs
+     * What this claim said until 2026-09-14 was the other way round.  Approach is not where the train stops: it runs
      * through it to WestEnd, which has ten units of room.
      *
      * MUTATION: judge a passed square again - drop the `if (!comesToRest) continue;` in

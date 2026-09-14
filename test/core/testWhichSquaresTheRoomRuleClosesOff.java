@@ -164,7 +164,8 @@ public class testWhichSquaresTheRoomRuleClosesOff
      * **A pin, not an endorsement**: it says nobody changes the number without saying so.
      *
      * **0 since MT-333 (2026-09-14)**, 35 before it.  Every one of the 35 was closed by a square the train only
-     * passed, and Adam withdrew that: *"this switch blocking should only affect berthes"*.
+     * passed, which was never what the rule was for: *"this switch blocking should only affect berthes"* (Adam,
+     * 2026-09-14, confirming it as the ruling of 2026-09-09 read as meant).
      */
     private static final int CLOSED_BY_THE_RULING = 0;
 

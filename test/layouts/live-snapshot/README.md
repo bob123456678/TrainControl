@@ -117,3 +117,6 @@ before anything reads it, so the checked-in fixture is never written to either.
 - `ui.testOnlyAStationHoldsAnotherBack`
 - `ui.testReturnHomeShowsItIsWorking`
 - `ui.testTheEditorNamesItsShortcuts`
+- `regression.testAPassingTrainMayStandAcrossThePoints`
+- `regression.testTheTurnRuleDoesNotChangeTheRealRailway`
+- `regression.testCancelUndoesAutonomyEdits`

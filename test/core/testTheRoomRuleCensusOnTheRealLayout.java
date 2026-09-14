@@ -318,7 +318,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
     /**
      * Journeys refused on the way that the berth-only rule admitted: NONE since MT-333 (2026-09-14).
      *
-     * Adam withdrew the pass-through half of the ruling below - *"this switch blocking should only affect
+     * Adam read the ruling below as meant - its mechanic is a standing train's - *"this switch blocking should only affect
      * berthes"* - so a square a train only passes refuses nothing, and a journey whose berth has room is refused
      * on the way only if EVERY route to it turns at a square too short, which on the snapshot is never: measured
      * 0 on the first run after the change.  Pinned at exactly zero, so the pass-through check coming back is
@@ -356,7 +356,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
      *
      * **825 on the first run after MT-333 (2026-09-14), where it had been 15000 to 23000.**  The counter was
      * raised for any refusal before the destination, and until then that included squares the train only
-     * passes - so the old band counted the withdrawn pass-through refusals as turns.  825 is the turn bound
+     * passes - so the old band counted those pass-through refusals as turns.  825 is the turn bound
      * alone; the band allows the couple of per cent route order moves between JVMs, and the figures below are
      * the history.
      *

@@ -843,8 +843,9 @@ public class testSwitchingToACentralStationLayout
         // afterwards.  A stale ratchet now hides nothing.
         // 42 since 2026-09-14: ui.testBulkToolsHoldsTheWholeLayoutTools, ui.testOnlyAStationHoldsAnotherBack,
         // ui.testReturnHomeShowsItIsWorking and ui.testTheEditorNamesItsShortcuts, each opening a sandbox first.
-        assertEquals(checked, 42,
-            checked + " test classes were found to build a window, not the 42 there were when this "
+        // 43 since 2026-09-14: regression.testCancelUndoesAutonomyEdits (OB-223), which opens a sandbox first.
+        assertEquals(checked, 43,
+            checked + " test classes were found to build a window, not the 43 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating - and "
             + "nothing else in this method is hidden by that any more, because the checks that "

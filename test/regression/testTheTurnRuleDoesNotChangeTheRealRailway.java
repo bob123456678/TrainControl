@@ -55,9 +55,14 @@ public class testTheTurnRuleDoesNotChangeTheRealRailway
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        // A COPY of the real layout, opened before the model, because init reads the layout preference
-        // and would otherwise open the railway itself (OB-111).
-        sandbox = support.LayoutSandbox.open(new File("cs2_sample_layout"));
+        // THE FROZEN SNAPSHOT of the real layout, opened before the model, because init reads the layout
+        // preference and would otherwise open the railway itself (OB-111).
+        //
+        // It read a copy of the LIVE folder until 2026-09-14, when the battery went red with "no reversing copy
+        // at all" and no change to the builder: Adam had turned 1 - Main:20,14 from may-turn to must-turn that
+        // afternoon.  A claim about what the builder does to his railway cannot change colour because he edited
+        // the railway - which is the reason `live-snapshot` exists.
+        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = init(null, true, false, false, false);
         model.stop();

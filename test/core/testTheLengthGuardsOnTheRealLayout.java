@@ -348,7 +348,8 @@ public class testTheLengthGuardsOnTheRealLayout
     /**
      * A nine-unit train is refused RampDown, and the one unit at 22,7 is why.
      *
-     * **REVERSED ON 2026-09-14, and kept for the record of why.**  Adam, MT-333: *"this SHOULD be allowed per
+     * **THE CLAIM TURNED ROUND ON 2026-09-14, the ruling read as meant rather than reversed, and the old reasoning kept
+     * for the record.**  Adam, MT-333: *"this SHOULD be allowed per
      * the standing rule that this switch blocking should only affect berthes."*  A square a train only passes
      * is no longer judged for room, so BottomMainPost - which the route to RampDown only runs past - no longer
      * refuses it, and RampDown is offered.  What follows is the ruling this test was written for.
