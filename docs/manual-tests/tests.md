@@ -20239,6 +20239,12 @@ FR-007, built 2026-08-22. Reconstructed from the receipt.
 
 - The import is offered there, and reachable - the menu does not require an existing setup before it will let you make one. That is the state a new or upgrading user is in.
 
+**Adam, 2026-09-13 (triage).** Works, with notes.
+
+Base functionality works, but the "the setup was left alone" popup shows twice (once at first import, once again when import is completed).  Then, it shows up after every time the autonomy editor is opened.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-381"></a>
@@ -20345,6 +20351,12 @@ It puts your page count and the stored preference back afterwards, because that 
 
 Nothing left for you to run here.
 
+**Adam, 2026-09-13 (triage).** Works.
+
+Closing on assumption that your tests passed.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-384"></a>
@@ -20370,6 +20382,10 @@ FR-034, built 2026-08-27. Reconstructed from the receipt.
 
 - Step 2: the nearest station is already selected - not the top of the list.
 - Step 3: the one you last picked is offered once and then stops being the default, so a second caption somewhere else does not inherit it.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -20672,6 +20688,10 @@ did not open one.
 has a section on captions - it had three mentions in passing and no explanation, which is why the
 question could be asked at all.
 
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-394"></a>
@@ -20714,6 +20734,15 @@ walk's answer is whichever copy it landed on.
 
 *What this is:* your ruling, built.  `FacingPrompt` is the dialog; `behaviour.md` section 4 has the
 rule and why the two questions are different questions.
+
+**Adam, 2026-09-13 (triage).** Does not work.
+
+3. arrival side passes, tail is where it needs to be.
+4. Fails.  Pasting 75 407 DB on BottomMainB makes it face east regardless of the user's choice.  Check how this passed our internal tests.
+6. passes, correctly cancelles
+7. passes, pasting onto a terminus or regular station makes it face the right way and change facing as needed
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -20759,5 +20788,9 @@ is worth watching on the real one rather than only in the tests.
 *What this is:* PRW-B2 leg 2, which you told me to do.  Also settled while building it: the planner was
 NOT missing the station's stated maximum length - `canRest` has always asked it - and a second copy of
 that test was added and taken out the same hour.
+
+**Adam, 2026-09-13 (triage).** Works.
+
+*Run against commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---

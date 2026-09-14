@@ -110,6 +110,44 @@ ISSUE_STATE_COLORS["declined"] = "#8a3a3a"         # closed, deliberately not bu
 # checks were added; this is that missing check.
 VALID_DISPOSITIONS = set(slug.replace("-", " ") for slug in DISPOSITION_COLORS)
 
+# A bug or feature request is CLOSED when it is validated or declined, and OUT OF VIEW when it was
+# declined (Adam, 2026-09-13: "hide cancelled ones from view").  "cancelled" is not a documented
+# word - "declined" is - but it was typed into the receipt table twice, and a word the app did not
+# know was read as open, so both are accepted here rather than trusting the file to stay tidy.
+HIDDEN_ISSUE_STATES = ("declined", "cancelled")
+CLOSED_ISSUE_STATES = ("fixed validated",) + HIDDEN_ISSUE_STATES
+
+
+def derived_disposition(tags, by_tag):
+    """The state of a promoted bug or feature request: the state of the tests it became.
+
+    A request promoted to tests.md has no State column of its own - exactly one of State or Became
+    is filled in - so its disposition is read from those tests rather than shown as a pointer.
+    WORST OPEN STATE WINS: one test still needing a run keeps the request open however many of its
+    siblings are validated.  A superseded test says nothing about the request, so it is set aside;
+    a request whose every test was superseded answers "superseded", which reads as not done.
+
+    :param tags: the MT-### tags the request became, in the order the row names them
+    :param by_tag: tests.md's entries, by tag
+    :return: the derived disposition, or None when none of the tags is in tests.md
+    """
+
+    states = [by_tag[tag].disposition.strip().lower() for tag in tags if tag in by_tag]
+
+    if not states:
+        return None
+
+    live = [state for state in states if state != SUPERSEDED]
+
+    if not live:
+        return SUPERSEDED
+
+    for word in ("needs test", "fixed unvalidated"):
+        if word in live:
+            return word
+
+    return "fixed validated"
+
 
 def disposition_slug(disposition):
     """'fixed unvalidated' -> 'fixed-unvalidated', a lookup key and a tag name in one."""
@@ -852,8 +890,15 @@ class IssuesDoc(object):
             row = dict(zip(header, cells))
 
             became = row.get("became", "")
-            m = re.search(r'\[(MT-\d+)\]', became)
-            row["became_tag"] = m.group(1) if m else None
+
+            # EVERY TAG, IN EITHER SPELLING (Adam, 2026-09-13).  Became is written two ways in the
+            # receipt table - a markdown link, `[MT-266](tests.md#mt-266)`, and a bare code span,
+            # `MT-378` in backticks - and this matched only the link.  Every row written the second
+            # way came through with no tag, was read as tracked directly, and showed its empty State
+            # column: the "-" on most of the feature requests.  A row can also name several tests,
+            # and the first alone is not the state of the request.
+            row["became_tags"] = re.findall(r'MT-\d+', became)
+            row["became_tag"] = row["became_tags"][0] if row["became_tags"] else None
 
             rows.append(row)
 
@@ -1445,11 +1490,11 @@ class Triage(tk.Tk):
         return frame
 
     def _build_issue_list(self, parent, kind):
-        """One tab's worth: pending items of that kind, plus the ones tracked directly by their
-        own State once picked up. A promoted item - one that earned an MT-### tag - hides under
-        the 'open' filters, since its real home is the Tests tab while it's active work, and
-        reappears under 'everything' so it can still be traced from filing to close from its own
-        tab rather than only from tests.md. A read-only pane underneath shows whichever row is
+        """One tab's worth: pending items of that kind, plus every picked-up one. A row tracked
+        directly shows its own State; a promoted item - one that earned MT-### tags - shows the
+        state of those tests, worst open state winning, and is open or closed by that the same
+        way a direct row is (Adam, 2026-09-13). Declined rows are hidden under every filter. A
+        read-only pane underneath shows whichever row is
         selected. Read-only on purpose - filing and answering both already have a home (New
         issue, and the Tests tab), so this tab is for seeing what is there, not a second way to
         write to either file.
@@ -1570,32 +1615,37 @@ class Triage(tk.Tk):
                 continue
 
             ref = row.get("ref", "")
-            tag = row.get("became_tag")
+            tags = row.get("became_tags") or []
 
-            if tag:
-                # Promoted to a test - while it's still being worked, its home is the Tests tab,
-                # not here, which is what the "open" filters enforce by hiding it outright
-                # regardless of its own disposition.  "everything" is the exception: a bug or
-                # feature request should be traceable from filing to close from its OWN tab, not
-                # only from tests.md, so it comes back once the broad view is asked for.
-                if not show_everything:
-                    continue
-
-                entry = self.doc.by_tag.get(tag)
-                slug = disposition_slug(entry.disposition) if entry else None
-                state_shown = "-> %s" % tag
+            if tags:
+                # PROMOTED: its state is the state of the tests it became (Adam, 2026-09-13: "clean
+                # up the disposition of FR's in the '-' state").  This showed only "-> MT-###" and hid
+                # the row under both open filters, so a request whose tests were all validated and one
+                # still waiting on a run read the same, and neither could be seen without asking for
+                # everything.  Worst open state wins - see derived_disposition.
+                state_text = derived_disposition(tags, self.doc.by_tag) or ""
+                slug = disposition_slug(state_text) if state_text else None
+                state_shown = "%s  (%s)" % (state_text or "tests not found", ", ".join(tags))
             else:
-                # Tracked directly: State IS the disposition, same three words tests.md uses,
-                # Claude-set the same way.  Closed the same way fixed validated closes a test:
-                # declined is the request-track's own terminal state, so it hides under the same
-                # filter that hides fixed validated.
+                # Tracked directly: State IS the disposition, same words tests.md uses, Claude-set
+                # the same way.  A bare "-" is an empty cell, not a word.
                 state_text = (row.get("state") or "").strip()
+
+                if state_text == "-":
+                    state_text = ""
+
                 slug = disposition_slug(state_text) if state_text else None
                 state_shown = state_text or "(no state recorded)"
-                is_open = state_text.lower() not in ("fixed validated", "declined")
 
-                if not self._issue_include(is_open):
-                    continue
+            # CANCELLED IS OUT OF VIEW, under every filter (Adam, 2026-09-13).  It stays in the file,
+            # which is the record; the list is for what is still in play or has been done.
+            if state_text.lower() in HIDDEN_ISSUE_STATES:
+                continue
+
+            is_open = state_text.lower() not in CLOSED_ISSUE_STATES
+
+            if not self._issue_include(is_open):
+                continue
 
             row_tags = (slug,) if slug in ISSUE_STATE_COLORS else ()
 
@@ -1632,10 +1682,18 @@ class Triage(tk.Tk):
             tag = row.get("became_tag") if row else None
 
             if tag:
-                # Only reachable under the "everything" filter - _populate_issue_tree hides a
-                # promoted row otherwise, so its real home stays the Tests tab while it's active.
-                text = "Picked up as %s.\n\nRef: %s\nFiled: %s\n\n%s" % (
-                    tag, ref, row.get("filed", "") if row else "", row.get("what", "") if row else "")
+                # Every test it became, each with its own state, under the state they add up to - so
+                # the one keeping a request open is named rather than left to be looked for.
+                tags = row.get("became_tags") or [tag]
+
+                each = "\n".join(
+                    "  %s - %s" % (t, self.doc.by_tag[t].disposition if t in self.doc.by_tag
+                                   else "not found in tests.md")
+                    for t in tags)
+
+                text = "Picked up as %s - state: %s.\n\n%s\n\nRef: %s\nFiled: %s\n\n%s" % (
+                    ", ".join(tags), derived_disposition(tags, self.doc.by_tag) or "tests not found",
+                    each, ref, row.get("filed", ""), row.get("what", ""))
             else:
                 state_text = (row.get("state") if row else "") or "(no state recorded)"
                 text = "Tracked directly - state: %s.\n\nRef: %s\nFiled: %s\n\n%s" % (

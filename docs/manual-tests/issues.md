@@ -1139,6 +1139,24 @@ to bulk tools in the autonomy editor, add an option to mass mark current train l
 
 For the buttons on multi-unit Mm2 locomotives paired with mfx/dcc ones, don't print "F<x>" text labels on the function buttons- keep the label blank as is the default.
 
+### OB-214 - 2026-09-13 - no tooltip for segment length hotkey
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-13 22:14  
+**Build:** commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+in the autonomy editor, Set Segment Length needs a tooltip that says "Control+E".  change for other missing tooltip hints.
+
+### FR-076 - 2026-09-13 - easy tracking of station labels
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-13 22:32  
+**Build:** commit ac960047, build\classes, compiled 13 Sep 22:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+autonomy station labels should be deduped per page, not globally- that way, other pages' stations can be tracked from a main page if desired.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1150,6 +1168,8 @@ validated` - not `superseded`, which has no meaning for something nobody has cod
 everywhere else it appears. Exactly one of
 State or Became is filled in for any row - a feature request either gets its own tag, or it does
 not, never both.
+
+**How the triage app shows these (Adam, 2026-09-13).** A row that Became a test has no State of its own, so the app shows the state of the tests it became - worst open state wins, so one test still waiting on a run keeps the request open however many of its siblings are validated, and a superseded test is set aside. Became is read in either spelling, a markdown link or a bare code span, and every tag in it counts: the code-span spelling used to be missed, which is why most feature requests showed "-". **Declined rows are hidden from every view** - they stay here, which is the record - and so is the undocumented word "cancelled", which reached the file twice and is now written as declined.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
@@ -1255,8 +1275,8 @@ not, never both.
 | 2026-08-28 | OB-127 | bug | An empty layout path is the working directory, and its index named five pages that were never deleted | fixed validated | - |
 | 2026-08-28 | OB-126 | bug | The grey Edit Layout button named one of its three reasons whatever was true | fixed unvalidated | - |
 | 2026-08-28 | OB-125 | bug | The crop editor reopens where the crop was taken, not on the default view | fixed unvalidated | - |
-| 2026-08-28 | FR-038 | feature request | Mis-filed: the crop editor quirk is a bug, re-filed as OB-125 | cancelled | - |
-| 2026-08-28 | FR-039 | feature request | The request to cancel FR-038, which is done - nothing of its own to work | cancelled | - |
+| 2026-08-28 | FR-038 | feature request | Mis-filed: the crop editor quirk is a bug, re-filed as OB-125 | declined | - |
+| 2026-08-28 | FR-039 | feature request | The request to cancel FR-038, which is done - nothing of its own to work | declined | - |
 | 2026-08-27 | FR-036 | feature request | Plus and minus walk through the pages, through the switch that already existed | - | `MT-386` |
 | 2026-08-27 | FR-037 | feature request | Travel restrictions can be drawn on the ordinary track diagram, on by default | - | `MT-387` |
 | 2026-08-27 | OB-122 | bug | Not a defect: the warning was right, and the track diagram was the thing at fault | fixed validated | - |
@@ -1418,7 +1438,7 @@ not, never both.
 | 2026-08-22 | OB-005 | bug | Switching between the autonomy view and the track diagram editor flashes - the window closes and reopens | - | [MT-095](tests.md#mt-095) |
 | 2026-08-22 | FR-003 | feature request | Editor sidebar: buttons become a clickable list, and the layout/autonomy pair becomes a radio switch | - | [MT-097](tests.md#mt-097) |
 | 2026-08-22 | OB-003 | bug | Editor window size varies by page and is often too small - default to the diagram's own size, capped at the screen | - | [MT-096](tests.md#mt-096) |
-| 2026-08-22 | FR-002 | feature request | Appearance of stations and incoming arrows - circles, squares and diamonds are not semantic, and the arrows are messy | - | `MT-094` |
+| 2026-08-22 | FR-002 | feature request | Appearance of stations and incoming arrows - circles, squares and diamonds are not semantic, and the arrows are messy.  **Not done** (Adam, 2026-09-13): `MT-094`, its only test, was superseded, so nothing current implements it and it is tracked here again rather than through that test | needs test | - |
 | 2026-08-22 | FR-009 | feature request | Highlight on Diagram button in the route editor, and rename Test to Test Condition | - | [MT-064](tests.md#mt-064) |
 
 **OB-008 to OB-012 are fixed, 2026-08-22.** Two of them share `MT-102`, because they are the same
