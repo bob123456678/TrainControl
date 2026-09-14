@@ -29,34 +29,26 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 |---|---|---|---|---|
 | [MT-244](#mt-244) | 2026-08-31 | The Auto tab on a layout that has only an autonomy.json | fixed unvalidated | RGN-A2 |
 | [MT-247](#mt-247) | 2026-09-01 | A refused route still cuts the power at the two human doors | fixed unvalidated | FX2-2, SVN-A4 |
-| [MT-254](#mt-254) | 2026-09-02 | Clearing every home locomotive at once | fixed unvalidated | R28-C1 |
 | [MT-256](#mt-256) | 2026-09-02 | Switching a signal by hand while a train stands at its platform | fixed unvalidated | SVN-B16, WK3-B1 |
 | [MT-263](#mt-263) | 2026-09-03 | The three refusals, when the graph will not build | needs test | V31-C1, V32-C1, DY3-C7 |
 | [MT-267](#mt-267) | 2026-09-04 | A setup edit made the instant autonomy starts | needs test | VD11-C8 |
 | [MT-291](#mt-291) | 2026-09-07 | The Grid tooltip, in a language you read | needs test | FR-057 (split from MT-274) |
 | [MT-298](#mt-298) | 2026-09-07 | A second import fills gaps and does not overwrite | needs test | IPR-A1 (split from MT-243) |
 | [MT-326](#mt-326) | 2026-09-07 | A declined setup edit survives quitting | needs test | ACC-B3 (split from MT-269) |
-| [MT-333](#mt-333) | 2026-09-08 | The track behind a train is still blocked after the prompt change | fixed unvalidated | OB-182 |
 | [MT-335](#mt-335) | 2026-09-08 | Return Home will not plan through track a train is lying across | fixed unvalidated | OB-184 |
-| [MT-368](#mt-368) | 2026-09-12 | The direction prompt appears at a station trains MAY turn round at | fixed unvalidated | OB-205 claim 3 |
-| [MT-376](#mt-376) | 2026-09-12 | The Unavailable While Occupied list, sorted and shaded | fixed unvalidated | FR-074 |
 | [MT-380](#mt-380) | 2026-09-13 | Autonomy can be set up by importing, from the menu, with nothing set up yet | fixed unvalidated | FR-007 |
-| [MT-394](#mt-394) | 2026-09-13 | Pasting onto a may-reverse square asks which way the train faces | fixed unvalidated | your ruling of 2026-09-13 |
 | [MT-396](#mt-396) | 2026-09-14 | A function pressed on a consist is sent to every locomotive in it | fixed unvalidated | MT-359 (your ruling of 2026-09-13) |
 | [MT-397](#mt-397) | 2026-09-14 | The editor's keyboard shortcuts are named in their tooltips | fixed unvalidated | OB-214 |
-| [MT-398](#mt-398) | 2026-09-14 | The facing question's buttons say which way the train points | fixed unvalidated | OB-215 |
-| [MT-399](#mt-399) | 2026-09-14 | The tested path's line stays on its rail over the switch at 12,13 | fixed unvalidated | OB-216 |
-| [MT-400](#mt-400) | 2026-09-14 | One-Way Run and Name Everything are in Bulk Tools, and the editor column has its headings | fixed unvalidated | OB-217 |
 | [MT-401](#mt-401) | 2026-09-14 | Return Home shows it is working while it plans | fixed unvalidated | FR-077 |
 | [MT-402](#mt-402) | 2026-09-14 | A Return Home plan that fails says why in the log, by square | fixed unvalidated | FR-078 |
-| [MT-403](#mt-403) | 2026-09-14 | The function buttons follow the locomotive you switched to last | fixed unvalidated | TDR-B5 |
-| [MT-404](#mt-404) | 2026-09-14 | A square cannot be named with the editor's own direction heading | fixed unvalidated | TDR-C11 |
 | [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
-| [MT-429](#mt-429) | 2026-09-14 | Why Not Moving lists stations, then berths, alphabetically, with other pages named | fixed unvalidated | FR-080 |
-| [MT-430](#mt-430) | 2026-09-14 | Cancel in the autonomy editor puts your edits back | fixed unvalidated | OB-223 |
+| [MT-431](#mt-431) | 2026-09-14 | 75 407 DB may run from Tunnel to BottomMainA past the one-unit run | fixed unvalidated | OB-224 |
+| [MT-432](#mt-432) | 2026-09-14 | Three units at BottomMainA close Tunnel to BottomMainB and C | fixed unvalidated | OB-224 |
+| [MT-433](#mt-433) | 2026-09-14 | Why Not Moving sorts by page, current page first, and says Page | fixed unvalidated | FR-080 |
+| [MT-434](#mt-434) | 2026-09-14 | Switching Path Type redraws the tested route | fixed unvalidated | FR-084 |
 
-Everything else - 403 of 430 - needs nothing from you unless the area changes again:
-357 **fixed validated** and 46 **superseded**.
+Everything else - 415 of 434 - needs nothing from you unless the area changes again:
+368 **fixed validated** and 47 **superseded**.
 
 ---
 
@@ -14608,7 +14600,7 @@ findings about his railway, which cost him the time to check them.
 
 ### MT-254 - 2026-09-02 - Clearing every home locomotive at once
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** R28-C1
 
 **Written:** 2026-09-02
@@ -17915,7 +17907,7 @@ value, so the label and the protection cannot disagree.
 
 ### MT-333 - 2026-09-08 - The track behind a train is still blocked after the prompt change
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-182
 
 **Written:** 2026-09-08
@@ -18007,6 +17999,16 @@ If step 4 is not orange after a genuine run with nothing from the list in betwee
 Regression, but not directly related to this test.  75 407 DB (len 2) can no longer go from tunnel to bottommaina because of the 1+1 length split around the switch between buttommainapre and bottommaina.  this SHOULD be allowed per the standing rule that this switch blocking should only affect berthes.  Figure out when introduced the regression, fix it, and then re-file the protrosion test itself.  in that protrusion test, if we made 75 407 DB have len 3 and it is parked at bottommaina, other trains should be blocked from going tunnel->bottommainb and c.
 
 *Run against commit 5e29137a, build\classes, compiled 14 Sep 13:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-14.**
+
+**Claude, 2026-09-14.** Superseded by **MT-431** and **MT-432**.
+
+**The regression** is **OB-224**, fixed: 75 407 DB was refused at BottomMainAPre, a square it only passes, not at BottomMainA - the pass-through room check of 2026-09-10 (`5948a88a`, your ruling of 2026-09-09), which the relaxation of 2026-09-12 never reached.  It showed when 7,9 and 13,12 were measured.  A passed square is not judged any more; MT-431 checks the journey.
+
+**Your protrusion test** is MT-432, re-filed as you described it.  It already held for a train DRIVEN to BottomMainA - three units close Tunnel to B and C, two do not - so nothing changed there; the test now exists, on its own copy of the railway.
+
+**On the failing home test (OB-222):** this is not its cause.  Its five trains have no length, so neither the room rule nor the tail walk ever reaches them; it failed in batteries on 11, 13 and 14 September and passed between, all on the random twenty-second run it starts from.
 
 ---
 
@@ -19655,7 +19657,7 @@ That is the SIXTH site of this one confusion (OB-205 claims 1, 2 and 3, MT-368, 
 
 ### MT-368 - 2026-09-12 - The direction prompt appears at a station trains MAY turn round at
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-205 claim 3
 
 **Written:** 2026-09-12
@@ -20230,7 +20232,7 @@ That a class testing one source of a stacking bug reported clean about the other
 
 ### MT-376 - 2026-09-12 - The Unavailable While Occupied list, sorted and shaded
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-074
 
 **Written:** 2026-09-12
@@ -20985,7 +20987,7 @@ question could be asked at all.
 
 ### MT-394 - 2026-09-13 - Pasting onto a may-reverse square asks which way the train faces
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** your ruling of 2026-09-13
 
 **Written:** 2026-09-13
@@ -21166,7 +21168,7 @@ Max Train Length already said Control+L, D, K and B, and are unchanged.  `ui.tes
 
 ### MT-398 - 2026-09-14 - The facing question's buttons say which way the train points
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-215
 
 **Written:** 2026-09-14
@@ -21198,7 +21200,7 @@ MT-394's step 4, and is not asked again here.  `core.testAPasteDoesNotTurnTheTra
 
 ### MT-399 - 2026-09-14 - The tested path's line stays on its rail over the switch at 12,13
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-216
 
 **Written:** 2026-09-14
@@ -21227,13 +21229,17 @@ Works, but when changing the auto and manual radio buttons, make it update the s
 
 *Run against commit 5e29137a, build\classes, compiled 14 Sep 13:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-14.**
+
+**Claude, 2026-09-14.** Closed on your verdict; your note is FR-084, built - MT-434 checks it.
+
 ---
 
 <a id="mt-400"></a>
 
 ### MT-400 - 2026-09-14 - One-Way Run and Name Everything are in Bulk Tools, and the editor column has its headings
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-217
 
 **Written:** 2026-09-14
@@ -21330,7 +21336,7 @@ TDR-C9).  `core.testReturnHomeSaysWhy` covers every sentence the planner can rea
 
 ### MT-403 - 2026-09-14 - The function buttons follow the locomotive you switched to last
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** TDR-B5
 
 **Written:** 2026-09-14
@@ -21365,7 +21371,7 @@ redraw at the exact moment the request used to be lost.
 
 ### MT-404 - 2026-09-14 - A square cannot be named with the editor's own direction heading
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** TDR-C11
 
 **Written:** 2026-09-14
@@ -22102,7 +22108,7 @@ Your FR-082: *"For the red operators, can we add a warning triangle icon with a 
 
 ### MT-429 - 2026-09-14 - Why Not Moving lists stations, then berths, alphabetically, with other pages named
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-080
 
 **Written:** 2026-09-14
@@ -22132,13 +22138,17 @@ Works, but capitalize Page.  Update sorting to be by page then station name, rat
 
 *Run against commit 5e29137a, build\classes, compiled 14 Sep 13:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-14.**
+
+**Claude, 2026-09-14.** Closed on your verdict; your note - capital Page, by page then name, current page first - is built, and MT-433 checks it.
+
 ---
 
 <a id="mt-430"></a>
 
 ### MT-430 - 2026-09-14 - Cancel in the autonomy editor puts your edits back
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-223
 
 **Written:** 2026-09-14
@@ -22169,5 +22179,125 @@ Your note on MT-406: *"Escape works, but it seems a one-way run (or any other ed
 **Adam, 2026-09-14 (triage).** Works.
 
 *Run against commit 5e29137a, build\classes, compiled 14 Sep 13:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-431"></a>
+
+### MT-431 - 2026-09-14 - 75 407 DB may run from Tunnel to BottomMainA past the one-unit run
+
+**Disposition:** fixed unvalidated
+**From:** OB-224
+
+**Written:** 2026-09-14
+
+Your OB-224, from MT-333: *"75 407 DB (len 2) can no longer go from tunnel to bottommaina ... this SHOULD be allowed per the standing rule that this switch blocking should only affect berthes."*
+
+**Steps**
+
+1. With your current measurements (7,9 = 1, 10,10 = 2, 13,12 = 1, 19,12 = 1) give 75 407 DB length **2** and stand it at **Tunnel**.
+2. Right-click it and look for **BottomMainA**, then **LowerFront** and **BottomMainPost**.
+3. Send it to **BottomMainA**.
+4. Give it length **3** and stand it at Tunnel again; look for BottomMainA.
+
+**Expected**
+
+- Step 2: all three offered - it only runs past BottomMainAPre, where the one unit is.
+- Step 3: it runs and arrives.
+- Step 4: BottomMainA is refused, naming BottomMainA itself: three units do not fit its two-unit approach.
+
+*What this is:* OB-224.  A square a train only passes is no longer judged for standing across the points - only where it comes to rest: the destination, and a square it turns round at.  This withdraws the pass-through half of your ruling of 2026-09-09, which refused your 9 Sep example (a nine-unit train past 22,7 to RampDown) - that is now offered too.  `regression.testAPassingTrainMayStandAcrossThePoints`, seen red first; `core.testATrainIsJudgedOnlyWhereItStops`; commit `e677cbab`.
+
+#### Comments
+
+---
+
+<a id="mt-432"></a>
+
+### MT-432 - 2026-09-14 - Three units at BottomMainA close Tunnel to BottomMainB and C
+
+**Disposition:** fixed unvalidated
+**From:** OB-224
+
+**Written:** 2026-09-14
+
+Re-filed from MT-333, as you asked: *"in that protrusion test, if we made 75 407 DB have len 3 and it is parked at bottommaina, other trains should be blocked from going tunnel->bottommainb and c."*
+
+**Steps**
+
+1. Give 75 407 DB length **2**, stand it at **Tunnel**, and **send it to BottomMainA** by hand - drive it there; do not place it.
+2. When it has arrived, give it length **3** (the locomotive's own length setting - this does not rebuild the railway).
+3. Look at the diagram between **Tunnel** and **BottomMainAPre**.
+4. Stand another train at Tunnel and right-click it: look for **BottomMainB** and **BottomMainC**.
+5. Give 75 407 DB length **2** again and repeat step 4.
+
+**Expected**
+
+- Step 3: orange from Tunnel to BottomMainAPre as well as on to BottomMainA.
+- Step 4: B and C refused, naming 75 407 DB standing across **Tunnel -> BottomMainBCPre**.
+- Step 5: B and C offered again - two units fit the approach and reach back over nothing.
+
+**Driving matters.**  Past a junction the tail follows the route the train drove, which is kept in memory only: a train placed by hand, or anything in the list on MT-333 (a restart, closing the autonomy editor, editing the diagram, a page in or out of autonomy, choosing a configuration), makes the tail stop at the fork and B and C stay open.
+
+*What this is:* the protrusion half of MT-333, which this replaces.  `regression.testAPassingTrainMayStandAcrossThePoints.testThreeUnitsAtBottomMainAClosesTunnelToBAndC`, on its own copy of the railway.
+
+#### Comments
+
+---
+
+<a id="mt-433"></a>
+
+### MT-433 - 2026-09-14 - Why Not Moving sorts by page, current page first, and says Page
+
+**Disposition:** fixed unvalidated
+**From:** FR-080
+
+**Written:** 2026-09-14
+
+Your note on MT-429: *"Works, but capitalize Page.  Update sorting to be by page then station name, rather than station name only, with the current page being first, then others sequentially later."*
+
+**Steps**
+
+1. Open the autonomy editor on **1 - Main**, choose **Why Not Moving?**, and click a train with somewhere it cannot go.
+2. Read both groups.
+3. Do the same from the track diagram's own right-click menu on a train on another page.
+
+**Expected**
+
+- Step 2: in each group, the stations on 1 - Main first, alphabetically; then the next page's, alphabetically, and so on in page order.  Stations on another page read **(Page 2 - Bottom)** with a capital P.
+- Step 3: the train's own page comes first.
+
+*What this is:* the MT-429 note.  `regression.testTheDiagramRefreshDoesNotWaitOnTheRailway.testTheWhyAnswerListsStationsThenBerthsWithTheirPages`, seen red first; commit `a48cb5e6`.
+
+#### Comments
+
+---
+
+<a id="mt-434"></a>
+
+### MT-434 - 2026-09-14 - Switching Path Type redraws the tested route
+
+**Disposition:** fixed unvalidated
+**From:** FR-084
+
+**Written:** 2026-09-14
+
+Your FR-084, from MT-399: *"when changing the auto and manual radio buttons, make it update the shown route to the new selection without having to repeat the button press sequence."*
+
+**Steps**
+
+1. In the autonomy editor, choose **Test a Path** and click an ordinary station, then a station autonomy will never choose.
+2. Switch **Path Type** to **Manual**, then back to **Auto**.
+3. Press **Escape**, then switch Path Type again.
+
+**Expected**
+
+- Step 1: the route drawn, with the note that autonomy will never choose that station.
+- Step 2: the route stays; the note goes on Manual and comes back on Auto, without clicking the squares again.
+- Step 3: nothing is redrawn - the test was put away.
+
+*What this is:* FR-084.  `core.testManualOnlyPathsAreADifferentColour.testSwitchingPathTypeRedrawsTheTestedRoute`, seen red first; commit `b1cb1fe9`.
+
+#### Comments
 
 ---
