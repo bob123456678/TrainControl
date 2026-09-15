@@ -1,6 +1,6 @@
 # The 2026-09-15 feedback fixes: round 2 validated
 
-**Status:** open 2026-09-15 - round 3 fixed B1, C1, C2 and C3 in `ae19fbf3` (claims and the clock seam in `55b0d0b5` and `3f5410d8`)
+**Status:** open 2026-09-15 - round 3 fixed B1 and C1 in `ae19fbf3` (claims in `55b0d0b5`), C2 in `fdb98884`, and C3 - the clock seam and its claim - in `55b0d0b5` and `3f5410d8`
 
 **Prefix:** MFW (checked free with MFR, MFV and MFX before the review: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`, every declaration spelling in `docs/reviews/`, and a grep of `src/`, `test/` and `docs/`)
 

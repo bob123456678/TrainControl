@@ -1,6 +1,6 @@
 # The 2026-09-15 feedback fixes, reviewed
 
-**Status:** open 2026-09-15 - round 1 fixed B1, B2, B3, C2, C4, C6 and C7 in `ddaa1b9b` and strengthened the C5 claim; C2's fix was replaced in round 2 (MFV-B1, `ab217322`); C1 and C3 held; C8 noted on OB-229 in `32b415a2`
+**Status:** open 2026-09-15 - round 1 fixed B1, B2, B3, C2, C6 and C7 in `ddaa1b9b`, restored C4's seven claims and strengthened the C5 claim in `3369b650`; C2's fix was replaced in round 2 (MFV-B1, `ab217322`); C1 and C3 held; C8 noted on OB-229 in `32b415a2`
 
 **Prefix:** MFR (checked free, with MFV, MFW and MFX for the validation rounds: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`, every declaration spelling in `docs/reviews/`, and a grep of `src/`, `test/` and `docs/`)
 
@@ -89,7 +89,7 @@ Where the second road back from a junction contributes no sensor because it is u
 |---|---|
 | **Disposition** | Fixed |
 
-The retry from the start (OB-228) ran with a fresh `SEARCH_BUDGET_MS`.  **Fixed, round 1:** one deadline, set once per `search`, read by every A* it runs.  **Replaced in round 2** (MFV-B1, `ab217322`): one deadline could leave the retry from the start no time at all, so the budget is shared out - half to A* from the greedy arrangement, the rest to the retry.  Not claimed by a test: a test of a fifteen-second budget costs fifteen seconds a run, and the change is a field read.
+The retry from the start (OB-228) ran with a fresh `SEARCH_BUDGET_MS`.  **Fixed, round 1:** one deadline, set once per `search`, read by every A* it runs.  **Replaced in round 2** (MFV-B1, `ab217322`): one deadline could leave the retry from the start no time at all, so the budget is shared out - half to A* from the greedy arrangement, the rest to the retry.  Not claimed by a test in round 1; round 3 claimed the budget on a stepped clock (MFW-C3, `testTheRetryFromTheStartHasTimeLeft`).
 
 ### MFR-C3 - a train moved and later back on its start square is judged by two tails
 
