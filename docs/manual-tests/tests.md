@@ -22581,12 +22581,14 @@ From the agreement check in your MT-335 log: *"planner allows 75 407 DB -> Botto
 2. Right-click it: look for **RampDown** and **BottomSecondary**.
 3. Send it to **BottomSecondary**, and watch the route it takes.
 4. With debug logging on, press **Return Home** and read the agreement check line.
+5. Stand a train on **RampDown** and right-click it; then press Return Home with its home elsewhere.
 
 **Expected**
 
 - Step 2: both offered.  Before this neither was, though the route was clear.
 - Step 3: it runs the long way - BottomMainA or B, BottomMainPost, up the ramp, TopMainR1, TopMainPost, down RampDown - never through TopMainR0Park or a parking track.
 - Step 4: no *"planner allows 75 407 DB -> ..."* lines for RampDown or BottomSecondary.
+- Step 5: no other RampDown copy is offered, and no plan sends it round a loop back onto RampDown - your ruling: *"we should never do a round trip just to change direction."*
 
 *What this is:* OB-229.  `core.testARouteIsFoundPastATerminus`, seen red first (`4b519e71`); fixed in `badb0a2c`.
 
