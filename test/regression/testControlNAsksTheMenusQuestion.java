@@ -131,10 +131,14 @@ public class testControlNAsksTheMenusQuestion
             assertFalse(asked(panel, "canBeNamed", track), "precondition: Control+S would open a dialog on " + track);
             assertFalse(panel.offersALength(track), "precondition: Control+E would open a dialog on " + track);
             assertFalse(keyOffersAName(panel, track), "precondition: Control+N would open a dialog on " + track);
+            assertFalse(panel.offersAMaximumTrainLength(track), "precondition: Control+B would open a dialog on " + track);
+            assertFalse(keyOffers(panel, "offersAHome", track), "precondition: Control+H would open a dialog on " + track);
 
-            String[] keys = { "Control+S", "Control+E", "Control+N" };
+            // EVERY KEY THAT IS A DOOR ONTO THE MENU (MFW-C1): S, E, N, and B and H, which the first version left out.
+            String[] keys = { "Control+S", "Control+E", "Control+N", "Control+B", "Control+H" };
             Runnable[] presses = { () -> panel.promptNameFor(track), () -> panel.promptLengthFor(track),
-                () -> panel.showStationNameFor(track) };
+                () -> panel.showStationNameFor(track), () -> panel.promptMaxTrainLengthFor(track),
+                () -> panel.promptHomeFor(track) };
 
             // ARMED THROUGH THE PANEL'S OWN FIELD, not its button: on an ignored page the panel's refresh disables Test a
             // Path (`testButton.setEnabled(!ignored)`), so after the first click every further doClick did nothing and
@@ -184,6 +188,105 @@ public class testControlNAsksTheMenusQuestion
         f.setAccessible(true);
 
         return f.get(on);
+    }
+
+    /**
+     * Control+H offers a home exactly where the right-click menu does (MFW-B1).
+     *
+     * R28-C5 restored the key at Adam's word (*"set control+H for home"*) as one line that asked nothing, so on plain
+     * track, a switch or a page left out of autonomy it opened the home chooser and wrote a home onto a square that is
+     * not a station - taking the locomotive's home off the platform it had.  The menu offers the item only on a station.
+     *
+     * @throws Exception from the session or the reflection
+     */
+    @Test
+    public void testControlHOffersAHomeOnlyWhereTheMenuDoes() throws Exception
+    {
+        needsADisplay();
+
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-h").toFile();
+
+        try
+        {
+            AutonomySession session = new AutonomySession(folder);
+
+            session.open(Arrays.asList(aPageWithARun("main")));
+
+            TileKey station = new TileKey("main", 1, 1);
+            TileKey track = new TileKey("main", 3, 1);
+
+            session.setStation(station, true);
+
+            AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+            // THE CONTROL: a station, where the menu offers a home and so must the key.
+            javax.swing.JPopupMenu atTheStation = panel.buildTileMenu(station, null);
+
+            assertTrue(offersAHome(atTheStation), "precondition: the menu offers no home on the station at " + station
+                + ": " + itemNames(atTheStation));
+
+            assertTrue(keyOffers(panel, "offersAHome", station),
+                "Control+H offers no home on the station at " + station + ", where the menu does");
+
+            // PLAIN TRACK: no home on the menu, none from the key.
+            javax.swing.JPopupMenu onTrack = panel.buildTileMenu(track, null);
+
+            assertFalse(offersAHome(onTrack), "precondition: the menu offers a home on plain track: " + itemNames(onTrack));
+
+            assertFalse(keyOffers(panel, "offersAHome", track),
+                "Control+H offers a home on the plain track at " + track + ", where the menu offers " + itemNames(onTrack)
+                + " - a home written onto a square that is not a station (MFW-B1)");
+
+            // AND THE STATION ON A PAGE LEFT OUT OF AUTONOMY: only the bulk tools on the menu.
+            session.setPageExcluded("main", true);
+
+            javax.swing.JPopupMenu ignored = panel.buildTileMenu(station, null);
+
+            assertFalse(offersAHome(ignored), "precondition: the menu offers a home on an ignored square: " + itemNames(ignored));
+
+            assertFalse(keyOffers(panel, "offersAHome", station),
+                "Control+H offers a home on " + station + ", on a page left out of autonomy, where the menu offers "
+                + itemNames(ignored) + " (MFW-B1)");
+        }
+        finally
+        {
+            deleteRecursively(folder);
+        }
+    }
+
+    /** A public question of the panel's by name, failing plainly where the panel does not have it. */
+    private static boolean keyOffers(AutonomyEditorPanel panel, String name, TileKey tile) throws Exception
+    {
+        java.lang.reflect.Method asked;
+
+        try
+        {
+            asked = AutonomyEditorPanel.class.getMethod(name, TileKey.class);
+        }
+        catch (NoSuchMethodException none)
+        {
+            fail("AutonomyEditorPanel has no " + name + ": the key asks its own question, not the menu's");
+
+            return false;
+        }
+
+        return (Boolean) asked.invoke(panel, tile);
+    }
+
+    private static boolean offersAHome(javax.swing.JPopupMenu menu)
+    {
+        String none = I18n.t("autosetup.ui.menuHomeNone");
+        String named = I18n.t("autosetup.ui.menuHomeFor");
+        String namedStart = named.contains("{0}") ? named.substring(0, named.indexOf("{0}")) : named;
+
+        for (String name : itemNames(menu))
+        {
+            if (name == null) continue;
+
+            if (name.equals(none) || (!namedStart.isEmpty() && name.startsWith(namedStart))) return true;
+        }
+
+        return false;
     }
 
     /** What the key acts on - public, so the two doors can be put side by side. */

@@ -177,6 +177,108 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
     }
 
     /**
+     * The retry from the start still has time when the first search spends its share (MFV-B1, claimed as MFW-C3).
+     *
+     * OB-228 added a second search, from the railway as it stands, for the arrangement the greedy pass boxes itself
+     * into; MFR-C2 then put both searches on one deadline, so a first search that ran to it left the retry nothing,
+     * and a plan the retry would have found came back NO_PLAN_FOUND.  The budget is shared out now.  The X, Y, Z
+     * railway of the claim above needs the retry; sixty sidings Z can wander along keep the first search from running
+     * out of arrangements before its time does; and the search's clock is stepped 300 ms a read, so the fifteen-second
+     * budget is fifty reads rather than fifteen seconds.
+     *
+     * @throws Exception from the railway or the reflection
+     */
+    @Test
+    public void testTheRetryFromTheStartHasTimeLeft() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.setDefaultLocSpeed(30);
+
+        String[] names = { "RS_SY", "RS_SX", "RS_SZ", "RS_P", "RS_L1", "RS_L2", "RS_L3", "RS_HX", "RS_HY", "RS_HZ" };
+        boolean[] stations = { true, true, true, false, false, false, false, true, true, true };
+
+        for (int i = 0; i < names.length; i++)
+        {
+            layout.createPoint(names[i], stations[i], model.newFeedback(2500 + i, null).getName());
+        }
+
+        String[][] rails = { { "RS_SZ", "RS_SX" }, { "RS_SX", "RS_SY" }, { "RS_SY", "RS_P" }, { "RS_P", "RS_HX" },
+            { "RS_P", "RS_HY" }, { "RS_P", "RS_HZ" }, { "RS_SX", "RS_L1" }, { "RS_L1", "RS_L2" }, { "RS_L2", "RS_L3" },
+            { "RS_L3", "RS_HX" } };
+
+        for (String[] rail : rails)
+        {
+            layout.createEdge(rail[0], rail[1]);
+            layout.getEdge(rail[0], rail[1]).setLength(1);
+        }
+
+        // THE SIDINGS: a line of stations off SZ, none of them anybody's home.
+        int sidings = 60;
+
+        for (int i = 0; i < sidings; i++)
+        {
+            layout.createPoint(String.format("RS_Q%02d", i), true, model.newFeedback(2520 + i, null).getName());
+        }
+
+        layout.createEdge("RS_SZ", "RS_Q00");
+        layout.getEdge("RS_SZ", "RS_Q00").setLength(1);
+
+        for (int i = 0; i + 1 < sidings; i++)
+        {
+            String from = String.format("RS_Q%02d", i);
+            String to = String.format("RS_Q%02d", i + 1);
+
+            layout.createEdge(from, to);
+            layout.getEdge(from, to).setLength(1);
+        }
+
+        for (String home : new String[] { "RS_HX", "RS_HY", "RS_HZ" })
+        {
+            for (Edge in : layout.getIncomingEdges(layout.getPoint(home))) in.setEntrySide("W");
+        }
+
+        trainA.setTrainLength(3);
+        trainB.setTrainLength(1);
+        trainC.setTrainLength(1);
+
+        assertTrue(layout.moveLocomotive(trainA.getName(), "RS_SX", false), "could not stand X at RS_SX");
+        assertTrue(layout.moveLocomotive(trainB.getName(), "RS_SY", false), "could not stand Y at RS_SY");
+        assertTrue(layout.moveLocomotive(trainC.getName(), "RS_SZ", false), "could not stand Z at RS_SZ");
+
+        layout.setHomeLocomotive("RS_HX", trainA.getName());
+        layout.setHomeLocomotive("RS_HY", trainB.getName());
+        layout.setHomeLocomotive("RS_HZ", trainC.getName());
+
+        HomeStaging staging = HomeStaging.snapshot(layout);
+
+        // A CLOCK THAT MOVES 300 MS EVERY TIME THE SEARCH LOOKS AT IT.
+        final java.util.concurrent.atomic.AtomicLong now = new java.util.concurrent.atomic.AtomicLong();
+
+        java.lang.reflect.Field clock = HomeStaging.class.getDeclaredField("clock");
+
+        clock.setAccessible(true);
+        clock.set(staging, (java.util.function.LongSupplier) () -> now.addAndGet(300));
+
+        HomeStaging.Plan plan = staging.plan();
+
+        // NOT VACUOUS: more than half the budget was read, so the greedy pass did not simply succeed and both searches ran.
+        assertTrue(now.get() > 7500, "precondition: the search read the clock for only " + now.get() + " ms, so the greedy"
+            + " pass brought everybody home and neither search ran - this claim is about the second one");
+
+        assertEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
+            "the first search spent the time and the retry from the start - which finds X long, Y, Z - had none left:"
+            + " NO_PLAN_FOUND after " + now.get() + " ms on the search's clock (MFV-B1).  Moves: " + plan.getMoves());
+
+        List<String> run = replay(layout, plan);
+
+        assertTrue(trainA.equals(layout.getPoint("RS_HX").getCurrentLocomotive())
+            && trainB.equals(layout.getPoint("RS_HY").getCurrentLocomotive())
+            && trainC.equals(layout.getPoint("RS_HZ").getCurrentLocomotive()),
+            "replaying the plan did not bring all three home: " + run);
+    }
+
+    /**
      * Drives each move of the plan onto the layout as a run leaves a train, failing on a move over another train's tail.
      *
      * @param layout the railway

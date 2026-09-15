@@ -76,6 +76,15 @@ public final class HomeStaging
     /** When the search in progress started - set once per `search`, so every `astar` it runs is timed from it. */
     private long searchStarted;
 
+    /**
+     * Where the search reads the time (MFW-C3).
+     *
+     * The wall clock, always, on the railway.  A field rather than a call so a test can step it: how the budget is
+     * shared out between the two searches (MFV-B1) is a rule about time, and a claim that waited on the real clock
+     * would spend fifteen seconds a run to say so.  `core.testReturnHomeKeepsClearOfTheTailsItLeaves` sets it.
+     */
+    private java.util.function.LongSupplier clock = System::currentTimeMillis;
+
     /** Expansions allowed per route search.  A point may now be revisited under different accessory
      *  settings, so the search is no longer bounded by the number of points. */
     private static final int ROUTE_SEARCH_LIMIT = 20000;
@@ -772,7 +781,7 @@ public final class HomeStaging
         this.movedAlong = new java.util.HashMap<>();
 
         // ONE BUDGET, for every search this runs (MFR-C2), shared out below (MFV-B1).
-        this.searchStarted = System.currentTimeMillis();
+        this.searchStarted = this.clock.getAsLong();
 
         boolean progress = true;
 
@@ -880,7 +889,7 @@ public final class HomeStaging
 
 
 
-        while (!open.isEmpty() && examined < SEARCH_LIMIT && System.currentTimeMillis() < deadline)
+        while (!open.isEmpty() && examined < SEARCH_LIMIT && this.clock.getAsLong() < deadline)
         {
             Scored polled = open.poll();
             String currentKey = polled.key;
