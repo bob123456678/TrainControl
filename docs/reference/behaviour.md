@@ -1440,6 +1440,13 @@ way through a terminus hid a longer clear way past it: from Tunnel, 75 407 DB wa
 BottomSecondary, though the loop over the top level reaches both and Return Home's planner found it. The right-click
 menu, autonomy's choice and Why Not Moving? all use that search. `core.testARouteIsFoundPastATerminus`.
 
+**No tier sends a train round a loop to another copy of its own square** (Adam, 2026-09-15, reading the routes the
+terminus fix opens: *"we should never do a round trip just to change direction"*). The right-click menu and autonomy
+never offered one - a copy of the square a train stands on reads as occupied by that train - and Why Not Moving? does not
+list the train's own square; Return Home's planner now refuses it too. A train turns round at a reversing square or a
+terminus on its way, never by lapping the railway back onto where it started.
+`core.testARouteIsFoundPastATerminus.testNoRoundTripBackToTheTrainsOwnSquare`.
+
 ---
 
 **A sensor announces itself however it changed** (W21-B1). A module changes state two ways - a

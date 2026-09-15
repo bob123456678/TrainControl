@@ -101,6 +101,60 @@ public class testARouteIsFoundPastATerminus
             "Why Not Moving? has no reason against RU9_E, whose only route runs through a terminus");
     }
 
+    /**
+     * No tier sends a train round a loop to another copy of the square it is standing on (Adam, 2026-09-15).
+     *
+     * Reading the routes the terminus fix opens on his railway, Adam: *"These paths all make sense to me, except for the
+     * circular ones like RampDown (northbound, reverse) -> RampDown (southbound, reverse).  These are the same point so
+     * we should never do a round trip just to change direction."*  The right-click menu and autonomy already never
+     * offer one - a copy of the square a train stands on reads as occupied by that train - but Return Home's planner
+     * skipped only the exact copy, so it could plan the loop, and its agreement check would call that a disagreement.
+     *
+     * A square split into two copies, P_a and P_b, one block; a loop from P_a out and back into P_b through no terminus.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testNoRoundTripBackToTheTrainsOwnSquare() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.setDefaultLocSpeed(30);
+
+        String[] names = { "RR9_Pa", "RR9_Pb", "RR9_K", "RR9_L", "RR9_M" };
+        boolean[] stations = { true, true, false, false, false };
+
+        for (int i = 0; i < names.length; i++)
+        {
+            MarklinFeedback sensor = model.newFeedback(3240 + i, null);
+
+            model.setFeedbackState(sensor.getName(), false);
+
+            layout.createPoint(names[i], stations[i], sensor.getName());
+        }
+
+        layout.getPoint("RR9_Pa").setBlock("RR9_P-square");
+        layout.getPoint("RR9_Pb").setBlock("RR9_P-square");
+
+        String[][] rails = { { "RR9_Pa", "RR9_K" }, { "RR9_K", "RR9_L" }, { "RR9_L", "RR9_M" }, { "RR9_M", "RR9_Pb" } };
+
+        for (String[] rail : rails) layout.createEdge(rail[0], rail[1]);
+
+        Locomotive loc = aTrainAt(layout, "RR9_Pa");
+
+        assertTrue(layout.bfs(layout.getPoint("RR9_Pa"), layout.getPoint("RR9_Pb"), null) != null,
+            "precondition: there is no loop from RR9_Pa back to RR9_Pb, so nothing here could be a round trip");
+
+        // THE CONTROL: the menu never offered it.
+        assertFalse(ends(layout.getPossiblePaths(loc, true)).contains("RR9_Pb"),
+            "precondition: the right-click menu offers RR9_Pb, the other copy of the square the train stands on");
+
+        // AND THE PLANNER AGREES.
+        assertEquals(org.traincontrol.automation.HomeStaging.snapshot(layout).auditAgainstRuntime(), 0,
+            "Return Home's planner would send a train at RR9_Pa round the loop to RR9_Pb - the same square, a round trip"
+            + " just to change direction, which Adam ruled out and the menu never offers");
+    }
+
     /** S -> X -> T -> Y -> Q -> E, T a terminus; and, when asked for, S -> A -> B -> C -> D -> F -> Q. */
     private static Layout theTwoWays(String tag, int s88, boolean withTheLongerWay) throws Exception
     {

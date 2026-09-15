@@ -1006,6 +1006,13 @@ public final class HomeStaging
     {
         if (from == null || to == null || from.equals(to)) return null;
 
+        // NOT ROUND A LOOP BACK ONTO THE SQUARE IT STANDS ON (Adam, 2026-09-15: *"These are the same point so we should
+        // never do a round trip just to change direction"*).  Another copy of the train's own square is the same track,
+        // and the right-click menu and autonomy never offer one - `Point.getBlockLocomotive` reads it as occupied by the
+        // train - so a plan that used one would be the planner disagreeing with the railway.  A train on any copy of its
+        // home is already home (`atHome`), so this never keeps a train from home.
+        if (from.getBlock() != null && from.getBlock().equals(to.getBlock())) return null;
+
         // The origin is exempt from every other test here - that is what stops the moving train's own
         // sensor blocking its own departure - but not from these two.  isPathClear applies its
         // inactive-point rule to every edge start including the first, and staging executes with
