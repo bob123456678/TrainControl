@@ -1341,6 +1341,19 @@ Adam, on MT-335 (2026-09-15): *"The 335 park works, but I get: Could not run EN5
 
 From Adam's MT-335 run of 2026-09-15 (log `traincontrol-20260915-035118.log`, 03:54:12 and again at 03:55:14, with 75 407 DB standing at Tunnel before the plan): *"planner allows 75 407 DB -> BottomSecondary, but the layout would refuse it"* and *"planner allows 75 407 DB -> RampDown, but the layout would refuse it"*.  `HomeStaging.auditAgainstRuntime` compares `firstClearRoute` with `Layout.getPossiblePaths` for the railway as it stands, so this is a rule the planner applies differently from the runtime - the OB-073 shape: a plan the runtime refuses on the move.  Neither move was in the plan that ran, and OB-228 was the refusal Adam saw, so this is recorded rather than guessed at: both are squares autonomy will never choose, and the berth rules are the first place to compare.  **Narrowed by review MFR-C8 (2026-09-15):** the audit counted three disagreements and printed two, because `logStagingAudit` prints `placeNameOf`, which names a square and not its copy - so the third is almost certainly RampDown's other copy (northbound, and northbound reverse).  The rule to compare is one that reads the copy - a turn at the destination, a route ending on a reverse copy - more than the berth rules.  FR-087 does not bear on it (neither square is one autonomy may choose), and OB-228's moved tails are empty when the audit runs.
 
+**Investigated 2026-09-15, and fixed.**  Reproduced on a copy of Adam's layout with 75 407 DB stood back at Tunnel: three
+disagreements - BottomSecondary, RampDown (southbound), and RampDown (southbound, reverse), the one the log did not print.
+**The planner was right.**  Its route to all three - Tunnel, BottomMainA or B, BottomMainPost, RampUp, TopMainR1,
+TopMainPost, down RampDown - passes `isPathClear`.  **The railway's route search did not find it.**  `Layout.bfs` marks a
+square visited the first time it is taken off the queue, and the shortest way to TopMainPost (eastbound) ran through
+TopMainR0Park, a terminus `isPathClear` refuses in the middle of a route - so that square was spent on a route that could
+never be used and the loop through it was never tried; its one offering for RampDown was refused, and it stopped.  The
+right-click menu (`getPossiblePaths`), autonomy (`pickPath`) and Why Not Moving? (`firstClearOrWhyNot`,
+`whyNoRouteFitsTo`) all use that search.  Asked how to fix it, Adam chose **search past termini**: the search does not
+extend a route through a terminus that is not its end.  On his layout that gains exactly these three destinations for
+75 407 DB at Tunnel and loses none, every new route clear.  `core.testARouteIsFoundPastATerminus`, red first (`4b519e71`); fixed
+in `badb0a2c`; MT-441.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1357,6 +1370,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-15 | OB-229 | bug | Return Home's agreement check blamed the planner for routes the railway's search never found: `Layout.bfs` spent squares on routes through a terminus.  Searched past termini, at Adam's choice. | - | `MT-441` |
 | 2026-09-15 | OB-228 | bug | Adam, on MT-335: *"Could not run EN57-203 from BottomInner (northbound) to TopMainR0Park - the path stayed blocked."*  Return Home routed a train over the tail of one it had just parked; the planner now models the tails of trains it moves. | - | `MT-440` |
 | 2026-09-15 | FR-088 | feature request | Adam, on MT-435: *"The closest sensor to the back should be the default selection in the length window"*.  Starts on the recorded road, else on the one sensor nearest the back, else nothing. | - | `MT-438` |
 | 2026-09-15 | OB-227 | bug | Adam, on MT-435: the tail question offered roads a train could only have reversed along - *"that isn't a realistic path."* | - | `MT-438` |

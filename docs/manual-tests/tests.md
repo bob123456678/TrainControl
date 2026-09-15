@@ -42,8 +42,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-438](#mt-438) | 2026-09-15 | The tail question: a sensor at exactly the length, roads a train can drive, and a default | fixed unvalidated | OB-226, OB-227, FR-088 |
 | [MT-439](#mt-439) | 2026-09-15 | Why Not Moving? and Test a Path both follow Path Type | fixed unvalidated | OB-225 |
 | [MT-440](#mt-440) | 2026-09-15 | Return Home does not route a train over the tail of one it has just parked | fixed unvalidated | OB-228 |
+| [MT-441](#mt-441) | 2026-09-15 | 75 407 DB is offered RampDown and BottomSecondary from Tunnel, the long way round | fixed unvalidated | OB-229 |
 
-Everything else - 425 of 440 - needs nothing from you unless the area changes again:
+Everything else - 425 of 441 - needs nothing from you unless the area changes again:
 374 **fixed validated** and 51 **superseded**.
 
 ---
@@ -22558,6 +22559,36 @@ Your note on MT-335: *"The 335 park works, but I get: Could not run EN57-203 fro
 - Step 3: the plan either moves EN57-203 past BottomMainAPre before 75 407 DB parks, or takes it another way.  If the agreement check still reports 75 407 DB -> RampDown or -> BottomSecondary, paste those lines here: they are not explained yet.
 
 *What this is:* OB-228, replacing MT-335.  The planner now walks the tail a moved train will leave with the runtime's own code, and searches again from the start when its first pass boxes itself in.  `core.testReturnHomeKeepsClearOfTheTailsItLeaves`, seen red first; commit `c0fe696e`.
+
+#### Comments
+
+---
+
+<a id="mt-441"></a>
+
+### MT-441 - 2026-09-15 - 75 407 DB is offered RampDown and BottomSecondary from Tunnel, the long way round
+
+**Disposition:** fixed unvalidated
+**From:** OB-229
+
+**Written:** 2026-09-15
+
+From the agreement check in your MT-335 log: *"planner allows 75 407 DB -> BottomSecondary, but the layout would refuse it"*, and RampDown.  The planner was right; the railway's route search missed the loop over the top level.  You chose to have it **search past termini**.
+
+**Steps**
+
+1. Stand 75 407 DB at **Tunnel**, with BottomMainA or BottomMainB, the ramp and TopMainR1 clear.
+2. Right-click it: look for **RampDown** and **BottomSecondary**.
+3. Send it to **BottomSecondary**, and watch the route it takes.
+4. With debug logging on, press **Return Home** and read the agreement check line.
+
+**Expected**
+
+- Step 2: both offered.  Before this neither was, though the route was clear.
+- Step 3: it runs the long way - BottomMainA or B, BottomMainPost, up the ramp, TopMainR1, TopMainPost, down RampDown - never through TopMainR0Park or a parking track.
+- Step 4: no *"planner allows 75 407 DB -> ..."* lines for RampDown or BottomSecondary.
+
+*What this is:* OB-229.  `core.testARouteIsFoundPastATerminus`, seen red first (`4b519e71`); fixed in `badb0a2c`.
 
 #### Comments
 
