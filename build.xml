@@ -444,6 +444,7 @@
         <test-one-class class="testManualOnlyPathsAreADifferentColour"/>
         <test-one-class class="testUiStateIsNotLostWhenUnreadable"/>
         <test-one-class class="testWhyStuck"/>
+        <test-one-class class="testARouteIsFoundPastATerminus"/>
         <test-one-class class="testACompulsoryTurnIsNotAQuestion"/>
         <test-one-class class="testADirectionChangeIsNotSwallowed"/>
         <test-one-class class="testAPastedTrainKeepsItsDirection"/>
