@@ -4671,7 +4671,50 @@ public class AutonomyEditorPanel extends JPanel
      */
     public void promptHomeFor(TileKey tile)
     {
-        if (tile != null) promptHome(tile);
+        if (tile == null || session == null || session.getGraph() == null) return;
+
+        // A GESTURE IN PROGRESS IS PUT DOWN FIRST, as the right-click menu does (MFW-C1).
+        cancelPendingGesture();
+
+        // AND ONLY WHERE THE MENU OFFERS A HOME (MFW-B1).  The key asked nothing, so on plain track, a switch or a page
+        // left out of autonomy it wrote a home onto a square that is not a station - and took the locomotive's home
+        // off the platform it had.  `offersAHome` is the menu's own question.
+        if (!offersAHome(tile))
+        {
+            say(hint, isIgnored(tile) ? I18n.t("autosetup.ui.infoTileIgnored")
+                : I18n.t("autosetup.ui.infoNotAStationHere"));
+
+            return;
+        }
+
+        promptHome(leaderOf(tile));
+    }
+
+    /**
+     * Whether the right-click menu offers to set a home on this square (MFW-B1).
+     *
+     * The menu's questions, in its order: a text or blank square gets `buildTextMenu`, which offers no home; an
+     * ignored square gets only the bulk tools; and otherwise the menu acts on the run's leader and offers the home item
+     * only where that is a Point the reducer knows and a station.  Public so a test can put the key and the menu side by
+     * side - `regression.testControlNAsksTheMenusQuestion` - because Control+H itself opens a modal dialog.
+     *
+     * @param tile the square
+     * @return whether the menu offers the item
+     */
+    public boolean offersAHome(TileKey tile)
+    {
+        if (tile == null || session == null || session.getGraph() == null) return false;
+
+        LayoutDiagramComponent onPage = componentAt(tile);
+
+        if (pageOf(tile) != null && (onPage == null || onPage.isText())) return false;
+
+        if (isIgnored(tile)) return false;
+
+        TileKey target = leaderOf(tile);
+
+        return session.getReducer() != null && session.getReducer().getPoints().containsKey(target)
+            && session.getStore().isStation(target);
     }
 
     private void promptHome(TileKey tile)
@@ -5528,6 +5571,9 @@ public class AutonomyEditorPanel extends JPanel
      */
     public void promptMaxTrainLengthFor(TileKey tile)
     {
+        // A GESTURE IN PROGRESS IS PUT DOWN FIRST, as the right-click menu does (MFW-C1).
+        cancelPendingGesture();
+
         if (!offersAMaximumTrainLength(tile))
         {
             if (tile != null && session != null && session.getGraph() != null)
