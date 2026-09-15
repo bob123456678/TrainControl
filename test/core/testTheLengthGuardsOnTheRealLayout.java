@@ -1071,8 +1071,9 @@ public class testTheLengthGuardsOnTheRealLayout
      * Not from what the railway offers, because what it offers is the thing under test - asking it for the
      * route would make the claim conditional on the refusal not happening.  **And, since OB-229, not from
      * `Layout.bfs` either**: that search no longer extends a route through a terminus that is not its end
-     * (Adam, 2026-09-15: *"Search past termini"*), because `isPathClear` refuses every such route.  The only
-     * track from where 75 407 DB stands to TunnelLongPark passes one - which is the reason other than length
+     * (Adam, 2026-09-15: *"Search past termini"*), because `isPathClear` refuses every such route.  The shortest
+     * track route from where 75 407 DB stands to TunnelLongPark passes one - the precondition says so, of that route -
+     * which is the reason other than length
      * `testTunnelLongParkIsRefusedForReasonsOtherThanLength` pins - so `bfs` now finds nothing there, and the
      * room rule, which is a rule about a list of edges, is asked of the track by `aRouteOverTheTrackAlone`.
      *
@@ -1119,7 +1120,8 @@ public class testTheLengthGuardsOnTheRealLayout
     }
 
     /**
-     * The shortest route over the track, through anything - `Layout.bfs` as it was before OB-229, with no exclusions.
+     * The shortest route over the track, through anything - `Layout.bfs` as it was before OB-229, with no exclusions and
+     * without its check that the end is a destination (every caller here names a station).
      *
      * @param built the running layout
      * @param start where from

@@ -97,8 +97,24 @@ public class testARouteIsFoundPastATerminus
         assertFalse(ends(layout.getPossiblePaths(loc, true)).contains("RU9_E"),
             "RU9_E is offered where the only route runs through the terminus RU9_T - a route the railway refuses");
 
-        assertNotNull(layout.explainDestinations(loc).get("RU9_E"),
-            "Why Not Moving? has no reason against RU9_E, whose only route runs through a terminus");
+        String why = layout.explainDestinations(loc).get("RU9_E");
+
+        // AND IT SAYS WHY (PTR-B1).  The track does connect, through the terminus, so "No track route leads there" would
+        // send the operator looking for rails that are there.  The reason is the route check's own sentence.
+        assertEquals(why, org.traincontrol.util.I18n.t("autolayout.errorIntermediateTerminusStation"),
+            "Why Not Moving? says '" + why + "' of RU9_E, whose only route runs through the terminus RU9_T - the track"
+            + " connects, so the reason is the terminus in the way, not missing track (PTR-B1)");
+
+        // AND A STATION NO TRACK REACHES STILL SAYS SO: the question put to the track through termini must not turn
+        // every missing route into a terminus.
+        MarklinFeedback sensor = model.newFeedback(3235, null);
+
+        model.setFeedbackState(sensor.getName(), false);
+
+        layout.createPoint("RU9_Z", true, sensor.getName());
+
+        assertEquals(layout.explainDestinations(loc).get("RU9_Z"), org.traincontrol.util.I18n.t("autolayout.why.noRoute"),
+            "RU9_Z is joined to nothing, and Why Not Moving? does not say no track route leads there");
     }
 
     /**

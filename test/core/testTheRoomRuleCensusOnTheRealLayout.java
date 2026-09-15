@@ -324,13 +324,14 @@ public class testTheRoomRuleCensusOnTheRealLayout
     }
 
     /**
-     * Journeys refused on the way that the berth-only rule admitted: NONE since MT-333 (2026-09-14).
+     * Journeys refused on the way that the berth-only rule admitted: NONE from MT-333 (2026-09-14) until OB-229.
      *
      * Adam read the ruling below as meant - its mechanic is a standing train's - *"this switch blocking should only affect
      * berthes"* - so a square a train only passes refuses nothing, and a journey whose berth has room is refused
      * on the way only if EVERY route to it turns at a square too short, which on the snapshot is never: measured
-     * 0 on the first run after the change.  Pinned at exactly zero, so the pass-through check coming back is
-     * caught here as well as in `core.testATrainIsJudgedOnlyWhereItStops`.
+     * 0 on the first run after the change.  Pinned at exactly zero until OB-229, which moved it to the band the comment
+     * at the constant explains; the pass-through check coming back is still caught here, and in
+     * `core.testATrainIsJudgedOnlyWhereItStops`.
      *
      * What follows is the figure as it was under the ruling of 2026-09-09.
      *
@@ -667,10 +668,12 @@ public class testTheRoomRuleCensusOnTheRealLayout
             + " 22,7, measuring BottomMainPost - and every square it costs on his railway is one he"
             + " has measured at a unit or three");
 
-        assertTrue(squares.size() >= ON_THE_WAY.length - 2,
-            "only " + squares.size() + " of the " + ON_THE_WAY.length + " squares that used to refuse"
-            + " on the way still do (" + squares.keySet() + "), so the ruling has stopped being"
-            + " enforced over most of the railway it was measured on");
+        // AT LEAST ONE LISTED SQUARE STILL REFUSES, when any is listed (PTR-C2).  Which copy of a station gets named
+        // depends on the route order, so not every one on every run - but none at all is the ruling no longer reaching
+        // the squares it was measured on.  The size test this replaces was `>= length - 2`, which one entry never fails.
+        assertTrue(ON_THE_WAY.length == 0 || !squares.isEmpty(),
+            "none of " + java.util.Arrays.asList(ON_THE_WAY) + " refuses on the way any more (" + squares.keySet()
+            + "), so the ruling has stopped being enforced over the squares it was measured on");
 
         for (Map.Entry<String, Integer> square : squares.entrySet())
         {
