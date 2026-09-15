@@ -149,6 +149,17 @@ public class testOneChangeSticks
 
         if (recorded == null) recorded = sides.get(0);
 
+        // A TRAIN STANDING THERE, which is the only state a side is ever written in (TLR-A2, 2026-09-15).
+        //
+        // The arrival writes it for the train that arrived, and the three operator doors for the train they just
+        // placed; the menu offers it only where a train stands.  Since TLR-A2 the capture reads a side from the copy
+        // carrying the train, so a side left on an empty square - which this set before it placed nothing - is dropped
+        // like the departed train's tail it is (RGD-B1).  What this claim is about is unchanged: a side written for a
+        // standing train survives the save, the build, the capture and the reload.
+        String standing = model.getLocList().get(0);
+
+        session.placeLocomotive(station, standing);
+
         session.setArrivedFrom(station, recorded);
 
         roundTrip();

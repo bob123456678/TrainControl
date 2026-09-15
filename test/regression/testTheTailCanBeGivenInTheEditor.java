@@ -48,7 +48,7 @@ public class testTheTailCanBeGivenInTheEditor
     private static TrainControlUI ui;
     private static AutonomySession session;
 
-    /** Long enough that on a railway measured at one unit a square the tail reaches past has two roads back. */
+    /** Long enough that on a railway measured at one unit the tail crosses a sensor past a junction. */
     private static final int LONG = 12;
 
     @BeforeClass
@@ -354,10 +354,10 @@ public class testTheTailCanBeGivenInTheEditor
     }
 
     /**
-     * Answering Not Known at a paste forgets a road the square held before (TLR-C5).
+     * Answering Not Known forgets a road the train held before (TLR-C5, TLV-C2).
      *
-     * The doors wrote a road only when one was chosen, and pasting the same train back on the same square is not a
-     * change of occupant - so the old road stayed in the setup and was put back on the next rebuild.
+     * Pasted back onto the square it stands on, the train is not a change of occupant, so nothing else clears the road.
+     * The question is put and answered Not Known, and the road goes from both stores.
      */
     @Test
     public void testNotKnownOnAPasteForgetsAnOldRoad() throws Exception
@@ -366,20 +366,73 @@ public class testTheTailCanBeGivenInTheEditor
 
         try
         {
-            TailCrossedPrompt.Choice farthest = f.choices().get(f.choices().size() - 1);
+            TailCrossedPrompt.Choice farthest = f.recordARoadByPasting();
 
-            f.paste(farthest.getFarthest().getName());
+            f.pasteInPlace(TailCrossedPrompt.NOT_KNOWN);
+
+            assertNull(session.getArrivedAlong(f.tile), "Not Known was answered and the setup still holds the road "
+                + farthest.getLabel() + " - the next rebuild follows it");
+
+            assertNull(f.standing().getArrivedAlong(), "Not Known was answered and the train on the running railway still"
+                + " follows the road " + farthest.getLabel());
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
+    /**
+     * A paste that puts no question keeps the road the train has (TLV-A1).
+     *
+     * The doors wrote "no road" whenever nothing was chosen, and nothing is chosen where nothing is asked - so pasting a
+     * train back where it stands, or pressing OK in its locomotive dialog, erased the road autonomy drove it in on, and
+     * the tracks behind it opened again.
+     */
+    @Test
+    public void testAPasteThatAsksNothingKeepsTheRoad() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            TailCrossedPrompt.Choice farthest = f.recordARoadByPasting();
+
+            f.train.setTrainLength(1);
+
+            assertFalse(TailCrossedPrompt.wouldAsk(model.getAutoLayout(), f.standing(), f.standing().getArrivedFrom(), 1),
+                "precondition: a one-unit train is still asked");
+
+            f.pasteInPlace(TailCrossedPrompt.NOT_KNOWN);
 
             assertEquals(session.getArrivedAlong(f.tile), Layout.namesOfRoad(farthest.getRoad()),
-                "precondition: the first paste did not keep the road answered");
+                "the train was pasted back where it stands, nothing was asked, and the setup lost its road");
 
-            f.paste(TailCrossedPrompt.NOT_KNOWN);
+            assertNotNull(f.standing().getArrivedAlong(), "the train was pasted back where it stands, nothing was asked,"
+                + " and the train on the running railway lost its road");
+        }
+        finally
+        {
+            f.close();
+        }
+    }
 
-            assertNull(session.getArrivedAlong(f.tile), "the train was pasted back and Not Known answered, and the setup"
-                + " still holds the road from the paste before - the next rebuild follows it");
+    /**
+     * Closing the question without an answer keeps the road the train has (TLV-A1).
+     */
+    @Test
+    public void testDismissingTheQuestionKeepsTheRoad() throws Exception
+    {
+        Fixture f = Fixture.open();
 
-            assertNull(f.standing().getArrivedAlong(), "Not Known was answered, and the train on the running railway still"
-                + " follows a road");
+        try
+        {
+            TailCrossedPrompt.Choice farthest = f.recordARoadByPasting();
+
+            f.pasteInPlace(TailCrossedPrompt.DISMISSED);
+
+            assertEquals(session.getArrivedAlong(f.tile), Layout.namesOfRoad(farthest.getRoad()),
+                "the question was closed without an answer, and the setup lost the road the train had");
         }
         finally
         {
@@ -532,6 +585,80 @@ public class testTheTailCanBeGivenInTheEditor
                 org.traincontrol.gui.ArrivalSidePrompt.answerForTests(null);
                 org.traincontrol.gui.FacingPrompt.answerForTests(null);
             }
+        }
+
+        /**
+         * Pastes the train back onto the square it stands on - no change of occupant - the tail question answered.
+         *
+         * @param answer the farthest sensor's point name, `TailCrossedPrompt.NOT_KNOWN` or `TailCrossedPrompt.DISMISSED`
+         */
+        void pasteInPlace(String answer) throws Exception
+        {
+            final Point before = standing();
+
+            assertNotNull(before, "precondition: the train is not standing anywhere");
+
+            final String side = before.getArrivedFrom();
+            final org.traincontrol.automationui.TilePorts.Side heading =
+                session.facingOf(train.getName(), model.getAutoLayout());
+
+            org.traincontrol.gui.ArrivalSidePrompt.answerForTests(side);
+            org.traincontrol.gui.FacingPrompt.answerForTests(heading);
+            TailCrossedPrompt.answerForTests(answer);
+
+            try
+            {
+                final java.lang.reflect.Field cut = TrainControlUI.class.getDeclaredField("cutLocomotive");
+                cut.setAccessible(true);
+
+                final java.lang.reflect.Method gesture = TrainControlUI.class.getDeclaredMethod(
+                    "locomotiveGestureOnDiagram", int.class, boolean.class);
+                gesture.setAccessible(true);
+
+                final Object[] handled = new Object[1];
+
+                SwingUtilities.invokeAndWait(() ->
+                {
+                    try
+                    {
+                        cut.set(ui, train);
+                        ui.setHoveredDiagramTile(tile.getPage(), tile.getX(), tile.getY());
+                        handled[0] = gesture.invoke(ui, java.awt.event.KeyEvent.VK_V, true);
+                    }
+                    catch (Exception refused)
+                    {
+                        handled[0] = refused;
+                    }
+                });
+
+                settle();
+
+                assertEquals(handled[0], Boolean.TRUE, "the diagram's paste door did not take Control+V: " + handled[0]);
+                assertNotNull(standing(), "precondition: the paste put the train nowhere");
+            }
+            finally
+            {
+                TailCrossedPrompt.answerForTests(null);
+                org.traincontrol.gui.ArrivalSidePrompt.answerForTests(null);
+                org.traincontrol.gui.FacingPrompt.answerForTests(null);
+            }
+        }
+
+        /**
+         * Records the farthest sensor's road by pasting the train back in place and answering with it.
+         *
+         * @return the choice recorded
+         */
+        TailCrossedPrompt.Choice recordARoadByPasting() throws Exception
+        {
+            TailCrossedPrompt.Choice farthest = choices().get(choices().size() - 1);
+
+            pasteInPlace(farthest.getFarthest().getName());
+
+            assertEquals(session.getArrivedAlong(tile), Layout.namesOfRoad(farthest.getRoad()),
+                "precondition: pasting the train back in place and answering " + farthest.getLabel() + " did not record its road");
+
+            return farthest;
         }
 
         /** The running Point the train stands on now - rebuilds replace it. */

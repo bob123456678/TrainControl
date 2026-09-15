@@ -22334,8 +22334,8 @@ Your idea on WK7-B1: *"why not ask the user to specify the last sensor it crosse
 
 - Step 2: B and C refused, naming 75 407 DB - as MT-432 had it.
 - Step 3: still refused both times.  Before this, closing the editor or restarting forgot the road it came in on, and B and C were offered.
-- Step 4: under **Farthest sensor the tail crossed**, the sensors its tail can have passed and **Not known** - shown only where its tail can reach two roads back from a junction; if the section is not there, the train is not long enough on your measurements for the answer to matter.
-- Step 5: after the side question (if any), a list asks for the farthest sensor the tail crossed - again only where the answer matters.  Choosing one draws the orange back along that road; **Not known** stops it at the junction, as before.
+- Step 4: under **Farthest sensor the tail crossed**, the sensors its tail can have passed and **Not known** - shown only where a junction behind the train has two roads back and its tail has crossed a sensor on at least one of them; if the section is not there, the train is not long enough on your measurements for the answer to matter.
+- Step 5: after the side question (if any), a list asks for the farthest sensor the tail crossed - again only where the answer matters.  Choosing one draws the orange back along that road; **Not known** stops it at the junction, as before.  Closing the list without answering, or pasting a train back where it stands when nothing is asked, keeps the road it already had.
 - Step 6: the sensors are outlined; the square that is not outlined says so and keeps waiting; the outlined one records it.  Escape cancels.
 
 *What this is:* FR-085, closing WK7-B1, and replacing MT-432.  `core.testATailRouteIsKept`, `core.testTheTailCrossedQuestion`, `regression.testTheTailCanBeGivenInTheEditor`, and the two rebuild and restart claims in `regression.testAPassingTrainMayStandAcrossThePoints`, each seen red first.

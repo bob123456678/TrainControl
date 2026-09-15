@@ -868,8 +868,10 @@ places, or no length, both halves fall back to the answer 5a already gives.
     the tail of the train recently crossed.  Also, ideally in the autonomy editor, it should allow the user to
     click to select as well."*). The whole train lies between the farthest sensor its tail has crossed and the
     square it stands on, so that sensor names the road. The question is put - when a train is pasted, placed
-    from the right-click menu, or set in the locomotive dialog - only where the tail can have crossed sensors
-    on two different roads back from one junction; elsewhere every answer describes the same track. The list
+    from the right-click menu, or set in the locomotive dialog - only where a junction behind the train has two
+    roads back and its tail has crossed a sensor on at least one of them (two copies of one square are one road);
+    elsewhere every answer describes the same track. Not asked, or closed without an answer, the road a train
+    already has is kept; **Not known** forgets it. The list
     offers each such sensor, nearest first, and **Not known**, which keeps the fork rule. The same list is in
     the right-click menu under **Farthest sensor the tail crossed**, and in the autonomy editor **Pick on the
     diagram...** outlines the sensors to click instead. Which sensors are offered is worked out from the

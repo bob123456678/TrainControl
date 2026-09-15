@@ -250,18 +250,26 @@ public class GraphLocAssign extends javax.swing.JPanel
             // live Point while the setup is the half that survives a restart.
             String tail = edit.getArrivedFrom();
 
+            // WHAT THE SETUP HAD, before this door writes a side (TLV-A1).
+            String sideWas = session.getArrivedFrom(tile);
+
             session.setArrivedFrom(tile, tail);
 
             point.setArrivedFrom(tail);
 
             // AND HOW FAR BACK ITS TAIL REACHES, asked after this dialog rather than on top of it (Adam, 2026-09-14).
-            java.util.List<org.traincontrol.automation.Edge> road = TailCrossedPrompt.askAfterPlacement(layout, point, tail,
-                point.getCurrentLocomotive().getTrainLength(), point.getCurrentLocomotive().getName(), edit,
+            // OWNED BY THE MAIN WINDOW (TLV-C3): the dialog's own panel has gone with the dialog.
+            TailCrossedPrompt.Answer answer = TailCrossedPrompt.askAfterPlacement(layout, point, tail,
+                point.getCurrentLocomotive().getTrainLength(), point.getCurrentLocomotive().getName(), edit.parent,
                 session::baseNameOf);
 
-            // WRITTEN EITHER WAY (TLR-C5), as the paste does.
-            session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(road));
-            point.setArrivedAlong(road);
+            // WRITTEN WHEN IT SAYS SOMETHING (TLV-A1), as the paste does: OK pressed on a train's own dialog, with
+            // nothing asked, keeps the road autonomy drove it in on.
+            if (answer.replacesTheRoad(sideWas, tail))
+            {
+                session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(answer.getRoad()));
+                point.setArrivedAlong(answer.getRoad());
+            }
         }
 
         // AND WRITTEN TO DISK (VAL9-B1).  The two writes above change the setup in memory only, and

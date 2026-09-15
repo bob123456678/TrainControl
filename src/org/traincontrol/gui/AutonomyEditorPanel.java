@@ -3541,8 +3541,8 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * The "farthest sensor the tail crossed" choices for the train standing here, where the answer matters.
      *
-     * Nothing is added unless `TailCrossedPrompt.wouldAsk` says the tail can have crossed sensors on two roads back
-     * from one junction: elsewhere every answer describes the same track.  The ticked entry is the recorded road -
+     * Nothing is added unless `TailCrossedPrompt.wouldAsk` says a junction behind the train has two roads back and the
+     * tail has crossed a sensor on at least one of them: elsewhere every answer describes the same track.  The ticked entry is the recorded road -
      * the running layout's, since that is what blocks track - matched as the longest choice it ends with, because a
      * driven train's road starts wherever it set off.
      *

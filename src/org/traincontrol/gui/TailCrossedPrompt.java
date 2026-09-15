@@ -29,10 +29,11 @@ import org.traincontrol.util.I18n;
  *
  * **Asked only when the answer changes something.**  The side it came in by (`ArrivalSidePrompt`) already picks the
  * first road back; past that the walk follows the only road there is until it reaches a junction.  So the question
- * is put only where the train is long enough for its tail to have crossed sensors on TWO different roads back from
- * one junction - otherwise every answer describes the same track.  A junction the tail reaches but crosses no sensor
- * beyond is not asked about either: the answer would be the junction itself on every road, and could not say which
- * one the tail lies on, so the walk stops there as it always has.
+ * is put only where a junction behind the train has two roads back and its tail has crossed a sensor on at least one
+ * of them (TLR-B1) - that sensor and Not Known then describe different track; elsewhere every answer describes the
+ * same track.  A junction the tail reaches but crosses no sensor beyond is not asked about: the answer would be the
+ * junction itself on every road, and could not say which one the tail lies on, so the walk stops there as it always
+ * has.  Two copies of one square are one road (TLR-B2).
  *
  * **How far back a sensor may be offered is a suggestion, not the blocking rule.**  Each road back is spent against
  * the train's length using the measured lengths of its edges, and a sensor is offered while some of the train is
@@ -50,6 +51,9 @@ public class TailCrossedPrompt
 
     /** The answer that says nobody knows, for `answerForTests`. */
     public static final String NOT_KNOWN = "";
+
+    /** The question closed without an answer, for `answerForTests` (TLV-A1). */
+    public static final String DISMISSED = "(dismissed)";
 
     /** How many sensors back a road is followed at most, so a loop in a hand-written layout cannot run away. */
     private static final int MOST_SENSORS_BACK = 30;
@@ -126,8 +130,8 @@ public class TailCrossedPrompt
     /**
      * Whether the answer would change which track is blocked, so a placement should ask.
      *
-     * The same walk as `choicesFor`, one place: true exactly where it finds a junction the tail has crossed sensors
-     * beyond on two different roads.
+     * The same walk as `choicesFor`, one place: true exactly where it finds a junction with two roads back and a sensor
+     * the tail has crossed on at least one of them.
      *
      * @param layout the running layout
      * @param at the point the train stands on
@@ -162,16 +166,16 @@ public class TailCrossedPrompt
      * @param shown what to call a point on screen, or null for its own name
      * @return the road, or null when nothing was asked or the operator did not know
      */
-    public static List<Edge> askAfterPlacement(Layout layout, Point at, String arrivedFrom, Integer trainLength,
+    public static Answer askAfterPlacement(Layout layout, Point at, String arrivedFrom, Integer trainLength,
         String train, Component parent, Function<String, String> shown)
     {
-        if (!wouldAsk(layout, at, arrivedFrom, trainLength)) return null;
+        if (!wouldAsk(layout, at, arrivedFrom, trainLength)) return Answer.NOT_ASKED;
 
         List<Choice> choices = choicesFor(layout, at, arrivedFrom, trainLength, shown);
 
-        Choice chosen = ask(parent, train, shownName(shown, at), choices);
+        Reply reply = reply(parent, train, shownName(shown, at), choices);
 
-        return chosen == null ? null : chosen.getRoad();
+        return reply.answered ? new Answer(true, reply.choice == null ? null : reply.choice.getRoad()) : Answer.NOT_ASKED;
     }
 
     /**
@@ -189,19 +193,94 @@ public class TailCrossedPrompt
      */
     public static Choice ask(Component parent, String train, String station, List<Choice> choices)
     {
-        if (choices == null || choices.isEmpty()) return null;
+        return reply(parent, train, station, choices).choice;
+    }
+
+    /**
+     * What a placement's question came to (TLV-A1).
+     *
+     * Two things a bare road could not say apart: "Not known" is an answer and forgets a road; no question - or one
+     * closed without an answer - says nothing, and must leave whatever road the train has.
+     */
+    public static final class Answer
+    {
+        /** Nothing was asked, or nothing was answered. */
+        public static final Answer NOT_ASKED = new Answer(false, null);
+
+        private final boolean answered;
+        private final List<Edge> road;
+
+        private Answer(boolean answered, List<Edge> road)
+        {
+            this.answered = answered;
+            this.road = road;
+        }
+
+        /** @return whether the operator answered - a sensor, or Not Known */
+        public boolean wasAnswered()
+        {
+            return answered;
+        }
+
+        /** @return the road answered, or null for Not Known or no answer */
+        public List<Edge> getRoad()
+        {
+            return road;
+        }
+
+        /**
+         * Whether a door should write `getRoad` over the road the train has.
+         *
+         * When the question was answered; or when the side the road follows from has just changed, because a road
+         * describes one side.  Not otherwise: re-placing a train where it stands, or pressing OK in its locomotive
+         * dialog, is not a change of occupant, and writing "no road" there erased the road autonomy drove it in on.
+         *
+         * @param sideWas the side the setup had before the door wrote one
+         * @param sideNow the side the door just wrote
+         * @return whether to write
+         */
+        public boolean replacesTheRoad(String sideWas, String sideNow)
+        {
+            if (answered) return true;
+
+            return sideWas == null ? sideNow != null : !sideWas.equalsIgnoreCase(sideNow);
+        }
+    }
+
+    /** A choice, and whether it was answered at all. */
+    private static final class Reply
+    {
+        private final boolean answered;
+        private final Choice choice;
+
+        private Reply(boolean answered, Choice choice)
+        {
+            this.answered = answered;
+            this.choice = choice;
+        }
+    }
+
+    /**
+     * The dialog, telling Not Known (an answer) from a closed dialog (none).
+     */
+    private static Reply reply(Component parent, String train, String station, List<Choice> choices)
+    {
+        if (choices == null || choices.isEmpty()) return new Reply(false, null);
 
         if (answeredByATest != null)
         {
+            if (NOT_KNOWN.equals(answeredByATest)) return new Reply(true, null);
+
             for (Choice choice : choices)
             {
-                if (choice.getFarthest().getName().equals(answeredByATest)) return choice;
+                if (choice.getFarthest().getName().equals(answeredByATest)) return new Reply(true, choice);
             }
 
-            return null;
+            return new Reply(false, null);
         }
 
         final Choice[] answer = {null};
+        final boolean[] answered = {false};
 
         try
         {
@@ -223,6 +302,9 @@ public class TailCrossedPrompt
                 int chose = JOptionPane.showOptionDialog(parent, panel, I18n.t("autolayout.ui.askArrivalSideTitle"),
                     JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 
+                // OK with a sensor chosen is that sensor; OK with none, or Not Known, is Not Known.  Closed is no answer.
+                if (chose == 0 || chose == 1) answered[0] = true;
+
                 if (chose == 0 && list.getSelectedIndex() >= 0) answer[0] = choices.get(list.getSelectedIndex());
             };
 
@@ -231,10 +313,10 @@ public class TailCrossedPrompt
         }
         catch (Exception cannotAsk)
         {
-            // Nothing, and Not Known stands: an unanswered question narrows the walk and blocks no extra track.
+            // Nothing, and no answer stands: the road the train has, if any, is left as it was.
         }
 
-        return answer[0];
+        return new Reply(answered[0], answer[0]);
     }
 
     /**
@@ -305,7 +387,7 @@ public class TailCrossedPrompt
 
     /**
      * Follows every road back from the standing square, spending the train's length, collecting the sensors its tail
-     * has crossed and counting the junctions where it crossed sensors on more than one road.
+     * has crossed and counting the junctions with two roads back where it crossed a sensor on at least one.
      */
     private static void walk(Layout layout, Point at, String arrivedFrom, Integer trainLength, List<Choice> into,
         int[] forks)
@@ -424,21 +506,56 @@ public class TailCrossedPrompt
         {
             String name = shownName(shown, choice.getFarthest());
 
-            if (count.get(name) > 1 && choice.getRoad().size() > 1)
-            {
-                // The next sensor towards the train says which road it is: the far end of the road's first rail
-                // (TLR-C3).  That rail may be laid either way, so it is the end that is NOT the sensor itself.
-                Edge first = choice.getRoad().get(0);
-                Point via = first.getStart() != null && first.getStart().isSamePlaceAs(choice.getFarthest())
-                    ? first.getEnd() : first.getStart();
+            // The next sensor towards the train says which road it is, usually (TLR-C3).
+            choice.label = count.get(name) > 1 && choice.getRoad().size() > 1
+                ? I18n.f("autolayout.ui.tailCrossedVia", name, viaNames(choice, shown, 1)) : name;
+        }
 
-                choice.label = I18n.f("autolayout.ui.tailCrossedVia", name, shownName(shown, via));
-            }
-            else
+        // AND WHERE THAT IS NOT ENOUGH, every sensor on the way (TLV-B3): two roads that part and meet again before the
+        // next sensor read the same by it.
+        Map<String, Integer> again = new LinkedHashMap<>();
+
+        for (Choice choice : choices) again.put(choice.label, again.getOrDefault(choice.label, 0) + 1);
+
+        for (Choice choice : choices)
+        {
+            if (again.get(choice.label) > 1 && choice.getRoad().size() > 1)
             {
-                choice.label = name;
+                choice.label = I18n.f("autolayout.ui.tailCrossedVia", shownName(shown, choice.getFarthest()),
+                    viaNames(choice, shown, Integer.MAX_VALUE));
             }
         }
+    }
+
+    /**
+     * The sensors between a choice and the train, nearest the choice first, as the operator reads them.
+     *
+     * @param choice the choice
+     * @param shown what to call a point on screen
+     * @param most how many to name
+     * @return the names, joined
+     */
+    private static String viaNames(Choice choice, Function<String, String> shown, int most)
+    {
+        List<String> names = new ArrayList<>();
+
+        Point previous = choice.getFarthest();
+
+        for (int i = 0; i + 1 < choice.getRoad().size() && names.size() < most; i++)
+        {
+            Edge rail = choice.getRoad().get(i);
+
+            // The end of this rail that is not where the walk along the road just was - rails may be laid either way.
+            Point next = rail.getStart() != null && rail.getStart().isSamePlaceAs(previous) ? rail.getEnd() : rail.getStart();
+
+            if (next == null) break;
+
+            names.add(shownName(shown, next));
+
+            previous = next;
+        }
+
+        return String.join(", ", names);
     }
 
     /**

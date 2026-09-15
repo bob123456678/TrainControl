@@ -6325,6 +6325,95 @@ public class Layout
     }
 
     /**
+     * Where a standing train's road says its tail goes from here (TLR-A1, TLV-B1).
+     *
+     * The road's edge ENDING at this square first: a road a train drove runs towards it, so that edge names where it
+     * came from - and when a road passes a square twice, the later arrival wins.  Only where no edge ends here, the edge
+     * STARTING here: a road the operator gave is made of the rails that exist, and on a one-way rail laid the other way
+     * the edge starts at the square.  Both by place, so a train turned onto the other lane's copy still follows the road
+     * it drove in on the first.
+     *
+     * @param road the train's road
+     * @param here the square the walk has reached
+     * @param walked the names walked so far
+     * @return the Point the tail goes back to, or null when the road says nothing here
+     */
+    private Point cameFromAlong(List<Edge> road, Point here, Set<String> walked)
+    {
+        if (road == null) return null;
+
+        Point cameFrom = null;
+
+        for (Edge driven : road)
+        {
+            if (driven.getStart() == null || driven.getEnd() == null) continue;
+
+            if (driven.getEnd().isSamePlaceAs(here) && !walkedAPlaceLike(driven.getStart(), walked))
+            {
+                cameFrom = driven.getStart();
+            }
+        }
+
+        if (cameFrom != null) return cameFrom;
+
+        for (Edge driven : road)
+        {
+            if (driven.getStart() == null || driven.getEnd() == null) continue;
+
+            if (driven.getStart().isSamePlaceAs(here) && !walkedAPlaceLike(driven.getEnd(), walked))
+            {
+                cameFrom = driven.getEnd();
+            }
+        }
+
+        return cameFrom;
+    }
+
+    /**
+     * The square a train's road goes back to from the platform, where that is one of the rails on its arrival side
+     * (TLV-B1) - so a fork right behind the platform is decided by the road, and a road that names nothing there
+     * leaves the side to decide as it always has.
+     *
+     * @param standing the Point the train stands on
+     * @param here the same Point - the walk's first hop
+     * @param back every edge touching it
+     * @param walked the names walked so far
+     * @return the square to go back to, or null for the side alone
+     */
+    private Point roadBackAtTheFirstHop(Point standing, Point here, List<Edge> back, Set<String> walked)
+    {
+        if (standing.getArrivedAlong() == null || standing.getArrivedFrom() == null || back == null) return null;
+
+        Point roadBack = cameFromAlong(standing.getArrivedAlong(), here, walked);
+
+        if (roadBack == null) return null;
+
+        for (Edge candidate : back)
+        {
+            Point other = candidate.getStart() == here ? candidate.getEnd() : candidate.getStart();
+
+            if (other == null || !other.isSamePlaceAs(roadBack)) continue;
+
+            String cameInBy = entrySideOf(candidate, here);
+
+            if (cameInBy != null && standing.getArrivedFrom().equalsIgnoreCase(cameInBy)) return roadBack;
+        }
+
+        return null;
+    }
+
+    /**
+     * One square, whatever copy of it this is: the block a split square's copies share, or the Point's own name.
+     *
+     * @param point a Point
+     * @return the key
+     */
+    private static String placeKey(Point point)
+    {
+        return point.getBlock() != null ? "block " + point.getBlock() : "point " + point.getName();
+    }
+
+    /**
      * Whether the walk has already been on this square, under any of its names (TLR-A1).
      *
      * `walked` holds Point names, and a split square is several Points - so a name test says a copy the walk never
@@ -6410,6 +6499,11 @@ public class Layout
                     // THE SIDE IT CAME IN BY, which is the whole point of recording it.  Only the
                     // first hop can be chosen this way; past that the train is somewhere it never
                     // stopped, and the deterministic rule below takes over.
+                    //
+                    // AND THE ROAD, where the train has one and more than one rail comes in on that side (TLV-B1): a
+                    // fork right behind the platform is asked about, and the side alone took whichever rail it met
+                    // first.
+                    Point roadBack = roadBackAtTheFirstHop(standingHere, here, back, walked);
                     for (Edge candidate : back)
                     {
                         Point other = candidate.getStart() == here
@@ -6421,6 +6515,8 @@ public class Layout
                         // value and this comparison have to come from the same place, and until
                         // 2026-09-08 they did not: this asked where the neighbour LIES and the
                         // doors offered the side the track comes in by, which differ on a curve.
+                        if (roadBack != null && !other.isSamePlaceAs(roadBack)) continue;
+
                         String cameInBy = entrySideOf(candidate, here);
 
                         if (cameInBy == null
@@ -6483,9 +6579,15 @@ public class Layout
                         // NOT THE WAY WE CAME.  Every point on a straight run has two neighbours -
                         // the one ahead and the one behind - so counting the one just walked makes
                         // every ordinary tile look like a fork and the tail never leaves the berth.
-                        if (walked.contains(other.getName())) continue;
+                        // BY PLACE (TLR-B3, TLV-B2): a split square's copies are one square, and the walk has been on
+                        // it if it has been on any of them.
+                        if (walkedAPlaceLike(other, walked)) continue;
 
-                        if (neighbours.add(other.getName())) segment = candidate;
+                        // COUNTED BY PLACE (TLR-B3, TLV-B2).  Adam's rule is to stop where the track SPLITS - "end
+                        // locking at the switch" - and a square's lane copy and turning copy are one piece of track
+                        // under two names, not a split.  Counted by name they stopped the tail at a junction whose only
+                        // road back led to such a square, and nothing could extend it.
+                        if (neighbours.add(placeKey(other))) segment = candidate;
                     }
 
                     // PAST A JUNCTION, THE ROAD IT CAME IN ON (Adam, MT-335, 2026-09-13).
@@ -6506,39 +6608,8 @@ public class Layout
                     // rule, unchanged.  A hand-placed train can be given one (behaviour.md 5c, FR-085).
                     if (neighbours.size() > 1 && standingHere.getArrivedAlong() != null)
                     {
-                        Point cameFrom = null;
-
-                        // THE EDGE THAT ENDS HERE, where the road has one.  A road a train drove runs towards it, so
-                        // that edge names where it came from.  Asked BY PLACE, both ends (TLR-A1): a turned train
-                        // stands on the other lane's copy of its square and the walk runs down that lane, while the
-                        // road still names the lane it drove in on - so a name test let the platform's own edge,
-                        // read from its far end, send the walk back the way it had come.
-                        for (Edge driven : standingHere.getArrivedAlong())
-                        {
-                            if (driven.getStart() == null || driven.getEnd() == null) continue;
-
-                            if (driven.getEnd().isSamePlaceAs(here) && !walkedAPlaceLike(driven.getStart(), walked))
-                            {
-                                cameFrom = driven.getStart();
-                            }
-                        }
-
-                        // AND ONLY THEN THE OTHER WAY ROUND (Adam, 2026-09-14).  A road the operator gave - the
-                        // farthest sensor the tail crossed - is made of the rails that exist, and on a one-way rail
-                        // laid the other way the edge STARTS here.  The tail lies across the rail whichever way
-                        // traffic runs on it.
-                        if (cameFrom == null)
-                        {
-                            for (Edge driven : standingHere.getArrivedAlong())
-                            {
-                                if (driven.getStart() == null || driven.getEnd() == null) continue;
-
-                                if (driven.getStart().isSamePlaceAs(here) && !walkedAPlaceLike(driven.getEnd(), walked))
-                                {
-                                    cameFrom = driven.getEnd();
-                                }
-                            }
-                        }
+                        // Where the road says it came from - see `cameFromAlong`, shared with the first hop (TLV-B1).
+                        Point cameFrom = cameFromAlong(standingHere.getArrivedAlong(), here, walked);
 
                         if (cameFrom != null)
                         {
@@ -6552,7 +6623,7 @@ public class Layout
                                     segment = candidate;
 
                                     neighbours.clear();
-                                    neighbours.add(other.getName());
+                                    neighbours.add(placeKey(other));
 
                                     break;
                                 }

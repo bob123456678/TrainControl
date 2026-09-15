@@ -1207,22 +1207,28 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             // become blocked.  After `placeLocomotive`, because a change of occupant clears it.
             if (arriving)
             {
+                // WHAT THE SETUP HAD, before this door writes a side (TLV-A1).
+                String sideWas = session.getArrivedFrom(station);
+
                 session.setArrivedFrom(station, tail);
 
                 if (landing != null) landing.setArrivedFrom(tail);
 
                 // AND HOW FAR BACK ITS TAIL REACHES, asked where the answer matters (Adam, 2026-09-14).  After the
                 // move, because moving the train clears any road the square held.
-                java.util.List<org.traincontrol.automation.Edge> road =
+                org.traincontrol.gui.TailCrossedPrompt.Answer answer =
                     org.traincontrol.gui.TailCrossedPrompt.askAfterPlacement(running, landing, tail,
                         landing == null || landing.getCurrentLocomotive() == null
                             ? null : landing.getCurrentLocomotive().getTrainLength(),
                         locName, ui, session::baseNameOf);
 
-                // WRITTEN EITHER WAY (TLR-C5): Not Known, or no question, forgets a road the square held before.
-                session.setArrivedAlong(station, org.traincontrol.automation.Layout.namesOfRoad(road));
+                // WRITTEN WHEN IT SAYS SOMETHING (TLV-A1), as the paste does.
+                if (answer.replacesTheRoad(sideWas, tail))
+                {
+                    session.setArrivedAlong(station, org.traincontrol.automation.Layout.namesOfRoad(answer.getRoad()));
 
-                if (landing != null) landing.setArrivedAlong(road);
+                    if (landing != null) landing.setArrivedAlong(answer.getRoad());
+                }
             }
         }
 

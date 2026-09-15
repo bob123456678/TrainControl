@@ -7782,6 +7782,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // undo anything until the question moved earlier.
             String tail = tailAtTheLanding;
 
+            // WHAT THE SETUP HAD, before this door writes a side (TLV-A1): a road is rewritten only when the question
+            // was answered or the side it follows from changed.
+            String sideWas = session.getArrivedFrom(tile);
+
             session.setArrivedFrom(tile, tail);
 
             // AND THE RAILWAY, NOT ONLY THE SETUP (VAL8-A2, REG7-B1 - found by both reviewers).
@@ -7796,14 +7800,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             point.setArrivedFrom(tail);
 
             // AND HOW FAR BACK ITS TAIL REACHES, asked where the answer matters (Adam, 2026-09-14).
-            java.util.List<org.traincontrol.automation.Edge> road = org.traincontrol.gui.TailCrossedPrompt.askAfterPlacement(
+            org.traincontrol.gui.TailCrossedPrompt.Answer answer = org.traincontrol.gui.TailCrossedPrompt.askAfterPlacement(
                 this.model.getAutoLayout(), point, tail, point.getCurrentLocomotive().getTrainLength(),
                 point.getCurrentLocomotive().getName(), this, session::baseNameOf);
 
-            // WRITTEN EITHER WAY (TLR-C5): pasting the same train back on its square is not a change of occupant, so
-            // Not Known - or no question - has to forget the road it held before, or the next rebuild follows it.
-            session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(road));
-            point.setArrivedAlong(road);
+            // WRITTEN WHEN IT SAYS SOMETHING (TLR-C5, TLV-A1).  Pasting a train back where it stands is not a change of
+            // occupant, so Not Known has to forget the road it held - and no question, or a closed one, has to KEEP it,
+            // or re-placing a train autonomy drove erased the road that keeps the track behind it closed.
+            if (answer.replacesTheRoad(sideWas, tail))
+            {
+                session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(answer.getRoad()));
+                point.setArrivedAlong(answer.getRoad());
+            }
 
             // SPEC-A1: THE FOURTH ATTEMPT RECORDED THE LANDING COPY'S OWN SIDE, which is not the
             // train's heading.  `StationIndex.speakerAt` says that on an empty square "any copy will
