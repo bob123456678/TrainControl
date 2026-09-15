@@ -44,8 +44,13 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-440](#mt-440) | 2026-09-15 | Return Home does not route a train over the tail of one it has just parked | fixed unvalidated | OB-228 |
 | [MT-441](#mt-441) | 2026-09-15 | 75 407 DB is offered RampDown and BottomSecondary from Tunnel, the long way round | fixed unvalidated | OB-229 |
 | [MT-442](#mt-442) | 2026-09-15 | Why Not Moving? says a terminus is in the way, not that no track leads there | fixed unvalidated | PTR-B1 (OB-229) |
+| [MT-443](#mt-443) | 2026-09-15 | Making a square no longer a station takes Unavailable While Occupied with it | fixed unvalidated | AMS-B2 |
+| [MT-444](#mt-444) | 2026-09-15 | Why Not Moving? on Manual gives a reason for a station the right-click menu leaves out | fixed unvalidated | AMR-B2 (OB-225) |
+| [MT-445](#mt-445) | 2026-09-15 | Return Home turns a train that cannot reverse only on its way into its berth | fixed unvalidated | AMH-B1 |
+| [MT-446](#mt-446) | 2026-09-15 | After an edit declined at the start of a run, where the trains are is saved again | fixed unvalidated | AMS-B1 (MT-267) |
+| [MT-447](#mt-447) | 2026-09-15 | Unavailable While Occupied naming a station on an excluded page does not stop autonomy loading | fixed unvalidated | AMG-B1 |
 
-Everything else - 425 of 442 - needs nothing from you unless the area changes again:
+Everything else - 425 of 447 - needs nothing from you unless the area changes again:
 374 **fixed validated** and 51 **superseded**.
 
 ---
@@ -22620,6 +22625,147 @@ Found by the review of the OB-229 fix.  Since the route search stopped going thr
 - Step 3: a station no track reaches still says *"No track route leads there."*
 
 *What this is:* PTR-B1.  `core.testARouteIsFoundPastATerminus.testThroughTheTerminusAloneItIsStillRefused`, seen red first (`19a680f3`); fixed in `b4776f6b`.
+
+#### Comments
+
+---
+
+<a id="mt-443"></a>
+
+### MT-443 - 2026-09-15 - Making a square no longer a station takes Unavailable While Occupied with it
+
+**Disposition:** fixed unvalidated
+**From:** AMS-B2
+
+**Written:** 2026-09-15
+
+Found by the wide autonomy review.  A station can be set unavailable while another square is occupied.  Setting it to pass through left that restriction in force - every route through the square still waited on the other one - and the menu item that clears it is only offered on a station, so nothing could take it off.
+
+**Steps**
+
+1. In the autonomy editor, right-click a station and use **Unavailable While Occupied...** to tick another station.
+2. Right-click the first station again and, under **Station**, choose **No - Trains Can Only Pass Through**.
+3. Make it a station again and open **Unavailable While Occupied...**.
+
+**Expected**
+
+- Step 3: nothing is ticked - the restriction went when the square stopped being a station, as its caption and its barred arrivals already do.
+- Between steps 2 and 3, a train routed through that square is not held up by a train standing on the other one.
+
+*What this is:* AMS-B2.  `regression.testStationBlockedByAnotherPoint.testDemotingTheStationTakesTheRestrictionWithIt`.  Seen red first (8818d8cd); fixed in 64169b0b.
+
+#### Comments
+
+---
+
+<a id="mt-444"></a>
+
+### MT-444 - 2026-09-15 - Why Not Moving? on Manual gives a reason for a station the right-click menu leaves out
+
+**Disposition:** fixed unvalidated
+**From:** AMR-B2 (OB-225)
+
+**Written:** 2026-09-15
+
+Found by the wide autonomy review.  On **Manual**, Why Not Moving? answers for a train sent by hand (MT-439).  The right-click menu leaves two kinds of station out altogether - one that excludes the train, and a terminus autonomy may choose for a train that cannot reverse (OB-205) - and Why Not Moving? listed both as somewhere the train could go.
+
+**Steps**
+
+1. Exclude a train from a station it could otherwise reach (the station's excluded locomotives).
+2. In the autonomy editor set **Path Type** to **Manual**, choose **Why Not Moving?** and click that train.
+3. Do the same for a train that cannot reverse, standing where **BottomMainC** is reachable.
+
+**Expected**
+
+- Step 2: the excluded station is under *Stations the train cannot be sent to right now*, saying *"This station does not accept"* and the train's name.
+- Step 3: BottomMainC is under the same heading, saying *"Terminus disallowed because"* the train *"is not reversible"*.
+- Neither is listed where the train can go, and the right-click menu offers neither - the two agree.
+
+*What this is:* AMR-B2.  `core.testWhyStuck.testByHandAStationTheMenuDoesNotOfferSaysWhy`.  Seen red first (8818d8cd); fixed in 64169b0b.
+
+#### Comments
+
+---
+
+<a id="mt-445"></a>
+
+### MT-445 - 2026-09-15 - Return Home turns a train that cannot reverse only on its way into its berth
+
+**Disposition:** fixed unvalidated
+**From:** AMH-B1
+
+**Written:** 2026-09-15
+
+Found by the wide autonomy review, and your ruling on it: *"this should only be allowed if the train is going to reverse into its berth on the next turn."*  Return Home turns a train round at every terminus or reversing point one of its moves stops at.  The planner could stop a train that cannot reverse on one while it shuffled others, then drive it on somewhere else, the wrong way round.
+
+**Steps**
+
+1. Give a train that cannot reverse (EN57-947, say) a home, and arrange things so that Return Home has to move it out of another train's way - two trains standing on each other's homes is the simplest.
+2. Press **Return Home** and watch that train through the whole plan.
+
+**Expected**
+
+- If it stops that train at a terminus or a reversing point that is not its home, the train's very next move takes it home.
+- It never stops there and then sets off somewhere else.
+- Where no plan can keep to that, Return Home says it found no plan rather than running one that does.
+
+*What this is:* AMH-B1.  `core.testHomeStaging.testATrainThatCannotReverseIsTurnedOnTheWayOnlyToGoHome`.  Seen red first (8818d8cd); fixed in 64169b0b.
+
+#### Comments
+
+---
+
+<a id="mt-446"></a>
+
+### MT-446 - 2026-09-15 - After an edit declined at the start of a run, where the trains are is saved again
+
+**Disposition:** fixed unvalidated
+**From:** AMS-B1 (MT-267)
+
+**Written:** 2026-09-15
+
+Found by the wide autonomy review.  When a setup edit lands just as autonomy starts, it is saved but not applied (MT-267), and from then on nothing folded the running railway back into the setup - so as not to undo that edit.  It never stopped: after the run, every later gesture and the exit left the trains' positions unsaved, and the next start put each train back where it stood before the run.
+
+**Steps**
+
+1. Make MT-267's declined edit happen (an edit in the same instant as **Start**).  If you cannot hit it, say so - this test then has nothing to check.
+2. Let the run move some trains, and stop it.
+3. Make any ordinary setup edit - set a home, say.
+4. Quit TrainControl and start it again.
+
+**Expected**
+
+- Step 4: every train starts where it was standing when you quit, not where it stood before the run.
+- The edit from step 1 is there too.
+
+*What this is:* AMS-B1.  `regression.testCancelUndoesAutonomyEdits.testTheDeclinedEditGuardEndsWhenARebuildCarriesTheEdit`.  Seen red first (8818d8cd); fixed in 64169b0b.
+
+#### Comments
+
+---
+
+<a id="mt-447"></a>
+
+### MT-447 - 2026-09-15 - Unavailable While Occupied naming a station on an excluded page does not stop autonomy loading
+
+**Disposition:** fixed unvalidated
+**From:** AMG-B1
+
+**Written:** 2026-09-15
+
+Found by the wide autonomy review.  The **Unavailable While Occupied...** list offers every station in the setup, including those on a page left out of autonomy.  Ticking one wrote an empty name into the running railway's file, and loading it failed with *"configuration invalid, must reload"* - and the setup checks said nothing was wrong.
+
+**Steps**
+
+1. In the autonomy editor, right-click a station on an included page and use **Unavailable While Occupied...** to tick a station on an excluded page (**3 - Top Parking**, say).
+2. Load the configuration and start autonomy.
+
+**Expected**
+
+- It loads and runs.
+- The restriction simply does not apply while the other page is excluded - the same as a restriction on a square that has been deleted.
+
+*What this is:* AMG-B1.  `regression.testStationBlockedByAnotherPoint.testARestrictionWatchingASquareOffTheGraphIsLeftOut`.  Seen red first (8818d8cd); fixed in 64169b0b.
 
 #### Comments
 
