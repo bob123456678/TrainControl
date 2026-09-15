@@ -2742,15 +2742,25 @@ WK3-C3	2026-09-02-week-of-commits-review.md	Closed	`AutonomySession.java:3364`, 
 WK3-D1	2026-09-02-week-of-commits-review.md	Closed	`MarklinControlStation.java:552`
 WK7-B1	2026-09-14-WK7-seven-day-review.md	-	Held
 WK7-B1	2026-09-14-WKV-fix-validation.md	-	The reason overstated MT-432: its steps drive and look, and do not rebuild; its warning li
+WK7-B1	2026-09-14-WKW-fix-validation-round-two.md	-	The revised reason said MT-432 names opening the editor; it names closing it. **Corrected.
 WK7-C1	2026-09-14-WK7-seven-day-review.md	-	Fixed
 WK7-C1	2026-09-14-WKV-fix-validation.md	-	Test comments still gave the old "every square" reading: `testTheWashIsNoLongerThanTheTrai
+WK7-C1	2026-09-14-WKW-fix-validation-round-two.md	-	`testTheLengthGuardsOnTheRealLayout`'s note on start squares still gave the old reading; `
 WK7-C2	2026-09-14-WK7-seven-day-review.md	-	Fixed
 WK7-C2	2026-09-14-WKV-fix-validation.md	-	`testSwitchingToACentralStationLayout` still named the old class; the renamed class's java
+WK7-C2	2026-09-14-WKW-fix-validation-round-two.md	-	The text holds; the warning's promise has one exception, WKW-B1.
 WK7-C3	2026-09-14-WK7-seven-day-review.md	-	Fixed
 WK7-C3	2026-09-14-WKV-fix-validation.md	-	Confirmed fixed
 WKV-B1	2026-09-14-WKV-fix-validation.md	-	Fixed
+WKV-B1	2026-09-14-WKW-fix-validation-round-two.md	-	`page == null` is only the diagram's tile menus (`TrainControlUI.java`, the one `new Auton
 WKV-B2	2026-09-14-WKV-fix-validation.md	-	Fixed
+WKV-B2	2026-09-14-WKW-fix-validation-round-two.md	-	A moved train, a pending turn, a direction learned by the follower and a rename all surviv
 WKV-C1	2026-09-14-WKV-fix-validation.md	-	Held
+WKV-C1	2026-09-14-WKW-fix-validation-round-two.md	-	Cancel undoes a clear, not a placement, so MT-430's *"Placing ... is still not undone"* st
+WKW-B1	2026-09-14-WKW-fix-validation-round-two.md	-	Held
+WKW-B2	2026-09-14-WKW-fix-validation-round-two.md	-	Fixed
+WKW-C1	2026-09-14-WKW-fix-validation-round-two.md	-	Fixed
+WKW-C2	2026-09-14-WKW-fix-validation-round-two.md	-	Fixed
 WP-A1	2026-08-17-whole-project-review.md	Closed	**Fixed 2026-08-17**
 WP-A2	2026-08-17-whole-project-review.md	Closed	**Fixed 2026-08-17**
 WP-A3	2026-08-17-whole-project-review.md	Closed	Fixed (stated in the body)
