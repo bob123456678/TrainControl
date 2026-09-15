@@ -435,9 +435,11 @@ public class AutonomyBuilder
         {
             if (!edge.getEnd().equals(tile)) continue;
 
-            // A train that came through a link arrived by no side on the grid, so there is no copy for
-            // it to land on: splitting would strand it at the far end of the link.  Left whole instead,
-            // which costs this one tile the rule and keeps the route.
+            // An edge that arrives by no side of the grid has no copy to land on, so the tile is left whole,
+            // which costs this one tile the rule and keeps the route.  A walk produces one only where a
+            // portal's far end has been redrawn as a sensor, a setup `validatePortals` already refuses: a
+            // walk through a paired portal lands on its partner, which is never a Point, and goes on by a
+            // real side (AMG-C2 - this said a train arriving through a link has no side).
             if (edge.getEntrySide() == null) return Collections.emptyList();
 
             sides.add(edge.getEntrySide());
@@ -863,6 +865,13 @@ public class AutonomyBuilder
 
                     for (TileKey square : held)
                     {
+                        // NOT A SQUARE OFF THE GRAPH (AMG-B1).  A station on an excluded page, or a sensor whose
+                        // track was deleted, has no Point and no name here, and `nodeName` then wrote null - which
+                        // the railway's reader throws on, invalidating the whole configuration.  Left out instead,
+                        // which is what the lock-edge half below has always done: the restriction quietly stops
+                        // applying rather than taking the railway out of service.
+                        if (!reducer.getPoints().containsKey(square) || names.get(square) == null) continue;
+
                         List<Node> copies = nodesFor(square);
 
                         if (copies.isEmpty()) continue;
@@ -974,8 +983,8 @@ public class AutonomyBuilder
                 //
                 // Either the copy that exists to turn trains round, or - where the square was marked and
                 // nothing arrives at it by any side of the grid, so there was no facing to record and no
-                // copy to make - the single Point it became.  Without that second case a square reached
-                // only through a link emitted no flag at all and its trains would have run into the
+                // copy to make - the single Point it became.  Without that second case a square nothing
+                // arrives at by a side of the grid emitted no flag at all and its trains would have run into the
                 // buffers.
                 //
                 // MUST, not may, in that second case.  The flag means "every arriving train reverses",

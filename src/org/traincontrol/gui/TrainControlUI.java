@@ -581,10 +581,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * layout back over the configuration, removing what it does not carry.  This is what stops that
      * save from deleting the edit.
      *
-     * Never cleared: a rebuild that succeeds afterwards makes the layout current again, but working
-     * out whether it covered the same point is exactly the kind of bookkeeping that goes wrong
-     * quietly.  What it costs when it is stale is one session's train positions, which the next run
-     * re-establishes; what it saves is authored data.
+     * Cleared by a rebuild that replaces the running layout (AMS-B1).  This said "never cleared", on the
+     * worry that working out whether a rebuild covered the same point is bookkeeping that goes wrong
+     * quietly - but a rebuild covers every point: it builds the whole railway from the setup, edit
+     * included, and puts the trains back where they stand.  Never clearing it cost the rest of the
+     * session's train positions at every door, and the next start put each train back where it stood
+     * before the run.
      */
     private boolean setupEditDeclinedDuringRun;
 
@@ -3035,9 +3037,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // so opening the autonomy editor after the run folded the layout built before the edit over the
         // configuration and removed the edit before the exit could protect it.
         //
-        // The same trade as the exit: the flag is not cleared, so for the rest of the session no door folds
-        // the running layout back, and where the trains stand is carried across rebuilds by
-        // `putTheTrainsBack` rather than written - against authored data nothing else would bring back.
+        // The same trade as the exit: until a rebuild has carried the edit no door folds the running layout
+        // back, and where the trains stand is carried across rebuilds by `putTheTrainsBack` rather than
+        // written - against authored data nothing else would bring back.  The rebuild that replaces the
+        // running layout clears the flag, because from then on it carries the edit too (AMS-B1).
         if (setupEditDeclinedDuringRun) return;
 
         try
@@ -6210,7 +6213,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     if (back.getCurrentLocomotive() == null
                         || !was.getKey().equals(back.getCurrentLocomotive().getName()))
                     {
-                        built.moveLocomotive(was.getKey(), was.getValue()[0], false);
+                        // AND ONLY WHERE IT WENT (AMS-C2).  `moveLocomotive` refuses a square that is not a
+                        // destination - a station demoted with the train still on it - and says so in the log.
+                        // The side and road below were written onto the square regardless: a tail with no train,
+                        // read by the tail walk and by the next capture.
+                        if (!built.moveLocomotive(was.getKey(), was.getValue()[0], false)) continue;
                     }
 
                     // The arrival side goes back with the train: `Point.setLocomotive` clears it
@@ -6432,11 +6439,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // did is a fact, and the file is a record of it.
             java.util.Map<String, String> pendingTurns = takeThePendingTurns();
 
+            final Object runningBefore = this.model == null ? null : this.model.getAutoLayout();
+
             try
             {
                 getAutonomyViewerPanel().load(activeDiagramConfiguration, false, false);
 
                 putTheTrainsBack(standing, placementsJustEdited);
+
+                // AND A DECLINED EDIT HAS NOW BEEN CARRIED (AMS-B1).
+                //
+                // The guard exists because the running layout was built BEFORE the edit.  A rebuild that replaced
+                // it was built from the setup, edit included, with the trains put back where they stand - so the
+                // running layout is the newer of the two again, and every fold the guard was stopping would now
+                // keep the edit.  Left up, it stopped them for the rest of the session: the editor opened on the
+                // pre-run placements and the exit saved no positions, which is OB-183 kept alive by the guard.
+                //
+                // Only when the layout was REPLACED: `load` declines without rebuilding - a confirmation refused, a
+                // setup that will not build - and a declined load has carried nothing.
+                if (setupEditDeclinedDuringRun && this.model != null && this.model.hasAutoLayout()
+                    && this.model.getAutoLayout() != runningBefore && this.model.getAutoLayout().isValid())
+                {
+                    setupEditDeclinedDuringRun = false;
+                }
             }
             finally
             {

@@ -413,8 +413,9 @@ public class testReturnHomeSequencesAReversal
      * would be built on.
      *
      * MUTATION: putting `mustBackIn` back at `firstClearRoute`'s arrival test returns this to
-     * `NO_PLAN_FOUND`; dropping `|| from.isTerminus()` from `firstClearRoute`'s seed leaves it READY,
-     * which is why the seed has its own assertion below rather than riding on the outcome.
+     * `NO_PLAN_FOUND`.  (This also named a `|| from.isTerminus()` clause in `firstClearRoute`'s seed, with an
+     * assertion of its own below; the seed is `from.isReversing()` alone and there is no such assertion -
+     * AMH-C3.)
      */
     @Test
     public void testALeavingTerminusDoesNotCountAsHavingBackedIn() throws Exception
@@ -548,8 +549,8 @@ public class testReturnHomeSequencesAReversal
      * exactly level with shuffling a train somewhere useless.  With two trains and a shared bottleneck
      * that is enough to lose the plan among the permutations.
      *
-     * MUTATION: scoring on `misplaced(next)` instead of the staging estimate fails this - the outcome
-     * is NO_PLAN_FOUND.
+     * No mutation is named: the search scores `cost + misplaced(next)` and has no separate staging
+     * estimate to swap it for.  (This named one against such an estimate - AMH-C3.)
      */
     @Test
     public void testTwoTrainsQueueThroughOneStagingSquare() throws Exception

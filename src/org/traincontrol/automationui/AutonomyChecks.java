@@ -255,8 +255,9 @@ public class AutonomyChecks
      * fix this, so counting a side the operator has already barred would leave a finding they cannot
      * clear - and the message names that remedy.
      *
-     * **A side the grid does not have is not a way in.**  A square reached only through a portal has no
-     * entry side at all, which is why the count is of SIDES rather than of arriving edges.
+     * **Counted as sides, not as arriving edges**, because two edges can reach one square by the same side.
+     * (This said a square reached only through a portal has no entry side; a walk through a portal arrives
+     * by a real side, and a missing one arises only in a setup `validatePortals` refuses - AMG-C2.)
      */
     public static final String TERMINUS_WITH_TWO_WAYS_IN = "autosetup.ui.checkTerminusTwoWaysIn";
 
@@ -1271,8 +1272,11 @@ public class AutonomyChecks
             {
                 // A terminus that cannot be left is the specific case worth naming: a train sent there
                 // is stuck, and the layout will look like it simply stopped using that station.
+                // A COMPULSORY TURN IS A TERMINUS HERE (AMG-C1).  `isTerminus` reads the authored flag, which
+                // setting a square's flags clears, and falls back to "nothing leaves it" - never true of a
+                // compulsory turn, whose turning copy departs.
                 findings.add(new Finding(Severity.WARNING,
-                    isTerminus(reducer, station, termini)
+                    isTerminus(reducer, station, termini) || mustTurn.contains(station.getTile())
                         ? TERMINUS_STRANDED : STATION_REACHES_NOTHING,
                     station.getName(), station.getTile()));
             }

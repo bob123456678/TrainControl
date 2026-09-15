@@ -1020,6 +1020,10 @@ public class Point
     {
         if (!this.isDestination) return true;
         if (this.getMaxTrainLength() == 0) return true;
+
+        // Nothing known about the train is not a train too long (AMR-C1).  Every other reader of the length treats
+        // null that way, and this one unboxed it inside the route checks that ask it.
+        if (loc.getTrainLength() == null) return true;
         
         return loc.getTrainLength() <= this.getMaxTrainLength();   
     }

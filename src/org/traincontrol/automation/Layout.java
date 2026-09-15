@@ -4722,10 +4722,26 @@ public class Layout
      */
     synchronized public boolean isOfferableToOperator(Point end, Locomotive loc)
     {
-        if (end == null || !end.isActive()) return false;
+        return whyNotOfferedToOperator(end, loc) == null;
+    }
+
+    /**
+     * Why the right-click menu leaves this station out for this train, or null when it offers it (AMR-B2).
+     *
+     * The rule of `isOfferableToOperator`, answering with the reason, so that Why Not Moving? on Manual asks the
+     * menu's own question rather than a copy of it: it listed a station that excludes the train, and a terminus a
+     * train that cannot reverse would be stranded at, as somewhere to go.
+     *
+     * @param end the candidate station
+     * @param loc the locomotive being offered it
+     * @return the reason, already translated, or null
+     */
+    private String whyNotOfferedToOperator(Point end, Locomotive loc)
+    {
+        if (end == null || !end.isActive()) return I18n.t("autolayout.why.inactive");
 
         if (loc != null && !end.getExcludedLocs().isEmpty()
-            && end.getExcludedLocs().contains(loc)) return false;
+            && end.getExcludedLocs().contains(loc)) return I18n.f("autolayout.why.excluded", loc.getName());
 
         // A TERMINUS A TRAIN THAT CANNOT REVERSE WOULD BE STRANDED AT (Adam, OB-205).
         //
@@ -4786,10 +4802,10 @@ public class Layout
             && end.isAutoDestination()
             && !hasAWayThrough(end))
         {
-            return false;
+            return I18n.f("autolayout.errorTerminusNotAllowedForNonReversibleLoc", loc.getName());
         }
 
-        return true;
+        return null;
     }
 
     /**
@@ -5005,7 +5021,11 @@ public class Layout
             // is standing on it, so "occupied" was never the operative reason - it was just the first
             // test that happened to match.
             // Not on a hand-driven send (MT-434): autonomy's bars, which the operator is not bound by.
-            String reason = byHand ? null : barredFromAutonomy(end, loc);
+            //
+            // BUT THE MENU'S OWN (AMR-B2).  The right-click menu leaves out a station that excludes the train and a
+            // terminus a train that cannot reverse would be stranded at, and "may go" said of either is the button
+            // and its explanation disagreeing (OB-057).
+            String reason = byHand ? whyNotOfferedToOperator(end, loc) : barredFromAutonomy(end, loc);
 
             if (reason == null && end.getBlockLocomotive() != null)
             {

@@ -936,9 +936,26 @@ public final class HomeStaging
                     continue;
                 }
 
+                // A TRAIN THAT CANNOT REVERSE IS TURNED ON THE WAY ONLY TO GO HOME (Adam, 2026-09-15, AMH-B1).
+                //
+                // *"This should only be allowed if the train is going to reverse into its berth on the next turn."*
+                // The run turns a train at every terminus and reversing point a leg ends at (`ALWAYS_REVERSE`), so a
+                // plan that rested a train that cannot reverse on one and then sent it anywhere but home drove it on
+                // running the other way - a square the right-click menu will not even offer it since OB-205.
+                //
+                // Both halves, because the search does not look ahead: a move onto such a square is made only by a
+                // train with a home to go to, and a train the PLAN has put on one moves next only to its home.  One
+                // the railway already had standing there was not turned by the plan, and moves as before.
+                boolean turnedByThePlan = !l.isReversible() && this.movedAlong.containsKey(l)
+                    && turnsATrainArrivingAt(at) && !atHome(ownHome, at);
+
                 for (Point to : this.stations)
                 {
                     if (to.equals(at) || current.containsKey(to)) continue;
+
+                    if (turnedByThePlan && !atHome(ownHome, to)) continue;
+
+                    if (!l.isReversible() && ownHome == null && turnsATrainArrivingAt(to)) continue;
 
                     List<Edge> path = firstClearRoute(current, blocked, l, at, to);
 
@@ -2330,6 +2347,16 @@ public final class HomeStaging
     private static boolean atHome(Point home, Point where)
     {
         return home != null && home.isSamePlaceAs(where);
+    }
+
+    /**
+     * Whether the run turns a train round when a leg ends here (AMH-B1).
+     *
+     * Legs run under `ALWAYS_REVERSE`, for which `Layout.turnsOnArrival` is a terminus or a reversing point.
+     */
+    private static boolean turnsATrainArrivingAt(Point where)
+    {
+        return where != null && (where.isTerminus() || where.isReversing());
     }
 
     private static Point locationOf(Map<Point, Locomotive> state, Locomotive l)

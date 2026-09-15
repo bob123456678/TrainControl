@@ -2961,10 +2961,11 @@ public class AutonomySession
 
             // AND A SQUARE THAT WAS NEVER SPLIT HAS NO ARRIVAL TO TRAP.
             //
-            // `splitSides` emits a tile whole when an edge reaches it by no side of the grid - a link,
-             // which lands a train nowhere the compass can name - and a whole tile with no way out is a
-            // dead end in the track rather than a trapped arrival. Three such squares on the sample
-            // layout, and reporting them would tell the operator to fix something that is not there.
+            // A tile nothing arrives at by any side of the grid is emitted whole, and a whole tile with no way
+            // out is a dead end in the track rather than a trapped arrival. Three such squares on the sample
+            // layout - sensors nothing arrives at - and reporting them would tell the operator to fix
+            // something that is not there.  (This said the whole tile was one reached through a link; a link
+            // lands a train by a real side - AMG-C2.)
             //
             // Found by `testTheCheckerAgreesWithTheBuild`, on the change meant to make that test
             // redundant: my first version of this derivation left the filter out.
@@ -4130,6 +4131,12 @@ public class AutonomySession
 
         for (LayoutDiagram page : pages)
         {
+            // NOR A STAND-IN FOR A PAGE THAT WOULD NOT READ (AMS-A1).  It carries the real page's name and one
+            // text tile, so judged here every placement, home and priority on that page was "no longer there" -
+            // the MT-135 loss `pagesSafeToJudge` and `save()` refuse since FV3-A1, by the one loop of the four
+            // that did not skip it.
+            if (page.isUnreadable()) continue;
+
             if (!store.getExcludedPages().contains(page.getName())) pagesInPlay.add(page.getName());
         }
 
@@ -4937,6 +4944,11 @@ public class AutonomySession
         // And the signal that protected it: a plain point is not somewhere trains are held out of.
         if (!station) store.setProtectingSignal(tile, null);
 
+        // And being unavailable while another square is occupied (AMS-B2).  Unlike the arrival bar it is NOT inert
+        // on a square that is no longer a station - the build locks every route into it against the watched square -
+        // and the menu that clears it is offered on stations only, so left behind nothing could take it off.
+        if (!station) store.setBlockingPoints(tile, null);
+
         touched();
     }
 
@@ -5161,6 +5173,8 @@ public class AutonomySession
 
         org.json.JSONObject points = configuration.getJSONObject("points");
 
+        boolean swept = false;
+
         for (String key : new LinkedHashSet<>(points.keySet()))
         {
             if (keep != null && key.equals(keep.toString())) continue;
@@ -5181,8 +5195,16 @@ public class AutonomySession
             extras.remove("loc");
             extras.remove(AutonomyBuilder.FACING);
 
-            touched();
+            // AND ITS TAIL (AMS-C1), as the other two placement doors clear it (IND9-A1, WK7-B1): where a train
+            // came in is a fact about that train, and left here the next one placed on the square inherits it.
+            extras.remove("arrivedFrom");
+            extras.remove("arrivedAlong");
+
+            swept = true;
         }
+
+        // Once, not once per square swept: `touched` rebuilds the whole graph.
+        if (swept) touched();
     }
 
     /**
@@ -7701,8 +7723,8 @@ public class AutonomySession
      *   - **unbarred sides.**  Shutting one side with the arrows is one of the three remedies the
      *     message names, so a side already barred must not go on being counted.
      *
-     * Counted as SIDES rather than as arriving edges: two edges can reach one square by the same side,
-     * and an arrival through a portal has no side on the grid at all.
+     * Counted as SIDES rather than as arriving edges: two edges can reach one square by the same side.
+     * (This also said an arrival through a portal has no side on the grid; it arrives by a real one - AMG-C2.)
      *
      * @return the squares, mapped to how many unbarred sides reach them, empty when none do
      */

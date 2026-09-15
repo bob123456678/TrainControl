@@ -44,10 +44,11 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * the model has no separate direction. So "facing the same direction as when they started" is asserted
  * as the same Point, and on a split platform that is strictly stronger than being home.
  *
- * **It is registered in build.xml and it is expected to be RED until Return Home stages this.**  Adam,
- * on being told the outcome was NO_PLAN_FOUND: "ok, so that test should then be red."  Nothing moves
- * when Return Home is pressed for this arrangement; a test for something that does not work belongs in
- * the battery being red rather than in an exclusion table being quiet.
+ * **It is registered in build.xml, and it was written RED until Return Home staged this.**  Adam, on
+ * being told the outcome was NO_PLAN_FOUND: "ok, so that test should then be red."  It has been green
+ * since Return Home learned to stage the arrangement (PRW-B2 bisected the change; AMH-C3 found this
+ * still saying red).  A test for something that does not work belongs in the battery being red rather
+ * than in an exclusion table being quiet.
  *
  * **IT RUNS AGAINST A FROZEN COPY, not against his railway (Adam, 2026-09-01: "let's get the current
  * diagram frozen in the test").**
@@ -473,7 +474,7 @@ public class testTrainsComeHomeToTheirPlatforms
             }
         }
 
-        out.append("  (a train that cannot reverse needs turningRoute=true to back into a terminus)\n");
+        out.append("  (a train that cannot reverse may back into a terminus; Return Home turns it on the way only to go home)\n");
 
         return out.toString();
     }
