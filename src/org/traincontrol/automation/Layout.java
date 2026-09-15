@@ -3964,14 +3964,34 @@ public class Layout
     }
         
     /**
-     * Finds the shortest path between two points using BFS
-     * @param start
-     * @param end
-     * @param excludePaths
-     * @return
-     * @throws Exception 
+     * Finds the shortest path between two points using BFS, never through a terminus that is not its end (OB-229).
+     *
+     * @param start where from
+     * @param end where to
+     * @param excludePaths routes already found, to be passed over
+     * @return the route, or null
+     * @throws Exception when either point is not on this layout
      */
     public List<Edge> bfs(Point start, Point end, List<List<Edge>> excludePaths) throws Exception
+    {
+        return bfs(start, end, excludePaths, false);
+    }
+
+    /**
+     * The same search, with a choice about termini.
+     *
+     * Through them only for a question about the TRACK rather than about a route a train may take: Why Not Moving?
+     * asks it to tell "a terminus is in the way" from "no track leads there" (PTR-B1).  Nothing that sends a train
+     * asks it - `isPathClear` refuses every route through a terminus.
+     *
+     * @param start where from
+     * @param end where to
+     * @param excludePaths routes already found, to be passed over
+     * @param throughTermini true to extend a route through a terminus that is not its end
+     * @return the route, or null
+     * @throws Exception when either point is not on this layout
+     */
+    private List<Edge> bfs(Point start, Point end, List<List<Edge>> excludePaths, boolean throughTermini) throws Exception
     {
         start = this.getPoint(start.getName());
         end = this.getPoint(end.getName());
@@ -3994,7 +4014,7 @@ public class Layout
         //
         // Deliberately still marked on DEQUEUE below rather than on enqueue.  Marking on enqueue is the
         // usual BFS refinement and would stop a point being queued more than once, but it would change
-        // what this method finds: all three callers pass excludePaths, and the search depends on
+        // what this method finds: every caller in the application passes excludePaths, and the search depends on
         // reaching a point by several different routes in order to find one that is not excluded.
         // Marking on enqueue would explore only the first route to each point and could then fail to
         // return an allowed alternative that exists.
@@ -4038,7 +4058,7 @@ public class Layout
                 // top level down RampDown - clear, found by Return Home's planner, and never offered by the
                 // menu or autonomy.  Adam, asked how to fix it: *"Search past termini"*.  The planner's own
                 // search has always stopped at a terminus the same way.
-                else if (!visited.contains(next.getEnd()) && !next.getEnd().isTerminus())
+                else if (!visited.contains(next.getEnd()) && (throughTermini || !next.getEnd().isTerminus()))
                 {
                     List<Edge> newPath = new LinkedList<>(path);
                     newPath.add(next);
@@ -5212,6 +5232,25 @@ public class Layout
 
         // No route at all is a different answer from every route being blocked, and the difference is
         // the difference between "build some track" and "wait a minute"
+        // NOT "NO TRACK" WHERE THE TRACK CONNECTS THROUGH A TERMINUS (PTR-B1).  Since OB-229 the search above never goes
+        // through a terminus, so a station whose every route passes one finds no route at all - and "No track route leads
+        // there" sends the operator looking for rails that are there.  Asked of the track once more, through termini: if
+        // a route exists that way, the reason is the terminus in the way, in the route check's own sentence.
+        if (why == null)
+        {
+            try
+            {
+                if (this.bfs(start, end, null, true) != null)
+                {
+                    return I18n.t("autolayout.errorIntermediateTerminusStation");
+                }
+            }
+            catch (Exception unsearchable)
+            {
+                return String.valueOf(unsearchable.getMessage());
+            }
+        }
+
         return why == null ? I18n.t("autolayout.why.noRoute") : why;
     }
 
