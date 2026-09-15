@@ -37,18 +37,12 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-326](#mt-326) | 2026-09-07 | A declined setup edit survives quitting | needs test | ACC-B3 (split from MT-269) |
 | [MT-335](#mt-335) | 2026-09-08 | Return Home will not plan through track a train is lying across | fixed unvalidated | OB-184 |
 | [MT-380](#mt-380) | 2026-09-13 | Autonomy can be set up by importing, from the menu, with nothing set up yet | fixed unvalidated | FR-007 |
-| [MT-396](#mt-396) | 2026-09-14 | A function pressed on a consist is sent to every locomotive in it | fixed unvalidated | MT-359 (your ruling of 2026-09-13) |
-| [MT-397](#mt-397) | 2026-09-14 | The editor's keyboard shortcuts are named in their tooltips | fixed unvalidated | OB-214 |
-| [MT-401](#mt-401) | 2026-09-14 | Return Home shows it is working while it plans | fixed unvalidated | FR-077 |
-| [MT-402](#mt-402) | 2026-09-14 | A Return Home plan that fails says why in the log, by square | fixed unvalidated | FR-078 |
 | [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
-| [MT-431](#mt-431) | 2026-09-14 | 75 407 DB may run from Tunnel to BottomMainA past the one-unit run | fixed unvalidated | OB-224 |
-| [MT-433](#mt-433) | 2026-09-14 | Why Not Moving sorts by page, current page first, and says Page | fixed unvalidated | FR-080 |
 | [MT-434](#mt-434) | 2026-09-14 | Switching Path Type redraws the tested route | fixed unvalidated | FR-084 |
 | [MT-435](#mt-435) | 2026-09-14 | A long train's tail: kept after a rebuild, and asked for when you place it | fixed unvalidated | FR-085 |
 
-Everything else - 416 of 435 - needs nothing from you unless the area changes again:
-368 **fixed validated** and 48 **superseded**.
+Everything else - 422 of 435 - needs nothing from you unless the area changes again:
+374 **fixed validated** and 48 **superseded**.
 
 ---
 
@@ -21108,7 +21102,7 @@ that test was added and taken out the same hour.
 
 ### MT-396 - 2026-09-14 - A function pressed on a consist is sent to every locomotive in it
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-359 (your ruling of 2026-09-13)
 
 **Written:** 2026-09-14
@@ -21143,7 +21137,7 @@ the commands handed to the station, and was red before the change.
 
 ### MT-397 - 2026-09-14 - The editor's keyboard shortcuts are named in their tooltips
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-214
 
 **Written:** 2026-09-14
@@ -21279,7 +21273,7 @@ Your OB-217: *"move 'one way run' and 'name everything' into the bulk tools menu
 
 ### MT-401 - 2026-09-14 - Return Home shows it is working while it plans
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-077
 
 **Written:** 2026-09-14
@@ -21306,7 +21300,7 @@ or tidy railway the plan can take a fraction of a second, so the mark may only f
 
 ### MT-402 - 2026-09-14 - A Return Home plan that fails says why in the log, by square
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-078
 
 **Written:** 2026-09-14
@@ -22190,7 +22184,7 @@ Your note on MT-406: *"Escape works, but it seems a one-way run (or any other ed
 
 ### MT-431 - 2026-09-14 - 75 407 DB may run from Tunnel to BottomMainA past the one-unit run
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-224
 
 **Written:** 2026-09-14
@@ -22257,7 +22251,7 @@ Re-filed from MT-333, as you asked: *"in that protrusion test, if we made 75 407
 
 ### MT-433 - 2026-09-14 - Why Not Moving sorts by page, current page first, and says Page
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-080
 
 **Written:** 2026-09-14

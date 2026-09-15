@@ -142,14 +142,19 @@ public class testAPassingTrainMayStandAcrossThePoints
     }
 
     /**
-     * The control: the destination is still judged.  Three units do not fit the two-unit approach.
+     * Three units are taken at BottomMainA because the measured route in holds them, and four are not (FR-087).
+     *
+     * Adam, on MT-431, 2026-09-15: *"didn't we say that BottomMainA should be allowed at length 3, since it is not a
+     * parking spot, the station allows the length, and the length would be tracked?"*  And, asked how far that reaches:
+     * bounded by the route - at a station autonomy may choose, the train is accepted if the measured track of the route
+     * it drives in on holds it back from the destination, because its tail lies on that route and blocks it.  Tunnel to
+     * BottomMainA measures one unit and then two: three units fit it, four do not.  Until this, the bound was the approach
+     * alone, and three units were refused its two.
      */
     @Test
-    public void testAThreeUnitTrainIsStillRefusedTheTwoUnitPlatform() throws Exception
+    public void testTheRouteInHoldsAThreeUnitTrainAndNotAFourUnitOne() throws Exception
     {
         Layout built = emptied();
-
-        standing.setTrainLength(3);
 
         Point tunnel = copy(built, "Tunnel", true);
         Point mainA = copy(built, "BottomMainA", true);
@@ -158,13 +163,28 @@ public class testAPassingTrainMayStandAcrossThePoints
 
         assertNotNull(route, "precondition: no route from Tunnel to BottomMainA");
 
+        int measured = 0;
+
+        for (Edge leg : route) measured += Math.max(0, leg.getLength());
+
+        assertEquals(measured, 3, "precondition: the route from Tunnel to BottomMainA does not measure three units, so this"
+            + " claim is not about the train it names: " + describe(route));
+
+        standing.setTrainLength(3);
+
+        assertNull(Layout.whyTooLongForThisRoute(route, standing),
+            "three units are refused BottomMainA, a station autonomy may choose, though the route in measures three and the"
+            + " tail lying on it is tracked.  Adam, MT-431: 'BottomMainA should be allowed at length 3'.  Refused: "
+            + Layout.whyTooLongForThisRoute(route, standing));
+
+        standing.setTrainLength(4);
+
         String why = Layout.whyTooLongForThisRoute(route, standing);
 
-        assertNotNull(why, "a three-unit train is admitted to BottomMainA, whose approach measures two - the"
-            + " destination is no longer judged at all, which is not what MT-333 asked for");
+        assertNotNull(why, "four units are accepted at BottomMainA, and the route in measures three - the tail would lie on"
+            + " track nothing has measured");
 
-        assertTrue(why.contains("BottomMainA"), "the refusal is '" + why + "', which does not name BottomMainA -"
-            + " it is refused somewhere it only passes");
+        assertTrue(why.contains("BottomMainA"), "the four-unit refusal does not name BottomMainA: " + why);
     }
 
     /**

@@ -7285,6 +7285,21 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
                 return;
             }
 
+            // Control+N shows a station's name on the square under the pointer (FR-086).
+            //
+            // Adam, on MT-397 (2026-09-15): *"let's add a hotkey for 'show station name here' too"*, and asked which key,
+            // **Control+N** - free here, and N for name.  Above the guard below with the other keys that are, by that
+            // guard's own rule: a caption places, cuts, rotates and retextures nothing.  The square under the pointer,
+            // as Control+S and Control+E take it.
+            if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_N)
+            {
+                org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
+
+                if (over != null && autonomyPanel != null) autonomyPanel.showStationNameFor(over);
+
+                return;
+            }
+
             // Control+B is the same door onto the STATION's own maximum (Adam, 2026-09-12).
             //
             // He asked for Control+M - *"is control+M taken in the autonomy editor?  If not, map it to

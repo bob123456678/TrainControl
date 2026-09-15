@@ -1277,6 +1277,62 @@ Adam, 2026-09-14, on WK7-B1: *"For the tails, if a train is long, why not ask th
 
 Two halves.  **Kept:** a standing train's arrival road is saved with the point, reloaded, carried across every rebuild and captured into the setup, so a driven train's tail is the same after a restart or any setup gesture (WK7-B1, `63ac68f4`).  **Asked:** a hand-placed train long enough for its tail to have crossed sensors on two roads back from a junction is asked for the farthest sensor its tail crossed - at the paste, the right-click Place and the locomotive dialog, in the right-click menu beside Train arrived from, and by clicking in the autonomy editor.  behaviour.md 5c.
 
+### FR-086 - 2026-09-15 - Control+N for Show a Station Name Here in the autonomy editor
+
+**Kind:** feature request  
+**Raised from:** MT-397  
+**Filed:** 2026-09-15  
+
+Adam, on MT-397 (2026-09-15): *"Works, but let's add a hotkey for 'show station name here' too"*.  Asked which key, he chose **Control+N** (free in the editor; N for name).  Named in the item's tooltip like the other editor shortcuts (`ui.testTheEditorNamesItsShortcuts`).
+
+### FR-087 - 2026-09-15 - A station autonomy may choose accepts a train its own route in holds, not only its approach
+
+**Kind:** feature request  
+**Raised from:** MT-431  
+**Filed:** 2026-09-15  
+
+Adam, on MT-431 (2026-09-15): *"But didn't we say that BottomMainA should be allowed at length 3, since it is not a parking spot, the station allows the length, and the length would be tracked?"*  Asked how far the allowance should reach, he chose **bounded by the route**: at a station autonomy may choose, accept the train if the measured track of the route it drives in on holds it back from the destination - its tail lies on that route and blocks it - while unmeasured track or a gap still refuses.  Today the bound is the approach's own length (behaviour.md 5a, the 2026-09-12 relaxation), so 75 407 DB at length 3 is refused BottomMainA's two-unit approach.
+
+### OB-225 - 2026-09-15 - Switching Path Type does not redraw the tested route in the autonomy editor
+
+**Kind:** bug  
+**Raised from:** MT-434  
+**Filed:** 2026-09-15  
+
+Adam, on MT-434 (2026-09-15): *"Does not work.  Changes don't happen when switching, and in manual mode, I still get reasons like 'tunnellongpark will never be chosen in autonomy'."*  The note is written only when Auto is selected, so on Manual it means the test was never run again.  `core.testManualOnlyPathsAreADifferentColour.testSwitchingPathTypeRedrawsTheTestedRoute` passed without reaching the real editor: it drives `applyTest` on a panel with no page, and its route assertion compares against an empty substring.
+
+### OB-226 - 2026-09-15 - The tail question leaves out a sensor exactly the train's length back
+
+**Kind:** bug  
+**Raised from:** MT-435  
+**Filed:** 2026-09-15  
+
+Adam, on MT-435 (2026-09-15): *"When 75 407 DB is set to length 3, only BottomMainAPre is offered (2 away from the station), but Tunnel should also be offered since it is 3 away.  The check works as intended at length 4."*  `TailCrossedPrompt` counts a sensor as crossed only when some of the train is left beyond it.
+
+### OB-227 - 2026-09-15 - The tail question offers roads a train could not have driven in on
+
+**Kind:** bug  
+**Raised from:** MT-435  
+**Filed:** 2026-09-15  
+
+Adam, on MT-435 (2026-09-15): *"If 'Ramp down' is selected, rather than the path that takes the train there through bottomsecondary, sensor 1030, tunnel, bottommaina, the blocked orange path crosses switch 99 and switch 100 instead of going to bottomsecondary, which would require the train to reverse in.  that isn't a realistic path."*  `TailCrossedPrompt` follows track back in either direction; the road a tail lies on is the one the train drove in on, forwards.
+
+### FR-088 - 2026-09-15 - The tail question starts on the sensor nearest the back
+
+**Kind:** feature request  
+**Raised from:** MT-435  
+**Filed:** 2026-09-15  
+
+Adam, on MT-435 (2026-09-15): *"The closest sensor to the back should be the default selection in the length window, so the user can just click OK if appropriate."*  Asked what to do where the tail could be on more than one road, he chose: start on the recorded road if there is one; otherwise on the sensor nearest the tail when exactly one qualifies; otherwise nothing chosen.
+
+### OB-228 - 2026-09-15 - Return Home plans a move through the tail of a train it has just moved
+
+**Kind:** bug  
+**Raised from:** MT-335  
+**Filed:** 2026-09-15  
+
+Adam, on MT-335 (2026-09-15): *"The 335 park works, but I get: Could not run EN57-203 from BottomInner (northbound) to TopMainR0Park - the path stayed blocked. ... Shouldn't it get sent to rampdown and then parked?"*  His log: the plan moved 75 407 DB Tunnel -> BottomMainA first, then routed EN57-203 BottomInner -> Tunnel -> BottomMainAPre -> RampDown -> TopMainPost -> TopMainR0Park, and the runtime refused it: *"75 407 DB is standing across BottomMainAPre -> RampDown - the train is longer than the track in front of it"*.  The planner models the tails of trains that have not moved yet (MT-335's stated limit); a train it has moved now has a known road - the route the plan gave it - so its tail can be modelled too.  The same log's agreement check also reported the planner allowing 75 407 DB -> RampDown and -> BottomSecondary where the layout would refuse them.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

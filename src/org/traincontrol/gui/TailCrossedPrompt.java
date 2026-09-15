@@ -218,7 +218,39 @@ public class TailCrossedPrompt
     {
         Choice ticked = recordedChoice(choices, recorded);
 
-        return ticked == null ? -1 : choices.indexOf(ticked);
+        if (ticked != null) return choices.indexOf(ticked);
+
+        // THE SENSOR NEAREST THE BACK, WHEN THERE IS ONE (FR-088).  Adam, MT-435, 2026-09-15: *"The closest sensor to the
+        // back should be the default selection in the length window, so the user can just click OK if appropriate."*
+        // Asked about several: nearest the back if there is one, nothing chosen otherwise.  Nearest the back is a sensor
+        // no other offered sensor lies beyond on the same road.
+        int nearestTheBack = -1;
+
+        for (int i = 0; i < choices.size(); i++)
+        {
+            List<String> mine = pairsOf(choices.get(i).getRoad());
+            boolean somethingBeyond = false;
+
+            for (Choice other : choices)
+            {
+                List<String> theirs = pairsOf(other.getRoad());
+
+                if (theirs.size() > mine.size() && theirs.subList(theirs.size() - mine.size(), theirs.size()).equals(mine))
+                {
+                    somethingBeyond = true;
+
+                    break;
+                }
+            }
+
+            if (somethingBeyond) continue;
+
+            if (nearestTheBack >= 0) return -1;
+
+            nearestTheBack = i;
+        }
+
+        return nearestTheBack;
     }
 
     /**
@@ -434,25 +466,23 @@ public class TailCrossedPrompt
         if (layout == null || at == null || arrivedFrom == null || trainLength == null || trainLength <= 0) return;
 
         // THE FIRST ROAD BACK IS THE SIDE IT CAME IN BY - the tail walk's own first hop, and `entrySideOf` is the one
-        // definition of a side both read.  The copy of the rail that ARRIVES here is preferred, as the walk does.
+        // definition of a side both read.
+        //
+        // ONLY RAILS THAT ARRIVE HERE (OB-227).  Adam, MT-435, 2026-09-15: *"the blocked orange path crosses switch 99 and
+        // switch 100 instead of going to bottomsecondary, which would require the train to reverse in.  that isn't a
+        // realistic path."*  The road a tail lies on is the one the train DROVE in on, so every rail of it runs towards
+        // the train; a rail laid the other way is one it could only have reached by turning round.
         Map<String, Edge> firstHops = new LinkedHashMap<>();
 
-        for (Edge candidate : layout.getNeighborsAndIncoming(at))
+        for (Edge candidate : layout.getIncomingEdges(at))
         {
-            Point other = candidate.getStart() == at ? candidate.getEnd() : candidate.getStart();
-
-            if (other == null) continue;
+            if (candidate.getEnd() != at || candidate.getStart() == null) continue;
 
             String cameInBy = layout.entrySideOf(candidate, at);
 
             if (cameInBy == null || !arrivedFrom.equalsIgnoreCase(cameInBy)) continue;
 
-            Edge known = firstHops.get(roadKeyOf(other));
-
-            if (known == null || (known.getEnd() != at && candidate.getEnd() == at))
-            {
-                firstHops.put(roadKeyOf(other), candidate);
-            }
+            firstHops.putIfAbsent(roadKeyOf(candidate.getStart()), candidate);
         }
 
         Set<String> walked = new LinkedHashSet<>();
@@ -465,9 +495,7 @@ public class TailCrossedPrompt
 
         for (Edge hop : firstHops.values())
         {
-            Point behind = hop.getStart() == at ? hop.getEnd() : hop.getStart();
-
-            if (back(layout, hop, behind, at, trainLength, road, walked, into, forks, 1)) crossedHere++;
+            if (back(layout, hop, hop.getStart(), at, trainLength, road, walked, into, forks, 1)) crossedHere++;
         }
 
         // A JUNCTION IS A QUESTION when it has two roads back and the tail crossed a sensor on at least one of them
@@ -491,13 +519,13 @@ public class TailCrossedPrompt
 
         int beyond = left - hop.getLength();
 
-        // Crossed only if some of the train is still left beyond the sensor.
-        if (beyond <= 0) return false;
+        // CROSSED WHEN THE TRAIN REACHES IT (OB-226).  Adam, MT-435, 2026-09-15: *"When 75 407 DB is set to length 3, only
+        // BottomMainAPre is offered (2 away from the station), but Tunnel should also be offered since it is 3 away."*
+        // A train exactly as long as the track to a sensor has its tail at that sensor, and it is offered.
+        if (beyond < 0) return false;
 
-        // THE RAIL AS A TRAIN DRIVES IT: from the sensor behind towards the square ahead, where that direction exists.
-        Edge driven = layout.getEdge(behind.getName(), ahead.getName());
-
-        road.add(0, driven != null ? driven : hop);
+        // The rail as the train drove it: it arrives at the square ahead (OB-227).
+        road.add(0, hop);
         walked.add(placeOf(behind));
 
         into.add(new Choice(behind, road));
@@ -506,9 +534,12 @@ public class TailCrossedPrompt
 
         Set<String> seen = new LinkedHashSet<>();
 
-        for (Edge candidate : layout.getNeighborsAndIncoming(behind))
+        for (Edge candidate : layout.getIncomingEdges(behind))
         {
-            Point further = candidate.getStart() == behind ? candidate.getEnd() : candidate.getStart();
+            // ONLY RAILS THAT ARRIVE HERE, as at the first hop (OB-227).
+            if (candidate.getEnd() != behind) continue;
+
+            Point further = candidate.getStart();
 
             // BY PLACE (TLR-B2): a square a train may turn at is a lane copy and a turning copy, the same metal under
             // two names, and counted by name it was a second road back.

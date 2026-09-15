@@ -288,6 +288,9 @@ public class AutonomyEditorPanel extends JPanel
     /** Sets the segment length of the square under the pointer - see `SHORTCUT_HOME`. */
     public static final String SHORTCUT_LENGTH = "Control+E";
 
+    /** Shows a station's name on the square under the pointer - see `SHORTCUT_HOME` (FR-086). */
+    public static final String SHORTCUT_STATION = "Control+N";
+
     /** Shows or hides the track lengths - see `SHORTCUT_HOME`. */
     public static final String SHORTCUT_LENGTHS = "Control+G";
 
@@ -2599,9 +2602,12 @@ public class AutonomyEditorPanel extends JPanel
         // are all the same reason: nothing else on this menu says that a caption is a live readout of
         // another square rather than a name plate.
         name.setToolTipText(wrapped(
-            showsItself ? I18n.t("autosetup.ui.tooltipStationShowsItself")
+            (showsItself ? I18n.t("autosetup.ui.tooltipStationShowsItself")
                 : !mine ? I18n.t("autosetup.ui.tooltipTextInTheWay")
-                : I18n.t("autosetup.ui.tooltipShowStationHere")));
+                : I18n.t("autosetup.ui.tooltipShowStationHere"))
+            // AND ITS KEY (FR-086, Adam on MT-397: "let's add a hotkey for 'show station name here' too").  Added to
+            // the sentence rather than replacing it: this item's tooltip is the only place that says what a caption is.
+            + "  (" + SHORTCUT_STATION + ")"));
 
         menu.add(name);
 
@@ -5324,6 +5330,29 @@ public class AutonomyEditorPanel extends JPanel
     public void promptNameFor(TileKey tile)
     {
         if (canBeNamed(tile)) promptName(tile);
+    }
+
+    /**
+     * Shows a station's name on a square, from somewhere other than its own right-click menu (FR-086).
+     *
+     * Adam, on MT-397 (2026-09-15): *"let's add a hotkey for 'show station name here' too"* - Control+N, which he chose.
+     * The same relationship Control+S has to Rename: the key handler lives in `LayoutEditor`, and this asks exactly
+     * what the menu asks before it offers the item - a square that can carry a caption, in the editor rather than the
+     * diagram's own menu, and not a station already showing its own name - so the key and the menu cannot disagree.
+     *
+     * @param tile the square under the pointer, ignored when null
+     */
+    public void showStationNameFor(TileKey tile)
+    {
+        if (tile == null || menuOnly) return;
+
+        LayoutDiagramComponent here = componentAt(tile);
+
+        if (!mayCarryACaption(here)) return;
+
+        if (session.getStore().isStation(tile) && tile.equals(session.getCaptionTarget(tile))) return;
+
+        promptStationLabel(tile, here);
     }
 
     /**

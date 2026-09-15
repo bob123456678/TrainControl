@@ -8607,7 +8607,15 @@ public class Layout
     }
 
     /**
-     * Whether a station autonomy may choose takes this train because its whole approach is long enough.
+     * Whether a station autonomy may choose takes this train because the measured route in holds it (FR-087).
+     *
+     * **Widened on 2026-09-15 from the approach alone to the route in.**  Adam, on MT-431: *"didn't we say that
+     * BottomMainA should be allowed at length 3, since it is not a parking spot, the station allows the length, and the
+     * length would be tracked?"*  Asked how far that reaches, he chose the route: the train is accepted if the measured
+     * track of the route it drives in on, counted back from the station without a gap, holds it - its tail lies on that
+     * route, a driven train's road is kept (WK7-B1), and the track under it is claimed.  An unmeasured leg ends the count,
+     * so a tail that would reach track nothing has measured is still refused.  What follows is the method as it was
+     * written for the approach.
      *
      * **Adam's relaxation of 2026-09-12, and the reason it is a method rather than a line.**  On a
      * platform whose approach measures 6 with a switch in the middle and 3 either side: *"it would not
@@ -8642,15 +8650,28 @@ public class Layout
 
         if (loc.getTrainLength() == null || loc.getTrainLength() <= 0) return false;
 
-        Edge lastLeg = path.get(path.size() - 1);
+        Point ending = path.get(path.size() - 1).getEnd();
 
-        Point ending = lastLeg.getEnd();
+        // `isAutoDestination` is the flag his words name - "Can Be Chosen In Full Autonomy".
+        if (ending == null || !ending.isAutoDestination()) return false;
 
-        // `isAutoDestination` is the flag his words name - "Can Be Chosen In Full Autonomy".  Whether
-        // the square is switched on at all is a different question, asked long before anything gets
-        // here.
-        return ending != null && ending.isAutoDestination() && lastLeg.getLength() > 0
-            && loc.getTrainLength() <= lastLeg.getLength();
+        // THE ROUTE IN, back from the station, while it is measured (FR-087).  The last leg alone is what the approach
+        // rule of 2026-09-12 counted; a train longer than it lies back over the leg before, and that leg is still the
+        // route it drove in on.
+        int held = 0;
+
+        for (int i = path.size() - 1; i >= 0; i--)
+        {
+            int leg = path.get(i).getLength();
+
+            if (leg <= 0) break;
+
+            held += leg;
+
+            if (loc.getTrainLength() <= held) return true;
+        }
+
+        return false;
     }
 
     /**

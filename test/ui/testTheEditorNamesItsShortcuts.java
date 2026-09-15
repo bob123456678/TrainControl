@@ -170,6 +170,28 @@ public class testTheEditorNamesItsShortcuts
         }
 
         assertTrue(homeNamed, "the Home item on a station's menu does not say Control+H");
+
+        // AND CONTROL+N, on the item that shows a station's name on a square (FR-086, Adam on MT-397: "let's add a hotkey
+        // for 'show station name here' too").  Its tooltip already says what a caption is, so the key is added to it.
+        javax.swing.JMenuItem showHere = null;
+
+        for (javax.swing.JMenuItem item : items)
+        {
+            String text = item.getText();
+
+            if (text != null && (text.equals(I18n.t("autosetup.ui.menuShowStationHere"))
+                || text.equals(I18n.t("autosetup.ui.menuShowStationHereNamed"))
+                || text.equals(I18n.t("autosetup.ui.menuStationShowsItself"))))
+            {
+                showHere = item;
+            }
+        }
+
+        assertNotNull(showHere, "precondition: " + station + " offers no Show a Station Name Here item");
+
+        assertTrue(showHere.getToolTipText() != null
+            && showHere.getToolTipText().contains(AutonomyEditorPanel.SHORTCUT_STATION),
+            "Show a Station Name Here does not say Control+N: " + showHere.getToolTipText());
     }
 
     /**
