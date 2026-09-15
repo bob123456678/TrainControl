@@ -191,11 +191,15 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
     @Test
     public void testTheRetryFromTheStartHasTimeLeft() throws Exception
     {
+        // THE ORDER THE GREEDY PASS MEETS THE TRAINS is the order of Layout's point map, a HashMap by name - and this
+        // claim needs Y met before X, so the greedy pass boxes itself in and the retry is needed.  The names are chosen
+        // for that (Java's String hash, 128 buckets for these seventy points); the "precondition" below says so if a
+        // change to the map or the names ever lets the greedy pass succeed.
         Layout layout = new Layout(model);
 
         layout.setDefaultLocSpeed(30);
 
-        String[] names = { "RS_SY", "RS_SX", "RS_SZ", "RS_P", "RS_L1", "RS_L2", "RS_L3", "RS_HX", "RS_HY", "RS_HZ" };
+        String[] names = { "RS_SYA", "RS_SXA", "RS_SZ", "RS_P", "RS_L1", "RS_L2", "RS_L3", "RS_HX", "RS_HY", "RS_HZ" };
         boolean[] stations = { true, true, true, false, false, false, false, true, true, true };
 
         for (int i = 0; i < names.length; i++)
@@ -203,8 +207,8 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
             layout.createPoint(names[i], stations[i], model.newFeedback(2500 + i, null).getName());
         }
 
-        String[][] rails = { { "RS_SZ", "RS_SX" }, { "RS_SX", "RS_SY" }, { "RS_SY", "RS_P" }, { "RS_P", "RS_HX" },
-            { "RS_P", "RS_HY" }, { "RS_P", "RS_HZ" }, { "RS_SX", "RS_L1" }, { "RS_L1", "RS_L2" }, { "RS_L2", "RS_L3" },
+        String[][] rails = { { "RS_SZ", "RS_SXA" }, { "RS_SXA", "RS_SYA" }, { "RS_SYA", "RS_P" }, { "RS_P", "RS_HX" },
+            { "RS_P", "RS_HY" }, { "RS_P", "RS_HZ" }, { "RS_SXA", "RS_L1" }, { "RS_L1", "RS_L2" }, { "RS_L2", "RS_L3" },
             { "RS_L3", "RS_HX" } };
 
         for (String[] rail : rails)
@@ -242,8 +246,8 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
         trainB.setTrainLength(1);
         trainC.setTrainLength(1);
 
-        assertTrue(layout.moveLocomotive(trainA.getName(), "RS_SX", false), "could not stand X at RS_SX");
-        assertTrue(layout.moveLocomotive(trainB.getName(), "RS_SY", false), "could not stand Y at RS_SY");
+        assertTrue(layout.moveLocomotive(trainA.getName(), "RS_SXA", false), "could not stand X at RS_SX");
+        assertTrue(layout.moveLocomotive(trainB.getName(), "RS_SYA", false), "could not stand Y at RS_SY");
         assertTrue(layout.moveLocomotive(trainC.getName(), "RS_SZ", false), "could not stand Z at RS_SZ");
 
         layout.setHomeLocomotive("RS_HX", trainA.getName());
