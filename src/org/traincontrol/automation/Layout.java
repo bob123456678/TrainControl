@@ -4029,12 +4029,20 @@ public class Layout
                         path.remove(path.size() - 1);
                     }
                 }
-                else if (!visited.contains(next.getEnd()))
+                // NOT ON THROUGH A TERMINUS (OB-229).  A route may END at one; it may not pass through, and
+                // `isPathClear` refuses every route that does ("Contains an intermediate terminus station").
+                // Extending one anyway was worse than wasted work: a square is marked visited the first time
+                // it is taken off the queue, so where the shortest way to it ran through a terminus, that
+                // square was spent on a route that could never be used and the longer way through it was never
+                // tried.  On Adam's railway (MT-335's run, 2026-09-15) that hid the loop from Tunnel over the
+                // top level down RampDown - clear, found by Return Home's planner, and never offered by the
+                // menu or autonomy.  Adam, asked how to fix it: *"Search past termini"*.  The planner's own
+                // search has always stopped at a terminus the same way.
+                else if (!visited.contains(next.getEnd()) && !next.getEnd().isTerminus())
                 {
                     List<Edge> newPath = new LinkedList<>(path);
                     newPath.add(next);
-                    
-                    queue.add(new PointPath(next.getEnd(), newPath));                    
+                    queue.add(new PointPath(next.getEnd(), newPath));
                 }
             }
         }

@@ -1024,12 +1024,18 @@ public class testTheLengthGuardsOnTheRealLayout
             //
             // So the rule is asked directly, of a route to that berth, which is the one question no
             // other bar can answer for it.
-            List<Edge> route = theRouteToByBfs("TunnelLongPark");
+            List<Edge> route = theRouteOverTheTrackTo("TunnelLongPark");
 
             assertNotNull(route,
                 "there is no route at all from where 75 407 DB stands to TunnelLongPark, so the room"
                 + " rule has nothing to judge and the claim below is about track that does not"
                 + " connect");
+
+            // WHY THE TRACK AND NOT THE RAILWAY'S SEARCH (OB-229), said as a precondition so that a wrong reading
+            // of it shows: the route over the track passes a terminus, which is why `bfs` no longer returns it.
+            assertTrue(passesATerminus(route),
+                "precondition: the route over the track to TunnelLongPark passes no terminus, so the railway's own"
+                + " search should still find it - this claim's reason for searching the track itself is wrong");
 
             Integer room = Layout.measuredRoomAtTheEndOf(route, train);
 
@@ -1060,16 +1066,21 @@ public class testTheLengthGuardsOnTheRealLayout
     }
 
     /**
-     * A route from where the borrowed engine stands to a named station, found by search.
+     * A route from where the borrowed engine stands to a named station, found over the track alone.
      *
-     * From `bfs` rather than from what the railway offers, because what it offers is the thing under
-     * test - asking it for the route would make the claim conditional on the refusal not happening.
+     * Not from what the railway offers, because what it offers is the thing under test - asking it for the
+     * route would make the claim conditional on the refusal not happening.  **And, since OB-229, not from
+     * `Layout.bfs` either**: that search no longer extends a route through a terminus that is not its end
+     * (Adam, 2026-09-15: *"Search past termini"*), because `isPathClear` refuses every such route.  The only
+     * track from where 75 407 DB stands to TunnelLongPark passes one - which is the reason other than length
+     * `testTunnelLongParkIsRefusedForReasonsOtherThanLength` pins - so `bfs` now finds nothing there, and the
+     * room rule, which is a rule about a list of edges, is asked of the track by `aRouteOverTheTrackAlone`.
      *
      * @param station the destination's base name
      * @return the edges in order, or null when nothing connects
      * @throws Exception on a failure to build
      */
-    private List<Edge> theRouteToByBfs(String station) throws Exception
+    private List<Edge> theRouteOverTheTrackTo(String station) throws Exception
     {
         Layout built = rebuild();
 
@@ -1088,9 +1099,68 @@ public class testTheLengthGuardsOnTheRealLayout
         {
             if (!to.getName().startsWith(station)) continue;
 
-            List<Edge> route = built.bfs(from, to, new LinkedList<List<Edge>>());
+            List<Edge> route = aRouteOverTheTrackAlone(built, from, to);
 
             if (route != null) return route;
+        }
+
+        return null;
+    }
+
+    /** Whether some edge after the first starts at a terminus - the route `isPathClear` refuses on that ground. */
+    private static boolean passesATerminus(List<Edge> route)
+    {
+        for (int i = 1; i < route.size(); i++)
+        {
+            if (route.get(i).getStart().isTerminus()) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * The shortest route over the track, through anything - `Layout.bfs` as it was before OB-229, with no exclusions.
+     *
+     * @param built the running layout
+     * @param start where from
+     * @param end where to
+     * @return the edges in order, or null
+     */
+    @SuppressWarnings("unchecked")
+    private static List<Edge> aRouteOverTheTrackAlone(Layout built, Point start, Point end)
+    {
+        java.util.Set<Point> visited = new java.util.HashSet<>();
+        java.util.Queue<Object[]> queue = new LinkedList<>();
+
+        queue.add(new Object[] { start, new LinkedList<Edge>() });
+
+        while (!queue.isEmpty())
+        {
+            Object[] current = queue.remove();
+            Point point = (Point) current[0];
+            List<Edge> path = (List<Edge>) current[1];
+
+            visited.add(point);
+
+            for (Edge next : built.getNeighbors(point))
+            {
+                if (next.getEnd().equals(end))
+                {
+                    List<Edge> found = new LinkedList<>(path);
+
+                    found.add(next);
+
+                    return found;
+                }
+
+                if (!visited.contains(next.getEnd()))
+                {
+                    List<Edge> longer = new LinkedList<>(path);
+
+                    longer.add(next);
+                    queue.add(new Object[] { next.getEnd(), longer });
+                }
+            }
         }
 
         return null;

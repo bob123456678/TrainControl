@@ -36,6 +36,10 @@ import org.testng.annotations.Test;
  * one point by several different routes.  testExcludedPathFallsBackToAnAlternativeViaASharedPoint below
  * fails if anyone makes that change.
  *
+ * SINCE OB-229 (2026-09-15) bfs does not extend a route through a terminus that is not its end - a route the
+ * railway refuses anyway, which spent the squares beyond it.  Nothing in this file marks a terminus, so what it pins
+ * is unchanged; `core.testARouteIsFoundPastATerminus` holds the new rule.
+ *
  * NOTE FOR ANYONE ADDING TO THIS FILE: bfs is not deterministic.  Layout.getNeighbors ends with
  * Collections.shuffle, so among several equally short routes the one returned varies per call.  An
  * assertion on an exact route is therefore only safe where the shortest route is unique - every such

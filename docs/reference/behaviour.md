@@ -1433,6 +1433,13 @@ rule less the shut squares. Adam: *"just use a different color going to manual-o
 yellow is currently forward, and orange is backwards — path, not the chevron arrows."* The colour is
 about the destination, so every square of that leg carries it; the chevrons still say the direction.
 
+**A route is found past a terminus, never through one** (OB-229, Adam 2026-09-15: *"Search past termini"*). A route may
+end at a terminus and may not pass through one - the route check refuses that on every tier. The route search used to
+extend a route through a terminus anyway, and because it spends each square on the first way it reaches it, a shorter
+way through a terminus hid a longer clear way past it: from Tunnel, 75 407 DB was offered neither RampDown nor
+BottomSecondary, though the loop over the top level reaches both and Return Home's planner found it. The right-click
+menu, autonomy's choice and Why Not Moving? all use that search. `core.testARouteIsFoundPastATerminus`.
+
 ---
 
 **A sensor announces itself however it changed** (W21-B1). A module changes state two ways - a
