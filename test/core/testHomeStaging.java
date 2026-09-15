@@ -3165,6 +3165,109 @@ public class testHomeStaging
     }
 
     /**
+     * A train that cannot reverse is turned on the way home only to back into its berth (Adam, 2026-09-15, AMH-B1).
+     *
+     * The planner rested any train on any station, and the run turns a train at every terminus and reversing point
+     * it arrives at (`ALWAYS_REVERSE`).  So a train that cannot reverse could be stepped aside onto a square that
+     * turns it and then driven on to somewhere else, running the other way - the tier disagreement the right-click
+     * menu refuses since OB-205.  Adam, on the review: *"this should only be allowed if the train is going to reverse
+     * into its berth on the next turn."*
+     *
+     * The fixture has one way home and it turns the train twice: P -> T1 -> T2 -> R, one way, T1 and T2 termini.  A
+     * route never passes a terminus, so the plan is three moves, and the rest at T1 is followed by a move to T2, not
+     * home.  THE CONTROL is the same railway with a train that can reverse, for which that plan is right.  The oracle
+     * is the ruling itself, asked of every move, so the assertion holds however the planner finds its answer.
+     */
+    @Test
+    public void testATrainThatCannotReverseIsTurnedOnTheWayOnlyToGoHome() throws Exception
+    {
+        Layout layout = load(twoTurnsBeforeHome());
+
+        assign(layout, LOC_A, "HS R");
+
+        boolean[] was = setReversible(true, LOC_A);
+
+        try
+        {
+            HomeStaging.Plan reversible = HomeStaging.snapshot(layout).plan();
+
+            assertEquals(reversible.getOutcome(), HomeStaging.Outcome.READY,
+                "control: a train that can reverse has no plan home on a railway with one way there: " + reversible);
+
+            assertNotNull(turnedAndNotSentHome(layout, reversible, true),
+                "precondition: the plan home does not rest the train on a square that turns it and then send it somewhere"
+                + " other than home, so this fixture cannot show the rule: " + reversible.getMoves());
+
+            loc(LOC_A).setReversible(false);
+
+            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+            String broken = turnedAndNotSentHome(layout, plan, false);
+
+            assertNull(broken,
+                "Return Home rests " + LOC_A + ", which cannot reverse, on a square that turns it and then sends it on"
+                + " somewhere other than its home - " + broken + ".  Adam: only to reverse into its berth on the next"
+                + " turn (AMH-B1)");
+        }
+        finally
+        {
+            restoreReversible(was, LOC_A);
+        }
+    }
+
+    /**
+     * The first move of a plan that breaks the ruling of 2026-09-15 (AMH-B1), or null.
+     *
+     * A move breaks it when it rests a train that cannot reverse on a square that turns it - a terminus or a reversing
+     * point - that is not its home, and that train's next move does not end at its home.
+     *
+     * @param asIfItCannotReverse judge every train as though it could not reverse, for the control
+     */
+    private static String turnedAndNotSentHome(Layout layout, HomeStaging.Plan plan, boolean asIfItCannotReverse)
+    {
+        List<HomeStaging.Move> moves = plan.getMoves();
+
+        for (int i = 0; i < moves.size(); i++)
+        {
+            HomeStaging.Move move = moves.get(i);
+
+            org.traincontrol.base.Locomotive train = move.getLocomotive();
+
+            Point end = move.getEnd();
+
+            if ((train.isReversible() && !asIfItCannotReverse) || !(end.isTerminus() || end.isReversing())) continue;
+
+            Point home = layout.getHomeStations().get(train);
+
+            if (home != null && home.isSamePlaceAs(end)) continue;
+
+            HomeStaging.Move next = null;
+
+            for (int j = i + 1; j < moves.size() && next == null; j++)
+            {
+                if (moves.get(j).getLocomotive().equals(train)) next = moves.get(j);
+            }
+
+            if (home == null || next == null || !home.isSamePlaceAs(next.getEnd())) return move + " then " + next;
+        }
+
+        return null;
+    }
+
+    /** P -> T1 -> T2 -> R, one way, T1 and T2 termini, a train at P: the only way to R turns it twice. */
+    private static String twoTurnsBeforeHome()
+    {
+        return json("{'points': ["
+            + station("HS P", 40, LOC_A) + ","
+            + terminus("HS T1", 41) + ","
+            + terminus("HS T2", 42) + ","
+            + station("HS R", 43, null)
+            + "],'edges': ["
+            + edge("HS P", "HS T1") + "," + edge("HS T1", "HS T2") + "," + edge("HS T2", "HS R")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
+    /**
      * A terminus may be arrived at but never driven through - and that is not the same as unreachable.
      *
      * **INVERTED 2026-09-01, and the old assertion is the finding.** This required IMPOSSIBLE, on the

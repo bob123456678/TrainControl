@@ -197,6 +197,53 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
+     * A train the rebuilt railway refuses to put back leaves no tail on the square (AMS-C2).
+     *
+     * `putTheTrainsBack` asked `moveLocomotive` and did not read its answer, then wrote the arrival side and the
+     * road onto the square whether or not the train was standing on it.  `moveLocomotive` refuses a square that
+     * is not a destination - a station demoted after a run, with the train still on it - so the square was left
+     * with a tail and no train, and nothing was said.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testATrainThatCannotBePutBackLeavesNoTailBehind() throws Exception
+    {
+        Layout built = new Layout(model);
+
+        MarklinFeedback platformSensor = model.newFeedback(8394, null);
+        MarklinFeedback passingSensor = model.newFeedback(8396, null);
+
+        model.setFeedbackState(platformSensor.getName(), false);
+        model.setFeedbackState(passingSensor.getName(), false);
+
+        built.createPoint("PLATFORM", true, platformSensor.getName());
+        built.createPoint("PASSING", false, passingSensor.getName());
+
+        Map<String, String[]> standing = new LinkedHashMap<>();
+
+        standing.put(STAYER, new String[]{"PASSING", "north"});
+
+        java.util.List<String> said = new java.util.ArrayList<>();
+
+        TrainControlUI.putTheTrainsBack(built, standing, said::add);
+
+        Point passing = built.getPoint("PASSING");
+
+        assertNull(passing.getCurrentLocomotive(),
+            "precondition: the railway stood a train on a square that is not a destination, so this is not the"
+            + " refused case");
+
+        assertNull(passing.getArrivedFrom(),
+            "the train could not be put back on PASSING and the square was given its arrival side anyway - a tail"
+            + " with no train, which the tail walk and the next capture both read (AMS-C2)");
+
+        assertFalse(said.isEmpty(),
+            STAYER + " could not be put back and nothing said so - it is standing somewhere the rebuilt railway does"
+            + " not have it (AMS-C2)");
+    }
+
+    /**
      * A placement NOBODY edited is a record, and a run outran it - so the railway wins.
      *
      * D2-A1 / W7-A1, and the case the pair above leaves out. The control beside it models the setup

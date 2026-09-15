@@ -177,6 +177,110 @@ public class testWhyStuck
     }
 
     /**
+     * By hand, a station the right-click menu does not offer is not listed as somewhere to go (AMR-B2).
+     *
+     * On Manual, Why Not Moving? skips autonomy's standing bars (MT-434) and decides each station the way the menu's
+     * route search does.  The menu itself asks one more question first - `isOfferableToOperator` - and leaves out two
+     * kinds of station: one that excludes this train (Adam, 2026-09-04: *"if it excludes the loc, don't even include it
+     * in the list"*), and a compulsory turn autonomy may choose for a train that cannot reverse (OB-205, MT-367).  The
+     * Manual answer asked neither, so it said "may go" of stations the menu never offers - the button and the
+     * explanation answering one question two ways (OB-057).
+     *
+     * THE CONTROL is the same station with nothing set: offered, and nothing said against it.
+     */
+    @Test
+    public void testByHandAStationTheMenuDoesNotOfferSaysWhy() throws Exception
+    {
+        Layout layout = twoStations("WSX");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        boolean reversibleWas = loc.isReversible();
+        Integer lengthWas = loc.getTrainLength();
+
+        try
+        {
+            loc.setReversible(true);
+            loc.setTrainLength(0);
+
+            assertTrue(layout.moveLocomotive(loc.getName(), "WSX_A", false), "could not stand the train at WSX_A");
+
+            Point b = layout.getPoint("WSX_B");
+
+            assertTrue(layout.isOfferableToOperator(b, loc), "precondition: the menu does not offer WSX_B with nothing set");
+            assertNull(layout.explainDestinations(loc, true).get("WSX_B"),
+                "control: with nothing set, Why Not Moving? on Manual has a reason against WSX_B");
+
+            // A STATION THAT EXCLUDES THE TRAIN.
+            java.util.Set<org.traincontrol.base.Locomotive> excluded = new java.util.HashSet<>();
+            excluded.add(loc);
+            b.setExcludedLocs(excluded);
+
+            assertFalse(layout.isOfferableToOperator(b, loc), "precondition: the menu offers a station that excludes the train");
+
+            String excludedWhy = layout.explainDestinations(loc, true).get("WSX_B");
+
+            assertNotNull(excludedWhy,
+                "WSX_B excludes " + loc.getName() + " and the menu does not offer it, yet Why Not Moving? on Manual lists it"
+                + " as somewhere to go (AMR-B2)");
+            assertTrue(excludedWhy.contains(loc.getName()), "the reason does not name the excluded train: " + excludedWhy);
+
+            b.setExcludedLocs(new java.util.HashSet<org.traincontrol.base.Locomotive>());
+
+            // A TERMINUS A TRAIN THAT CANNOT REVERSE WOULD BE STRANDED AT (OB-205).
+            loc.setReversible(false);
+            b.setTerminus(true);
+
+            assertFalse(layout.isOfferableToOperator(b, loc),
+                "precondition: the menu offers an ordinary terminus to a train that cannot reverse");
+
+            assertNotNull(layout.explainDestinations(loc, true).get("WSX_B"),
+                "WSX_B is a terminus autonomy may choose, " + loc.getName() + " cannot reverse and the menu does not offer"
+                + " it, yet Why Not Moving? on Manual lists it as somewhere to go (AMR-B2, OB-205)");
+        }
+        finally
+        {
+            loc.setReversible(reversibleWas);
+            loc.setTrainLength(lengthWas == null ? 0 : lengthWas);
+        }
+    }
+
+    /**
+     * A train with no length recorded is not an error against a station with a stated limit (AMR-C1).
+     *
+     * `Point.validateTrainLength` unboxed the train's length, where every other reader of it treats null as nothing
+     * known.  Its callers ask it inside route checks, so a null reached a dispatch as a NullPointerException.
+     */
+    @Test
+    public void testATrainWithNoLengthRecordedFitsAStationWithALimit() throws Exception
+    {
+        Layout layout = twoStations("WSN");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        Integer lengthWas = loc.getTrainLength();
+
+        try
+        {
+            assertTrue(layout.moveLocomotive(loc.getName(), "WSN_A", false), "could not stand the train at WSN_A");
+
+            Point b = layout.getPoint("WSN_B");
+
+            b.setMaxTrainLength(3);
+
+            loc.setTrainLength(null);
+
+            assertTrue(b.validateTrainLength(loc),
+                "a train with no length recorded was judged against a stated limit of 3 - nothing is known about it, which"
+                + " every other reader of the length treats as fitting (AMR-C1)");
+        }
+        finally
+        {
+            loc.setTrainLength(lengthWas == null ? 0 : lengthWas);
+        }
+    }
+
+    /**
      * A station with no track to it says THAT, rather than that it is busy.
      *
      * The distinction is the difference between "build some track" and "wait a minute", and a user

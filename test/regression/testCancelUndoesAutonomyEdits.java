@@ -642,6 +642,44 @@ public class testCancelUndoesAutonomyEdits
         }
     }
 
+    /**
+     * The declined-edit guard ends once a rebuild has carried the edit (AMS-B1).
+     *
+     * `setupEditDeclinedDuringRun` stops every fold of the running layout back into the setup, because the
+     * running layout was built before the edit.  It was never cleared - so after the run, when the next setup
+     * gesture rebuilds the railway from the setup (edit included) and puts the trains back where they stand,
+     * every door went on refusing: the editor opened on pre-run placements, a home set from the menu went to a
+     * pre-run square, and the exit saved no positions.  The next start put every train back where it stood before
+     * the run, which is OB-183's consequence kept alive by the guard meant to protect an edit.
+     *
+     * Cleared only by a rebuild that REPLACED the running layout: `load` can decline (a confirmation refused, a
+     * setup that will not build), and a declined load has carried nothing.
+     */
+    @Test
+    public void testTheDeclinedEditGuardEndsWhenARebuildCarriesTheEdit() throws Exception
+    {
+        final java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
+        declined.setAccessible(true);
+        try
+        {
+            declined.setBoolean(ui, true);
+            final Object before = model.getAutoLayout();
+            SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
+            settle();
+            assertNotSame(model.getAutoLayout(), before,
+                "precondition: the rebuild did not replace the running layout, so it carried nothing and the guard"
+                + " is right to stay");
+            assertFalse(declined.getBoolean(ui),
+                "the running layout was rebuilt from the setup - the declined edit with it - and the guard is still"
+                + " up, so no door folds the railway back for the rest of the session and the next start puts every"
+                + " train back where it stood before the run (AMS-B1)");
+        }
+        finally
+        {
+            declined.setBoolean(ui, false);
+        }
+    }
+
     /** Every home the setup records, square by square, as a session holds it. */
     private static Map<String, String> homes(AutonomySession of)
     {

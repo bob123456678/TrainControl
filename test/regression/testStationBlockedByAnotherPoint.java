@@ -232,6 +232,95 @@ public class testStationBlockedByAnotherPoint
             + "satisfied, and whatever is drawn at those coordinates next inherits it");
     }
 
+    /**
+     * Setting the station to pass through takes its restriction with it (AMS-B2).
+     *
+     * Demoting a station already sweeps its caption, its barred arrivals and its protecting signal.  Not this:
+     * the build emits the lock edges for any square with a restriction, station or not, so every route into the
+     * demoted square still locked every approach to the watched one - and the menu that clears a restriction is
+     * offered on stations only, so nothing but promoting the square again could take it off.
+     */
+    @Test
+    public void testDemotingTheStationTakesTheRestrictionWithIt() throws IOException
+    {
+        TileKey platform = new TileKey("main", 3, 1);
+        TileKey yard = new TileKey("main", 3, 3);
+
+        open();
+
+        session.getStore().setBlockingPoints(platform, Arrays.asList(yard));
+
+        assertEquals(session.getStore().getBlockingPoints(platform), Arrays.asList(yard),
+            "precondition: the restriction did not take");
+
+        session.setStation(platform, false);
+
+        assertTrue(session.getStore().getBlockingPoints(platform).isEmpty(),
+            "the square is no longer a station and still carries 'unavailable while the yard is occupied' - the menu"
+            + " that clears it is offered on stations only, so it cannot be taken off (AMS-B2)");
+
+        org.json.JSONArray edges =
+            new org.json.JSONObject(session.buildConfigurationForInspection()).getJSONArray("edges");
+
+        for (int i = 0; i < edges.length(); i++)
+        {
+            org.json.JSONArray locks = edges.getJSONObject(i).optJSONArray("lockedges");
+
+            if (!"Bahnsteig".equals(edges.getJSONObject(i).optString("end", null)) || locks == null) continue;
+
+            for (int at = 0; at < locks.length(); at++)
+            {
+                assertNotEquals(locks.getJSONObject(at).optString("end", null), "Abstellgleis",
+                    "a route into the demoted square still locks the approach to the yard (AMS-B2)");
+            }
+        }
+    }
+
+    /**
+     * A restriction watching a square that is not on the graph is left out of the build, not written as null
+     * (AMG-B1).
+     *
+     * The lock-edge half walks emitted edges, so a watched square off the graph is simply not found - the build's own
+     * comment says the restriction "quietly stops applying rather than taking the station out of service".  The
+     * standing-train half looked the square's name up among the reduction's Points, found none, and wrote
+     * `"blockedBy": [null]`; the railway's reader throws on a null name and invalidates the WHOLE configuration.  A
+     * station on an excluded page, a watched sensor whose track was deleted, or a page excluded after pairing all
+     * leave the store holding such a square.
+     */
+    @Test
+    public void testARestrictionWatchingASquareOffTheGraphIsLeftOut() throws IOException
+    {
+        TileKey platform = new TileKey("main", 3, 1);
+        TileKey offTheGraph = new TileKey("main", 8, 5);
+
+        open();
+
+        session.getStore().setBlockingPoints(platform, Arrays.asList(offTheGraph));
+
+        assertEquals(session.getStore().getBlockingPoints(platform), Arrays.asList(offTheGraph),
+            "precondition: the store did not keep a restriction watching a square off the graph");
+        assertFalse(session.getReducer().getPoints().containsKey(offTheGraph),
+            "precondition: the watched square is a Point of the reduction");
+
+        org.json.JSONArray points =
+            new org.json.JSONObject(session.buildConfigurationForInspection()).getJSONArray("points");
+
+        for (int i = 0; i < points.length(); i++)
+        {
+            org.json.JSONArray watching = points.getJSONObject(i).optJSONArray("blockedBy");
+
+            if (watching == null) continue;
+
+            for (int at = 0; at < watching.length(); at++)
+            {
+                assertFalse(watching.isNull(at),
+                    points.getJSONObject(i).optString("name") + " is written as held back by nothing: \"blockedBy\" holds"
+                    + " a null, which the railway's reader throws on - and that invalidates the whole configuration"
+                    + " (AMG-B1)");
+            }
+        }
+    }
+
     // ------------------------------------------------------------------------------------------
 
     private void open() throws IOException

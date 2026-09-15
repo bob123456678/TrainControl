@@ -119,6 +119,96 @@ public class testAutonomyDiagramSession
             + "assertion above would pass with the stand-in rule removed entirely");
     }
 
+    /**
+     * A capture does not judge a page whose file would not read either (AMS-A1).
+     *
+     * `captureFromLayout` folds the running layout back into the configuration and prunes every entry whose
+     * square is not in the graph, on the pages "in play".  That set was every page not excluded - so a blank
+     * stand-in for a page that would not read counted, the one text tile it carries was all that was "still
+     * there", and every placement, home, priority and exclusion on the real page was removed and written.  It
+     * is the same loss FV3-A1 closed for `save()`, by a door that fix did not reach: the capture runs when the
+     * autonomy editor opens and closes, at the exit save, and before every configuration load.
+     *
+     * THE CONTROL is on the page that did read: a setting on a square that is not there is pruned, so the
+     * first assertion is about the stand-in and not about a capture that has stopped pruning.
+     */
+    @Test
+    public void testACaptureDoesNotJudgeAPageThatWouldNotRead() throws IOException
+    {
+        session.open(Arrays.asList(runOfTrack(), secondPage()));
+        session.initialize("Evening");
+
+        TileKey onTheSecondPage = new TileKey("second", 1, 1);
+        TileKey nowhereOnTheFirst = new TileKey("main", 7, 3);
+
+        session.setPointProperty(onTheSecondPage, "priority", 7);
+        session.setPointProperty(nowhereOnTheFirst, "priority", 3);
+        session.save();
+
+        LayoutDiagram standIn = new LayoutDiagram("second", 6, 4, null, null);
+
+        standIn.setPageId("2");
+
+        standIn.markUnreadable();
+
+        AutonomySession withAStandIn = new AutonomySession(layout);
+
+        withAStandIn.open(Arrays.asList(runOfTrack(), standIn));
+
+        assertEquals(String.valueOf(withAStandIn.getPointProperty(onTheSecondPage, "priority")), "7",
+            "precondition: the priority on the second page did not reach the reopened setup");
+        assertEquals(String.valueOf(withAStandIn.getPointProperty(nowhereOnTheFirst, "priority")), "3",
+            "precondition: the setting on a square the first page does not have did not reach the reopened setup,"
+            + " so the control below cannot show the capture prunes");
+
+        withAStandIn.captureFromLayout("{\"points\": [], \"edges\": []}", "Evening");
+
+        assertEquals(String.valueOf(withAStandIn.getPointProperty(onTheSecondPage, "priority")), "7",
+            "a capture removed the priority on a page whose file would not read - it judged the page by the one"
+            + " text tile its stand-in carries, and the editor's close or the exit save writes that (AMS-A1)");
+
+        assertNull(withAStandIn.getPointProperty(nowhereOnTheFirst, "priority"),
+            "control: a setting on a square the loaded page does not have survived the capture, so the capture is"
+            + " not pruning at all and the assertion above proves nothing");
+    }
+
+    /**
+     * Moving a train in the setup takes its tail off the square it left (AMS-C1).
+     *
+     * `placeLocomotive(tile, null)` and `clearEveryPlacement` clear `loc`, the facing, `arrivedFrom` and
+     * `arrivedAlong` together (IND9-A1, WK7-B1).  The third door - placing the same train somewhere else, which
+     * sweeps it off every other square - cleared the first two only.
+     */
+    @Test
+    public void testMovingATrainInTheSetupTakesItsTailOffTheSquareItLeft() throws IOException
+    {
+        session.open(Arrays.asList(runOfTrack()));
+        session.initialize("Evening");
+
+        TileKey from = new TileKey("main", 1, 1);
+        TileKey to = new TileKey("main", 4, 1);
+
+        String name = "AMS C1 train";
+
+        session.placeLocomotive(from, name);
+        session.setPointProperty(from, "arrivedFrom", "WEST");
+        session.setPointProperty(from, "arrivedAlong", new org.json.JSONArray().put("a rail"));
+
+        assertNotNull(session.getPointProperty(from, "arrivedFrom"), "precondition: the arrival side did not take");
+        assertNotNull(session.getPointProperty(from, "arrivedAlong"), "precondition: the road did not take");
+
+        session.placeLocomotive(to, name);
+
+        assertNull(session.getLocomotiveNameAt(from), "precondition: placing the train elsewhere did not move it");
+
+        assertNull(session.getPointProperty(from, "arrivedFrom"),
+            "the square the train was moved off still records which side it came in by - the next train placed there"
+            + " inherits the last one's tail (AMS-C1, the sibling of IND9-A1)");
+
+        assertNull(session.getPointProperty(from, "arrivedAlong"),
+            "the square the train was moved off still records the road it came in along (AMS-C1, WK7-B1)");
+    }
+
     @BeforeMethod
     public void setUp() throws IOException
     {
@@ -2198,6 +2288,54 @@ public class testAutonomyDiagramSession
             + "east end is barred - and nothing said so. The findings are walking runs the railway "
             + "refuses, which is the half of OB-120 that never reached its call sites. Reported: "
             + stranded + " / " + terminus);
+    }
+
+    /**
+     * A compulsory turn that reaches nothing is named as a terminus (AMG-C1).
+     *
+     * `AutonomyChecks.isTerminus` asked the authored "terminus" key, which setting a square's flags now clears, and
+     * fell back to "no reduced edge leaves the tile" - false for every compulsory turn, whose turning copy departs.
+     * So the specific message for a terminus a train is stranded at could not be chosen for the squares it describes.
+     */
+    @Test
+    public void testAStrandedCompulsoryTurnIsNamedAsATerminus() throws Exception
+    {
+        LayoutDiagram page = pageWithATwoEndedStation();
+
+        session.open(Arrays.asList(page));
+
+        session.getStore().createConfiguration("AMG", null);
+        session.getStore().setActiveConfiguration("AMG");
+
+        TileKey west = new TileKey("main", 1, 1);
+        TileKey east = new TileKey("main", 5, 1);
+
+        session.setStation(west, true);
+        session.setPointName(west, "WestEnd");
+
+        session.setStation(east, true);
+        session.setPointName(east, "EastEnd");
+
+        session.setPointFlag(west, AutonomyBuilder.MUST_REVERSE, true);
+
+        session.setBarredArrivals(east, new java.util.LinkedHashSet<>(session.arrivalSides(east)));
+
+        session.rebuild();
+
+        assertTrue(session.mandatoryTurnTiles().contains(west), "precondition: the west end is not a compulsory turn");
+
+        java.util.List<String> stranded =
+            subjectsOf(org.traincontrol.automationui.AutonomyChecks.STATION_REACHES_NOTHING);
+
+        java.util.List<String> terminus =
+            subjectsOf(org.traincontrol.automationui.AutonomyChecks.TERMINUS_STRANDED);
+
+        assertTrue(stranded.contains("WestEnd") || terminus.contains("WestEnd"),
+            "precondition: the west end reaches nothing and neither finding names it: " + stranded + " / " + terminus);
+
+        assertTrue(terminus.contains("WestEnd"),
+            "the west end is a compulsory turn that reaches no station, and the check named it as a station that reaches"
+            + " nothing rather than as a terminus a train would be stranded at (AMG-C1)");
     }
 
     /**
