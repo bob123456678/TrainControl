@@ -798,9 +798,14 @@ points — no distribution of the measurements changes that — and he rules it 
 **What decides is how long the train stays.**
 
 - At a **station autonomy may choose**, a train is PASSING. It fits if it fits past the last switch,
-  as above, **or** within its own approach. The bound is the approach's own length, so a train longer
-  than the whole run in is still refused: its tail would lie back over the edge before it, where
-  nothing has been measured.
+  as above, **or** within the measured track of the route it drives in on (FR-087, Adam on MT-431,
+  2026-09-15: *"BottomMainA should be allowed at length 3, since it is not a parking spot, the station
+  allows the length, and the length would be tracked"*). The route is counted back from the destination,
+  leg by leg, for as long as each leg is measured and never back past a square the train turns at (the
+  berth's own bound, 2026-09-11); a train that ends inside that stretch is accepted, and
+  its tail lies on the route and blocks it (5c). A leg with no length stops the count, so a train longer
+  than the measured track in is still refused. `Layout.theApproachItselfHoldsIt`;
+  `regression.testAPassingTrainMayStandAcrossThePoints.testTheRouteInHoldsAThreeUnitTrainAndNotAFourUnitOne`.
 - At a **parking berth** — a square with *Can Be Chosen In Full Autonomy* off — a train is STAYING,
   and a berth is not worth a road. On top of the room rule it must foul no track that is not a way in
   or out of its own square. Its own roads are excluded because the train being there blocks them
@@ -873,13 +878,17 @@ places, or no length, both halves fall back to the answer 5a already gives.
     are one road; its two ends, one per arrival side, are two);
     elsewhere every answer describes the same track. Not asked, or closed without an answer, the road the train
     had on the railway is kept where it stays on the same square with the same side; **Not known** forgets it. The
-    list starts on the road it has. The list
-    offers each such sensor, nearest first, and **Not known**, which keeps the fork rule. The same list is in
+    list starts on the road it has; with none, on the one sensor nearest the back of the train where exactly one
+    qualifies - no other offered sensor lies further back on the same road - and on nothing otherwise (FR-088,
+    Adam on MT-435, 2026-09-15: *"so the user can just click OK if appropriate"*). The list
+    offers each such sensor, nearest first, and **Not known**, which keeps the fork rule. A sensor exactly the
+    train's length back is offered: the tail has reached it (OB-226). Only roads a train can drive in on are
+    offered - the walk back takes rails that run towards the train - so a road it could only have reversed along is
+    not one (OB-227, Adam: *"that isn't a realistic path"*). The same list is in
     the right-click menu under **Farthest sensor the tail crossed**, and in the autonomy editor **Pick on the
     diagram...** outlines the sensors to click instead. Which sensors are offered is worked out from the
     measured lengths of the roads back and is a suggestion: what blocks track is still this walk, reading the
-    road chosen. A road given this way may run along rails laid the other way; the walk follows it regardless
-    of direction, as it follows the first hop. `core.testTheTailCrossedQuestion`,
+    road chosen. A road given this way runs along rails laid towards the train, as a run's road does. `core.testTheTailCrossedQuestion`,
     `regression.testTheTailCanBeGivenInTheEditor`.
 - **It stops at unmeasured track.** Only positive lengths are determinate.
 - **The square the train is standing on is an allowance, not track it lies over.** Adam, 2026-09-13:
@@ -1267,6 +1276,14 @@ not fight: the post-processor only ever sees what the focus owner did not want.
   station closed by one already parked, and Return Home answers `NO_PLAN_FOUND` — not `IMPOSSIBLE`,
   which names locomotives and asserts no arrangement exists. See §1.
 - It never asks the operator anything: the operator's decision was made when the homes were set.
+- **It knows where the tails of the trains it moves will lie** (OB-228, Adam on MT-335, 2026-09-15: *"the path
+  stayed blocked"*). A train the plan has moved stands at the end of the route the plan gave it, having come in by
+  that route's last rail and along that route - what an arrival records - so its tail is walked by the runtime's own
+  code (`Layout.walkOneTail`, asked through `edgesATailWouldCover`) and no later move is routed over it. A train
+  that has not moved is judged by the tail it has on the railway, as before (OB-184). Making every move it can, in
+  the order it meets the trains, can now leave a tail across the run another train needs, so when the search from
+  that arrangement finds nothing it searches again from the start.
+  `core.testReturnHomeKeepsClearOfTheTailsItLeaves`.
 
 **Whether it is on offer is asked once, off the event thread** (OB-192, second round). "Is anything
 away from home" is cheap but not free of a lock: it builds a `HomeStaging.snapshot`, which calls
@@ -1390,6 +1407,15 @@ On **Auto**, a station autonomy is told to leave alone is reported as reachable 
 which is the state somebody opens the panel to explain. The route is still drawn, because the track
 is passable and reporting "no path" would be a lie about the railway to make a point about the
 settings.
+
+**Why Not Moving? follows Path Type as well** (MT-434, Adam 2026-09-15, asked which tool: *"Why Not
+Moving?"*). On **Auto** it answers for autonomy: the stations it could choose but cannot right now, and the
+stations it will never choose, each with autonomy's reason. On **Manual** it answers for a train sent by hand, the
+way the right-click menu decides what to offer: autonomy's standing bars - not to be chosen, switched off, a train
+excluded, a reversing square - are not reasons there, so those stations are listed as reachable when a route is
+clear, and every refusal is under *Stations the train cannot be sent to right now*. Switching the radio asks the
+last square again. `Layout.explainDestinations(Locomotive, boolean)`;
+`regression.testPathTypeRedrawsTheTestInTheEditor.testWhyNotMovingFollowsPathType`.
 
 **And the drawn route says it too, in its colour** (Adam, 2026-09-09). A tested path is drawn yellow
 on the way out and orange on the way back; a leg whose **destination** is a station autonomy will

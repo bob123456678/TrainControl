@@ -8769,6 +8769,12 @@ public class Layout
 
         for (int i = path.size() - 1; i >= 0; i--)
         {
+            // NOT BACK PAST A TURN.  Adam, 2026-09-11: the berth is *"measured back to whichever of the last switch and
+            // the reversal is met first"* - a train that changed direction on the way does not lie back over the track
+            // it drove before the turn.  The same test `measuredRoomAtTheEndOf` makes, so the room rule and this
+            // allowance stop at the same square.
+            if (i < path.size() - 1 && path.get(i).getEnd() != null && path.get(i).getEnd().isReversing()) break;
+
             int leg = path.get(i).getLength();
 
             if (leg <= 0) break;

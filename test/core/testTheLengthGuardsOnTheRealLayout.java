@@ -766,7 +766,8 @@ public class testTheLengthGuardsOnTheRealLayout
      * So it searches for a destination the railway will offer once it is measured wide, and asserts
      * the boundary there. What is being tested is the RULE, and the rule is not about one berth.
      *
-     * MUTATION: `>=` in place of `>` at the guard fails the first assertion.
+     * MUTATION: `>=` in place of `>` at the guard leaves no berth where exactly-fits is offered, and the search's
+     * assertion fails.
      *
      * @throws Exception on a failure to build
      */
@@ -805,13 +806,16 @@ public class testTheLengthGuardsOnTheRealLayout
 
             for (String candidate : offeredDestinations(train))
             {
-                // A STATION AUTONOMY MAY CHOOSE, because at one it may not the berth rule refuses a long train
-                // for fouling a road - a different rule, which would select a berth where BOTH lengths are
-                // refused and make the exactly-fits claim about the wrong thing (found 2026-09-14, when the
-                // room rule stopped judging passed squares and the search reached ParkingTrack6).
+                // A PARKING BERTH - Can Be Chosen In Full Autonomy off - since FR-087 (Adam, on MT-431,
+                // 2026-09-15).  At a station autonomy may choose, a train the measured route in holds is admitted
+                // however little room lies past the last switch, and with every tile measured wide every such
+                // station holds one unit more: the room rule binds at a berth.  A berth also refuses a train that
+                // fouls a road it does not own - a different rule, which can refuse BOTH lengths (ParkingTrack6,
+                // found 2026-09-14) - so a berth is taken only where exactly-fits is offered too.  What the search
+                // cannot supply is that the boundary sits at the room the guard is measured to see.
                 Point asked = rebuild().getPoint(candidate);
 
-                if (asked == null || !asked.isAutoDestination()) continue;
+                if (asked == null || asked.isAutoDestination()) continue;
 
                 int here = roomTheGuardSees(train, candidate);
 
@@ -821,6 +825,10 @@ public class testTheLengthGuardsOnTheRealLayout
 
                 if (offers(train, candidate)) continue;
 
+                train.setTrainLength(here);
+
+                if (!offers(train, candidate)) continue;
+
                 berth = candidate;
                 room = here;
 
@@ -828,9 +836,9 @@ public class testTheLengthGuardsOnTheRealLayout
             }
 
             assertNotNull(berth,
-                "no destination on this railway refuses a train one unit too long for it, so the length"
-                + " guard binds nowhere and there is no boundary to test. That is either a railway with"
-                + " no reversing berths measured, or a guard that has stopped refusing");
+                "no parking berth on this railway admits a train exactly as long as the room the guard"
+                + " measures there and refuses one unit more. That is a railway with no berth measured, a"
+                + " guard that has stopped refusing, or one that refuses exactly-fits - `>=` where `>` is");
 
             // EXACTLY FITS.
             train.setTrainLength(room);

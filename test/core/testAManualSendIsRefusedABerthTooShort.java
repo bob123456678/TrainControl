@@ -345,7 +345,14 @@ public class testAManualSendIsRefusedABerthTooShort
 
         berth.setTerminus(terminus);
 
-        // A long approach BEFORE the switch, which must not count: the binding measurement is the
+        // A PARKING BERTH - Can Be Chosen In Full Autonomy off - which is what Adam's MT-262 square was
+        // (bottomlongpark).  Since FR-087 (Adam, on MT-431, 2026-09-15) a station autonomy MAY choose takes a
+        // train the measured route in holds, so at one this 50-unit approach admits the four-unit train by his
+        // ruling; the room rule this class is about is the berth's.
+        // `regression.testAPassingTrainMayStandAcrossThePoints` holds the station half.
+        berth.setAutoDestination(false);
+
+        // A long approach BEFORE the switch, which must not count at a berth: the binding measurement is the
         // stretch after the last switch, and a rule that adds this in admits everything.
         Edge approach = layout.createEdge(start.getName(), middle.getName());
         Edge run = layout.createEdge(middle.getName(), berth.getName());
