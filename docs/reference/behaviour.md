@@ -1290,6 +1290,12 @@ not fight: the post-processor only ever sees what the focus owner did not want.
   station closed by one already parked, and Return Home answers `NO_PLAN_FOUND` — not `IMPOSSIBLE`,
   which names locomotives and asserts no arrangement exists. See §1.
 - It never asks the operator anything: the operator's decision was made when the homes were set.
+- **A train that cannot reverse is turned on the way only to go home** (Adam, 2026-09-15, AMH-B1: *"this should
+  only be allowed if the train is going to reverse into its berth on the next turn"*). Every leg of a plan ends
+  with the train turned round if it stops at a terminus or a reversing point, so a plan may stop such a train on one
+  only when the train has a home and its next move takes it there; a train the railway already had standing on one
+  moves as before. Where the only arrangement needs anything else, the answer is `NO_PLAN_FOUND`.
+  `core.testHomeStaging.testATrainThatCannotReverseIsTurnedOnTheWayOnlyToGoHome`.
 - **It knows where the tails of the trains it moves will lie** (OB-228, Adam on MT-335, 2026-09-15: *"the path
   stayed blocked"*). A train the plan has moved stands at the end of the route the plan gave it, having come in by
   that route's last rail and along that route - what an arrival records - so its tail is walked by the runtime's own
@@ -1425,9 +1431,13 @@ settings.
 **Why Not Moving? follows Path Type as well** (MT-434, Adam 2026-09-15, asked which tool: *"Why Not
 Moving?"*). On **Auto** it answers for autonomy: the stations it could choose but cannot right now, and the
 stations it will never choose, each with autonomy's reason. On **Manual** it answers for a train sent by hand, the
-way the right-click menu decides what to offer: autonomy's standing bars - not to be chosen, a train excluded, a
-reversing square on the way or at the end - are not reasons there, so those stations are listed as reachable when a
-route is clear, and every refusal is under *Stations the train cannot be sent to right now*. A switched-off station
+way the right-click menu decides what to offer: autonomy's standing bars - not to be chosen, a reversing square on
+the way or at the end - are not reasons there, so those stations are listed as reachable when a route is clear, and
+every refusal is under *Stations the train cannot be sent to right now*.  **What the menu itself leaves out is still
+a reason by hand** (AMR-B2): a station that excludes the train, and a terminus autonomy may choose for a train that
+cannot reverse (OB-205) - `Layout.isOfferableToOperator`'s rule, asked through the same method, so the list and
+its explanation cannot disagree.  This paragraph used to list "a train excluded" among the bars that do not count,
+while the menu left the station out. A switched-off station
 is still refused by hand, as the first paragraph of this section says of both tiers: the route check refuses an
 inactive destination whatever sends the train, so it is listed there with that reason (MFV-C5). Switching the radio asks the
 last square again. `Layout.explainDestinations(Locomotive, boolean)`;
