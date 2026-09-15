@@ -1068,6 +1068,22 @@ MB-C1	2026-08-18-v2.8.1-master-review.md	Closed	**Fixed on master** `68d78e4`
 MB-C2	2026-08-18-v2.8.1-master-review.md	Closed	**Fixed on both** - master `68d78e4`, v3.0.0 `0e3e280`
 MB-C3	2026-08-18-v2.8.1-master-review.md	Closed	**Fixed on both** - master `68d78e4`, v3.0.0 `0e3e280`
 MB-D1	2026-08-18-v2.8.1-master-review.md	Closed	Recorded
+MFR-B1	2026-09-15-MFR-feedback-fixes-review.md	-	Fixed
+MFR-B2	2026-09-15-MFR-feedback-fixes-review.md	-	Fixed
+MFR-B3	2026-09-15-MFR-feedback-fixes-review.md	-	Fixed
+MFR-C1	2026-09-15-MFR-feedback-fixes-review.md	-	Held - Adam's ruling
+MFR-C2	2026-09-15-MFR-feedback-fixes-review.md	-	Fixed
+MFR-C3	2026-09-15-MFR-feedback-fixes-review.md	-	Held
+MFR-C4	2026-09-15-MFR-feedback-fixes-review.md	-	Fixed
+MFR-C5	2026-09-15-MFR-feedback-fixes-review.md	-	Fixed
+MFR-C6	2026-09-15-MFR-feedback-fixes-review.md	-	Fixed
+MFR-C7	2026-09-15-MFR-feedback-fixes-review.md	-	Fixed
+MFR-C8	2026-09-15-MFR-feedback-fixes-review.md	-	Noted on OB-229
+MFR-D1	2026-09-15-MFR-feedback-fixes-review.md	-	A square with no incoming rail on the recorded side is never asked the tail question - a t
+MFR-D2	2026-09-15-MFR-feedback-fixes-review.md	-	Control+N is also the main window's notes key - separate windows, a frame-scoped post-proc
+MFR-D3	2026-09-15-MFR-feedback-fixes-review.md	-	`putIfAbsent(roadKeyOf(...))` merges a lane copy and its turning copy - one piece of metal
+MFR-D4	2026-09-15-MFR-feedback-fixes-review.md	-	`beyond < 0` at the first hop counts the standing square's own measurement - pre-existing,
+MFR-D5	2026-09-15-MFR-feedback-fixes-review.md	-	The three fixture moves from stations to parking berths follow FR-087 and hide no defect; 
 MON-A1	MON-month-2026-09-07.md	Closed	Reverted (the doors speak the geometry again); the proper fix needs a curved fixture and i
 MON-B1	MON-month-2026-09-07.md	Closed	Fixed (stated in the body)
 MON-B2	MON-month-2026-09-07.md	Closed	Fixed (stated in the body)
