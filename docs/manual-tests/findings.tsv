@@ -2757,7 +2757,7 @@ WKV-B2	2026-09-14-WKV-fix-validation.md	-	Fixed
 WKV-B2	2026-09-14-WKW-fix-validation-round-two.md	-	A moved train, a pending turn, a direction learned by the follower and a rename all surviv
 WKV-C1	2026-09-14-WKV-fix-validation.md	-	Held
 WKV-C1	2026-09-14-WKW-fix-validation-round-two.md	-	Cancel undoes a clear, not a placement, so MT-430's *"Placing ... is still not undone"* st
-WKW-B1	2026-09-14-WKW-fix-validation-round-two.md	-	Held
+WKW-B1	2026-09-14-WKW-fix-validation-round-two.md	-	Accepted
 WKW-B2	2026-09-14-WKW-fix-validation-round-two.md	-	Fixed
 WKW-C1	2026-09-14-WKW-fix-validation-round-two.md	-	Fixed
 WKW-C2	2026-09-14-WKW-fix-validation-round-two.md	-	Fixed

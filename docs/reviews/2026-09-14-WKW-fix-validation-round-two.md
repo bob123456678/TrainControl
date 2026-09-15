@@ -1,6 +1,6 @@
 # Second validation of the WK7 fix rounds, 2026-09-14
 
-**Status:** closed 2026-09-14 - WKW-B2, WKW-C1, WKW-C2 and the remaining text fixed; WKW-B1 held for Adam
+**Status:** closed 2026-09-14 - WKW-B2, WKW-C1, WKW-C2 and the remaining text fixed; WKW-B1 accepted as it is by Adam
 
 **What happened to each finding is in the status column and in `docs/manual-tests/findings.tsv`.**  The repairs were made after this document was written and were not validated by a further round - Adam capped the validation at two (*"iterate up to 2x with an opus validator"*) - so the code they touch is held by its own claims, seen red first, and by the battery.
 
@@ -35,18 +35,20 @@
 
 | id | status | where |
 |---|---|---|
-| WKW-B1 | Held for Adam | `TrainControlUI.putTheTrainsBack` - "Cancel puts them back" is false when a cleared square has been given to another train |
+| WKW-B1 | Accepted (Adam) | `TrainControlUI.putTheTrainsBack` - "Cancel puts them back" is false when a cleared square has been given to another train |
 | WKW-B2 | Fixed | `TrainControlUI.captureRunningLayout` - opening the editor removed a setup edit declined during a run |
 
 ### WKW-B1 - a cleared locomotive is lost when its square went to another train before Cancel
 
 | | |
 |---|---|
-| **Disposition** | Held |
+| **Disposition** | Accepted |
 
 A stands on S.  Clear All Locomotives; place B on S in the editor, whose rebuild names B so it stands on S on the railway; press Cancel (or close the application and Discard).  The restored setup has A on S and the rebuild regenerates it - then `putTheTrainsBack` puts B back on S, because B was standing there and is not named, and `moveLocomotive` clears the square, taking A with it.  The capture writes S = B.  A is gone from the setup after the warning promised it back.  A single-square Remove followed by the same placement does the same.
 
 **Held, not changed.**  Fixing it means Cancel undoing a placement wherever it collides with one the restored setup puts back, and MT-430, which Adam passed, says *"Placing ... is still not undone by Cancel"*.  Which answer wins on that square - the editor's placement or the setup as it opened - is his call.
+
+**Adam, 2026-09-14:** *"For B1, I am OK with the locomotive being overwritten."*  So the train placed in the editor keeps the square after Cancel, as MT-430 says placing does, and the cleared one is not put back there.  No change to the code or to the warning.
 
 ### WKW-B2 - opening the editor removes a setup edit declined during a run
 
