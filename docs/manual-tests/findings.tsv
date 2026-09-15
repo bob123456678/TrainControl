@@ -2740,7 +2740,7 @@ WK3-C1	2026-09-02-week-of-commits-review.md	Closed	`TrainControlUI.java:5183` vs
 WK3-C2	2026-09-02-week-of-commits-review.md	Closed	`TrainControlUI.java:16115`, `:24541-24560`, `Route.java:115`
 WK3-C3	2026-09-02-week-of-commits-review.md	Closed	`AutonomySession.java:3364`, `:4041`, `:4083`
 WK3-D1	2026-09-02-week-of-commits-review.md	Closed	`MarklinControlStation.java:552`
-WK7-B1	2026-09-14-WK7-seven-day-review.md	-	Held
+WK7-B1	2026-09-14-WK7-seven-day-review.md	-	Fixed
 WK7-B1	2026-09-14-WKV-fix-validation.md	-	The reason overstated MT-432: its steps drive and look, and do not rebuild; its warning li
 WK7-B1	2026-09-14-WKW-fix-validation-round-two.md	-	The revised reason said MT-432 names opening the editor; it names closing it. **Corrected.
 WK7-C1	2026-09-14-WK7-seven-day-review.md	-	Fixed

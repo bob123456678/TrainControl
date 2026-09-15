@@ -274,6 +274,98 @@ public class testTheTailCanBeGivenInTheEditor
         }
     }
 
+    /**
+     * Pasting a long train asks for the farthest sensor its tail crossed, and keeps the answer (the paste door).
+     *
+     * The real Control+V gesture over the square (`TrainControlUI.locomotiveGestureOnDiagram`), with the questions
+     * answered through their test doors.  The answer is the farthest sensor offered, so the road recorded is one no
+     * other answer - and no answer at all - would give.
+     */
+    @Test
+    public void testPastingALongTrainAsksAndKeepsTheAnswer() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            Point before = f.standing();
+
+            assertNotNull(before, "precondition: the train is not standing anywhere");
+
+            String side = before.getArrivedFrom();
+
+            // THE HEADING IT HAD, so a may-reverse square's facing question is answered rather than shown: a dialog
+            // nobody can see would hold the run until it timed out.
+            final org.traincontrol.automationui.TilePorts.Side heading =
+                session.facingOf(f.train.getName(), model.getAutoLayout());
+
+            List<TailCrossedPrompt.Choice> offered = f.choices();
+
+            TailCrossedPrompt.Choice farthest = offered.get(offered.size() - 1);
+
+            // OFF THE RAILWAY AND ON THE CLIPBOARD, which is what Control+X leaves behind.
+            SwingUtilities.invokeAndWait(() -> model.getAutoLayout().moveLocomotive(null, before.getName(), true));
+
+            settle();
+
+            org.traincontrol.gui.ArrivalSidePrompt.answerForTests(side);
+            org.traincontrol.gui.FacingPrompt.answerForTests(heading);
+            TailCrossedPrompt.answerForTests(farthest.getFarthest().getName());
+
+            final java.lang.reflect.Field cut = TrainControlUI.class.getDeclaredField("cutLocomotive");
+            cut.setAccessible(true);
+
+            final java.lang.reflect.Method gesture = TrainControlUI.class.getDeclaredMethod(
+                "locomotiveGestureOnDiagram", int.class, boolean.class);
+            gesture.setAccessible(true);
+
+            final Object[] handled = new Object[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    cut.set(ui, f.train);
+                    ui.setHoveredDiagramTile(f.tile.getPage(), f.tile.getX(), f.tile.getY());
+                    handled[0] = gesture.invoke(ui, java.awt.event.KeyEvent.VK_V, true);
+                }
+                catch (Exception refused)
+                {
+                    handled[0] = refused;
+                }
+            });
+
+            settle();
+
+            assertEquals(handled[0], Boolean.TRUE, "the diagram's paste door did not take Control+V: " + handled[0]);
+
+            Point after = f.standing();
+
+            assertNotNull(after, "precondition: the paste put the train nowhere");
+
+            assertEquals(after.getArrivedFrom(), side, "precondition: the paste recorded a different side, so the"
+                + " sensors offered are not the ones this claim answered from");
+
+            assertEquals(session.getArrivedAlong(f.tile), Layout.namesOfRoad(farthest.getRoad()),
+                "a " + LONG + "-unit train pasted where its tail can have crossed sensors on two roads back was not asked"
+                + " for the farthest one, or the answer " + farthest.getLabel() + " was not kept in the setup");
+
+            TailCrossedPrompt.Choice onTheRailway = TailCrossedPrompt.recordedChoice(f.choices(), after.getArrivedAlong());
+
+            assertNotNull(onTheRailway, "the answer reached the setup and not the train on the running railway");
+
+            assertEquals(onTheRailway.getFarthest().getName(), farthest.getFarthest().getName(),
+                "the train on the running railway follows a different road from the one answered");
+        }
+        finally
+        {
+            TailCrossedPrompt.answerForTests(null);
+            org.traincontrol.gui.ArrivalSidePrompt.answerForTests(null);
+            org.traincontrol.gui.FacingPrompt.answerForTests(null);
+            f.close();
+        }
+    }
+
     // ---------------------------------------------------------------- the fixture
 
     /** One claim's railway: the setup as found, measured, a long train found, an editor open on its page. */
@@ -283,7 +375,7 @@ public class testTheTailCanBeGivenInTheEditor
         private final LayoutEditor editor;
         private final AutonomyEditorPanel panel;
         private final TileKey tile;
-        private final Locomotive train;
+        final Locomotive train;
         private final Integer lengthWas;
 
         private Fixture(org.json.JSONObject asFound, LayoutEditor editor, TileKey tile, Locomotive train, Integer lengthWas)
