@@ -1300,6 +1300,15 @@ PRW-D6	2026-09-12-PRW-three-day-review.md	-	`places` end to end
 PRW-D7	2026-09-12-PRW-three-day-review.md	-	the platform relaxation's safety claim
 PRW-D8	2026-09-12-PRW-three-day-review.md	-	the editor's one-argument `facingOf`
 PRW-D9	2026-09-12-PRW-three-day-review.md	-	smaller working-tree changes
+PTR-B1	2026-09-15-PTR-route-search-past-termini-review.md	-	Fixed
+PTR-C1	2026-09-15-PTR-route-search-past-termini-review.md	-	Fixed (stated in the body)
+PTR-C2	2026-09-15-PTR-route-search-past-termini-review.md	-	Fixed (stated in the body)
+PTR-C3	2026-09-15-PTR-route-search-past-termini-review.md	-	two sibling pins walk `bfs` on the snapshot and were not shown re-run
+PTR-C4	2026-09-15-PTR-route-search-past-termini-review.md	-	Fixed (stated in the body)
+PTR-D1	2026-09-15-PTR-route-search-past-termini-review.md	-	`bfs`'s pruning is exactly `isPathClear`'s intermediate-terminus set: a terminus start is 
+PTR-D2	2026-09-15-PTR-route-search-past-termini-review.md	-	A long loop holds the layout monitor for its whole configuration (150 ms an edge and more)
+PTR-D3	2026-09-15-PTR-route-search-past-termini-review.md	-	A round trip onto a train's own square reaches `executePath` only from a hand-edited timet
+PTR-D4	2026-09-15-PTR-route-search-past-termini-review.md	-	The OB-229 claim is red for the reason it names and the round-trip claim's count of 0 can 
 PV-B1	2026-07-27-post-cycle-verification.md	Closed	Fixed (stated in the body)
 PV-C1	2026-07-27-post-cycle-verification.md	Closed	Fixed (stated in the body)
 PV-C2	2026-07-27-post-cycle-verification.md	Closed	**Fixed 2026-07-27**. Fix validated, including a deadlock audit of the new lock scope
