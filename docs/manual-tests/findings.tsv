@@ -2027,6 +2027,16 @@ TDR-C6	2026-09-14-TDR-ten-day-review.md	-	Fixed
 TDR-C7	2026-09-14-TDR-ten-day-review.md	-	Fixed
 TDR-C8	2026-09-14-TDR-ten-day-review.md	-	Fixed
 TDR-C9	2026-09-14-TDR-ten-day-review.md	-	Fixed
+TLR-A1	2026-09-15-TLR-tail-feature-review.md	-	Fixed
+TLR-A2	2026-09-15-TLR-tail-feature-review.md	-	Fixed
+TLR-B1	2026-09-15-TLR-tail-feature-review.md	-	Fixed
+TLR-B2	2026-09-15-TLR-tail-feature-review.md	-	Fixed
+TLR-B3	2026-09-15-TLR-tail-feature-review.md	-	Held
+TLR-C1	2026-09-15-TLR-tail-feature-review.md	-	stale comments: `Point.getArrivedAlong`, `AutonomySession.captureFromLayout`, `Layout.walk
+TLR-C2	2026-09-15-TLR-tail-feature-review.md	-	`testTheTailCanBeGivenInTheEditor` said Escape and pressed the right-click cancel
+TLR-C3	2026-09-15-TLR-tail-feature-review.md	-	`TailCrossedPrompt.label` - the "via" could name the junction itself
+TLR-C4	2026-09-15-TLR-tail-feature-review.md	-	`GraphLocAssign.commitAndRecord` - the tail dialog had no parent
+TLR-C5	2026-09-15-TLR-tail-feature-review.md	-	the three doors kept an old road when the answer was Not Known
 TR-A1	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
 TR-A10	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
 TR-A11	2026-08-21-review-dispositions.md	Closed	-
