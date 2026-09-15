@@ -833,6 +833,8 @@ public class AutonomyEditorPanel extends JPanel
         pendingPortal = null;
         signalFor = null;
         blockingFor = null;
+        tailFor = null;
+        tailPicks.clear();
         highlightedSignals.clear();
         traces.clear();
 
@@ -914,6 +916,11 @@ public class AutonomyEditorPanel extends JPanel
         oneWayFrom = null;
         signalFor = null;
         blockingFor = null;
+
+        if (tailFor != null) highlightedSignals.clear();
+
+        tailFor = null;
+        tailPicks.clear();
     }
 
     /**
@@ -971,7 +978,7 @@ public class AutonomyEditorPanel extends JPanel
     private boolean anythingIsArmed()
     {
         return tool != Tool.NONE || testFrom != null || oneWayFrom != null
-            || pendingPortal != null || signalFor != null || blockingFor != null;
+            || pendingPortal != null || signalFor != null || blockingFor != null || tailFor != null;
     }
 
     private JScrollPane buildFindings()
@@ -3314,6 +3321,10 @@ public class AutonomyEditorPanel extends JPanel
                 {
                     session.setArrivedFrom(target, side);
 
+                    // A ROAD BACK DESCRIBES ONE SIDE (2026-09-14): the tail cannot lie along a road that leaves by
+                    // another, so a changed side forgets it, here and on the railway below.
+                    if (!side.equals(recorded)) session.setArrivedAlong(target, null);
+
                     // SAVED AND SHOWN, like every other door that writes a point property.
                     // A setting that changes nothing the operator can see, and is gone at the
                     // next load, is the shape the surface rule beside this exists to catch.
@@ -3330,6 +3341,8 @@ public class AutonomyEditorPanel extends JPanel
                         org.traincontrol.automation.Point on = pointOnTheLayout(now, target);
 
                         if (on != null) on.setArrivedFrom(side);
+
+                        if (on != null && !side.equals(recorded)) on.setArrivedAlong(null);
                     }
                 }));
         }
@@ -3514,7 +3527,172 @@ public class AutonomyEditorPanel extends JPanel
             }
         }
 
+        // AND HOW FAR BACK ITS TAIL REACHES (Adam, 2026-09-14).
+        //
+        // *"the prompt should ask the user to pick from a list and select the farthest sensor the tail of the train
+        // recently crossed.  Also, ideally in the autonomy editor, it should allow the user to click to select as
+        // well."*  The same list as the placement question, in the same menu as the side it follows from, on both
+        // surfaces - and in the editor a way to click the sensor instead.
+        appendTailCrossed(facingMenu, target);
+
         return facingMenu;
+    }
+
+    /**
+     * The "farthest sensor the tail crossed" choices for the train standing here, where the answer matters.
+     *
+     * Nothing is added unless `TailCrossedPrompt.wouldAsk` says the tail can have crossed sensors on two roads back
+     * from one junction: elsewhere every answer describes the same track.  The ticked entry is the recorded road -
+     * the running layout's, since that is what blocks track - matched as the longest choice it ends with, because a
+     * driven train's road starts wherever it set off.
+     *
+     * @param menu the facing menu
+     * @param target the square
+     */
+    private void appendTailCrossed(javax.swing.JMenu menu, final TileKey target)
+    {
+        org.traincontrol.automation.Layout running = runningLayout == null ? null : runningLayout.get();
+
+        if (running == null) return;
+
+        org.traincontrol.automation.Point point = pointOnTheLayout(running, target);
+
+        if (point == null || point.getCurrentLocomotive() == null) return;
+
+        String side = point.getArrivedFrom() != null ? point.getArrivedFrom() : session.getArrivedFrom(target);
+
+        Integer length = point.getCurrentLocomotive().getTrainLength();
+
+        if (!TailCrossedPrompt.wouldAsk(running, point, side, length)) return;
+
+        java.util.List<TailCrossedPrompt.Choice> choices =
+            TailCrossedPrompt.choicesFor(running, point, side, length, session::baseNameOf);
+
+        TailCrossedPrompt.Choice ticked = TailCrossedPrompt.recordedChoice(choices, point.getArrivedAlong());
+
+        menu.addSeparator();
+        menu.add(heading(I18n.t("autosetup.ui.headingTailCrossed")));
+
+        javax.swing.ButtonGroup group = new javax.swing.ButtonGroup();
+
+        for (final TailCrossedPrompt.Choice choice : choices)
+        {
+            menu.add(radio(group, choice.getLabel(), "autosetup.ui.hintTailCrossed", choice == ticked,
+                () -> recordTailRoad(target, choice.getRoad())));
+        }
+
+        menu.add(radio(group, I18n.t("autosetup.ui.tailCrossedNotKnown"), "autosetup.ui.hintTailCrossed",
+            ticked == null, () -> recordTailRoad(target, null)));
+
+        // CLICKING IS THE EDITOR'S: on the track diagram's menu this panel has no grid to be clicked on.
+        if (!menuOnly && page != null)
+        {
+            menu.add(item(I18n.t("autosetup.ui.menuPickTailCrossed"), () -> armTailPick(target)));
+        }
+    }
+
+    /**
+     * Writes the road the tail lies along - to the setup, and to the train on the running railway.
+     *
+     * The railway as well as the file, for the reason the side radio gives: what blocks track is the Point.
+     *
+     * @param target the square the train stands on
+     * @param road the road, or null for Not Known
+     */
+    private void recordTailRoad(TileKey target, java.util.List<org.traincontrol.automation.Edge> road)
+    {
+        String names = org.traincontrol.automation.Layout.namesOfRoad(road);
+
+        session.setArrivedAlong(target, names);
+
+        org.traincontrol.automation.Layout now = runningLayout == null ? null : runningLayout.get();
+
+        if (now != null)
+        {
+            org.traincontrol.automation.Point on = pointOnTheLayout(now, target);
+
+            if (on != null) on.setArrivedAlong(names == null ? null : now.roadNamed(names));
+        }
+
+        setupChanged();
+    }
+
+    /**
+     * Hands the next click on the diagram to the tail of the train standing at `target` (2026-09-14).
+     *
+     * The sensors it can have crossed are outlined, a click on one records its road, and a click anywhere else says
+     * so and stays armed - the blocker pick's rule, because missing a small square is the ordinary mistake.  Where
+     * two roads reach the same sensor the click is followed by the list, narrowed to those two.
+     *
+     * @param target the square the train stands on
+     */
+    private void armTailPick(TileKey target)
+    {
+        if (needsTheGrid(target)) return;
+
+        org.traincontrol.automation.Layout running = runningLayout == null ? null : runningLayout.get();
+
+        if (running == null || session.getStationIndex() == null) return;
+
+        org.traincontrol.automation.Point point = pointOnTheLayout(running, target);
+
+        if (point == null || point.getCurrentLocomotive() == null) return;
+
+        String side = point.getArrivedFrom() != null ? point.getArrivedFrom() : session.getArrivedFrom(target);
+
+        tailPicks.clear();
+
+        for (TailCrossedPrompt.Choice choice : TailCrossedPrompt.choicesFor(running, point, side,
+            point.getCurrentLocomotive().getTrainLength(), session::baseNameOf))
+        {
+            TileKey square = session.getStationIndex().squareOf(choice.getFarthest());
+
+            if (square == null) continue;
+
+            tailPicks.computeIfAbsent(square, k -> new java.util.ArrayList<>()).add(choice);
+        }
+
+        if (tailPicks.isEmpty()) return;
+
+        tailFor = target;
+
+        highlightedSignals.clear();
+        highlightedSignals.addAll(tailPicks.keySet());
+
+        waitFor(I18n.f("autosetup.ui.promptClickTailCrossed", describeTile(target)));
+
+        refresh();
+    }
+
+    /**
+     * The square whose train's tail the next click answers for, or null (2026-09-14).
+     */
+    private TileKey tailFor;
+
+    /**
+     * The sensors that click may land on, by square, with the road each one means.
+     */
+    private final java.util.Map<TileKey, java.util.List<TailCrossedPrompt.Choice>> tailPicks =
+        new java.util.LinkedHashMap<>();
+
+    /**
+     * Whether a click on the diagram is being waited for to say where a tail lies - for tests.
+     *
+     * @return the square whose train it is about, or null
+     */
+    public TileKey tailPickFor()
+    {
+        return tailFor;
+    }
+
+    /**
+     * The squares outlined for that click - for tests.
+     *
+     * @return the squares, in the order they were found
+     */
+    public java.util.Set<TileKey> tailPickSquares()
+    {
+        return java.util.Collections.unmodifiableSet(tailPicks.keySet());
     }
 
     /**
@@ -6288,6 +6466,40 @@ public class AutonomyEditorPanel extends JPanel
         if (tile == null || session.getGraph() == null) return;
 
         rememberIfStation(tile);
+
+        // A train's tail is waiting to be told the farthest sensor it crossed, and this is that click (2026-09-14).
+        //
+        // First, like the other gestures that asked for a particular square: what an ordinary click would do to this
+        // square is not the question.
+        if (tailFor != null)
+        {
+            java.util.List<TailCrossedPrompt.Choice> here = tailPicks.get(tile);
+
+            if (here == null)
+            {
+                // Stays armed, as the blocker pick does: Escape or a right-click cancels.
+                say(hint, I18n.t("autosetup.ui.errorNotATailCrossing"));
+
+                return;
+            }
+
+            TileKey standing = tailFor;
+
+            TailCrossedPrompt.Choice chosen = here.size() == 1 ? here.get(0)
+                : TailCrossedPrompt.ask(owner(), locomotiveAt(standing), describeTile(standing), here);
+
+            tailFor = null;
+            tailPicks.clear();
+            highlightedSignals.clear();
+
+            if (chosen != null) recordTailRoad(standing, chosen.getRoad());
+
+            say(hint, I18n.t("autosetup.ui.hintClickToCycle"));
+
+            refresh();
+
+            return;
+        }
 
         // The one-way tool: the first click names one end.
         if (tool == Tool.ONE_WAY && oneWayFrom == null)

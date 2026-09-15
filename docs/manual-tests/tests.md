@@ -43,12 +43,12 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-402](#mt-402) | 2026-09-14 | A Return Home plan that fails says why in the log, by square | fixed unvalidated | FR-078 |
 | [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
 | [MT-431](#mt-431) | 2026-09-14 | 75 407 DB may run from Tunnel to BottomMainA past the one-unit run | fixed unvalidated | OB-224 |
-| [MT-432](#mt-432) | 2026-09-14 | Three units at BottomMainA close Tunnel to BottomMainB and C | fixed unvalidated | OB-224 |
 | [MT-433](#mt-433) | 2026-09-14 | Why Not Moving sorts by page, current page first, and says Page | fixed unvalidated | FR-080 |
 | [MT-434](#mt-434) | 2026-09-14 | Switching Path Type redraws the tested route | fixed unvalidated | FR-084 |
+| [MT-435](#mt-435) | 2026-09-14 | A long train's tail: kept after a rebuild, and asked for when you place it | fixed unvalidated | FR-085 |
 
-Everything else - 415 of 434 - needs nothing from you unless the area changes again:
-368 **fixed validated** and 47 **superseded**.
+Everything else - 416 of 435 - needs nothing from you unless the area changes again:
+368 **fixed validated** and 48 **superseded**.
 
 ---
 
@@ -22220,7 +22220,7 @@ Your OB-224, from MT-333: *"75 407 DB (len 2) can no longer go from tunnel to bo
 
 ### MT-432 - 2026-09-14 - Three units at BottomMainA close Tunnel to BottomMainB and C
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-224
 
 **Written:** 2026-09-14
@@ -22246,6 +22246,10 @@ Re-filed from MT-333, as you asked: *"in that protrusion test, if we made 75 407
 *What this is:* the protrusion half of MT-333, which this replaces.  `regression.testAPassingTrainMayStandAcrossThePoints.testThreeUnitsAtBottomMainAClosesTunnelToBAndC`, on its own copy of the railway.
 
 #### Comments
+
+**Claude, 2026-09-14.**
+
+**Superseded by MT-435 (FR-085).**  This test was written around a tail road kept in memory only, so its note says a restart or closing the editor made the tail stop at the fork.  On your design of 2026-09-14 the road is now kept through both, and a placed train is asked for the farthest sensor its tail crossed - which changes what this test would see.  MT-435 has the same scenario, plus the rebuild, the restart and the question.
 
 ---
 
@@ -22301,6 +22305,40 @@ Your FR-084, from MT-399: *"when changing the auto and manual radio buttons, mak
 - Step 3: nothing is redrawn - the test was put away.
 
 *What this is:* FR-084.  `core.testManualOnlyPathsAreADifferentColour.testSwitchingPathTypeRedrawsTheTestedRoute`, seen red first; commit `b1cb1fe9`.
+
+#### Comments
+
+---
+
+<a id="mt-435"></a>
+
+### MT-435 - 2026-09-14 - A long train's tail: kept after a rebuild, and asked for when you place it
+
+**Disposition:** fixed unvalidated
+**From:** FR-085
+
+**Written:** 2026-09-14
+
+Your idea on WK7-B1: *"why not ask the user to specify the last sensor it crossed from a list of possible sensors?  Then state will always be fully consistent."*  And: *"select the farthest sensor the tail of the train recently crossed.  Also, ideally in the autonomy editor, it should allow the user to click to select as well."*
+
+**Steps**
+
+1. Give 75 407 DB length **3**, stand it at **Tunnel**, and **drive it to BottomMainA**.
+2. Stand another train at Tunnel and right-click it: look for **BottomMainB** and **BottomMainC**.
+3. Open the autonomy editor and close it again.  Repeat step 2.  Then restart TrainControl and repeat step 2 once more.
+4. Right-click 75 407 DB at BottomMainA and open **75 407 DB is facing...**.
+5. Cut 75 407 DB (Ctrl+X), give it a longer length - **6**, say - and paste it back at BottomMainA (Ctrl+V).
+6. In the autonomy editor, right-click it again, choose **Pick on the diagram...**, click a square that is not outlined, then click an outlined one.
+
+**Expected**
+
+- Step 2: B and C refused, naming 75 407 DB - as MT-432 had it.
+- Step 3: still refused both times.  Before this, closing the editor or restarting forgot the road it came in on, and B and C were offered.
+- Step 4: under **Farthest sensor the tail crossed**, the sensors its tail can have passed and **Not known** - shown only where its tail can reach two roads back from a junction; if the section is not there, the train is not long enough on your measurements for the answer to matter.
+- Step 5: after the side question (if any), a list asks for the farthest sensor the tail crossed - again only where the answer matters.  Choosing one draws the orange back along that road; **Not known** stops it at the junction, as before.
+- Step 6: the sensors are outlined; the square that is not outlined says so and keeps waiting; the outlined one records it.  Escape cancels.
+
+*What this is:* FR-085, closing WK7-B1, and replacing MT-432.  `core.testATailRouteIsKept`, `core.testTheTailCrossedQuestion`, `regression.testTheTailCanBeGivenInTheEditor`, and the two rebuild and restart claims in `regression.testAPassingTrainMayStandAcrossThePoints`, each seen red first.
 
 #### Comments
 

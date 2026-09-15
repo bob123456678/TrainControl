@@ -1267,6 +1267,16 @@ Adam, on MT-333 (2026-09-14): *"Regression, but not directly related to this tes
 
 Adam, on MT-399 (2026-09-14): *"Works, but when changing the auto and manual radio buttons, make it update the shown route to the new selection without having to repeat the button press sequence."*
 
+### FR-085 - 2026-09-14 - Ask for the farthest sensor a placed train's tail crossed, and keep the road it names
+
+**Kind:** feature request  
+**Raised from:** WK7-B1  
+**Filed:** 2026-09-14  
+
+Adam, 2026-09-14, on WK7-B1: *"For the tails, if a train is long, why not ask the user to specify the last sensor it crossed from a list of possible sensors?  Then state will always be fully consistent."*  And: *"Go - build it autonomously, battery when done.  the prompt should ask the user to pick from a list and select the farthest sensor the tail of the train recently crossed.  Also, ideally in the autonomy editor, it should allow the user to click to select as well."*
+
+Two halves.  **Kept:** a standing train's arrival road is saved with the point, reloaded, carried across every rebuild and captured into the setup, so a driven train's tail is the same after a restart or any setup gesture (WK7-B1, `63ac68f4`).  **Asked:** a hand-placed train long enough for its tail to have crossed sensors on two roads back from a junction is asked for the farthest sensor its tail crossed - at the paste, the right-click Place and the locomotive dialog, in the right-click menu beside Train arrived from, and by clicking in the autonomy editor.  behaviour.md 5c.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

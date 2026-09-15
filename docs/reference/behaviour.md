@@ -856,10 +856,27 @@ places, or no length, both halves fall back to the answer 5a already gives.
   several means the graph cannot say which.
   - **Unless the train was driven there** (Adam, MT-333/MT-335, 2026-09-13: *"Follow its last route"*).
     A train that arrived by a run remembers the route (`Point.arrivedAlong`), and past a junction the
-    walk takes the road that route came in on. A train placed by hand has no route and still stops at
-    the fork. The route is kept **in memory only**: a rebuild or a restart forgets it and the fork rule
-    applies again. `core.testATailFollowsTheRouteItCameIn` drives a real run through a junction and has
-    the placed train as its control.
+    walk takes the road that route came in on. `core.testATailFollowsTheRouteItCameIn` drives a real run
+    through a junction and has a placed train with no road as its control.
+  - **The road is kept** (WK7-B1, Adam 2026-09-14: *"Then state will always be fully consistent."*). It is
+    saved with the point (`arrivedAlong`, as start/end name pairs), read back on load, carried across every
+    rebuild with the train, and captured into the setup with the placement and the side - so a restart,
+    closing the autonomy editor or any setup gesture no longer drops it. A road naming a rail the layout no
+    longer has is dropped whole, and the fork rule applies again. `core.testATailRouteIsKept`,
+    `regression.testAPassingTrainMayStandAcrossThePoints`.
+  - **A train placed by hand is asked** (Adam, 2026-09-14: *"pick from a list and select the farthest sensor
+    the tail of the train recently crossed.  Also, ideally in the autonomy editor, it should allow the user to
+    click to select as well."*). The whole train lies between the farthest sensor its tail has crossed and the
+    square it stands on, so that sensor names the road. The question is put - when a train is pasted, placed
+    from the right-click menu, or set in the locomotive dialog - only where the tail can have crossed sensors
+    on two different roads back from one junction; elsewhere every answer describes the same track. The list
+    offers each such sensor, nearest first, and **Not known**, which keeps the fork rule. The same list is in
+    the right-click menu under **Farthest sensor the tail crossed**, and in the autonomy editor **Pick on the
+    diagram...** outlines the sensors to click instead. Which sensors are offered is worked out from the
+    measured lengths of the roads back and is a suggestion: what blocks track is still this walk, reading the
+    road chosen. A road given this way may run along rails laid the other way; the walk follows it regardless
+    of direction, as it follows the first hop. `core.testTheTailCrossedQuestion`,
+    `regression.testTheTailCanBeGivenInTheEditor`.
 - **It stops at unmeasured track.** Only positive lengths are determinate.
 - **The square the train is standing on is an allowance, not track it lies over.** Adam, 2026-09-13:
   *"if the segment length is shorter, more should be blocked. The station size is an allowance, not a

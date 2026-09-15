@@ -1210,6 +1210,20 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 session.setArrivedFrom(station, tail);
 
                 if (landing != null) landing.setArrivedFrom(tail);
+
+                // AND HOW FAR BACK ITS TAIL REACHES, asked where the answer matters (Adam, 2026-09-14).  After the
+                // move, because moving the train clears any road the square held.
+                java.util.List<org.traincontrol.automation.Edge> road =
+                    org.traincontrol.gui.TailCrossedPrompt.askAfterPlacement(running, landing, tail,
+                        landing == null || landing.getCurrentLocomotive() == null
+                            ? null : landing.getCurrentLocomotive().getTrainLength(),
+                        locName, ui, session::baseNameOf);
+
+                if (road != null)
+                {
+                    session.setArrivedAlong(station, org.traincontrol.automation.Layout.namesOfRoad(road));
+                    landing.setArrivedAlong(road);
+                }
             }
         }
 

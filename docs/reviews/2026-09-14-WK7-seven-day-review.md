@@ -1,6 +1,6 @@
 # Seven days of commits, reviewed after the MT-333 ruling and today's fixes
 
-**Status:** open 2026-09-14 - round 1 fixed (C1, C2, C3); validated (`2026-09-14-WKV-fix-validation.md`), C1 and C2 completed in round 2; WK7-B1 held for MT-432
+**Status:** open 2026-09-14 - round 1 fixed (C1, C2, C3); validated (`2026-09-14-WKV-fix-validation.md`), C1 and C2 completed in round 2; WK7-B1 fixed on Adam's design (`63ac68f4`)
 
 **Prefix:** WK7 (checked free: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`, and every declaration spelling in `docs/reviews/*.md`)
 
@@ -20,19 +20,21 @@
 
 | id | status | where |
 |---|---|---|
-| WK7-B1 | Held for MT-432 | `Point.arrivedAlong`, `TrainControlUI.whereTheTrainsAre` / `putTheTrainsBack` - a driven train's route is lost at every rebuild |
+| WK7-B1 | Fixed | `Point.arrivedAlong`, `TrainControlUI.whereTheTrainsAre` / `putTheTrainsBack` - a driven train's route is lost at every rebuild |
 
 ### WK7-B1 - a driven train's tail stops following its route after any rebuild
 
 | | |
 |---|---|
-| **Disposition** | Held |
+| **Disposition** | Fixed |
 
 `Point.arrivedAlong` lives in memory only.  `whereTheTrainsAre` records a standing train's square and arrival side, and `putTheTrainsBack` restores those two and not the route - so every rebuild of the running layout forgets it, and `walkStandingTrains` falls back to the fork rule for a train that has not moved.  Every setup gesture rebuilds (`rebuildRunningLayoutFromSetup`), and so does closing the autonomy editor.
 
 **Scenario.**  75 407 DB, length 3, driven from Tunnel to BottomMainA: a second train at Tunnel is refused BottomMainB and C, as `regression.testAPassingTrainMayStandAcrossThePoints.testThreeUnitsAtBottomMainAClosesTunnelToBAndC` pins.  Set a home or a caption from the diagram's right-click menu, or open and close the autonomy editor: the train is put back with its side and no route, the walk stops at BottomMainAPre, and B and C are offered again over a tail still lying on the Tunnel run.
 
 Introduced with the route-following tail in `d4f09f5d`, whose javadoc says a rebuild loses it; MT-333's note of 2026-09-14 listed the gestures and offered to carry the route through a rebuild.  **Held, not changed:** it touches MT-432, the protrusion test Adam has not run.  Stated more exactly after validation: MT-432's steps drive and look and do not rebuild, and its warning names closing the autonomy editor but not a home or caption set from the diagram's menu (WKW) - carrying the route through a rebuild would change what its tail looks like after any of those.
+
+**Fixed, on Adam's design (2026-09-14).**  *"For the tails, if a train is long, why not ask the user to specify the last sensor it crossed from a list of possible sensors?  Then state will always be fully consistent."* and *"Go - build it autonomously"*.  The road is saved with the point, read back on load, carried across every rebuild and captured into the setup (`63ac68f4`; `core.testATailRouteIsKept`, and `regression.testAPassingTrainMayStandAcrossThePoints.testTheRoadIsKeptAcrossARebuild` / `testTheRoadIsWrittenToTheSetup` - this scenario, red first).  A hand-placed train is asked for the farthest sensor its tail crossed (behaviour.md 5c).  MT-432, written around the old behaviour, is superseded by a new hands-on test.
 
 ---
 

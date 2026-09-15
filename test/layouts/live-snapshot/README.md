@@ -120,3 +120,4 @@ before anything reads it, so the checked-in fixture is never written to either.
 - `regression.testAPassingTrainMayStandAcrossThePoints`
 - `regression.testTheTurnRuleDoesNotChangeTheRealRailway`
 - `regression.testCancelUndoesAutonomyEdits`
+- `regression.testTheTailCanBeGivenInTheEditor`

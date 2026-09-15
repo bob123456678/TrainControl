@@ -6479,26 +6479,36 @@ public class Layout
                     // A train placed by hand has no route and keeps the fork rule, unchanged.
                     if (neighbours.size() > 1 && standingHere.getArrivedAlong() != null)
                     {
-                        Edge along = null;
+                        Point cameFrom = null;
 
+                        // EITHER WAY ROUND (Adam, 2026-09-14).  A road a train drove runs towards it, so the edge
+                        // ending here names where it came from.  A road the operator gave - the farthest sensor the
+                        // tail crossed - is made of the rails that exist, and on a one-way rail laid the other way
+                        // that edge STARTS here.  The tail lies across the rail whichever way traffic runs on it.
                         for (Edge driven : standingHere.getArrivedAlong())
                         {
-                            if (driven.getEnd() != null && driven.getEnd().isSamePlaceAs(here)
-                                && driven.getStart() != null
+                            if (driven.getStart() == null || driven.getEnd() == null) continue;
+
+                            if (driven.getEnd().isSamePlaceAs(here)
                                 && !walked.contains(driven.getStart().getName()))
                             {
-                                along = driven;
+                                cameFrom = driven.getStart();
+                            }
+                            else if (driven.getStart().isSamePlaceAs(here)
+                                && !walked.contains(driven.getEnd().getName()))
+                            {
+                                cameFrom = driven.getEnd();
                             }
                         }
 
-                        if (along != null)
+                        if (cameFrom != null)
                         {
                             for (Edge candidate : back)
                             {
                                 Point other = candidate.getStart() == here
                                     ? candidate.getEnd() : candidate.getStart();
 
-                                if (other != null && other.isSamePlaceAs(along.getStart()))
+                                if (other != null && other.isSamePlaceAs(cameFrom))
                                 {
                                     segment = candidate;
 

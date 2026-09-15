@@ -7795,6 +7795,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // the railway alone.  One door, both stores, every time.
             point.setArrivedFrom(tail);
 
+            // AND HOW FAR BACK ITS TAIL REACHES, asked where the answer matters (Adam, 2026-09-14).
+            java.util.List<org.traincontrol.automation.Edge> road = org.traincontrol.gui.TailCrossedPrompt.askAfterPlacement(
+                this.model.getAutoLayout(), point, tail, point.getCurrentLocomotive().getTrainLength(),
+                point.getCurrentLocomotive().getName(), this, session::baseNameOf);
+
+            if (road != null)
+            {
+                session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(road));
+                point.setArrivedAlong(road);
+            }
+
             // SPEC-A1: THE FOURTH ATTEMPT RECORDED THE LANDING COPY'S OWN SIDE, which is not the
             // train's heading.  `StationIndex.speakerAt` says that on an empty square "any copy will
             // do", so that side was copy 0 - chosen arbitrarily - and recording it cemented a

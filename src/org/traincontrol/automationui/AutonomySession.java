@@ -6093,6 +6093,32 @@ public class AutonomySession
     }
 
     /**
+     * Records the road the tail of the train standing here lies along, beside its arrival side (WK7-B1).
+     *
+     * Adam, 2026-09-14: *"select the farthest sensor the tail of the train recently crossed."*  The road from that
+     * sensor to this square, as `Layout.namesOfRoad` writes it - the same form the running layout saves - so it
+     * travels with the placement and the side through a save, a load and a capture.
+     *
+     * @param tile the square
+     * @param road [start, end] point-name pairs as a JSON array string, or null to forget
+     */
+    public void setArrivedAlong(TileKey tile, String road)
+    {
+        setPointProperty(tile, "arrivedAlong", road == null ? null : new org.json.JSONArray(road));
+    }
+
+    /**
+     * @param tile the square
+     * @return the recorded road as a JSON array string, or null
+     */
+    public String getArrivedAlong(TileKey tile)
+    {
+        Object value = getPointProperty(tile, "arrivedAlong");
+
+        return value == null ? null : value.toString();
+    }
+
+    /**
      * @param tile the square
      * @return the recorded arrival side, or null
      */

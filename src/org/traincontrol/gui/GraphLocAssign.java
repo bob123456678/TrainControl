@@ -253,6 +253,17 @@ public class GraphLocAssign extends javax.swing.JPanel
             session.setArrivedFrom(tile, tail);
 
             point.setArrivedFrom(tail);
+
+            // AND HOW FAR BACK ITS TAIL REACHES, asked after this dialog rather than on top of it (Adam, 2026-09-14).
+            java.util.List<org.traincontrol.automation.Edge> road = TailCrossedPrompt.askAfterPlacement(layout, point, tail,
+                point.getCurrentLocomotive().getTrainLength(), point.getCurrentLocomotive().getName(), null,
+                session::baseNameOf);
+
+            if (road != null)
+            {
+                session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(road));
+                point.setArrivedAlong(road);
+            }
         }
 
         // AND WRITTEN TO DISK (VAL9-B1).  The two writes above change the setup in memory only, and
