@@ -1102,6 +1102,14 @@ MFW-D2	2026-09-15-MFW-fix-validation-round-two.md	-	The gesture claim's excluded
 MFW-D3	2026-09-15-MFW-fix-validation-round-two.md	-	`tailKey`'s cost is one short tail walk per successor beside a route search per successor;
 MFW-D4	2026-09-15-MFW-fix-validation-round-two.md	-	The greedy pass ignores the deadline, but its time comes out of the first search's half
 MFW-D5	2026-09-15-MFW-fix-validation-round-two.md	-	`measuredRouteIn`'s two callers read the same count at the destination
+MFX-C1	2026-09-15-MFX-fix-validation-round-three.md	-	Fixed (stated in the body)
+MFX-C2	2026-09-15-MFX-fix-validation-round-three.md	-	Fixed (stated in the body)
+MFX-C3	2026-09-15-MFX-fix-validation-round-three.md	-	Fixed (stated in the body)
+MFX-D1	2026-09-15-MFX-fix-validation-round-three.md	-	The Control+H claim cannot tell `leaderOf(tile)` from `tile`, and cannot need to: every re
+MFX-D2	2026-09-15-MFX-fix-validation-round-three.md	-	`HomeStaging.clock` is private, set only by its initializer on the railway, and confined t
+MFX-D3	2026-09-15-MFX-fix-validation-round-three.md	-	The C3 claim's HashMap dependence is in the safe direction: the order that breaks it fails
+MFX-D4	2026-09-15-MFX-fix-validation-round-three.md	-	`lastWhyTile` cannot re-ask a stale square: every way of disarming the Why tool clears it
+MFX-D5	2026-09-15-MFX-fix-validation-round-three.md	-	The refusal quotes the route in only at a square autonomy may choose; a parking berth stil
 MON-A1	MON-month-2026-09-07.md	Closed	Reverted (the doors speak the geometry again); the proper fix needs a curved fixture and i
 MON-B1	MON-month-2026-09-07.md	Closed	Fixed (stated in the body)
 MON-B2	MON-month-2026-09-07.md	Closed	Fixed (stated in the body)
