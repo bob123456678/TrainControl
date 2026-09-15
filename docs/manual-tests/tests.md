@@ -43,8 +43,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-439](#mt-439) | 2026-09-15 | Why Not Moving? and Test a Path both follow Path Type | fixed unvalidated | OB-225 |
 | [MT-440](#mt-440) | 2026-09-15 | Return Home does not route a train over the tail of one it has just parked | fixed unvalidated | OB-228 |
 | [MT-441](#mt-441) | 2026-09-15 | 75 407 DB is offered RampDown and BottomSecondary from Tunnel, the long way round | fixed unvalidated | OB-229 |
+| [MT-442](#mt-442) | 2026-09-15 | Why Not Moving? says a terminus is in the way, not that no track leads there | fixed unvalidated | PTR-B1 (OB-229) |
 
-Everything else - 425 of 441 - needs nothing from you unless the area changes again:
+Everything else - 425 of 442 - needs nothing from you unless the area changes again:
 374 **fixed validated** and 51 **superseded**.
 
 ---
@@ -22591,6 +22592,34 @@ From the agreement check in your MT-335 log: *"planner allows 75 407 DB -> Botto
 - Step 5: no other RampDown copy is offered, and no plan sends it round a loop back onto RampDown - your ruling: *"we should never do a round trip just to change direction."*
 
 *What this is:* OB-229.  `core.testARouteIsFoundPastATerminus`, seen red first (`4b519e71`); fixed in `badb0a2c`.
+
+#### Comments
+
+---
+
+<a id="mt-442"></a>
+
+### MT-442 - 2026-09-15 - Why Not Moving? says a terminus is in the way, not that no track leads there
+
+**Disposition:** fixed unvalidated
+**From:** PTR-B1 (OB-229)
+
+**Written:** 2026-09-15
+
+Found by the review of the OB-229 fix.  Since the route search stopped going through a terminus (your choice, *"Search past termini"*), a station whose every route passes one found no route at all, and Why Not Moving? said *"No track route leads there."* - though the track is there.
+
+**Steps**
+
+1. In the autonomy editor, set **Path Type** to **Manual**, choose **Why Not Moving?** and click a train standing at **BottomInner**.
+2. Find **TunnelLongPark**, **TunnelLeftPark**, **TunnelCenterPark**, **TunnelRightPark** or **ParkingTrack11** in the answer.
+3. If you have a station joined to nothing, find it too.
+
+**Expected**
+
+- Step 2: each one that is refused says *"Contains an intermediate terminus station"* - the only way there runs through a terminus - and none says *"No track route leads there."*
+- Step 3: a station no track reaches still says *"No track route leads there."*
+
+*What this is:* PTR-B1.  `core.testARouteIsFoundPastATerminus.testThroughTheTerminusAloneItIsStillRefused`, seen red first (`19a680f3`); fixed in `b4776f6b`.
 
 #### Comments
 
