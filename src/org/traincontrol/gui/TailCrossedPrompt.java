@@ -164,16 +164,28 @@ public class TailCrossedPrompt
      * @param train the train's name, for the question
      * @param parent what to centre the dialog on
      * @param shown what to call a point on screen, or null for its own name
-     * @return the road, or null when nothing was asked or the operator did not know
+     * @return what the question came to - see `Answer` (TLW-C2)
      */
     public static Answer askAfterPlacement(Layout layout, Point at, String arrivedFrom, Integer trainLength,
         String train, Component parent, Function<String, String> shown)
+    {
+        return askAfterPlacement(layout, at, arrivedFrom, trainLength, train, parent, shown, null);
+    }
+
+    /**
+     * The same, with the list starting on the road the train already has (TLW-C4), so OK does not throw it away.
+     *
+     * @param recorded the road the train had before the door ran, or null
+     * @return what the question came to
+     */
+    public static Answer askAfterPlacement(Layout layout, Point at, String arrivedFrom, Integer trainLength,
+        String train, Component parent, Function<String, String> shown, List<Edge> recorded)
     {
         if (!wouldAsk(layout, at, arrivedFrom, trainLength)) return Answer.NOT_ASKED;
 
         List<Choice> choices = choicesFor(layout, at, arrivedFrom, trainLength, shown);
 
-        Reply reply = reply(parent, train, shownName(shown, at), choices);
+        Reply reply = reply(parent, train, shownName(shown, at), choices, preselectedIndex(choices, recorded));
 
         return reply.answered ? new Answer(true, reply.choice == null ? null : reply.choice.getRoad()) : Answer.NOT_ASKED;
     }
@@ -181,9 +193,8 @@ public class TailCrossedPrompt
     /**
      * Puts the question: a list of the sensors, and Not Known.
      *
-     * A dismissed dialog is Not Known - nothing recorded, and the walk keeps the fork rule, which claims least.
-     * Unlike the side question it does not refuse the placement: the train is already somewhere a side was given
-     * for, and not knowing how far back its tail reaches is an ordinary answer.
+     * A closed dialog is no answer and a choice of nothing (TLW-C2).  Unlike the side question it does not refuse the
+     * placement: the train is already somewhere a side was given for.
      *
      * @param parent what to centre on
      * @param train the train's name
@@ -193,7 +204,21 @@ public class TailCrossedPrompt
      */
     public static Choice ask(Component parent, String train, String station, List<Choice> choices)
     {
-        return reply(parent, train, station, choices).choice;
+        return reply(parent, train, station, choices, -1).choice;
+    }
+
+    /**
+     * Where the list should start: the choice the recorded road describes, or none (TLW-C4).
+     *
+     * @param choices the choices
+     * @param recorded the road the train has, or null
+     * @return its index, or -1
+     */
+    public static int preselectedIndex(List<Choice> choices, List<Edge> recorded)
+    {
+        Choice ticked = recordedChoice(choices, recorded);
+
+        return ticked == null ? -1 : choices.indexOf(ticked);
     }
 
     /**
@@ -229,21 +254,28 @@ public class TailCrossedPrompt
         }
 
         /**
-         * Whether a door should write `getRoad` over the road the train has.
+         * The road a door should record for the train, in both stores (TLV-A1, TLW-A1).
          *
-         * When the question was answered; or when the side the road follows from has just changed, because a road
-         * describes one side.  Not otherwise: re-placing a train where it stands, or pressing OK in its locomotive
-         * dialog, is not a change of occupant, and writing "no road" there erased the road autonomy drove it in on.
+         * The answer, where there was one.  Otherwise the road the train had ON THE RAILWAY before the door moved it -
+         * kept where it is still on the same square with the same side, and dropped where it is not, because a road
+         * describes one arrival.  Decided from the railway, not the setup: a run writes its arrival on the running
+         * layout alone, and the setup hears of it only at the next capture, so reading the setup erased the road a
+         * train had just driven in on.  Both stores are then written, so they agree - including when the door moved the
+         * train onto another copy of its square, which clears the road there.
          *
-         * @param sideWas the side the setup had before the door wrote one
+         * @param roadBefore the road the train had on the running layout before the door ran, or null
+         * @param sameSquare whether it is on the same square as before
+         * @param sideBefore the side it had on the running layout before, or null
          * @param sideNow the side the door just wrote
-         * @return whether to write
+         * @return the road to record, or null for none
          */
-        public boolean replacesTheRoad(String sideWas, String sideNow)
+        public List<Edge> roadToRecord(List<Edge> roadBefore, boolean sameSquare, String sideBefore, String sideNow)
         {
-            if (answered) return true;
+            if (answered) return road;
 
-            return sideWas == null ? sideNow != null : !sideWas.equalsIgnoreCase(sideNow);
+            boolean sameSide = sideBefore == null ? sideNow == null : sideBefore.equalsIgnoreCase(sideNow);
+
+            return sameSquare && sameSide ? roadBefore : null;
         }
     }
 
@@ -263,7 +295,7 @@ public class TailCrossedPrompt
     /**
      * The dialog, telling Not Known (an answer) from a closed dialog (none).
      */
-    private static Reply reply(Component parent, String train, String station, List<Choice> choices)
+    private static Reply reply(Component parent, String train, String station, List<Choice> choices, final int preselect)
     {
         if (choices == null || choices.isEmpty()) return new Reply(false, null);
 
@@ -271,12 +303,17 @@ public class TailCrossedPrompt
         {
             if (NOT_KNOWN.equals(answeredByATest)) return new Reply(true, null);
 
+            if (DISMISSED.equals(answeredByATest)) return new Reply(false, null);
+
             for (Choice choice : choices)
             {
                 if (choice.getFarthest().getName().equals(answeredByATest)) return new Reply(true, choice);
             }
 
-            return new Reply(false, null);
+            // SAID, not taken for a dismissal (TLW-C3): a test answering with a sensor that is not offered is a test
+            // asking about a different railway from the one it built.
+            throw new IllegalStateException("a test answered " + answeredByATest + ", which is not offered: "
+                + java.util.Arrays.asList(labelsOf(choices)));
         }
 
         final Choice[] answer = {null};
@@ -289,6 +326,8 @@ public class TailCrossedPrompt
                 final javax.swing.JList<String> list = new javax.swing.JList<>(labelsOf(choices));
 
                 list.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+
+                if (preselect >= 0 && preselect < choices.size()) list.setSelectedIndex(preselect);
                 list.setVisibleRowCount(Math.min(10, Math.max(3, choices.size())));
 
                 javax.swing.JPanel panel = new javax.swing.JPanel(new java.awt.BorderLayout(0, 8));
@@ -408,11 +447,11 @@ public class TailCrossedPrompt
 
             if (cameInBy == null || !arrivedFrom.equalsIgnoreCase(cameInBy)) continue;
 
-            Edge known = firstHops.get(placeOf(other));
+            Edge known = firstHops.get(roadKeyOf(other));
 
             if (known == null || (known.getEnd() != at && candidate.getEnd() == at))
             {
-                firstHops.put(placeOf(other), candidate);
+                firstHops.put(roadKeyOf(other), candidate);
             }
         }
 
@@ -473,7 +512,7 @@ public class TailCrossedPrompt
 
             // BY PLACE (TLR-B2): a square a train may turn at is a lane copy and a turning copy, the same metal under
             // two names, and counted by name it was a second road back.
-            if (further == null || walked.contains(placeOf(further)) || !seen.add(placeOf(further))) continue;
+            if (further == null || walked.contains(placeOf(further)) || !seen.add(roadKeyOf(further))) continue;
 
             if (back(layout, candidate, further, behind, beyond, road, walked, into, forks, depth + 1)) crossedBeyond++;
         }
@@ -567,6 +606,34 @@ public class TailCrossedPrompt
     private static String placeOf(Point point)
     {
         return point.getBlock() != null ? "block " + point.getBlock() : "point " + point.getName();
+    }
+
+    /**
+     * One road's end: the square AND the lane (TLW-B1).
+     *
+     * A square's turning copy runs on the lane of the copy it turns (the builder names it "X (eastbound, reverse)"
+     * beside "X (eastbound)"), so the two are one road.  Its copies for the two arrival sides are the square's two
+     * ends - a balloon reaches one directly and the other round its loop - and those are two roads.  Read from the
+     * name because the name is where the builder writes the lane; a Point with no block is its own road.
+     *
+     * @param point a Point
+     * @return the key
+     */
+    static String roadKeyOf(Point point)
+    {
+        return point.getBlock() == null ? "point " + point.getName()
+            : "block " + point.getBlock() + " lane " + laneOf(point.getName());
+    }
+
+    /**
+     * The name with its turning mark taken off: "X (eastbound, reverse)" -> "X (eastbound)", "X (reverse)" -> "X".
+     *
+     * @param name a Point name
+     * @return the lane's name
+     */
+    static String laneOf(String name)
+    {
+        return name == null ? "" : name.replace(", reverse)", ")").replace(" (reverse)", "");
     }
 
     private static String shownName(Function<String, String> shown, Point point)

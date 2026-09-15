@@ -6947,6 +6947,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             //
             // Discarded, the clipboard was cleared for a move that did not happen - and a train that got
             // here by Control+X, which removes it, was then on no square and on no clipboard.
+            // WHAT THE TRAIN HAD ON THE RAILWAY, before this paste moves it (TLW-A1): the tail question's keep-or-drop is
+            // decided from these, because a run leaves its arrival on the running layout and not in the setup.
+            org.traincontrol.automation.Point wasOn = null;
+
+            for (org.traincontrol.automation.Point each : this.model.getAutoLayout().getPoints())
+            {
+                if (each.getCurrentLocomotive() == placing) wasOn = each;
+            }
+
+            roadBeforeTheLanding = wasOn == null ? null : wasOn.getArrivedAlong();
+            sideBeforeTheLanding = wasOn == null ? null : wasOn.getArrivedFrom();
+            squareBeforeTheLanding = wasOn == null || getAutonomySession() == null
+                || getAutonomySession().getStationIndex() == null
+                ? null : getAutonomySession().getStationIndex().squareOf(wasOn);
+
             if (!this.model.getAutoLayout().moveLocomotive(placing.getName(), point.getName(), false))
             {
                 // The clipboard still holds it, so the next square accepts the same paste - which is
@@ -7027,6 +7042,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * done."
      */
     private String tailAtTheLanding;
+
+    /** The road, side and square the pasted train had on the running layout before it moved (TLW-A1). */
+    private java.util.List<org.traincontrol.automation.Edge> roadBeforeTheLanding;
+
+    private String sideBeforeTheLanding;
+
+    private org.traincontrol.automationui.TileGraph.TileKey squareBeforeTheLanding;
 
     /**
      * Which way the train being placed will face once it is on the square it was dropped on.
@@ -7782,10 +7804,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // undo anything until the question moved earlier.
             String tail = tailAtTheLanding;
 
-            // WHAT THE SETUP HAD, before this door writes a side (TLV-A1): a road is rewritten only when the question
-            // was answered or the side it follows from changed.
-            String sideWas = session.getArrivedFrom(tile);
-
             session.setArrivedFrom(tile, tail);
 
             // AND THE RAILWAY, NOT ONLY THE SETUP (VAL8-A2, REG7-B1 - found by both reviewers).
@@ -7802,16 +7820,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // AND HOW FAR BACK ITS TAIL REACHES, asked where the answer matters (Adam, 2026-09-14).
             org.traincontrol.gui.TailCrossedPrompt.Answer answer = org.traincontrol.gui.TailCrossedPrompt.askAfterPlacement(
                 this.model.getAutoLayout(), point, tail, point.getCurrentLocomotive().getTrainLength(),
-                point.getCurrentLocomotive().getName(), this, session::baseNameOf);
+                point.getCurrentLocomotive().getName(), this, session::baseNameOf, roadBeforeTheLanding);
 
-            // WRITTEN WHEN IT SAYS SOMETHING (TLR-C5, TLV-A1).  Pasting a train back where it stands is not a change of
-            // occupant, so Not Known has to forget the road it held - and no question, or a closed one, has to KEEP it,
-            // or re-placing a train autonomy drove erased the road that keeps the track behind it closed.
-            if (answer.replacesTheRoad(sideWas, tail))
-            {
-                session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(answer.getRoad()));
-                point.setArrivedAlong(answer.getRoad());
-            }
+            // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY (TLR-C5, TLV-A1, TLW-A1).  Not Known forgets a road; no
+            // question, or a closed one, keeps the road the train had where it is still on the same square with the same
+            // side - read from the running layout, which a run has told and the setup has not - and both stores are
+            // written so they agree, including on another copy of the square the paste moved it onto.
+            java.util.List<org.traincontrol.automation.Edge> road = answer.roadToRecord(roadBeforeTheLanding,
+                tile.equals(squareBeforeTheLanding), sideBeforeTheLanding, tail);
+
+            session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(road));
+            point.setArrivedAlong(road);
 
             // SPEC-A1: THE FOURTH ATTEMPT RECORDED THE LANDING COPY'S OWN SIDE, which is not the
             // train's heading.  `StationIndex.speakerAt` says that on an empty square "any copy will

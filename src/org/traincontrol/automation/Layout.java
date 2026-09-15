@@ -6410,7 +6410,14 @@ public class Layout
      */
     private static String placeKey(Point point)
     {
-        return point.getBlock() != null ? "block " + point.getBlock() : "point " + point.getName();
+        // THE SQUARE AND THE LANE (TLW-B1).  A turning copy runs on the lane of the copy it turns - "X (eastbound,
+        // reverse)" beside "X (eastbound)" - and is the same road.  The copies for a square's two arrival sides are its
+        // two ends, which a balloon reaches from one junction by different track: a split, where the tail stops.
+        if (point.getBlock() == null) return "point " + point.getName();
+
+        String lane = point.getName() == null ? "" : point.getName().replace(", reverse)", ")").replace(" (reverse)", "");
+
+        return "block " + point.getBlock() + " lane " + lane;
     }
 
     /**

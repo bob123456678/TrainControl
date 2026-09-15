@@ -372,6 +372,78 @@ public class testTheTailCrossedQuestion
             "two different roads read the same in the list, so choosing one is a guess: " + labels);
     }
 
+    /**
+     * Two ends of one square reached from one junction are two roads, and the tail still stops there (TLW-B1).
+     *
+     * A balloon: from J one rail reaches square A's west end and a loop reaches its east end.  The builder splits A by
+     * arrival side, so those are two copies with one block - different track.  Counted by block they were one road,
+     * so a train with no road ran on past J down whichever rail sorted first, and the question was not put.
+     */
+    @Test
+    public void testTwoEndsOfOneSquareAreTwoRoads() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.setDefaultLocSpeed(30);
+
+        layout.createPoint("TQ_A (westbound)", true, model.newFeedback(2390, null).getName());
+        layout.createPoint("TQ_A (eastbound)", true, model.newFeedback(2391, null).getName());
+        layout.createPoint("TQ_J", false, model.newFeedback(2392, null).getName());
+        layout.createPoint("TQ_S", true, model.newFeedback(2393, null).getName());
+
+        layout.getPoint("TQ_A (westbound)").setBlock("TQ_A-square");
+        layout.getPoint("TQ_A (eastbound)").setBlock("TQ_A-square");
+
+        layout.createEdge("TQ_A (westbound)", "TQ_J");
+        layout.createEdge("TQ_A (eastbound)", "TQ_J");
+        layout.createEdge("TQ_J", "TQ_S");
+
+        layout.getEdge("TQ_A (westbound)", "TQ_J").setLength(3);
+        layout.getEdge("TQ_A (eastbound)", "TQ_J").setLength(3);
+        layout.getEdge("TQ_J", "TQ_S").setLength(1);
+        layout.getEdge("TQ_J", "TQ_S").setEntrySide("W");
+
+        Point s = layout.getPoint("TQ_S");
+
+        assertTrue(layout.moveLocomotive(loc.getName(), "TQ_S", false), "could not stand the train at TQ_S");
+
+        s.setArrivedFrom("W");
+        loc.setTrainLength(5);
+
+        Map<Edge, Locomotive> covered = layout.edgesCoveredByStandingTrains();
+
+        assertTrue(covered.containsKey(layout.getEdge("TQ_J", "TQ_S")), "precondition: the walk did not start");
+
+        assertFalse(covered.containsKey(layout.getEdge("TQ_A (westbound)", "TQ_J"))
+            || covered.containsKey(layout.getEdge("TQ_A (eastbound)", "TQ_J")),
+            "a train with no road ran on past a junction whose two rails reach opposite ends of one square - different"
+            + " track, where Adam's rule is to stop. Covered: " + covered.keySet());
+
+        assertTrue(TailCrossedPrompt.wouldAsk(layout, s, "W", 5),
+            "the tail can have crossed either end of TQ_A, which are different track, and the question is not put");
+    }
+
+    /**
+     * The list starts on the road the train already has, so OK does not throw it away (TLW-C4).
+     */
+    @Test
+    public void testTheRecordedRoadIsTheOneOfferedFirst() throws Exception
+    {
+        Layout layout = aPlatformBehindAJunction(2400, true);
+        Point s = layout.getPoint("TQ_S");
+
+        List<TailCrossedPrompt.Choice> choices = TailCrossedPrompt.choicesFor(layout, s, "W", 5, null);
+
+        int c = farthestOf(choices).indexOf("TQ_C");
+
+        assertTrue(c >= 0, "precondition: TQ_C is not offered");
+
+        assertEquals(TailCrossedPrompt.preselectedIndex(choices, choices.get(c).getRoad()), c,
+            "the list does not start on the road the train already has, so OK with nothing moved erases it");
+
+        assertEquals(TailCrossedPrompt.preselectedIndex(choices, null), -1, "a train with no road has a choice made for it");
+    }
+
     /** A -> J and A (reverse) -> J, one square under two names, then J -> S. */
     private static Layout twoCopiesBehindAJunction(int s88) throws Exception
     {

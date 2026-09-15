@@ -119,7 +119,7 @@ public class testTheTailCanBeGivenInTheEditor
 
             int heading = texts.indexOf(I18n.t("autosetup.ui.headingTailCrossed"));
 
-            assertTrue(heading >= 0, "the menu of a train whose tail can have crossed sensors on two roads back does not"
+            assertTrue(heading >= 0, "the menu of a train whose tail can have crossed a sensor past a junction does not"
                 + " ask how far back it reaches. Items: " + texts);
 
             for (TailCrossedPrompt.Choice choice : f.choices())
@@ -334,7 +334,7 @@ public class testTheTailCanBeGivenInTheEditor
                 + " sensors offered are not the ones this claim answered from");
 
             assertEquals(session.getArrivedAlong(f.tile), Layout.namesOfRoad(farthest.getRoad()),
-                "a " + LONG + "-unit train pasted where its tail can have crossed sensors on two roads back was not asked"
+                "a " + LONG + "-unit train pasted where its tail can have crossed a sensor past a junction was not asked"
                 + " for the farthest one, or the answer " + farthest.getLabel() + " was not kept in the setup");
 
             TailCrossedPrompt.Choice onTheRailway = TailCrossedPrompt.recordedChoice(f.choices(), after.getArrivedAlong());
@@ -408,8 +408,9 @@ public class testTheTailCanBeGivenInTheEditor
             assertEquals(session.getArrivedAlong(f.tile), Layout.namesOfRoad(farthest.getRoad()),
                 "the train was pasted back where it stands, nothing was asked, and the setup lost its road");
 
-            assertNotNull(f.standing().getArrivedAlong(), "the train was pasted back where it stands, nothing was asked,"
-                + " and the train on the running railway lost its road");
+            assertEquals(Layout.namesOfRoad(f.standing().getArrivedAlong()), Layout.namesOfRoad(farthest.getRoad()),
+                "the train was pasted back where it stands, nothing was asked, and the train on the running railway lost"
+                + " its road or was given another (TLW-C3)");
         }
         finally
         {
@@ -429,10 +430,61 @@ public class testTheTailCanBeGivenInTheEditor
         {
             TailCrossedPrompt.Choice farthest = f.recordARoadByPasting();
 
+            assertTrue(TailCrossedPrompt.wouldAsk(model.getAutoLayout(), f.standing(), f.standing().getArrivedFrom(), LONG),
+                "precondition: the question is not put, so this claim would be about a paste that asks nothing (TLW-C3)");
+
             f.pasteInPlace(TailCrossedPrompt.DISMISSED);
 
             assertEquals(session.getArrivedAlong(f.tile), Layout.namesOfRoad(farthest.getRoad()),
                 "the question was closed without an answer, and the setup lost the road the train had");
+
+            assertEquals(Layout.namesOfRoad(f.standing().getArrivedAlong()), Layout.namesOfRoad(farthest.getRoad()),
+                "the question was closed without an answer, and the train on the running railway lost its road");
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
+    /**
+     * A paste right after a run keeps the road the run left, though the setup has not caught up (TLW-A1).
+     *
+     * A run writes its arrival on the running railway only; the setup hears of it at the next capture.  The doors
+     * decided keep-or-replace by reading the SETUP, which here says nothing about the side or the road - so a paste
+     * of the train back where it stands, with nothing asked, wrote "no road" over the one it drove in on.
+     */
+    @Test
+    public void testAPasteAfterARunKeepsTheRoadTheRunLeft() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            TailCrossedPrompt.Choice farthest = f.choices().get(f.choices().size() - 1);
+
+            // WHAT A RUN LEAVES: the side and road on the running Point, and a setup that has not been told.
+            Point standing = f.standing();
+
+            standing.setArrivedAlong(farthest.getRoad());
+
+            session.setArrivedAlong(f.tile, null);
+            session.setArrivedFrom(f.tile, null);
+
+            f.train.setTrainLength(1);
+
+            assertFalse(TailCrossedPrompt.wouldAsk(model.getAutoLayout(), standing, standing.getArrivedFrom(), 1),
+                "precondition: a one-unit train is still asked");
+
+            f.pasteInPlace(TailCrossedPrompt.DISMISSED);
+
+            assertEquals(Layout.namesOfRoad(f.standing().getArrivedAlong()), Layout.namesOfRoad(farthest.getRoad()),
+                "the train was pasted back where it stands after a run, nothing was asked, and the running railway lost the"
+                + " road the run left - the door read the setup, which had not been told of the run");
+
+            assertEquals(session.getArrivedAlong(f.tile), Layout.namesOfRoad(farthest.getRoad()),
+                "the train was pasted back where it stands after a run, nothing was asked, and the setup was not brought"
+                + " into line with the road the run left");
         }
         finally
         {
@@ -505,7 +557,7 @@ public class testTheTailCanBeGivenInTheEditor
                 session.restoreSetup(asFound);
 
                 throw new SkipException("no standing train on the snapshot, measured at one unit, has a tail of " + LONG
-                    + " units that can have crossed sensors on two roads back");
+                    + " units that can have crossed a sensor past a junction");
             }
 
             train.setTrainLength(LONG);

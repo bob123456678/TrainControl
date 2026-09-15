@@ -1190,6 +1190,22 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         //
         // The log line `moveLocomotive` already writes is the user-visible half, so nothing is added
         // here: a second message would say the same thing twice.
+        // WHAT THE TRAIN HAD ON THE RAILWAY, before this door moves it (TLW-A1).
+        org.traincontrol.automation.Point wasOn = null;
+
+        if (running != null)
+        {
+            for (org.traincontrol.automation.Point each : running.getPoints())
+            {
+                if (each.getCurrentLocomotive() != null && locName.equals(each.getCurrentLocomotive().getName())) wasOn = each;
+            }
+        }
+
+        final java.util.List<org.traincontrol.automation.Edge> roadBefore = wasOn == null ? null : wasOn.getArrivedAlong();
+        final String sideBefore = wasOn == null ? null : wasOn.getArrivedFrom();
+        final org.traincontrol.automationui.TileGraph.TileKey squareBefore = wasOn == null || session == null
+            || session.getStationIndex() == null ? null : session.getStationIndex().squareOf(wasOn);
+
         if (!ui.getModel().getAutoLayout().moveLocomotive(locName, pointName, false)) return;
 
         if (session != null)
@@ -1207,9 +1223,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             // become blocked.  After `placeLocomotive`, because a change of occupant clears it.
             if (arriving)
             {
-                // WHAT THE SETUP HAD, before this door writes a side (TLV-A1).
-                String sideWas = session.getArrivedFrom(station);
-
                 session.setArrivedFrom(station, tail);
 
                 if (landing != null) landing.setArrivedFrom(tail);
@@ -1220,15 +1233,15 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     org.traincontrol.gui.TailCrossedPrompt.askAfterPlacement(running, landing, tail,
                         landing == null || landing.getCurrentLocomotive() == null
                             ? null : landing.getCurrentLocomotive().getTrainLength(),
-                        locName, ui, session::baseNameOf);
+                        locName, ui, session::baseNameOf, roadBefore);
 
-                // WRITTEN WHEN IT SAYS SOMETHING (TLV-A1), as the paste does.
-                if (answer.replacesTheRoad(sideWas, tail))
-                {
-                    session.setArrivedAlong(station, org.traincontrol.automation.Layout.namesOfRoad(answer.getRoad()));
+                // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY (TLW-A1), as the paste does.
+                java.util.List<org.traincontrol.automation.Edge> road = answer.roadToRecord(roadBefore,
+                    station != null && station.equals(squareBefore), sideBefore, tail);
 
-                    if (landing != null) landing.setArrivedAlong(answer.getRoad());
-                }
+                session.setArrivedAlong(station, org.traincontrol.automation.Layout.namesOfRoad(road));
+
+                if (landing != null) landing.setArrivedAlong(road);
             }
         }
 

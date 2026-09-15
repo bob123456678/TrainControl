@@ -224,6 +224,25 @@ public class GraphLocAssign extends javax.swing.JPanel
         org.traincontrol.automationui.TilePorts.Side heading =
             arriving == null || session == null ? null : session.facingOf(arriving, layout);
 
+        // WHAT THE TRAIN HAD ON THE RAILWAY, before the dialog's commit moves it (TLW-A1).
+        org.traincontrol.automation.Point wasOn = null;
+
+        if (layout != null && arriving != null)
+        {
+            for (org.traincontrol.automation.Point each : layout.getPoints())
+            {
+                if (each.getCurrentLocomotive() != null && arriving.equals(each.getCurrentLocomotive().getName()))
+                {
+                    wasOn = each;
+                }
+            }
+        }
+
+        final java.util.List<org.traincontrol.automation.Edge> roadBefore = wasOn == null ? null : wasOn.getArrivedAlong();
+        final String sideBefore = wasOn == null ? null : wasOn.getArrivedFrom();
+        final org.traincontrol.automationui.TileGraph.TileKey squareBefore = wasOn == null || session == null
+            || session.getStationIndex() == null ? null : session.getStationIndex().squareOf(wasOn);
+
         edit.commitChanges();
 
         if (session == null) return;
@@ -250,8 +269,7 @@ public class GraphLocAssign extends javax.swing.JPanel
             // live Point while the setup is the half that survives a restart.
             String tail = edit.getArrivedFrom();
 
-            // WHAT THE SETUP HAD, before this door writes a side (TLV-A1).
-            String sideWas = session.getArrivedFrom(tile);
+            // (What the train had before is read from the railway above, before the commit - TLW-A1.)
 
             session.setArrivedFrom(tile, tail);
 
@@ -261,15 +279,15 @@ public class GraphLocAssign extends javax.swing.JPanel
             // OWNED BY THE MAIN WINDOW (TLV-C3): the dialog's own panel has gone with the dialog.
             TailCrossedPrompt.Answer answer = TailCrossedPrompt.askAfterPlacement(layout, point, tail,
                 point.getCurrentLocomotive().getTrainLength(), point.getCurrentLocomotive().getName(), edit.parent,
-                session::baseNameOf);
+                session::baseNameOf, roadBefore);
 
-            // WRITTEN WHEN IT SAYS SOMETHING (TLV-A1), as the paste does: OK pressed on a train's own dialog, with
-            // nothing asked, keeps the road autonomy drove it in on.
-            if (answer.replacesTheRoad(sideWas, tail))
-            {
-                session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(answer.getRoad()));
-                point.setArrivedAlong(answer.getRoad());
-            }
+            // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY (TLW-A1), as the paste does: OK pressed on a train's own
+            // dialog right after a run, with nothing asked, keeps the road it drove in on - in both stores.
+            java.util.List<org.traincontrol.automation.Edge> road = answer.roadToRecord(roadBefore, tile.equals(squareBefore),
+                sideBefore, tail);
+
+            session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(road));
+            point.setArrivedAlong(road);
         }
 
         // AND WRITTEN TO DISK (VAL9-B1).  The two writes above change the setup in memory only, and
