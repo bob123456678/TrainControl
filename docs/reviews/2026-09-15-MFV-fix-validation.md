@@ -1,6 +1,6 @@
 # The 2026-09-15 feedback fixes: round 1 validated
 
-**Status:** open 2026-09-15 - round 2 fixed B1, C1, C2, C3, C4, C5 and C6 in `ab217322`
+**Status:** open 2026-09-15 - round 2 fixed B1, C1, C2, C3 and C4 in `ab217322` (claims in `099f6327`), and C5 and C6 in `2a4b2cc8`
 
 **Prefix:** MFV (checked free with MFR, MFW and MFX before the review: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`, every declaration spelling in `docs/reviews/`, and a grep of `src/`, `test/` and `docs/`)
 

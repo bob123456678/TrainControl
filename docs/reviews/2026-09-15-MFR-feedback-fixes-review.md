@@ -1,6 +1,6 @@
 # The 2026-09-15 feedback fixes, reviewed
 
-**Status:** open 2026-09-15 - round 1 fixed B1, B2, B3, C2, C4, C5, C6 and C7 in `ddaa1b9b`; C1 and C3 held; C8 noted on OB-229 in `32b415a2`
+**Status:** open 2026-09-15 - round 1 fixed B1, B2, B3, C2, C4, C6 and C7 in `ddaa1b9b` and strengthened the C5 claim; C2's fix was replaced in round 2 (MFV-B1, `ab217322`); C1 and C3 held; C8 noted on OB-229 in `32b415a2`
 
 **Prefix:** MFR (checked free, with MFV, MFW and MFX for the validation rounds: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`, every declaration spelling in `docs/reviews/`, and a grep of `src/`, `test/` and `docs/`)
 
@@ -67,10 +67,10 @@ The key's javadoc said it asked what the menu asks.  It did not ask `isIgnored`,
 | id | status | where |
 |---|---|---|
 | MFR-C1 | Held | `TailCrossedPrompt.preselectedIndex` - the default at a fork whose other road is unmeasured |
-| MFR-C2 | Fixed | `HomeStaging.search` - a failed search could take twice the budget |
+| MFR-C2 | Fixed | `HomeStaging.search` - a failed search could take twice the budget (round 2 shares the budget out: MFV-B1) |
 | MFR-C3 | Held | `HomeStaging` - a train moved away and back is judged by two tails |
 | MFR-C4 | Fixed | `core.testTheTailCrossedQuestion` - seven claims deleted, not moved |
-| MFR-C5 | Fixed | `testWhyNotMovingFollowsPathType` asserted only absences on Manual |
+| MFR-C5 | Not a defect | `testWhyNotMovingFollowsPathType` asserted only absences on Manual - claim strengthened |
 | MFR-C6 | Fixed | `Layout.whyTooLongForThisRoute` - the refusal quoted the room past the switch, not the route in |
 | MFR-C7 | Fixed | stale comments: "the approach's own length", "while some of the train is still left beyond it" |
 | MFR-C8 | Noted | OB-229 - the audit's third disagreement is a copy |
@@ -89,7 +89,7 @@ Where the second road back from a junction contributes no sensor because it is u
 |---|---|
 | **Disposition** | Fixed |
 
-The retry from the start (OB-228) ran with a fresh `SEARCH_BUDGET_MS`.  **Fixed, round 1:** one deadline, set once per `search`, read by every A* it runs.  Not claimed by a test: a test of a fifteen-second budget costs fifteen seconds a run, and the change is a field read.
+The retry from the start (OB-228) ran with a fresh `SEARCH_BUDGET_MS`.  **Fixed, round 1:** one deadline, set once per `search`, read by every A* it runs.  **Replaced in round 2** (MFV-B1, `ab217322`): one deadline could leave the retry from the start no time at all, so the budget is shared out - half to A* from the greedy arrangement, the rest to the retry.  Not claimed by a test: a test of a fifteen-second budget costs fifteen seconds a run, and the change is a field read.
 
 ### MFR-C3 - a train moved and later back on its start square is judged by two tails
 
@@ -111,7 +111,7 @@ The claim script for OB-226, OB-227 and FR-088 rewrote `core.testTheTailCrossedQ
 
 | | |
 |---|---|
-| **Disposition** | Fixed |
+| **Disposition** | Not a defect - claim strengthened |
 
 **Fixed, round 1:** on Manual the answer must name more stations it can go to than on Auto - an empty or failed answer names none.  Passes on the real editor before the round's fixes, as it should - C5 is a stronger claim, not a defect.
 
