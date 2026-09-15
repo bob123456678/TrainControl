@@ -6374,17 +6374,19 @@ public class Layout
      * (TLV-B1) - so a fork right behind the platform is decided by the road, and a road that names nothing there
      * leaves the side to decide as it always has.
      *
-     * @param standing the Point the train stands on
-     * @param here the same Point - the walk's first hop
+     * @param arrivedFrom the side the train came in by
+     * @param arrivedAlong the road it came along
+     * @param here the Point it stands on - the walk's first hop
      * @param back every edge touching it
      * @param walked the names walked so far
      * @return the square to go back to, or null for the side alone
      */
-    private Point roadBackAtTheFirstHop(Point standing, Point here, List<Edge> back, Set<String> walked)
+    private Point roadBackAtTheFirstHop(String arrivedFrom, List<Edge> arrivedAlong, Point here, List<Edge> back,
+        Set<String> walked)
     {
-        if (standing.getArrivedAlong() == null || standing.getArrivedFrom() == null || back == null) return null;
+        if (arrivedAlong == null || arrivedFrom == null || back == null) return null;
 
-        Point roadBack = cameFromAlong(standing.getArrivedAlong(), here, walked);
+        Point roadBack = cameFromAlong(arrivedAlong, here, walked);
 
         if (roadBack == null) return null;
 
@@ -6396,7 +6398,7 @@ public class Layout
 
             String cameInBy = entrySideOf(candidate, here);
 
-            if (cameInBy != null && standing.getArrivedFrom().equalsIgnoreCase(cameInBy)) return roadBack;
+            if (cameInBy != null && arrivedFrom.equalsIgnoreCase(cameInBy)) return roadBack;
         }
 
         return null;
@@ -6458,338 +6460,407 @@ public class Layout
      */
     private void walkStandingTrains(Map<Edge, Locomotive> covered, Map<String, Locomotive> places)
     {
-
         for (Point standing : this.points.values())
         {
             Locomotive loc = standing.getCurrentLocomotive();
 
             if (loc == null || loc.getTrainLength() == null || loc.getTrainLength() <= 0) continue;
 
-            int remaining = loc.getTrainLength();
+            walkOneTail(standing, loc, standing.getArrivedFrom(), standing.getArrivedAlong(), covered, places);
+        }
+    }
 
-            final Point standingHere = standing;
+    /**
+     * One standing train's tail, walked (OB-228) - the body `walkStandingTrains` runs for each train, lifted out so a
+     * train that is not standing there yet can be walked by the same code.
+     *
+     * The Return Home planner puts trains down in a plan before any of them moves, and asked only the railway as it is it
+     * could not see the tail a moved train would leave - Adam's MT-335 run parked 75 407 DB at BottomMainA and then sent
+     * EN57-203 over the track behind it.  Handing the side and road in, rather than reading them off the Point, is what
+     * lets the planner ask about a train it has only imagined, without writing anything onto the running layout.
+     *
+     * @param standing the Point the train stands on
+     * @param loc the train
+     * @param arrivedFrom the side it came in by, or null
+     * @param arrivedAlong the road it came along, or null
+     * @param covered filled with every covered edge and this train
+     * @param places filled with every claimed place and this train
+     */
+    private void walkOneTail(Point standing, Locomotive loc, String arrivedFrom, List<Edge> arrivedAlong,
+        Map<Edge, Locomotive> covered, Map<String, Locomotive> places)
+    {
+        int remaining = loc.getTrainLength();
 
-            Point here = standing;
+        final Point standingHere = standing;
 
-            Set<String> walked = new LinkedHashSet<>();
+        Point here = standing;
 
-            walked.add(here.getName());
+        Set<String> walked = new LinkedHashSet<>();
 
-            // WHAT THIS TRAIN HAS ALREADY PAID FOR (PRW-C3).
+        walked.add(here.getName());
+
+        // WHAT THIS TRAIN HAS ALREADY PAID FOR (PRW-C3).
+        //
+        // Two hops share the square the walk turned at: it is the end of one edge and a place on
+        // the next.  Charged twice, the tail stops short of where it really reaches and the track
+        // under its back end is claimed by nobody - which is the permitting side of the guard
+        // between two trains.
+        Set<String> spent = new LinkedHashSet<>();
+
+        while (remaining > 0)
+        {
+            // EVERY WAY IN, in both directions, because a tail is not directional.
             //
-            // Two hops share the square the walk turned at: it is the end of one edge and a place on
-            // the next.  Charged twice, the tail stops short of where it really reaches and the track
-            // under its back end is claimed by nobody - which is the permitting side of the guard
-            // between two trains.
-            Set<String> spent = new LinkedHashSet<>();
+            // Adam, 2026-09-07, after finding the 2-8-4 blocking nothing: the graph encodes facing
+            // as one-way edges, so "incoming" means "a train travelling this way could arrive by
+            // it" - and a train that has been TURNED lies across track no incoming edge names.  He
+            // turned that one to face east having arrived from the west; its tail is on the
+            // westbound rail, which is an outgoing edge of the copy it stands on.
+            //
+            // So the candidates are every edge that touches this point, and `arrivedFrom` picks
+            // between them.  A train lying across a rail fouls it whichever way traffic runs.
+            List<Edge> back = this.getNeighborsAndIncoming(here);
 
-            while (remaining > 0)
+            if (back == null || back.isEmpty()) break;
+
+            Edge segment = null;
+
+            if (here == standingHere && arrivedFrom != null)
             {
-                // EVERY WAY IN, in both directions, because a tail is not directional.
+                // THE SIDE IT CAME IN BY, which is the whole point of recording it.  Only the
+                // first hop can be chosen this way; past that the train is somewhere it never
+                // stopped, and the deterministic rule below takes over.
                 //
-                // Adam, 2026-09-07, after finding the 2-8-4 blocking nothing: the graph encodes facing
-                // as one-way edges, so "incoming" means "a train travelling this way could arrive by
-                // it" - and a train that has been TURNED lies across track no incoming edge names.  He
-                // turned that one to face east having arrived from the west; its tail is on the
-                // westbound rail, which is an outgoing edge of the copy it stands on.
-                //
-                // So the candidates are every edge that touches this point, and `arrivedFrom` picks
-                // between them.  A train lying across a rail fouls it whichever way traffic runs.
-                List<Edge> back = this.getNeighborsAndIncoming(here);
-
-                if (back == null || back.isEmpty()) break;
-
-                Edge segment = null;
-
-                if (here == standingHere && standingHere.getArrivedFrom() != null)
+                // AND THE ROAD, where the train has one and more than one rail comes in on that side (TLV-B1): a
+                // fork right behind the platform is asked about, and the side alone took whichever rail it met
+                // first.
+                Point roadBack = roadBackAtTheFirstHop(arrivedFrom, arrivedAlong, here, back, walked);
+                for (Edge candidate : back)
                 {
-                    // THE SIDE IT CAME IN BY, which is the whole point of recording it.  Only the
-                    // first hop can be chosen this way; past that the train is somewhere it never
-                    // stopped, and the deterministic rule below takes over.
-                    //
-                    // AND THE ROAD, where the train has one and more than one rail comes in on that side (TLV-B1): a
-                    // fork right behind the platform is asked about, and the side alone took whichever rail it met
-                    // first.
-                    Point roadBack = roadBackAtTheFirstHop(standingHere, here, back, walked);
-                    for (Edge candidate : back)
+                    Point other = candidate.getStart() == here
+                        ? candidate.getEnd() : candidate.getStart();
+
+                    if (other == null) continue;
+
+                    // THE BUILD’S SIDE where there is one - see `entrySideOf`. The written
+                    // value and this comparison have to come from the same place, and until
+                    // 2026-09-08 they did not: this asked where the neighbour LIES and the
+                    // doors offered the side the track comes in by, which differ on a curve.
+                    if (roadBack != null && !other.isSamePlaceAs(roadBack)) continue;
+
+                    String cameInBy = entrySideOf(candidate, here);
+
+                    if (cameInBy == null
+                        || !arrivedFrom.equalsIgnoreCase(cameInBy))
                     {
-                        Point other = candidate.getStart() == here
-                            ? candidate.getEnd() : candidate.getStart();
-
-                        if (other == null) continue;
-
-                        // THE BUILD’S SIDE where there is one - see `entrySideOf`. The written
-                        // value and this comparison have to come from the same place, and until
-                        // 2026-09-08 they did not: this asked where the neighbour LIES and the
-                        // doors offered the side the track comes in by, which differ on a curve.
-                        if (roadBack != null && !other.isSamePlaceAs(roadBack)) continue;
-
-                        String cameInBy = entrySideOf(candidate, here);
-
-                        if (cameInBy == null
-                            || !standingHere.getArrivedFrom().equalsIgnoreCase(cameInBy))
-                        {
-                            continue;
-                        }
-
-                        // AND THE COPY THAT ARRIVES HERE, where the rail is written both ways (SVZ-B1).
-                        //
-                        // A piece of rail is two `Edge` objects, one per direction, and at a berth
-                        // both can report the same way in.  `getNeighborsAndIncoming` lists the
-                        // OUTGOING ones first, so the copy running away from the berth used to win -
-                        // and an edge's places are the path plus the square it ARRIVES at, so that
-                        // copy's places are the track behind and never the berth itself.  The square
-                        // a train was standing on was then claimed by nobody, at some stations and
-                        // not at others: measured at TopMainR0Park on 2026-09-13, where the claims
-                        // came back as the two tiles behind with the berth missing, while the same
-                        // claim at TunnelLongPark passed because no outgoing copy answers there.
-                        //
-                        // The train arrived along the copy that ENDS here - that is what
-                        // `arrivedFrom` records - and it is the one whose places describe where a
-                        // tail lies.  It also carries the standing square, which is what the
-                        // allowance rule below is written against.
-                        //
-                        // The other copy is still taken when there is no arriving one, which is the
-                        // case at a square a train has been turned on: it lies across that rail
-                        // whichever way traffic runs, and half an answer beats none.
-                        if (candidate.getEnd() == here)
-                        {
-                            segment = candidate;
-
-                            break;
-                        }
-
-                        if (segment == null) segment = candidate;
+                        continue;
                     }
 
-                    // Recorded, but naming a side no track leaves by - a stale value after an edit.
-                    // Nothing can be said, and guessing would block the wrong rail.
-                    if (segment == null) break;
+                    // AND THE COPY THAT ARRIVES HERE, where the rail is written both ways (SVZ-B1).
+                    //
+                    // A piece of rail is two `Edge` objects, one per direction, and at a berth
+                    // both can report the same way in.  `getNeighborsAndIncoming` lists the
+                    // OUTGOING ones first, so the copy running away from the berth used to win -
+                    // and an edge's places are the path plus the square it ARRIVES at, so that
+                    // copy's places are the track behind and never the berth itself.  The square
+                    // a train was standing on was then claimed by nobody, at some stations and
+                    // not at others: measured at TopMainR0Park on 2026-09-13, where the claims
+                    // came back as the two tiles behind with the berth missing, while the same
+                    // claim at TunnelLongPark passed because no outgoing copy answers there.
+                    //
+                    // The train arrived along the copy that ENDS here - that is what
+                    // `arrivedFrom` records - and it is the one whose places describe where a
+                    // tail lies.  It also carries the standing square, which is what the
+                    // allowance rule below is written against.
+                    //
+                    // The other copy is still taken when there is no arriving one, which is the
+                    // case at a square a train has been turned on: it lies across that rail
+                    // whichever way traffic runs, and half an answer beats none.
+                    if (candidate.getEnd() == here)
+                    {
+                        segment = candidate;
+
+                        break;
+                    }
+
+                    if (segment == null) segment = candidate;
                 }
-                else
+
+                // Recorded, but naming a side no track leaves by - a stale value after an edit.
+                // Nothing can be said, and guessing would block the wrong rail.
+                if (segment == null) break;
+            }
+            else
+            {
+                // THE FORK RULE, for every hop after the first and for a train nobody has told us
+                // about.  One way means the tail certainly lies there; several means the graph
+                // cannot say which, and blocking either would stop a train that could have run.
+                //
+                // Counted over DISTINCT neighbours rather than edges: a square joined to one
+                // other by a pair of one-way rails is still one way back.
+                Set<String> neighbours = new LinkedHashSet<>();
+
+                for (Edge candidate : back)
                 {
-                    // THE FORK RULE, for every hop after the first and for a train nobody has told us
-                    // about.  One way means the tail certainly lies there; several means the graph
-                    // cannot say which, and blocking either would stop a train that could have run.
-                    //
-                    // Counted over DISTINCT neighbours rather than edges: a square joined to one
-                    // other by a pair of one-way rails is still one way back.
-                    Set<String> neighbours = new LinkedHashSet<>();
+                    Point other = candidate.getStart() == here
+                        ? candidate.getEnd() : candidate.getStart();
 
-                    for (Edge candidate : back)
+                    if (other == null) continue;
+
+                    // NOT THE WAY WE CAME.  Every point on a straight run has two neighbours -
+                    // the one ahead and the one behind - so counting the one just walked makes
+                    // every ordinary tile look like a fork and the tail never leaves the berth.
+                    // BY PLACE (TLR-B3, TLV-B2): a split square's copies are one square, and the walk has been on
+                    // it if it has been on any of them.
+                    if (walkedAPlaceLike(other, walked)) continue;
+
+                    // COUNTED BY PLACE (TLR-B3, TLV-B2).  Adam's rule is to stop where the track SPLITS - "end
+                    // locking at the switch" - and a square's lane copy and turning copy are one piece of track
+                    // under two names, not a split.  Counted by name they stopped the tail at a junction whose only
+                    // road back led to such a square, and nothing could extend it.
+                    if (neighbours.add(placeKey(other))) segment = candidate;
+                }
+
+                // PAST A JUNCTION, THE ROAD IT CAME IN ON (Adam, MT-335, 2026-09-13).
+                //
+                // *"With 75 407 DB at bottommaina, length 5 ... EN57-947 may still be manually sent
+                // to botommainb, and the orange blocked track is not extended to the segment between
+                // tunnel and bottommaina pre."*  Five units with two measured behind the platform
+                // reach past BottomMainAPre, where several roads lead back, and the rule below - his
+                // own of 2026-09-07, "end locking at the switch and call it a day" - stopped there.
+                //
+                // His ruling now: a train that was DRIVEN here follows the route it arrived along,
+                // through the junction.  The route is the edge that ended where the walk is now; the
+                // candidate taken is the one reaching back to where that edge started.  Matched by
+                // place rather than by object, because a square is several Points and the walk may
+                // stand on a different copy of it than the route passed through.
+                //
+                // A train with no road - placed by hand and not asked, or answered Not Known - keeps the fork
+                // rule, unchanged.  A hand-placed train can be given one (behaviour.md 5c, FR-085).
+                if (neighbours.size() > 1 && arrivedAlong != null)
+                {
+                    // Where the road says it came from - see `cameFromAlong`, shared with the first hop (TLV-B1).
+                    Point cameFrom = cameFromAlong(arrivedAlong, here, walked);
+
+                    if (cameFrom != null)
                     {
-                        Point other = candidate.getStart() == here
-                            ? candidate.getEnd() : candidate.getStart();
-
-                        if (other == null) continue;
-
-                        // NOT THE WAY WE CAME.  Every point on a straight run has two neighbours -
-                        // the one ahead and the one behind - so counting the one just walked makes
-                        // every ordinary tile look like a fork and the tail never leaves the berth.
-                        // BY PLACE (TLR-B3, TLV-B2): a split square's copies are one square, and the walk has been on
-                        // it if it has been on any of them.
-                        if (walkedAPlaceLike(other, walked)) continue;
-
-                        // COUNTED BY PLACE (TLR-B3, TLV-B2).  Adam's rule is to stop where the track SPLITS - "end
-                        // locking at the switch" - and a square's lane copy and turning copy are one piece of track
-                        // under two names, not a split.  Counted by name they stopped the tail at a junction whose only
-                        // road back led to such a square, and nothing could extend it.
-                        if (neighbours.add(placeKey(other))) segment = candidate;
-                    }
-
-                    // PAST A JUNCTION, THE ROAD IT CAME IN ON (Adam, MT-335, 2026-09-13).
-                    //
-                    // *"With 75 407 DB at bottommaina, length 5 ... EN57-947 may still be manually sent
-                    // to botommainb, and the orange blocked track is not extended to the segment between
-                    // tunnel and bottommaina pre."*  Five units with two measured behind the platform
-                    // reach past BottomMainAPre, where several roads lead back, and the rule below - his
-                    // own of 2026-09-07, "end locking at the switch and call it a day" - stopped there.
-                    //
-                    // His ruling now: a train that was DRIVEN here follows the route it arrived along,
-                    // through the junction.  The route is the edge that ended where the walk is now; the
-                    // candidate taken is the one reaching back to where that edge started.  Matched by
-                    // place rather than by object, because a square is several Points and the walk may
-                    // stand on a different copy of it than the route passed through.
-                    //
-                    // A train with no road - placed by hand and not asked, or answered Not Known - keeps the fork
-                    // rule, unchanged.  A hand-placed train can be given one (behaviour.md 5c, FR-085).
-                    if (neighbours.size() > 1 && standingHere.getArrivedAlong() != null)
-                    {
-                        // Where the road says it came from - see `cameFromAlong`, shared with the first hop (TLV-B1).
-                        Point cameFrom = cameFromAlong(standingHere.getArrivedAlong(), here, walked);
-
-                        if (cameFrom != null)
+                        for (Edge candidate : back)
                         {
-                            for (Edge candidate : back)
+                            Point other = candidate.getStart() == here
+                                ? candidate.getEnd() : candidate.getStart();
+
+                            if (other != null && other.isSamePlaceAs(cameFrom))
                             {
-                                Point other = candidate.getStart() == here
-                                    ? candidate.getEnd() : candidate.getStart();
+                                segment = candidate;
 
-                                if (other != null && other.isSamePlaceAs(cameFrom))
-                                {
-                                    segment = candidate;
+                                neighbours.clear();
+                                neighbours.add(placeKey(other));
 
-                                    neighbours.clear();
-                                    neighbours.add(placeKey(other));
-
-                                    break;
-                                }
+                                break;
                             }
                         }
                     }
-
-                    if (neighbours.size() != 1) break;
                 }
 
-                // THE MEASUREMENT RULE.  Nothing can be said about an unmeasured segment, including
-                // how much of the train would still be left after it.
-                //
-                // AND THE STANDING SQUARE'S OWN MEASUREMENT DOES NOT COUNT AS ONE (SVX-B1).
-                //
-                // `getLength()` is the path PLUS the square the edge arrives at, and on the first hop
-                // that square is the one the train stands on - whose measurement Adam ruled an
-                // allowance rather than track.  So a berth measured on an otherwise unmeasured
-                // approach passed this test with nothing spendable behind it, and the walk then
-                // claimed every place on the approach.
-                //
-                // `whyABerthCannotHoldIt` was given the matching bound a round earlier and this was
-                // not, which left the pair worse than before either had it: the berth rule ACCEPTED
-                // the train and this guard then blocked the roads behind it.  That configuration is
-                // the one `Automation.md` produces first, because it tells him to measure the berth.
-                if (segment.getLength() - spendableAllowance(segment, here, standingHere) <= 0) break;
-
-                // BOTH DIRECTIONS OF THE SAME RAIL (VAL8-A1, REG7-B3).
-                //
-                // Two reviewers found this independently and a test confirmed it: the graph writes one
-                // piece of rail as two `Edge` objects, one per direction, because facing IS one-way
-                // edges here.  `isPathClear` looks the covered set up by Edge identity, so covering
-                // A -> B left B -> A clear and a train routed the other way over the same metal was
-                // cleared to run into the one standing on it.
-                //
-                // `behaviour.md` 5c already says a tail fouls the rail whichever way traffic runs, and
-                // the GREYING was symmetric while the routing guard was not - the picture protected
-                // more than the railway did, which is the worst way round for the two to disagree.
-                //
-                // Every fixture in the tail tests was a one-way chain, which is why this went unseen.
-                covered.put(segment, loc);
-
-                for (Edge sameRail : this.edges.values())
-                {
-                    if (sameRail == segment) continue;
-
-                    if (sameRail.getStart() == segment.getEnd()
-                        && sameRail.getEnd() == segment.getStart())
-                    {
-                        covered.put(sameRail, loc);
-                    }
-                }
-
-                // AND HOW FAR ALONG IT THE TAIL ACTUALLY REACHES (OB-207).
-                //
-                // The line above records the whole segment, which is all this could say until the build
-                // began emitting each edge's places.  Spend the train's remaining length across them
-                // from the end the tail comes in by - the places are ordered from the edge's start, and
-                // their lengths sum to its length, so this is the same arithmetic at a finer grain.
-                //
-                // A place is claimed BEFORE its length is spent, so a tail that just reaches into one
-                // claims it, and an unmeasured place the train lies over for nothing is claimed too.
-                List<String> ids = segment.getPlaceIds();
-
-                List<Integer> spans = segment.getPlaceLengths();
-
-                // What the standing square's own measurement came to, where this hop had one to skip
-                // (SEV-B3).  Zero everywhere else, so the hop budget is unchanged there.
-                int allowance = 0;
-
-                // What the places walk actually charged, which is what this hop costs (PRW-C3).
-                // Negative until the places are walked at all, so the edge's own length can stand in
-                // for a configuration that does not carry them.
-                int chargedHere = -1;
-
-                if (!ids.isEmpty() && ids.size() == spans.size())
-                {
-                    boolean fromTheEnd = (segment.getEnd() == here);
-
-                    int left = remaining;
-
-                    chargedHere = 0;
-
-                    for (int step = 0; step < ids.size(); step++)
-                    {
-                        int at = fromTheEnd ? ids.size() - 1 - step : step;
-
-                        places.put(ids.get(at), loc);
-
-                        // THE SQUARE THE TRAIN IS STANDING ON IS AN ALLOWANCE, NOT RAIL TO SPEND.
-                        //
-                        // Adam, 2026-09-13: *"if the segment length is shorter, more should be
-                        // blocked.  The station size is an allowance, not a length."*  What a station
-                        // measures is how much train it may HOLD - the question `whyTooLongForThisRoute`
-                        // asks - and reading it here as well made one number answer two questions.  A
-                        // train at a generously-sized platform had its whole body absorbed by the
-                        // platform and blocked nothing behind it, however long it was.
-                        //
-                        // Claimed, though: it IS standing there.  Only the subtraction is skipped, and
-                        // only for the first square of the first hop - every square further back is
-                        // ordinary track the body really does lie over.
-                        //
-                        // This settles PRW-B4, which was filed on the guard and the picture charging
-                        // different squares.  `AutonomySession.walkBackFrom` never charged the standing
-                        // square; a repair that made the picture match the guard instead was tried on
-                        // 2026-09-12 and reverted the same day, because it left a train shorter than
-                        // its own square with nothing drawn behind it - failing two claims Adam had
-                        // already validated.  The picture was right and this was not.
-                        boolean onTheAllowance = fromTheEnd && step == 0 && here == standingHere;
-
-                        // AND NOT TWICE (PRW-C3).  The square the walk turned at is the end of the
-                        // last edge and a place on this one; charging it again shortens the tail by
-                        // its length and leaves the track under the train's back end unclaimed.
-                        if (!spent.add(ids.get(at))) continue;
-
-                        if (onTheAllowance)
-                        {
-                            // AND THE HOP BUDGET HAS TO SKIP IT TOO (SEV-B3).
-                            //
-                            // `remaining -= segment.getLength()` below spends the whole edge, and
-                            // `GraphReducer` builds an edge's length as the path PLUS the square it
-                            // arrives at - which on this first hop is the square the train is standing
-                            // on.  Skipping the allowance here and spending it there would leave the
-                            // two budgets disagreeing by exactly the allowance, and a train whose body
-                            // reaches into a second edge would have its last units silently dropped.
-                            allowance = Math.max(0, spans.get(at));
-                        }
-                        else
-                        {
-                            left -= Math.max(0, spans.get(at));
-
-                            chargedHere += Math.max(0, spans.get(at));
-                        }
-
-                        if (left <= 0) break;
-                    }
-                }
-
-                // ONE BUDGET, NOT TWO (PRW-C3, and the two rounds that found the same seam).
-                //
-                // This read `remaining -= segment.getLength() - allowance`, which is a second
-                // arithmetic over the same train: the places walk spends span by span and this spent
-                // the whole edge.  They agreed only while every square on the edge was measured, the
-                // standing square was ordinary track, and no square belonged to two hops - and each
-                // of those three assumptions has failed in turn (SEV-B3, SVX-B1, PRW-C3).
-                //
-                // What the finer walk charged IS what the hop costs.  The edge's own length is kept
-                // for a configuration that carries no places, where there is nothing finer to spend -
-                // an old file behaves as it always did.
-                remaining -= chargedHere >= 0 ? chargedHere : segment.getLength() - allowance;
-
-                Point next = segment.getStart() == here ? segment.getEnd() : segment.getStart();
-
-                // A loop of track would otherwise be walked for ever by a long enough train.
-                if (next == null || !walked.add(next.getName())) break;
-
-                here = next;
+                if (neighbours.size() != 1) break;
             }
+
+            // THE MEASUREMENT RULE.  Nothing can be said about an unmeasured segment, including
+            // how much of the train would still be left after it.
+            //
+            // AND THE STANDING SQUARE'S OWN MEASUREMENT DOES NOT COUNT AS ONE (SVX-B1).
+            //
+            // `getLength()` is the path PLUS the square the edge arrives at, and on the first hop
+            // that square is the one the train stands on - whose measurement Adam ruled an
+            // allowance rather than track.  So a berth measured on an otherwise unmeasured
+            // approach passed this test with nothing spendable behind it, and the walk then
+            // claimed every place on the approach.
+            //
+            // `whyABerthCannotHoldIt` was given the matching bound a round earlier and this was
+            // not, which left the pair worse than before either had it: the berth rule ACCEPTED
+            // the train and this guard then blocked the roads behind it.  That configuration is
+            // the one `Automation.md` produces first, because it tells him to measure the berth.
+            if (segment.getLength() - spendableAllowance(segment, here, standingHere) <= 0) break;
+
+            // BOTH DIRECTIONS OF THE SAME RAIL (VAL8-A1, REG7-B3).
+            //
+            // Two reviewers found this independently and a test confirmed it: the graph writes one
+            // piece of rail as two `Edge` objects, one per direction, because facing IS one-way
+            // edges here.  `isPathClear` looks the covered set up by Edge identity, so covering
+            // A -> B left B -> A clear and a train routed the other way over the same metal was
+            // cleared to run into the one standing on it.
+            //
+            // `behaviour.md` 5c already says a tail fouls the rail whichever way traffic runs, and
+            // the GREYING was symmetric while the routing guard was not - the picture protected
+            // more than the railway did, which is the worst way round for the two to disagree.
+            //
+            // Every fixture in the tail tests was a one-way chain, which is why this went unseen.
+            covered.put(segment, loc);
+
+            for (Edge sameRail : this.edges.values())
+            {
+                if (sameRail == segment) continue;
+
+                if (sameRail.getStart() == segment.getEnd()
+                    && sameRail.getEnd() == segment.getStart())
+                {
+                    covered.put(sameRail, loc);
+                }
+            }
+
+            // AND HOW FAR ALONG IT THE TAIL ACTUALLY REACHES (OB-207).
+            //
+            // The line above records the whole segment, which is all this could say until the build
+            // began emitting each edge's places.  Spend the train's remaining length across them
+            // from the end the tail comes in by - the places are ordered from the edge's start, and
+            // their lengths sum to its length, so this is the same arithmetic at a finer grain.
+            //
+            // A place is claimed BEFORE its length is spent, so a tail that just reaches into one
+            // claims it, and an unmeasured place the train lies over for nothing is claimed too.
+            List<String> ids = segment.getPlaceIds();
+
+            List<Integer> spans = segment.getPlaceLengths();
+
+            // What the standing square's own measurement came to, where this hop had one to skip
+            // (SEV-B3).  Zero everywhere else, so the hop budget is unchanged there.
+            int allowance = 0;
+
+            // What the places walk actually charged, which is what this hop costs (PRW-C3).
+            // Negative until the places are walked at all, so the edge's own length can stand in
+            // for a configuration that does not carry them.
+            int chargedHere = -1;
+
+            if (!ids.isEmpty() && ids.size() == spans.size())
+            {
+                boolean fromTheEnd = (segment.getEnd() == here);
+
+                int left = remaining;
+
+                chargedHere = 0;
+
+                for (int step = 0; step < ids.size(); step++)
+                {
+                    int at = fromTheEnd ? ids.size() - 1 - step : step;
+
+                    places.put(ids.get(at), loc);
+
+                    // THE SQUARE THE TRAIN IS STANDING ON IS AN ALLOWANCE, NOT RAIL TO SPEND.
+                    //
+                    // Adam, 2026-09-13: *"if the segment length is shorter, more should be
+                    // blocked.  The station size is an allowance, not a length."*  What a station
+                    // measures is how much train it may HOLD - the question `whyTooLongForThisRoute`
+                    // asks - and reading it here as well made one number answer two questions.  A
+                    // train at a generously-sized platform had its whole body absorbed by the
+                    // platform and blocked nothing behind it, however long it was.
+                    //
+                    // Claimed, though: it IS standing there.  Only the subtraction is skipped, and
+                    // only for the first square of the first hop - every square further back is
+                    // ordinary track the body really does lie over.
+                    //
+                    // This settles PRW-B4, which was filed on the guard and the picture charging
+                    // different squares.  `AutonomySession.walkBackFrom` never charged the standing
+                    // square; a repair that made the picture match the guard instead was tried on
+                    // 2026-09-12 and reverted the same day, because it left a train shorter than
+                    // its own square with nothing drawn behind it - failing two claims Adam had
+                    // already validated.  The picture was right and this was not.
+                    boolean onTheAllowance = fromTheEnd && step == 0 && here == standingHere;
+
+                    // AND NOT TWICE (PRW-C3).  The square the walk turned at is the end of the
+                    // last edge and a place on this one; charging it again shortens the tail by
+                    // its length and leaves the track under the train's back end unclaimed.
+                    if (!spent.add(ids.get(at))) continue;
+
+                    if (onTheAllowance)
+                    {
+                        // AND THE HOP BUDGET HAS TO SKIP IT TOO (SEV-B3).
+                        //
+                        // `remaining -= segment.getLength()` below spends the whole edge, and
+                        // `GraphReducer` builds an edge's length as the path PLUS the square it
+                        // arrives at - which on this first hop is the square the train is standing
+                        // on.  Skipping the allowance here and spending it there would leave the
+                        // two budgets disagreeing by exactly the allowance, and a train whose body
+                        // reaches into a second edge would have its last units silently dropped.
+                        allowance = Math.max(0, spans.get(at));
+                    }
+                    else
+                    {
+                        left -= Math.max(0, spans.get(at));
+
+                        chargedHere += Math.max(0, spans.get(at));
+                    }
+
+                    if (left <= 0) break;
+                }
+            }
+
+            // ONE BUDGET, NOT TWO (PRW-C3, and the two rounds that found the same seam).
+            //
+            // This read `remaining -= segment.getLength() - allowance`, which is a second
+            // arithmetic over the same train: the places walk spends span by span and this spent
+            // the whole edge.  They agreed only while every square on the edge was measured, the
+            // standing square was ordinary track, and no square belonged to two hops - and each
+            // of those three assumptions has failed in turn (SEV-B3, SVX-B1, PRW-C3).
+            //
+            // What the finer walk charged IS what the hop costs.  The edge's own length is kept
+            // for a configuration that carries no places, where there is nothing finer to spend -
+            // an old file behaves as it always did.
+            remaining -= chargedHere >= 0 ? chargedHere : segment.getLength() - allowance;
+
+            Point next = segment.getStart() == here ? segment.getEnd() : segment.getStart();
+
+            // A loop of track would otherwise be walked for ever by a long enough train.
+            if (next == null || !walked.add(next.getName())) break;
+
+            here = next;
         }
+    }
+
+    /**
+     * The edges a train would cover standing at the end of this road, having driven it (OB-228).
+     *
+     * Asked by the Return Home planner of a train its plan has moved.  The side is the one the road's last rail comes in
+     * by, and the road is the one the plan gave it - exactly what an arrival records - so this is the covering the runtime
+     * will see once the move has been driven.
+     *
+     * @param standing where the train would stand
+     * @param loc the train
+     * @param road the route it would have driven, ending at `standing`
+     * @return every edge its tail would cover
+     */
+    synchronized public Map<Edge, Locomotive> edgesATailWouldCover(Point standing, Locomotive loc, List<Edge> road)
+    {
+        Map<Edge, Locomotive> covered = new LinkedHashMap<>();
+
+        tailAlong(standing, loc, road, covered, new LinkedHashMap<String, Locomotive>());
+
+        return covered;
+    }
+
+    /**
+     * The same, in places - see `placesCoveredByStandingTrains`.
+     *
+     * @param standing where the train would stand
+     * @param loc the train
+     * @param road the route it would have driven
+     * @return every place its tail would claim
+     */
+    synchronized public Map<String, Locomotive> placesATailWouldCover(Point standing, Locomotive loc, List<Edge> road)
+    {
+        Map<String, Locomotive> places = new LinkedHashMap<>();
+
+        tailAlong(standing, loc, road, new LinkedHashMap<Edge, Locomotive>(), places);
+
+        return places;
+    }
+
+    private void tailAlong(Point standing, Locomotive loc, List<Edge> road, Map<Edge, Locomotive> covered,
+        Map<String, Locomotive> places)
+    {
+        if (standing == null || loc == null || loc.getTrainLength() == null || loc.getTrainLength() <= 0) return;
+
+        if (road == null || road.isEmpty()) return;
+
+        walkOneTail(standing, loc, entrySideOf(road.get(road.size() - 1), standing), road, covered, places);
     }
 
     /**

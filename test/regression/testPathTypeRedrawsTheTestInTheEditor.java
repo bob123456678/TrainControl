@@ -177,6 +177,132 @@ public class testPathTypeRedrawsTheTestInTheEditor
         }
     }
 
+    /**
+     * Why Not Moving? answers for the tier Path Type names, and switching the radio answers again (OB-225).
+     *
+     * Adam, on MT-434, 2026-09-15, asked which tool he had switched Path Type under: *"Why Not Moving?"* - and that it
+     * should follow Path Type.  On Auto the answer files the stations autonomy is told to leave alone under "will never
+     * choose"; on Manual a person may send a train to every one of them, so neither that heading nor autonomy's reason
+     * belongs in the answer.  The square is the one a train stands on in the frozen snapshot, clicked once; only the
+     * radio is clicked after that.
+     */
+    @Test
+    public void testWhyNotMovingFollowsPathType() throws Exception
+    {
+        final LayoutDiagram page = model.getLayout(PAGE);
+
+        assertNotNull(page, "precondition: no page " + PAGE);
+
+        final TileKey standing = aSquareATrainStandsOn();
+
+        assertNotNull(standing, "precondition: no train stands on a station square of " + PAGE);
+
+        final LayoutEditor[] built = new LayoutEditor[1];
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                built[0] = new LayoutEditor(page, 30, ui, 0);
+                built[0].render();
+                built[0].setAutonomyMode(session);
+            });
+
+            settle();
+
+            final AutonomyEditorPanel panel = built[0].getAutonomyPanel();
+            final javax.swing.AbstractButton why = (javax.swing.AbstractButton) field(panel, "whyButton");
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                why.doClick();
+                panel.tileClicked(standing, page.getComponent(standing.getX(), standing.getY()), false);
+            });
+
+            answered(panel);
+
+            String neverHeading = headingStart("autolayout.ui.whyHeaderBarred");
+            String notChosen = org.traincontrol.util.I18n.t("autolayout.why.notAutoDestination");
+
+            String onAuto = shown(panel);
+
+            assertTrue(onAuto.contains(neverHeading),
+                "precondition: on Auto the answer names no station autonomy will never choose, so the tier cannot be"
+                + " seen to change: " + onAuto);
+
+            final javax.swing.AbstractButton manual = (javax.swing.AbstractButton) field(panel, "pathTypeManual");
+
+            SwingUtilities.invokeAndWait(manual::doClick);
+
+            answered(panel);
+
+            String onManual = shown(panel);
+
+            assertFalse(onManual.contains(neverHeading) || onManual.contains(notChosen),
+                "Path Type is Manual and Why Not Moving? still answers for autonomy.  Adam, MT-434: 'in manual mode, I"
+                + " still get reasons like tunnellongpark will never be chosen in autonomy'.  It says: " + onManual);
+
+            final javax.swing.AbstractButton auto = (javax.swing.AbstractButton) field(panel, "pathTypeAuto");
+
+            SwingUtilities.invokeAndWait(auto::doClick);
+
+            answered(panel);
+
+            assertTrue(shown(panel).contains(neverHeading),
+                "switching back to Auto did not bring autonomy's answer back: " + shown(panel));
+        }
+        finally
+        {
+            if (built[0] != null)
+            {
+                final LayoutEditor closing = built[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+        }
+    }
+
+    /** A station square on the page a train is standing on, as the railway sees it. */
+    private static TileKey aSquareATrainStandsOn()
+    {
+        org.traincontrol.automation.Layout layout = model.getAutoLayout();
+
+        if (layout == null) return null;
+
+        org.traincontrol.automationui.StationIndex index = session.getStationIndex();
+
+        for (org.traincontrol.automation.Point point : layout.getPoints())
+        {
+            if (point.getCurrentLocomotive() == null) continue;
+
+            TileKey square = index.squareOf(point.getName());
+
+            if (square != null && PAGE.equals(square.getPage())) return square;
+        }
+
+        return null;
+    }
+
+    /** Waits for the worker to finish the answer, then for the event thread to paint it. */
+    private static void answered(AutonomyEditorPanel panel) throws Exception
+    {
+        java.lang.reflect.Method await = AutonomyEditorPanel.class.getDeclaredMethod("awaitWhy", long.class);
+
+        await.setAccessible(true);
+
+        assertTrue((Boolean) await.invoke(panel, 120000L), "the Why answer was not worked out within two minutes");
+
+        settle();
+    }
+
+    /** A heading's words before its count. */
+    private static String headingStart(String key)
+    {
+        String heading = org.traincontrol.util.I18n.t(key);
+
+        return heading.substring(0, heading.indexOf("{0}")).trim();
+    }
+
     /** What the editor shows the operator: the hint line and the banner across the top, together. */
     private static String shown(AutonomyEditorPanel panel) throws Exception
     {

@@ -111,6 +111,25 @@ public final class HomeStaging
     /** The same, by place rather than by edge - what the shared-metal refusal is narrowed with. */
     private final Map<String, Locomotive> placesCoveredAtStart;
 
+    /**
+     * The route each train the search has moved last took, for the arrangement being expanded (OB-228).
+     *
+     * Adam, MT-335, 2026-09-15: the plan parked 75 407 DB at BottomMainA and then sent EN57-203 over the track behind it,
+     * and the runtime refused the second move.  `coveredAtStart` is the railway before the plan; a train the plan has
+     * moved lies along the route it was given, and this is what says which route that was.  Set before every expansion
+     * - the greedy pass keeps it as it goes, A* rebuilds it from the chain of moves that reached the arrangement.
+     */
+    private Map<Locomotive, List<Edge>> movedAlong = new java.util.HashMap<>();
+
+    /** What the greedy pass left in `movedAlong`, for A* to start from. */
+    private Map<Locomotive, List<Edge>> greedyMovedAlong = new java.util.HashMap<>();
+
+    /** The covering each moved train would leave, by train and route, so a route is walked once per search. */
+    private final Map<List<Edge>, Map<Edge, Locomotive>> coveredByAMove = new java.util.IdentityHashMap<>();
+
+    /** The same, in places. */
+    private final Map<List<Edge>, Map<String, Locomotive>> placesByAMove = new java.util.IdentityHashMap<>();
+
 
     /** Stations with zero incoming edges - hand-staged launch pads; see snapshot. */
     private final Set<String> launchPads;
@@ -739,6 +758,9 @@ public final class HomeStaging
         Map<Point, Locomotive> state = new LinkedHashMap<>(this.start);
         List<Move> plan = new ArrayList<>();
 
+        // Nothing has moved yet (OB-228).
+        this.movedAlong = new java.util.HashMap<>();
+
         boolean progress = true;
 
         while (progress && misplaced(state) > 0)
@@ -758,6 +780,10 @@ public final class HomeStaging
                 {
                     apply(state, l, home);
                     plan.add(new Move(l, path));
+
+                    // AND ITS TAIL NOW LIES ALONG THIS ROUTE, for every move after it (OB-228).
+                    this.movedAlong.put(l, path);
+
                     progress = true;
                 }
             }
@@ -765,13 +791,29 @@ public final class HomeStaging
 
         if (misplaced(state) == 0) return plan;
 
+        // A* starts from the greedy pass's arrangement, so it inherits the routes that pass gave (OB-228).
+        this.greedyMovedAlong = new java.util.HashMap<>(this.movedAlong);
+
         List<Move> rest = astar(state);
 
-        if (rest == null) return null;
+        if (rest != null)
+        {
+            plan.addAll(rest);
 
-        plan.addAll(rest);
+            return plan;
+        }
 
-        return plan;
+        // NOT ONLY FROM WHERE THE GREEDY PASS LEFT THINGS (OB-228).  That pass makes every move it can, in the order
+        // it meets the trains, and once the tails of moved trains are modelled a move it makes can be the one that
+        // blocks the rest: it parks a train on a platform with no way out and leaves the tail across the run another
+        // train needs, and no search from there can take it back.  So when nothing is found from the greedy
+        // arrangement, search again from the railway as it stands.  Nothing to retry when the greedy pass moved
+        // nothing - both searches would start from the same arrangement.
+        if (plan.isEmpty()) return null;
+
+        this.greedyMovedAlong = new java.util.HashMap<>();
+
+        return astar(new LinkedHashMap<>(this.start));
     }
 
     /**
@@ -830,6 +872,12 @@ public final class HomeStaging
             Map<Point, Locomotive> current = states.get(currentKey);
 
             if (misplaced(current) == 0) return rebuild(currentKey, cameFrom, arrivedBy);
+
+            // THE ROUTES THAT BROUGHT THE TRAINS TO THIS ARRANGEMENT (OB-228): the greedy pass's, then each move on the
+            // chain from the start of A* to here, later moves replacing earlier ones for the same train.
+            this.movedAlong = new java.util.HashMap<>(this.greedyMovedAlong);
+
+            for (Move move : rebuild(currentKey, cameFrom, arrivedBy)) this.movedAlong.put(move.getLocomotive(), move.getPath());
 
             // One set per state, not one per candidate move: nothing moves while we expand this state
             Set<String> blocked = blockedSensors(current);
@@ -1035,6 +1083,7 @@ public final class HomeStaging
                 // and no point reports it. That is the rule `Layout.isPathClear` enforces, and a plan
                 // that ignores it is a plan the runtime refuses on the first move.
                 if (!passesTheTailsOfTrainsThatHaveNotMoved(e, loc, state)) continue;
+                if (!passesTheTailsOfTrainsItHasMoved(e, loc, state)) continue;
 
                 // Lock edges are deliberately NOT consulted here.
                 //
@@ -1307,6 +1356,66 @@ public final class HomeStaging
         }
 
         return false;
+    }
+
+    /**
+     * Whether this edge is free of the tails the plan's own moves leave behind (OB-228).
+     *
+     * Adam, on MT-335, 2026-09-15: *"Could not run EN57-203 from BottomInner (northbound) to TopMainR0Park - the path
+     * stayed blocked."*  The plan had parked 75 407 DB at BottomMainA first; its tail then lay back over
+     * BottomMainAPre -> RampDown, and the plan's next route ran over it.  `passesTheTailsOfTrainsThatHaveNotMoved` said
+     * why that was not seen: *"Where a train's tail lies after a move depends on the side it arrives by, which the planner
+     * does not model"*.  It does now: a train the plan moved stands at the end of the route it was given, has come in by
+     * that route's last rail and along that route, and `Layout.edgesATailWouldCover` walks that tail with the runtime's
+     * own code.
+     *
+     * The same shared-metal and places rules as the unmoved trains, and the same exception: a train never blocks itself.
+     * Only a train still standing where that route left it counts - one moved again since has a later route here.
+     *
+     * @param edge the edge being entered
+     * @param mover the locomotive being routed
+     * @param state the arrangement being considered
+     * @return true when no train the plan has moved would be lying across it
+     */
+    private boolean passesTheTailsOfTrainsItHasMoved(Edge edge, Locomotive mover, Map<Point, Locomotive> state)
+    {
+        if (this.layout == null || this.movedAlong.isEmpty()) return true;
+
+        for (Map.Entry<Locomotive, List<Edge>> moved : this.movedAlong.entrySet())
+        {
+            Locomotive train = moved.getKey();
+            List<Edge> road = moved.getValue();
+
+            if (train.equals(mover) || road == null || road.isEmpty()) continue;
+
+            Point end = road.get(road.size() - 1).getEnd();
+
+            // Still standing where this route left it.
+            if (end == null || !train.equals(state.get(end))) continue;
+
+            Map<Edge, Locomotive> covered = this.coveredByAMove.computeIfAbsent(road,
+                r -> this.layout.edgesATailWouldCover(end, train, r));
+
+            if (covered.containsKey(edge)) return false;
+
+            Map<String, Locomotive> places = this.placesByAMove.computeIfAbsent(road,
+                r -> this.layout.placesATailWouldCover(end, train, r));
+
+            for (Edge sharing : edge.getLockEdges())
+            {
+                if (!covered.containsKey(sharing)) continue;
+                if (!sharing.getLockEdges().contains(edge)) continue;
+                if (!edge.getPlaceIds().isEmpty() && !sharing.getPlaceIds().isEmpty()
+                    && !Layout.tailLiesOn(edge, train, places))
+                {
+                    continue;
+                }
+
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
