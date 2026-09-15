@@ -223,6 +223,94 @@ public class testAPassingTrainMayStandAcrossThePoints
         }
     }
 
+    /**
+     * And after a rebuild the three units still close B and C: the road comes back with the train (WK7-B1).
+     *
+     * Every setup gesture and every close of the autonomy editor regenerates the running layout from the setup and
+     * puts the trains back where they stood (`TrainControlUI.putTheTrainsBack`).  That carried the side and not the
+     * road, so the tail stopped at BottomMainAPre and B and C were offered again over a tail still lying on the
+     * Tunnel run.  Adam, 2026-09-14: *"Then state will always be fully consistent."*
+     */
+    @Test
+    public void testTheRoadIsKeptAcrossARebuild() throws Exception
+    {
+        Layout built = aThreeUnitTrainDrivenToBottomMainA();
+
+        Map<String, String[]> standing = org.traincontrol.gui.TrainControlUI.whereTheTrainsAre(built);
+
+        Layout rebuilt = emptied();
+
+        org.traincontrol.gui.TrainControlUI.putTheTrainsBack(rebuilt, standing, null);
+
+        assertBAndCAreClosed(rebuilt, "after a rebuild");
+    }
+
+    /**
+     * And written to the setup, so a restart - a build from the file alone - still closes B and C (WK7-B1).
+     */
+    @Test
+    public void testTheRoadIsWrittenToTheSetup() throws Exception
+    {
+        Layout built = aThreeUnitTrainDrivenToBottomMainA();
+
+        String active = scenario.getSession().getStore().getActiveConfiguration();
+
+        assertNotNull(active, "precondition: the scenario has no active configuration to capture into");
+
+        scenario.getSession().captureFromLayout(built.toJSON(), active);
+
+        Layout restarted = scenario.build();
+
+        assertBAndCAreClosed(restarted, "after the running layout was captured to the setup and built again from it");
+    }
+
+    /** Three units standing at BottomMainA as a train driven there from Tunnel stands, and the other train at Tunnel. */
+    private Layout aThreeUnitTrainDrivenToBottomMainA() throws Exception
+    {
+        Layout built = emptied();
+
+        other.setTrainLength(null);
+        other.setReversible(true);
+
+        Point tunnel = copy(built, "Tunnel", true);
+        Point mainA = copy(built, "BottomMainA", true);
+
+        List<Edge> route = built.bfs(tunnel, mainA, new LinkedList<List<Edge>>());
+
+        assertNotNull(route, "precondition: no route from Tunnel to BottomMainA");
+
+        standing.setTrainLength(3);
+
+        assertTrue(built.moveLocomotive(STANDING, mainA.getName(), false), "could not stand the train at BottomMainA");
+
+        mainA.setArrivedFrom(built.entrySideOf(route.get(route.size() - 1), mainA));
+        mainA.setArrivedAlong(route);
+
+        assertTrue(built.moveLocomotive(OTHER, tunnel.getName(), false), "could not stand the other train at Tunnel");
+
+        assertBAndCAreClosed(built, "before anything was rebuilt (precondition)");
+
+        return built;
+    }
+
+    /** B and C are refused to the other train, because of the standing one. */
+    private void assertBAndCAreClosed(Layout built, String when)
+    {
+        Map<String, String> reasons = built.explainDestinations(other);
+
+        for (String road : new String[] { "BottomMainB", "BottomMainC" })
+        {
+            String why = reasonFor(reasons, road);
+
+            assertNotNull(why, when + ", the other train at Tunnel is offered " + road + " with three units standing at"
+                + " BottomMainA - the tail lying back along the Tunnel run is no longer followed past BottomMainAPre, so"
+                + " the road it came in on was lost (WK7-B1).  Reasons: " + reasons);
+
+            assertTrue(why.contains(STANDING), when + ", " + road + " is refused, but not because of the train at"
+                + " BottomMainA: '" + why + "'");
+        }
+    }
+
     // ---------------------------------------------------------------- the fixture
 
     /** The railway built afresh, with every train taken off it. */

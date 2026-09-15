@@ -6147,6 +6147,80 @@ public class Layout
     }
 
     /**
+     * A road written by `namesOfRoad`, looked up on this layout (WK7-B1).
+     *
+     * **All or nothing.**  A pair naming an edge this layout does not have - a square re-split, a point renamed -
+     * drops the whole road, because the part that is left would lead the tail walk down a road the train may never
+     * have been on.  With no road the walk keeps the fork rule, which claims less.
+     *
+     * @param named a JSON array of [start, end] point-name pairs, or its string form, or null
+     * @return the edges in the order they were written, or null
+     */
+    public List<Edge> roadNamed(Object named)
+    {
+        if (named == null) return null;
+
+        JSONArray pairs;
+
+        try
+        {
+            pairs = named instanceof JSONArray ? (JSONArray) named : new JSONArray(named.toString());
+        }
+        catch (JSONException notARoad)
+        {
+            return null;
+        }
+
+        List<Edge> road = new java.util.ArrayList<>();
+
+        for (int i = 0; i < pairs.length(); i++)
+        {
+            JSONArray pair = pairs.optJSONArray(i);
+
+            if (pair == null || pair.length() != 2) return null;
+
+            Edge edge;
+
+            try
+            {
+                edge = getEdge(pair.optString(0, null), pair.optString(1, null));
+            }
+            catch (RuntimeException noSuchEdge)
+            {
+                return null;
+            }
+
+            if (edge == null) return null;
+
+            road.add(edge);
+        }
+
+        return road.isEmpty() ? null : road;
+    }
+
+    /**
+     * A road as the file writes it: [start, end] point-name pairs, in the order driven (WK7-B1).
+     *
+     * @param road the edges, or null
+     * @return the JSON array's string form, or null when there is nothing to write
+     */
+    public static String namesOfRoad(List<Edge> road)
+    {
+        if (road == null || road.isEmpty()) return null;
+
+        JSONArray pairs = new JSONArray();
+
+        for (Edge edge : road)
+        {
+            if (edge == null || edge.getStart() == null || edge.getEnd() == null) return null;
+
+            pairs.put(new JSONArray().put(edge.getStart().getName()).put(edge.getEnd().getName()));
+        }
+
+        return pairs.toString();
+    }
+
+    /**
      * Which side of its END point an edge comes in by - the ONE definition, used by both readers.
      *
      * **The build says, and the geometry is the fallback.** `AutonomyBuilder` splits a square on the
@@ -9787,6 +9861,9 @@ public class Layout
         // restart, for exactly the squares the arrival-side question exists for.
         java.util.Map<String, String> arrivalSideByPoint = new java.util.LinkedHashMap<>();
 
+        // AND THE ROADS, held back for the same reason and applied in the same place (WK7-B1).
+        java.util.Map<String, Object> arrivalRoadByPoint = new java.util.LinkedHashMap<>();
+
         // Validate basic required data
         try
         {
@@ -10092,6 +10169,11 @@ public class Layout
                 {
                     arrivalSideByPoint.put(point.getString("name"),
                         point.optString("arrivedFrom", null));
+                }
+
+                if (point.has("arrivedAlong"))
+                {
+                    arrivalRoadByPoint.put(point.getString("name"), point.get("arrivedAlong"));
                 }
 
                 if (point.has("blockedBy"))
@@ -10977,6 +11059,16 @@ public class Layout
             Point landed = layout.getPoint(entry.getKey());
 
             if (landed != null) landed.setArrivedFrom(entry.getValue());
+        }
+
+        // AND THE ROADS, after the sides and for the same reason (WK7-B1): the placement pass above clears both
+        // on a change of occupant.  A road naming an edge that no longer exists is dropped whole - half a road
+        // would send the tail somewhere the train never was - and the walk then keeps the fork rule.
+        for (java.util.Map.Entry<String, Object> entry : arrivalRoadByPoint.entrySet())
+        {
+            Point landed = layout.getPoint(entry.getKey());
+
+            if (landed != null) landed.setArrivedAlong(layout.roadNamed(entry.getValue()));
         }
 
         // Applied only now, because an assignment may name a locomotive placed at any point, and until

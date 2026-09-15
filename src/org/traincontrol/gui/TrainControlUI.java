@@ -6023,17 +6023,52 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private java.util.Map<String, String[]> whereTheTrainsAre()
     {
+        if (this.model == null || !this.model.hasAutoLayout()) return new java.util.LinkedHashMap<>();
+
+        return whereTheTrainsAre(this.model.getAutoLayout());
+    }
+
+    /**
+     * The road a train came in on, put back on the Point it was put back on (WK7-B1).
+     *
+     * @param built the layout the rebuild produced
+     * @param back the Point the train is standing on again
+     * @param was what `whereTheTrainsAre` recorded - a third entry only where it recorded a road
+     */
+    private static void putTheRoadBack(org.traincontrol.automation.Layout built,
+        org.traincontrol.automation.Point back, String[] was)
+    {
+        if (was == null || was.length < 3 || was[2] == null) return;
+
+        java.util.List<org.traincontrol.automation.Edge> road = built.roadNamed(was[2]);
+
+        if (road != null) back.setArrivedAlong(road);
+    }
+
+    /**
+     * The same, over a layout handed in, so a rebuild can be tested without a window.
+     *
+     * **And the road it came in on (WK7-B1)**, as `Layout.namesOfRoad` writes it.  The rebuild regenerates every
+     * Point, so the edges themselves cannot be carried - only their names, which `putTheTrainsBack` looks up again
+     * on the layout it has just built.
+     *
+     * @param layout the running layout
+     * @return locomotive name to {point name, arrival side, road}, the side and the road possibly null
+     */
+    public static java.util.Map<String, String[]> whereTheTrainsAre(org.traincontrol.automation.Layout layout)
+    {
         java.util.Map<String, String[]> standing = new java.util.LinkedHashMap<>();
 
-        if (this.model == null || !this.model.hasAutoLayout()) return standing;
+        if (layout == null) return standing;
 
-        for (org.traincontrol.automation.Point point : this.model.getAutoLayout().getPoints())
+        for (org.traincontrol.automation.Point point : layout.getPoints())
         {
             org.traincontrol.base.Locomotive loc = point.getCurrentLocomotive();
 
             if (loc == null || loc.getName() == null) continue;
 
-            standing.put(loc.getName(), new String[]{point.getName(), point.getArrivedFrom()});
+            standing.put(loc.getName(), new String[]{point.getName(), point.getArrivedFrom(),
+                org.traincontrol.automation.Layout.namesOfRoad(point.getArrivedAlong())});
         }
 
         return standing;
@@ -6183,6 +6218,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     // off on every rebuild - the half of OB-183 that is not the placement.
                     if (was.getValue()[1] != null) back.setArrivedFrom(was.getValue()[1]);
 
+                    // AND THE ROAD, looked up again on this layout (WK7-B1).  After the move above, which clears
+                    // both on a change of occupant.
+                    putTheRoadBack(built, back, was.getValue());
+
                     continue;
                 }
 
@@ -6214,6 +6253,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         break;
                     }
                 }
+
+                // AND THE ROAD, where the train is where it was (WK7-B1).
+                if (now == back) putTheRoadBack(built, back, was.getValue());
 
                 if (now == back && was.getValue()[1] != null)
                 {

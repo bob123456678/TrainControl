@@ -1189,9 +1189,15 @@ public class Point
                 locObj.put("departureFunc", this.currentLoc.getDepartureFunc());
             }
             
-            if (this.currentLoc.getTrainLength() > 0)
+            // A LENGTH NOBODY HAS SET IS NULL, and unboxing it here threw (found 2026-09-14 by
+            // `testAPassingTrainMayStandAcrossThePoints.testTheRoadIsWrittenToTheSetup`).  `Layout.toJSON` then
+            // failed whole, and every capture of the running layout - closing the editor, the exit, a
+            // re-download - logged the exception and wrote nothing while such a train stood anywhere.
+            Integer trainLength = this.currentLoc.getTrainLength();
+
+            if (trainLength != null && trainLength > 0)
             {
-                locObj.put("trainLength", this.currentLoc.getTrainLength());
+                locObj.put("trainLength", trainLength);
             }
             
             jsonObj.put("loc", locObj);
@@ -1235,6 +1241,20 @@ public class Point
         if (this.arrivedFrom != null)
         {
             jsonObj.put("arrivedFrom", this.arrivedFrom);
+        }
+
+        // AND THE ROAD IT CAME IN ON, which the side alone cannot say past a junction (WK7-B1).
+        //
+        // Adam, 2026-09-14: *"Then state will always be fully consistent."*  This lived in memory only, so a
+        // save, a restart or a rebuild put a driven train back with its side and not its road, and its tail
+        // stopped at the first fork again.  Written as [start, end] name pairs, the form `Layout.roadNamed`
+        // reads: by NAME because a file has to, and each edge whole because a point pair is what `getEdge`
+        // looks up.
+        String road = Layout.namesOfRoad(this.arrivedAlong);
+
+        if (road != null)
+        {
+            jsonObj.put("arrivedAlong", new JSONArray(road));
         }
                 
         if (this.coordinatesSet())

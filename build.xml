@@ -284,6 +284,7 @@
         <test-one-class class="testAnImportKeepsOnlyThisLayoutsPages"/>
         <test-one-class class="testTheLeftAloneWarningIsSaidOnce"/>
         <test-one-class class="testATailFollowsTheRouteItCameIn"/>
+        <test-one-class class="testATailRouteIsKept"/>
         <test-one-class class="testATestedPathStaysOnItsRail"/>
         <test-one-class class="testBulkToolsHoldsTheWholeLayoutTools"/>
         <test-one-class class="testReturnHomeSaysWhy"/>

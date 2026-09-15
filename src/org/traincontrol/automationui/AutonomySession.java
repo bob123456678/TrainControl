@@ -2614,7 +2614,12 @@ public class AutonomySession
      */
     private static final List<String> POINT_OPERATIONAL_KEYS = java.util.Arrays.asList(
         "loc", "active", "maxTrainLength", "speedMultiplier",
-        "priority", "home", "excludedLocs");
+        "priority", "home", "excludedLocs",
+        // WHERE A STANDING TRAIN'S TAIL LIES, captured with the train (WK7-B1).  A side and a road written by a
+        // run lived only on the running layout, so a restart put every driven train back with neither and its
+        // tail blocked nothing past the platform.  Replaced like the rest - and removed where the layout no
+        // longer carries them, which is a square whose train has left.
+        "arrivedFrom", "arrivedAlong");
 
     /**
      * Squares where trains turn round whose track has no recorded length (Adam, 2026-09-01).
@@ -4060,6 +4065,7 @@ public class AutonomySession
             if (occupantWas != null && !occupantWas.equals(occupantNow))
             {
                 before.remove("arrivedFrom");
+                before.remove("arrivedAlong");
             }
 
             // Keys the layout can speak for are replaced - including being REMOVED when the layout no
@@ -5000,6 +5006,9 @@ public class AutonomySession
             // sibling was not swept then; it is now.
             setPointProperty(tile, "arrivedFrom", null);
 
+            // AND THE ROAD, which describes the same arrival (WK7-B1).
+            setPointProperty(tile, "arrivedAlong", null);
+
             return;
         }
 
@@ -5036,6 +5045,7 @@ public class AutonomySession
         if (!name.equals(nameOfPlacedLocomotive(existing)))
         {
             setPointProperty(tile, "arrivedFrom", null);
+            setPointProperty(tile, "arrivedAlong", null);
         }
     }
 
@@ -5067,6 +5077,7 @@ public class AutonomySession
             // And the arrival side with it, for the same reason (IND9-A1).  This loop and the single
             // -square door have drifted before, which is why each carries a note that they must agree.
             writePointProperty(tile, "arrivedFrom", null);
+            writePointProperty(tile, "arrivedAlong", null);
         }
 
         // ONCE, at the end.  Not skipped: the split names are computed from these properties.
