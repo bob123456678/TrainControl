@@ -1,6 +1,6 @@
 # Validation of the WK7 fix round of 2026-09-14
 
-**Status:** open 2026-09-14 - round 2 fixed (WKV-B1, WKV-B2, and what WK7-C1 and WK7-C2 had left); WKV-C1 waits for Adam; a second validation follows, the last Adam allowed
+**Status:** closed 2026-09-14 - round 2 fixed (WKV-B1, WKV-B2, and what WK7-C1 and WK7-C2 had left) and validated (`2026-09-14-WKW-fix-validation-round-two.md`); WKV-C1 waits for Adam
 
 **Prefix:** WKV (checked free: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`, and every declaration spelling in `docs/reviews/*.md`)
 
@@ -74,10 +74,10 @@ Closing TrainControl with the autonomy editor open asks Save / Discard / Cancel.
 |---|---|
 | **Disposition** | Held |
 
-MT-415 and MT-430 were passed by Adam against *"Cancel will not bring them back"*.  Since OB-223 Cancel does, the warning says so (WK7-C2), and on the diagram's own menu it says the clear is saved at once (WKV-B1).  **Not changed:** these are Adam's passed results, and which undo the editor should offer is his call.  What Cancel does now: a setup edit, including a bulk clear, is undone; a train that was moved on the railway stays where it was moved.
+MT-415 and MT-430 were passed by Adam against *"Cancel will not bring them back"*.  Since OB-223 Cancel does, the warning says so (WK7-C2), and on the diagram's own menu it says the clear is saved at once (WKV-B1).  **Not changed:** these are Adam's passed results.  OB-223, which he asked for, settled that Cancel undoes the setup; what is held is only the text of two tests he passed.  **Corrected after the second validation (WKW):** what Cancel does now is undo a clear, not a placement - a locomotive placed in the editor stays placed after Cancel, because the rebuild that follows a placement names the train and Cancel's does not - so MT-430's *"Placing ... is still not undone"* is still true, and only *"clearing"* in it is stale.
 
 ---
 
 ## D - looked wrong and is not
 
-- **WKV-D1** - the arrow half of WKV-B2, above: Discard on the way out already kept arrows put back, run.
+- **WKV-D1** - the arrow half of WKV-B2, above: Discard on the way out already kept arrows put back, run.  **Corrected after the second validation (WKW-C1):** arrows are the one setting the exit's fold never carries, so this answered nothing about the rest - the fold writes placements, `active`, `maxTrainLength`, `speedMultiplier`, `priority`, `home` and `excludedLocs`, and before round 2 a discarded home was kept too.  Round 2's rebuild covers them; `testDiscardOnTheWayOutPutsTheHomeBack` pins one.

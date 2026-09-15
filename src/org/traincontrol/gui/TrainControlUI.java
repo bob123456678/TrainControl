@@ -3026,6 +3026,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
+        // NOT WHILE A DECLINED SETUP EDIT IS WAITING (WKW-B2).
+        //
+        // A setup edit made as a run starts is written to the file and not to the running layout, and the
+        // message shown then promises it will be picked up at the next load.  The exit save has kept that
+        // promise since ACC-B3 by skipping its fold.  This is the same fold at the other doors - opening an
+        // editor, closing one, re-downloading the diagram, renaming or deleting a page - and it did not ask,
+        // so opening the autonomy editor after the run folded the layout built before the edit over the
+        // configuration and removed the edit before the exit could protect it.
+        //
+        // The same trade as the exit: the flag is not cleared, so for the rest of the session no door folds
+        // the running layout back, and where the trains stand is carried across rebuilds by
+        // `putTheTrainsBack` rather than written - against authored data nothing else would bring back.
+        if (setupEditDeclinedDuringRun) return;
+
         try
         {
             autonomySession.captureFromLayout(this.model.getAutoLayout().toJSON(),

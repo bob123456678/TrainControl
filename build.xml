@@ -259,9 +259,10 @@
 
         <!-- Added 2026-09-09, with Adam's two rulings of that day.
 
-             testATrainMustFitEverySquareOnItsRoute is ruling 1b - the room rule asked at every square
-             a route runs through rather than only at the berth - on the single-switch scenario, whose
-             one turnout is what lets a short stretch sit EARLY on a route.
+             testATrainIsJudgedOnlyWhereItStops (testATrainMustFitEverySquareOnItsRoute until 2026-09-14)
+             is the room rule on the single-switch scenario - asked at every square a route ran through
+             from ruling 1b, and since MT-333 only where the train comes to rest - whose one turnout is
+             what lets a short stretch sit EARLY on a route.
 
              testACompulsoryTurnIsChosenLikeAnyOtherStation is OB-195, on the same scenario, which is
              the only fixture where the two markings can disagree: on Adam's own railway every

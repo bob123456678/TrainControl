@@ -32,7 +32,7 @@
 
 **Scenario.**  75 407 DB, length 3, driven from Tunnel to BottomMainA: a second train at Tunnel is refused BottomMainB and C, as `regression.testAPassingTrainMayStandAcrossThePoints.testThreeUnitsAtBottomMainAClosesTunnelToBAndC` pins.  Set a home or a caption from the diagram's right-click menu, or open and close the autonomy editor: the train is put back with its side and no route, the walk stops at BottomMainAPre, and B and C are offered again over a tail still lying on the Tunnel run.
 
-Introduced with the route-following tail in `d4f09f5d`, whose javadoc says a rebuild loses it; MT-333's note of 2026-09-14 listed the gestures and offered to carry the route through a rebuild.  **Held, not changed:** it touches MT-432, the protrusion test Adam has not run.  Stated more exactly after validation: MT-432's steps drive and look and do not rebuild, and its warning names opening the editor but not a home or caption set from the diagram's menu - carrying the route through a rebuild would change what its tail looks like after any of those.
+Introduced with the route-following tail in `d4f09f5d`, whose javadoc says a rebuild loses it; MT-333's note of 2026-09-14 listed the gestures and offered to carry the route through a rebuild.  **Held, not changed:** it touches MT-432, the protrusion test Adam has not run.  Stated more exactly after validation: MT-432's steps drive and look and do not rebuild, and its warning names closing the autonomy editor but not a home or caption set from the diagram's menu (WKW) - carrying the route through a rebuild would change what its tail looks like after any of those.
 
 ---
 

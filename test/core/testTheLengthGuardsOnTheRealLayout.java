@@ -199,14 +199,13 @@ public class testTheLengthGuardsOnTheRealLayout
      * are now answered by measurement rather than left open.
      *
      * **THE FIRST QUESTION: is the guard refusing from some start squares and not others?**  Yes, and
-     * that is the rule rather than a hole in it.  Since Adam's ruling of 2026-09-09 the guard refuses
-     * on the tightest measured stretch anywhere on the ROUTE, so the answer is a property of the whole
-     * journey: two starts that reach one berth by different approaches can get different answers about
-     * it, and a berth with room can be refused for a square on the way.
-     * `testTheOneUnitAtTwentyTwoSevenDecidesBottomMainPost` pins one tile deciding the berth it leads
-     * into, and `testWhyRampDownIsRefused` pins the same tile deciding a berth eight edges away that
-     * it does not lead into at all.  Neither claim can be made by asking whatever train happens to be
-     * standing somewhere.
+     * that is the rule rather than a hole in it.  The guard asks where the train comes to rest - the
+     * destination and any square it turns at (MT-333, 2026-09-14; from 2026-09-09 until then, every square
+     * on the route) - so two starts that reach one berth by different approaches, turning in different
+     * places, can get different answers about it.  `testTheOneUnitAtTwentyTwoSevenDecidesBottomMainPost`
+     * pins one tile deciding the berth it leads into, and `testRampDownIsOfferedPastTheOneUnitItOnlyPasses`
+     * pins the same tile NOT deciding a berth eight edges away that the route only passes it on the way
+     * to.  Neither claim can be made by asking whatever train happens to be standing somewhere.
      *
      * **THE SECOND QUESTION: does `roomTheGuardSees` answer a different question from
      * `Layout.measuredRoomAtTheEndOf`?**  It did, and that is what it was rewritten for on the same
@@ -390,7 +389,8 @@ public class testTheLengthGuardsOnTheRealLayout
      * conditional on the answer under test.
      *
      * MUTATION, run 2026-09-14: taking `if (!comesToRest) continue;` out of `Layout.whyTooLongForThisRoute`,
-     * so every square the route runs through is judged again, refuses RampDown and fails the first assertion.
+     * so every square the route runs through is judged again, refuses RampDown and fails the offer assertion
+     * that follows the standing-train precondition; `testExactlyFitsIsAdmittedAndOneMoreIsNot` fails with it.
      *
      * @throws Exception on a failure to build
      */
@@ -971,7 +971,8 @@ public class testTheLengthGuardsOnTheRealLayout
         // AND THEY ARE ON TRACK THE GUARD COUNTS (E8V-C1).
         //
         // Two named tiles are a measurement only while they lie on a stretch the room walk reaches,
-        // and this file records what it costs when they do not: `testWhyRampDownIsRefused`'s own note
+        // and this file records what it costs when they do not: the RampDown claim's own note (it was
+        // `testWhyRampDownIsRefused` until 2026-09-14)
         // is about two tiles named by hand that turned out to be on track the walk never consulted,
         // and both halves of a boundary then read as refusals.
         //
@@ -1027,7 +1028,7 @@ public class testTheLengthGuardsOnTheRealLayout
             assertNotNull(room,
                 "the room walk declines to judge the route to TunnelLongPark, so neither of the two"
                 + " lengths set above is on a stretch it counts - which is the staleness this file's"
-                + " own note at testWhyRampDownIsRefused is about");
+                + " own note at the RampDown claim is about");
 
             assertTrue(room < 4,
                 "the walk measures " + room + " units on the way to TunnelLongPark with only Adam's"

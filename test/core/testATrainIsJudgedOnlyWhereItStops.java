@@ -74,8 +74,9 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * `testASquareWithNoSwitchBehindItIsNotJudged`, until no passed square was judged at all and it could no longer
  * fail (WK7-C3).
  *
- * `core.testTheLengthGuardsOnTheRealLayout.testWhyRampDownIsRefused` is the same ruling measured on
- * Adam's own layout, and it is the test this change turned round.
+ * `core.testTheLengthGuardsOnTheRealLayout.testRampDownIsOfferedPastTheOneUnitItOnlyPasses` - until 2026-09-14
+ * `testWhyRampDownIsRefused` - is the same ruling measured on Adam's own layout, and it is the test this
+ * change turned round.
  *
  * @author Adam
  */

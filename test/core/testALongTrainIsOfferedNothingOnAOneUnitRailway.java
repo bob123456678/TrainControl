@@ -32,7 +32,7 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * 1. **A SECTION IS NOT A TILE.**  That test set every TILE to one unit, and an edge on his railway is
  *    made of many tiles - the run into `RampDown` is eighteen of them - so "every section is one unit"
  *    produced sections of eighteen units.  A nine-unit train fits in eighteen, and was correctly
- *    offered.  The measurement is at `testTheLengthGuardsOnTheRealLayout.testWhyRampDownIsRefused`.
+ *    offered.  The measurement is at `testTheLengthGuardsOnTheRealLayout.testRampDownIsOfferedPastTheOneUnitItOnlyPasses`.
  * 2. **It was start-dependent.**  It asked whatever train happened to be standing somewhere for a
  *    destination, so it asserted about ONE square and read as an assertion about the whole railway.
  *

@@ -479,6 +479,181 @@ public class testCancelUndoesAutonomyEdits
         }
     }
 
+    /**
+     * And a home set in the editor is put back by Discard on the way out (WKW-C1).
+     *
+     * The exit's fold carries more than placements - `active`, `maxTrainLength`, `speedMultiplier`, `priority`,
+     * `home` and `excludedLocs` - so before round 2 a discarded home was written back as well.  The arrow claim
+     * above could not say so: a tile direction is the one setting the fold never carries.  The home is set
+     * through the session and the running layout rebuilt, which is what the editor's home door does.
+     */
+    @Test
+    public void testDiscardOnTheWayOutPutsTheHomeBack() throws Exception
+    {
+        org.json.JSONObject asFound = session.snapshotSetup();
+        final LayoutEditor editor = opened();
+        Answerer answerer = null;
+        try
+        {
+            TileKey square = null;
+            String locomotive = null;
+            for (TileKey tile : session.getReducer().getPoints().keySet())
+            {
+                String name = session.getLocomotiveNameAt(tile);
+                if (name != null && session.getPointProperty(tile, "home") == null)
+                {
+                    square = tile;
+                    locomotive = name;
+                    break;
+                }
+            }
+            if (square == null) fail("precondition: no square with a locomotive and no home to give it one");
+            Map<String, String> before = homes(session);
+            final TileKey at = square;
+            final String name = locomotive;
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.setHome(at, name);
+                ui.rebuildRunningLayoutFromSetup();
+            });
+            settle();
+            assertNotEquals(homes(session), before, "precondition: making " + at + " home to " + name + " changed nothing");
+            boolean carried = false;
+            for (org.traincontrol.automation.Point point : model.getAutoLayout().getPoints())
+            {
+                if (point.getHomeLoc() != null && name.equals(point.getHomeLoc().getName())) carried = true;
+            }
+            assertTrue(carried, "precondition: the running layout does not carry the home given to " + name
+                + ", so the exit's fold has nothing to write back and this claim cannot fail");
+            answerer = Answerer.start(org.traincontrol.util.I18n.t("layout.ui.switchDiscard"));
+            final boolean[] mayExit = new boolean[1];
+            SwingUtilities.invokeAndWait(() -> mayExit[0] = editor.maySettleBeforeExit());
+            settle();
+            answerer.stop();
+            assertTrue(mayExit[0], "precondition: Discard did not let the exit go ahead");
+            final java.lang.reflect.Method fold = TrainControlUI.class.getDeclaredMethod("captureRunningLayout");
+            fold.setAccessible(true);
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    fold.invoke(ui);
+                }
+                catch (Exception failed)
+                {
+                    throw new RuntimeException(failed);
+                }
+            });
+            settle();
+            assertEquals(homes(session), before,
+                "Discard on the way out restored the setup, and the save on the way out then folded the running"
+                + " layout - still carrying the home given to " + name + " - back over it");
+            assertEquals(homes(fromDisk()), before, "the file keeps the home Discard threw away");
+        }
+        finally
+        {
+            if (answerer != null) answerer.stop();
+            dispose(editor);
+            session.restoreSetup(asFound);
+        }
+    }
+
+    /**
+     * A setup edit declined during a run is not removed by the next door that folds the running layout back
+     * (WKW-B2).
+     *
+     * An edit made as a run starts reaches the file and not the running layout, and the message then says it
+     * will be picked up at the next load.  Since ACC-B3 the exit save skips its fold while that is so.
+     * `captureRunningLayout` is the same fold at every other door - opening an editor, closing one,
+     * re-downloading the diagram, renaming or deleting a page - and did not ask, so opening the autonomy
+     * editor after the run removed the edit before the exit could protect it.
+     *
+     * The race itself - an edit and a Start in the same event - is set up as the state it leaves behind: the
+     * home written to the setup and the file without a rebuild, and the flag the declined rebuild sets.  The
+     * fold is called directly rather than through `openLayoutEditor`, which also writes the operator's
+     * last-editor preference.
+     */
+    @Test
+    public void testADeclinedEditSurvivesTheNextCapture() throws Exception
+    {
+        org.json.JSONObject asFound = session.snapshotSetup();
+        final java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
+        declined.setAccessible(true);
+        try
+        {
+            TileKey square = null;
+            String locomotive = null;
+            for (TileKey tile : session.getReducer().getPoints().keySet())
+            {
+                String name = session.getLocomotiveNameAt(tile);
+                if (name != null && session.getPointProperty(tile, "home") == null)
+                {
+                    square = tile;
+                    locomotive = name;
+                    break;
+                }
+            }
+            if (square == null) fail("precondition: no square with a locomotive and no home to give it one");
+            final TileKey at = square;
+            final String name = locomotive;
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.setHome(at, name);
+                try
+                {
+                    session.saveWithoutReconciling();
+                }
+                catch (java.io.IOException failed)
+                {
+                    throw new RuntimeException(failed);
+                }
+            });
+            settle();
+            Map<String, String> edited = homes(session);
+            assertEquals(edited.get(at.toString()), name, "precondition: the home did not reach the setup");
+            assertEquals(homes(fromDisk()).get(at.toString()), name, "precondition: the home did not reach the file");
+            // The running layout was not rebuilt after the write, so it does not carry the home - which is what
+            // the red run before the fix showed: the fold removed it.
+            declined.setBoolean(ui, true);
+            final java.lang.reflect.Method fold = TrainControlUI.class.getDeclaredMethod("captureRunningLayout");
+            fold.setAccessible(true);
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    fold.invoke(ui);
+                }
+                catch (Exception failed)
+                {
+                    throw new RuntimeException(failed);
+                }
+            });
+            settle();
+            assertEquals(homes(session).get(at.toString()), name,
+                "the fold removed the home that was declined during the run - the layout it folded was built"
+                + " before the edit - so the promise that the edit is picked up at the next load is broken"
+                + " before the exit can keep it (ACC-B3)");
+            assertEquals(homes(fromDisk()).get(at.toString()), name, "the file lost the declined home");
+        }
+        finally
+        {
+            declined.setBoolean(ui, false);
+            session.restoreSetup(asFound);
+        }
+    }
+
+    /** Every home the setup records, square by square, as a session holds it. */
+    private static Map<String, String> homes(AutonomySession of)
+    {
+        Map<String, String> out = new java.util.TreeMap<>();
+        for (TileKey tile : session.getReducer().getPoints().keySet())
+        {
+            Object home = of.getPointProperty(tile, "home");
+            if (home != null) out.put(tile.toString(), String.valueOf(home));
+        }
+        return out;
+    }
+
     /** Every placement the setup records, square by square. */
     private static Map<String, String> placements()
     {

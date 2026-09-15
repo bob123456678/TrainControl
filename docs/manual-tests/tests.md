@@ -18658,6 +18658,10 @@ Set the small length back to 0 and the destination comes back: an unmeasured str
 
 *Run against commit ac960047, build\classes, compiled 12 Sep 00:51 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-14.**
+
+**This result describes the rule as it stood when you passed it (WKW-C2).**  MT-333 (2026-09-14, confirmed by you as the ruling read as meant): whether a train being sent fits is asked only where it comes to rest - the destination and a square it turns at - not at a square it only drives past.  So the case in these steps now OFFERS the destination: the stretch just past the switch is only passed.  A standing train still blocks other roads wherever the track under it is measured (behaviour.md 5a).  Nothing to run again; this is recorded beside MT-415 and MT-430, the other passed results whose wording the 2026-09-14 changes overtook.
+
 ---
 
 <a id="mt-348"></a>
