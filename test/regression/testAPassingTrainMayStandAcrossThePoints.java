@@ -30,8 +30,8 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * edges, but not make that check for active stations"* - was built at the destination only, and the pass-through
  * check went on refusing overhangs nobody stops in.  It showed on his railway when those tiles were measured.
  *
- * **What still refuses.**  The destination (the room past its switch, or its whole approach at a station
- * autonomy may choose, and the berth rule at one it may not) and a square the train turns at (2026-09-11).
+ * **What still refuses.**  The destination (the room past its switch, or its measured route in at a station
+ * autonomy may choose (FR-087), and the berth rule at one it may not) and a square the train turns at (2026-09-11).
  *
  * **And the protrusion he asked to have re-filed**: *"if we made 75 407 DB have len 3 and it is parked at
  * bottommaina, other trains should be blocked from going tunnel->bottommainb and c."*  A driven train's tail

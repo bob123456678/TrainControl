@@ -489,7 +489,9 @@ public class testTheTailCrossedQuestion
         assertEquals(TailCrossedPrompt.preselectedIndex(choices, choices.get(c).getRoad()), c,
             "the list does not start on the road the train already has, so OK with nothing moved erases it");
 
-        assertEquals(TailCrossedPrompt.preselectedIndex(choices, null), -1, "a train with no road has a choice made for it");
+        assertEquals(TailCrossedPrompt.preselectedIndex(choices, null), -1,
+            "a train with no road and TWO sensors nearest its back, TQ_A and TQ_C, has one chosen for it - FR-088 starts"
+            + " the list on one only where exactly one qualifies");
     }
 
     /** A -> J and A (reverse) -> J, one square under two names, then J -> S. */

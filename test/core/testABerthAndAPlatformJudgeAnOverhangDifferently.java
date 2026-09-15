@@ -189,7 +189,7 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     }
 
     /**
-     * And it is bounded: a train longer than the whole approach is still refused.
+     * And it is bounded: a train longer than the measured route in - here the approach alone - is still refused.
      *
      * Without this the relaxation is "no check at all at a station", which would let a fifty-unit train
      * stop at a platform and lie back over track nothing has measured.
@@ -202,7 +202,7 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
         train.setTrainLength(toThePlatform.getLength() + 1);
 
         assertNotNull(Layout.whyTooLongForThisRoute(justTheApproach(toThePlatform), train),
-            "a train one unit longer than the whole approach was accepted at "
+            "a train one unit longer than the measured route in (here the whole approach) was accepted at "
             + toThePlatform.getEnd().getName() + ", so the relaxation is unbounded and a train of any"
             + " length may stop at a station");
     }

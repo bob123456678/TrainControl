@@ -63,6 +63,22 @@ public class testControlNAsksTheMenusQuestion
             assertTrue(keyOffersAName(panel, track),
                 "the key offers no station name on plain track where the menu does: " + itemNames(menu));
 
+            // AND THE SQUARES THE MENU SENDS TO ITS TEXT MENU (MFV-C3): a label and an empty square, which carry no
+            // track - an empty square counts as ignored, so a predicate that asked `isIgnored` before the text branch
+            // would refuse the very square a station name is usually put on, and the two squares above would not see it.
+            for (TileKey square : new TileKey[] { new TileKey("main", 3, 3), new TileKey("main", 9, 2) })
+            {
+                javax.swing.JPopupMenu there = panel.buildTileMenu(square, null);
+
+                assertTrue(there != null && offersAName(there),
+                    "precondition: the menu offers no station name on the text or empty square " + square + ": "
+                    + itemNames(there));
+
+                assertTrue(keyOffersAName(panel, square),
+                    "Control+N offers no station name on " + square + ", a text or empty square, where the menu offers "
+                    + itemNames(there) + " (MFV-C3)");
+            }
+
             // AN IGNORED SQUARE: the same track, its page left out of autonomy.
             session.setPageExcluded("main", true);
 
@@ -80,6 +96,86 @@ public class testControlNAsksTheMenusQuestion
         {
             deleteRecursively(folder);
         }
+    }
+
+    /**
+     * Every key in the editor puts down a gesture in progress, as the right-click menu does (MFV-C4).
+     *
+     * The menu abandons an armed tool before it offers anything - opening it is how somebody says "not that, this
+     * instead".  Control+N does the same since MFR-B3; Control+S and Control+E did not, so with Test a Path armed one
+     * key disarmed it and the next two left it waiting for a click.  Asked on a page left out of autonomy, where no key
+     * opens a dialog - each key's own predicate is checked first, so a key that would open one fails a precondition
+     * rather than hanging the run.
+     *
+     * @throws Exception from the session or the reflection
+     */
+    @Test
+    public void testEveryEditorKeyPutsDownAGestureAsTheMenuDoes() throws Exception
+    {
+        needsADisplay();
+
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-keys").toFile();
+
+        try
+        {
+            AutonomySession session = new AutonomySession(folder);
+
+            session.open(Arrays.asList(aPageWithARun("main")));
+
+            final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+            final TileKey track = new TileKey("main", 3, 1);
+
+            session.setPageExcluded("main", true);
+
+            assertFalse(asked(panel, "canBeNamed", track), "precondition: Control+S would open a dialog on " + track);
+            assertFalse(panel.offersALength(track), "precondition: Control+E would open a dialog on " + track);
+            assertFalse(keyOffersAName(panel, track), "precondition: Control+N would open a dialog on " + track);
+
+            String[] keys = { "Control+S", "Control+E", "Control+N" };
+            Runnable[] presses = { () -> panel.promptNameFor(track), () -> panel.promptLengthFor(track),
+                () -> panel.showStationNameFor(track) };
+
+            final javax.swing.AbstractButton test = (javax.swing.AbstractButton) field(panel, "testButton");
+
+            for (int i = 0; i < keys.length; i++)
+            {
+                if (!asked(panel, "anythingIsArmed", null)) test.doClick();
+
+                assertTrue(asked(panel, "anythingIsArmed", null), "precondition: Test a Path did not arm before " + keys[i]);
+
+                presses[i].run();
+
+                assertFalse(asked(panel, "anythingIsArmed", null),
+                    keys[i] + " left Test a Path armed, where the right-click menu puts it down before offering anything"
+                    + " - one key disarms a gesture and another leaves it waiting for a click (MFV-C4)");
+            }
+        }
+        finally
+        {
+            deleteRecursively(folder);
+        }
+    }
+
+    /** A private boolean question of the panel's, with the square or with nothing. */
+    private static boolean asked(AutonomyEditorPanel panel, String name, TileKey tile) throws Exception
+    {
+        java.lang.reflect.Method method = tile == null
+            ? AutonomyEditorPanel.class.getDeclaredMethod(name)
+            : AutonomyEditorPanel.class.getDeclaredMethod(name, TileKey.class);
+
+        method.setAccessible(true);
+
+        return (Boolean) (tile == null ? method.invoke(panel) : method.invoke(panel, tile));
+    }
+
+    private static Object field(Object on, String name) throws Exception
+    {
+        java.lang.reflect.Field f = on.getClass().getDeclaredField(name);
+
+        f.setAccessible(true);
+
+        return f.get(on);
     }
 
     /** What the key acts on - public, so the two doors can be put side by side. */
@@ -122,6 +218,9 @@ public class testControlNAsksTheMenusQuestion
         }
 
         page.addComponent(componentType.FEEDBACK, 6, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+
+        // A label, the other square the menu sends to its text menu; (9,2) is left empty.
+        page.addComponent(componentType.TEXT, 3, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, "Yard");
 
         page.setPageId(name);
 
