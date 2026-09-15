@@ -1084,6 +1084,15 @@ MFR-D2	2026-09-15-MFR-feedback-fixes-review.md	-	Control+N is also the main wind
 MFR-D3	2026-09-15-MFR-feedback-fixes-review.md	-	`putIfAbsent(roadKeyOf(...))` merges a lane copy and its turning copy - one piece of metal
 MFR-D4	2026-09-15-MFR-feedback-fixes-review.md	-	`beyond < 0` at the first hop counts the standing square's own measurement - pre-existing,
 MFR-D5	2026-09-15-MFR-feedback-fixes-review.md	-	The three fixture moves from stations to parking berths follow FR-087 and hide no defect; 
+MFV-B1	2026-09-15-MFV-fix-validation.md	-	Fixed
+MFV-C1	2026-09-15-MFV-fix-validation.md	-	Fixed (stated in the body)
+MFV-C2	2026-09-15-MFV-fix-validation.md	-	Fixed (stated in the body)
+MFV-C3	2026-09-15-MFV-fix-validation.md	-	Fixed (stated in the body)
+MFV-C4	2026-09-15-MFV-fix-validation.md	-	Fixed (stated in the body)
+MFV-C5	2026-09-15-MFV-fix-validation.md	-	Fixed (stated in the body)
+MFV-C6	2026-09-15-MFV-fix-validation.md	-	Fixed (stated in the body)
+MFV-D1	2026-09-15-MFV-fix-validation.md	-	Control+N cancelling a tail pick or signal pick leaves nothing waiting - both are armed fr
+MFV-D2	2026-09-15-MFV-fix-validation.md	-	`offersAStationName` answers true on a text square with `menuOnly` set - `buildTextMenu` a
 MON-A1	MON-month-2026-09-07.md	Closed	Reverted (the doors speak the geometry again); the proper fix needs a curved fixture and i
 MON-B1	MON-month-2026-09-07.md	Closed	Fixed (stated in the body)
 MON-B2	MON-month-2026-09-07.md	Closed	Fixed (stated in the body)
