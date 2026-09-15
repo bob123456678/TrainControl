@@ -35,14 +35,16 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-291](#mt-291) | 2026-09-07 | The Grid tooltip, in a language you read | needs test | FR-057 (split from MT-274) |
 | [MT-298](#mt-298) | 2026-09-07 | A second import fills gaps and does not overwrite | needs test | IPR-A1 (split from MT-243) |
 | [MT-326](#mt-326) | 2026-09-07 | A declined setup edit survives quitting | needs test | ACC-B3 (split from MT-269) |
-| [MT-335](#mt-335) | 2026-09-08 | Return Home will not plan through track a train is lying across | fixed unvalidated | OB-184 |
 | [MT-380](#mt-380) | 2026-09-13 | Autonomy can be set up by importing, from the menu, with nothing set up yet | fixed unvalidated | FR-007 |
 | [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
-| [MT-434](#mt-434) | 2026-09-14 | Switching Path Type redraws the tested route | fixed unvalidated | FR-084 |
-| [MT-435](#mt-435) | 2026-09-14 | A long train's tail: kept after a rebuild, and asked for when you place it | fixed unvalidated | FR-085 |
+| [MT-436](#mt-436) | 2026-09-15 | Control+N shows a station's name on the square under the pointer | fixed unvalidated | FR-086 |
+| [MT-437](#mt-437) | 2026-09-15 | 75 407 DB at length 3 may go to BottomMainA, and at length 4 may not | fixed unvalidated | FR-087 |
+| [MT-438](#mt-438) | 2026-09-15 | The tail question: a sensor at exactly the length, roads a train can drive, and a default | fixed unvalidated | OB-226, OB-227, FR-088 |
+| [MT-439](#mt-439) | 2026-09-15 | Why Not Moving? and Test a Path both follow Path Type | fixed unvalidated | OB-225 |
+| [MT-440](#mt-440) | 2026-09-15 | Return Home does not route a train over the tail of one it has just parked | fixed unvalidated | OB-228 |
 
-Everything else - 422 of 435 - needs nothing from you unless the area changes again:
-374 **fixed validated** and 48 **superseded**.
+Everything else - 425 of 440 - needs nothing from you unless the area changes again:
+374 **fixed validated** and 51 **superseded**.
 
 ---
 
@@ -18054,7 +18056,7 @@ The whole diagram redrew because the light redraw door added for OB-185 was wire
 
 ### MT-335 - 2026-09-08 - Return Home will not plan through track a train is lying across
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-184
 
 **Written:** 2026-09-08
@@ -18162,6 +18164,10 @@ The 335 park works, but I get: Could not run EN57-203 from BottomInner (northbou
 Shouldn't it get sent to rampdown and then parked?
 
 *Run against commit 9e626e48, build\classes, compiled 15 Sep 03:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-15.**
+
+**Superseded by MT-440 (OB-228).**  The planner modelled the tails of trains it had not moved; it now walks the tail each moved train will leave, along the route it gave it, and 75 407 DB's tail over BottomMainAPre -> RampDown is seen.  The agreement-check lines about 75 407 DB -> RampDown and -> BottomSecondary are not explained yet; MT-440 asks for them if they recur.
 
 ---
 
@@ -21178,6 +21184,10 @@ Works, but let's add a hotkey for "show station name here" too
 
 *Run against commit 9e626e48, build\classes, compiled 15 Sep 03:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-15.**
+
+**Control+N is built (FR-086)**, and the Show a Station Name Here item names it.  MT-436 checks it.
+
 ---
 
 <a id="mt-398"></a>
@@ -22240,6 +22250,10 @@ Expected results happen.  But didn't we say that BottomMainA should be allowed a
 
 *Run against commit 9e626e48, build\classes, compiled 15 Sep 03:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-15.**
+
+**Step 4 is turned round by your note, as FR-087.**  Length 3 is now offered BottomMainA: at a station autonomy may choose, the measured route in holds the train.  Length 4 is refused.  MT-437 checks it.
+
 ---
 
 <a id="mt-432"></a>
@@ -22315,7 +22329,7 @@ Your note on MT-429: *"Works, but capitalize Page.  Update sorting to be by page
 
 ### MT-434 - 2026-09-14 - Switching Path Type redraws the tested route
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** FR-084
 
 **Written:** 2026-09-14
@@ -22344,13 +22358,17 @@ Does not work.  Changes don't happen when switching, and in manual mode, I still
 
 *Run against commit 9e626e48, build\classes, compiled 15 Sep 03:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-15.**
+
+**Superseded by MT-439 (OB-225).**  Test a Path did redraw in the real editor - a claim on the frozen railway passes - but the tool you had switched under was Why Not Moving?, which ignored Path Type.  It follows Path Type now, and MT-439 checks both tools.
+
 ---
 
 <a id="mt-435"></a>
 
 ### MT-435 - 2026-09-14 - A long train's tail: kept after a rebuild, and asked for when you place it
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** FR-085
 
 **Written:** 2026-09-14
@@ -22386,5 +22404,161 @@ Bug 1. When 75 407 DB is set to length 3, only BottomMainAPre is offered (2 away
 Bug 2. If "Ramp down" is selected, rather than the path that takes the train there through bottomsecondary, sensor 1030, tunnel, bottommaina, the blocked orange path crosses switch 99 and switch 100 instead of going to bottomsecondary, which would require the train to reverse in.  that isn't a realistic path.
 
 *Run against commit 9e626e48, build\classes, compiled 15 Sep 03:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-15.**
+
+**Superseded by MT-438 (OB-226, OB-227, FR-088).**  Your two bugs and the default are fixed: a sensor exactly the train's length back is offered, only roads a train can drive in on are offered, and the list starts on the one sensor nearest the back.  MT-438 repeats this entry's checks with them.
+
+---
+
+<a id="mt-436"></a>
+
+### MT-436 - 2026-09-15 - Control+N shows a station's name on the square under the pointer
+
+**Disposition:** fixed unvalidated
+**From:** FR-086
+
+**Written:** 2026-09-15
+
+Your note on MT-397: *"Works, but let's add a hotkey for 'show station name here' too"* - and the key you chose, **Control+N**.
+
+**Steps**
+
+1. Open the autonomy editor on **1 - Main**.
+2. Right-click an empty square beside a station and hover **Show a Station Name Here...**.
+3. Press Escape.  Hover the same empty square and press **Control+N**.
+4. Hover a station square that already shows its own name and press Control+N.
+
+**Expected**
+
+- Step 2: the tooltip ends with **(Control+N)**.
+- Step 3: the same station chooser opens as from the menu, for that square.
+- Step 4: nothing happens - a station square already shows itself, as the menu says.
+
+*What this is:* FR-086.  `ui.testTheEditorNamesItsShortcuts`, seen red first; commit `9cc6a874`.
+
+#### Comments
+
+---
+
+<a id="mt-437"></a>
+
+### MT-437 - 2026-09-15 - 75 407 DB at length 3 may go to BottomMainA, and at length 4 may not
+
+**Disposition:** fixed unvalidated
+**From:** FR-087
+
+**Written:** 2026-09-15
+
+Your note on MT-431: *"didn't we say that BottomMainA should be allowed at length 3, since it is not a parking spot, the station allows the length, and the length would be tracked?"*  And your answer when asked how far that reaches: **bounded by the route** in.
+
+**Steps**
+
+1. With your measurements from MT-431 (7,9 = 1, 10,10 = 2, 13,12 = 1, 19,12 = 1), give 75 407 DB length **3** and stand it at **Tunnel**.
+2. Right-click it and look for **BottomMainA**.  Send it there.
+3. When it has arrived, look at the diagram between Tunnel and BottomMainA.
+4. Give it length **4**, stand it at Tunnel again, and look for BottomMainA.
+5. Repeat step 4 with a parking berth whose approach is shorter than the train, if you have one to hand.
+
+**Expected**
+
+- Step 2: BottomMainA is offered, and the train runs and arrives.  Before this it was refused, naming BottomMainA's two-unit approach.
+- Step 3: orange back over the track it stands across, towards Tunnel - its tail is on the route it came in by, and other trains are kept off it.
+- Step 4: refused, naming BottomMainA - four units are longer than the measured route in, which is three.
+- Step 5: refused as before - a parking berth still has to hold the train past its last switch.
+
+*What this is:* FR-087, which turns round step 4 of MT-431.  At a station autonomy may choose, a train fits if the measured track of the route it drives in on holds it, counted back without a gap and never back past a square it turns at; parking berths are unchanged.  `regression.testAPassingTrainMayStandAcrossThePoints.testTheRouteInHoldsAThreeUnitTrainAndNotAFourUnitOne`, seen red first; commit `9cc6a874`.
+
+#### Comments
+
+---
+
+<a id="mt-438"></a>
+
+### MT-438 - 2026-09-15 - The tail question: a sensor at exactly the length, roads a train can drive, and a default
+
+**Disposition:** fixed unvalidated
+**From:** OB-226, OB-227, FR-088
+
+**Written:** 2026-09-15
+
+Your notes on MT-435: *"When 75 407 DB is set to length 3, only BottomMainAPre is offered ... but Tunnel should also be offered since it is 3 away"*; *"the blocked orange path crosses switch 99 and switch 100 instead of going to bottomsecondary, which would require the train to reverse in.  that isn't a realistic path"*; and *"The closest sensor to the back should be the default selection in the length window, so the user can just click OK if appropriate."*
+
+**Steps**
+
+1. Give 75 407 DB length **3**, cut it (Ctrl+X) and paste it at **BottomMainA** (Ctrl+V).
+2. Read the list of sensors, and which one it starts on.  Choose **Tunnel** and look at the orange.
+3. Give it length **4** or more and paste it at BottomMainA again.  Choose **RampDown** if it is offered, and look at the orange.
+4. Paste it once more where only one sensor is nearest its back, and once where two roads each have one.
+
+**Expected**
+
+- Step 2: **Tunnel** is offered as well as BottomMainAPre - three units back is where the tail has reached.  The list starts on the recorded road if the train has one, otherwise on the one sensor nearest the back.
+- Step 3: the orange runs back the way a train drives in - through BottomSecondary, not across switches 99 and 100.  No sensor is offered that the train could only have reached by reversing.
+- Step 4: with one sensor nearest the back the list starts on it, so OK is enough; with two, nothing is chosen.
+- Everything MT-435 checked still holds: the road is kept after a rebuild and a restart, and Pick on the diagram outlines the same sensors.
+
+*What this is:* OB-226, OB-227 and FR-088, replacing MT-435.  `core.testTheTailCrossedQuestion` - `testASensorExactlyTheTrainsLengthBackIsOffered`, `testOnlyARoadATrainCanDriveInOnIsOffered`, `testTheListStartsOnTheOneSensorNearestTheBack` - each seen red first; commits `9cc6a874`, `c0fe696e`.
+
+#### Comments
+
+---
+
+<a id="mt-439"></a>
+
+### MT-439 - 2026-09-15 - Why Not Moving? and Test a Path both follow Path Type
+
+**Disposition:** fixed unvalidated
+**From:** OB-225
+
+**Written:** 2026-09-15
+
+Your note on MT-434: *"Does not work.  Changes don't happen when switching, and in manual mode, I still get reasons like 'tunnellongpark will never be chosen in autonomy'."*  Asked which tool that was: **Why Not Moving?** - and that it should follow Path Type.
+
+**Steps**
+
+1. In the autonomy editor with **Path Type** on **Auto**, choose **Why Not Moving?** and click a train.
+2. Switch Path Type to **Manual** without clicking anything else.
+3. Switch back to **Auto**.
+4. Choose **Test a Path**, click an ordinary station and then a station autonomy will never choose (TunnelLongPark, say), and switch Path Type to Manual and back.
+
+**Expected**
+
+- Step 1: two groups - *Stations autonomy could choose, but cannot right now* and *Stations autonomy will never choose*, TunnelLongPark among the second with *Set not to be chosen automatically.*
+- Step 2: the answer is worked out again by itself.  Stations like TunnelLongPark are listed where it can go when a route is clear; any refusal is under *Stations the train cannot be sent to right now*; nothing says autonomy will never choose it.
+- Step 3: autonomy's answer comes back.
+- Step 4: the route stays drawn; the note that autonomy will never choose the station goes on Manual and comes back on Auto.
+
+*What this is:* OB-225, replacing MT-434.  `regression.testPathTypeRedrawsTheTestInTheEditor` - both claims drive the real editor on the frozen railway; the Why one was seen red first; commit `7a484ea9`.
+
+#### Comments
+
+---
+
+<a id="mt-440"></a>
+
+### MT-440 - 2026-09-15 - Return Home does not route a train over the tail of one it has just parked
+
+**Disposition:** fixed unvalidated
+**From:** OB-228
+
+**Written:** 2026-09-15
+
+Your note on MT-335: *"The 335 park works, but I get: Could not run EN57-203 from BottomInner (northbound) to TopMainR0Park - the path stayed blocked."*  The plan parked 75 407 DB at BottomMainA first and then sent EN57-203 over BottomMainAPre -> RampDown, where 75 407 DB's tail was lying.
+
+**Steps**
+
+1. Set up the MT-335 run again: 75 407 DB long enough to overhang BottomMainAPre, DRIVEN to Tunnel, home BottomMainA; EN57-203 at BottomInner, home TopMainR0Park; EN57-947 home BottomInner.
+2. Press **Return Home** and let it run.
+3. Read the log.
+
+**Expected**
+
+- Step 2: every train gets home, or Return Home says before it starts that it has no plan - it does not stop half way with *the path stayed blocked*.
+- Step 3: the plan either moves EN57-203 past BottomMainAPre before 75 407 DB parks, or takes it another way.  If the agreement check still reports 75 407 DB -> RampDown or -> BottomSecondary, paste those lines here: they are not explained yet.
+
+*What this is:* OB-228, replacing MT-335.  The planner now walks the tail a moved train will leave with the runtime's own code, and searches again from the start when its first pass boxes itself in.  `core.testReturnHomeKeepsClearOfTheTailsItLeaves`, seen red first; commit `c0fe696e`.
+
+#### Comments
 
 ---
