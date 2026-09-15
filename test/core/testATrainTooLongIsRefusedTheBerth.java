@@ -456,7 +456,13 @@ public class testATrainTooLongIsRefusedTheBerth
         // The berth is the end of the line, which is what brings the room rule into play at all.
         berth.setTerminus(true);
 
-        // A long approach BEFORE the switch, which must not count: the binding measurement is what
+        // AND A PARKING BERTH - Can Be Chosen In Full Autonomy off - as TunnelLongPark, Adam's own case, is.
+        // Since FR-087 (Adam, on MT-431, 2026-09-15) a station autonomy MAY choose takes a train the measured
+        // route in holds, so at one this 50-unit approach admits the long train by his ruling.  The room rule
+        // this class is about binds at a berth; `admittedWithUnmeasuredApproach` still judges a station.
+        berth.setAutoDestination(false);
+
+        // A long approach BEFORE the switch, which must not count at a berth: the binding measurement is what
         // lies after the last switch, and a permissive rule that adds this in admits everything.
         Edge approach = layout.createEdge(start.getName(), middle.getName());
         Edge run = layout.createEdge(middle.getName(), berth.getName());
