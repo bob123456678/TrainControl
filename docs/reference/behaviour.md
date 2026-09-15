@@ -741,7 +741,8 @@ The rest of this section is about the **first** rule.
   **What it costs, on a railway measured to make it cost something.** Over 1848 routable station
   pairs and six train lengths - 11088 journeys - the berth rule refuses 1760 and this ruling refuses
   about 1655 more, so roughly one journey in three is refused for want of room, and **every square
-  that does the refusing measures ONE unit**.
+  that does the refusing measures ONE unit**. (Those are the figures of 2026-09-09; since OB-229 the census walks
+  no route through a terminus, and section 5b's table gives today's.)
 
   **Those three one-unit tiles are a test configuration, not a survey of his track.** Adam,
   2026-09-10: *"A/B/C are distinct pieces of track. We put the lengths of 1 in there for testing.
@@ -1176,12 +1177,25 @@ the count below with nothing saying why.
 | | |
 |---|---|
 | ordered station pairs | 1980 (45 destination Points, each against the other 44) |
-| of those, routable | 1848 |
+| of those, routable | 1354 (1848 before OB-229) |
 | train lengths asked, the census's own | 1, 2, 3, 4, 5, 6 |
-| journeys the widening NEWLY refuses | **880** |
+| journeys the widening NEWLY refuses | **610** (880 before OB-229) |
 | every one of them arriving at | BottomMainA (eastbound), BottomMainB (eastbound), BottomMainC (westbound), BottomMainPost (northbound) - each measured at **ONE** unit of room |
 
 The room rule declines to judge almost everything else: the railway carries only a few measurements.
+
+**Re-measured 2026-09-15, after OB-229.** The census walks the railway's own route search, and that search no longer
+extends a route through a terminus that is not its end - the route check refuses every such route (section 7). So
+the pairs whose only routes ran through a terminus are no longer counted as routable, and the journeys over those
+routes - every one of them refused before length ever arose - no longer count as refused for room: 1354 routable pairs
+rather than 1848, 610 newly refused rather than 880, 1030 refused at the berth rather than 1760. A probe put every route
+both searches could yield to the route check: none of the dropped pairs was drivable, and 153 pairs the old search
+never found became drivable. The four berths and their one unit of room are unchanged, and they are what this section
+reasons from. **One number rose, and its old zero was hiding it:** about 60 journeys now count as refused on the way -
+the berth has room, and every route to it turns at a square too short for the train. Each of them used to have a route
+through a terminus as well, which the room rules alone admit and the route check always refused, so none was counted and
+none was ever drivable. The square refusing them is `BottomMainB (westbound, reverse)`, a turn copy of one of the four
+berths below - the turn bound of 2026-09-11 at one of Adam's own one-unit squares, not a refusal somewhere new.
 
 Those four are the berths Adam named himself, with the number he gave: *"bottommainb, which has a
 length of 1 leading up to its switch"*, and MT-262's own report of `BottomMainA (eastbound)` offered
