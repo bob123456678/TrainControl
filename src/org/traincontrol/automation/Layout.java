@@ -4566,6 +4566,22 @@ public class Layout
     }
 
     /**
+     * The same, for either tier (MT-434).  By hand, the reasons `explainDestinations(Locomotive, boolean)` gives a
+     * hand-driven send, and nothing in the group autonomy will never choose: what autonomy will not do is not the
+     * question a person sending a train has asked.
+     *
+     * @param loc the train
+     * @param byHand true for a hand-driven send
+     * @return the reasons and the barred stations, taken under one lock
+     */
+    synchronized public Destinations explainDestinationsGrouped(Locomotive loc, boolean byHand)
+    {
+        if (!byHand) return explainDestinationsGrouped(loc);
+
+        return new Destinations(explainDestinations(loc, true), new java.util.LinkedHashSet<String>());
+    }
+
+    /**
      * Why each station is unavailable, and which of them autonomy would never choose anyway.
      *
      * A holder rather than two return values.  It exists so the two can be taken together; handing
@@ -4904,6 +4920,25 @@ public class Layout
      */
     synchronized public java.util.Map<String, String> explainDestinations(Locomotive loc)
     {
+        return explainDestinations(loc, false);
+    }
+
+    /**
+     * The same reasons, for a train a person sends rather than one autonomy picks (MT-434).
+     *
+     * Adam, 2026-09-15, on Why Not Moving? in the autonomy editor: *"in manual mode, I still get reasons like
+     * 'tunnellongpark will never be chosen in autonomy'"* - and, asked whether that tool should follow Path Type, yes.
+     * Autonomy's standing bars - a station set not to be chosen, one switched off, a train excluded, a reversing square,
+     * a terminus for a train that cannot reverse - say what autonomy will pick.  `getPossiblePaths`, which is what a
+     * person is offered, asks none of them itself, so a hand-driven answer skips them and decides every station the way
+     * that list does: somebody standing there, or the first clear route, or why there is none.
+     *
+     * @param loc the train
+     * @param byHand true for the reasons a hand-driven send meets; false for autonomy's
+     * @return each station's reason, null where it may go
+     */
+    synchronized public java.util.Map<String, String> explainDestinations(Locomotive loc, boolean byHand)
+    {
         java.util.Map<String, String> out = new java.util.LinkedHashMap<>();
 
         if (loc == null) return out;
@@ -4941,7 +4976,8 @@ public class Layout
             // Nothing is lost by the order. A station under a standing bar is not a candidate whoever
             // is standing on it, so "occupied" was never the operative reason - it was just the first
             // test that happened to match.
-            String reason = barredFromAutonomy(end, loc);
+            // Not on a hand-driven send (MT-434): autonomy's bars, which the operator is not bound by.
+            String reason = byHand ? null : barredFromAutonomy(end, loc);
 
             if (reason == null && end.getBlockLocomotive() != null)
             {

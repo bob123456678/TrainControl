@@ -362,6 +362,13 @@ public class AutonomyEditorPanel extends JPanel
     private TileKey lastTestTo;
 
     /**
+     * The square the last Why Not Moving? answer was about, so switching Path Type can ask it again (MT-434).
+     *
+     * Cleared with the path test's squares.
+     */
+    private TileKey lastWhyTile;
+
+    /**
      * Which tier the routing check answers for, and the label that names the pair.
      *
      * Auto is the default because it is the question that gets asked: somebody opens this panel
@@ -832,6 +839,7 @@ public class AutonomyEditorPanel extends JPanel
         testFrom = null;
         lastTestFrom = null;
         lastTestTo = null;
+        lastWhyTile = null;
         oneWayFrom = null;
         pendingPortal = null;
         signalFor = null;
@@ -915,6 +923,7 @@ public class AutonomyEditorPanel extends JPanel
         testFrom = null;
         lastTestFrom = null;
         lastTestTo = null;
+        lastWhyTile = null;
         traces.clear();
         oneWayFrom = null;
         signalFor = null;
@@ -7147,6 +7156,13 @@ public class AutonomyEditorPanel extends JPanel
         // the setup rather than to whichever reader asks first.
         org.traincontrol.automationui.StationIndex index = session.getStationIndex();
 
+        // WHICH TIER IT ANSWERS FOR (MT-434), read with the radio here on the event thread, and the square remembered so
+        // switching Path Type can ask it again.  Adam, 2026-09-15: *"in manual mode, I still get reasons like
+        // 'tunnellongpark will never be chosen in autonomy'"*.
+        final boolean byHand = pathTypeAuto != null && !pathTypeAuto.isSelected();
+
+        lastWhyTile = tile;
+
         // SAID NOW, because the answer lands a beat later and a tool that goes quiet on a click reads
         // as a tool that did nothing.  The key is the locomotive panel's - the same question, asked
         // there, and moved off the event thread before this one.
@@ -7162,7 +7178,7 @@ public class AutonomyEditorPanel extends JPanel
 
         try
         {
-            WhyRenderer.submit(() -> workOutWhy(asked, layout, index, tile));
+            WhyRenderer.submit(() -> workOutWhy(asked, layout, index, tile, byHand));
         }
         catch (RuntimeException refused)
         {
@@ -7186,9 +7202,10 @@ public class AutonomyEditorPanel extends JPanel
      * @param layout the railway, captured on the event thread
      * @param index the square-to-Point translation, captured with it
      * @param tile the square that was clicked
+     * @param byHand true when Path Type is Manual
      */
     private void workOutWhy(long asked, org.traincontrol.automation.Layout layout,
-        org.traincontrol.automationui.StationIndex index, TileKey tile)
+        org.traincontrol.automationui.StationIndex index, TileKey tile, boolean byHand)
     {
         try
         {
@@ -7196,7 +7213,7 @@ public class AutonomyEditorPanel extends JPanel
 
             try
             {
-                answer = composeWhy(layout, index, tile);
+                answer = composeWhy(layout, index, tile, byHand);
             }
             catch (RuntimeException failed)
             {
@@ -7232,10 +7249,11 @@ public class AutonomyEditorPanel extends JPanel
      * @param layout the railway
      * @param index the square-to-Point translation
      * @param tile the square that was clicked
+     * @param byHand true when Path Type is Manual: the reasons a hand-driven send meets (MT-434)
      * @return what to say and what to draw
      */
     private WhyAnswer composeWhy(org.traincontrol.automation.Layout layout,
-        org.traincontrol.automationui.StationIndex index, TileKey tile)
+        org.traincontrol.automationui.StationIndex index, TileKey tile, boolean byHand)
     {
         // Which train is standing here.  Asked of the LAYOUT rather than of the setup, because it is
         // the layout's opinion of where trains are that decides what runs.
@@ -7279,7 +7297,7 @@ public class AutonomyEditorPanel extends JPanel
         // THE REASONS AND WHICH OF THEM AUTONOMY WOULD NEVER CHOOSE, taken under one lock (FBR-C6) so a
         // station cannot be printed under the wrong heading - the question the locomotive panel's own
         // why-window asks, and in the same call.
-        org.traincontrol.automation.Layout.Destinations grouped = layout.explainDestinationsGrouped(standing);
+        org.traincontrol.automation.Layout.Destinations grouped = layout.explainDestinationsGrouped(standing, byHand);
 
         java.util.Map<String, String> reasons = grouped.getReasons();
         java.util.Set<String> neverChosenPoints = grouped.getBarred();
@@ -7396,7 +7414,9 @@ public class AutonomyEditorPanel extends JPanel
 
         StringBuilder blocked = new StringBuilder();
 
-        whyGroup(blocked, I18n.f("autolayout.ui.whyHeaderCandidates", choosable.size()), choosable);
+        // On Manual, the stations it cannot be sent to: autonomy's "could choose" is not the question asked (MT-434).
+        whyGroup(blocked, I18n.f(byHand ? "autolayout.ui.whyHeaderByHand" : "autolayout.ui.whyHeaderCandidates",
+            choosable.size()), choosable);
         whyGroup(blocked, I18n.f("autolayout.ui.whyHeaderBarred", neverChosen.size()), neverChosen);
 
         String detail = blocked.toString();
@@ -7871,6 +7891,25 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void retestForTheNewTier()
     {
+        // AND THE WHY ANSWER (MT-434).  Adam, 2026-09-15, asked which tool he had switched Path Type under: *"Why Not
+        // Moving?"* - and that it should follow Path Type.  The square last asked about is asked again through the door
+        // the click uses, so the answer on screen and the radio cannot disagree.
+        if (tool == Tool.WHY && lastWhyTile != null)
+        {
+            try
+            {
+                applyWhy(lastWhyTile, componentAt(lastWhyTile));
+            }
+            catch (RuntimeException e)
+            {
+                JOptionPane.showMessageDialog(owner(), String.valueOf(e.getMessage()));
+            }
+
+            refresh();
+
+            return;
+        }
+
         if (tool != Tool.TEST || testFrom != null || lastTestFrom == null || lastTestTo == null) return;
 
         TileKey from = lastTestFrom;
