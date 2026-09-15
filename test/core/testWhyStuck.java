@@ -36,6 +36,76 @@ public class testWhyStuck
     }
 
     /**
+     * By hand, a station beyond a headshunt is somewhere to go, as the right-click menu says it is (MFR-B1).
+     *
+     * Adam, on MT-434 (2026-09-15), asked which tool: Why Not Moving? should follow Path Type, and on Manual answer for
+     * a hand-driven send.  `reversesAlongTheWay` is autonomy's rule - its own javadoc: *"NOT asked by isPathClear, so a
+     * hand-driven move ... can still use a headshunt"* - and `firstClearOrWhyNot` still asked it by hand, so a station
+     * the menu offers read as "cannot be sent" through a reversing station.
+     *
+     * A -> R -> B, R a reversing square, nothing measured.  On its own sensors.
+     */
+    @Test
+    public void testByHandAStationBeyondAHeadshuntIsSomewhereToGo() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.setDefaultLocSpeed(30);
+
+        String[] names = { "WSH_A", "WSH_R", "WSH_B" };
+
+        for (int i = 0; i < names.length; i++)
+        {
+            MarklinFeedback sensor = model.newFeedback(3100 + i, null);
+
+            model.setFeedbackState(sensor.getName(), false);
+
+            layout.createPoint(names[i], true, sensor.getName());
+        }
+
+        layout.getPoint("WSH_R").setReversing(true);
+
+        layout.createEdge("WSH_A", "WSH_R");
+        layout.createEdge("WSH_R", "WSH_B");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        boolean reversibleWas = loc.isReversible();
+        Integer lengthWas = loc.getTrainLength();
+
+        try
+        {
+            loc.setReversible(true);
+            loc.setTrainLength(0);
+
+            assertTrue(layout.moveLocomotive(loc.getName(), "WSH_A", false), "could not stand the train at WSH_A");
+
+            boolean offered = false;
+
+            for (java.util.List<org.traincontrol.automation.Edge> path : layout.getPossiblePaths(loc, true))
+            {
+                if ("WSH_B".equals(path.get(path.size() - 1).getEnd().getName())) offered = true;
+            }
+
+            assertTrue(offered, "precondition: the right-click menu does not offer WSH_B through the headshunt, so the"
+                + " Manual answer has nothing to agree with");
+
+            assertNotNull(layout.explainDestinations(loc).get("WSH_B"),
+                "precondition: autonomy would choose WSH_B through a reversing square, so the tiers do not differ here");
+
+            String byHand = layout.explainDestinations(loc, true).get("WSH_B");
+
+            assertNull(byHand, "the right-click menu offers WSH_B and Why Not Moving? on Manual says it cannot be sent there:"
+                + " '" + byHand + "' - the headshunt is autonomy's rule, not a hand-driven send's");
+        }
+        finally
+        {
+            loc.setReversible(reversibleWas);
+            loc.setTrainLength(lengthWas == null ? 0 : lengthWas);
+        }
+    }
+
+    /**
      * A station with a train standing on it says so, and names the train.
      */
     @Test

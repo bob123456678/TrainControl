@@ -302,6 +302,7 @@
         <test-one-class class="testControlBAsksTheMenusQuestion"/>
         <test-one-class class="testTheAutonomyMenuHoldsItsSlot"/>
         <test-one-class class="testControlEAsksTheMenusQuestion"/>
+        <test-one-class class="testControlNAsksTheMenusQuestion"/>
 
         <!-- Added 2026-09-10 out of the Opus review of 5948a88a.  The first is the number a journey
              census cannot see - which SQUARES the room rule closes off completely; the second is the

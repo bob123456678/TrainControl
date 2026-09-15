@@ -185,6 +185,12 @@ public class testAPassingTrainMayStandAcrossThePoints
             + " track nothing has measured");
 
         assertTrue(why.contains("BottomMainA"), "the four-unit refusal does not name BottomMainA: " + why);
+
+        // AND THE NUMBER THAT REFUSED IT (MFR-C6): three units were admitted over this route a moment ago, so a refusal
+        // quoting the room past the switch tells the operator the square holds less than it just held.
+        assertTrue(why.contains(org.traincontrol.util.I18n.f("autolayout.errorTrainTooLongForBerth", standing.getName(),
+            "BottomMainA", 3, 4).replaceAll(".*which measures ", "which measures ").replaceAll(" - .*", "")),
+            "the four-unit refusal does not say the route in measures three - it quotes another bound: " + why);
     }
 
     /**

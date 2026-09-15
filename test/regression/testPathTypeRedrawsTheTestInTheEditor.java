@@ -242,6 +242,16 @@ public class testPathTypeRedrawsTheTestInTheEditor
                 "Path Type is Manual and Why Not Moving? still answers for autonomy.  Adam, MT-434: 'in manual mode, I"
                 + " still get reasons like tunnellongpark will never be chosen in autonomy'.  It says: " + onManual);
 
+            // AND AN ANSWER, not only the absence of autonomy's (MFR-C5): the stations autonomy will never choose are
+            // somewhere a person may send it, so more of them are places it can go - an empty or failed answer has none.
+            int canGoOnAuto = placesItCanGo(onAuto);
+            int canGoOnManual = placesItCanGo(onManual);
+
+            assertTrue(canGoOnManual > canGoOnAuto,
+                "Path Type is Manual and the answer names " + canGoOnManual + " station(s) it can go to, against "
+                + canGoOnAuto + " on Auto, though the stations autonomy will never choose are somewhere a person may send"
+                + " it: " + onManual);
+
             final javax.swing.AbstractButton auto = (javax.swing.AbstractButton) field(panel, "pathTypeAuto");
 
             SwingUtilities.invokeAndWait(auto::doClick);
@@ -293,6 +303,18 @@ public class testPathTypeRedrawsTheTestInTheEditor
         assertTrue((Boolean) await.invoke(panel, 120000L), "the Why answer was not worked out within two minutes");
 
         settle();
+    }
+
+    /** The count in "can go to N station(s)", or 0 where the answer says it can go nowhere. */
+    private static int placesItCanGo(String shown)
+    {
+        String pattern = org.traincontrol.util.I18n.t("autosetup.ui.whyCanGo");
+        String before = pattern.substring(0, pattern.indexOf("{0}"));
+
+        java.util.regex.Matcher count = java.util.regex.Pattern.compile(java.util.regex.Pattern.quote(before) + "(\\d+)")
+            .matcher(shown);
+
+        return count.find() ? Integer.parseInt(count.group(1)) : 0;
     }
 
     /** A heading's words before its count. */

@@ -39,8 +39,10 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
     private static MarklinControlStation model;
     private static Locomotive trainA;
     private static Locomotive trainB;
+    private static Locomotive trainC;
     private static Integer lengthA;
     private static Integer lengthB;
+    private static Integer lengthC;
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -49,12 +51,14 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
         sandbox = support.LayoutSandbox.open();
         model = MarklinControlStation.init(null, true, false, false, false);
 
-        assertTrue(model.getLocList().size() >= 2, "precondition: fewer than two locomotives to plan with");
+        assertTrue(model.getLocList().size() >= 3, "precondition: fewer than three locomotives to plan with");
 
         trainA = model.getLocByName(model.getLocList().get(0));
         trainB = model.getLocByName(model.getLocList().get(1));
+        trainC = model.getLocByName(model.getLocList().get(2));
         lengthA = trainA.getTrainLength();
         lengthB = trainB.getTrainLength();
+        lengthC = trainC.getTrainLength();
     }
 
     @AfterClass(alwaysRun = true)
@@ -64,6 +68,7 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
         {
             if (trainA != null) trainA.setTrainLength(lengthA);
             if (trainB != null) trainB.setTrainLength(lengthB);
+            if (trainC != null) trainC.setTrainLength(lengthC);
         }
         finally
         {
@@ -95,6 +100,91 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
         assertEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
             "precondition: no plan brings both trains home, though moving B first does: " + plan.getMoves());
 
+        List<String> run = replay(layout, plan);
+
+        assertTrue(trainA.equals(layout.getPoint("RT_A").getCurrentLocomotive())
+            && trainB.equals(layout.getPoint("RT_H").getCurrentLocomotive()),
+            "precondition: replaying the plan did not bring both trains home: " + run);
+    }
+
+    /**
+     * A plan found only one way round is found, though the other way round reaches the same squares first (MFR-B2).
+     *
+     * The search keyed an arrangement by where the trains stand, and a move's tail by the one chain of moves it kept -
+     * so two orders reaching the same squares with different tails were one arrangement, and whichever was found first
+     * decided.  Here X has two roads home: the short one past SY, whose tail lies over SY -> P, and a long one.  With Y
+     * still at SY, X takes the long road; with Y gone, the short one.  Z needs SX and SY empty and SY -> P clear.  So
+     * the only order that brings all three home is X, Y, Z - and Y, X reaches the same squares with X's tail across Z's
+     * road.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAnOrderThatOnlyWorksOneWayRoundIsFound() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.setDefaultLocSpeed(30);
+
+        String[] names = { "RH_SY", "RH_SX", "RH_SZ", "RH_P", "RH_L1", "RH_L2", "RH_L3", "RH_HX", "RH_HY", "RH_HZ" };
+        boolean[] stations = { true, true, true, false, false, false, false, true, true, true };
+
+        for (int i = 0; i < names.length; i++)
+        {
+            layout.createPoint(names[i], stations[i], model.newFeedback(2460 + i, null).getName());
+        }
+
+        String[][] rails = { { "RH_SZ", "RH_SX" }, { "RH_SX", "RH_SY" }, { "RH_SY", "RH_P" }, { "RH_P", "RH_HX" },
+            { "RH_P", "RH_HY" }, { "RH_P", "RH_HZ" }, { "RH_SX", "RH_L1" }, { "RH_L1", "RH_L2" }, { "RH_L2", "RH_L3" },
+            { "RH_L3", "RH_HX" } };
+
+        for (String[] rail : rails)
+        {
+            layout.createEdge(rail[0], rail[1]);
+            layout.getEdge(rail[0], rail[1]).setLength(1);
+        }
+
+        for (String home : new String[] { "RH_HX", "RH_HY", "RH_HZ" })
+        {
+            for (Edge in : layout.getIncomingEdges(layout.getPoint(home))) in.setEntrySide("W");
+        }
+
+        trainA.setTrainLength(3);
+        trainB.setTrainLength(1);
+        trainC.setTrainLength(1);
+
+        assertTrue(layout.moveLocomotive(trainA.getName(), "RH_SX", false), "could not stand X at RH_SX");
+        assertTrue(layout.moveLocomotive(trainB.getName(), "RH_SY", false), "could not stand Y at RH_SY");
+        assertTrue(layout.moveLocomotive(trainC.getName(), "RH_SZ", false), "could not stand Z at RH_SZ");
+
+        layout.setHomeLocomotive("RH_HX", trainA.getName());
+        layout.setHomeLocomotive("RH_HY", trainB.getName());
+        layout.setHomeLocomotive("RH_HZ", trainC.getName());
+
+        HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+        assertEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
+            "X long, then Y, then Z brings all three home, and the search answered " + plan.getOutcome() + ": moving Y"
+            + " first reaches the same squares with X's tail across Z's road, and the search kept only that one (MFR-B2)."
+            + "  Moves: " + plan.getMoves());
+
+        List<String> run = replay(layout, plan);
+
+        assertTrue(trainA.equals(layout.getPoint("RH_HX").getCurrentLocomotive())
+            && trainB.equals(layout.getPoint("RH_HY").getCurrentLocomotive())
+            && trainC.equals(layout.getPoint("RH_HZ").getCurrentLocomotive()),
+            "replaying the plan did not bring all three home: " + run);
+    }
+
+    /**
+     * Drives each move of the plan onto the layout as a run leaves a train, failing on a move over another train's tail.
+     *
+     * @param layout the railway
+     * @param plan the plan
+     * @return the moves made
+     */
+    private static List<String> replay(Layout layout, HomeStaging.Plan plan) throws Exception
+    {
         List<String> run = new ArrayList<>();
 
         for (HomeStaging.Move move : plan.getMoves())
@@ -127,9 +217,7 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
             run.add(move.getLocomotive().getName() + " -> " + end.getName());
         }
 
-        assertTrue(trainA.equals(layout.getPoint("RT_A").getCurrentLocomotive())
-            && trainB.equals(layout.getPoint("RT_H").getCurrentLocomotive()),
-            "precondition: replaying the plan did not bring both trains home: " + run);
+        return run;
     }
 
     /**
