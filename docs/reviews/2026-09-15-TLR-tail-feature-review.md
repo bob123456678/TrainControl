@@ -1,6 +1,6 @@
 # The tail feature, reviewed
 
-**Status:** open 2026-09-15 - round 1 fixed (A1, A2, B1, B2, C1-C5); TLR-B3 held; validation to follow (up to two rounds, Adam 2026-09-15: *"Do it"*)
+**Status:** open 2026-09-15 - round 1 fixed (A1, A2, B1, B2, C1-C5) in `fd3f251e`; validated (`2026-09-15-TLV-fix-validation.md`), round 2 in `8b8ec4ad` completed B1, B2, C3 and C5 and fixed TLR-B3; second validation to follow
 
 **Prefix:** TLR (checked free, with TLV and TLW for the validation rounds: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`, and every declaration spelling in `docs/`, `test/` and `src/`)
 
@@ -49,7 +49,7 @@ The build writes a square's side and road onto every copy, and a train leaving c
 |---|---|---|
 | TLR-B1 | Fixed | `TailCrossedPrompt` - not asked where one road back has a crossed sensor and the other none |
 | TLR-B2 | Fixed | `TailCrossedPrompt` - a square's turning copy counted as a second road |
-| TLR-B3 | Held | `Layout.walkStandingTrains` fork rule - the same name-counting, for trains with no road |
+| TLR-B3 | Fixed | `Layout.walkStandingTrains` fork rule - the same name-counting, for trains with no road |
 
 ### TLR-B1 - one crossed road is enough to ask
 
@@ -79,9 +79,11 @@ A square trains may turn at is a lane copy and a turning copy - the same metal u
 
 | | |
 |---|---|
-| **Disposition** | Held |
+| **Disposition** | Fixed |
 
 `walkStandingTrains`' fork rule counts distinct neighbours by name, so for a train with no road a turning copy next to the junction reads as a second road back and the tail stops early.  Older than these commits.  **Held:** counting by place would block more track behind trains with no road - a change to what MT-431 and validated tail tests describe, and a rule Adam set (*"end locking at the switch and call it a day"*).  For his call.
+
+**Not held after all - fixed in round 2 (`8b8ec4ad`).**  The validation showed the reason was wrong: his rule stops the tail where track SPLITS, and two copies of one square are not a split; and with TLR-B2 fixed and this held, such trains could never be given a road (TLV-B2).  Counted by place; `core.testTheTailCrossedQuestion.testATrainWithNoRoadFollowsOneRoadUnderTwoNames`, seen red first.
 
 ---
 

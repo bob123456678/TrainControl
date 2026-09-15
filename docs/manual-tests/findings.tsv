@@ -2028,15 +2028,30 @@ TDR-C7	2026-09-14-TDR-ten-day-review.md	-	Fixed
 TDR-C8	2026-09-14-TDR-ten-day-review.md	-	Fixed
 TDR-C9	2026-09-14-TDR-ten-day-review.md	-	Fixed
 TLR-A1	2026-09-15-TLR-tail-feature-review.md	-	Fixed
+TLR-A1	2026-09-15-TLV-fix-validation.md	-	Either half of the fix (pass order, by-place test) alone turns its claim green; neither is
 TLR-A2	2026-09-15-TLR-tail-feature-review.md	-	Fixed
+TLR-A2	2026-09-15-TLV-fix-validation.md	-	Every door writes the side and road on the copy carrying the train. **But see the battery 
 TLR-B1	2026-09-15-TLR-tail-feature-review.md	-	Fixed
+TLR-B1	2026-09-15-TLV-fix-validation.md	-	The same rule applied at the platform, where the walk could not honour the answer (TLV-B1)
 TLR-B2	2026-09-15-TLR-tail-feature-review.md	-	Fixed
-TLR-B3	2026-09-15-TLR-tail-feature-review.md	-	Held
+TLR-B2	2026-09-15-TLV-fix-validation.md	-	Right for the list; with TLR-B3 held it left such trains no way to be given a road (TLV-B2
+TLR-B3	2026-09-15-TLR-tail-feature-review.md	-	Fixed
+TLR-B3	2026-09-15-TLV-fix-validation.md	-	Adam's rule stops the tail where track SPLITS; two copies of one square are not a split. *
 TLR-C1	2026-09-15-TLR-tail-feature-review.md	-	stale comments: `Point.getArrivedAlong`, `AutonomySession.captureFromLayout`, `Layout.walk
 TLR-C2	2026-09-15-TLR-tail-feature-review.md	-	`testTheTailCanBeGivenInTheEditor` said Escape and pressed the right-click cancel
 TLR-C3	2026-09-15-TLR-tail-feature-review.md	-	`TailCrossedPrompt.label` - the "via" could name the junction itself
+TLR-C3	2026-09-15-TLV-fix-validation.md	-	Not for roads that part and meet again (TLV-B3). **Fixed, round 2.**
 TLR-C4	2026-09-15-TLR-tail-feature-review.md	-	`GraphLocAssign.commitAndRecord` - the tail dialog had no parent
+TLR-C4	2026-09-15-TLV-fix-validation.md	-	TLV-C3. **Fixed, round 2.**
 TLR-C5	2026-09-15-TLR-tail-feature-review.md	-	the three doors kept an old road when the answer was Not Known
+TLR-C5	2026-09-15-TLV-fix-validation.md	-	TLV-A1. **Fixed, round 2.**
+TLV-A1	2026-09-15-TLV-fix-validation.md	-	Fixed
+TLV-B1	2026-09-15-TLV-fix-validation.md	-	Fixed
+TLV-B2	2026-09-15-TLV-fix-validation.md	-	Fixed
+TLV-B3	2026-09-15-TLV-fix-validation.md	-	Fixed
+TLV-C1	2026-09-15-TLV-fix-validation.md	-	"two roads" still in `TailCrossedPrompt`, `AutonomyEditorPanel`, behaviour.md 5c and MT-43
+TLV-C2	2026-09-15-TLV-fix-validation.md	-	the TLR-C5 claim reached an unreachable state; its second assertion could not fail
+TLV-C3	2026-09-15-TLV-fix-validation.md	-	the locomotive dialog's question was owned by the dialog that had just closed
 TR-A1	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
 TR-A10	2026-08-21-review-findings.md	Closed	Fixed `174178c5`
 TR-A11	2026-08-21-review-dispositions.md	Closed	-
