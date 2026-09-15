@@ -254,6 +254,127 @@ public class testControlNAsksTheMenusQuestion
         }
     }
 
+    /**
+     * Control+H refused on a square that is not a station says why in its own words (MFX-C1).
+     *
+     * MFW-B1's refusal borrowed Control+B's sentence, which explains a maximum train length - the right remedy, make it a
+     * station, under the wrong reason.
+     *
+     * @throws Exception from the session or the reflection
+     */
+    @Test
+    public void testControlHSaysWhyItOffersNoHome() throws Exception
+    {
+        needsADisplay();
+
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-h-why").toFile();
+
+        try
+        {
+            AutonomySession session = new AutonomySession(folder);
+
+            session.open(Arrays.asList(aPageWithARun("main")));
+
+            AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+            TileKey track = new TileKey("main", 3, 1);
+
+            assertFalse(keyOffers(panel, "offersAHome", track), "precondition: Control+H would open a dialog on " + track);
+
+            panel.promptHomeFor(track);
+
+            Object hint = field(panel, "hint");
+            String shown = hint instanceof javax.swing.JLabel ? String.valueOf(((javax.swing.JLabel) hint).getText()) : "";
+
+            String borrowed = I18n.t("autosetup.ui.infoNotAStationHere");
+            String borrowedStart = borrowed.substring(0, borrowed.indexOf('.'));
+
+            assertFalse(shown.contains(borrowedStart),
+                "Control+H refused a home on plain track with Control+B's reason, about a maximum train length: " + shown
+                + " (MFX-C1)");
+
+            String own = I18n.t("autosetup.ui.infoNotAStationForAHome");
+            String ownStart = own.substring(0, Math.max(0, own.indexOf('.')));
+
+            assertTrue(!ownStart.isEmpty() && shown.contains(ownStart),
+                "Control+H refused a home on plain track without saying a home needs a station: " + shown);
+        }
+        finally
+        {
+            deleteRecursively(folder);
+        }
+    }
+
+    /**
+     * The main window's menu does not name Control+N, which is the notes key there (MFX-C3).
+     *
+     * The same menu is built for the main window's track diagram with `setMenuOnly`, and on a text or empty square it
+     * carries the caption items - whose tooltip named the editor's key.
+     *
+     * @throws Exception from the session
+     */
+    @Test
+    public void testTheMainWindowsMenuDoesNotNameTheEditorsKey() throws Exception
+    {
+        needsADisplay();
+
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-n-main").toFile();
+
+        try
+        {
+            AutonomySession session = new AutonomySession(folder);
+
+            session.open(Arrays.asList(aPageWithARun("main")));
+
+            TileKey empty = new TileKey("main", 9, 2);
+
+            // THE CONTROL: the editor's menu names the key.
+            AutonomyEditorPanel editor = new AutonomyEditorPanel(session, "main", () -> { });
+
+            String inTheEditor = nameTooltip(editor.buildTileMenu(empty, null));
+
+            assertTrue(inTheEditor != null && inTheEditor.contains(AutonomyEditorPanel.SHORTCUT_STATION),
+                "precondition: the editor's menu does not name " + AutonomyEditorPanel.SHORTCUT_STATION + " on " + empty
+                + ": " + inTheEditor);
+
+            // THE MAIN WINDOW'S: the same menu, menu-only.
+            AutonomyEditorPanel mainWindow = new AutonomyEditorPanel(session, "main", () -> { });
+
+            mainWindow.setMenuOnly(true);
+
+            String inTheMainWindow = nameTooltip(mainWindow.buildTileMenu(empty, null));
+
+            assertNotNull(inTheMainWindow, "precondition: the main window's menu offers no station name on " + empty);
+
+            assertFalse(inTheMainWindow.contains(AutonomyEditorPanel.SHORTCUT_STATION),
+                "the main window's menu names " + AutonomyEditorPanel.SHORTCUT_STATION + ", which is the notes key in that"
+                + " window: " + inTheMainWindow + " (MFX-C3)");
+        }
+        finally
+        {
+            deleteRecursively(folder);
+        }
+    }
+
+    /** The tooltip of the Show a Station Name Here item, in any of its three wordings, or null. */
+    private static String nameTooltip(javax.swing.JPopupMenu menu)
+    {
+        if (menu == null) return null;
+
+        java.util.List<String> names = java.util.Arrays.asList(I18n.t("autosetup.ui.menuShowStationHere"),
+            I18n.t("autosetup.ui.menuShowStationHereNamed"), I18n.t("autosetup.ui.menuStationShowsItself"));
+
+        for (java.awt.Component each : menu.getComponents())
+        {
+            if (each instanceof javax.swing.JMenuItem && names.contains(((javax.swing.JMenuItem) each).getText()))
+            {
+                return ((javax.swing.JMenuItem) each).getToolTipText();
+            }
+        }
+
+        return null;
+    }
+
     /** A public question of the panel's by name, failing plainly where the panel does not have it. */
     private static boolean keyOffers(AutonomyEditorPanel panel, String name, TileKey tile) throws Exception
     {
