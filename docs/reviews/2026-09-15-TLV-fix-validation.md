@@ -1,6 +1,6 @@
 # Validation of the tail feature's round 1, 2026-09-15
 
-**Status:** open 2026-09-15 - round 2 fixed in `8b8ec4ad` (TLV-A1, B1, B2, B3, C1-C3; TLR-B3 no longer held); the battery's one failure on round 1 explained and its claim corrected; a second validation follows, the last Adam allowed
+**Status:** open 2026-09-15 - round 2 fixed in `8b8ec4ad` (TLV-A1, B1, B2, B3, C1-C3; TLR-B3 no longer held); the battery's one failure on round 1 explained and its claim corrected; validated (`2026-09-15-TLW-fix-validation-round-two.md`), round 3 completed TLV-A1 and narrowed TLR-B3 to square and lane
 
 **Prefix:** TLV (checked free with TLR and TLW before the review began)
 

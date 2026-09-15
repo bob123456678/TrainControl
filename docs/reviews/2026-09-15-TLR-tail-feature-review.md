@@ -1,6 +1,6 @@
 # The tail feature, reviewed
 
-**Status:** open 2026-09-15 - round 1 fixed (A1, A2, B1, B2, C1-C5) in `fd3f251e`; validated (`2026-09-15-TLV-fix-validation.md`), round 2 in `8b8ec4ad` completed B1, B2, C3 and C5 and fixed TLR-B3; second validation to follow
+**Status:** open 2026-09-15 - round 1 fixed (A1, A2, B1, B2, C1-C5) in `fd3f251e`; validated (`2026-09-15-TLV-fix-validation.md`), round 2 in `8b8ec4ad` completed B1, B2, C3 and C5 and fixed TLR-B3; validated again (`2026-09-15-TLW-fix-validation-round-two.md`) and round 3 finished what that found
 
 **Prefix:** TLR (checked free, with TLV and TLW for the validation rounds: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`, and every declaration spelling in `docs/`, `test/` and `src/`)
 
