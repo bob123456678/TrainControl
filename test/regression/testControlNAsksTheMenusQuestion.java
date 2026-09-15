@@ -136,11 +136,19 @@ public class testControlNAsksTheMenusQuestion
             Runnable[] presses = { () -> panel.promptNameFor(track), () -> panel.promptLengthFor(track),
                 () -> panel.showStationNameFor(track) };
 
-            final javax.swing.AbstractButton test = (javax.swing.AbstractButton) field(panel, "testButton");
+            // ARMED THROUGH THE PANEL'S OWN FIELD, not its button: on an ignored page the panel's refresh disables Test a
+            // Path (`testButton.setEnabled(!ignored)`), so after the first click every further doClick did nothing and
+            // the claim failed on its own precondition.  The state a click leaves is what the keys are asked about.
+            final java.lang.reflect.Field tool = AutonomyEditorPanel.class.getDeclaredField("tool");
+
+            tool.setAccessible(true);
+
+            @SuppressWarnings({ "unchecked", "rawtypes" })
+            final Object testTool = Enum.valueOf((Class) tool.getType(), "TEST");
 
             for (int i = 0; i < keys.length; i++)
             {
-                if (!asked(panel, "anythingIsArmed", null)) test.doClick();
+                if (!asked(panel, "anythingIsArmed", null)) tool.set(panel, testTool);
 
                 assertTrue(asked(panel, "anythingIsArmed", null), "precondition: Test a Path did not arm before " + keys[i]);
 

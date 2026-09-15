@@ -64,13 +64,17 @@ public final class HomeStaging
      * NO_PLAN_FOUND already says "may still be possible", which is exactly the right claim to make when
      * the answer is cut short.  What was wrong was how long it took to say it.
      *
-     * **One budget for the whole search** (MFR-C2): A* from where the greedy pass stopped and A* again from the start
-     * (OB-228) share it, so a railway with no plan still says so within this, not twice this.
+     * **One budget for the whole search, shared out** (MFR-C2, MFV-B1).  A railway with no plan says so within this,
+     * not twice this - but not by letting the first search spend it all: A* from where the greedy pass stopped may use
+     * half, and A* from the start has what is left.  The retry exists for exactly the arrangement that exhausts the
+     * first search (OB-228: a train parked with no way out, its tail across another's road), so a shared deadline gave
+     * it no time on the one railway it was for.  When the greedy pass moved nothing there is one search, and it has the
+     * whole budget.
      */
     private static final long SEARCH_BUDGET_MS = 15000;
 
-    /** When the search in progress must give up - set once per `search`, read by every `astar` it runs. */
-    private long searchDeadline;
+    /** When the search in progress started - set once per `search`, so every `astar` it runs is timed from it. */
+    private long searchStarted;
 
     /** Expansions allowed per route search.  A point may now be revisited under different accessory
      *  settings, so the search is no longer bounded by the number of points. */
@@ -767,8 +771,8 @@ public final class HomeStaging
         // Nothing has moved yet (OB-228).
         this.movedAlong = new java.util.HashMap<>();
 
-        // ONE BUDGET, for every search this runs (MFR-C2).
-        this.searchDeadline = System.currentTimeMillis() + SEARCH_BUDGET_MS;
+        // ONE BUDGET, for every search this runs (MFR-C2), shared out below (MFV-B1).
+        this.searchStarted = System.currentTimeMillis();
 
         boolean progress = true;
 
@@ -803,7 +807,10 @@ public final class HomeStaging
         // A* starts from the greedy pass's arrangement, so it inherits the routes that pass gave (OB-228).
         this.greedyMovedAlong = new java.util.HashMap<>(this.movedAlong);
 
-        List<Move> rest = astar(state);
+        // HALF FOR THIS SEARCH, when a retry from the start may follow it (MFV-B1).
+        long firstDeadline = this.searchStarted + (plan.isEmpty() ? SEARCH_BUDGET_MS : SEARCH_BUDGET_MS / 2);
+
+        List<Move> rest = astar(state, firstDeadline);
 
         if (rest != null)
         {
@@ -822,7 +829,7 @@ public final class HomeStaging
 
         this.greedyMovedAlong = new java.util.HashMap<>();
 
-        return astar(new LinkedHashMap<>(this.start));
+        return astar(new LinkedHashMap<>(this.start), this.searchStarted + SEARCH_BUDGET_MS);
     }
 
     /**
@@ -831,7 +838,7 @@ public final class HomeStaging
      * Admissible: every move relocates exactly one locomotive, so at least one move per misplaced one
      * is needed.  Cheap, and enough to keep realistic layouts well inside the limit.
      */
-    private List<Move> astar(Map<Point, Locomotive> from)
+    private List<Move> astar(Map<Point, Locomotive> from, long deadline)
     {
         Map<String, Map<Point, Locomotive>> states = new HashMap<>();
         Map<String, Integer> cost = new HashMap<>();
@@ -871,7 +878,7 @@ public final class HomeStaging
         Set<String> closed = new HashSet<>();
         int examined = 0;
 
-        long deadline = this.searchDeadline;
+
 
         while (!open.isEmpty() && examined < SEARCH_LIMIT && System.currentTimeMillis() < deadline)
         {

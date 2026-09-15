@@ -5338,6 +5338,9 @@ public class AutonomyEditorPanel extends JPanel
      */
     public void promptNameFor(TileKey tile)
     {
+        // A GESTURE IN PROGRESS IS PUT DOWN FIRST, as the right-click menu and Control+N do (MFV-C4).
+        cancelPendingGesture();
+
         if (canBeNamed(tile)) promptName(tile);
     }
 
@@ -5428,6 +5431,9 @@ public class AutonomyEditorPanel extends JPanel
      */
     public void promptLengthFor(TileKey tile)
     {
+        // A GESTURE IN PROGRESS IS PUT DOWN FIRST, as the right-click menu and Control+N do (MFV-C4).
+        cancelPendingGesture();
+
         if (!offersALength(tile))
         {
             if (tile != null && session != null && session.getGraph() != null)
