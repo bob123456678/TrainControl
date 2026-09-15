@@ -501,8 +501,8 @@ public class Point
      * one that drove it.
      *
      * Cleared on the same change of occupant that clears `arrivedFrom`, for the same reason: a route
-     * describes the train that arrived, not whoever stands here next.  NOT saved with the setup - a
-     * rebuild loses it, and the walk then falls back to the fork rule, which is what it did before.
+     * describes the train that arrived, not whoever stands here next.  Saved with the point since WK7-B1, carried across
+     * a rebuild and captured into the setup; a hand-placed train can be given one (FR-085, behaviour.md 5c).
      *
      * @return the edges in the order they were driven, or null when nothing was driven here
      */

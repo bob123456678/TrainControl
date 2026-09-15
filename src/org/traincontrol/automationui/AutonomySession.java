@@ -3999,6 +3999,12 @@ public class AutonomySession
                         continue;
                     }
 
+                    // A TAIL BELONGS TO THE COPY THE TRAIN STANDS ON (TLR-A2).  The build writes a square's side and
+                    // road onto every copy of it, and a train leaving clears them only on its own - so read from the
+                    // others, this merge put a departed train's tail back into the setup, where a restart gave it to
+                    // whatever stood there next.
+                    if (("arrivedFrom".equals(key) || "arrivedAlong".equals(key)) && !point.has("loc")) continue;
+
                     extras.put(key, point.get(key));
                 }
 
@@ -4049,9 +4055,8 @@ public class AutonomySession
             //
             // The loop below replaces `loc` from the running layout, so a capture can hand a square to
             // a different locomotive - autonomy ran, the trains moved, somebody opened the editor.
-            // `arrivedFrom` is not one of these keys and is not captured either: which side a train
-            // came in by is worked out by the railway on arrival, not commanded, so there is nothing
-            // to capture. But leaving the OLD train's side on a square whose occupant just changed is
+            // Since WK7-B1 `arrivedFrom` and `arrivedAlong` ARE captured, from the occupied copy only (TLR-A2) -
+            // and before that they were not. Either way, leaving the OLD train's side on a square whose occupant just changed is
             // the same defect the placement doors were fixed for, arriving by a different road.
             //
             // Read before the replacement, because the replacement is what makes them differ.

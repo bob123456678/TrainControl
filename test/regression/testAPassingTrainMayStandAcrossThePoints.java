@@ -264,6 +264,113 @@ public class testAPassingTrainMayStandAcrossThePoints
         assertBAndCAreClosed(restarted, "after the running layout was captured to the setup and built again from it");
     }
 
+    /**
+     * Turned where it stands, the train still covers the road it came in on (TLR-A1).
+     *
+     * A facing change stands the same train on the other lane's copy of its square and carries its side and road
+     * across (`AutonomySession.moveOntoFacingCopy`, TDR-B2), so the road names the lane it drove in on while the walk
+     * runs down the other.  The walk that follows a road "either way round" matched the platform's own edge from the
+     * far end and turned back on itself, so the tail stopped at BottomMainAPre and B and C were offered again.
+     */
+    @Test
+    public void testTheRoadIsFollowedAfterTheTrainIsTurned() throws Exception
+    {
+        Layout built = aThreeUnitTrainDrivenToBottomMainA();
+
+        Point mainA = null;
+
+        for (Point point : built.getPoints())
+        {
+            if (point.getCurrentLocomotive() == standing) mainA = point;
+        }
+
+        TileKey square = scenario.getSession().getStationIndex().squareOf(mainA);
+
+        assertNotNull(square, "precondition: BottomMainA is not a square of the setup");
+
+        Map<String, org.traincontrol.automationui.TilePorts.Side> copies = scenario.getSession().facingsFor(square);
+
+        org.traincontrol.automationui.TilePorts.Side now = copies.get(mainA.getName());
+        org.traincontrol.automationui.TilePorts.Side other = null;
+
+        for (org.traincontrol.automationui.TilePorts.Side side : copies.values())
+        {
+            if (side != null && side != now) other = side;
+        }
+
+        if (other == null) throw new SkipException("BottomMainA is not split into two lanes on the snapshot: " + copies);
+
+        final java.lang.reflect.Method turn = org.traincontrol.automationui.AutonomySession.class.getDeclaredMethod(
+            "moveOntoFacingCopy", Layout.class, String.class, TileKey.class, org.traincontrol.automationui.TilePorts.Side.class);
+
+        turn.setAccessible(true);
+
+        turn.invoke(scenario.getSession(), built, STANDING, square, other);
+
+        Point turned = null;
+
+        for (Point point : built.getPoints())
+        {
+            if (point.getCurrentLocomotive() == standing) turned = point;
+        }
+
+        assertNotNull(turned, "precondition: the turn put the train nowhere");
+        assertNotEquals(turned.getName(), mainA.getName(), "precondition: the turn left the train on the same copy");
+        assertNotNull(turned.getArrivedAlong(), "precondition: the turn did not carry the road across (TDR-B2)");
+
+        assertBAndCAreClosed(built, "after the train was turned at BottomMainA");
+    }
+
+    /**
+     * A train that leaves takes its side and road out of the setup, whichever copy of the square they were read from
+     * (TLR-A2).
+     *
+     * The build writes a square's side and road onto every copy of it, and a train leaving clears them only on the copy
+     * it stood on.  The capture merges a square's copies, so the others put the departed train's tail back into the
+     * setup - where a restart applies it to whatever stands there next.
+     */
+    @Test
+    public void testALeavingTrainTakesItsTailOutOfTheSetup() throws Exception
+    {
+        Layout built = aThreeUnitTrainDrivenToBottomMainA();
+
+        String active = scenario.getSession().getStore().getActiveConfiguration();
+
+        assertNotNull(active, "precondition: no active configuration");
+
+        scenario.getSession().captureFromLayout(built.toJSON(), active);
+
+        Layout rebuilt = scenario.build();
+
+        Point mainA = null;
+
+        for (Point point : rebuilt.getPoints())
+        {
+            if (point.getCurrentLocomotive() == standing) mainA = point;
+        }
+
+        assertNotNull(mainA, "precondition: the rebuild did not stand the train at BottomMainA");
+
+        TileKey square = scenario.getSession().getStationIndex().squareOf(mainA);
+
+        if (scenario.getSession().facingsFor(square).size() < 2)
+        {
+            throw new SkipException("BottomMainA is not split on the snapshot, so it has no other copy to hold a stale tail");
+        }
+
+        assertNotNull(scenario.getSession().getArrivedFrom(square), "precondition: the capture did not record the side");
+
+        assertTrue(rebuilt.moveLocomotive(null, mainA.getName(), true), "could not take the train off BottomMainA");
+
+        scenario.getSession().captureFromLayout(rebuilt.toJSON(), active);
+
+        assertNull(scenario.getSession().getArrivedFrom(square), "the train left BottomMainA and the setup still records"
+            + " the side it came in by - read back from another copy of the square, so a restart gives it to the next train");
+
+        assertNull(scenario.getSession().getArrivedAlong(square), "the train left BottomMainA and the setup still records"
+            + " its road - read back from another copy of the square");
+    }
+
     /** Three units standing at BottomMainA as a train driven there from Tunnel stands, and the other train at Tunnel. */
     private Layout aThreeUnitTrainDrivenToBottomMainA() throws Exception
     {

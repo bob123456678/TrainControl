@@ -7800,11 +7800,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.getAutoLayout(), point, tail, point.getCurrentLocomotive().getTrainLength(),
                 point.getCurrentLocomotive().getName(), this, session::baseNameOf);
 
-            if (road != null)
-            {
-                session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(road));
-                point.setArrivedAlong(road);
-            }
+            // WRITTEN EITHER WAY (TLR-C5): pasting the same train back on its square is not a change of occupant, so
+            // Not Known - or no question - has to forget the road it held before, or the next rebuild follows it.
+            session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(road));
+            point.setArrivedAlong(road);
 
             // SPEC-A1: THE FOURTH ATTEMPT RECORDED THE LANDING COPY'S OWN SIDE, which is not the
             // train's heading.  `StationIndex.speakerAt` says that on an empty square "any copy will

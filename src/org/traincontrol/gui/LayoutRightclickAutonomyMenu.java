@@ -1219,11 +1219,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                             ? null : landing.getCurrentLocomotive().getTrainLength(),
                         locName, ui, session::baseNameOf);
 
-                if (road != null)
-                {
-                    session.setArrivedAlong(station, org.traincontrol.automation.Layout.namesOfRoad(road));
-                    landing.setArrivedAlong(road);
-                }
+                // WRITTEN EITHER WAY (TLR-C5): Not Known, or no question, forgets a road the square held before.
+                session.setArrivedAlong(station, org.traincontrol.automation.Layout.namesOfRoad(road));
+
+                if (landing != null) landing.setArrivedAlong(road);
             }
         }
 

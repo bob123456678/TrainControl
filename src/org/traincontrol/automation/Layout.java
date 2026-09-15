@@ -6325,6 +6325,32 @@ public class Layout
     }
 
     /**
+     * Whether the walk has already been on this square, under any of its names (TLR-A1).
+     *
+     * `walked` holds Point names, and a split square is several Points - so a name test says a copy the walk never
+     * stood on is new ground when its sibling is where the walk just came from.
+     *
+     * @param point a Point
+     * @param walked the names walked so far
+     * @return whether it, or another copy of its square, has been walked
+     */
+    private boolean walkedAPlaceLike(Point point, Set<String> walked)
+    {
+        if (point == null) return false;
+
+        if (walked.contains(point.getName())) return true;
+
+        for (String name : walked)
+        {
+            Point there = this.getPoint(name);
+
+            if (there != null && there.isSamePlaceAs(point)) return true;
+        }
+
+        return false;
+    }
+
+    /**
      * The one walk behind both answers above, so the two can never disagree about where a tail is.
      *
      * Callers that want both - `isPathClear` does - come here directly rather than asking twice: the
@@ -6476,28 +6502,41 @@ public class Layout
                     // place rather than by object, because a square is several Points and the walk may
                     // stand on a different copy of it than the route passed through.
                     //
-                    // A train placed by hand has no route and keeps the fork rule, unchanged.
+                    // A train with no road - placed by hand and not asked, or answered Not Known - keeps the fork
+                    // rule, unchanged.  A hand-placed train can be given one (behaviour.md 5c, FR-085).
                     if (neighbours.size() > 1 && standingHere.getArrivedAlong() != null)
                     {
                         Point cameFrom = null;
 
-                        // EITHER WAY ROUND (Adam, 2026-09-14).  A road a train drove runs towards it, so the edge
-                        // ending here names where it came from.  A road the operator gave - the farthest sensor the
-                        // tail crossed - is made of the rails that exist, and on a one-way rail laid the other way
-                        // that edge STARTS here.  The tail lies across the rail whichever way traffic runs on it.
+                        // THE EDGE THAT ENDS HERE, where the road has one.  A road a train drove runs towards it, so
+                        // that edge names where it came from.  Asked BY PLACE, both ends (TLR-A1): a turned train
+                        // stands on the other lane's copy of its square and the walk runs down that lane, while the
+                        // road still names the lane it drove in on - so a name test let the platform's own edge,
+                        // read from its far end, send the walk back the way it had come.
                         for (Edge driven : standingHere.getArrivedAlong())
                         {
                             if (driven.getStart() == null || driven.getEnd() == null) continue;
 
-                            if (driven.getEnd().isSamePlaceAs(here)
-                                && !walked.contains(driven.getStart().getName()))
+                            if (driven.getEnd().isSamePlaceAs(here) && !walkedAPlaceLike(driven.getStart(), walked))
                             {
                                 cameFrom = driven.getStart();
                             }
-                            else if (driven.getStart().isSamePlaceAs(here)
-                                && !walked.contains(driven.getEnd().getName()))
+                        }
+
+                        // AND ONLY THEN THE OTHER WAY ROUND (Adam, 2026-09-14).  A road the operator gave - the
+                        // farthest sensor the tail crossed - is made of the rails that exist, and on a one-way rail
+                        // laid the other way the edge STARTS here.  The tail lies across the rail whichever way
+                        // traffic runs on it.
+                        if (cameFrom == null)
+                        {
+                            for (Edge driven : standingHere.getArrivedAlong())
                             {
-                                cameFrom = driven.getEnd();
+                                if (driven.getStart() == null || driven.getEnd() == null) continue;
+
+                                if (driven.getStart().isSamePlaceAs(here) && !walkedAPlaceLike(driven.getEnd(), walked))
+                                {
+                                    cameFrom = driven.getEnd();
+                                }
                             }
                         }
 

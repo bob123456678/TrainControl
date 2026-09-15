@@ -185,6 +185,69 @@ public class testTheTailCrossedQuestion
     }
 
     /**
+     * One road with a crossed sensor is enough to ask, when the other road has none (TLR-B1).
+     *
+     * A -> J measures three and C -> J four.  Five units leave four past J: A is crossed with one left, C is not.
+     * "A" claims A -> J; "Not known" stops at J - different track, so the question has to be put.
+     */
+    @Test
+    public void testOneCrossedRoadIsEnoughToAsk() throws Exception
+    {
+        Layout layout = aPlatformBehindAJunction(2340, true);
+
+        layout.getEdge("TQ_C", "TQ_J").setLength(4);
+
+        Point s = layout.getPoint("TQ_S");
+
+        assertEquals(farthestOf(TailCrossedPrompt.choicesFor(layout, s, "W", 5, null)), java.util.Arrays.asList("TQ_J", "TQ_A"),
+            "precondition: five units cross TQ_J and TQ_A and not TQ_C");
+
+        assertTrue(TailCrossedPrompt.wouldAsk(layout, s, "W", 5),
+            "the tail crossed TQ_A on one road back from the junction and no sensor on the other, so TQ_A and Not Known"
+            + " block different track - and the question is not put");
+    }
+
+    /**
+     * Two copies of one square are one road, not two (TLR-B2).
+     *
+     * A square a train may turn at is split into a lane copy and a turning copy (`AutonomyBuilder`), the same metal
+     * under two names.  Counted by name they were two roads back from J, so the question was put on plain track and
+     * the list offered the same sensor twice.
+     */
+    @Test
+    public void testTwoCopiesOfOneSquareAreOneRoad() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.createPoint("TQ_A", true, model.newFeedback(2350, null).getName());
+        layout.createPoint("TQ_A (reverse)", true, model.newFeedback(2351, null).getName());
+        layout.createPoint("TQ_J", false, model.newFeedback(2352, null).getName());
+        layout.createPoint("TQ_S", true, model.newFeedback(2353, null).getName());
+
+        layout.getPoint("TQ_A").setBlock("TQ_A-square");
+        layout.getPoint("TQ_A (reverse)").setBlock("TQ_A-square");
+
+        layout.createEdge("TQ_A", "TQ_J");
+        layout.createEdge("TQ_A (reverse)", "TQ_J");
+        layout.createEdge("TQ_J", "TQ_S");
+
+        layout.getEdge("TQ_A", "TQ_J").setLength(3);
+        layout.getEdge("TQ_A (reverse)", "TQ_J").setLength(3);
+        layout.getEdge("TQ_J", "TQ_S").setLength(1);
+        layout.getEdge("TQ_J", "TQ_S").setEntrySide("W");
+
+        Point s = layout.getPoint("TQ_S");
+
+        List<TailCrossedPrompt.Choice> choices = TailCrossedPrompt.choicesFor(layout, s, "W", 5, null);
+
+        assertEquals(choices.size(), 2, "one road back past the junction, to one square, offers TQ_J and that square once -"
+            + " the list offered " + farthestOf(choices));
+
+        assertFalse(TailCrossedPrompt.wouldAsk(layout, s, "W", 5),
+            "the question is put where the only road back past the junction reaches one square by two names");
+    }
+
+    /**
      * A -> J -> S, with C joining at J.
      *
      * @param s88 the first of four sensor numbers this fixture uses

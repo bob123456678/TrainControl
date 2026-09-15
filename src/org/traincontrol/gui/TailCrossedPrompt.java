@@ -269,7 +269,10 @@ public class TailCrossedPrompt
         return best;
     }
 
-    /** Each edge as "start>end", with the rail read either way round the same, as the walk reads it. */
+    /**
+     * Each edge as its two places, the rail read either way round the same, as the walk reads it - by place, so a road a
+     * train drove in one lane still matches the choices worked out from the other lane's copy it was turned onto (TLR-A1).
+     */
     private static List<String> pairsOf(List<Edge> road)
     {
         List<String> pairs = new ArrayList<>();
@@ -278,8 +281,8 @@ public class TailCrossedPrompt
         {
             if (edge == null || edge.getStart() == null || edge.getEnd() == null) continue;
 
-            String a = edge.getStart().getName();
-            String b = edge.getEnd().getName();
+            String a = placeOf(edge.getStart());
+            String b = placeOf(edge.getEnd());
 
             pairs.add(a.compareTo(b) <= 0 ? a + ">" + b : b + ">" + a);
         }
@@ -323,17 +326,17 @@ public class TailCrossedPrompt
 
             if (cameInBy == null || !arrivedFrom.equalsIgnoreCase(cameInBy)) continue;
 
-            Edge known = firstHops.get(other.getName());
+            Edge known = firstHops.get(placeOf(other));
 
             if (known == null || (known.getEnd() != at && candidate.getEnd() == at))
             {
-                firstHops.put(other.getName(), candidate);
+                firstHops.put(placeOf(other), candidate);
             }
         }
 
         Set<String> walked = new LinkedHashSet<>();
 
-        walked.add(at.getName());
+        walked.add(placeOf(at));
 
         List<Edge> road = new ArrayList<>();
 
@@ -346,7 +349,10 @@ public class TailCrossedPrompt
             if (back(layout, hop, behind, at, trainLength, road, walked, into, forks, 1)) crossedHere++;
         }
 
-        if (crossedHere > 1) forks[0]++;
+        // A JUNCTION IS A QUESTION when it has two roads back and the tail crossed a sensor on at least one of them
+        // (TLR-B1): that sensor and Not Known then describe different track.  Crossed on none, every answer is the
+        // junction itself and the walk stops there anyway.
+        if (firstHops.size() > 1 && crossedHere > 0) forks[0]++;
     }
 
     /**
@@ -357,7 +363,7 @@ public class TailCrossedPrompt
     private static boolean back(Layout layout, Edge hop, Point behind, Point ahead, int left, List<Edge> road,
         Set<String> walked, List<Choice> into, int[] forks, int depth)
     {
-        if (behind == null || walked.contains(behind.getName()) || depth > MOST_SENSORS_BACK) return false;
+        if (behind == null || walked.contains(placeOf(behind)) || depth > MOST_SENSORS_BACK) return false;
 
         // An unmeasured stretch ends the road: nothing can be said about how much train is left after it.
         if (hop.getLength() <= 0) return false;
@@ -371,7 +377,7 @@ public class TailCrossedPrompt
         Edge driven = layout.getEdge(behind.getName(), ahead.getName());
 
         road.add(0, driven != null ? driven : hop);
-        walked.add(behind.getName());
+        walked.add(placeOf(behind));
 
         into.add(new Choice(behind, road));
 
@@ -383,14 +389,16 @@ public class TailCrossedPrompt
         {
             Point further = candidate.getStart() == behind ? candidate.getEnd() : candidate.getStart();
 
-            if (further == null || walked.contains(further.getName()) || !seen.add(further.getName())) continue;
+            // BY PLACE (TLR-B2): a square a train may turn at is a lane copy and a turning copy, the same metal under
+            // two names, and counted by name it was a second road back.
+            if (further == null || walked.contains(placeOf(further)) || !seen.add(placeOf(further))) continue;
 
             if (back(layout, candidate, further, behind, beyond, road, walked, into, forks, depth + 1)) crossedBeyond++;
         }
 
-        if (crossedBeyond > 1) forks[0]++;
+        if (seen.size() > 1 && crossedBeyond > 0) forks[0]++;
 
-        walked.remove(behind.getName());
+        walked.remove(placeOf(behind));
         road.remove(0);
 
         return true;
@@ -418,9 +426,11 @@ public class TailCrossedPrompt
 
             if (count.get(name) > 1 && choice.getRoad().size() > 1)
             {
-                // The next sensor towards the train says which road it is.
-                Edge next = choice.getRoad().get(1);
-                Point via = next.getStart() == null ? next.getEnd() : next.getStart();
+                // The next sensor towards the train says which road it is: the far end of the road's first rail
+                // (TLR-C3).  That rail may be laid either way, so it is the end that is NOT the sensor itself.
+                Edge first = choice.getRoad().get(0);
+                Point via = first.getStart() != null && first.getStart().isSamePlaceAs(choice.getFarthest())
+                    ? first.getEnd() : first.getStart();
 
                 choice.label = I18n.f("autolayout.ui.tailCrossedVia", name, shownName(shown, via));
             }
@@ -429,6 +439,17 @@ public class TailCrossedPrompt
                 choice.label = name;
             }
         }
+    }
+
+    /**
+     * One square, whatever it is called: the block a split square's copies share, or the Point's own name.
+     *
+     * @param point a Point
+     * @return the key
+     */
+    private static String placeOf(Point point)
+    {
+        return point.getBlock() != null ? "block " + point.getBlock() : "point " + point.getName();
     }
 
     private static String shownName(Function<String, String> shown, Point point)

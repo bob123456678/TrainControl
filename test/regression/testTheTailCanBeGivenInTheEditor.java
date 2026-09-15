@@ -248,21 +248,8 @@ public class testTheTailCanBeGivenInTheEditor
 
             assertEquals(session.getArrivedAlong(f.tile), before, "a click on a square the tail cannot have crossed recorded a road");
 
-            final java.lang.reflect.Method cancel = AutonomyEditorPanel.class.getDeclaredMethod("cancelPendingGesture");
-
-            cancel.setAccessible(true);
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    cancel.invoke(f.panel);
-                }
-                catch (Exception failed)
-                {
-                    throw new RuntimeException(failed);
-                }
-            });
+            // ESCAPE ITSELF (TLR-C2): `putToolsDown` is what the key runs; the right-click path is `cancelPendingGesture`.
+            SwingUtilities.invokeAndWait(() -> f.panel.putToolsDown());
 
             assertNull(f.panel.tailPickFor(), "Escape did not let go of the tail pick");
 
@@ -366,6 +353,40 @@ public class testTheTailCanBeGivenInTheEditor
         }
     }
 
+    /**
+     * Answering Not Known at a paste forgets a road the square held before (TLR-C5).
+     *
+     * The doors wrote a road only when one was chosen, and pasting the same train back on the same square is not a
+     * change of occupant - so the old road stayed in the setup and was put back on the next rebuild.
+     */
+    @Test
+    public void testNotKnownOnAPasteForgetsAnOldRoad() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            TailCrossedPrompt.Choice farthest = f.choices().get(f.choices().size() - 1);
+
+            f.paste(farthest.getFarthest().getName());
+
+            assertEquals(session.getArrivedAlong(f.tile), Layout.namesOfRoad(farthest.getRoad()),
+                "precondition: the first paste did not keep the road answered");
+
+            f.paste(TailCrossedPrompt.NOT_KNOWN);
+
+            assertNull(session.getArrivedAlong(f.tile), "the train was pasted back and Not Known answered, and the setup"
+                + " still holds the road from the paste before - the next rebuild follows it");
+
+            assertNull(f.standing().getArrivedAlong(), "Not Known was answered, and the train on the running railway still"
+                + " follows a road");
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
     // ---------------------------------------------------------------- the fixture
 
     /** One claim's railway: the setup as found, measured, a long train found, an editor open on its page. */
@@ -450,6 +471,67 @@ public class testTheTailCanBeGivenInTheEditor
             settle();
 
             return new Fixture(asFound, built[0], at, train, lengthWas);
+        }
+
+        /**
+         * Takes the train off and pastes it back on its square through Control+V, the tail question answered.
+         *
+         * @param answer the farthest sensor's point name, or `TailCrossedPrompt.NOT_KNOWN`
+         */
+        void paste(String answer) throws Exception
+        {
+            final Point before = standing();
+
+            assertNotNull(before, "precondition: the train is not standing anywhere");
+
+            final String side = before.getArrivedFrom();
+            final org.traincontrol.automationui.TilePorts.Side heading =
+                session.facingOf(train.getName(), model.getAutoLayout());
+
+            SwingUtilities.invokeAndWait(() -> model.getAutoLayout().moveLocomotive(null, before.getName(), true));
+
+            settle();
+
+            org.traincontrol.gui.ArrivalSidePrompt.answerForTests(side);
+            org.traincontrol.gui.FacingPrompt.answerForTests(heading);
+            TailCrossedPrompt.answerForTests(answer);
+
+            try
+            {
+                final java.lang.reflect.Field cut = TrainControlUI.class.getDeclaredField("cutLocomotive");
+                cut.setAccessible(true);
+
+                final java.lang.reflect.Method gesture = TrainControlUI.class.getDeclaredMethod(
+                    "locomotiveGestureOnDiagram", int.class, boolean.class);
+                gesture.setAccessible(true);
+
+                final Object[] handled = new Object[1];
+
+                SwingUtilities.invokeAndWait(() ->
+                {
+                    try
+                    {
+                        cut.set(ui, train);
+                        ui.setHoveredDiagramTile(tile.getPage(), tile.getX(), tile.getY());
+                        handled[0] = gesture.invoke(ui, java.awt.event.KeyEvent.VK_V, true);
+                    }
+                    catch (Exception refused)
+                    {
+                        handled[0] = refused;
+                    }
+                });
+
+                settle();
+
+                assertEquals(handled[0], Boolean.TRUE, "the diagram's paste door did not take Control+V: " + handled[0]);
+                assertNotNull(standing(), "precondition: the paste put the train nowhere");
+            }
+            finally
+            {
+                TailCrossedPrompt.answerForTests(null);
+                org.traincontrol.gui.ArrivalSidePrompt.answerForTests(null);
+                org.traincontrol.gui.FacingPrompt.answerForTests(null);
+            }
         }
 
         /** The running Point the train stands on now - rebuilds replace it. */
