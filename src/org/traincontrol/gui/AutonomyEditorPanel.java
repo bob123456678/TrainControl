@@ -2616,7 +2616,10 @@ public class AutonomyEditorPanel extends JPanel
                 : I18n.t("autosetup.ui.tooltipShowStationHere"))
             // AND ITS KEY (FR-086, Adam on MT-397: "let's add a hotkey for 'show station name here' too").  Added to
             // the sentence rather than replacing it: this item's tooltip is the only place that says what a caption is.
-            + "  (" + SHORTCUT_STATION + ")"));
+            //
+            // IN THE EDITOR ONLY (MFX-C3): the main window builds this menu with `setMenuOnly`, and there Control+N
+            // is the notes key.
+            + (menuOnly ? "" : "  (" + SHORTCUT_STATION + ")")));
 
         menu.add(name);
 
@@ -4681,8 +4684,9 @@ public class AutonomyEditorPanel extends JPanel
         // off the platform it had.  `offersAHome` is the menu's own question.
         if (!offersAHome(tile))
         {
+            // ITS OWN REASON (MFX-C1): the sentence it borrowed was Control+B's, about a maximum train length.
             say(hint, isIgnored(tile) ? I18n.t("autosetup.ui.infoTileIgnored")
-                : I18n.t("autosetup.ui.infoNotAStationHere"));
+                : I18n.t("autosetup.ui.infoNotAStationForAHome"));
 
             return;
         }
