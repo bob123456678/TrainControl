@@ -121,7 +121,7 @@ The claim script for OB-226, OB-227 and FR-088 rewrote `core.testTheTailCrossedQ
 |---|---|
 | **Disposition** | Fixed |
 
-At BottomMainA with four units the refusal read "measures 2" - the room past the switch - where the route in, which had just held three, measures three.  **Confirmed by running:** `testTheRouteInHoldsAThreeUnitTrainAndNotAFourUnitOne` now asks the number.  Red: *"overhang probe standing (length 4) is longer than the track leading into BottomMainA, which measures 1"*.  **Fixed, round 1:** `Layout.measuredRouteIn` is the one count; the allowance compares against it and the refusal at a station autonomy may choose quotes the larger of the two bounds.
+At BottomMainA with four units the refusal read "measures 1" - the room past the switch - where the route in, which had just held three, measures three.  **Confirmed by running:** `testTheRouteInHoldsAThreeUnitTrainAndNotAFourUnitOne` now asks the number.  Red: *"overhang probe standing (length 4) is longer than the track leading into BottomMainA, which measures 1"*.  **Fixed, round 1:** `Layout.measuredRouteIn` is the one count; the allowance compares against it and the refusal at a station autonomy may choose quotes the larger of the two bounds.
 
 ### MFR-C7 - stale comments
 

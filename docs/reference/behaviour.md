@@ -1411,9 +1411,11 @@ settings.
 **Why Not Moving? follows Path Type as well** (MT-434, Adam 2026-09-15, asked which tool: *"Why Not
 Moving?"*). On **Auto** it answers for autonomy: the stations it could choose but cannot right now, and the
 stations it will never choose, each with autonomy's reason. On **Manual** it answers for a train sent by hand, the
-way the right-click menu decides what to offer: autonomy's standing bars - not to be chosen, switched off, a train
-excluded, a reversing square - are not reasons there, so those stations are listed as reachable when a route is
-clear, and every refusal is under *Stations the train cannot be sent to right now*. Switching the radio asks the
+way the right-click menu decides what to offer: autonomy's standing bars - not to be chosen, a train excluded, a
+reversing square on the way or at the end - are not reasons there, so those stations are listed as reachable when a
+route is clear, and every refusal is under *Stations the train cannot be sent to right now*. A switched-off station
+is still refused by hand, as the first paragraph of this section says of both tiers: the route check refuses an
+inactive destination whatever sends the train, so it is listed there with that reason (MFV-C5). Switching the radio asks the
 last square again. `Layout.explainDestinations(Locomotive, boolean)`;
 `regression.testPathTypeRedrawsTheTestInTheEditor.testWhyNotMovingFollowsPathType`.
 
