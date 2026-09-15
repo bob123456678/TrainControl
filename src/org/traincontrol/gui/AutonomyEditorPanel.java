@@ -5342,26 +5342,59 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * Whether the right-click menu offers Show a Station Name Here on this square, live (FR-086, MFR-B3).
+     *
+     * The menu's own questions, in its order: `buildTileMenu` gives a text or blank square `buildTextMenu`, which
+     * always carries the caption items; it gives an ignored square nothing but the bulk tools; and otherwise it adds the
+     * caption items where `mayCarryACaption` allows and the panel is the editor's, greying the name item on a station
+     * already showing its own name.
+     *
+     * Public so a test can put the key and the menu side by side - `regression.testControlNAsksTheMenusQuestion` -
+     * because Control+N itself opens a modal dialog.  The key asked three of these and not `isIgnored`, so on a page
+     * left out of autonomy it wrote a caption where the menu offers none.
+     *
+     * @param tile the square
+     * @return whether the menu offers the item, enabled
+     */
+    public boolean offersAStationName(TileKey tile)
+    {
+        if (tile == null || session == null || session.getGraph() == null) return false;
+
+        LayoutDiagramComponent onPage = componentAt(tile);
+
+        if (pageOf(tile) != null && (onPage == null || onPage.isText())) return true;
+
+        if (isIgnored(tile)) return false;
+
+        if (menuOnly || !mayCarryACaption(onPage)) return false;
+
+        return !(session.getStore().isStation(tile) && tile.equals(session.getCaptionTarget(tile)));
+    }
+
+    /**
      * Shows a station's name on a square, from somewhere other than its own right-click menu (FR-086).
      *
      * Adam, on MT-397 (2026-09-15): *"let's add a hotkey for 'show station name here' too"* - Control+N, which he chose.
-     * The same relationship Control+S has to Rename: the key handler lives in `LayoutEditor`, and this asks exactly
-     * what the menu asks before it offers the item - a square that can carry a caption, in the editor rather than the
-     * diagram's own menu, and not a station already showing its own name - so the key and the menu cannot disagree.
+     * The same relationship Control+S has to Rename: the key handler lives in `LayoutEditor`, and this acts only where
+     * `offersAStationName` - the menu's own question - says the menu offers the item, so the key and the menu cannot
+     * disagree.  Like the menu, it abandons a gesture in progress first, and on an ignored square it says so.
      *
      * @param tile the square under the pointer, ignored when null
      */
     public void showStationNameFor(TileKey tile)
     {
-        if (tile == null || menuOnly) return;
+        if (tile == null || menuOnly || session == null || session.getGraph() == null) return;
 
-        LayoutDiagramComponent here = componentAt(tile);
+        cancelPendingGesture();
 
-        if (!mayCarryACaption(here)) return;
+        if (!offersAStationName(tile))
+        {
+            if (isIgnored(tile)) say(hint, I18n.t("autosetup.ui.infoTileIgnored"));
 
-        if (session.getStore().isStation(tile) && tile.equals(session.getCaptionTarget(tile))) return;
+            return;
+        }
 
-        promptStationLabel(tile, here);
+        promptStationLabel(tile, componentAt(tile));
     }
 
     /**

@@ -4991,7 +4991,7 @@ public class Layout
                 // Past the filter, so the question becomes whether any route is clear.  Every
                 // alternative is tried, exactly as pickPath does, because the first one being blocked
                 // says nothing about the second.
-                reason = firstClearOrWhyNot(loc, start, end);
+                reason = firstClearOrWhyNot(loc, start, end, byHand);
             }
             else
             {
@@ -5132,7 +5132,7 @@ public class Layout
      * round is the ordinary case, and reporting that first blocked route as though it were the only
      * one would tell the user their railway is broken when it is merely busy.
      */
-    private String firstClearOrWhyNot(Locomotive loc, Point start, Point end)
+    private String firstClearOrWhyNot(Locomotive loc, Point start, Point end, boolean byHand)
     {
         List<Edge> path;
         List<List<Edge>> seenPaths = new LinkedList<>();
@@ -5149,7 +5149,9 @@ public class Layout
 
                 seenPaths.add(path);
 
-                if (this.reversesAlongTheWay(path))
+                // AUTONOMY'S RULE, NOT A HAND-DRIVEN SEND'S (MFR-B1).  `reversesAlongTheWay` is not asked by `isPathClear`, so the
+                // right-click menu offers a station beyond a headshunt; by hand this answer has to as well.
+                if (!byHand && this.reversesAlongTheWay(path))
                 {
                     why = I18n.t("autolayout.why.throughReversing");
                     continue;
@@ -8737,8 +8739,8 @@ public class Layout
      * `whyABerthCannotHoldIt` refuses.
      *
      * **It only ever ALLOWS**, and only where the room rule has already refused.  The bound is the
-     * approach's own measured length, so a train longer than the whole run in is still refused: its
-     * tail would lie back over the edge before it, where nothing has been measured.
+     * measured route in (`measuredRouteIn`; the approach's own length before FR-087), so a train longer than
+     * that is still refused: its tail would lie back over track nothing has measured.
      *
      * **Lifted out of `whyTooLongForThisRoute` for PRW-B2 leg 2 (Adam, 2026-09-13: "Do it").**  The
      * staging planner needs this answer and cannot take the whole rule to get it - that was tried on
@@ -8762,17 +8764,32 @@ public class Layout
         // `isAutoDestination` is the flag his words name - "Can Be Chosen In Full Autonomy".
         if (ending == null || !ending.isAutoDestination()) return false;
 
-        // THE ROUTE IN, back from the station, while it is measured (FR-087).  The last leg alone is what the approach
-        // rule of 2026-09-12 counted; a train longer than it lies back over the leg before, and that leg is still the
-        // route it drove in on.
+        return loc.getTrainLength() <= measuredRouteIn(path);
+    }
+
+    /**
+     * How much measured track the route in holds, counted back from where it ends (FR-087).
+     *
+     * Leg by leg while each is measured, and never back past a square the train turns at - Adam, 2026-09-11: the berth
+     * is *"measured back to whichever of the last switch and the reversal is met first"*, and a train that changed
+     * direction on the way does not lie back over the track it drove before the turn.  The same test
+     * `measuredRoomAtTheEndOf` makes, so the room rule and this allowance stop at the same square.
+     *
+     * One number for two readers (MFR-C6): `theApproachItselfHoldsIt` admits a train no longer than it, and the refusal
+     * in `whyTooLongForThisRoute` quotes it - a refusal quoting the room past the switch told the operator the square
+     * held less than it had just held.
+     *
+     * @param path the route, in order, ending where the train comes to rest
+     * @return the measured units, 0 for none
+     */
+    public static int measuredRouteIn(List<Edge> path)
+    {
+        if (path == null) return 0;
+
         int held = 0;
 
         for (int i = path.size() - 1; i >= 0; i--)
         {
-            // NOT BACK PAST A TURN.  Adam, 2026-09-11: the berth is *"measured back to whichever of the last switch and
-            // the reversal is met first"* - a train that changed direction on the way does not lie back over the track
-            // it drove before the turn.  The same test `measuredRoomAtTheEndOf` makes, so the room rule and this
-            // allowance stop at the same square.
             if (i < path.size() - 1 && path.get(i).getEnd() != null && path.get(i).getEnd().isReversing()) break;
 
             int leg = path.get(i).getLength();
@@ -8780,11 +8797,9 @@ public class Layout
             if (leg <= 0) break;
 
             held += leg;
-
-            if (loc.getTrainLength() <= held) return true;
         }
 
-        return false;
+        return held;
     }
 
     /**
@@ -9054,7 +9069,8 @@ public class Layout
 
             if (room == null || loc.getTrainLength() <= room) continue;
 
-            // AND A STATION AUTONOMY MAY CHOOSE TAKES A TRAIN AS LONG AS ITS WHOLE APPROACH.
+            // AND A STATION AUTONOMY MAY CHOOSE TAKES A TRAIN ITS MEASURED ROUTE IN HOLDS (FR-087; ITS WHOLE
+            // APPROACH BEFORE 2026-09-15).
             //
             // Adam, 2026-09-12, on a platform whose approach measures 6 with a switch in the middle and
             // 3 on either side: *"it would not fit just past 14,12.  14,12 would be blocked and the 6
@@ -9077,8 +9093,8 @@ public class Layout
             //
             // **It only ever ALLOWS.**  The room rule above has already refused, and this hands back the
             // one case his ruling names; nothing that was accepted before is now refused.  The bound is
-            // the approach's own length, so a train longer than the whole run in is still refused - the
-            // tail would lie back over the edge before it, where this has measured nothing.
+            // the measured route in, never back past a turn, so a train longer than that is still refused -
+            // the tail would lie back over track this has measured nothing of.
             //
             // A train that turns round at the destination is deliberately NOT excluded.  It is standing
             // there for the same reason and for the same length of time; what it does on departure is
@@ -9095,8 +9111,13 @@ public class Layout
 
             if (here == null || berth)
             {
+                // THE BOUND THAT REFUSED (MFR-C6): at a station autonomy may choose, the route in was asked too, and it is
+                // the larger of the two - quoting the room past the switch said the square holds less than it does.
+                int refusedAt = berth && ending != null && ending.isAutoDestination()
+                    ? Math.max(room, measuredRouteIn(ordered)) : room;
+
                 return I18n.f("autolayout.errorTrainTooLongForBerth", loc.getName(),
-                    placeNameOf(ending), room, loc.getTrainLength());
+                    placeNameOf(ending), refusedAt, loc.getTrainLength());
             }
 
             return I18n.f("autolayout.errorTrainTooLongOnTheWay", loc.getName(), placeNameOf(here),

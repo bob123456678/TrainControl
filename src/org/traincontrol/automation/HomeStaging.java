@@ -63,8 +63,14 @@ public final class HomeStaging
      *
      * NO_PLAN_FOUND already says "may still be possible", which is exactly the right claim to make when
      * the answer is cut short.  What was wrong was how long it took to say it.
+     *
+     * **One budget for the whole search** (MFR-C2): A* from where the greedy pass stopped and A* again from the start
+     * (OB-228) share it, so a railway with no plan still says so within this, not twice this.
      */
     private static final long SEARCH_BUDGET_MS = 15000;
+
+    /** When the search in progress must give up - set once per `search`, read by every `astar` it runs. */
+    private long searchDeadline;
 
     /** Expansions allowed per route search.  A point may now be revisited under different accessory
      *  settings, so the search is no longer bounded by the number of points. */
@@ -761,6 +767,9 @@ public final class HomeStaging
         // Nothing has moved yet (OB-228).
         this.movedAlong = new java.util.HashMap<>();
 
+        // ONE BUDGET, for every search this runs (MFR-C2).
+        this.searchDeadline = System.currentTimeMillis() + SEARCH_BUDGET_MS;
+
         boolean progress = true;
 
         while (progress && misplaced(state) > 0)
@@ -830,7 +839,16 @@ public final class HomeStaging
         Map<String, Move> arrivedBy = new HashMap<>();
         Map<String, String> cameFrom = new HashMap<>();
 
-        String startKey = key(from);
+        // THE ROUTES EACH ARRANGEMENT'S MOVED TRAINS CAME BY, kept with it (MFR-B2).  They were rebuilt from the one chain
+        // of moves `cameFrom` remembered, and the key was the squares alone - so two orders reaching the same squares
+        // with different tails were one arrangement, and the first found decided.  Adam's MT-335 shape, one step on: a
+        // train parked the short way lies across the run another needs; parked the long way, it does not.
+        Map<String, Map<Locomotive, List<Edge>>> routesOf = new HashMap<>();
+        Map<Locomotive, List<Edge>> startRoutes = new java.util.HashMap<>(this.greedyMovedAlong);
+
+        String startKey = tailKey(from, startRoutes);
+
+        routesOf.put(startKey, startRoutes);
         states.put(startKey, from);
         cost.put(startKey, 0);
         score.put(startKey, misplaced(from));
@@ -853,7 +871,7 @@ public final class HomeStaging
         Set<String> closed = new HashSet<>();
         int examined = 0;
 
-        long deadline = System.currentTimeMillis() + SEARCH_BUDGET_MS;
+        long deadline = this.searchDeadline;
 
         while (!open.isEmpty() && examined < SEARCH_LIMIT && System.currentTimeMillis() < deadline)
         {
@@ -873,11 +891,8 @@ public final class HomeStaging
 
             if (misplaced(current) == 0) return rebuild(currentKey, cameFrom, arrivedBy);
 
-            // THE ROUTES THAT BROUGHT THE TRAINS TO THIS ARRANGEMENT (OB-228): the greedy pass's, then each move on the
-            // chain from the start of A* to here, later moves replacing earlier ones for the same train.
-            this.movedAlong = new java.util.HashMap<>(this.greedyMovedAlong);
-
-            for (Move move : rebuild(currentKey, cameFrom, arrivedBy)) this.movedAlong.put(move.getLocomotive(), move.getPath());
+            // THE ROUTES THAT BROUGHT THE TRAINS TO THIS ARRANGEMENT (OB-228), as it was reached (MFR-B2).
+            this.movedAlong = routesOf.get(currentKey);
 
             // One set per state, not one per candidate move: nothing moves while we expand this state
             Set<String> blocked = blockedSensors(current);
@@ -916,7 +931,11 @@ public final class HomeStaging
                     Map<Point, Locomotive> next = new LinkedHashMap<>(current);
                     apply(next, l, to);
 
-                    String nextKey = key(next);
+                    Map<Locomotive, List<Edge>> nextRoutes = new java.util.HashMap<>(this.movedAlong);
+
+                    nextRoutes.put(l, path);
+
+                    String nextKey = tailKey(next, nextRoutes);
                     int nextCost = cost.get(currentKey) + 1;
 
                     if (!cost.containsKey(nextKey) || nextCost < cost.get(nextKey))
@@ -926,6 +945,7 @@ public final class HomeStaging
                         score.put(nextKey, nextCost + misplaced(next));
                         cameFrom.put(nextKey, currentKey);
                         arrivedBy.put(nextKey, new Move(l, path));
+                        routesOf.put(nextKey, nextRoutes);
                         open.add(new Scored(nextKey, score.get(nextKey)));
                     }
                 }
@@ -1169,7 +1189,7 @@ public final class HomeStaging
                     // NO_PLAN_FOUND for all five trains, bisected.
                     //
                     // What was left open was the relaxation itself - a station autonomy may choose
-                    // takes a train as long as its whole approach - which the runtime allows and this
+                    // takes a train its measured route in holds (FR-087) - which the runtime allows and this
                     // refused.  A planner stricter than the railway silently drops plans that would
                     // have run, and nothing says so: the train simply stays where it is.
                     //
@@ -2322,6 +2342,59 @@ public final class HomeStaging
         }
 
         return count;
+    }
+
+    /**
+     * An arrangement's key: where the trains stand, and the track the trains the plan has moved lie across (MFR-B2).
+     *
+     * Two orders of moves that put the trains on the same squares are the same arrangement only if they leave the same
+     * tails - otherwise one of them may let a later move through that the other refuses, and a search that keeps the
+     * first it found can answer NO_PLAN_FOUND where a plan exists.  Keyed by the edges each tail covers, walked by
+     * `Layout.edgesATailWouldCover` as `passesTheTailsOfTrainsItHasMoved` asks it, rather than by the route itself:
+     * two routes whose tails lie on the same track are one arrangement, so the state count grows only where the tails
+     * really differ.
+     *
+     * @param state where the trains stand
+     * @param routes the route each moved train last took
+     * @return the key
+     */
+    private String tailKey(Map<Point, Locomotive> state, Map<Locomotive, List<Edge>> routes)
+    {
+        if (routes.isEmpty() || this.layout == null) return key(state);
+
+        List<String> tails = new ArrayList<>();
+
+        for (Map.Entry<Locomotive, List<Edge>> moved : routes.entrySet())
+        {
+            Locomotive train = moved.getKey();
+            List<Edge> road = moved.getValue();
+
+            if (road == null || road.isEmpty()) continue;
+
+            Point end = road.get(road.size() - 1).getEnd();
+
+            // Only a train still standing where that route left it lies along it.
+            if (end == null || !train.equals(state.get(end))) continue;
+
+            Map<Edge, Locomotive> covered = this.coveredByAMove.computeIfAbsent(road,
+                r -> this.layout.edgesATailWouldCover(end, train, r));
+
+            if (covered.isEmpty()) continue;
+
+            List<String> legs = new ArrayList<>();
+
+            for (Edge leg : covered.keySet()) legs.add(leg.getStart().getName() + ">" + leg.getEnd().getName());
+
+            Collections.sort(legs);
+
+            tails.add(train.getName() + ":" + String.join(",", legs));
+        }
+
+        if (tails.isEmpty()) return key(state);
+
+        Collections.sort(tails);
+
+        return key(state) + "#" + String.join("|", tails);
     }
 
     /** Identifies a configuration for the search's visited set. */
