@@ -18155,6 +18155,14 @@ why Return Home could not bring each train home (MT-402).
 
 **Claude: how to force the covered track for this test is in MT-333's latest note.**  Short version: the train has to DRIVE to BottomMainA, and nothing may rebuild the running layout between its arrival and Return Home - no restart, closing the autonomy editor, diagram edit or refresh, page toggle or configuration load.
 
+**Adam, 2026-09-15 (triage).** Does not work.
+
+The 335 park works, but I get: Could not run EN57-203 from BottomInner (northbound) to TopMainR0Park - the path stayed blocked.  Stopping.  The layout is not in the arrangement the plan was built for; move the train out of the way by hand and try again.
+
+Shouldn't it get sent to rampdown and then parked?
+
+*Run against commit 9e626e48, build\classes, compiled 15 Sep 03:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-336"></a>
@@ -21131,6 +21139,10 @@ the commands handed to the station, and was red before the change.
 
 #### Comments
 
+**Adam, 2026-09-15 (triage).** Works.
+
+*Run against commit 9e626e48, build\classes, compiled 15 Sep 03:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-397"></a>
@@ -21159,6 +21171,12 @@ Your OB-214: *"Set Segment Length needs a tooltip that says 'Control+E'.  change
 Max Train Length already said Control+L, D, K and B, and are unchanged.  `ui.testTheEditorNamesItsShortcuts`.
 
 #### Comments
+
+**Adam, 2026-09-15 (triage).** Works, with notes.
+
+Works, but let's add a hotkey for "show station name here" too
+
+*Run against commit 9e626e48, build\classes, compiled 15 Sep 03:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -21294,6 +21312,10 @@ or tidy railway the plan can take a fraction of a second, so the mark may only f
 
 #### Comments
 
+**Adam, 2026-09-15 (triage).** Works.
+
+*Run against commit 9e626e48, build\classes, compiled 15 Sep 03:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-402"></a>
@@ -21327,6 +21349,10 @@ platform with one arrival side barred (TDR-B3), and the log named the builder's 
 TDR-C9).  `core.testReturnHomeSaysWhy` covers every sentence the planner can reach.
 
 #### Comments
+
+**Adam, 2026-09-15 (triage).** Works.
+
+*Run against commit 9e626e48, build\classes, compiled 15 Sep 03:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -22208,6 +22234,12 @@ Your OB-224, from MT-333: *"75 407 DB (len 2) can no longer go from tunnel to bo
 
 #### Comments
 
+**Adam, 2026-09-15 (triage).** Works, with notes.
+
+Expected results happen.  But didn't we say that BottomMainA should be allowed at length 3, since it is not a parking spot, the station allows the length, and the length would be tracked?
+
+*Run against commit 9e626e48, build\classes, compiled 15 Sep 03:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-432"></a>
@@ -22273,6 +22305,10 @@ Your note on MT-429: *"Works, but capitalize Page.  Update sorting to be by page
 
 #### Comments
 
+**Adam, 2026-09-15 (triage).** Works.
+
+*Run against commit 9e626e48, build\classes, compiled 15 Sep 03:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-434"></a>
@@ -22301,6 +22337,12 @@ Your FR-084, from MT-399: *"when changing the auto and manual radio buttons, mak
 *What this is:* FR-084.  `core.testManualOnlyPathsAreADifferentColour.testSwitchingPathTypeRedrawsTheTestedRoute`, seen red first; commit `b1cb1fe9`.
 
 #### Comments
+
+**Adam, 2026-09-15 (triage).** Does not work.
+
+Does not work.  Changes don't happen when switching, and in manual mode, I still get reasons like "tunnellongpark will never be chosen in autonomy".
+
+*Run against commit 9e626e48, build\classes, compiled 15 Sep 03:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -22335,5 +22377,14 @@ Your idea on WK7-B1: *"why not ask the user to specify the last sensor it crosse
 *What this is:* FR-085, closing WK7-B1, and replacing MT-432.  `core.testATailRouteIsKept`, `core.testTheTailCrossedQuestion`, `regression.testTheTailCanBeGivenInTheEditor`, and the two rebuild and restart claims in `regression.testAPassingTrainMayStandAcrossThePoints`, each seen red first.
 
 #### Comments
+
+**Adam, 2026-09-15 (triage).** Does not work.
+
+Almost works.  When path is blocked, trains correctly cannot pass.  However:
+Feature missing: The closest sensor to the back should be the default selection in the length window, so the user can just click OK if appropriate.
+Bug 1. When 75 407 DB is set to length 3, only BottomMainAPre is offered (2 away from the station), but Tunnel should also be offered since it is 3 away.  The check works as intended at length 4, where Tunnel and many others are offered.
+Bug 2. If "Ramp down" is selected, rather than the path that takes the train there through bottomsecondary, sensor 1030, tunnel, bottommaina, the blocked orange path crosses switch 99 and switch 100 instead of going to bottomsecondary, which would require the train to reverse in.  that isn't a realistic path.
+
+*Run against commit 9e626e48, build\classes, compiled 15 Sep 03:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
