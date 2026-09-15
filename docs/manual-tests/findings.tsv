@@ -1075,7 +1075,7 @@ MFR-C1	2026-09-15-MFR-feedback-fixes-review.md	-	Held - Adam's ruling
 MFR-C2	2026-09-15-MFR-feedback-fixes-review.md	-	Fixed
 MFR-C3	2026-09-15-MFR-feedback-fixes-review.md	-	Held
 MFR-C4	2026-09-15-MFR-feedback-fixes-review.md	-	Fixed
-MFR-C5	2026-09-15-MFR-feedback-fixes-review.md	-	Fixed
+MFR-C5	2026-09-15-MFR-feedback-fixes-review.md	-	Not a defect - claim strengthened
 MFR-C6	2026-09-15-MFR-feedback-fixes-review.md	-	Fixed
 MFR-C7	2026-09-15-MFR-feedback-fixes-review.md	-	Fixed
 MFR-C8	2026-09-15-MFR-feedback-fixes-review.md	-	Noted on OB-229
@@ -1093,6 +1093,15 @@ MFV-C5	2026-09-15-MFV-fix-validation.md	-	Fixed (stated in the body)
 MFV-C6	2026-09-15-MFV-fix-validation.md	-	Fixed (stated in the body)
 MFV-D1	2026-09-15-MFV-fix-validation.md	-	Control+N cancelling a tail pick or signal pick leaves nothing waiting - both are armed fr
 MFV-D2	2026-09-15-MFV-fix-validation.md	-	`offersAStationName` answers true on a text square with `menuOnly` set - `buildTextMenu` a
+MFW-B1	2026-09-15-MFW-fix-validation-round-two.md	-	Fixed
+MFW-C1	2026-09-15-MFW-fix-validation-round-two.md	-	Fixed (stated in the body)
+MFW-C2	2026-09-15-MFW-fix-validation-round-two.md	-	Fixed (stated in the body)
+MFW-C3	2026-09-15-MFW-fix-validation-round-two.md	-	Fixed (stated in the body)
+MFW-D1	2026-09-15-MFW-fix-validation-round-two.md	-	A key drops what a right-click drops - the Why answer, tail and signal picks, a portal - t
+MFW-D2	2026-09-15-MFW-fix-validation-round-two.md	-	The gesture claim's excluded page resets nothing else; arming on an excluded page is reach
+MFW-D3	2026-09-15-MFW-fix-validation-round-two.md	-	`tailKey`'s cost is one short tail walk per successor beside a route search per successor;
+MFW-D4	2026-09-15-MFW-fix-validation-round-two.md	-	The greedy pass ignores the deadline, but its time comes out of the first search's half
+MFW-D5	2026-09-15-MFW-fix-validation-round-two.md	-	`measuredRouteIn`'s two callers read the same count at the destination
 MON-A1	MON-month-2026-09-07.md	Closed	Reverted (the doors speak the geometry again); the proper fix needs a curved fixture and i
 MON-B1	MON-month-2026-09-07.md	Closed	Fixed (stated in the body)
 MON-B2	MON-month-2026-09-07.md	Closed	Fixed (stated in the body)
