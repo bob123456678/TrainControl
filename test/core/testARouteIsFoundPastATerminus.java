@@ -3,6 +3,7 @@ package core;
 import java.util.ArrayList;
 import java.util.List;
 import static org.testng.Assert.*;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Edge;
@@ -37,11 +38,22 @@ public class testARouteIsFoundPastATerminus
 {
     private static MarklinControlStation model;
 
+    /** A throwaway copy of the fixture layout, opened BEFORE the model: `init` reads the layout preference (OB-111). */
+    private static support.LayoutSandbox sandbox;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
+        sandbox = support.LayoutSandbox.open();
+
         model = init(null, true, false, false, true);
         model.stop();
+    }
+
+    @AfterClass(alwaysRun = true)
+    public static void tearDownClass() throws Exception
+    {
+        if (sandbox != null) sandbox.close();
     }
 
     /**
