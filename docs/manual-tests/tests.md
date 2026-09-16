@@ -49,8 +49,11 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-445](#mt-445) | 2026-09-15 | Return Home turns a train that cannot reverse only on its way into its berth | fixed unvalidated | AMH-B1 |
 | [MT-446](#mt-446) | 2026-09-15 | After an edit declined at the start of a run, where the trains are is saved again | fixed unvalidated | AMS-B1 (MT-267) |
 | [MT-447](#mt-447) | 2026-09-15 | Unavailable While Occupied naming a station on an excluded page does not stop autonomy loading | fixed unvalidated | AMG-B1 |
+| [MT-448](#mt-448) | 2026-09-15 | No route goes round to another copy of the square it starts or ends at | fixed unvalidated | AMR-B1 |
+| [MT-449](#mt-449) | 2026-09-15 | Return Home does not turn a train that cannot reverse in the middle of a move | fixed unvalidated | AMV-B1 (MT-445) |
+| [MT-450](#mt-450) | 2026-09-15 | Return Home is not stopped by the sensor under a standing train's tail | fixed unvalidated | AMH-B2 |
 
-Everything else - 425 of 447 - needs nothing from you unless the area changes again:
+Everything else - 425 of 450 - needs nothing from you unless the area changes again:
 374 **fixed validated** and 51 **superseded**.
 
 ---
@@ -22766,6 +22769,91 @@ Found by the wide autonomy review.  The **Unavailable While Occupied...** list o
 - The restriction simply does not apply while the other page is excluded - the same as a restriction on a square that has been deleted.
 
 *What this is:* AMG-B1.  `regression.testStationBlockedByAnotherPoint.testARestrictionWatchingASquareOffTheGraphIsLeftOut`.  Seen red first (8818d8cd); fixed in 64169b0b.
+
+#### Comments
+
+---
+
+<a id="mt-448"></a>
+
+### MT-448 - 2026-09-15 - No route goes round to another copy of the square it starts or ends at
+
+**Disposition:** fixed unvalidated
+**From:** AMR-B1
+
+**Written:** 2026-09-15
+
+Found measuring what the terminus fix opened, and your ruling on it: *"We need to refuse both.  A copy makes a cycle."*  A square drawn as two Points is one piece of track, and a route that came back through the other copy was a lap through the train's own platform - or, the other way round, a route that passed its destination to reach it.  Measured on the frozen copy of your railway: 22 such routes, 14 of them the one route the right-click menu offered for a destination, and all 14 from **BottomMainPost**.
+
+**Steps**
+
+1. Stand a train at **BottomMainPost** and open the right-click menu's destination list.
+2. Compare it with what the menu used to offer - RampDown, Tunnel, BottomSecondary, TopMainR1, TopMainR2 and the two ramp intermediates were reachable only by going round through BottomMainPost again.
+3. Send the train somewhere the menu still offers, and watch the route it takes.
+
+**Expected**
+
+- Step 1: nothing in the list is a place the train can only reach by passing BottomMainPost a second time.
+- Step 3: the route drawn never passes the square the train started on, nor the square it is going to.
+- Nothing else on the railway lost a destination: 14 of 572 pairs, every one of them from BottomMainPost's two copies.
+
+*What this is:* AMR-B1.  `core.testARouteIsFoundPastATerminus.testNoRoutePassesAnotherCopyOfTheTrainsOwnSquare` and `testNoRoutePassesAnotherCopyOfItsDestination`.  Seen red first (c02f7000); fixed in c02f7000.
+
+#### Comments
+
+---
+
+<a id="mt-449"></a>
+
+### MT-449 - 2026-09-15 - Return Home does not turn a train that cannot reverse in the middle of a move
+
+**Disposition:** fixed unvalidated
+**From:** AMV-B1 (MT-445)
+
+**Written:** 2026-09-15
+
+Found by the validation of MT-445's fix.  That fix governed where a move ENDS; a route may also turn a train at a reversing point on the way and carry on, which for a train that cannot reverse means running on backwards.  Your ruling: it is allowed only where the train is going into its berth - *"the locking mechanism will refuse it.  That's why we started the 2 step process for parking, which is OK in my opinion."*
+
+**Steps**
+
+1. With a train that cannot reverse away from home, press **Return Home** and watch every move it makes.
+2. Note any move where it stops at a reversing point or a terminus on the way.
+
+**Expected**
+
+- No move turns that train at a reversing point and then carries it on to an ordinary station.
+- Backing into a berth still works: a move may turn it on the way in when the berth, or its home, is where that move ends.
+- Where no plan can keep to that, Return Home says it found no plan.
+
+*What this is:* AMV-B1.  `core.testHomeStaging.testATrainThatCannotReverseIsNotTurnedMidMoveAndSentOn`.  Seen red first (c02f7000); fixed in c02f7000.
+
+#### Comments
+
+---
+
+<a id="mt-450"></a>
+
+### MT-450 - 2026-09-15 - Return Home is not stopped by the sensor under a standing train's tail
+
+**Disposition:** fixed unvalidated
+**From:** AMH-B2
+
+**Written:** 2026-09-15
+
+Found by the wide autonomy review, and your answer on how your detection behaves: *"Yes, tails hold sensors."*  Return Home treated a sensor reading occupied as something on the track it knows nothing about, unless a train was standing on a square reporting it - so the section a long train's tail was lying over was shut for the whole plan, including after that train had moved, and Return Home could answer that it found no plan.
+
+**Steps**
+
+1. Stand a long train where its tail lies back over the section behind it (75 407 DB at BottomMainA, say).
+2. Displace another train from its home so that its way back runs through that section.
+3. Press **Return Home**.
+
+**Expected**
+
+- A plan is found and run, rather than *no plan found*.
+- A sensor that nothing accounts for - an obstruction on the track, a wagon nobody has told the diagram about - still stops the plan, and says so.
+
+*What this is:* AMH-B2.  `core.testHomeStaging.testASensorHeldByAStandingTrainsTailIsNotBlocked`.  Seen red first (c02f7000); fixed in c02f7000.
 
 #### Comments
 
