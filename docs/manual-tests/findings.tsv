@@ -1120,6 +1120,25 @@ LT-M6	2026-08-21-layout-test-feedback.md	Closed	Fixed
 LT-M7	2026-08-21-layout-test-feedback.md	Closed	Fixed - station, turning, arrivals, departures and links all headed
 LT-M8	2026-08-21-layout-test-feedback.md	Closed	Fixed
 LT-M9	2026-08-21-layout-test-feedback.md	Closed	Fixed - it is not the duplicate the other two were
+MAL-B1	2026-09-16-MAL-mass-assign-lengths-review.md	-	Open - confirmed by running; how far it should reach is Adam's call
+MAL-B2	2026-09-16-MAL-mass-assign-lengths-review.md	-	Open - confirmed by running
+MAL-B3	2026-09-16-MAL-mass-assign-lengths-review.md	-	Open - confirmed by running
+MAL-B4	2026-09-16-MAL-mass-assign-lengths-review.md	-	Open - confirmed against the JDK source, not run
+MAL-C1	2026-09-16-MAL-mass-assign-lengths-review.md	-	barred sides and stations out of service are asked for
+MAL-C2	2026-09-16-MAL-mass-assign-lengths-review.md	-	a resting square sits in every stretch that arrives at it; the comment saying otherwise is
+MAL-C3	2026-09-16-MAL-mass-assign-lengths-review.md	-	the prompt names a sensor where no train rests; the too-large catch is dead
+MAL-C4	2026-09-16-MAL-mass-assign-lengths-review.md	-	test gaps - none of the nine claims would catch B1 to B4
+MAL-C5	2026-09-16-MAL-mass-assign-lengths-review.md	-	behaviour.md: wrong subsection, and it repeats B1
+MAL-C6	2026-09-16-MAL-mass-assign-lengths-review.md	-	MT-454 and MT-455 steps that do not match the app
+MAL-C7	2026-09-16-MAL-mass-assign-lengths-review.md	-	translations: terms that drift from their bundles, and two meanings
+MAL-C8	2026-09-16-MAL-mass-assign-lengths-review.md	-	the greyed item's tooltip on a page left out of autonomy
+MAL-D1	2026-09-16-MAL-mass-assign-lengths-review.md	-	"Rebuilt once at the end" - the session rebuilds on every write, as `setPointName` does fo
+MAL-D2	2026-09-16-MAL-mass-assign-lengths-review.md	-	A tile twice in one path (a bridge crossed twice) is counted twice - but so do the reducer
+MAL-D3	2026-09-16-MAL-mass-assign-lengths-review.md	-	The amber wash is close in hue to the orange selection outline, but a fill and a 2px outli
+MAL-D4	2026-09-16-MAL-mass-assign-lengths-review.md	-	An exception part-way through the walk skips `setupChanged`, but the writes are in the sto
+MAL-D5	2026-09-16-MAL-mass-assign-lengths-review.md	-	Pages sort as strings, so "10" before "2" - cosmetic
+MAL-D6	2026-09-16-MAL-mass-assign-lengths-review.md	-	A reversing square met part-way back is not a stop, but every such square seeds its own wa
+MAL-D7	2026-09-16-MAL-mass-assign-lengths-review.md	-	No leak onto the main diagram: only the editor's `annotationFor` calls `needsALength`, and
 MB-B1	2026-08-18-v2.8.1-master-review.md	Closed	**Fixed on master** `68d78e4`
 MB-C1	2026-08-18-v2.8.1-master-review.md	Closed	**Fixed on master** `68d78e4`
 MB-C2	2026-08-18-v2.8.1-master-review.md	Closed	**Fixed on both** - master `68d78e4`, v3.0.0 `0e3e280`
