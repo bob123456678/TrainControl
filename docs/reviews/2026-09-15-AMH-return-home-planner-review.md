@@ -79,9 +79,31 @@ now reads the arrangement it is asked about - see D5.  MT-450.
 
 `NO_PLAN_FOUND`, with an empty blocked list.  **Every train has a route home**, and three of those routes are merely not clear yet - loc 0 is standing on loc 2's home, and so on.  That is an ordinary rearrangement, and the order that solves it is visible by eye: loc 3 home first (its route is clear), then loc 0 off loc 2's home, then loc 2, then loc 1.
 
-**It is not the turn rulings.**  Asked again with EVERY train made reversible, the answer is still `NO_PLAN_FOUND` - so neither AMV-B1 nor AMW-B3 is what refuses it, and the round 3 changes are not implicated.  What is left is this finding: the search generates ONE route per (train, station), the first its shuffled neighbour walk finds, so where that route is blocked and a longer clear one exists the plan is never generated.  Adam's ruling of the same day - *"normal autonomy runs should always have a solution"* - makes this a defect to fix rather than a limit to live with.
+**It is not the turn rulings.**  Asked again with EVERY train made reversible, the answer is still `NO_PLAN_FOUND` - so neither AMV-B1 nor AMW-B3 is what refuses it, and the round 3 changes are not implicated.
 
-The probe that measured it is not committed; the numbers above are its output.
+**MEASURED, on Adam's instruction** (2026-09-15: *"the whole point of the A* is to figure out how to rearrange other trains to park things when they belong, so we also need to differentiate issues with the track diagram from issues with the algorithm.  i recommend relaxing restrictions (track/station lengths) in the layout used for the A* tests."*).  The same arrangement, one relaxation at a time:
+
+| variant | outcome | time |
+|---|---|---|
+| trains three units long | `NO_PLAN_FOUND` | 15.1 s - the whole budget and its retry |
+| train lengths zeroed | **READY, 8 moves** | 6.6 s |
+| and station maximums cleared | READY | 6.6 s - **none were set** |
+| and FR-001 restrictions cleared | READY | 6.6 s - **none existed** |
+| and every train reversible | `NO_PLAN_FOUND` | 15.0 s |
+
+Then ten presses of the same arrangement with the lengths relaxed, to see whether the planner is INTERMITTENT on a railway where nothing but the order is in question: **READY on 10 of 10, 6.2 to 7.0 seconds, the identical eight-move plan every time.**
+
+What that settles, and it corrects this section twice over:
+
+- **This arrangement is not the budget case at all.**  Relaxed, it is solved reliably and identically on every press - the identical plan being item 8's determinism fix doing its job.  So the pinned class built from it is a REGRESSION instrument, and citing it as evidence of a search limit would be wrong.
+- **The 15-second failures are real, and they are elsewhere.**  Two of them: the same arrangement with three-unit trains, which cannot be planned at all, and the live class's OTHER scatters, which reach the deadline.  Since the live class leaves train lengths unset, its failures are harder ARRANGEMENTS running out of time rather than length refusals - and none of them exhausted `SEARCH_LIMIT`'s 50000 configurations, so time is the binding constraint, not the state space.
+- **Length is what makes the problem hard**, and that matters for real operation rather than for the tests: on Adam's railway the trains do have lengths, so a real Return Home faces the constrained problem this probe could not plan at all in 15 seconds.  The tests relax it on his instruction precisely so they measure the search instead.
+- **The earlier sentence here was wrong** - one route per (train, station), so a longer route is never generated.  That was the validation's framing, and `firstClearRoute` searches over the points that can be entered, so it finds a longer clear route when one exists.  It is left visible rather than deleted, because what replaced it came from measuring instead of reading.
+- **Length is the one restriction worth relaxing in an A* test**, exactly as he recommended: station maximums and FR-001 are not in play on his railway at all, and zeroing the train lengths is what turns this arrangement from unplannable into an eight-move plan.
+- **More freedom can LOSE a plan**: making every train reversible widened the branching factor and the answer went back to `NO_PLAN_FOUND` inside the same deadline.  Non-monotonic behaviour of that kind is a budget symptom, and worth knowing before anyone reads a red as a rule.
+- **One artefact of the measurement, recorded so it is not repeated:** the probe gave its trains a three-unit length, which the live class does not - so the battery's own failure is the borderline-budget case rather than the length case.
+
+The probes are not committed; the numbers above are their output.
 
 ### The finding as the review first stated it
 

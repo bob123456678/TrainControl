@@ -274,6 +274,17 @@ public class testTrainsComeHomeFromAPinnedArrangement
 
             loc.setPreferredSpeed(35);
 
+            // AND NO LENGTH, WHICH IS DELIBERATE (Adam, 2026-09-15: *"i recommend relaxing restrictions (track/station
+            // lengths) in the layout used for the A* tests"*).
+            //
+            // Measured on this very railway: the same arrangement has no plan with three-unit trains and an eight-move
+            // plan with none, because the room rules decline to judge a train of no length.  This class is about
+            // whether the SEARCH can work out an order, so the lengths are taken out of the question rather than left
+            // to decide it - his railway's station maximums and FR-001 restrictions are empty, so length was the only
+            // restriction in play.  `core.testTheRoomRuleCensusOnTheRealLayout` and the berth classes are where the
+            // length rules are tested.
+            loc.setTrainLength(0);
+
             Point home = ordinaryCopy(PLATFORMS[i]);
 
             assertNotNull(home, "no copy of " + PLATFORMS[i] + " accepts a train on his setup");
