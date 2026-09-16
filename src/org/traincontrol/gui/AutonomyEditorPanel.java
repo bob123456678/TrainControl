@@ -9093,6 +9093,9 @@ public class AutonomyEditorPanel extends JPanel
 
     private void nameEverything()
     {
+        // The same as Mass Assign Lengths: a new round opens afresh, and each prompt where the last was left.
+        walkPromptAt = null;
+
         List<TileKey> unnamed = unnamedPoints();
 
         if (unnamed.isEmpty())
@@ -9179,6 +9182,9 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void massAssignLengths()
     {
+        // A NEW ROUND OPENS AFRESH; within it, each prompt opens where the last was left (Adam, on MT-454).
+        walkPromptAt = null;
+
         java.util.List<AutonomySession.Stretch> pieces = session.stretchesNeedingALengthOn(page);
         java.util.Set<TileKey> switches = session.switchesNeedingALengthOn(page);
 
@@ -9274,6 +9280,21 @@ public class AutonomyEditorPanel extends JPanel
         return total;
     }
 
+    /**
+     * Where the walk's last prompt was left, so the next one opens there - null at the start of a round.
+     *
+     * Adam, on MT-454: *"when the popup closes and reopens, make sure it remembers its location unless I reopen a new
+     * mass assignment round from the right click menu.  right now, every skip press re centers it, which covers some of
+     * the track diagram."*  Each prompt is a new dialog, and `JOptionPane.createDialog` centres every one.  Name
+     * Everything's walk had the same habit and shares the fix.
+     */
+    private java.awt.Point walkPromptAt;
+
+    private void placeWalkPrompt(javax.swing.JDialog dialog)
+    {
+        if (walkPromptAt != null) dialog.setLocation(walkPromptAt);
+    }
+
     /** The walk dialogs' answers: OK, Skip, or stop the walk. */
     public static final int ANSWER_OK = 0;
     public static final int ANSWER_SKIP = 1;
@@ -9358,6 +9379,8 @@ public class AutonomyEditorPanel extends JPanel
 
         final javax.swing.JDialog dialog = pane.createDialog(owner(), I18n.t("autosetup.ui.menuMassAssignLengths"));
 
+        placeWalkPrompt(dialog);
+
         field.addActionListener(e ->
         {
             pane.setValue(answers[0]);
@@ -9365,6 +9388,9 @@ public class AutonomyEditorPanel extends JPanel
         });
 
         dialog.setVisible(true);
+
+        walkPromptAt = dialog.getLocation();
+
         dialog.dispose();
 
         int answer = dialogAnswer(pane.getValue(), answers);
@@ -9656,6 +9682,8 @@ public class AutonomyEditorPanel extends JPanel
         final javax.swing.JDialog dialog = pane.createDialog(owner(),
             I18n.t("autosetup.ui.btnNameEverything"));
 
+        placeWalkPrompt(dialog);
+
         // Enter in the box is OK, which showInputDialog gave for nothing and a dialog built by hand
         // has to be told
         field.addActionListener(e ->
@@ -9666,6 +9694,9 @@ public class AutonomyEditorPanel extends JPanel
         });
 
         dialog.setVisible(true);
+
+        walkPromptAt = dialog.getLocation();
+
         dialog.dispose();
 
         // Closed with the window button or Escape, which is the same as changing your mind about the walk (MAL-B4).

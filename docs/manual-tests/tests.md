@@ -22981,7 +22981,7 @@ Rewritten the same day after review MAL, to your rulings *"Every leg, cut at swi
 2. Right-click a TRACK square (an empty or text square has a different menu), open **Bulk Tools**, and hover **Mass Assign Lengths...** - the tooltip gives both counts.  Click it.
 3. For the first piece, type its whole length and press OK.
 4. For the second, type **0** and press OK.
-5. For the third, press **Skip**.
+5. Drag the prompt off the track diagram, then for the third piece press **Skip**.
 6. For the fourth, type a number and press **Escape**.
 7. Run it again, and this time press **Skip** through the pieces QUICKLY until the switch prompt appears; type one turnout length and press OK.
 
@@ -22990,9 +22990,10 @@ Rewritten the same day after review MAL, to your rulings *"Every leg, cut at swi
 - Each prompt says which piece of how many and names its two ends - a station or sensor by name, a switch as *the switch at x,y* - and the piece is outlined on the diagram and scrolled into view.
 - After step 3 that piece's squares show numbers adding up to exactly what you typed.  A switch at either end of it shows no number.
 - Step 4 says 0 is the same as no length at all, and asks again, writing nothing.
-- Step 5 leaves that piece untouched.
+- Step 5 leaves that piece untouched, and the next prompt opens where you dragged the last one - not back in the middle (FR-090).
 - Step 6 **stops the walk** and writes nothing for that piece.
-- In step 7 only the piece being asked about is outlined and flashing - skipping quickly leaves no trail of yellow squares behind (OB-231).
+- In step 7 the first prompt opens afresh, because a new round was started from the menu.
+- Only the piece being asked about is outlined and flashing - skipping quickly leaves no trail of yellow squares behind (OB-231).
 - Then every switch on the page is outlined together, and each gets the one length; a switch that already had a length keeps it.
 - On a page left out of autonomy, the greyed item says the page is left out rather than that everything is measured.
 

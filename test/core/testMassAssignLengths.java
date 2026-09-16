@@ -340,6 +340,156 @@ public class testMassAssignLengths
         assertEquals(AutonomyEditorPanel.dialogAnswer("OK", answers), AutonomyEditorPanel.ANSWER_OK, "OK");
     }
 
+    /**
+     * The walk's prompt comes back where it was left, and a new round starts it afresh.
+     *
+     * Adam, on MT-454, 2026-09-16: *"when the popup closes and reopens, make sure it remembers its location unless I
+     * reopen a new mass assignment round from the right click menu.  right now, every skip press re centers it, which
+     * covers some of the track diagram."*  Each prompt is a new dialog, and `JOptionPane.createDialog` centres every one.
+     *
+     * Asked of the real walk rather than of a helper: it is started on the event thread, and this test moves the prompt,
+     * presses Skip on it, and reads where the next prompt opened - so the call site is what is tested.  Then it presses
+     * Cancel, starts a second round, and requires that round's first prompt NOT to open where the first round left it.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheWalkPromptStaysWhereItWasLeftUntilANewRound() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the walk's prompt needs a display");
+
+        openBerthBehindASwitch(key(5, 1));
+
+        final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+        final java.lang.reflect.Method walk = AutonomyEditorPanel.class.getDeclaredMethod("massAssignLengths");
+        walk.setAccessible(true);
+
+        final java.awt.Point movedTo = new java.awt.Point(37, 41);
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            try { walk.invoke(panel); } catch (Exception e) { throw new RuntimeException(e); }
+        });
+
+        javax.swing.JDialog first = awaitPrompt(null);
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> first.setLocation(movedTo));
+
+        answer(first, org.traincontrol.util.I18n.t("autosetup.ui.btnSkipOne"));
+
+        javax.swing.JDialog second = awaitPrompt(first);
+
+        final java.awt.Point[] secondAt = new java.awt.Point[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> secondAt[0] = second.getLocation());
+
+        answer(second, org.traincontrol.util.I18n.t("ui.cancel"));
+
+        assertEquals(secondAt[0], movedTo, "the next prompt of the same walk was centred again instead of opening where"
+            + " the last one was left - Adam: \"every skip press re centers it\"");
+
+        // A NEW ROUND, as the right-click menu starts one: it opens afresh.
+        awaitNoPrompt();
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            try { walk.invoke(panel); } catch (Exception e) { throw new RuntimeException(e); }
+        });
+
+        javax.swing.JDialog fresh = awaitPrompt(second);
+
+        final java.awt.Point[] freshAt = new java.awt.Point[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> freshAt[0] = fresh.getLocation());
+
+        answer(fresh, org.traincontrol.util.I18n.t("ui.cancel"));
+
+        awaitNoPrompt();
+
+        assertNotEquals(freshAt[0], movedTo, "a new round from the menu opened where the last round left its prompt");
+    }
+
+    private static javax.swing.JDialog awaitPrompt(javax.swing.JDialog notThisOne) throws Exception
+    {
+        String title = org.traincontrol.util.I18n.t("autosetup.ui.menuMassAssignLengths");
+        long giveUp = System.currentTimeMillis() + 10000;
+
+        while (System.currentTimeMillis() < giveUp)
+        {
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (window instanceof javax.swing.JDialog && window != notThisOne && window.isShowing()
+                    && title.equals(((javax.swing.JDialog) window).getTitle()))
+                {
+                    return (javax.swing.JDialog) window;
+                }
+            }
+
+            Thread.sleep(50);
+        }
+
+        fail("no Mass Assign Lengths prompt appeared");
+
+        return null;
+    }
+
+    private static void awaitNoPrompt() throws Exception
+    {
+        String title = org.traincontrol.util.I18n.t("autosetup.ui.menuMassAssignLengths");
+        long giveUp = System.currentTimeMillis() + 10000;
+
+        while (System.currentTimeMillis() < giveUp)
+        {
+            boolean showing = false;
+
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (window instanceof javax.swing.JDialog && window.isShowing()
+                    && title.equals(((javax.swing.JDialog) window).getTitle())) showing = true;
+            }
+
+            if (!showing) return;
+
+            Thread.sleep(50);
+        }
+
+        fail("the Mass Assign Lengths prompt did not close");
+    }
+
+    /** Presses one of the prompt's buttons, the way a click does: by giving the option pane that value. */
+    private static void answer(javax.swing.JDialog dialog, String button) throws Exception
+    {
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            JOptionPane pane = findPane(dialog.getContentPane());
+
+            assertNotNull(pane, "the prompt has no option pane to answer");
+
+            for (Object option : pane.getOptions())
+            {
+                if (button.equals(option)) pane.setValue(option);
+            }
+        });
+    }
+
+    private static JOptionPane findPane(java.awt.Container container)
+    {
+        for (java.awt.Component child : container.getComponents())
+        {
+            if (child instanceof JOptionPane) return (JOptionPane) child;
+
+            if (child instanceof java.awt.Container)
+            {
+                JOptionPane found = findPane((java.awt.Container) child);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
+    }
+
     // ------------------------------------------------------------------------------------------------ the railways
 
     /**

@@ -1411,6 +1411,18 @@ Adam, on MT-454, 2026-09-16: *"When iterating quickly on the assign lengths popu
 
 **Fixed.**  `LayoutLabel.endFlash` ends a flash at once, and `reveal` ends the flash on the square it revealed last before flashing the next.  `regression.testAWalkMovesTheFlashOn` opens the real editor on the live snapshot, reveals two squares in a row and requires the first to be back to its own picture at once - red first with the reported symptom, the first square still wearing the highlight.  The route editor's flash, which lights several squares on purpose, is untouched.
 
+### FR-090 - 2026-09-16 - The walk's prompt stays where it was left until a new round is started
+
+**Kind:** feature request  
+**Raised from:** MT-454  
+**Filed:** 2026-09-16  
+
+Adam, on MT-454, 2026-09-16: *"when the popup closes and reopens, make sure it remembers its location unless I reopen a new mass assignment round from the right click menu.  right now, every skip press re centers it, which covers some of the track diagram"*
+
+**Why it re-centred.**  Each prompt of the walk is a new dialog, and `JOptionPane.createDialog` centres every one on its owner - so a prompt dragged off the track diagram came back over it at the next Skip.
+
+**Built.**  Each prompt of a walk opens where the last one was left; starting a round from the right-click menu opens its first prompt afresh.  Name Everything's walk had the same habit and shares it.  `core.testMassAssignLengths.testTheWalkPromptStaysWhereItWasLeftUntilANewRound` drives the real walk on the event thread: it moves the first prompt, presses Skip, and requires the next prompt where the first was left, then presses Cancel, starts a new round and requires its first prompt NOT to open there.  Red first - the second prompt opened centred, at 733,489 - and a mutation dropping the new-round reset fails its second half.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1427,6 +1439,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-16 | FR-090 | feature request | Adam, on MT-454: *"make sure it remembers its location unless I reopen a new mass assignment round from the right click menu"*.  Each prompt opens where the last was left; a new round opens afresh; Name Everything too. | - | `MT-454` |
 | 2026-09-16 | OB-231 | bug | Adam, on MT-454: *"When iterating quickly on the assign lengths popup (like by clicking skip), it does not clear the prior highlights."*  Each reveal's yellow flash held 2.25 s and nothing ended it when the walk moved on; `reveal` now ends the last one first. | - | `MT-454` |
 | 2026-09-16 | FR-089 | feature request | Adam: *"per stretch, every relevant square a rule reads. build it."*  Mass Assign Lengths in Bulk Tools walks the stretches still needing a length, one whole length each; the Unmeasured Track display highlights the same squares. | - | `MT-454`, `MT-455` |
 | 2026-09-15 | OB-229 | bug | Return Home's agreement check blamed the planner for routes the railway's search never found: `Layout.bfs` spent squares on routes through a terminus.  Searched past termini, at Adam's choice. | - | `MT-441` |
