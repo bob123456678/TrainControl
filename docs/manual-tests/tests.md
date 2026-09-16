@@ -22653,7 +22653,7 @@ Found by the wide autonomy review.  A station can be set unavailable while anoth
 **Expected**
 
 - Step 3: nothing is ticked - the restriction went when the square stopped being a station, as its caption and its barred arrivals already do.
-- Between steps 2 and 3, send a train TO the demoted square by hand while a train stands on the watched one: it is not refused, and *Why Not Moving?* does not name the watched square.  (Being routed THROUGH the square was never affected - the restriction is asked of where a train is going, and its lock edges are about a route already running - AMV-C4.)
+- Between steps 2 and 3 there is nothing to look at, and that is worth knowing rather than trying: a square that is not a station is not a destination, so it is not on the right-click menu and has no *Why Not Moving?* line at all.  The restriction being gone is what step 3 shows.  (Two earlier versions of this step asked for something that could not fail, and then for something that cannot be done - AMV-C4, AMW-C4.)
 
 *What this is:* AMS-B2.  `regression.testStationBlockedByAnotherPoint.testDemotingTheStationTakesTheRestrictionWithIt`.  Seen red first (8818d8cd); fixed in 64169b0b.
 
@@ -22795,6 +22795,7 @@ Found measuring what the terminus fix opened, and your ruling on it: *"We need t
 
 - Step 1: nothing in the list is a place the train can only reach by passing BottomMainPost a second time.
 - Step 3: the route drawn never passes the square the train started on, nor the square it is going to.
+- **Return Home is exempt, on your ruling of 2026-09-15** (*"menu and autonomy only"*): pressing Return Home may still route a train round through another copy of a square when that is the only way it can get home, so a staging run doing that is correct rather than a fault.  Applying the rule there cost five trains their way home, which is what the ruling answered.
 - Nothing else on the railway lost a destination: 14 of 572 pairs, every one of them from BottomMainPost's two copies.
 
 *What this is:* AMR-B1.  `core.testARouteIsFoundPastATerminus.testNoRoutePassesAnotherCopyOfTheTrainsOwnSquare` and `testNoRoutePassesAnotherCopyOfItsDestination`.  Seen red first (c02f7000); fixed in c02f7000.
