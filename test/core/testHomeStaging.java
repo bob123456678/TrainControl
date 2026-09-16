@@ -3455,6 +3455,96 @@ public class testHomeStaging
         }
     }
 
+    /**
+     * A train has to fit in the room at a square the route TURNS it at, and is asked nothing at a square it only
+     * passes (AMH-C2, and Adam's ruling on MT-333).
+     *
+     * `firstClearRoute` asks `measuredRoomAtTheEndOf` twice: once at the destination, which the berth claims pin, and
+     * once at a reversing square in the MIDDLE of a route, which nothing exercised.  A train that turns stands still
+     * for as long as it takes, so the stretch behind that square has to hold it; a train that merely runs through does
+     * not stand there and the runtime asks it nothing.  This arm used to ask the pass-through walk instead, which is
+     * both halves the wrong way round.
+     *
+     * Asserted as the difference between three railways identical but for the one thing each is about: the turn with
+     * one unit of room refuses a three-unit train, the same square not reversing admits it, and the same turn admits a
+     * one-unit train.  The second is the half Adam ruled on; the third says the refusal is the room and not the flag.
+     *
+     * The train is reversible, so nothing else about turning it can be what refuses: the berth rules of MT-445 and
+     * MT-449 govern where a NON-reversible train may be turned, and they would answer here otherwise.
+     *
+     * MUTATION: delete the `next.isReversing()` arm and the first assertion fails; widen it to every square and the
+     * second does.
+     */
+    @Test
+    public void testATrainMustFitTheRoomWhereARouteTurnsIt() throws Exception
+    {
+        Integer wasLength = loc(LOC_A).getTrainLength();
+        boolean couldReverse = loc(LOC_A).isReversible();
+
+        try
+        {
+            loc(LOC_A).setReversible(true);
+            loc(LOC_A).setTrainLength(3);
+
+            Layout turning = load(aShortStretchBeforeATurn("RN"));
+            turning.getPoint("RN_R").setReversing(true);
+            assign(turning, LOC_A, "RN_H");
+
+            assertEquals(HomeStaging.snapshot(turning).plan().getOutcome(), HomeStaging.Outcome.NO_PLAN_FOUND,
+                "the only road home turns the train at RN_R, where one unit of measured track lies behind it, and a"
+                + " three-unit train was sent there anyway - so it stands across the junction and the railway refuses"
+                + " the move (AMH-C2)");
+
+            // THE HALF ADAM RULED ON (MT-333): the same square, not a turning one, is not asked about at all.
+            Layout passing = load(aShortStretchBeforeATurn("RP"));
+            assign(passing, LOC_A, "RP_H");
+
+            assertEquals(HomeStaging.snapshot(passing).plan().getOutcome(), HomeStaging.Outcome.READY,
+                "a square the train only runs through was judged on the room behind it, which refuses trains the"
+                + " railway admits: it does not stand there (Adam, MT-333, 2026-09-14)");
+
+            // AND IT IS THE ROOM, NOT THE TURN: the same turning square takes a train that fits.
+            loc(LOC_A).setTrainLength(1);
+
+            Layout shortTrain = load(aShortStretchBeforeATurn("RQ"));
+            shortTrain.getPoint("RQ_R").setReversing(true);
+            assign(shortTrain, LOC_A, "RQ_H");
+
+            assertEquals(HomeStaging.snapshot(shortTrain).plan().getOutcome(), HomeStaging.Outcome.READY,
+                "control: a one-unit train is refused the same turn, so the refusal above is the reversing flag and"
+                + " not the room at all");
+        }
+        finally
+        {
+            loc(LOC_A).setTrainLength(wasLength == null ? 0 : wasLength);
+            loc(LOC_A).setReversible(couldReverse);
+        }
+    }
+
+    /**
+     * X - R - H in both directions, with one unit of track behind R and five behind H.  LOC_A stands at X; every other
+     * locomotive is left off the graph, so the only question is whether the one road home is allowed.
+     *
+     * @param tag a prefix of its own, so each copy is an independent railway (tests for different scenarios do not
+     *        share a track diagram)
+     * @return the configuration
+     */
+    private static String aShortStretchBeforeATurn(String tag)
+    {
+        int base = "RN".equals(tag) ? 90 : ("RP".equals(tag) ? 94 : 98);
+
+        return json("{'points': ["
+            + square(tag + "_X", base, null, true, LOC_A) + ","
+            + square(tag + "_R", base + 1, null, false, null) + ","
+            + square(tag + "_H", base + 2, null, true, null)
+            + "],'edges': ["
+            + "{'start': '" + tag + "_X', 'end': '" + tag + "_R', 'length': 1},"
+            + "{'start': '" + tag + "_R', 'end': '" + tag + "_X', 'length': 1},"
+            + "{'start': '" + tag + "_R', 'end': '" + tag + "_H', 'length': 5},"
+            + "{'start': '" + tag + "_H', 'end': '" + tag + "_R', 'length': 5}"
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
     // THE AMW-B2 CLAIM WAS REMOVED RATHER THAN LEFT GREEN (2026-09-15).
     //
     // Seven fixtures could not produce the case the validation describes, and each passed for a reason that had

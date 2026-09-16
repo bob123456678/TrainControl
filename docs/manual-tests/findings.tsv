@@ -110,7 +110,7 @@ AMG-B1	2026-09-15-AMG-autonomy-graph-build-review.md	-	Fixed
 AMG-B2	2026-09-15-AMG-autonomy-graph-build-review.md	-	Ruled - Adam, 2026-09-15, asked where the walk should stop: **"Neither"**. Only addressed 
 AMG-C1	2026-09-15-AMG-autonomy-graph-build-review.md	-	Fixed (stated in the body)
 AMG-C2	2026-09-15-AMG-autonomy-graph-build-review.md	-	Fixed (stated in the body)
-AMG-C3	2026-09-15-AMG-autonomy-graph-build-review.md	-	the parallel-route rule and the room walk's stopping tiles are under-pinned
+AMG-C3	2026-09-15-AMG-autonomy-graph-build-review.md	-	Answered by claims, 2026-09-15
 AMG-D1	2026-09-15-AMG-autonomy-graph-build-review.md	-	A train can arrive at a sensor against its own one-way marking: a sensor's direction const
 AMG-D2	2026-09-15-AMG-autonomy-graph-build-review.md	-	A barred side of a compulsory turn is emitted as a plain reversing copy, so a hand or Retu
 AMG-D3	2026-09-15-AMG-autonomy-graph-build-review.md	-	`hasAnyConnection` counts a neighbour facing a side the sensor has no port on, so such a s
@@ -119,7 +119,7 @@ AMG-D5	2026-09-15-AMG-autonomy-graph-build-review.md	-	A station switched out of
 AMH-B1	2026-09-15-AMH-return-home-planner-review.md	-	Fixed, to Adam's ruling
 AMH-B2	2026-09-15-AMH-return-home-planner-review.md	-	Fixed, round 2 - Adam, asked: **"Yes, tails hold sensors."**
 AMH-C1	2026-09-15-AMH-return-home-planner-review.md	-	Deferred as **OB-230**, at Adam's word (2026-09-15): *"I want to do the heuristic, but I t
-AMH-C2	2026-09-15-AMH-return-home-planner-review.md	-	the shared-metal half of the tail rule, and the reversing-intermediate room check, have no
+AMH-C2	2026-09-15-AMH-return-home-planner-review.md	-	Answered by claims, 2026-09-15
 AMH-C3	2026-09-15-AMH-return-home-planner-review.md	-	Fixed (stated in the body)
 AMH-D1	2026-09-15-AMH-return-home-planner-review.md	-	`canEnter` exempts the mover's own point, so a route could in principle loop through its o
 AMH-D2	2026-09-15-AMH-return-home-planner-review.md	-	A* can rewrite a closed state's bookkeeping; never happens, because unit move cost and a c

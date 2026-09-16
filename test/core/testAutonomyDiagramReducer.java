@@ -737,6 +737,95 @@ public class testAutonomyDiagramReducer
     }
 
     /**
+     * The room walk stops at a switch that can be thrown, and at nothing else - not at a crossing, and
+     * not at a permanent turnout (AMG-C3, and Adam's ruling on AMG-B2).
+     *
+     * `roomAfterTheLastSwitch` walks back from the far sensor and stops at `isSwitch()`, which is the
+     * addressable switches and the double slip.  A diamond crossing and a `CUSTOM_PERM_*` turnout are
+     * not in that list, so the walk counts straight through them.  Asked whether either should stop it -
+     * a permanent turnout is a fork a train could in principle be standing across, and a crossing is
+     * track another route uses - **Adam answered "Neither" (2026-09-15)**, so this is the behaviour and
+     * it is pinned here rather than left to be rediscovered by whoever next edits `isSwitch()`.
+     *
+     * `isSwitch()` is shared with the drawing code and the editor, so this asserts the ROOM NUMBER and
+     * not the predicate: what breaks if the list changes is the stretch a train's length is judged
+     * against, and that is the thing worth a red test.
+     *
+     * The discriminating number is the point: stopping at the crossing would answer 5 instead of 10.
+     *
+     * MUTATION: add `componentType.CROSSING` or the `CUSTOM_PERM_*` types to the stopping test in
+     * `roomAfterTheLastSwitch` and each half fails with 5 against 10.
+     */
+    @Test
+    public void testTheRoomWalkStopsOnlyAtASwitchThatCanBeThrown() throws IOException
+    {
+        // A - track - SWITCH - track - CROSSING - track - B, the switch's branch going to a sensor so
+        // that it is a real fork rather than a dead end.
+        LayoutDiagram page = page("main", 10, 4);
+        feedback(page, 1, 1, 11);
+        straight(page, 2, 1);
+        add(page, componentType.SWITCH_LEFT, 3, 1, 3, 7);
+        wire(page, 3, 1, 7, Accessory.accessoryType.SWITCH);
+        straight(page, 4, 1);
+        add(page, componentType.CROSSING, 5, 1, 0);   // N-S and E-W, and no address to throw
+        straight(page, 6, 1);
+        feedback(page, 7, 1, 12);
+        feedbackNS(page, 3, 0, 13);
+
+        Map<TileKey, Integer> lengths = new HashMap<>();
+        lengths.put(key("main", 2, 1), 5);
+        lengths.put(key("main", 3, 1), 7);   // the switch, which the walk stops at and does not count
+        lengths.put(key("main", 4, 1), 3);
+        lengths.put(key("main", 5, 1), 2);   // the crossing, which it counts and walks past
+        lengths.put(key("main", 6, 1), 4);
+        lengths.put(key("main", 7, 1), 1);   // the far sensor, which is part of the stretch
+
+        List<ReducedEdge> through = edgesBetween(reduce(graph(page), authored(lengths, null, null)),
+            key("main", 1, 1), key("main", 7, 1));
+
+        assertEquals(through.size(), 1,
+            "the fixture did not produce the one edge this is about; a run that does not join up "
+            + "through the crossing shows nothing");
+
+        assertEquals(through.get(0).getRoomAtTheEnd(), 10,
+            "the room past the switch is 3 + 2 + 4 + 1.  Stopping at the crossing gives 5, and a train "
+            + "twice as long as the stretch allows is then refused a berth it fits");
+
+        // THE PERMANENT TURNOUT, the other half of the same ruling.  A defective switch takes trailing
+        // moves only - `into(toward, from)` means travel INTO the toe - so at orientation 1 the toe is
+        // east and the road through it runs W-E, eastbound, with the other leg trailing in from the south.
+        LayoutDiagram perm = page("perm", 10, 4);
+        feedback(perm, 1, 1, 21);
+        straight(perm, 2, 1);
+        add(perm, componentType.SWITCH_LEFT, 3, 1, 3, 8);
+        wire(perm, 3, 1, 8, Accessory.accessoryType.SWITCH);
+        straight(perm, 4, 1);
+        add(perm, componentType.CUSTOM_PERM_LEFT, 5, 1, 1);   // toe east: W-E and S-E, no address
+        straight(perm, 6, 1);
+        feedback(perm, 7, 1, 22);
+        feedbackNS(perm, 3, 0, 23);
+
+        Map<TileKey, Integer> permLengths = new HashMap<>();
+        permLengths.put(key("perm", 2, 1), 5);
+        permLengths.put(key("perm", 3, 1), 7);
+        permLengths.put(key("perm", 4, 1), 3);
+        permLengths.put(key("perm", 5, 1), 2);
+        permLengths.put(key("perm", 6, 1), 4);
+        permLengths.put(key("perm", 7, 1), 1);
+
+        GraphReducer permReducer = reduce(graph(perm), authored(permLengths, null, null));
+
+        List<ReducedEdge> eastbound = edgesBetween(permReducer, key("perm", 1, 1), key("perm", 7, 1));
+
+        assertEquals(eastbound.size(), 1, "the fixture did not produce the eastbound edge through the "
+            + "permanent turnout:\n" + describe(permReducer));
+
+        assertEquals(eastbound.get(0).getRoomAtTheEnd(), 10,
+            "the walk stopped at the permanent turnout.  Adam was asked whether it should and said "
+            + "neither it nor a crossing stops it (2026-09-15), so the stretch is 3 + 2 + 4 + 1");
+    }
+
+    /**
      * Two edges that share a tile are the same piece of railway and must not run at once.
      */
     @Test
@@ -965,6 +1054,125 @@ public class testAutonomyDiagramReducer
 
             assertNotEquals(edge.getStart(), edge.getEnd(),
                 "an edge from a Point to itself is a shape the model has no room for");
+        }
+    }
+
+    /**
+     * The SHORTER of two parallel roads is the one kept, and the other is reported rather than dropped
+     * in silence (AMG-C3).
+     *
+     * The test above pins the invariant the model forces - at most one edge per ordered pair, an edge's
+     * identity being its pair of Point names - and stops there.  WHICH road survives is a separate
+     * decision, and the one every train's length on this pair depends on: the kept path is what
+     * `sumLength` measures and what `roomAfterTheLastSwitch` walks back through, so keeping the long way
+     * round would give the pair a length and a room measured from track no train will be driven over.
+     * `continueWalk` keeps the shorter, "which is the one a train would be given anyway".
+     *
+     * **The warning is pinned too, and separately.**  Nothing asserted `WARN_PARALLEL_ROUTE` was ever
+     * emitted, so the rule could have gone quiet and only someone comparing tile counts by hand would
+     * know a road had been dropped - and dropping half a layout's track without saying so is the whole
+     * reason the warning exists.  It is non-blocking: a passing loop is ordinary railway, and refusing
+     * to build the configuration over one would be worse than the duplicate is.
+     *
+     * The same passing loop as the test above, deliberately: two roads between the same pair of sensors,
+     * the direct one five tiles and the loop over the top seven.
+     *
+     * MUTATION: invert the comparison in `continueWalk` (keep the longer) and the path assertions fail;
+     * remove either `noteOnce` and the warning assertion does.
+     */
+    @Test
+    public void testTheShorterOfTwoParallelRoadsIsTheOneKept() throws IOException
+    {
+        //        (2,0)-(3,0)-(4,0)-(5,0)      the loop over the top, seven tiles
+        //       /                       .
+        //  A(0,1)-(1,1)-SW-(3,1)-(4,1)-SW-B(6,1)      the direct road, five
+        LayoutDiagram page = page("main", 10, 5);
+
+        feedback(page, 0, 1, 11);
+        straight(page, 1, 1);
+
+        add(page, componentType.SWITCH_LEFT, 2, 1, 3, 40);   // E-W, and W-N into the loop
+        wire(page, 2, 1, 40, Accessory.accessoryType.SWITCH);
+
+        straight(page, 3, 1);
+        straight(page, 4, 1);
+
+        add(page, componentType.SWITCH_RIGHT, 5, 1, 1, 41);  // W-E, and E-N out of the loop
+        wire(page, 5, 1, 41, Accessory.accessoryType.SWITCH);
+
+        feedback(page, 6, 1, 12);
+
+        add(page, componentType.CURVE, 2, 0, 0);   // E and S
+        straight(page, 3, 0);
+        straight(page, 4, 0);
+        add(page, componentType.CURVE, 5, 0, 3);   // S and W
+
+        // Both switches open both ways: their toes face each other, so left at the base-to-forks default
+        // the far one refuses every trailing move and the loop carries nothing.  What is under test is
+        // which road survives, not the default.
+        TileGraph graph = graph(page);
+
+        for (TileKey tile : graph.getTiles().keySet())
+        {
+            for (TileGraph.RouteId routeId : graph.getRoutes(tile).keySet())
+            {
+                graph.setDirection(tile, routeId, TileGraph.Direction.BOTH);
+            }
+        }
+
+        GraphReducer reducer = reduce(graph, null);
+
+        TileKey a = key("main", 0, 1);
+        TileKey b = key("main", 6, 1);
+
+        // THE FIXTURE FIRST.  A loop that joins up nowhere emits no edges and satisfies every "the long
+        // road is absent" assertion below by having no road at all - which is exactly how the sibling
+        // test passed for years without exercising the rule it is named after.
+        List<ReducedEdge> forward = edgesBetween(reducer, a, b);
+
+        assertEquals(forward.size(), 1, "the passing loop did not reduce to one edge each way, so "
+            + "nothing below is being tested:\n" + describe(reducer));
+
+        // THE WARNING, which is what says a second road was found at all.  Without it the assertions
+        // below cannot tell "the short road was kept" from "only one road was ever built".
+        List<TileGraph.Problem> parallel = new ArrayList<>();
+
+        for (TileGraph.Problem problem : reducer.getProblems())
+        {
+            if (GraphReducer.WARN_PARALLEL_ROUTE.equals(problem.getMessageKey())) parallel.add(problem);
+        }
+
+        assertFalse(parallel.isEmpty(), "two roads between the same sensors were reduced to one and "
+            + "nothing was reported, so a layout can lose half its track in silence:\n"
+            + describe(reducer));
+
+        for (TileGraph.Problem problem : parallel)
+        {
+            assertFalse(problem.isBlocking(), "a passing loop is ordinary railway; refusing to build "
+                + "the configuration over one is worse than the duplicate it reports");
+        }
+
+        // AND WHICH ROAD SURVIVED, in both directions: the five-tile road through (3,1), never the
+        // seven-tile loop through (3,0).
+        for (ReducedEdge edge : Arrays.asList(forward.get(0), edgesBetween(reducer, b, a).get(0)))
+        {
+            Set<TileKey> covered = new LinkedHashSet<>();
+
+            for (TileStep step : edge.getPath()) covered.add(step.getTile());
+
+            assertTrue(covered.contains(key("main", 3, 1)),
+                "the kept road misses the direct track: " + covered);
+
+            for (int x = 2; x <= 5; x++)
+            {
+                assertFalse(covered.contains(key("main", x, 0)),
+                    "the long way round was kept, so this pair's length and its room at the end are "
+                    + "measured over track no train will be driven on: " + covered);
+            }
+
+            assertEquals(edge.getPath().size(), 5,
+                "the direct road is (1,1) to (5,1); a different count means neither road was kept "
+                + "whole: " + covered);
         }
     }
 

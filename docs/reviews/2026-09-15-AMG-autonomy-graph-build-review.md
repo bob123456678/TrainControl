@@ -1,6 +1,6 @@
 # Building the running graph from the track diagram, reviewed whole
 
-**Status:** open 2026-09-15 - round 1 fixed B1, C1 and C2 (claims `8818d8cd`, fix `64169b0b`); B2 ruled by Adam, no change; C3 open
+**Status:** open 2026-09-15 - round 1 fixed B1, C1 and C2 (claims `8818d8cd`, fix `64169b0b`); B2 ruled by Adam, no change; C3 answered by claims
 
 **Prefix:** AMG (checked free, with AMS, AMR, AMH and AMV: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`, every declaration spelling in `docs/reviews/`, and a grep of `src/`, `test/` and `docs/`)
 
@@ -51,7 +51,7 @@ The standing-train half of FR-001 named each watched square through the reductio
 |---|---|---|
 | AMG-C1 | Fixed | `AutonomyChecks.isTerminus` - a stranded compulsory turn named as a station reaching nothing |
 | AMG-C2 | Fixed | four comments said a null entry side means "arrived through a link" |
-| AMG-C3 | Open | the parallel-route rule and the room walk's stopping tiles are under-pinned |
+| AMG-C3 | Answered by claims | the parallel-route rule and the room walk's stopping tiles were under-pinned; two claims, both mutation-checked |
 
 ### AMG-C1 - the terminus message could not be chosen
 
@@ -63,7 +63,16 @@ A walk through a paired portal lands on the partner with a null side, but the pa
 
 ### AMG-C3 - under-pinned rules
 
-Nothing asserts that the SHORTER of two parallel routes survives, or that `WARN_PARALLEL_ROUTE` is recorded, or which tile types stop the room walk.  Open.
+| | |
+|---|---|
+| **Disposition** | Answered by claims, 2026-09-15 |
+
+Nothing asserted that the SHORTER of two parallel routes survives, or that `WARN_PARALLEL_ROUTE` is recorded, or which tile types stop the room walk.  **Two claims, both in `core.testAutonomyDiagramReducer`, each shown failing under a mutation before being left green:**
+
+- `testTheShorterOfTwoParallelRoadsIsTheOneKept` - the passing loop the sibling claim already builds, now asked which of the two roads came out of it.  The kept path must run through the direct track and over none of the loop, in both directions, and `WARN_PARALLEL_ROUTE` must be recorded and non-blocking.  Keeping the long way round would give the pair a length and a room measured over track no train is driven on, which is what makes this more than bookkeeping.  **Measured:** inverting the comparison keeps the seven-tile loop - `[main:1,1, main:2,1, main:2,0, main:3,0, main:4,0, main:5,0, main:5,1]` - and silencing both `noteOnce` calls leaves the reduction reporting nothing.
+- `testTheRoomWalkStopsOnlyAtASwitchThatCanBeThrown` - and this is where **Adam's ruling on AMG-B2 is now written into a test**: asked whether a permanent turnout or a diamond crossing should stop the walk he answered *"Neither"*, so the walk counts through both and stops only at `isSwitch()`.  The claim asserts the room NUMBER rather than the predicate, because `isSwitch()` is shared with the drawing code and what breaks if its list changes is the stretch a train's length is judged against.  **Measured:** adding `CROSSING` and `CUSTOM_PERM_LEFT` to the stopping test answers 5 where the rule answers 10, on both halves of the fixture.
+
+One thing the second claim taught while it was being written: `CUSTOM_PERM_*` roads are `into(toward, from)`, which is travel INTO the toe - so a permanent turnout carries its road one way only, and at orientation 1 the toe is east.  The first fixture put the toe west and produced no eastbound edge at all, which the fixture guard caught rather than the assertion.
 
 ---
 

@@ -1,6 +1,6 @@
 # The Return Home planner and its execution, reviewed whole
 
-**Status:** open 2026-09-15 - round 1 fixed B1 to Adam's ruling and C3 (claims `8818d8cd`, fix `64169b0b`); round 2 fixed B2 to his answer on the hardware (claims and fix `c02f7000`); C1 measured and DEFERRED as OB-230 at Adam's word; C2 open
+**Status:** open 2026-09-15 - round 1 fixed B1 to Adam's ruling and C3 (claims `8818d8cd`, fix `64169b0b`); round 2 fixed B2 to his answer on the hardware (claims and fix `c02f7000`); C1 measured and DEFERRED as OB-230 at Adam's word; C2 answered by claims
 
 **Prefix:** AMH (checked free, with AMG, AMS, AMR and AMV: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`, every declaration spelling in `docs/reviews/`, and a grep of `src/`, `test/` and `docs/`)
 
@@ -62,7 +62,7 @@ now reads the arrangement it is asked about - see D5.  MT-450.
 | id | status | where |
 |---|---|---|
 | AMH-C1 | Deferred - **OB-230** | the A* budget on the constrained (measured-length) problem.  Measured below; the fix is the heuristic, which Adam deferred until the fully measured layout arrives |
-| AMH-C2 | Open | the shared-metal half of the tail rule, and the reversing-intermediate room check, have no test |
+| AMH-C2 | Answered by claims | the shared-metal half of the tail rule and the reversing-intermediate room check now have one each, both mutation-checked |
 | AMH-C3 | Fixed | test comments that the code contradicts |
 
 ### AMH-C1 - completeness and determinism, with a scatter that shows it
@@ -115,7 +115,18 @@ The probes are not committed; the numbers above are their output.
 
 ### AMH-C2 - untested halves
 
-`passesTheTailsOfTrainsItHasMoved`'s lock-edge and places branch, and `firstClearRoute`'s room check at a reversing intermediate, are exercised by nothing; the OB-228 oracle grades direct coverage only, where `Layout.isPathClear` on the replayed layout could grade every rule at once.  Open.
+| | |
+|---|---|
+| **Disposition** | Answered by claims, 2026-09-15 |
+
+`passesTheTailsOfTrainsItHasMoved`'s lock-edge and places branch, and `firstClearRoute`'s room check at a reversing intermediate, were exercised by nothing.  **Two claims, each shown failing under a mutation first:**
+
+- `core.testReturnHomeKeepsClearOfTheTailsItLeaves.testARoadSharingMetalWithAParkedTailIsRefused` - three railways identical but for the thing each is about: two roads declared as one piece of metal refuse a move over a parked tail; the same lock with places the tail is not on allows it; the same lock with the place the tail IS on refuses again.  The order is forced by the railway - A starts on B's home, so A parks first and its tail lies over the shared metal - and the control is the same graph with no lock declared.
+- `core.testHomeStaging.testATrainMustFitTheRoomWhereARouteTurnsIt` - a three-unit train is refused a turn at a square with one unit behind it; the same square not reversing admits it, which is **Adam's MT-333 ruling** (*a square it only passes is not asked about at all*); and a one-unit train is admitted the same turn, so the refusal is the room and not the flag.
+
+**Two things the mutations measured that the reading did not predict.**  Dropping the `tailLiesOn` continue does not fail one assertion - it fails all four claims in that class, the new one's own control first, because `createEdge` locks edges that share a point: without the places refinement a tail anywhere closes every road that touches its own and ordinary railways stop being plannable.  And widening the reversing arm to every square fails `testALongerApproachIsStillTriedWhenTheShortOneHasNoRoom` as well as the new claim, which is the same pass-through strictness PRW-B2 bisected once already.
+
+**A sibling, noted rather than fixed:** `passesTheTailsOfTrainsThatHaveNotMoved` carries the identical lock-edge loop twenty lines below.  The new claim exercises the moved-trains copy, which is the one this finding named; the standing-trains copy is reached by the older tail claims, and the two being separate spellings of one rule is the shape this project's defects keep.
 
 ### AMH-C3 - comments the code contradicts
 
