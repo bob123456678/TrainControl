@@ -1,6 +1,6 @@
 # The runtime railway, reviewed whole
 
-**Status:** open 2026-09-15 - round 1 fixed B2 and C1 (claims `8818d8cd`, fix `64169b0b`); round 2 fixed B1 to Adam's ruling (claims and fix `c02f7000`); B3 measured and left open; C2 fixed 2026-09-16 (MT-451); C3 open
+**Status:** open 2026-09-15 - round 1 fixed B2 and C1 (claims `8818d8cd`, fix `64169b0b`); round 2 fixed B1 to Adam's ruling (claims and fix `c02f7000`); B3 measured and left open; C2 fixed 2026-09-16 (MT-451); C3 fixed for a placement to Adam's ruling (MT-452), its lock-edge half open
 
 **Prefix:** AMR (checked free, with AMG, AMS, AMH and AMV: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`, every declaration spelling in `docs/reviews/`, and a grep of `src/`, `test/` and `docs/`)
 
@@ -90,7 +90,7 @@ On Manual the explanation skipped autonomy's standing bars wholesale, but both h
 |---|---|---|
 | AMR-C1 | Fixed | `Point.validateTrainLength` - unboxed a null train length |
 | AMR-C2 | Fixed | Auto-tier Why Not Moving? on a barred berth asked the length rule and not the berth rule |
-| AMR-C3 | Open | `Layout.fromJSON` invalidates the whole configuration for a placed train not in the database, or a lock edge naming a missing edge |
+| AMR-C3 | Fixed in part | `Layout.fromJSON` invalidated the whole configuration for a placed train not in the database - fixed; or a lock edge naming a missing edge - open, asked |
 
 ### AMR-C1 - a null length
 
@@ -114,7 +114,19 @@ MT-262's rule is that a physical refusal outranks a preference; the standing-bar
 
 ### AMR-C3 - the legacy loader's all-or-nothing refusals
 
-The Load JSON door only; homes, exclusions, restrictions and roads are dropped with a log line where these two invalidate.  Open.
+| | |
+|---|---|
+| **Disposition** | Fixed in part, 2026-09-16 - the placement to Adam's ruling (MT-452); the lock edge open and asked |
+
+The Load JSON door only; homes, exclusions, restrictions and roads are dropped with a log line where these two invalidate.
+
+**The placement: Adam, asked (2026-09-16): "drop the train and keep the rest."**
+
+**Confirmed by running.**  `core.testHomeStaging.testAPlacementForALocomotiveNotInTheDatabaseDropsOnlyThePlacement` loads three squares - one holding a phantom, one carrying a home, an exclusion and a station maximum, one holding a locomotive the database has.  Red: *"Auto layout error: Locomotive LD phantom, sold years ago does not exist in database"*, with the whole configuration invalid.  It asserts what survives rather than that the file parses: the real train's placement, the home, the exclusion, the maximum and the track.
+
+**Fixed** in `Layout.fromJSON`: the refusal is a log line, `autolayout.warnPlacedLocomotiveNotInDatabase` in all eight bundles, and the placement is simply not made.  `autolayout.errorLocomotiveNotInDatabase` had no other caller and is removed from all eight.  The legacy IMPORTER already dropped and named such a placement (`AutonomySession.importLegacy`), so the runtime loader was the door disagreeing about the same file; `core.testAutonomyDiagramSession.testAPlacementForAnUnknownLocomotiveIsRefused` said the running model invalidates the whole layout, and now says it did.  The rule and its list of drops are in behaviour.md section 8.
+
+**The lock edge: open, and asked rather than decided.**  Adam's ruling was about a train.  A lock edge naming an edge the file does not contain locks against track that is not in the graph, so dropping it loses no protection - but it can equally be a misspelt name for track that IS there, and then dropping it removes a constraint on shared metal in silence.  That is the half where being wrong costs safety rather than convenience, so it was not extended on his behalf.
 
 ---
 

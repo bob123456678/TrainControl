@@ -131,7 +131,7 @@ AMR-B2	2026-09-15-AMR-autonomy-runtime-review.md	-	Fixed
 AMR-B3	2026-09-15-AMR-autonomy-runtime-review.md	-	Open - measured; binds on nothing today
 AMR-C1	2026-09-15-AMR-autonomy-runtime-review.md	-	Fixed (stated in the body)
 AMR-C2	2026-09-15-AMR-autonomy-runtime-review.md	-	Fixed 2026-09-16, MT-451
-AMR-C3	2026-09-15-AMR-autonomy-runtime-review.md	-	`Layout.fromJSON` invalidates the whole configuration for a placed train not in the databa
+AMR-C3	2026-09-15-AMR-autonomy-runtime-review.md	-	Fixed in part, 2026-09-16 - the placement to Adam's ruling (MT-452); the lock edge open an
 AMR-D1	2026-09-15-AMR-autonomy-runtime-review.md	-	`isPathClear` refuses an edge end whose sensor reads occupied, including one sharing the s
 AMR-D2	2026-09-15-AMR-autonomy-runtime-review.md	-	The train cap fences on the run's flag, not the dispatch's tier; unreachable, because both
 AMS-A1	2026-09-15-AMS-autonomy-setup-and-session-review.md	-	Fixed

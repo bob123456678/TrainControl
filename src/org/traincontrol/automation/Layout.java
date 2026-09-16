@@ -11074,9 +11074,26 @@ public class Layout
                         }
                         else
                         {
-                            layout.invalidate(
-                                I18n.f("autolayout.errorLocomotiveNotInDatabase", loc.toString())
-                            );
+                            // DROPPED AND NAMED, NOT REFUSED (AMR-C3; Adam, 2026-09-16: **"drop the
+                            // train and keep the rest."**)
+                            //
+                            // This invalidated the whole configuration, which made one sold or renamed
+                            // locomotive cost the entire railway - reported as a locomotive problem,
+                            // with nothing to say the file had simply outlived the fleet.  Every other
+                            // dangling name in this loader is dropped with a log line, and the home
+                            // arm three hundred lines up states the reasoning: invalidating a whole
+                            // layout over one assignment is a much worse answer than losing the
+                            // assignment.
+                            //
+                            // The legacy IMPORTER already did it this way
+                            // (`AutonomySession.importLegacy` counts and names unknown locomotives),
+                            // so the two doors disagreed about the same file.
+                            //
+                            // The placement is simply not made: everything else about the point - its
+                            // name, its home, its exclusions, its maximum, the track - is loaded as
+                            // written, and the next save writes the file back without the phantom.
+                            control.logf("autolayout.warnPlacedLocomotiveNotInDatabase", loc,
+                                point.getString("name"));
                         }
                     }
                     else

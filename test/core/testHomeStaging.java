@@ -1672,6 +1672,81 @@ public class testHomeStaging
     }
 
     /**
+     * A placement naming a locomotive the database does not have loses the placement, not the layout (AMR-C3).
+     *
+     * The Load JSON door's own all-or-nothing refusal.  Every other dangling name in the same loader is dropped with a
+     * log line - the home three hundred lines up, the exclusions beside it, `blockedBy`, the run list - on the
+     * reasoning the home arm states: *"invalidating a whole layout over one assignment is a much worse answer than
+     * losing the assignment"*.  A placement was the exception, so a configuration written before a locomotive was sold
+     * or renamed took the whole railway out of service, reported as a locomotive problem.  **Adam, asked which it
+     * should be (2026-09-16): "drop the train and keep the rest."**
+     *
+     * The legacy IMPORTER already behaved this way - `core.testAutonomyDiagramSession
+     * .testAPlacementForAnUnknownLocomotiveIsRefused` names the unknown train and imports everything else - so this
+     * was the runtime loader disagreeing with the importer about the same file.
+     *
+     * Asserted on everything the file carries around that placement: the other train that IS in the database, the
+     * home, the exclusion, the station maximum and the edges.  A layout that merely parses is not the claim; a layout
+     * that keeps everything except the one thing it cannot resolve is.
+     *
+     * MUTATION: put the `invalidate` back and the first assertion fails - the parse returns an invalid layout, and
+     * every assertion after it is about a railway that does not exist.
+     */
+    @Test
+    public void testAPlacementForALocomotiveNotInTheDatabaseDropsOnlyThePlacement() throws Exception
+    {
+        model.parseAuto(aPlacementForAPhantom());
+
+        Layout layout = model.getAutoLayout();
+
+        assertNotNull(layout, "the loader returned no layout at all for a configuration naming one phantom train");
+
+        assertTrue(layout.isValid(),
+            "one placement naming a locomotive that is not in the database took the whole configuration out of"
+            + " service - \"" + Layout.getLastError() + "\" - where every other dangling name in this loader is"
+            + " dropped with a log line (AMR-C3; Adam: \"drop the train and keep the rest\")");
+
+        assertNull(layout.getPoint("LD_X").getCurrentLocomotive(),
+            "the phantom was placed on the railway, so a name matching nothing in the database is being carried"
+            + " around as though it were a train");
+
+        // AND THE REST OF THE FILE, which is the half the ruling is actually about.
+        assertEquals(layout.getPoint("LD_Z").getCurrentLocomotive(), loc(LOC_A),
+            "the train that IS in the database was not placed, so the drop took more than the one placement");
+
+        assertEquals(layout.getPoint("LD_Y").getHomeLoc(), loc(LOC_A), "the home assignment was lost with it");
+
+        assertTrue(layout.getPoint("LD_Y").getExcludedLocs().contains(loc(LOC_B)),
+            "the exclusion was lost with it, which is a restriction the operator believes is in force");
+
+        assertEquals(layout.getPoint("LD_Y").getMaxTrainLength().intValue(), 7,
+            "the station maximum was lost with it");
+
+        assertNotNull(layout.getEdge("LD_X", "LD_Y"), "the track was lost with it");
+    }
+
+    /**
+     * Three squares in a line: one holding a phantom, one carrying a home, an exclusion and a maximum, and one
+     * holding a locomotive this database really has.
+     *
+     * @return the configuration
+     */
+    private static String aPlacementForAPhantom()
+    {
+        return json("{'points': ["
+            + "{'name': 'LD_X', 'station': true, 's88': " + (S88_BASE + 102)
+            + ", 'loc': {'name': 'LD phantom, sold years ago'}},"
+            + "{'name': 'LD_Y', 'station': true, 's88': " + (S88_BASE + 103)
+            + ", 'home': '" + LOC_A + "', 'maxTrainLength': 7, 'excludedLocs': ['" + LOC_B + "']},"
+            + "{'name': 'LD_Z', 'station': true, 's88': " + (S88_BASE + 104)
+            + ", 'loc': {'name': '" + LOC_A + "'}}"
+            + "],'edges': ["
+            + edge("LD_X", "LD_Y") + "," + edge("LD_Y", "LD_X") + ","
+            + edge("LD_Y", "LD_Z") + "," + edge("LD_Z", "LD_Y")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
+    /**
      * Assignments survive a save and a reload, which is the only reason to store them on the point.
      */
     @Test

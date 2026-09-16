@@ -1697,6 +1697,27 @@ that the page says so itself, and that it will not be written over until the fil
   what the length and blocking rules run on, so a fine step set from another controller must not be
   quietly lost on the way in.
 
+**A configuration that names something the database no longer has loses that one thing, not the
+layout.** Adam, 2026-09-16, on the Load JSON door refusing a whole configuration over one placed
+train it could not find: *"drop the train and keep the rest."* A sold or renamed locomotive is the
+file outliving the fleet, and taking the railway out of service over it is a much worse answer than
+forgetting the one entry. So each of these is dropped and named in the log, and everything else in
+the file loads as written - the next save writes it back without the dangling name:
+
+- a placed train (AMR-C3);
+- a home assignment;
+- an exclusion from a station;
+- a station restriction naming a square (`blockedBy`);
+- a locomotive in the run list.
+
+The legacy importer behaves the same way and names what it left out, so the two doors agree about the
+same file.
+
+**Still refused whole:** a lock edge naming an edge the file does not contain. That half of AMR-C3 is
+open and waiting on Adam - such a reference locks against track that is not in the graph, so dropping
+it loses no protection, but it can equally be a misspelt name for track that is, and that is a
+constraint on shared metal rather than a convenience.
+
 ---
 
 ## Where this document came from

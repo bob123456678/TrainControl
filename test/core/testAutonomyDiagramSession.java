@@ -4195,10 +4195,13 @@ public class testAutonomyDiagramSession
     /**
      * A placement naming a locomotive this database does not have is refused, not written in.
      *
-     * The running model does not skip an unknown locomotive - it invalidates the WHOLE layout, by
-     * name, with errorLocomotiveNotInDatabase.  So an old graph naming one that has since been renamed
-     * or deleted would have imported cleanly and then produced a setup that refuses to open, reported
-     * as a locomotive problem with nothing to say the import put it there.
+     * The running model used to invalidate the WHOLE layout for one such name, so an old graph naming a
+     * locomotive since renamed or deleted imported cleanly and then produced a setup that refused to
+     * open, reported as a locomotive problem with nothing to say the import put it there.  Since
+     * AMR-C3 (Adam, 2026-09-16: *"drop the train and keep the rest."*) that loader drops the placement
+     * with a log line too - `core.testHomeStaging
+     * .testAPlacementForALocomotiveNotInTheDatabaseDropsOnlyThePlacement` - so the two doors now agree
+     * about the same file, which is why this test is about the importer NAMING what it dropped.
      *
      * Refused here and named instead, which is a thing the user can act on.
      */

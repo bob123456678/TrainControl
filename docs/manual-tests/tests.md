@@ -53,8 +53,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-449](#mt-449) | 2026-09-15 | Return Home does not turn a train that cannot reverse in the middle of a move | fixed unvalidated | AMV-B1 (MT-445) |
 | [MT-450](#mt-450) | 2026-09-15 | Return Home is not stopped by the sensor under a standing train's tail | fixed unvalidated | AMH-B2 |
 | [MT-451](#mt-451) | 2026-09-16 | Why Not Moving? gives the berth's own reason for a parking berth, not autonomy's preference | fixed unvalidated | AMR-C2 |
+| [MT-452](#mt-452) | 2026-09-16 | Loading a configuration that names a train you no longer have keeps the rest of it | fixed unvalidated | AMR-C3 |
 
-Everything else - 425 of 451 - needs nothing from you unless the area changes again:
+Everything else - 425 of 452 - needs nothing from you unless the area changes again:
 374 **fixed validated** and 51 **superseded**.
 
 ---
@@ -22886,6 +22887,35 @@ Found by the wide autonomy review.  Your MT-262 ruling is that a physical refusa
 - On **Manual**, the reason stays the menu's own, which is your AMV-C5 ruling: a station the operator is not offered at all is not one whose berth is the answer.
 
 *What this is:* AMR-C2.  `core.testAManualSendIsRefusedABerthTooShort.testTheWhyNotMovingViewNamesTheBerthRuleTooForAManualOnlyBerth`.  Seen red first - the window answered *"Set not to be chosen automatically."* while `whyABerthCannotHoldIt` refused the same berth.
+
+#### Comments
+
+---
+<a id="mt-452"></a>
+
+### MT-452 - 2026-09-16 - Loading a configuration that names a train you no longer have keeps the rest of it
+
+**Disposition:** fixed unvalidated
+**From:** AMR-C3
+
+**Written:** 2026-09-16
+
+Found by the wide autonomy review, and your ruling on it: *"drop the train and keep the rest."*  **Load JSON** refused a whole configuration when one of its squares had a train standing on it that is no longer in the locomotive database - sold, deleted, or renamed since the file was written.  The whole railway went out of service, reported as a locomotive problem.  Every other name the file can no longer resolve - a home, an exclusion, a station restriction, a train in the run list - was already dropped with a line in the log.
+
+**Steps**
+
+1. Save the configuration with a train standing somewhere (**Save JSON**, or take a copy of the one in the layout folder).
+2. In that copy, change the standing train's name to one that is not in your locomotive list.
+3. **Load JSON** from the copy.
+
+**Expected**
+
+- The configuration loads and autonomy is usable.
+- The square the missing train stood on is empty; every other train is where the file put it.
+- Homes, exclusions and station limits are all still set.
+- The log says which locomotive was dropped and where it was standing.
+
+*What this is:* AMR-C3.  `core.testHomeStaging.testAPlacementForALocomotiveNotInTheDatabaseDropsOnlyThePlacement`.  Seen red first - *"Auto layout error: Locomotive LD phantom, sold years ago does not exist in database"*, with the whole configuration invalid.
 
 #### Comments
 
