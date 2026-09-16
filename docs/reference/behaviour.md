@@ -1708,15 +1708,20 @@ the file loads as written - the next save writes it back without the dangling na
 - a home assignment;
 - an exclusion from a station;
 - a station restriction naming a square (`blockedBy`);
-- a locomotive in the run list.
+- a locomotive in the run list;
+- **a lock edge naming track the file does not contain - and this one loudly.** Adam, 2026-09-16:
+  *"drop the lock edge with a loud log line too."* A lock says two roads are one piece of metal, so
+  the drop has a dangerous reading: if the name is misspelt for track that IS there, two trains may
+  now be let onto it. The log line names the track that owns the lock and the name that matched
+  nothing, says what that could mean, and says to check the file. The locks beside it in the same
+  list are still applied.
 
 The legacy importer behaves the same way and names what it left out, so the two doors agree about the
 same file.
 
-**Still refused whole:** a lock edge naming an edge the file does not contain. That half of AMR-C3 is
-open and waiting on Adam - such a reference locks against track that is not in the graph, so dropping
-it loses no protection, but it can equally be a misspelt name for track that is, and that is a
-constraint on shared metal rather than a convenience.
+A MALFORMED entry is still refused - a lock entry the loader cannot read (`errorLockEdgeGeneric`), or a
+placement with no locomotive name at all (`errorLocomotiveConfigMissingName`) - because that is a broken
+file rather than one that has outlived its fleet or its track.
 
 ---
 

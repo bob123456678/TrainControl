@@ -1,6 +1,6 @@
 # The runtime railway, reviewed whole
 
-**Status:** open 2026-09-15 - round 1 fixed B2 and C1 (claims `8818d8cd`, fix `64169b0b`); round 2 fixed B1 to Adam's ruling (claims and fix `c02f7000`); B3 measured and left open; C2 fixed 2026-09-16 (MT-451); C3 fixed for a placement to Adam's ruling (MT-452), its lock-edge half open
+**Status:** open 2026-09-15 - round 1 fixed B2 and C1 (claims `8818d8cd`, fix `64169b0b`); round 2 fixed B1 to Adam's ruling (claims and fix `c02f7000`); B3 measured and left open; C2 fixed 2026-09-16 (MT-451); C3 fixed to Adam's two rulings (MT-452, MT-453)
 
 **Prefix:** AMR (checked free, with AMG, AMS, AMH and AMV: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`, every declaration spelling in `docs/reviews/`, and a grep of `src/`, `test/` and `docs/`)
 
@@ -90,7 +90,7 @@ On Manual the explanation skipped autonomy's standing bars wholesale, but both h
 |---|---|---|
 | AMR-C1 | Fixed | `Point.validateTrainLength` - unboxed a null train length |
 | AMR-C2 | Fixed | Auto-tier Why Not Moving? on a barred berth asked the length rule and not the berth rule |
-| AMR-C3 | Fixed in part | `Layout.fromJSON` invalidated the whole configuration for a placed train not in the database - fixed; or a lock edge naming a missing edge - open, asked |
+| AMR-C3 | Fixed | `Layout.fromJSON` invalidated the whole configuration for a placed train not in the database, or a lock edge naming a missing edge |
 
 ### AMR-C1 - a null length
 
@@ -116,7 +116,7 @@ MT-262's rule is that a physical refusal outranks a preference; the standing-bar
 
 | | |
 |---|---|
-| **Disposition** | Fixed in part, 2026-09-16 - the placement to Adam's ruling (MT-452); the lock edge open and asked |
+| **Disposition** | Fixed 2026-09-16, both halves to Adam's rulings - the placement (MT-452), the lock edge (MT-453) |
 
 The Load JSON door only; homes, exclusions, restrictions and roads are dropped with a log line where these two invalidate.
 
@@ -126,7 +126,11 @@ The Load JSON door only; homes, exclusions, restrictions and roads are dropped w
 
 **Fixed** in `Layout.fromJSON`: the refusal is a log line, `autolayout.warnPlacedLocomotiveNotInDatabase` in all eight bundles, and the placement is simply not made.  `autolayout.errorLocomotiveNotInDatabase` had no other caller and is removed from all eight.  The legacy IMPORTER already dropped and named such a placement (`AutonomySession.importLegacy`), so the runtime loader was the door disagreeing about the same file; `core.testAutonomyDiagramSession.testAPlacementForAnUnknownLocomotiveIsRefused` said the running model invalidates the whole layout, and now says it did.  The rule and its list of drops are in behaviour.md section 8.
 
-**The lock edge: open, and asked rather than decided.**  Adam's ruling was about a train.  A lock edge naming an edge the file does not contain locks against track that is not in the graph, so dropping it loses no protection - but it can equally be a misspelt name for track that IS there, and then dropping it removes a constraint on shared metal in silence.  That is the half where being wrong costs safety rather than convenience, so it was not extended on his behalf.
+**The lock edge: asked rather than decided, then ruled.**  The first ruling was about a train, and a lock edge naming track the file does not contain has a dangerous reading a placement does not: vacuous if the track really is absent, but a silently lost constraint on shared metal if the name is misspelt for track that is there.  So it was put to Adam separately, and he answered: **"drop the lock edge with a loud log line too."**
+
+**Confirmed by running.**  `core.testHomeStaging.testALockEdgeNamingMissingTrackIsDroppedLoudly` - one edge locked against a real road and against a name that matches nothing.  Red: *"Auto layout error: Lock edge {"start":"LK_Q","end":"LK_R"} does not exist in the autonomy configuration"*, the whole configuration invalid.  Green, it asserts the configuration loads, the real lock in the same list is still applied, and - what "loud" means in a test - that the model's own `java.util.logging` logger carried the dedicated warning naming both roads.  **Mutation, run:** silencing that one `logf` fails exactly this claim, *"the lock was dropped without the warning"*.
+
+**Fixed:** `autolayout.warnLockEdgeNotInGraph` replaces `autolayout.errorLockEdgeNotInGraph` in all eight bundles, in the same place.  It names the track that owns the lock and the name that matched nothing, says two trains may now be allowed onto shared track if that name is misspelt, and says to check the file.  A malformed lock entry is still refused (`errorLockEdgeGeneric`): that is a broken file, not one that has outlived its track.
 
 ---
 

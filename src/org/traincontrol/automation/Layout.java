@@ -11334,9 +11334,19 @@ public class Layout
 
                         if (layout.getEdge(lockEdge.getString("start"), lockEdge.getString("end")) == null)
                         {
-                            layout.invalidate(
-                                I18n.f("autolayout.errorLockEdgeNotInGraph", lockEdge.toString())
-                            );
+                            // DROPPED, AND SAID LOUDLY (AMR-C3; Adam, 2026-09-16: **"drop the lock edge with
+                            // a loud log line too."**)
+                            //
+                            // This invalidated the whole configuration, like the placement arm used to.
+                            // Unlike a placement, a lock is a constraint on shared metal, so the drop has
+                            // two readings and the message is written for the dangerous one: if the named
+                            // track really is absent nothing can run on it and nothing is lost, but if the
+                            // name is misspelt for track that IS there, two trains may now be let onto one
+                            // piece of metal.  So it names the track that owns the lock and the name that
+                            // matched nothing, and says to check the file - the other locks in this list
+                            // are still applied.
+                            control.logf("autolayout.warnLockEdgeNotInGraph", start + " -> " + end,
+                                lockEdge.getString("start") + " -> " + lockEdge.getString("end"));
                         }
                         else
                         {

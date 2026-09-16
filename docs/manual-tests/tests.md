@@ -54,8 +54,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-450](#mt-450) | 2026-09-15 | Return Home is not stopped by the sensor under a standing train's tail | fixed unvalidated | AMH-B2 |
 | [MT-451](#mt-451) | 2026-09-16 | Why Not Moving? gives the berth's own reason for a parking berth, not autonomy's preference | fixed unvalidated | AMR-C2 |
 | [MT-452](#mt-452) | 2026-09-16 | Loading a configuration that names a train you no longer have keeps the rest of it | fixed unvalidated | AMR-C3 |
+| [MT-453](#mt-453) | 2026-09-16 | A lock naming track that is not in the file is dropped, and the log says so loudly | fixed unvalidated | AMR-C3 |
 
-Everything else - 425 of 452 - needs nothing from you unless the area changes again:
+Everything else - 425 of 453 - needs nothing from you unless the area changes again:
 374 **fixed validated** and 51 **superseded**.
 
 ---
@@ -22916,6 +22917,34 @@ Found by the wide autonomy review, and your ruling on it: *"drop the train and k
 - The log says which locomotive was dropped and where it was standing.
 
 *What this is:* AMR-C3.  `core.testHomeStaging.testAPlacementForALocomotiveNotInTheDatabaseDropsOnlyThePlacement`.  Seen red first - *"Auto layout error: Locomotive LD phantom, sold years ago does not exist in database"*, with the whole configuration invalid.
+
+#### Comments
+
+---
+<a id="mt-453"></a>
+
+### MT-453 - 2026-09-16 - A lock naming track that is not in the file is dropped, and the log says so loudly
+
+**Disposition:** fixed unvalidated
+**From:** AMR-C3
+
+**Written:** 2026-09-16
+
+Found by the wide autonomy review, and your ruling on it: *"drop the lock edge with a loud log line too."*  A lock says two roads are one piece of metal.  **Load JSON** refused the whole configuration when a lock named a road the file did not contain.  Now the one lock is dropped and the rest loads - and because a misspelt name there could let two trains onto shared track, the log says exactly that rather than dropping it quietly.
+
+**Steps**
+
+1. Take a copy of a saved configuration (**Save JSON**, or the file in the layout folder).
+2. In that copy, find a `lockedges` entry and change one of its road names to something that does not exist - misspell a station, say.
+3. **Load JSON** from the copy, and look at the log.
+
+**Expected**
+
+- The configuration loads and autonomy is usable.
+- The log has a line starting **Lock ignored:** naming the road that owned the lock and the misspelt name, saying two trains may now be allowed onto shared track, and telling you to check the file.
+- Any other lock in the same list is still in force - the two roads it joins still cannot be used at once.
+
+*What this is:* AMR-C3.  `core.testHomeStaging.testALockEdgeNamingMissingTrackIsDroppedLoudly`.  Seen red first - *"Auto layout error: Lock edge ... does not exist in the autonomy configuration"*, with the whole configuration invalid.
 
 #### Comments
 

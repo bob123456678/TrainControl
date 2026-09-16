@@ -1747,6 +1747,109 @@ public class testHomeStaging
     }
 
     /**
+     * A lock naming track the file does not contain is dropped LOUDLY, and the locks that do resolve are kept (AMR-C3).
+     *
+     * The other half of the same all-or-nothing refusal.  A lock edge says two roads are one piece of metal, so it is
+     * the one dangling name whose loss could matter for safety: if the edge it names really is absent, nothing can run
+     * on it and dropping the lock loses nothing, but if the name is a misspelling of track that IS there, dropping it
+     * lets two trains onto shared metal.  **Adam, asked (2026-09-16): "drop the lock edge with a loud log line too."**
+     *
+     * So this pins three things, and the third is what "loud" means in a test:
+     *
+     *  - the configuration loads, rather than the whole railway going out of service;
+     *  - a lock in the same list that DOES resolve is applied - one misspelt entry must not cost its neighbours;
+     *  - the model's log carries the dedicated warning, naming both the track that owns the lock and the name that
+     *    matched nothing.  A drop nobody can see is the silent loss this half was asked about, so the line is heard
+     *    rather than assumed, through the model's own `java.util.logging` logger.
+     *
+     * MUTATION: put the `invalidate` back and the first assertion fails; drop the `logf` and the last one does.
+     */
+    @Test
+    public void testALockEdgeNamingMissingTrackIsDroppedLoudly() throws Exception
+    {
+        final List<String> heard = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        java.util.logging.Handler ear = new java.util.logging.Handler()
+        {
+            @Override
+            public void publish(java.util.logging.LogRecord record)
+            {
+                heard.add(record.getMessage());
+            }
+
+            @Override
+            public void flush()
+            {
+            }
+
+            @Override
+            public void close()
+            {
+            }
+        };
+
+        java.util.logging.Logger modelLog =
+            java.util.logging.Logger.getLogger(org.traincontrol.marklin.MarklinControlStation.class.getName());
+
+        modelLog.addHandler(ear);
+
+        try
+        {
+            model.parseAuto(aLockNamingMissingTrack());
+
+            Layout layout = model.getAutoLayout();
+
+            assertNotNull(layout, "the loader returned no layout at all for a configuration with one dangling lock");
+
+            assertTrue(layout.isValid(),
+                "one lock naming track that is not in the file took the whole configuration out of service - \""
+                + Layout.getLastError() + "\" (AMR-C3; Adam: \"drop the lock edge with a loud log line too\")");
+
+            Edge owner = layout.getEdge("LK_A", "LK_B");
+            Edge real = layout.getEdge("LK_C", "LK_D");
+
+            assertTrue(owner.getLockEdges().contains(real),
+                "the lock that DOES resolve was lost with the one that does not, so a misspelt entry cost its"
+                + " neighbour a real constraint on shared metal");
+
+            assertEquals(owner.getLockEdges().size(), 1,
+                "something other than the one real lock was applied: " + owner.getLockEdges());
+
+            String expected = org.traincontrol.util.I18n.f("autolayout.warnLockEdgeNotInGraph",
+                "LK_A -> LK_B", "LK_Q -> LK_R");
+
+            assertTrue(heard.contains(expected),
+                "the lock was dropped without the warning, which is the silent loss Adam asked to be told about -"
+                + " a misspelt name here lets two trains onto shared metal and nothing says so.  Heard: " + heard);
+        }
+        finally
+        {
+            modelLog.removeHandler(ear);
+        }
+    }
+
+    /**
+     * Two roads, A - B and C - D, with A -> B locked against C -> D (real) and against LK_Q -> LK_R, which the file does
+     * not contain.
+     *
+     * @return the configuration
+     */
+    private static String aLockNamingMissingTrack()
+    {
+        return json("{'points': ["
+            + square("LK_A", 106, null, true, null) + ","
+            + square("LK_B", 107, null, true, null) + ","
+            + square("LK_C", 108, null, true, null) + ","
+            + square("LK_D", 109, null, true, null)
+            + "],'edges': ["
+            + "{'start': 'LK_A', 'end': 'LK_B', 'lockedges': ["
+            + "{'start': 'LK_C', 'end': 'LK_D'}, {'start': 'LK_Q', 'end': 'LK_R'}]},"
+            + edge("LK_B", "LK_A") + ","
+            + edge("LK_C", "LK_D") + "," + edge("LK_D", "LK_C")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
+    /**
      * Assignments survive a save and a reload, which is the only reason to store them on the point.
      */
     @Test
