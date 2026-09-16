@@ -5160,7 +5160,7 @@ public class Layout
     }
 
     /**
-     * Why no route from start to end can hold this train, or null when one of them can (MT-262).
+     * Why no route from start to end can hold this train, or null when one of them can (MT-262, AMR-C2).
      *
      * **The refusal that does not clear itself.**  `explainDestinations` reports the standing bars
      * first and stops, so a berth autonomy will not choose - a parking track, which is where a person
@@ -5200,13 +5200,26 @@ public class Layout
 
                 seenPaths.add(path);
 
+                // BOTH PHYSICAL REFUSALS, NOT ONE (AMR-C2).
+                //
+                // MT-262's ruling is that a physical refusal outranks a preference, and there are two
+                // of them: the train does not fit down the route, and the train fits but its body
+                // would lie across a road something else needs.  `isPathClear` asks both, one line
+                // apart, and so does the staging planner - this asked only the first, so a berth the
+                // railway refuses on the second was reported as "Set not to be chosen automatically",
+                // which is autonomy's preference answering an operator about his own send.
+                //
+                // The berth rule is asked only of a route the train fits down, because its answer is
+                // about where the body comes to rest and the length refusal is the blunter fact.
                 String tooLong = whyTooLongForThisRoute(path, loc);
 
-                // A route it fits down is a route the operator can be sent along, so there is nothing
-                // to report about length whatever the others say.
-                if (tooLong == null) return null;
+                String foulsARoad = tooLong == null ? whyABerthCannotHoldIt(path, loc) : null;
 
-                why = tooLong;
+                // A route it fits down whose berth can hold it is a route the operator can be sent
+                // along, so there is nothing to report whatever the others say.
+                if (tooLong == null && foulsARoad == null) return null;
+
+                why = tooLong != null ? tooLong : foulsARoad;
 
             } while (path != null);
         }

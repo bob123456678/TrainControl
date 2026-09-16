@@ -1,11 +1,13 @@
 package core;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -275,6 +277,86 @@ public class testAManualSendIsRefusedABerthTooShort
             "a nine-unit train was refused a through platform whose run in nobody has measured. There"
             + " is no evidence either way, and refusing on none of it makes every unmeasured layout"
             + " unusable - Adam: \"generally, allow it\"");
+    }
+
+    /**
+     * The window's reason for a manual-only berth is the BERTH rule as well as the length rule (AMR-C2).
+     *
+     * MT-262's ruling is that a physical refusal outranks a preference, and there are two physical refusals, not one:
+     * the train does not fit down the route, and the train fits but its body would lie across a road something else
+     * uses.  `isPathClear` asks both, one line apart, and so does the staging planner - and this branch asked only the
+     * first, so a berth the railway will refuse on the second was reported as *"Set not to be chosen automatically."*,
+     * which is a statement about autonomy to an operator asking about his own send.
+     *
+     * The fixture separates the two deliberately: fifty units of room after the switch, so the length rule admits the
+     * train and cannot be what answers, and a two-unit train whose body claims the neck of the berth - metal a second
+     * road shares.  The assertion is agreement with `whyABerthCannotHoldIt` itself rather than a copy of its sentence,
+     * because a second spelling of a rule is this project's most repeated defect.
+     *
+     * MUTATION: drop the berth arm from `whyNoRouteFitsTo` and the reason falls back to the standing bar.
+     */
+    @Test
+    public void testTheWhyNotMovingViewNamesTheBerthRuleTooForAManualOnlyBerth() throws Exception
+    {
+        Fixture fouling = build(2, 50, false);
+
+        fouling.berth.setAutoDestination(false);
+
+        Edge run = fouling.path.get(fouling.path.size() - 1);
+
+        // The berth and the neck behind it, in path order - the square arrived at is last, and its own measurement is
+        // an allowance rather than rail to spend, so the two-unit train claims the neck as well.
+        run.setPlaces(Arrays.asList("AMR_neck", "AMR_berth"), Arrays.asList(2, 1));
+
+        // A SECOND ROAD OVER THE NECK.  It touches neither end of the berth's own square - a road in or out of the
+        // berth is blocked by the train being there at all, and refusing on those would make every berth refuse
+        // itself.  The lock is mutual, which is how the model tells shared metal from a one-directional FR-001
+        // restriction.
+        org.traincontrol.marklin.MarklinFeedback four = model.newFeedback(9720, null);
+        org.traincontrol.marklin.MarklinFeedback five = model.newFeedback(9721, null);
+
+        model.setFeedbackState(four.getName(), false);
+        model.setFeedbackState(five.getName(), false);
+
+        fouling.layout.createPoint("AMR_OTHER_A", false, four.getName());
+        fouling.layout.createPoint("AMR_OTHER_B", false, five.getName());
+
+        Edge otherRoad = fouling.layout.createEdge("AMR_OTHER_A", "AMR_OTHER_B");
+
+        otherRoad.setLength(1);
+        otherRoad.setPlaces(Arrays.asList("AMR_neck"), Arrays.asList(1));
+
+        run.addLockEdge(otherRoad);
+        otherRoad.addLockEdge(run);
+
+        // THE PRECONDITIONS, so that neither half of this can pass for the other's reason.
+        String foulsARoad = Layout.whyABerthCannotHoldIt(fouling.path, fouling.loc);
+
+        assertNotNull(foulsARoad,
+            "precondition: the berth rule does not refuse this berth at all, so the window has nothing to report and"
+            + " this fixture shows nothing");
+
+        assertNull(Layout.whyTooLongForThisRoute(fouling.path, fouling.loc),
+            "precondition: the length rule refuses this route as well, so the window could report the right sentence"
+            + " through the arm that was already there");
+
+        String reason = fouling.layout.explainDestinations(fouling.loc).get(fouling.berth.getName());
+
+        assertEquals(reason, foulsARoad,
+            "the window's reason for a berth whose neck this train would lie across is \"" + reason + "\".  The"
+            + " railway refuses the send on the berth rule and the operator is told about autonomy's preferences"
+            + " instead (AMR-C2)");
+
+        // AND THE BAR SURVIVES, which is the same control the length arm has: a berth nothing physical refuses is
+        // still somewhere autonomy will not choose, and that is what the window has always said about it.
+        Fixture plain = build(2, 50, false);
+
+        plain.berth.setAutoDestination(false);
+
+        assertEquals(plain.layout.explainDestinations(plain.loc).get(plain.berth.getName()),
+            org.traincontrol.util.I18n.t("autolayout.why.notAutoDestination"),
+            "a manual-only berth that nothing physical refuses no longer reads as barred, so the berth arm has"
+            + " swallowed the standing bar");
     }
 
     // ---------------------------------------------------------------- the fixture

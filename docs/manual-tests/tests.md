@@ -52,8 +52,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-448](#mt-448) | 2026-09-15 | No route goes round to another copy of the square it starts or ends at | fixed unvalidated | AMR-B1 |
 | [MT-449](#mt-449) | 2026-09-15 | Return Home does not turn a train that cannot reverse in the middle of a move | fixed unvalidated | AMV-B1 (MT-445) |
 | [MT-450](#mt-450) | 2026-09-15 | Return Home is not stopped by the sensor under a standing train's tail | fixed unvalidated | AMH-B2 |
+| [MT-451](#mt-451) | 2026-09-16 | Why Not Moving? gives the berth's own reason for a parking berth, not autonomy's preference | fixed unvalidated | AMR-C2 |
 
-Everything else - 425 of 450 - needs nothing from you unless the area changes again:
+Everything else - 425 of 451 - needs nothing from you unless the area changes again:
 374 **fixed validated** and 51 **superseded**.
 
 ---
@@ -22855,6 +22856,36 @@ Found by the wide autonomy review, and your answer on how your detection behaves
 - A sensor that nothing accounts for - an obstruction on the track, a wagon nobody has told the diagram about - still stops the plan, and says so.
 
 *What this is:* AMH-B2.  `core.testHomeStaging.testASensorHeldByAStandingTrainsTailIsNotBlocked`.  Seen red first (c02f7000); fixed in c02f7000.
+
+#### Comments
+
+---
+<a id="mt-451"></a>
+
+### MT-451 - 2026-09-16 - Why Not Moving? gives the berth's own reason for a parking berth, not autonomy's preference
+
+**Disposition:** fixed unvalidated
+**From:** AMR-C2
+
+**Written:** 2026-09-16
+
+Found by the wide autonomy review.  Your MT-262 ruling is that a physical refusal outranks a preference - being too long for the berth is a fact, being set not to be chosen automatically is only autonomy's taste - and the window was applying that to one of the two physical refusals.  The other is the berth rule: the train fits down the route, but where its body comes to rest it lies across a road something else needs.  For a parking berth the window reported *"Set not to be chosen automatically."* in that case, which answers a question about autonomy to somebody asking why his own send will not work.
+
+**This needs a measured approach to be visible at all**, and that is deliberate: the berth rule declines to judge an approach nobody has measured (PRW-B1, your ruling of 2026-09-06 - *"a stretch is only indeterminate when ALL of it is zero"*).  All 41 non-station approaches on your railway are unmeasured today, so before measuring anything the window's answer is the same as it always was.
+
+**Steps**
+
+1. Pick a parking berth - **Can Be Chosen In Full Autonomy** off - whose approach shares track with another road, and give the two squares behind it a length on the diagram.
+2. Take a train long enough that its body would reach back over that shared square, and leave the route in long enough that it is not simply too long for the road.
+3. Open **Why Not Moving?** for that train and look at what it says about that berth.
+
+**Expected**
+
+- The berth's own reason: the train *"would stand across ... which other trains need"*, naming the road and the length - the same sentence the right-click menu and the Auto status panel already give.
+- A parking berth that nothing physical refuses still reads as **Set not to be chosen automatically**, because it still is one.
+- On **Manual**, the reason stays the menu's own, which is your AMV-C5 ruling: a station the operator is not offered at all is not one whose berth is the answer.
+
+*What this is:* AMR-C2.  `core.testAManualSendIsRefusedABerthTooShort.testTheWhyNotMovingViewNamesTheBerthRuleTooForAManualOnlyBerth`.  Seen red first - the window answered *"Set not to be chosen automatically."* while `whyABerthCannotHoldIt` refused the same berth.
 
 #### Comments
 

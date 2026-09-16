@@ -1,6 +1,6 @@
 # The runtime railway, reviewed whole
 
-**Status:** open 2026-09-15 - round 1 fixed B2 and C1 (claims `8818d8cd`, fix `64169b0b`); round 2 fixed B1 to Adam's ruling (claims and fix `c02f7000`); B3 measured and left open; C2 and C3 open
+**Status:** open 2026-09-15 - round 1 fixed B2 and C1 (claims `8818d8cd`, fix `64169b0b`); round 2 fixed B1 to Adam's ruling (claims and fix `c02f7000`); B3 measured and left open; C2 fixed 2026-09-16 (MT-451); C3 open
 
 **Prefix:** AMR (checked free, with AMG, AMS, AMH and AMV: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`, every declaration spelling in `docs/reviews/`, and a grep of `src/`, `test/` and `docs/`)
 
@@ -89,7 +89,7 @@ On Manual the explanation skipped autonomy's standing bars wholesale, but both h
 | id | status | where |
 |---|---|---|
 | AMR-C1 | Fixed | `Point.validateTrainLength` - unboxed a null train length |
-| AMR-C2 | Open | Auto-tier Why Not Moving? on a barred berth asks the length rule and not the berth rule |
+| AMR-C2 | Fixed | Auto-tier Why Not Moving? on a barred berth asked the length rule and not the berth rule |
 | AMR-C3 | Open | `Layout.fromJSON` invalidates the whole configuration for a placed train not in the database, or a lock edge naming a missing edge |
 
 ### AMR-C1 - a null length
@@ -98,7 +98,19 @@ Every other reader treats a null train length as nothing known; `validateTrainLe
 
 ### AMR-C2 - the berth rule in the Auto explanation
 
-MT-262's rule is that a physical refusal outranks a preference; the standing-bar branch asks `whyNoRouteFitsTo` and not `whyABerthCannotHoldIt`.  Manual shows it.  Open.
+| | |
+|---|---|
+| **Disposition** | Fixed 2026-09-16, MT-451 |
+
+MT-262's rule is that a physical refusal outranks a preference; the standing-bar branch asked `whyNoRouteFitsTo` and not `whyABerthCannotHoldIt`.  There are TWO physical refusals - the train does not fit down the route, and the train fits but its body comes to rest across a road something else needs - and only the first was asked, so a parking berth the railway refuses on the second was reported as *"Set not to be chosen automatically."*: autonomy's preference answering an operator about his own send.
+
+**Confirmed by running.**  `core.testAManualSendIsRefusedABerthTooShort.testTheWhyNotMovingViewNamesTheBerthRuleTooForAManualOnlyBerth` - fifty units of room after the switch, so the length rule admits the train and cannot be what answers, and a two-unit train whose body claims the neck of the berth, which a second mutually-locked road runs over.  Red: the window said *"Set not to be chosen automatically."* while `whyABerthCannotHoldIt` refused the same berth with *"would stand across AMR_OTHER_A -> AMR_OTHER_B, which other trains need"*.  Asserted as agreement with that rule rather than as a copy of its sentence.
+
+**Fixed** in `whyNoRouteFitsTo`: a route answers "no refusal to report" only when the length rule and the berth rule both pass, with the berth rule asked of the routes the train fits down.  The standing bar survives where nothing physical refuses - its own control in the same claim - and Manual still gives the menu's reason, which is AMV-C5's ruling.
+
+**The sweep found no second site:** `isPathClear`, the staging planner, the right-click menu and the Auto status panel all asked both rules already; this branch was the only one asking half.
+
+**It binds on nothing on Adam's railway today**, for AMR-B3's reason: the berth rule declines to judge an unmeasured approach (PRW-B1) and all 41 of his non-station approaches are unmeasured.  MT-451 therefore opens by asking him to measure two squares behind a parking berth, and the fix becomes live for the whole railway when the measured layout arrives - the same layout OB-230 waits on.
 
 ### AMR-C3 - the legacy loader's all-or-nothing refusals
 
