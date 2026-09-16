@@ -2763,27 +2763,33 @@ public class AutonomySession
     }
 
     /**
-     * One stretch of track a length rule reads: what one leg contributes to the room at a square a train can come to
-     * rest on (Mass Assign Lengths; Adam, 2026-09-16: *"per stretch, every relevant square a rule reads"*).
+     * One piece of track to measure: the squares of a leg between two fixed points - a sensor or a switch - with neither
+     * switch in it (Mass Assign Lengths).
      *
-     * **In order from where the train rests, outwards** - the square the leg arrives at first, then back towards the
-     * switch or sensor the leg starts from - so the END of the list is the square farthest from the train.
-     * `assignStretchLength` gives any remainder to that end.  One run of plain track that is the approach to a resting
-     * square at each end is ONE stretch, ordered from the way it was found first, with the other end's square last.
+     * **Every leg, cut at switches** - Adam's ruling on review MAL-B1, 2026-09-16.  The first version asked only for the
+     * track past the last switch, because the room rule stops there; but the FR-087 allowance adds whole legs back until
+     * a reversal, and the tail and berth walks spend the switch square and the track before it, so on his railway every
+     * leg is read.  Cutting at switches keeps every rule exact: an even share of a piece never lands on the far side of a
+     * switch, where the room rule would not count it.
+     *
+     * **Each square is in exactly one piece.**  A sensor square that ends several legs belongs to the first piece that
+     * reaches it, so no answer can be overwritten by a later one (MAL-C2).
      */
     public static final class Stretch
     {
         private final java.util.List<TileKey> tiles;
-        private final TileKey restsAt;
+        private final TileKey from;
+        private final TileKey to;
 
-        Stretch(java.util.List<TileKey> tiles, TileKey restsAt)
+        Stretch(java.util.List<TileKey> tiles, TileKey from, TileKey to)
         {
             this.tiles = java.util.Collections.unmodifiableList(new java.util.ArrayList<>(tiles));
-            this.restsAt = restsAt;
+            this.from = from;
+            this.to = to;
         }
 
         /**
-         * @return the squares, nearest the resting square first
+         * @return the squares, in the order the leg runs
          */
         public java.util.List<TileKey> getTiles()
         {
@@ -2791,38 +2797,40 @@ public class AutonomySession
         }
 
         /**
-         * @return the square a train comes to rest on at the near end, which the prompt names
+         * @return the fixed point at one end - a sensor square, or the switch the piece stops short of - for the prompt
          */
-        public TileKey getRestsAt()
+        public TileKey getFrom()
         {
-            return restsAt;
+            return from;
+        }
+
+        /**
+         * @return the fixed point at the other end
+         */
+        public TileKey getTo()
+        {
+            return to;
         }
 
         @Override
         public String toString()
         {
-            return tiles + " -> " + restsAt;
+            return tiles + " between " + from + " and " + to;
         }
     }
 
     /**
-     * Every stretch a length rule reads, on the pages autonomy uses.
+     * Every piece of track a length rule reads, on the pages autonomy uses: every leg, cut at its switches.
      *
-     * **WHICH SQUARES, FROM THE RULES THEMSELVES.**  `Layout.measuredRoomAtTheEndOf` and `Layout.measuredRouteIn` walk
-     * back from where a train comes to rest, leg by leg, and stop at the last switch; the tail walk stops at a fork,
-     * which is the same place.  A leg that crosses no switch does NOT stop them - they carry on through the sensor
-     * behind it onto the leg before (AMR-B3).  So from every square a train can rest on - a station, a parking berth, a
-     * turn-round square - each arriving leg is walked back to its last switch, and where it has none, on through the
-     * sensor it starts from to the legs arriving there.  The switch tile is not room and is not included.  A leg's own
-     * start square is not part of its length - a leg is its track and the square it arrives at - so it belongs to the
-     * leg before, which is exactly how the builder writes an edge's length.
+     * **WHY EVERY LEG** (MAL-B1).  `Layout.measuredRouteIn` - the FR-087 allowance - adds each leg's whole length back from
+     * a station until a reversal or a wholly unmeasured leg; `Layout.walkOneTail` and `Layout.whyABerthCannotHoldIt`
+     * spend a train's length over every square of a leg, the switch included.  Measured on Adam's railway, that reach is
+     * every one of its 75 legs, so the question was only how to cut them, and he ruled: at switches.
      *
-     * **NOT the question `reversalsWithoutLength` asks, deliberately.**  That notice is said unprompted, so it asks only
-     * where trains turn round, stops at a leg's own start, and speaks only when a stretch is wholly unmeasured - how loud
-     * the findings list may be is Adam's call (MT-305).  This is a tool somebody opens in order to measure everything a
-     * rule reads.  Two questions, two answers; the note is here so that nobody merges them as a duplicate.
+     * **NOT the question `reversalsWithoutLength` asks, deliberately.**  That notice is said unprompted and asks less -
+     * how loud the findings list may be is Adam's call (MT-305).  This is a tool somebody opens to measure everything.
      *
-     * @return the stretches, ordered by page and position
+     * @return the pieces, ordered by page and position
      */
     public java.util.List<Stretch> stretchesALengthRuleReads()
     {
@@ -2830,135 +2838,83 @@ public class AutonomySession
 
         if (store == null || reducer == null || getGraph() == null) return out;
 
-        java.util.Map<String, java.util.List<TileKey>> runs = new java.util.LinkedHashMap<>();
-        java.util.Map<String, TileKey> nearEnds = new java.util.LinkedHashMap<>();
+        java.util.Set<TileKey> placed = new java.util.HashSet<>();
 
-        java.util.Deque<GraphReducer.ReducedEdge> toWalk = new java.util.ArrayDeque<>();
-        java.util.Set<GraphReducer.ReducedEdge> walked = new java.util.HashSet<>();
-
-        for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+        for (java.util.List<TileKey> leg : legsOnce())
         {
-            TileKey end = edge.getEnd();
+            java.util.List<TileKey> piece = new java.util.ArrayList<>();
+            int firstIndex = -1;
 
-            if (store.isStation(end) || isTurnAround(end)) toWalk.add(edge);
-        }
-
-        while (!toWalk.isEmpty())
-        {
-            GraphReducer.ReducedEdge edge = toWalk.poll();
-
-            if (!walked.add(edge)) continue;
-
-            java.util.List<TileKey> tiles = new java.util.ArrayList<>();
-
-            tiles.add(edge.getEnd());
-
-            boolean stoppedAtASwitch = false;
-
-            java.util.List<GraphReducer.TileStep> steps = edge.getPath();
-
-            for (int i = steps.size() - 1; i >= 0; i--)
+            for (int i = 0; i <= leg.size(); i++)
             {
-                TileKey tile = steps.get(i).getTile();
+                boolean boundary = i == leg.size() || isSwitchSquare(leg.get(i));
 
-                org.traincontrol.base.LayoutDiagramComponent component = getGraph().getTiles().get(tile);
-
-                if (component != null && component.isSwitch())
+                if (!boundary)
                 {
-                    stoppedAtASwitch = true;
+                    if (firstIndex < 0) firstIndex = i;
 
-                    break;
+                    // THE FIRST PIECE THAT REACHES A SQUARE KEEPS IT: a sensor square ends several legs, and if it
+                    // were in each of them the second answer would overwrite the first (MAL-C2).
+                    if (placed.add(leg.get(i))) piece.add(leg.get(i));
+
+                    continue;
                 }
 
-                tiles.add(tile);
-            }
-
-            // ONE KEY PER PIECE OF TRACK.  Past a switch the stretch belongs to one direction only - the other way along
-            // the same leg is bounded by the switch from the other side - so the squares themselves are the key.  A
-            // whole leg of plain track is the same piece of metal both ways, so its key is the pair of ends and the track
-            // between, and the second way found only adds its own end square.
-            String key;
-
-            if (stoppedAtASwitch)
-            {
-                key = "past a switch " + sortedNames(tiles);
-            }
-            else
-            {
-                java.util.List<TileKey> between = new java.util.ArrayList<>(tiles.subList(1, tiles.size()));
-
-                key = "a whole leg " + sortedNames(java.util.Arrays.asList(edge.getStart(), edge.getEnd()))
-                    + sortedNames(between);
-            }
-
-            java.util.List<TileKey> known = runs.get(key);
-
-            if (known == null)
-            {
-                runs.put(key, tiles);
-                nearEnds.put(key, edge.getEnd());
-            }
-            else
-            {
-                for (TileKey tile : tiles)
+                if (firstIndex >= 0 && !piece.isEmpty())
                 {
-                    if (!known.contains(tile)) known.add(tile);
-                }
-            }
+                    TileKey from = firstIndex > 0 ? leg.get(firstIndex - 1) : leg.get(0);
+                    TileKey to = i < leg.size() ? leg.get(i) : leg.get(leg.size() - 1);
 
-            // ON THROUGH THE SENSOR, where nothing divided this leg from the one before (AMR-B3) - but never straight
-            // back along the leg just walked, which is the same track the other way and not a leg behind it.
-            if (!stoppedAtASwitch)
-            {
-                for (GraphReducer.ReducedEdge before : reducer.getEdges())
-                {
-                    if (before.getEnd().equals(edge.getStart()) && !before.getStart().equals(edge.getEnd()))
-                    {
-                        toWalk.add(before);
-                    }
+                    out.add(new Stretch(piece, from, to));
                 }
+
+                piece = new java.util.ArrayList<>();
+                firstIndex = -1;
             }
         }
 
-        for (java.util.Map.Entry<String, java.util.List<TileKey>> run : runs.entrySet())
-        {
-            out.add(new Stretch(run.getValue(), nearEnds.get(run.getKey())));
-        }
-
-        java.util.Collections.sort(out, (one, two) ->
-        {
-            TileKey x = one.getRestsAt();
-            TileKey y = two.getRestsAt();
-
-            int byPage = String.valueOf(x.getPage()).compareTo(String.valueOf(y.getPage()));
-
-            if (byPage != 0) return byPage;
-            if (x.getY() != y.getY()) return Integer.compare(x.getY(), y.getY());
-            if (x.getX() != y.getX()) return Integer.compare(x.getX(), y.getX());
-
-            return one.getTiles().toString().compareTo(two.getTiles().toString());
-        });
+        java.util.Collections.sort(out, (one, two) -> compareSquares(one.getTiles().get(0), two.getTiles().get(0)));
 
         return out;
     }
 
-    private static String sortedNames(java.util.Collection<TileKey> tiles)
+    /**
+     * Every switch square on a leg autonomy uses.  A switch is in no piece - its share would sit where the room rule
+     * does not count it - so switches are asked for on their own, one turnout length for a page (Adam, 2026-09-16:
+     * "One length for all switches").
+     *
+     * @return the switch squares, ordered by page and position
+     */
+    public java.util.Set<TileKey> switchesALengthRuleReads()
     {
-        java.util.TreeSet<String> names = new java.util.TreeSet<>();
+        java.util.List<TileKey> out = new java.util.ArrayList<>();
 
-        for (TileKey tile : tiles) names.add(String.valueOf(tile));
+        if (store == null || reducer == null || getGraph() == null) return new java.util.LinkedHashSet<>(out);
 
-        return names.toString();
+        java.util.Set<TileKey> seen = new java.util.HashSet<>();
+
+        for (java.util.List<TileKey> leg : legsOnce())
+        {
+            for (TileKey tile : leg)
+            {
+                if (isSwitchSquare(tile) && seen.add(tile)) out.add(tile);
+            }
+        }
+
+        java.util.Collections.sort(out, this::compareSquares);
+
+        return new java.util.LinkedHashSet<>(out);
     }
 
     /**
-     * The stretches a length rule reads that still have a square with no length.
+     * The pieces still needing a length: those whose squares add up to nothing.
      *
-     * ANY square, not all of them: a partly measured stretch is not blind to the rules any more - an unmeasured square
-     * counts as nothing and the rest still counts (Adam, 2026-09-06) - but it UNDER-states the room by whatever is
-     * missing, so a train that would fit is refused.  Somebody measuring everything wants to know about that.
+     * The WHOLE piece, not each square - Adam, 2026-09-06: *"It is only indeterminate if the entire logical segment has
+     * length 0."*  A square inside a measured piece may rightly hold 0: a short piece drawn with several squares has
+     * fewer units than squares.  The store keeps 0 and "not given" as the same thing (`setTileLength` removes a length
+     * of 0), so there is no measured zero to tell apart.
      *
-     * @return the stretches, ordered as `stretchesALengthRuleReads` orders them
+     * @return the pieces, ordered as `stretchesALengthRuleReads` orders them
      */
     public java.util.List<Stretch> stretchesNeedingALength()
     {
@@ -2966,19 +2922,17 @@ public class AutonomySession
 
         for (Stretch stretch : stretchesALengthRuleReads())
         {
-            if (!unmeasuredIn(stretch).isEmpty()) out.add(stretch);
+            if (measuredIn(stretch) <= 0) out.add(stretch);
         }
 
         return out;
     }
 
     /**
-     * The stretches still needing a length that have an unmeasured square on this page - what Mass Assign Lengths
-     * walks from that page.  A stretch running on over a page link is offered from each page it has a gap on, and is
-     * measured whole wherever it is answered.
+     * The pieces still needing a length that have a square on this page - what Mass Assign Lengths walks from it.
      *
      * @param page the page being edited
-     * @return the stretches
+     * @return the pieces
      */
     public java.util.List<Stretch> stretchesNeedingALengthOn(String page)
     {
@@ -2986,7 +2940,7 @@ public class AutonomySession
 
         for (Stretch stretch : stretchesNeedingALength())
         {
-            for (TileKey tile : unmeasuredIn(stretch))
+            for (TileKey tile : stretch.getTiles())
             {
                 if (tile.getPage() != null && tile.getPage().equals(page))
                 {
@@ -3001,7 +2955,26 @@ public class AutonomySession
     }
 
     /**
-     * Every square a length rule reads that has no length - what the Unmeasured Track display highlights.
+     * The switch squares on this page with no length, which Mass Assign Lengths asks for together.
+     *
+     * @param page the page being edited
+     * @return the switches
+     */
+    public java.util.Set<TileKey> switchesNeedingALengthOn(String page)
+    {
+        java.util.Set<TileKey> out = new java.util.LinkedHashSet<>();
+
+        for (TileKey tile : switchesALengthRuleReads())
+        {
+            if (tile.getPage() != null && tile.getPage().equals(page) && store.getTileLength(tile) <= 0) out.add(tile);
+        }
+
+        return out;
+    }
+
+    /**
+     * Every square the Unmeasured Track display highlights: the squares of every piece that adds up to nothing, and
+     * every switch with no length.
      *
      * @return the squares
      */
@@ -3009,62 +2982,70 @@ public class AutonomySession
     {
         java.util.Set<TileKey> out = new java.util.LinkedHashSet<>();
 
-        for (Stretch stretch : stretchesALengthRuleReads()) out.addAll(unmeasuredIn(stretch));
+        for (Stretch stretch : stretchesNeedingALength()) out.addAll(stretch.getTiles());
+
+        for (TileKey tile : switchesALengthRuleReads())
+        {
+            if (store.getTileLength(tile) <= 0) out.add(tile);
+        }
 
         return out;
     }
 
     /**
-     * The shortest whole length this stretch can be given: what is already measured, and one unit for every square
-     * that is not.  Anything less would leave a square at nothing, still unmeasured after being "measured".
+     * The least whole length a piece can be given: one unit, because 0 is the same as no length at all.
      *
-     * @param stretch the stretch
-     * @return the least whole length `assignStretchLength` accepts
+     * @param stretch the piece
+     * @return the least whole length `assignStretchLength` accepts; a piece that already has a length, what it holds
      */
     public int leastWholeLengthOf(Stretch stretch)
     {
         if (stretch == null) return 0;
 
-        return measuredIn(stretch) + unmeasuredIn(stretch).size();
+        int measured = measuredIn(stretch);
+
+        return measured > 0 ? measured : 1;
     }
 
     /**
-     * Shares a stretch's whole length out over its unmeasured squares (Adam, 2026-09-16: per stretch).
+     * Shares a piece's whole length out over its squares (Adam, 2026-09-16: per stretch).
      *
-     * **Squares that already have a length keep it**; the rest of the whole length is shared evenly over the squares
-     * that do not.  **Any remainder goes to the squares FARTHEST from where the train rests**: the berth rule and the
-     * tail walk spend a train's length back from the resting square, so a smaller share at the near end makes a tail
-     * reach further back - the refusing direction rather than the admitting one.  The even share is an approximation
-     * of where the units really lie, and Adam chose it knowing that: the room rule needs only the total.
+     * Only a piece that adds up to nothing is written - one that has a length is measured, by the ruling above.  The
+     * whole length is shared evenly; a square may get 0 where there are fewer units than squares.
      *
-     * A whole length below `leastWholeLengthOf` is refused and nothing is written.
+     * **ANY UNIT LEFT OVER GOES FIRST TO A SQUARE A TRAIN STANDS ON** (MAL-B2).  That square's own length is an allowance
+     * the tail and berth walks never spend for the train standing there, so a unit on it is a unit less of rail they can
+     * spend - the tail reaches further, which is the refusing direction.  The first version gave the unit to the far end
+     * and argued it was refusing; measured, a four-unit tail claimed two squares under that split and four under this
+     * one.  Past the standing squares the rest go in the order the leg runs; the room rule and the FR-087 allowance read
+     * only the total, so for them the split changes nothing.
      *
-     * @param stretch the stretch
-     * @param wholeLength the length of the whole stretch, in the units train lengths are given in
+     * @param stretch the piece
+     * @param wholeLength its whole length, at least 1
      * @return whether it was written
      */
     public boolean assignStretchLength(Stretch stretch, int wholeLength)
     {
-        if (stretch == null) return false;
+        if (stretch == null || wholeLength < 1 || measuredIn(stretch) > 0) return false;
 
-        java.util.List<TileKey> unmeasured = unmeasuredIn(stretch);
+        java.util.List<TileKey> order = new java.util.ArrayList<>();
 
-        if (unmeasured.isEmpty()) return false;
-
-        int toShare = wholeLength - measuredIn(stretch);
-
-        if (toShare < unmeasured.size()) return false;
-
-        int each = toShare / unmeasured.size();
-        int over = toShare % unmeasured.size();
-
-        int given = 0;
-
-        for (int i = unmeasured.size() - 1; i >= 0; i--)
+        for (TileKey tile : stretch.getTiles())
         {
-            store.setTileLength(unmeasured.get(i), each + (given < over ? 1 : 0));
+            if (store.isStation(tile) || isTurnAround(tile)) order.add(tile);
+        }
 
-            given++;
+        for (TileKey tile : stretch.getTiles())
+        {
+            if (!order.contains(tile)) order.add(tile);
+        }
+
+        int each = wholeLength / order.size();
+        int over = wholeLength % order.size();
+
+        for (int i = 0; i < order.size(); i++)
+        {
+            store.setTileLength(order.get(i), each + (i < over ? 1 : 0));
         }
 
         touched();
@@ -3072,16 +3053,91 @@ public class AutonomySession
         return true;
     }
 
-    private java.util.List<TileKey> unmeasuredIn(Stretch stretch)
+    /**
+     * Gives one turnout length to every switch here that has none (Adam, 2026-09-16: "One length for all switches").
+     * A switch that already has a length keeps it.
+     *
+     * @param switches the switch squares to give it to
+     * @param length the length of one turnout, at least 1
+     * @return whether it was written
+     */
+    public boolean assignSwitchLength(java.util.Collection<TileKey> switches, int length)
     {
-        java.util.List<TileKey> out = new java.util.ArrayList<>();
+        if (switches == null || switches.isEmpty() || length < 1) return false;
 
-        for (TileKey tile : stretch.getTiles())
+        boolean wrote = false;
+
+        for (TileKey tile : switches)
         {
-            if (store.getTileLength(tile) <= 0) out.add(tile);
+            if (store.getTileLength(tile) > 0) continue;
+
+            store.setTileLength(tile, length);
+            wrote = true;
         }
 
-        return out;
+        if (wrote) touched();
+
+        return wrote;
+    }
+
+    /**
+     * Every leg once, whichever direction the reducer found it in: its start, its track and its end, in order, taken
+     * from the direction whose key sorts first so the answer does not depend on edge order.
+     */
+    private java.util.List<java.util.List<TileKey>> legsOnce()
+    {
+        java.util.TreeMap<String, java.util.List<TileKey>> byRun = new java.util.TreeMap<>();
+
+        for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+        {
+            java.util.List<TileKey> line = new java.util.ArrayList<>();
+
+            line.add(edge.getStart());
+
+            for (GraphReducer.TileStep step : edge.getPath()) line.add(step.getTile());
+
+            line.add(edge.getEnd());
+
+            String key = sortedNames(line);
+
+            String direction = String.valueOf(edge.getStart()) + " > " + edge.getEnd();
+
+            java.util.List<TileKey> known = byRun.get(key);
+
+            if (known == null || direction.compareTo(String.valueOf(known.get(0)) + " > " + known.get(known.size() - 1)) < 0)
+            {
+                byRun.put(key, line);
+            }
+        }
+
+        return new java.util.ArrayList<>(byRun.values());
+    }
+
+    private boolean isSwitchSquare(TileKey tile)
+    {
+        org.traincontrol.base.LayoutDiagramComponent component = getGraph().getTiles().get(tile);
+
+        return component != null && component.isSwitch();
+    }
+
+    /** By page, then row, then column - pages compared as text, which is how they are named. */
+    private int compareSquares(TileKey x, TileKey y)
+    {
+        int byPage = String.valueOf(x.getPage()).compareTo(String.valueOf(y.getPage()));
+
+        if (byPage != 0) return byPage;
+        if (x.getY() != y.getY()) return Integer.compare(x.getY(), y.getY());
+
+        return Integer.compare(x.getX(), y.getX());
+    }
+
+    private static String sortedNames(java.util.Collection<TileKey> tiles)
+    {
+        java.util.TreeSet<String> names = new java.util.TreeSet<>();
+
+        for (TileKey tile : tiles) names.add(String.valueOf(tile));
+
+        return names.toString();
     }
 
     private int measuredIn(Stretch stretch)

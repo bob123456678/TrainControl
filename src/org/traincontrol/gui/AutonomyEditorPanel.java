@@ -2167,15 +2167,23 @@ public class AutonomyEditorPanel extends JPanel
             // MASS ASSIGN LENGTHS (Adam, 2026-09-16: *"the 'mass assign lengths' feature in the right click menu that
             // cycles through each relevant square"*).  Greyed on its own count, which is the walk's own question - the
             // same shape as Name Everything above it.
-            int toMeasure = session == null ? 0 : session.stretchesNeedingALengthOn(page).size();
+            int piecesToMeasure = session == null ? 0 : session.stretchesNeedingALengthOn(page).size();
+            int switchesToMeasure = session == null ? 0 : session.switchesNeedingALengthOn(page).size();
+
+            boolean leftOut = session != null && session.getStore().getExcludedPages().contains(page);
 
             javax.swing.JMenuItem massAssign =
                 item(I18n.t("autosetup.ui.menuMassAssignLengths"), () -> massAssignLengths());
 
-            massAssign.setEnabled(toMeasure > 0);
-            massAssign.setToolTipText(wrapped(toMeasure > 0
-                ? I18n.f("autosetup.ui.tooltipMassAssignLengths", toMeasure)
-                : I18n.t("autosetup.ui.infoNothingToMeasure")));
+            massAssign.setEnabled(piecesToMeasure + switchesToMeasure > 0);
+
+            // A PAGE LEFT OUT says so (MAL-C8).  Its count is 0 because the graph has no such page, and "everything here
+            // already has a length" was vacuously true of a page nothing had looked at.
+            massAssign.setToolTipText(wrapped(leftOut
+                ? I18n.t("autosetup.ui.infoPageLeftOutNothingToMeasure")
+                : piecesToMeasure + switchesToMeasure > 0
+                    ? I18n.f("autosetup.ui.tooltipMassAssignLengths", piecesToMeasure, switchesToMeasure)
+                    : I18n.t("autosetup.ui.infoNothingToMeasure")));
 
             bulk.add(massAssign);
 
@@ -8718,6 +8726,11 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void setupChanged()
     {
+        // THE HIGHLIGHT'S SQUARES ARE FORGOTTEN HERE AS WELL AS IN refresh() (MAL-B3).  Control+E writes a length
+        // through applyLength and arrives here without ever running refresh(), so the square showed its new number and
+        // its old amber.  Every door that changes the setup comes through this method.
+        unmeasuredSquares = null;
+
         if (onDiagramChanged != null) onDiagramChanged.run();
 
         // ONE REBUILD PER GESTURE, NOT ONE PER WRITE (VD10-C2).
@@ -9152,21 +9165,24 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Goes through every stretch on this page that still needs a length, one at a time (Mass Assign Lengths).
+     * Goes through every piece of track on this page that still has no length, and then its switches (Mass Assign
+     * Lengths).
      *
-     * **Name Everything's walk, for lengths.**  Each stretch is outlined whole - it is one run somebody measures with
-     * one tape - and the first of its unmeasured squares on this page is scrolled to.  The prompt asks for the WHOLE
-     * length of the stretch, says how much of it is already measured, and the session shares the rest out over the
-     * squares with none (Adam, 2026-09-16: per stretch).  Skip leaves one stretch; Stop ends the walk, which a walk of
-     * forty needs.  A length too short to give every unmeasured square a unit is explained and asked again.
+     * **Name Everything's walk, for lengths.**  Each piece is outlined whole - it is one run somebody measures with one
+     * tape, between two sensors or switches - and scrolled to.  The prompt asks for the WHOLE length of the piece and the
+     * session shares it over the piece's squares (Adam, 2026-09-16: per stretch).  Then every switch on the page that has
+     * no length is outlined and one turnout length is asked for, given to each (Adam: "One length for all switches").
      *
-     * Rebuilt once at the end, as Name Everything is: sixty stretches measured one rebuild at a time is sixty rebuilds.
+     * OK, Skip and Cancel as in Name Everything; Escape stops, like Cancel (MAL-B4).  0 is refused with a sentence
+     * saying why - it is the same as no length at all - and asked again.  `setupChanged` once at the end, for the
+     * running layout; the session itself rebuilds on every write, as it does when Name Everything names a square.
      */
     private void massAssignLengths()
     {
-        java.util.List<AutonomySession.Stretch> stretches = session.stretchesNeedingALengthOn(page);
+        java.util.List<AutonomySession.Stretch> pieces = session.stretchesNeedingALengthOn(page);
+        java.util.Set<TileKey> switches = session.switchesNeedingALengthOn(page);
 
-        if (stretches.isEmpty())
+        if (pieces.isEmpty() && switches.isEmpty())
         {
             say(hint, I18n.t("autosetup.ui.infoNothingToMeasure"));
 
@@ -9174,56 +9190,56 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         boolean wroteAny = false;
+        boolean stopped = false;
 
-        for (int i = 0; i < stretches.size(); i++)
+        for (int i = 0; i < pieces.size() && !stopped; i++)
         {
-            AutonomySession.Stretch stretch = stretches.get(i);
+            AutonomySession.Stretch piece = pieces.get(i);
 
-            int measuredSquares = 0;
-            int measuredUnits = 0;
-            TileKey firstGapHere = null;
+            // Asked again rather than trusted from the list made before the walk began.  No two pieces share a square,
+            // so nothing answered earlier can have filled this one - but a walk that trusts a stale list is how a prompt
+            // ends up about nothing.
+            if (measuredTotal(piece) > 0) continue;
 
-            for (TileKey square : stretch.getTiles())
-            {
-                int length = session.getStore().getTileLength(square);
+            outlineAndReveal(piece.getTiles());
 
-                if (length > 0)
-                {
-                    measuredSquares++;
-                    measuredUnits += length;
-                }
-                else if (firstGapHere == null && page != null && page.equals(square.getPage()))
-                {
-                    firstGapHere = square;
-                }
-            }
-
-            // No stretch shares a square with another, so an earlier answer cannot have filled this one - asked again
-            // anyway, because a walk that trusts a list made before it started is how a prompt ends up about nothing.
-            if (measuredSquares == stretch.getTiles().size()) continue;
-
-            selection.clear();
-            selection.addAll(stretch.getTiles());
-            refresh();
-
-            if (onReveal != null && firstGapHere != null) onReveal.accept(firstGapHere);
-
-            String question = I18n.f("autosetup.ui.promptMassAssignLength", i + 1, stretches.size(),
-                nameForPrompt(stretch.getRestsAt()), stretch.getTiles().size(), measuredSquares, measuredUnits);
+            String question = I18n.f("autosetup.ui.promptMassAssignLength", i + 1, pieces.size(),
+                nameForPrompt(piece.getFrom()), nameForPrompt(piece.getTo()), piece.getTiles().size());
 
             Integer whole = askForWholeLength(question);
 
-            while (whole != null && whole >= 0 && !session.assignStretchLength(stretch, whole))
+            while (whole != null && whole >= 0 && !session.assignStretchLength(piece, whole))
             {
-                JOptionPane.showMessageDialog(owner(), wrapped(I18n.f("autosetup.ui.errorStretchTooShort",
-                    measuredUnits, stretch.getTiles().size() - measuredSquares, session.leastWholeLengthOf(stretch))));
+                JOptionPane.showMessageDialog(owner(), wrapped(I18n.t("autosetup.ui.errorLengthZero")));
 
                 whole = askForWholeLength(question);
             }
 
-            if (whole == null) break;
+            if (whole == null) stopped = true;
+            else if (whole >= 0) wroteAny = true;
+        }
 
-            if (whole >= 0) wroteAny = true;
+        if (!stopped)
+        {
+            switches = session.switchesNeedingALengthOn(page);
+
+            if (!switches.isEmpty())
+            {
+                outlineAndReveal(switches);
+
+                String question = I18n.f("autosetup.ui.promptMassAssignSwitches", switches.size());
+
+                Integer turnout = askForWholeLength(question);
+
+                while (turnout != null && turnout >= 0 && !session.assignSwitchLength(switches, turnout))
+                {
+                    JOptionPane.showMessageDialog(owner(), wrapped(I18n.t("autosetup.ui.errorLengthZero")));
+
+                    turnout = askForWholeLength(question);
+                }
+
+                if (turnout != null && turnout > 0) wroteAny = true;
+            }
         }
 
         selection.clear();
@@ -9232,11 +9248,74 @@ public class AutonomyEditorPanel extends JPanel
         else refresh();
     }
 
+    private void outlineAndReveal(java.util.Collection<TileKey> squares)
+    {
+        selection.clear();
+        selection.addAll(squares);
+        refresh();
+
+        for (TileKey square : squares)
+        {
+            if (onReveal != null && page != null && page.equals(square.getPage()))
+            {
+                onReveal.accept(square);
+
+                return;
+            }
+        }
+    }
+
+    private int measuredTotal(AutonomySession.Stretch piece)
+    {
+        int total = 0;
+
+        for (TileKey square : piece.getTiles()) total += Math.max(0, session.getStore().getTileLength(square));
+
+        return total;
+    }
+
+    /** The walk dialogs' answers: OK, Skip, or stop the walk. */
+    public static final int ANSWER_OK = 0;
+    public static final int ANSWER_SKIP = 1;
+    public static final int ANSWER_STOP = -1;
+
+    /**
+     * What an OK / Skip / Cancel walk dialog was answered with (MAL-B4).
+     *
+     * **Only the two buttons that say so are answers; everything else stops the walk.**  Both dialogs checked for null
+     * and for Cancel, and fell through to reading the field for anything else - but JDK 8's option pane answers Escape
+     * with `Integer.valueOf(CLOSED_OPTION)`, not null (`BasicOptionPaneUI`, inherited by FlatLaf).  So Escape wrote
+     * whatever had been typed: a length in Mass Assign Lengths, a name in Name Everything.  Asked the other way round,
+     * a value nobody anticipated can only ever stop.
+     *
+     * @param chosen the option pane's value
+     * @param answers OK, Skip and Cancel, in that order
+     * @return ANSWER_OK, ANSWER_SKIP or ANSWER_STOP
+     */
+    public static int dialogAnswer(Object chosen, Object[] answers)
+    {
+        if (chosen != null && chosen.equals(answers[0])) return ANSWER_OK;
+        if (chosen != null && chosen.equals(answers[1])) return ANSWER_SKIP;
+
+        return ANSWER_STOP;
+    }
+
     /**
      * @return the name the setup gives this square, or where it is when it has none
      */
     private String nameForPrompt(TileKey tile)
     {
+        if (tile == null) return "";
+
+        // A piece ends at a sensor or at a switch.  A switch has no name of its own in the setup, so it is named by
+        // where it is (MAL-C3: the first version named the sensor a leg led to, where no train need rest).
+        LayoutDiagramComponent component = session.getGraph() == null ? null : session.getGraph().getTiles().get(tile);
+
+        if (component != null && component.isSwitch())
+        {
+            return I18n.f("autosetup.ui.switchAtSquare", tile.getX() + "," + tile.getY());
+        }
+
         String name = session.getStore().getPointName(tile);
 
         return name == null || name.trim().isEmpty() ? String.valueOf(tile) : name;
@@ -9288,10 +9367,10 @@ public class AutonomyEditorPanel extends JPanel
         dialog.setVisible(true);
         dialog.dispose();
 
-        Object chosen = pane.getValue();
+        int answer = dialogAnswer(pane.getValue(), answers);
 
-        if (chosen == null || answers[2].equals(chosen)) return null;
-        if (answers[1].equals(chosen)) return -1;
+        if (answer == ANSWER_STOP) return null;
+        if (answer == ANSWER_SKIP) return -1;
 
         String entered = field.getText().trim();
 
@@ -9301,8 +9380,9 @@ public class AutonomyEditorPanel extends JPanel
         {
             return Integer.parseInt(entered);
         }
-        catch (NumberFormatException tooBig)
+        catch (NumberFormatException cannotHappen)
         {
+            // digitsOnly admits three digits and nothing else, so this is unreachable; a whole piece is at most 999.
             return -1;
         }
     }
@@ -9588,12 +9668,12 @@ public class AutonomyEditorPanel extends JPanel
         dialog.setVisible(true);
         dialog.dispose();
 
-        Object chosen = pane.getValue();
+        // Closed with the window button or Escape, which is the same as changing your mind about the walk (MAL-B4).
+        int answer = dialogAnswer(pane.getValue(), answers);
 
-        // Closed with the window button, which is the same as changing your mind about the walk
-        if (chosen == null || answers[2].equals(chosen)) return null;
+        if (answer == ANSWER_STOP) return null;
 
-        if (answers[1].equals(chosen)) return "";
+        if (answer == ANSWER_SKIP) return "";
 
         return field.getText();
     }

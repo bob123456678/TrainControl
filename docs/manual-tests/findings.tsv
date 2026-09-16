@@ -1120,18 +1120,18 @@ LT-M6	2026-08-21-layout-test-feedback.md	Closed	Fixed
 LT-M7	2026-08-21-layout-test-feedback.md	Closed	Fixed - station, turning, arrivals, departures and links all headed
 LT-M8	2026-08-21-layout-test-feedback.md	Closed	Fixed
 LT-M9	2026-08-21-layout-test-feedback.md	Closed	Fixed - it is not the duplicate the other two were
-MAL-B1	2026-09-16-MAL-mass-assign-lengths-review.md	-	Open - confirmed by running; how far it should reach is Adam's call
-MAL-B2	2026-09-16-MAL-mass-assign-lengths-review.md	-	Open - confirmed by running
-MAL-B3	2026-09-16-MAL-mass-assign-lengths-review.md	-	Open - confirmed by running
-MAL-B4	2026-09-16-MAL-mass-assign-lengths-review.md	-	Open - confirmed against the JDK source, not run
-MAL-C1	2026-09-16-MAL-mass-assign-lengths-review.md	-	barred sides and stations out of service are asked for
-MAL-C2	2026-09-16-MAL-mass-assign-lengths-review.md	-	a resting square sits in every stretch that arrives at it; the comment saying otherwise is
-MAL-C3	2026-09-16-MAL-mass-assign-lengths-review.md	-	the prompt names a sensor where no train rests; the too-large catch is dead
-MAL-C4	2026-09-16-MAL-mass-assign-lengths-review.md	-	test gaps - none of the nine claims would catch B1 to B4
-MAL-C5	2026-09-16-MAL-mass-assign-lengths-review.md	-	behaviour.md: wrong subsection, and it repeats B1
-MAL-C6	2026-09-16-MAL-mass-assign-lengths-review.md	-	MT-454 and MT-455 steps that do not match the app
-MAL-C7	2026-09-16-MAL-mass-assign-lengths-review.md	-	translations: terms that drift from their bundles, and two meanings
-MAL-C8	2026-09-16-MAL-mass-assign-lengths-review.md	-	the greyed item's tooltip on a page left out of autonomy
+MAL-B1	2026-09-16-MAL-mass-assign-lengths-review.md	-	Fixed 2026-09-16 to Adam's rulings: *"Every leg, cut at switches"*; for the switch squares
+MAL-B2	2026-09-16-MAL-mass-assign-lengths-review.md	-	Fixed
+MAL-B3	2026-09-16-MAL-mass-assign-lengths-review.md	-	Fixed
+MAL-B4	2026-09-16-MAL-mass-assign-lengths-review.md	-	Fixed - in both dialogs
+MAL-C1	2026-09-16-MAL-mass-assign-lengths-review.md	-	Ruled - superseded by B1's ruling: every leg is read
+MAL-C2	2026-09-16-MAL-mass-assign-lengths-review.md	-	Fixed (stated in the body)
+MAL-C3	2026-09-16-MAL-mass-assign-lengths-review.md	-	Fixed (stated in the body)
+MAL-C4	2026-09-16-MAL-mass-assign-lengths-review.md	-	Fixed (stated in the body)
+MAL-C5	2026-09-16-MAL-mass-assign-lengths-review.md	-	Fixed (stated in the body)
+MAL-C6	2026-09-16-MAL-mass-assign-lengths-review.md	-	Fixed (stated in the body)
+MAL-C7	2026-09-16-MAL-mass-assign-lengths-review.md	-	Fixed (stated in the body)
+MAL-C8	2026-09-16-MAL-mass-assign-lengths-review.md	-	Fixed (stated in the body)
 MAL-D1	2026-09-16-MAL-mass-assign-lengths-review.md	-	"Rebuilt once at the end" - the session rebuilds on every write, as `setPointName` does fo
 MAL-D2	2026-09-16-MAL-mass-assign-lengths-review.md	-	A tile twice in one path (a bridge crossed twice) is counted twice - but so do the reducer
 MAL-D3	2026-09-16-MAL-mass-assign-lengths-review.md	-	The amber wash is close in hue to the orange selection outline, but a fill and a 2px outli

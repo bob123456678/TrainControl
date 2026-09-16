@@ -55,8 +55,8 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-451](#mt-451) | 2026-09-16 | Why Not Moving? gives the berth's own reason for a parking berth, not autonomy's preference | fixed unvalidated | AMR-C2 |
 | [MT-452](#mt-452) | 2026-09-16 | Loading a configuration that names a train you no longer have keeps the rest of it | fixed unvalidated | AMR-C3 |
 | [MT-453](#mt-453) | 2026-09-16 | A lock naming track that is not in the file is dropped, and the log says so loudly | fixed unvalidated | AMR-C3 |
-| [MT-454](#mt-454) | 2026-09-16 | Mass Assign Lengths walks every stretch on the page that still needs a length | fixed unvalidated | FR-089 |
-| [MT-455](#mt-455) | 2026-09-16 | The Unmeasured Track display highlights exactly the squares still needing a length | fixed unvalidated | FR-089 |
+| [MT-454](#mt-454) | 2026-09-16 | Mass Assign Lengths walks every piece of track on the page that has no length, then its switches | fixed unvalidated | FR-089 |
+| [MT-455](#mt-455) | 2026-09-16 | The Unmeasured Track display highlights the track still needing a length, and follows every edit | fixed unvalidated | FR-089 |
 
 Everything else - 425 of 455 - needs nothing from you unless the area changes again:
 374 **fixed validated** and 51 **superseded**.
@@ -22966,33 +22966,36 @@ Found by the wide autonomy review, and your ruling on it: *"drop the lock edge w
 ---
 <a id="mt-454"></a>
 
-### MT-454 - 2026-09-16 - Mass Assign Lengths walks every stretch on the page that still needs a length
+### MT-454 - 2026-09-16 - Mass Assign Lengths walks every piece of track on the page that has no length, then its switches
 
 **Disposition:** fixed unvalidated
 **From:** FR-089
 
 **Written:** 2026-09-16
 
-Your request: *"the 'mass assign lengths' feature in the right click menu that cycles through each relevant square"*, per stretch.  It goes through the stretches of track a length rule reads that still have a square with no length, one at a time.  Each stretch is outlined whole, and you type the length of the WHOLE stretch; it is shared evenly over the squares that have none, squares that already have a length keep it, and any unit left over goes to the squares farthest from where the train stops.  On a copy of your railway today that is 33 stretches on **1 - Main** and 13 on **2 - Bottom**.
+Rewritten the same day after review MAL, to your rulings *"Every leg, cut at switches"* and *"One length for all switches"*.  Your request: *"the 'mass assign lengths' feature in the right click menu that cycles through each relevant square"*, per stretch.  The length rules between them read every leg of track, so the walk covers every leg, cut into pieces between two fixed points - a sensor or a switch.  Each piece is outlined whole and you type its WHOLE length; it is shared evenly over its squares, and a square may get 0 when there are fewer units than squares.  Then every switch on the page with no length is outlined and you type ONE turnout length, which each of them is given.  On a copy of your railway today that is 57 pieces and 33 switches on **1 - Main**, and 35 pieces and 21 switches on **2 - Bottom**.
 
 **Steps**
 
 1. Open the autonomy editor on **1 - Main**, and tick **Track Lengths** so the numbers show.
-2. Right-click any square, open **Bulk Tools**, and hover **Mass Assign Lengths...** - the tooltip says how many stretches.  Click it.
-3. For the first stretch, type its whole length and press OK.
-4. For the second, press **Skip**.
-5. For a stretch that already has a length on one of its squares, type a number smaller than the prompt says is already measured.
-6. Then press **Cancel** to stop.
+2. Right-click a TRACK square (an empty or text square has a different menu), open **Bulk Tools**, and hover **Mass Assign Lengths...** - the tooltip gives both counts.  Click it.
+3. For the first piece, type its whole length and press OK.
+4. For the second, type **0** and press OK.
+5. For the third, press **Skip**.
+6. For the fourth, type a number and press **Escape**.
+7. Run it again, and this time press **Skip** through the pieces until the switch prompt appears; type one turnout length and press OK.
 
 **Expected**
 
-- Each prompt says which stretch of how many, which square it leads to, how many squares it has and how much of it is already measured - and the stretch is outlined on the diagram, scrolled into view.
-- After step 3 the squares of that stretch show numbers that add up to exactly what you typed, and any extra unit sits at the end away from the station.
-- After step 4 that stretch is untouched.
-- Step 5 explains the smallest length the stretch can take and asks again, writing nothing.
-- Cancel stops the walk, and Mass Assign Lengths offered again starts from what is still unmeasured.
+- Each prompt says which piece of how many and names its two ends - a station or sensor by name, a switch as *the switch at x,y* - and the piece is outlined on the diagram and scrolled into view.
+- After step 3 that piece's squares show numbers adding up to exactly what you typed.  A switch at either end of it shows no number.
+- Step 4 says 0 is the same as no length at all, and asks again, writing nothing.
+- Step 5 leaves that piece untouched.
+- Step 6 **stops the walk** and writes nothing for that piece.
+- In step 7 every switch on the page is outlined together, and each gets the one length; a switch that already had a length keeps it.
+- On a page left out of autonomy, the greyed item says the page is left out rather than that everything is measured.
 
-*What this is:* FR-089.  `core.testMassAssignLengths` - nine claims, each seen red before the code existed, and five mutations each caught: never walking on through a sensor, ignoring switches, giving the remainder to the near end, the both-ways merge dropped, and the mark left out of `isBlank`.
+*What this is:* FR-089, and review MAL (B1 to B4, C2, C3, C8).  `core.testMassAssignLengths` - twelve claims, eleven seen red first against the first version, and six mutations each caught.
 
 #### Comments
 
@@ -23000,32 +23003,34 @@ Your request: *"the 'mass assign lengths' feature in the right click menu that c
 
 <a id="mt-455"></a>
 
-### MT-455 - 2026-09-16 - The Unmeasured Track display highlights exactly the squares still needing a length
+### MT-455 - 2026-09-16 - The Unmeasured Track display highlights the track still needing a length, and follows every edit
 
 **Disposition:** fixed unvalidated
 **From:** FR-089
 
 **Written:** 2026-09-16
 
-Your request: *"a display option to statically highlight all relevant unmeasured squares."*  A new tick box, **Unmeasured Track**, directly under **Track Lengths** in the autonomy editor.  With it on, every square a length rule reads that has no length is washed amber - the track from each station, parking berth and turn-round square back to the nearest switch.  It uses the same answer as Mass Assign Lengths, so the two cannot disagree.
+Rewritten the same day after review MAL.  Your request: *"a display option to statically highlight all relevant unmeasured squares."*  A tick box, **Unmeasured Track**, directly under **Track Lengths** in the autonomy editor.  With it on, every piece of track whose squares add up to nothing, and every switch with no length, is washed amber.  It asks the same question Mass Assign Lengths does, so the two cannot disagree.  On a copy of your railway today that is 212 squares on 1 - Main and 164 on 2 - Bottom.
 
 **Steps**
 
 1. Open the autonomy editor on **1 - Main** and tick **Unmeasured Track**.
-2. Look along a platform approach, and at the switch it comes off.
-3. Give one highlighted square a length the ordinary way (**Set Length...**).
-4. Close the editor and open it again.
-5. Look at **3 - Top Parking**.
+2. Look along a line through a switch: the track on both sides of it, and the switch itself.
+3. Hover a highlighted track square, press **Control+E**, type a length and press Enter.
+4. Give another highlighted square a length through the menu (**Segment Length...**).
+5. Close the editor and open it again.
+6. Look at **3 - Top Parking**.
 
 **Expected**
 
-- Amber squares on the approaches to stations, parking berths and turn-round squares - 131 on 1 - Main and 50 on 2 - Bottom on a copy of your railway today.  The switch itself is never amber, and neither is track on the far side of it.
+- Amber on the track either side of each switch, and on the switch too while it has no length - not only on the approaches to stations.
 - Arrows, badges and trains are still visible through the wash.
-- After step 3 only that square loses its highlight; the rest of its stretch stays amber until it has lengths too.
+- After step 3 the WHOLE piece that square belongs to loses its highlight at once - not at the next click - because a piece is measured once it adds up to more than nothing.  The number and the wash never disagree.
+- Step 4 does the same through the menu.
 - The tick box is remembered when the editor opens again.
 - **3 - Top Parking** shows nothing, because it is one of the three pages left out of autonomy.
 
-*What this is:* FR-089.  `core.testMassAssignLengths.testTheHighlightIsADisplayChoiceAndMarksOnlyWhatARuleReads`, asked of the editor's own `annotationFor`, and `testASquareMarkedOnlyAsUnmeasuredIsNotBlank` for OB-007's reason.
+*What this is:* FR-089 and review MAL (B1, B3).  `core.testMassAssignLengths.testTheHighlightIsADisplayChoiceAndMarksWhatIsStillUnmeasured` and `testAnEditThroughControlEUpdatesTheHighlight`, which was seen red against the first version.
 
 #### Comments
 

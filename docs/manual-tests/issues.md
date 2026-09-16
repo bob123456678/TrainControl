@@ -1397,6 +1397,8 @@ Adam, 2026-09-16, asking what it would take: *"How big of a lift would it be to 
 
 **On his railway today** (a sandbox copy, 2026-09-16): 46 stretches and 181 squares - 33 stretches and 131 squares on 1 - Main, 13 and 50 on 2 - Bottom, none on the three pages left out of autonomy, and no stretch crossing a page.
 
+**Revised the same day after review MAL** (`docs/reviews/2026-09-16-MAL-mass-assign-lengths-review.md`).  The squares above are only the room rule's: the FR-087 allowance and the tail and berth walks read the switch and the track before it, and on this railway their reach is every leg.  Asked, Adam ruled *"Every leg, cut at switches"* and *"One length for all switches"*: every leg is cut into pieces between sensors and switches, switches are asked for together with one turnout length, and a piece needs a length only while its whole total is 0.  On a copy of the railway after the fix: 96 pieces (91 still with no length) and 54 switches.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

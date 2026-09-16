@@ -846,6 +846,22 @@ places, or no length, both halves fall back to the answer 5a already gives.
   but the segment measures one unit, a four-unit train does not fit — a part cannot be longer than
   the whole. This over-states the real room, so it only ever refuses more; nothing new is admitted.
 
+**Mass Assign Lengths and Unmeasured Track: every leg, cut at switches** (FR-089; Adam, 2026-09-16, on review
+MAL-B1). The length rules between them read every leg on the railway: the room rule the track past the last switch,
+but the FR-087 allowance (5a) whole legs back until a reversal, and the tail and berth walks (5c) the switch square and
+the track before it. Measured on Adam's railway, that reach is every one of its 75 legs. So the tools cut every leg into
+**pieces** between two fixed points - a sensor or a switch - and ask for each piece's whole length once; each square is
+in exactly one piece. **A switch square is in no piece**: a share of a piece's length landing on it would sit where the
+room rule does not count it, so switches are asked for together, one turnout length for all of a page's switches with
+none (*"One length for all switches"*). Two switches back to back have no piece between them - there is no square of
+track there to measure. **A piece needs a length only while its whole total is 0**, by the ruling above - a square
+inside a measured piece may rightly hold 0 - so the least a piece can be given is 1. The share is even; any unit left
+over goes first to a square a train stands on, whose length its own tail never spends, which is the refusing direction
+(MAL-B2).
+
+The editor notice about turn-round squares with no length is a different question, said unprompted and so asking less
+(MT-305).
+
 ### 5c. The tail: track a standing train is lying across
 
 > *"Those edges it reaches need to be considered blocked ... bottommainc should currently be blocked
@@ -1279,19 +1295,6 @@ The focus-moving of `OB-170` stays as it was. It is no longer what makes the key
 not fight: the post-processor only ever sees what the focus owner did not want.
 
 `regression.testTheKeyMapReachesTheWholeWindow` holds the three halves of that rule.
-
-**Which squares a length rule reads, and how Mass Assign Lengths asks for them** (FR-089, Adam 2026-09-16:
-*"per stretch, every relevant square a rule reads"*). On every approach to a station, a parking berth or a
-turn-round square: the track from that square back to the nearest switch, and where a leg crosses no switch, on
-through the sensor behind it onto the leg before - the room rule walks exactly that far (AMR-B3). The switch tile is
-not room. **Unmeasured Track** highlights those squares that have no length; **Mass Assign Lengths** asks for them
-one stretch at a time - one leg's share, between the square it arrives at and a switch or a sensor - takes the
-stretch's whole length, keeps any square already measured, and shares the rest evenly over the others, with any
-remainder farthest from where the train stops. The even share is an approximation of where the units really lie,
-chosen knowing that: the room rule needs only the total, and the tail and berth rules read where each unit is.
-
-Not the same question as the editor notice about turn-round squares with no length, which is said unprompted and
-so asks less (MT-305).
 
 ---
 

@@ -7,11 +7,13 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import javax.swing.JOptionPane;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.GraphReducer;
 import org.traincontrol.automationui.TileAnnotation;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
@@ -20,28 +22,27 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.AutonomyEditorPanel;
 
 /**
- * Mass Assign Lengths and the Unmeasured Track display: which squares a length rule reads, and how a stretch's whole
- * length is shared out over them.
+ * Mass Assign Lengths and the Unmeasured Track display: which squares they ask for, and how a piece's whole length is
+ * shared out.
  *
- * Adam, 2026-09-16: *"per stretch, every relevant square a rule reads. build it.  let's have: the 'mass assign lengths'
- * feature in the right click menu that cycles through each relevant square.  and a display option to statically
- * highlight all relevant unmeasured squares."*
+ * **The definition, as ruled after review MAL (2026-09-16).**  The first version asked only for the track past the last
+ * switch, on the reasoning that every length rule stops there.  Only the room rule does: the FR-087 allowance
+ * (`Layout.measuredRouteIn`) adds whole legs back until a reversal, and the tail and berth walks spend the switch square
+ * and the track before it.  Measured on Adam's railway, that reach is every leg - so, asked how to cover it, Adam chose
+ * **"Every leg, cut at switches"**, and for the switch squares themselves **"One length for all switches"**.
  *
- * **Which squares a rule reads**, from the rules rather than from a summary of them.  The room rule
- * (`Layout.measuredRoomAtTheEndOf`) and the FR-087 allowance (`Layout.measuredRouteIn`) both walk back from where a train
- * comes to rest, leg by leg, and stop at the last switch; the tail walk stops at a fork, which is the same place.  A leg
- * that crosses no switch does not stop them - they go on through the sensor behind it onto the leg before (AMR-B3).  So
- * the relevant squares are, on every approach to every square a train can come to rest on - a station, a parking berth,
- * a turn-round square - the track from that square back to the nearest switch.  The switch tile itself is not room and
- * is not asked for.
+ * So:
  *
- * **Per stretch, as Adam chose.**  A stretch is one leg's share of that: the squares between the square it arrives at and
- * the switch, or between two sensors.  He types its whole length once and it is shared evenly over its unmeasured
- * squares.  The trade-off was put to him first: the room rule needs only the total, but the tail and berth rules read
- * where each unit lies, so an even share is an approximation - and any remainder goes to the squares FARTHEST from where
- * the train rests, which makes a tail reach further back rather than less far, the refusing direction.
+ *  - every leg on the pages autonomy uses is cut into PIECES at its switches, and each square belongs to exactly one
+ *    piece - a sensor square that ends several legs is in the first of them;
+ *  - a switch square is in no piece: its share of a piece's length would, in one direction or the other, sit on the
+ *    square the room rule does not count, so the room rule would come out wrong by that share.  Switches are asked for
+ *    together, one turnout length per page;
+ *  - a piece needs a length only while its TOTAL is 0 - Adam, 2026-09-06: *"It is only indeterminate if the entire
+ *    logical segment has length 0."*  A square inside a measured piece may hold 0; the store keeps 0 and "not given" as
+ *    the same thing, so a whole length of 0 is refused.
  *
- * Every railway here is its own, built in memory; none is shared with another test.
+ * Every railway here is its own, built in memory.
  *
  * @author Adam
  */
@@ -66,204 +67,197 @@ public class testMassAssignLengths
     // ------------------------------------------------------------------------------------------------ which squares
 
     /**
-     * A parking berth nobody turns round at still has its stretch asked for - and nothing a rule does not read is.
+     * Every leg is cut into pieces at its switches, each square is in one piece, and the switch is in none (MAL-B1).
      *
-     * The gap this feature closes.  The existing notice asks only where trains turn round, because it was written when
-     * the room rule ran only at reversals; since MT-262 it runs at every destination, so a parking berth's approach was
-     * read by the rule and asked for by nothing.
-     *
-     * The second half is the one that stops "highlight every square" passing: the switch, the track on the far side of
-     * it, and the branch are not read by any length rule for this berth, and must not be asked for.
+     * The first half is the one the first version failed: 2,1 lies BEFORE the switch on the way into the berth, and the
+     * FR-087 allowance and the tail walk both read it.  The branch to 3,0 leads to no station at all and is still a leg a
+     * route runs along, so it is asked for too.
      */
     @Test
-    public void testAParkingBerthNobodyTurnsAtHasItsStretchAskedFor() throws IOException
+    public void testEveryLegIsCutIntoPiecesAtItsSwitches() throws IOException
     {
-        TileKey berth = key(5, 1);
+        openBerthBehindASwitch(key(5, 1));
 
-        openBerthBehindASwitch(berth);
+        assertEquals(tileSets(session.stretchesALengthRuleReads()),
+            new HashSet<>(Arrays.asList(set(key(1, 1), key(2, 1)), set(key(4, 1), key(5, 1)), set(key(3, 0)))),
+            "the pieces are the track either side of the switch and the branch: " + describe(session.stretchesALengthRuleReads()));
 
-        assertFalse(session.isTurnAround(berth),
-            "precondition: trains turn round at the berth, so the old notice could be what finds it");
+        assertEquals(session.switchesALengthRuleReads(), set(key(3, 1)), "the switch square is asked for on its own");
 
-        List<AutonomySession.Stretch> needing = session.stretchesNeedingALength();
+        assertNoSquareIsInTwoPieces(session.stretchesALengthRuleReads());
+    }
 
-        assertEquals(needing.size(), 1, "one stretch leads into the berth from the switch; found " + describe(needing));
+    /**
+     * Two switches back to back leave no piece between them, and both are asked for as switches.
+     *
+     * Adam, 2026-09-16: *"what happens when two switches are back to back"*.  There is no track square between them, so
+     * there is nothing to measure there; the room rule stops at the nearer switch, and the legs that cross both add both
+     * switches' lengths.
+     */
+    @Test
+    public void testTwoSwitchesBackToBackLeaveNoPieceBetweenThem() throws IOException
+    {
+        openTwoSwitchesBackToBack();
 
-        assertEquals(new HashSet<>(needing.get(0).getTiles()), set(key(5, 1), key(4, 1)),
-            "the stretch into the berth is the berth and the track between it and the switch");
+        List<AutonomySession.Stretch> pieces = session.stretchesALengthRuleReads();
 
-        assertEquals(needing.get(0).getRestsAt(), berth, "the stretch should say which square it leads to");
+        assertFalse(pieces.isEmpty(), "precondition: the fixture built no legs at all");
 
-        Set<TileKey> highlighted = session.squaresNeedingALength();
-
-        assertEquals(highlighted, set(key(5, 1), key(4, 1)),
-            "the squares to highlight are exactly the unmeasured squares a length rule reads for this berth");
-
-        for (TileKey unread : Arrays.asList(key(3, 1), key(2, 1), key(1, 1), key(3, 0)))
+        for (AutonomySession.Stretch piece : pieces)
         {
-            assertFalse(highlighted.contains(unread), unread + " was asked for, but no length rule reads it: the switch"
-                + " is not room, and the far side and the branch lie behind the switch the room rule stops at");
+            assertFalse(piece.getTiles().isEmpty(), "an empty piece would be a prompt about nothing: " + describe(pieces));
+            assertFalse(piece.getTiles().contains(key(2, 1)) || piece.getTiles().contains(key(3, 1)),
+                "a switch square is inside a piece: " + describe(pieces));
         }
+
+        assertEquals(session.switchesALengthRuleReads(), set(key(2, 1), key(3, 1)), "both switches are asked for");
+
+        assertNoSquareIsInTwoPieces(pieces);
     }
 
     /**
-     * A leg with no switch in it does not end the stretch: the rules walk on through the sensor behind (AMR-B3).
-     *
-     * A - B - C in a line with no switch, and C the only station.  `measuredRoomAtTheEndOf` sums the leg into C and then
-     * carries on over the leg into B, because nothing divides them - so both legs are read, and both are asked for.  A
-     * itself is not: it is where the second leg starts, and a leg's length is its track and the square it arrives at.
+     * A piece is measured once its total is above 0, and a square inside it may hold 0 (Adam's ruling of 2026-09-06).
      */
     @Test
-    public void testAStretchWithNoSwitchRunsBackThroughTheSensorBehindIt() throws IOException
-    {
-        session.open(Arrays.asList(threeSensorsInALine()));
-        session.initialize("Lengths");
-        session.setStation(key(5, 1), true);
-        session.rebuild();
-
-        assertEquals(session.squaresNeedingALength(), set(key(5, 1), key(4, 1), key(3, 1), key(2, 1)),
-            "the room at C is read back over both legs, through B, because no switch divides them");
-
-        assertEquals(session.stretchesNeedingALength().size(), 2,
-            "each leg is its own stretch - one between B and C, one between A and B - so each is measured as one run: "
-            + describe(session.stretchesNeedingALength()));
-    }
-
-    /**
-     * One run of track that is the approach to a station at each end is ONE stretch, not two.
-     *
-     * Asked twice it would be typed twice, and the second prompt would be about squares the first had just filled.
-     */
-    @Test
-    public void testBothWaysAlongOneRunAreOneStretch() throws IOException
-    {
-        session.open(Arrays.asList(runBetweenTwoStations()));
-        session.initialize("Lengths");
-        session.setStation(key(1, 1), true);
-        session.setStation(key(4, 1), true);
-        session.rebuild();
-
-        List<AutonomySession.Stretch> needing = session.stretchesNeedingALength();
-
-        assertEquals(needing.size(), 1, "the one run between the two stations was asked for more than once: "
-            + describe(needing));
-
-        assertEquals(new HashSet<>(needing.get(0).getTiles()), set(key(1, 1), key(2, 1), key(3, 1), key(4, 1)));
-    }
-
-    /**
-     * A measured square stops being asked for, and a fully measured stretch stops being a stretch to measure.
-     */
-    @Test
-    public void testOnlyTheUnmeasuredSquaresAreStillAskedFor() throws IOException
+    public void testAPieceIsMeasuredWhenItsTotalIsAboveZero() throws IOException
     {
         openBerthBehindASwitch(key(5, 1));
 
         session.setTileLength(key(4, 1), 3);
 
-        assertEquals(session.squaresNeedingALength(), set(key(5, 1)),
-            "a square with a length is still highlighted, or the one without is not");
+        assertFalse(session.squaresNeedingALength().contains(key(5, 1)),
+            "a square inside a piece that has a length is still highlighted - the whole piece is what is measured, and"
+            + " a short square may rightly hold nothing");
 
-        assertEquals(session.stretchesNeedingALength().size(), 1,
-            "a stretch with one square still unmeasured must still be asked for");
+        assertTrue(session.squaresNeedingALength().contains(key(2, 1)),
+            "control: the unmeasured piece before the switch is no longer highlighted");
 
-        session.setTileLength(key(5, 1), 2);
+        session.setTileLength(key(4, 1), 0);
 
-        assertTrue(session.squaresNeedingALength().isEmpty(), "a fully measured railway still has squares highlighted");
-        assertTrue(session.stretchesNeedingALength().isEmpty(), "a fully measured stretch is still asked for");
-
-        assertEquals(session.stretchesALengthRuleReads().size(), 1,
-            "control: the stretch has not stopped being READ just because it is measured");
+        assertTrue(session.squaresNeedingALength().contains(key(4, 1)),
+            "a piece set back to 0 is measured again, but 0 and 'not given' are the same thing in the store");
     }
 
     /**
-     * The walk is per page: a stretch on another page is not asked for from this one.
+     * The walk is per page: a piece on another page is not asked for from this one.
      */
     @Test
     public void testTheWalkAsksOnlyAboutThisPage() throws IOException
     {
         openBerthBehindASwitch(key(5, 1));
 
-        assertEquals(session.stretchesNeedingALengthOn("main").size(), 1, "the stretch on this page was not offered");
+        assertEquals(session.stretchesNeedingALengthOn("main").size(), 3, "the pieces on this page were not offered");
         assertTrue(session.stretchesNeedingALengthOn("elsewhere").isEmpty(),
-            "a page with no track on it was offered a stretch from another page");
+            "a page with no track on it was offered a piece from another page");
+        assertEquals(session.switchesNeedingALengthOn("main"), set(key(3, 1)));
+        assertTrue(session.switchesNeedingALengthOn("elsewhere").isEmpty());
     }
 
     // ------------------------------------------------------------------------------------------------ sharing it out
 
     /**
-     * The whole length is shared evenly over the unmeasured squares, and the remainder goes FARTHEST from the berth.
+     * Units never cross a switch: the room past it is exactly the piece past it, and the leg adds up (MAL-B1).
      *
-     * Seven units over the berth and the square behind it: three each and one over.  The one over goes to 4,1, the
-     * square farther from where the train rests - so a tail walked back from the berth spends less on the first square
-     * and reaches further, which is the refusing direction for the berth rule rather than the admitting one.
+     * Asked of the reducer the running layout is built from, so this is the number the room rule and the FR-087
+     * allowance will read - not a sum this test does itself.
      */
     @Test
-    public void testTheWholeLengthIsSharedOverTheUnmeasuredSquares() throws IOException
+    public void testUnitsNeverCrossASwitch() throws IOException
     {
         openBerthBehindASwitch(key(5, 1));
 
-        AutonomySession.Stretch stretch = session.stretchesNeedingALength().get(0);
+        assertTrue(session.assignStretchLength(piece(key(1, 1)), 5));
+        assertTrue(session.assignStretchLength(piece(key(4, 1)), 7));
+        assertTrue(session.assignSwitchLength(session.switchesNeedingALengthOn("main"), 2));
+        assertTrue(session.assignStretchLength(piece(key(3, 0)), 1), "the branch is a piece of its own");
 
-        assertTrue(session.assignStretchLength(stretch, 7), "a whole length the stretch can hold was refused");
+        session.rebuild();
 
-        assertEquals(length(5, 1) + length(4, 1), 7, "the shares do not add up to the whole length that was typed");
+        GraphReducer.ReducedEdge in = edge(key(1, 1), key(5, 1));
 
-        assertEquals(length(4, 1), 4, "the unit over should go to the square farther from the berth");
-        assertEquals(length(5, 1), 3, "the berth itself should get the even share");
+        assertEquals(in.getRoomAtTheEnd(), 7,
+            "the room past the switch is not the piece past the switch, so a share of it landed on the switch or before it");
 
-        assertTrue(session.stretchesNeedingALength().isEmpty(), "a stretch that has just been measured is still asked for");
+        assertEquals(in.getLength(), length(2, 1) + 2 + 7,
+            "the leg does not add up to the track before the switch, the switch and the piece past it");
+
+        assertTrue(session.squaresNeedingALength().isEmpty(), "everything has a length and something is still highlighted");
     }
 
     /**
-     * A square already measured keeps its length, and a whole length too short to give every other square one unit is
-     * refused with nothing written.
+     * The unit over goes to the square a train stands on first (MAL-B2).
+     *
+     * That square's own length is an allowance the tail and berth walks never spend, so a unit there is a unit less of
+     * rail they can spend - the tail reaches further, which is the refusing direction.  Measured on the review's probe:
+     * split 3 and 4 a four-unit tail claimed two squares; split 4 and 3 it claimed four.
      */
     @Test
-    public void testAMeasuredSquareIsKeptAndATooShortLengthIsRefused() throws IOException
+    public void testTheUnitOverGoesToTheSquareATrainStandsOn() throws IOException
     {
-        session.open(Arrays.asList(threeSensorsInALine()));
-        session.initialize("Lengths");
-        session.setStation(key(5, 1), true);
-        session.rebuild();
+        openBerthBehindASwitch(key(5, 1));
 
-        session.setTileLength(key(4, 1), 5);
+        assertTrue(session.assignStretchLength(piece(key(5, 1)), 7), "a whole length the piece can hold was refused");
 
-        AutonomySession.Stretch intoC = null;
+        assertEquals(length(5, 1) + length(4, 1), 7, "the shares do not add up to what was typed");
+        assertEquals(length(5, 1), 4, "the unit over should go to the berth, whose length is not spent by its own tail");
+        assertEquals(length(4, 1), 3);
+    }
 
-        for (AutonomySession.Stretch stretch : session.stretchesNeedingALength())
-        {
-            if (stretch.getTiles().contains(key(5, 1))) intoC = stretch;
-        }
+    /**
+     * Fewer units than squares can be entered, and 0 cannot.
+     *
+     * Two squares, one unit: one square gets it and the other rightly holds nothing.  The first version demanded a unit
+     * per square, so a short piece drawn with several squares could not be entered at all.
+     */
+    @Test
+    public void testFewerUnitsThanSquaresCanBeEnteredButNotZero() throws IOException
+    {
+        openBerthBehindASwitch(key(5, 1));
 
-        assertNotNull(intoC, "the stretch into C is no longer asked for, with C itself still unmeasured");
+        AutonomySession.Stretch beforeTheSwitch = piece(key(1, 1));
 
-        assertEquals(session.leastWholeLengthOf(intoC), 6,
-            "4,1 already holds 5, and C needs at least one: the least whole length is 6");
+        assertEquals(session.leastWholeLengthOf(beforeTheSwitch), 1, "the least a piece can be given is one unit");
 
-        assertFalse(session.assignStretchLength(intoC, 5),
-            "a whole length that leaves an unmeasured square at nothing was accepted");
+        assertFalse(session.assignStretchLength(beforeTheSwitch, 0), "0 was accepted, and it means no length at all");
+        assertEquals(length(1, 1) + length(2, 1), 0, "a refused length still wrote something");
 
-        assertEquals(length(5, 1), 0, "a refused length still wrote something");
-        assertEquals(length(4, 1), 5, "a refused length changed a square that was already measured");
+        assertTrue(session.assignStretchLength(beforeTheSwitch, 1), "one unit over two squares was refused");
+        assertEquals(length(1, 1) + length(2, 1), 1);
 
-        assertTrue(session.assignStretchLength(intoC, 9), "a whole length the stretch can hold was refused");
+        assertFalse(pieceNeedsALength(key(1, 1)), "a piece whose total is now 1 is still asked for");
+    }
 
-        assertEquals(length(4, 1), 5, "the square that was already measured was overwritten");
-        assertEquals(length(5, 1), 4, "the rest of the whole length should go to the square that had none");
+    /**
+     * One turnout length goes to every switch on the page that has none, and a switch already measured keeps its own.
+     */
+    @Test
+    public void testOneTurnoutLengthGoesToEverySwitchStillWithout() throws IOException
+    {
+        openTwoSwitchesBackToBack();
+
+        session.setTileLength(key(2, 1), 3);
+
+        assertEquals(session.switchesNeedingALengthOn("main"), set(key(3, 1)), "a measured switch is asked for again");
+
+        assertFalse(session.assignSwitchLength(session.switchesNeedingALengthOn("main"), 0), "0 was accepted for a switch");
+        assertEquals(length(3, 1), 0, "a refused switch length still wrote something");
+
+        assertTrue(session.assignSwitchLength(session.switchesNeedingALengthOn("main"), 2));
+
+        assertEquals(length(3, 1), 2, "the switch without a length did not get the turnout length");
+        assertEquals(length(2, 1), 3, "the switch that already had a length was overwritten");
     }
 
     // ------------------------------------------------------------------------------------------------ the display
 
     /**
-     * The highlight is a display choice, and it marks exactly the squares a rule reads that have no length.
+     * The highlight is a display choice, and it marks the pieces and switches still needing a length.
      *
-     * Asked of the editor's own `annotationFor`, which is what each square paints from - so this is the highlight a
-     * person sees, not a set somebody could forget to draw.  The toggle is set directly rather than clicked, so the test
-     * does not write Adam's remembered view settings.
+     * Asked of the editor's own `annotationFor`, which is what each square paints from.  The toggle is set directly, so
+     * the test does not write Adam's remembered view settings.
      */
     @Test
-    public void testTheHighlightIsADisplayChoiceAndMarksOnlyWhatARuleReads() throws IOException
+    public void testTheHighlightIsADisplayChoiceAndMarksWhatIsStillUnmeasured() throws IOException
     {
         openBerthBehindASwitch(key(5, 1));
 
@@ -275,17 +269,43 @@ public class testMassAssignLengths
 
         panel.getShowUnmeasured().setSelected(true);
 
-        assertTrue(marked(panel, key(4, 1)), "the unmeasured square behind the berth is not highlighted");
-        assertTrue(marked(panel, key(5, 1)), "the unmeasured berth is not highlighted");
-        assertFalse(marked(panel, key(2, 1)), "a square no length rule reads is highlighted");
-        assertFalse(marked(panel, key(3, 1)), "the switch is highlighted, and it is not room");
+        for (TileKey square : Arrays.asList(key(1, 1), key(2, 1), key(3, 1), key(4, 1), key(5, 1), key(3, 0)))
+        {
+            assertTrue(marked(panel, square), square + " is on a leg with no length and is not highlighted");
+        }
+    }
+
+    /**
+     * An edit through Control+E updates the highlight (MAL-B3).
+     *
+     * Control+E reaches `promptLengthFor` -> `applyLength` -> `setupChanged()` and never the panel's `refresh()`, and the
+     * highlighted squares were forgotten only in `refresh()` - so the square showed its new number and its old amber.
+     * The dialog cannot be driven here, so the write is made the way `applyLength` makes it and `setupChanged` is called
+     * as it calls it.
+     */
+    @Test
+    public void testAnEditThroughControlEUpdatesTheHighlight() throws Exception
+    {
+        openBerthBehindASwitch(key(5, 1));
+
+        AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+        panel.getShowUnmeasured().setSelected(true);
+
+        assertTrue(marked(panel, key(4, 1)), "precondition: the square is highlighted before it is measured");
+
+        session.setTileLength(key(4, 1), 3);
+
+        java.lang.reflect.Method setupChanged = AutonomyEditorPanel.class.getDeclaredMethod("setupChanged");
+        setupChanged.setAccessible(true);
+        setupChanged.invoke(panel);
+
+        assertFalse(marked(panel, key(4, 1)), "the square was measured through Control+E's path and is still amber");
+        assertFalse(marked(panel, key(5, 1)), "the rest of a piece that now has a length is still amber");
     }
 
     /**
      * A square whose only mark is "needs a length" still paints (OB-007).
-     *
-     * `isBlank` decides whether a square is drawn at all, and a mark missing from it is invisible on exactly the squares
-     * with nothing else to say - which, for plain track, is nearly all of them.
      */
     @Test
     public void testASquareMarkedOnlyAsUnmeasuredIsNotBlank()
@@ -296,6 +316,28 @@ public class testMassAssignLengths
         assertTrue(plain.isBlank(), "control: an annotation with nothing on it is blank");
         assertFalse(marked.isBlank(), "a square whose only mark is 'needs a length' would never be painted");
         assertNotEquals(marked, plain, "the mark is left out of equals, so a repaint could be skipped as unchanged");
+        assertNotEquals(marked.hashCode(), plain.hashCode(), "the mark is left out of hashCode");
+    }
+
+    /**
+     * Escape stops the walk rather than writing what was typed (MAL-B4).
+     *
+     * JDK 8's option pane answers Escape with `Integer.valueOf(CLOSED_OPTION)`, not null, and both dialogs checked only
+     * for null and the Cancel button - so Escape fell through to reading the field.  Asked of the one decision both
+     * dialogs now make through.
+     */
+    @Test
+    public void testEscapeStopsRatherThanAnswering()
+    {
+        Object[] answers = { "OK", "Skip", "Cancel" };
+
+        assertEquals(AutonomyEditorPanel.dialogAnswer(Integer.valueOf(JOptionPane.CLOSED_OPTION), answers),
+            AutonomyEditorPanel.ANSWER_STOP, "Escape read the field instead of stopping");
+
+        assertEquals(AutonomyEditorPanel.dialogAnswer(null, answers), AutonomyEditorPanel.ANSWER_STOP, "the close box");
+        assertEquals(AutonomyEditorPanel.dialogAnswer("Cancel", answers), AutonomyEditorPanel.ANSWER_STOP, "Cancel");
+        assertEquals(AutonomyEditorPanel.dialogAnswer("Skip", answers), AutonomyEditorPanel.ANSWER_SKIP, "Skip");
+        assertEquals(AutonomyEditorPanel.dialogAnswer("OK", answers), AutonomyEditorPanel.ANSWER_OK, "OK");
     }
 
     // ------------------------------------------------------------------------------------------------ the railways
@@ -315,9 +357,7 @@ public class testMassAssignLengths
         page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
 
-        page.getComponent(3, 1).setAccessory(new org.traincontrol.marklin.MarklinAccessory(
-            null, 7, org.traincontrol.base.Accessory.accessoryType.SWITCH, accessoryDecoderType.MM2,
-            "Switch 7", false, 0));
+        wire(page, 3, 1, 7);
 
         page.setPageId("1");
 
@@ -328,35 +368,37 @@ public class testMassAssignLengths
         session.rebuild();
     }
 
-    /** A 1,1 - 2,1 - B 3,1 - 4,1 - C 5,1, sensors at 1, 3 and 5 and plain track between. */
-    private LayoutDiagram threeSensorsInALine() throws IOException
+    /**
+     * 1,1 sensor - SWITCH 2,1 - SWITCH 3,1 - 4,1 sensor, both toes west, each branching north to a sensor above it.  No
+     * square between the two switches.
+     */
+    private void openTwoSwitchesBackToBack() throws IOException
     {
-        LayoutDiagram page = new LayoutDiagram("main", 8, 4, null, null);
+        LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
         page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.SWITCH_LEFT, 2, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 8, 8, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 2, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 8, 14, accessoryDecoderType.MM2, null);
+
+        wire(page, 2, 1, 7);
+        wire(page, 3, 1, 8);
 
         page.setPageId("1");
 
-        return page;
+        session.open(Arrays.asList(page));
+        session.initialize("Lengths");
+        session.setStation(key(4, 1), true);
+        session.rebuild();
     }
 
-    /** A 1,1 - 2,1 - 3,1 - B 4,1: one run of plain track between two sensors. */
-    private LayoutDiagram runBetweenTwoStations() throws IOException
+    private static void wire(LayoutDiagram page, int x, int y, int address)
     {
-        LayoutDiagram page = new LayoutDiagram("main", 8, 4, null, null);
-
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
-
-        page.setPageId("1");
-
-        return page;
+        page.getComponent(x, y).setAccessory(new org.traincontrol.marklin.MarklinAccessory(
+            null, address, org.traincontrol.base.Accessory.accessoryType.SWITCH, accessoryDecoderType.MM2,
+            "Switch " + address, false, 0));
     }
 
     // ------------------------------------------------------------------------------------------------ helpers
@@ -376,6 +418,63 @@ public class testMassAssignLengths
         return session.getStore().getTileLength(key(x, y));
     }
 
+    private AutonomySession.Stretch piece(TileKey containing)
+    {
+        for (AutonomySession.Stretch piece : session.stretchesALengthRuleReads())
+        {
+            if (piece.getTiles().contains(containing)) return piece;
+        }
+
+        fail("no piece contains " + containing + ": " + describe(session.stretchesALengthRuleReads()));
+
+        return null;
+    }
+
+    private boolean pieceNeedsALength(TileKey containing)
+    {
+        for (AutonomySession.Stretch piece : session.stretchesNeedingALengthOn("main"))
+        {
+            if (piece.getTiles().contains(containing)) return true;
+        }
+
+        return false;
+    }
+
+    private GraphReducer.ReducedEdge edge(TileKey start, TileKey end)
+    {
+        for (GraphReducer.ReducedEdge edge : session.getReducer().getEdges())
+        {
+            if (edge.getStart().equals(start) && edge.getEnd().equals(end)) return edge;
+        }
+
+        fail("no leg from " + start + " to " + end);
+
+        return null;
+    }
+
+    private static Set<Set<TileKey>> tileSets(List<AutonomySession.Stretch> pieces)
+    {
+        Set<Set<TileKey>> out = new HashSet<>();
+
+        for (AutonomySession.Stretch piece : pieces) out.add(new HashSet<>(piece.getTiles()));
+
+        return out;
+    }
+
+    private static void assertNoSquareIsInTwoPieces(List<AutonomySession.Stretch> pieces)
+    {
+        Set<TileKey> seen = new HashSet<>();
+
+        for (AutonomySession.Stretch piece : pieces)
+        {
+            for (TileKey square : piece.getTiles())
+            {
+                assertTrue(seen.add(square), square + " is in two pieces, so the second answer overwrites the first: "
+                    + describe(pieces));
+            }
+        }
+    }
+
     private static boolean marked(AutonomyEditorPanel panel, TileKey tile)
     {
         TileAnnotation annotation = panel.annotationFor(tile);
@@ -387,10 +486,7 @@ public class testMassAssignLengths
     {
         StringBuilder out = new StringBuilder("[");
 
-        for (AutonomySession.Stretch stretch : stretches)
-        {
-            out.append(stretch.getTiles()).append(" -> ").append(stretch.getRestsAt()).append("; ");
-        }
+        for (AutonomySession.Stretch stretch : stretches) out.append(stretch.getTiles()).append("; ");
 
         return out.append("]").toString();
     }
