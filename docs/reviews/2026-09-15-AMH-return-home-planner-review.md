@@ -1,6 +1,6 @@
 # The Return Home planner and its execution, reviewed whole
 
-**Status:** open 2026-09-15 - round 1 fixed B1 to Adam's ruling and C3 (claims `8818d8cd`, fix `64169b0b`); round 2 fixed B2 to his answer on the hardware (claims and fix `c02f7000`); C1 seen happening and open; C2 open
+**Status:** open 2026-09-15 - round 1 fixed B1 to Adam's ruling and C3 (claims `8818d8cd`, fix `64169b0b`); round 2 fixed B2 to his answer on the hardware (claims and fix `c02f7000`); C1 measured and DEFERRED as OB-230 at Adam's word; C2 open
 
 **Prefix:** AMH (checked free, with AMG, AMS, AMR and AMV: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`, every declaration spelling in `docs/reviews/`, and a grep of `src/`, `test/` and `docs/`)
 
@@ -61,11 +61,15 @@ now reads the arrangement it is asked about - see D5.  MT-450.
 
 | id | status | where |
 |---|---|---|
-| AMH-C1 | Open, with an instance | one route per (train, square), chosen by a shuffled search - neither limit is written down.  The round 3 battery produced a scatter it cannot plan from, measured and recorded below |
+| AMH-C1 | Deferred - **OB-230** | the A* budget on the constrained (measured-length) problem.  Measured below; the fix is the heuristic, which Adam deferred until the fully measured layout arrives |
 | AMH-C2 | Open | the shared-metal half of the tail rule, and the reversing-intermediate room check, have no test |
 | AMH-C3 | Fixed | test comments that the code contradicts |
 
 ### AMH-C1 - completeness and determinism, with a scatter that shows it
+
+| | |
+|---|---|
+| **Disposition** | Deferred as **OB-230**, at Adam's word (2026-09-15): *"I want to do the heuristic, but I think this needs to be deferred until I deliver you the fully measured layout.  So, let's mark this as an open OB for now and continue."*  The measurement below is recorded there; the agreed fix is the heuristic, `misplaced` giving no credit for getting closer |
 
 **An instance, from the round 3 battery (2026-09-15).**  `core.testTrainsComeHomeToTheirPlatforms` let autonomy run and then could not be planned home from what it left:
 

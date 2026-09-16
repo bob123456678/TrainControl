@@ -118,7 +118,7 @@ AMG-D4	2026-09-15-AMG-autonomy-graph-build-review.md	-	A two-sensor oval reduces
 AMG-D5	2026-09-15-AMG-autonomy-graph-build-review.md	-	A station switched out of service is reported `STATION_UNREACHABLE` - deliberate and pinne
 AMH-B1	2026-09-15-AMH-return-home-planner-review.md	-	Fixed, to Adam's ruling
 AMH-B2	2026-09-15-AMH-return-home-planner-review.md	-	Fixed, round 2 - Adam, asked: **"Yes, tails hold sensors."**
-AMH-C1	2026-09-15-AMH-return-home-planner-review.md	-	one route per (train, square), chosen by a shuffled search - neither limit is written down
+AMH-C1	2026-09-15-AMH-return-home-planner-review.md	-	Deferred as **OB-230**, at Adam's word (2026-09-15): *"I want to do the heuristic, but I t
 AMH-C2	2026-09-15-AMH-return-home-planner-review.md	-	the shared-metal half of the tail rule, and the reversing-intermediate room check, have no
 AMH-C3	2026-09-15-AMH-return-home-planner-review.md	-	Fixed (stated in the body)
 AMH-D1	2026-09-15-AMH-return-home-planner-review.md	-	`canEnter` exempts the mover's own point, so a route could in principle loop through its o

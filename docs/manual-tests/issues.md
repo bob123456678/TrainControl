@@ -1353,6 +1353,36 @@ right-click menu (`getPossiblePaths`), autonomy (`pickPath`) and Why Not Moving?
 extend a route through a terminus that is not its end.  For the four trains where they stood that is these three destinations - but **across every station pair** a later probe (every route each search can yield, put to `isPathClear` with a train at the start, disagreements retried thirty times) found **97 pairs opening on his layout and 153 on the frozen snapshot, and none lost**; the v2.8.1 railway drives the same 102 pairs before and after.  Every one is the same loop - up the ramp, across the top, down RampDown - and they end at seven destinations; the report Adam was sent lists them.  The first figure given him, +3, counted only the trains' current squares.  **Adam, 2026-09-15:** *"These paths all make sense to me, except for the circular ones like RampDown (northbound, reverse) -> RampDown (southbound, reverse).  These are the same point so we should never do a round trip just to change direction."*  Three of the 97 were those; the right-click menu and autonomy never offered them (a copy of the square a train stands on reads as occupied by it), and Return Home's planner now refuses them too - `core.testARouteIsFoundPastATerminus.testNoRoundTripBackToTheTrainsOwnSquare`, red first.  So 94 real pairs.  Two pinned counts that measure the search rather than the drivable railway moved with it: `test/autonomy_formats/v2_8_1-station-paths.txt` (1381 to 1095 pairs, none ever drivable) and the room-rule census's routable pairs (1848 to 1354).  `core.testARouteIsFoundPastATerminus`, red first (`4b519e71`); fixed
 in `badb0a2c`; MT-441.
 
+### OB-230 - 2026-09-15 - Return Home's A* runs out of time on real arrangements: the heuristic gives no credit for getting closer
+
+**Kind:** bug  
+**Raised from:** review finding AMH-C1  
+**Filed:** 2026-09-15  
+
+**Raised from review finding AMH-C1** (`docs/reviews/2026-09-15-AMH-return-home-planner-review.md`), and **deferred at Adam's word, 2026-09-15:** *"I want to do the heuristic, but I think this needs to be deferred until I deliver you the fully measured layout.  So, let's mark this as an open OB for now and continue."*
+
+**What happens.**  Return Home answers `NO_PLAN_FOUND` on arrangements a person can solve by eye.  The round 3 battery left one: five trains, every one of them with a route home, three of those routes merely not clear yet because another train is standing on the destination - an ordinary rearrangement, and the order that solves it is visible by inspection (loc 3 home first, its route being clear; then loc 0 off loc 2's home; then loc 2; then loc 1).  The blocked list came back empty, which is honest: nothing on the railway is barred, the search simply did not find the order in the time it had.
+
+**Measured, on Adam's instruction** (*"the whole point of the A* is to figure out how to rearrange other trains to park things when they belong, so we also need to differentiate issues with the track diagram from issues with the algorithm.  i recommend relaxing restrictions (track/station lengths) in the layout used for the A* tests."*).  The same arrangement, one relaxation at a time:
+
+| variant | outcome | time |
+|---|---|---|
+| trains three units long | `NO_PLAN_FOUND` | 15.1 s - the whole budget and its retry |
+| train lengths zeroed | **READY, 8 moves** | 6.6 s |
+| and station maximums cleared | READY | 6.6 s - **none were set** |
+| and FR-001 restrictions cleared | READY | 6.6 s - **none existed** |
+| and every train reversible | `NO_PLAN_FOUND` | 15.0 s |
+
+Then ten presses of the relaxed arrangement, to see whether the planner is intermittent where nothing but the order is in question: **READY on 10 of 10, 6.2 to 7.0 seconds, the identical eight-move plan every time.**
+
+**What that settles.**  Length is the only restriction in play on his railway - no station maximums are set and no FR-001 restrictions exist - and zeroing the train lengths is what turns this arrangement from unplannable into an eight-move plan.  Every failure is deadline-bound: none exhausted `SEARCH_LIMIT`'s 50 000 configurations, so time is the binding constraint and not the state space.  And more freedom can lose a plan - making every train reversible widened the branching factor and the answer went back to `NO_PLAN_FOUND` inside the same deadline.  Non-monotonic behaviour of that kind is a budget symptom.
+
+**The agreed fix: the heuristic.**  `HomeStaging`'s estimate is `misplaced` - the count of trains not at home.  It cannot tell a move that carries a train most of the way home from one that shuffles it sideways, so A* spends its budget breadth-first over orders that are all equally promising by its own measure.  A heuristic that gives credit for getting closer - route length remaining, or moves-to-home over the diagram - is what turns the constrained problem from a deadline into a search.  **Deferred until Adam delivers the fully measured layout**, because the constrained problem is the one worth tuning against and its lengths are what make it hard: tuning against relaxed lengths would fit the instrument rather than the railway.
+
+**Not a regression, and the pinned class is not evidence for this.**  `core.testTrainsComeHomeFromAPinnedArrangement` freezes that scatter with lengths relaxed per Adam's ruling (*"make a pinned version and keep the current version, aiming for both to be true.  normal autonomy runs should always have a solution."*), and it is reliable 10 of 10 - so it is a regression instrument for the determinism fix, not budget evidence.  The live `core.testTrainsComeHomeToTheirPlatforms` leaves lengths unset and reaches the deadline on harder scatters; that is this issue.  Neither AMV-B1 nor AMW-B3 is implicated: asked again with every train reversible the answer is still `NO_PLAN_FOUND`.
+
+The probes are not committed; the figures above are their output.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
