@@ -1,0 +1,4233 @@
+{"routes": [
+    {
+        "name": "Top Track 1",
+        "id": 1,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "19",
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2",
+                    "DELAY": "200"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "3",
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "75",
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
+                }
+            }
+        ]
+    },
+    {
+        "name": "Top Track 2",
+        "id": 2,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "66",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "3",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "19",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "75",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Top Track 3",
+        "id": 3,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "66",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "3",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "19",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "75",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Top Track 4",
+        "id": 4,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "3",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "19",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "67",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "75",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Top Track 5",
+        "id": 5,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "18",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "3",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "19",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "67",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "75",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Inner Loop",
+        "id": 6,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "52",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "6",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "10",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Cross Over",
+        "id": 7,
+        "auto": false,
+        "triggerType": "OCCUPIED_THEN_CLEAR",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "50",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "51",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "99",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "100",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "58",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "10",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "86",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Loopback",
+        "id": 8,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "32",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "4",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "5",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "37",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "102",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "55",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "71",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "56",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Lower Circuit",
+        "id": 9,
+        "auto": false,
+        "triggerType": "OCCUPIED_THEN_CLEAR",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "5",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "32",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "102",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "30",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "37",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "25",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "92",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "57",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "36",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "83",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Lower Track 1",
+        "id": 10,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "5",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "37",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "53",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "54",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Lower Track 2",
+        "id": 11,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "5",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "53",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "37",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "54",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "91",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Lower Track 3",
+        "id": 12,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "5",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "53",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "37",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "54",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "91",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Lower Track 4",
+        "id": 13,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "4",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "5",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "37",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "7",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Lower Track 5",
+        "id": 14,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "4",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "5",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "37",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "7",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Lower Track 6",
+        "id": 15,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "4",
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "5",
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "37",
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "55",
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "56",
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
+                }
+            }
+        ]
+    },
+    {
+        "name": "Lower Track 7",
+        "id": 16,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "4",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "5",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "37",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "55",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "56",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "31",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Lower Track 8",
+        "id": 17,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "4",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "5",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "37",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "55",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "56",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "29",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "31",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Lower Track 9",
+        "id": 18,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "4",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "5",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "37",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "55",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "56",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "29",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "31",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Lower Track 10",
+        "id": 19,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "4",
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "5",
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "71",
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "56",
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2",
+                    "DELAY": "200"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "55",
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
+                }
+            }
+        ]
+    },
+    {
+        "name": "Reset",
+        "id": 20,
+        "auto": false,
+        "triggerType": "OCCUPIED_THEN_CLEAR",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "116",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "37",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "63",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "64",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "86",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "87",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "38",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "60",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "100",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "99",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "62",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "61",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "58",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "2",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "51",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "75",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "11",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "72",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "74",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "59",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "10",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "90",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "52",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "50",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "6",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "68",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "97",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "73",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "3",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "75",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "49",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "36",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "57",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "92",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "25",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "30",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "83",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "69",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "103",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "104",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "102",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "32",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "8",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "57",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "36",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "108",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "41",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "42",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Mid Parking 1",
+        "id": 21,
+        "auto": false,
+        "triggerType": "OCCUPIED_THEN_CLEAR",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "49",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "116",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Mid Parking 2",
+        "id": 22,
+        "auto": false,
+        "triggerType": "OCCUPIED_THEN_CLEAR",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "80",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "49",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "116",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Mid Parking 3",
+        "id": 23,
+        "auto": false,
+        "triggerType": "OCCUPIED_THEN_CLEAR",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "79",
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2",
+                    "DELAY": "200"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "80",
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "49",
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "116",
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
+                }
+            }
+        ]
+    },
+    {
+        "name": "Mid Parking 4",
+        "id": 24,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "69",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Mid Parking 5",
+        "id": 25,
+        "auto": false,
+        "triggerType": "OCCUPIED_THEN_CLEAR",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "98",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "69",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Auto Bottom Main Track 1",
+        "id": 26,
+        "s88": 1032,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "86",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "87",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            }
+        ],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "false"
+                }
+            }
+        }
+    },
+    {
+        "name": "Auto Bottom Main Track 2",
+        "id": 27,
+        "s88": 1032,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "86",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "87",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "60",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ],
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "9",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "10",
+                        "SETTING": "false"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
+    },
+    {
+        "name": "Auto Bottom Main Track 3",
+        "id": 28,
+        "s88": 1032,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "86",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "87",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "60",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "70",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            }
+        ],
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "9",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "10",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
+    },
+    {
+        "name": "Auto Bottom Sec Track 1",
+        "id": 29,
+        "s88": 2015,
+        "auto": false,
+        "triggerType": "OCCUPIED_THEN_CLEAR",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "52",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "6",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "39",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            }
+        ],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "1009",
+                    "SETTING": "true"
+                }
+            }
+        }
+    },
+    {
+        "name": "Auto Bottom Sec Track 2",
+        "id": 30,
+        "s88": 2015,
+        "auto": false,
+        "triggerType": "OCCUPIED_THEN_CLEAR",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "2",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "39",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "1009",
+                    "SETTING": "false"
+                }
+            }
+        }
+    },
+    {
+        "name": "Auto Top R1",
+        "id": 31,
+        "s88": 2013,
+        "auto": false,
+        "triggerType": "OCCUPIED_THEN_CLEAR",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "108",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            }
+        ],
+        "conditions": {
+            "left": {
+                "left": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1012",
+                            "SETTING": "false"
+                        }
+                    }
+                },
+                "right": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1015",
+                            "SETTING": "false"
+                        }
+                    }
+                },
+                "type": "NodeAnd"
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1022",
+                        "SETTING": "false"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
+    },
+    {
+        "name": "Auto Top R2",
+        "id": 32,
+        "s88": 2013,
+        "auto": false,
+        "triggerType": "OCCUPIED_THEN_CLEAR",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "108",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ],
+        "conditions": {
+            "left": {
+                "left": {
+                    "left": {
+                        "type": "NodeRouteCommand",
+                        "command": {
+                            "type": "TYPE_FEEDBACK",
+                            "state": {
+                                "ADDRESS": "1013",
+                                "SETTING": "false"
+                            }
+                        }
+                    },
+                    "right": {
+                        "type": "NodeRouteCommand",
+                        "command": {
+                            "type": "TYPE_FEEDBACK",
+                            "state": {
+                                "ADDRESS": "1016",
+                                "SETTING": "false"
+                            }
+                        }
+                    },
+                    "type": "NodeAnd"
+                },
+                "right": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1022",
+                            "SETTING": "true"
+                        }
+                    }
+                },
+                "type": "NodeAnd"
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1023",
+                        "SETTING": "false"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
+    },
+    {
+        "name": "Lower Parking 12",
+        "id": 34,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "57",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "101",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "116",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Lower Parking 14",
+        "id": 35,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "84",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Lower Parking 13",
+        "id": 36,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "82",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "84",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Lower Parking 18",
+        "id": 37,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "57",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "101",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "116",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Lower Parking 16",
+        "id": 38,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "116",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "25",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "92",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Auto Bottom Sec Track 1 Crossover",
+        "id": 39,
+        "s88": 1011,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "103",
+                "SETTING": "true",
+                "PROTOCOL": ""
+            }
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "false"
+                }
+            }
+        }
+    },
+    {
+        "name": "Auto Bottom Sec Track 1 Crossover 2",
+        "id": 40,
+        "s88": 1011,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "103",
+                "SETTING": "true",
+                "PROTOCOL": ""
+            }
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "10",
+                    "SETTING": "false"
+                }
+            }
+        }
+    },
+    {
+        "name": "Auto Bottom Sec Track 1 Crossover 3",
+        "id": 41,
+        "s88": 1011,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "103",
+                "SETTING": "true",
+                "PROTOCOL": ""
+            }
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "4",
+                    "SETTING": "false"
+                }
+            }
+        }
+    },
+    {
+        "name": "Auto Bottom Sec Track 1 Crossover 4",
+        "id": 42,
+        "s88": 1011,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "103",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "52",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "6",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            }
+        ],
+        "conditions": {
+            "left": {
+                "left": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "4",
+                            "SETTING": "true"
+                        }
+                    }
+                },
+                "right": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "9",
+                            "SETTING": "true"
+                        }
+                    }
+                },
+                "type": "NodeAnd"
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "10",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
+    },
+    {
+        "name": "Lower Parking 11",
+        "id": 43,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "83",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "116",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Top Parking Left 6",
+        "id": 44,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "68",
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "24",
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2",
+                    "DELAY": "200"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "23",
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
+                }
+            }
+        ]
+    },
+    {
+        "name": "Top Parking Center 7",
+        "id": 45,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "68",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "23",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "24",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Top Parking Right 8",
+        "id": 46,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "68",
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "23",
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2",
+                    "DELAY": "200"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "24",
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
+                }
+            }
+        ]
+    },
+    {
+        "name": "Top Long Parking Left 9",
+        "id": 47,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "97",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Top Long Parking Right 10",
+        "id": 48,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "73",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Auto Emergency Stop Main A",
+        "id": 49,
+        "s88": 1007,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_STOP",
+            "state": {}
+        }],
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "100",
+                        "SETTING": "false",
+                        "PROTOCOL": ""
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "9",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
+    },
+    {
+        "name": "Parking Off",
+        "id": 51,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "81",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "116",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "37",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "BottomMainA",
+        "id": 52,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "86",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "87",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "100",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "69",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "40",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "BottomMainB",
+        "id": 53,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "87",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "86",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "60",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "38",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "BottomMainC",
+        "id": 54,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "1",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "87",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "60",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "70",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "86",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "94",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "TopMainR1",
+        "id": 55,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "3",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "75",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "63",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "TopMainR2",
+        "id": 56,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "75",
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "64",
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "108",
+                    "SETTING": "false",
+                    "PROTOCOL": "MM2"
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "128",
+                    "SETTING": "true",
+                    "PROTOCOL": "MM2"
+                }
+            }
+        ]
+    },
+    {
+        "name": "BottomSecondary",
+        "id": 57,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "99",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "51",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "39",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "62",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "2",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "58",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "104",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "BottomInner",
+        "id": 58,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "53",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "12",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "103",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "90",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "39",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "59",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "SigReset Main A Post",
+        "id": 59,
+        "s88": 2013,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "40",
+                "SETTING": "true",
+                "PROTOCOL": ""
+            }
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "false"
+                }
+            }
+        }
+    },
+    {
+        "name": "SigReset Main B Post",
+        "id": 60,
+        "s88": 2013,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "38",
+                "SETTING": "true",
+                "PROTOCOL": ""
+            }
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "10",
+                    "SETTING": "false"
+                }
+            }
+        }
+    },
+    {
+        "name": "SigReset R1",
+        "id": 61,
+        "s88": 1022,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "107",
+                "SETTING": "true",
+                "PROTOCOL": ""
+            }
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "2015",
+                    "SETTING": "false"
+                }
+            }
+        }
+    },
+    {
+        "name": "SigReset R2",
+        "id": 62,
+        "s88": 1023,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "108",
+                "SETTING": "true",
+                "PROTOCOL": ""
+            }
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "2015",
+                    "SETTING": "false"
+                }
+            }
+        }
+    },
+    {
+        "name": "SigReset Main A",
+        "id": 63,
+        "s88": 9,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "86",
+                "SETTING": "true",
+                "PROTOCOL": ""
+            }
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "2013",
+                    "SETTING": "false"
+                }
+            }
+        }
+    },
+    {
+        "name": "SigReset Main B",
+        "id": 64,
+        "s88": 10,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "87",
+                "SETTING": "true",
+                "PROTOCOL": ""
+            }
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "2013",
+                    "SETTING": "false"
+                }
+            }
+        }
+    },
+    {
+        "name": "SigReset R1 Post",
+        "id": 65,
+        "s88": 2012,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "63",
+                "SETTING": "true",
+                "PROTOCOL": ""
+            }
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "1022",
+                    "SETTING": "false"
+                }
+            }
+        }
+    },
+    {
+        "name": "SigReset R2 Post",
+        "id": 66,
+        "s88": 2012,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "64",
+                "SETTING": "true",
+                "PROTOCOL": ""
+            }
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "1023",
+                    "SETTING": "false"
+                }
+            }
+        }
+    },
+    {
+        "name": "SigReset Secondary",
+        "id": 67,
+        "s88": 1009,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "39",
+                "SETTING": "true",
+                "PROTOCOL": ""
+            }
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "1030",
+                    "SETTING": "false"
+                }
+            }
+        }
+    },
+    {
+        "name": "SigReset Main C Post",
+        "id": 68,
+        "s88": 2013,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "94",
+                "SETTING": "true",
+                "PROTOCOL": ""
+            }
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "4",
+                    "SETTING": "false"
+                }
+            }
+        }
+    },
+    {
+        "name": "SigReset Main C",
+        "id": 69,
+        "s88": 4,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "87",
+                "SETTING": "true",
+                "PROTOCOL": ""
+            }
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_FEEDBACK",
+                "state": {
+                    "ADDRESS": "2013",
+                    "SETTING": "false"
+                }
+            }
+        }
+    },
+    {
+        "name": "Lower Parking 17",
+        "id": 70,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "30",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "42",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "25",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Lower Parking 15",
+        "id": 71,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "30",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "88",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "42",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "25",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "Auto Emergency Stop Top R1",
+        "id": 72,
+        "s88": 1027,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_STOP",
+            "state": {}
+        }],
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "9",
+                        "SETTING": "true",
+                        "PROTOCOL": ""
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1015",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
+    },
+    {
+        "name": "Auto Emergency Stop Top R2",
+        "id": 73,
+        "s88": 1027,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_STOP",
+            "state": {}
+        }],
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "9",
+                        "SETTING": "false",
+                        "PROTOCOL": ""
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1016",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
+    },
+    {
+        "name": "Auto Top R1 Pre",
+        "id": 75,
+        "s88": 2013,
+        "auto": false,
+        "triggerType": "OCCUPIED_THEN_CLEAR",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "108",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            }
+        ],
+        "conditions": {
+            "left": {
+                "left": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1015",
+                            "SETTING": "false"
+                        }
+                    }
+                },
+                "right": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1022",
+                            "SETTING": "true"
+                        }
+                    }
+                },
+                "type": "NodeAnd"
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1023",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
+    },
+    {
+        "name": "Auto Top R2 Pre",
+        "id": 77,
+        "s88": 2013,
+        "auto": false,
+        "triggerType": "OCCUPIED_THEN_CLEAR",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "9",
+                    "SETTING": "false",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "107",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "108",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            }
+        ],
+        "conditions": {
+            "left": {
+                "left": {
+                    "left": {
+                        "type": "NodeRouteCommand",
+                        "command": {
+                            "type": "TYPE_FEEDBACK",
+                            "state": {
+                                "ADDRESS": "1015",
+                                "SETTING": "true"
+                            }
+                        }
+                    },
+                    "right": {
+                        "type": "NodeRouteCommand",
+                        "command": {
+                            "type": "TYPE_FEEDBACK",
+                            "state": {
+                                "ADDRESS": "1016",
+                                "SETTING": "false"
+                            }
+                        }
+                    },
+                    "type": "NodeAnd"
+                },
+                "right": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1022",
+                            "SETTING": "true"
+                        }
+                    }
+                },
+                "type": "NodeAnd"
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1023",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
+    },
+    {
+        "name": "Auto Emergency Red Light Top R1 pre",
+        "id": 78,
+        "s88": 1027,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "107",
+                "SETTING": "true",
+                "PROTOCOL": ""
+            }
+        }],
+        "conditions": {
+            "left": {
+                "left": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_ACCESSORY",
+                        "state": {
+                            "ADDRESS": "9",
+                            "SETTING": "true",
+                            "PROTOCOL": ""
+                        }
+                    }
+                },
+                "right": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1012",
+                            "SETTING": "true"
+                        }
+                    }
+                },
+                "type": "NodeAnd"
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1022",
+                        "SETTING": "false"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
+    },
+    {
+        "name": "Auto Emergency Red Light Top R2 pre",
+        "id": 79,
+        "s88": 1027,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "108",
+                "SETTING": "true",
+                "PROTOCOL": ""
+            }
+        }],
+        "conditions": {
+            "left": {
+                "left": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_ACCESSORY",
+                        "state": {
+                            "ADDRESS": "9",
+                            "SETTING": "false",
+                            "PROTOCOL": ""
+                        }
+                    }
+                },
+                "right": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1013",
+                            "SETTING": "true"
+                        }
+                    }
+                },
+                "type": "NodeAnd"
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1023",
+                        "SETTING": "false"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
+    },
+    {
+        "name": "Auto Emergency Stop Top R1 2",
+        "id": 80,
+        "s88": 2014,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_STOP",
+            "state": {}
+        }],
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "9",
+                        "SETTING": "true",
+                        "PROTOCOL": ""
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1026",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
+    },
+    {
+        "name": "Auto Emergency Stop Top R2 2",
+        "id": 81,
+        "s88": 2014,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_STOP",
+            "state": {}
+        }],
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "9",
+                        "SETTING": "false",
+                        "PROTOCOL": ""
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1025",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
+    },
+    {
+        "name": "Auto Top R1 Pre partial",
+        "id": 82,
+        "s88": 2014,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "9",
+                "SETTING": "false",
+                "PROTOCOL": ""
+            }
+        }],
+        "conditions": {
+            "left": {
+                "left": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_ACCESSORY",
+                        "state": {
+                            "ADDRESS": "9",
+                            "SETTING": "true",
+                            "PROTOCOL": ""
+                        }
+                    }
+                },
+                "right": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1015",
+                            "SETTING": "true"
+                        }
+                    }
+                },
+                "type": "NodeAnd"
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1016",
+                        "SETTING": "false"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
+    },
+    {
+        "name": "Auto Top R2 Pre partial",
+        "id": 83,
+        "s88": 2014,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "9",
+                "SETTING": "true",
+                "PROTOCOL": ""
+            }
+        }],
+        "conditions": {
+            "left": {
+                "left": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_ACCESSORY",
+                        "state": {
+                            "ADDRESS": "9",
+                            "SETTING": "false",
+                            "PROTOCOL": ""
+                        }
+                    }
+                },
+                "right": {
+                    "type": "NodeRouteCommand",
+                    "command": {
+                        "type": "TYPE_FEEDBACK",
+                        "state": {
+                            "ADDRESS": "1015",
+                            "SETTING": "false"
+                        }
+                    }
+                },
+                "type": "NodeAnd"
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1016",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
+    },
+    {
+        "name": "Auto Emergency Stop Bottom Inner",
+        "id": 84,
+        "s88": 2012,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_STOP",
+            "state": {}
+        }],
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "12",
+                        "SETTING": "true",
+                        "PROTOCOL": ""
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1011",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
+    },
+    {
+        "name": "Auto Emergency Stop Bottom Secondary",
+        "id": 85,
+        "s88": 2012,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [
+            {
+                "type": "TYPE_ACCESSORY",
+                "state": {
+                    "ADDRESS": "39",
+                    "SETTING": "true",
+                    "PROTOCOL": ""
+                }
+            },
+            {
+                "type": "TYPE_STOP",
+                "state": {}
+            }
+        ],
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "12",
+                        "SETTING": "false",
+                        "PROTOCOL": ""
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1009",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
+    },
+    {
+        "name": "Auto Emergency Stop Bottom Inner 2",
+        "id": 86,
+        "s88": 1008,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_STOP",
+            "state": {}
+        }],
+        "conditions": {
+            "left": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_ACCESSORY",
+                    "state": {
+                        "ADDRESS": "103",
+                        "SETTING": "true",
+                        "PROTOCOL": ""
+                    }
+                }
+            },
+            "right": {
+                "type": "NodeRouteCommand",
+                "command": {
+                    "type": "TYPE_FEEDBACK",
+                    "state": {
+                        "ADDRESS": "1030",
+                        "SETTING": "true"
+                    }
+                }
+            },
+            "type": "NodeAnd"
+        }
+    },
+    {
+        "name": "Auto Emergency Stop Main BC",
+        "id": 87,
+        "s88": 1006,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_STOP",
+            "state": {}
+        }],
+        "conditions": {
+            "left": {
+                "type": "NodeGroup",
+                "expressions": [{
+                    "left": {
+                        "type": "NodeRouteCommand",
+                        "command": {
+                            "type": "TYPE_ACCESSORY",
+                            "state": {
+                                "ADDRESS": "60",
+                                "SETTING": "true",
+                                "PROTOCOL": "MM2"
+                            }
+                        }
+                    },
+                    "right": {
+                        "type": "NodeRouteCommand",
+                        "command": {
+                            "type": "TYPE_FEEDBACK",
+                            "state": {
+                                "ADDRESS": "4",
+                                "SETTING": "true"
+                            }
+                        }
+                    },
+                    "type": "NodeAnd"
+                }]
+            },
+            "right": {
+                "type": "NodeGroup",
+                "expressions": [{
+                    "left": {
+                        "type": "NodeRouteCommand",
+                        "command": {
+                            "type": "TYPE_ACCESSORY",
+                            "state": {
+                                "ADDRESS": "60",
+                                "SETTING": "false",
+                                "PROTOCOL": "MM2"
+                            }
+                        }
+                    },
+                    "right": {
+                        "type": "NodeRouteCommand",
+                        "command": {
+                            "type": "TYPE_FEEDBACK",
+                            "state": {
+                                "ADDRESS": "10",
+                                "SETTING": "true"
+                            }
+                        }
+                    },
+                    "type": "NodeAnd"
+                }]
+            },
+            "type": "NodeOr"
+        }
+    },
+    {
+        "name": "Test Route",
+        "id": 1000,
+        "s88": 10,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "93",
+                "SETTING": "true",
+                "PROTOCOL": "MM2"
+            }
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_AUTO_LOCOMOTIVE",
+                "state": {
+                    "NAME": "EN57-203",
+                    "ADDRESS": "10"
+                }
+            }
+        }
+    },
+    {
+        "name": "Test Route 2",
+        "id": 1001,
+        "s88": 1022,
+        "auto": false,
+        "triggerType": "CLEAR_THEN_OCCUPIED",
+        "commands": [{
+            "type": "TYPE_ACCESSORY",
+            "state": {
+                "ADDRESS": "93",
+                "SETTING": "false",
+                "PROTOCOL": "MM2"
+            }
+        }],
+        "conditions": {
+            "type": "NodeRouteCommand",
+            "command": {
+                "type": "TYPE_AUTO_LOCOMOTIVE",
+                "state": {
+                    "NAME": "EN57-203",
+                    "ADDRESS": "1022"
+                }
+            }
+        }
+    }
+]}

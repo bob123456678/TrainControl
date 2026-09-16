@@ -13905,6 +13905,12 @@ before I change anything.
 `config/autonomy/setup.json` - that is, a 2.7.4c user who has just installed 3.0.0 and not imported
 anything yet.
 
+**Files (2026-09-16):** `docs/manual-tests/files/MT-244-layout-without-autonomy-setup/`.  `layout/` is a
+copy of your layout's drawings with no `config/autonomy` folder at all, and `autonomy.json` is your own
+2.7.4c file.  TrainControl reads `autonomy.json` from the folder it RUNS from, not from the layout
+folder, and there is already one in the TrainControl project folder (285 KB, 15 Sep) - so move that
+one aside, put this one in its place, and choose `layout/` as the local layout.
+
 1. Start TrainControl with auto-load on.
 2. **Look at the Auto tab.** I expect it to be greyed.
 3. **Check the log.** I expect it to say the autonomy layout loaded and is valid.
@@ -16614,7 +16620,9 @@ The class builds and enables a route of its own rather than relying on the fixtu
 
 **Steps**
 
-1. Import a 2.7.4c `autonomy.json`.
+**File:** `docs/manual-tests/files/MT-298-autonomy-2.7.4c.json` - a byte-for-byte copy of your own 2.7.4c file, `config/autonomy_legacy/autonomy.json`.  Loaded against a sandbox copy of your railway: valid, with its four trains.
+
+1. Import `MT-298-autonomy-2.7.4c.json` from the Autonomy menu.
 2. Change one setting by hand.
 3. Import the same file again.
 
@@ -22903,18 +22911,20 @@ Found by the wide autonomy review.  Your MT-262 ruling is that a physical refusa
 
 Found by the wide autonomy review, and your ruling on it: *"drop the train and keep the rest."*  **Load JSON** refused a whole configuration when one of its squares had a train standing on it that is no longer in the locomotive database - sold, deleted, or renamed since the file was written.  The whole railway went out of service, reported as a locomotive problem.  Every other name the file can no longer resolve - a home, an exclusion, a station restriction, a train in the run list - was already dropped with a line in the log.
 
+**File:** `docs/manual-tests/files/MT-452-placed-train-not-in-database.json` - your own 2.7.4c autonomy file (`config/autonomy_legacy/autonomy.json`) with ONE change: the train standing at **Tunnel**, ET22-245, is renamed *MT-452 phantom (not in your database)*.  Loaded against a sandbox copy of your railway before it was handed over, and it does what is expected below.
+
+**Where the door is.**  This loader is the old autonomy JSON tab's **Import Configuration from File** button, and that tab only appears while TrainControl is showing your **Central Station** layout rather than the local folder - with the local folder open, the Autonomy menu's import is a different door, which already behaved this way.  One thing to know first: on that tab TrainControl writes whatever it loaded to `autonomy.json` in the folder it runs from when it exits, so copy that file aside before you start if you want to keep it.
+
 **Steps**
 
-1. Save the configuration with a train standing somewhere (**Save JSON**, or take a copy of the one in the layout folder).
-2. In that copy, change the standing train's name to one that is not in your locomotive list.
-3. **Load JSON** from the copy.
+1. Switch TrainControl to your Central Station layout.
+2. On the autonomy JSON tab, press **Import Configuration from File** and choose the file above.
 
 **Expected**
 
-- The configuration loads and autonomy is usable.
-- The square the missing train stood on is empty; every other train is where the file put it.
-- Homes, exclusions and station limits are all still set.
-- The log says which locomotive was dropped and where it was standing.
+- The configuration loads and is valid.
+- **Tunnel** is empty.  The other three trains are where the file puts them: 2-8-4 3505 SP at TopMainR1, EN57-947 at TopMainR2Inter, EN57-203 at TopMainR1Inter.
+- The log says: *"Locomotive MT-452 phantom (not in your database) is standing at Tunnel but is not in the database.  The placement has been removed."*
 
 *What this is:* AMR-C3.  `core.testHomeStaging.testAPlacementForALocomotiveNotInTheDatabaseDropsOnlyThePlacement`.  Seen red first - *"Auto layout error: Locomotive LD phantom, sold years ago does not exist in database"*, with the whole configuration invalid.
 
@@ -22932,17 +22942,20 @@ Found by the wide autonomy review, and your ruling on it: *"drop the train and k
 
 Found by the wide autonomy review, and your ruling on it: *"drop the lock edge with a loud log line too."*  A lock says two roads are one piece of metal.  **Load JSON** refused the whole configuration when a lock named a road the file did not contain.  Now the one lock is dropped and the rest loads - and because a misspelt name there could let two trains onto shared track, the log says exactly that rather than dropping it quietly.
 
+**File:** `docs/manual-tests/files/MT-453-lock-naming-missing-track.json` - your own 2.7.4c autonomy file with ONE change: on the road **BottomCrossover -> TunnelPre**, the lock against *BottomSecondary -> TunnelPre* is misspelt *BottomSecondary -> **Tunel**Pre*.  Loaded against a sandbox copy of your railway before it was handed over, and it does what is expected below.
+
+**Where the door is.**  This loader is the old autonomy JSON tab's **Import Configuration from File** button, and that tab only appears while TrainControl is showing your **Central Station** layout rather than the local folder - with the local folder open, the Autonomy menu's import is a different door, which already behaved this way.  One thing to know first: on that tab TrainControl writes whatever it loaded to `autonomy.json` in the folder it runs from when it exits, so copy that file aside before you start if you want to keep it.
+
 **Steps**
 
-1. Take a copy of a saved configuration (**Save JSON**, or the file in the layout folder).
-2. In that copy, find a `lockedges` entry and change one of its road names to something that does not exist - misspell a station, say.
-3. **Load JSON** from the copy, and look at the log.
+1. Switch TrainControl to your Central Station layout.
+2. On the autonomy JSON tab, press **Import Configuration from File** and choose the file above, then look at the log.
 
 **Expected**
 
-- The configuration loads and autonomy is usable.
-- The log has a line starting **Lock ignored:** naming the road that owned the lock and the misspelt name, saying two trains may now be allowed onto shared track, and telling you to check the file.
-- Any other lock in the same list is still in force - the two roads it joins still cannot be used at once.
+- The configuration loads and is valid, with all four trains where the file puts them.
+- The log has exactly one line starting **Lock ignored:** - *"Lock ignored: track BottomCrossover -> TunnelPre is locked against BottomSecondary -> TunelPre, which is not in this configuration.  If that name is misspelt, two trains may now be allowed onto shared track - check it in the file."*
+- No other lock is reported: the rest of that road's locks, and every other road's, are still in force.
 
 *What this is:* AMR-C3.  `core.testHomeStaging.testALockEdgeNamingMissingTrackIsDroppedLoudly`.  Seen red first - *"Auto layout error: Lock edge ... does not exist in the autonomy configuration"*, with the whole configuration invalid.
 
