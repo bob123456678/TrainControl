@@ -61,11 +61,29 @@ now reads the arrangement it is asked about - see D5.  MT-450.
 
 | id | status | where |
 |---|---|---|
-| AMH-C1 | Open, and seen | one route per (train, square), chosen by a shuffled search - neither limit is written down; `core.testTrainsComeHomeToTheirPlatforms` answered NO_PLAN_FOUND once and READY once on the same code during round 2 |
+| AMH-C1 | Open, with an instance | one route per (train, square), chosen by a shuffled search - neither limit is written down.  The round 3 battery produced a scatter it cannot plan from, measured and recorded below |
 | AMH-C2 | Open | the shared-metal half of the tail rule, and the reversing-intermediate room check, have no test |
 | AMH-C3 | Fixed | test comments that the code contradicts |
 
-### AMH-C1 - completeness and determinism
+### AMH-C1 - completeness and determinism, with a scatter that shows it
+
+**An instance, from the round 3 battery (2026-09-15).**  `core.testTrainsComeHomeToTheirPlatforms` let autonomy run and then could not be planned home from what it left:
+
+| train | reversible | standing on | home | route home | turns on the way | clear now |
+|---|---|---|---|---|---|---|
+| loc 0 | no | `TopMainR2 (northbound)` | `BottomMainA (eastbound)` | yes | no | no |
+| loc 1 | no | `LowerBack` | `TopMainR1 (northbound)` | yes | no | no |
+| loc 2 | no | `BottomSecondary` | `TopMainR2 (northbound)` | yes | no | no |
+| loc 3 | yes | `BottomInnerOtherside` | `Tunnel (southbound)` | yes | no | yes |
+| loc 4 | yes | `LowerFront (eastbound, reverse)` | `LowerFront (eastbound)` | already home | - | - |
+
+`NO_PLAN_FOUND`, with an empty blocked list.  **Every train has a route home**, and three of those routes are merely not clear yet - loc 0 is standing on loc 2's home, and so on.  That is an ordinary rearrangement, and the order that solves it is visible by eye: loc 3 home first (its route is clear), then loc 0 off loc 2's home, then loc 2, then loc 1.
+
+**It is not the turn rulings.**  Asked again with EVERY train made reversible, the answer is still `NO_PLAN_FOUND` - so neither AMV-B1 nor AMW-B3 is what refuses it, and the round 3 changes are not implicated.  What is left is this finding: the search generates ONE route per (train, station), the first its shuffled neighbour walk finds, so where that route is blocked and a longer clear one exists the plan is never generated.  Adam's ruling of the same day - *"normal autonomy runs should always have a solution"* - makes this a defect to fix rather than a limit to live with.
+
+The probe that measured it is not committed; the numbers above are its output.
+
+### The finding as the review first stated it
 
 `firstClearRoute` returns the first route its breadth-first search finds over `Layout.getNeighbors`, which shuffles, and A* generates one successor per (train, station).  Since OB-228 the route decides the tail and the tail decides what is possible later, so a plan that needs a longer route is never generated, and among equal routes the same railway can answer READY on one press and NO_PLAN_FOUND on the next.  `NO_PLAN_FOUND` stays honest; the limits belong in §6.  Open.
 
