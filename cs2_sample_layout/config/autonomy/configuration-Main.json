@@ -7,21 +7,58 @@
     "preArrivalSpeedReduction": 0.5,
     "defaultLocSpeed": 35,
     "maxLatency": 0,
-    "timetable": [{
-      "executionTime": 1787647406049,
-      "secondsToNext": 478,
-      "loc": "EN57-947",
-      "path": [
-        {
-          "start": "TopMainR2Inter (southbound)",
-          "end": "TopMainR2Pre (northbound)"
-        },
-        {
-          "start": "TopMainR2Pre (northbound)",
-          "end": "TopMainR2 (northbound)"
-        }
-      ]
-    }],
+    "timetable": [
+      {
+        "executionTime": 1789365014815,
+        "secondsToNext": 3061,
+        "loc": "2-8-4 3505 SP",
+        "path": [
+          {
+            "start": "TopMainR2Inter (southbound)",
+            "end": "TopMainR2Pre (northbound)"
+          },
+          {
+            "start": "TopMainR2Pre (northbound)",
+            "end": "TopMainR2 (northbound)"
+          },
+          {
+            "start": "TopMainR2 (northbound)",
+            "end": "TopMainPost (eastbound)"
+          },
+          {
+            "start": "TopMainPost (eastbound)",
+            "end": "RampDown (southbound)"
+          },
+          {
+            "start": "RampDown (southbound)",
+            "end": "BottomSecondary"
+          }
+        ]
+      },
+      {
+        "executionTime": 1789365022865,
+        "secondsToNext": 8050,
+        "loc": "EN57-947",
+        "path": [
+          {
+            "start": "BottomInner (northbound)",
+            "end": "1 - Main 12,7"
+          },
+          {
+            "start": "1 - Main 12,7",
+            "end": "Tunnel (southbound)"
+          },
+          {
+            "start": "Tunnel (southbound)",
+            "end": "BottomMainBCPre (eastbound)"
+          },
+          {
+            "start": "BottomMainBCPre (eastbound)",
+            "end": "BottomMainB (eastbound)"
+          }
+        ]
+      }
+    ],
     "maxDelay": 2,
     "turnOffFunctionsOnArrival": false,
     "maxLocInactiveSeconds": 0,
@@ -36,26 +73,41 @@
     "3 - Top Parking:18,11": {},
     "3 - Top Parking:10,10": {},
     "1 - Main:0,11": {
-      "maxTrainLength": 0,
-      "priority": -1
-    },
-    "1 - Main:20,14": {
-      "maxTrainLength": 0,
-      "facing": "W",
-      "priority": 2,
-      "canReverse": true
-    },
-    "1 - Main:20,12": {
-      "maxTrainLength": 0,
-      "facing": "W"
-    },
-    "1 - Main:20,13": {
       "loc": {"name": "2-8-4 3505 SP"},
       "maxTrainLength": 0,
       "facing": "E",
-      "arrivedFrom": "W",
-      "canReverse": true,
+      "arrivedFrom": "N",
+      "priority": -1,
       "home": "2-8-4 3505 SP"
+    },
+    "1 - Main:20,14": {
+      "loc": {"name": "EN57-947"},
+      "mustReverse": true,
+      "maxTrainLength": 0,
+      "facing": "W",
+      "arrivedFrom": "W",
+      "priority": 2
+    },
+    "1 - Main:20,12": {
+      "loc": {"name": "75 407 DB"},
+      "maxTrainLength": 0,
+      "arrivedAlong": [
+        [
+          "Tunnel (southbound)",
+          "BottomMainAPre (eastbound)"
+        ],
+        [
+          "BottomMainAPre (eastbound)",
+          "BottomMainA"
+        ]
+      ],
+      "facing": "E",
+      "arrivedFrom": "W",
+      "home": "75 407 DB"
+    },
+    "1 - Main:20,13": {
+      "maxTrainLength": 0,
+      "canReverse": true
     },
     "1 - Main:21,6": {
       "maxTrainLength": 0,
@@ -63,18 +115,18 @@
       "canReverse": true
     },
     "3 - Top Parking:4,9": {},
-    "2 - Bottom:16,5": {
-      "parking": true,
-      "mustReverse": true,
-      "maxTrainLength": 0,
-      "autoDestination": false
-    },
     "1 - Main:7,7": {
       "maxTrainLength": 0,
       "facing": "S",
       "priority": -2
     },
     "1 - Main:5,9": {},
+    "2 - Bottom:16,5": {
+      "parking": true,
+      "mustReverse": true,
+      "maxTrainLength": 0,
+      "autoDestination": false
+    },
     "2 - Bottom:14,4": {
       "parking": true,
       "mustReverse": true,
@@ -92,30 +144,29 @@
     "3 - Top Parking:17,10": {},
     "1 - Main:1,10": {
       "maxTrainLength": 0,
-      "facing": "E",
       "priority": -2
     },
     "1 - Main:4,5": {
       "mustReverse": true,
       "maxTrainLength": 0,
       "autoDestination": false,
-      "priority": 1
+      "priority": 1,
+      "home": "EN57-203"
     },
     "1 - Main:2,7": {
       "mustReverse": true,
       "maxTrainLength": 0,
       "autoDestination": false
     },
+    "1 - Main:6,4": {
+      "maxTrainLength": 2,
+      "priority": 1
+    },
     "2 - Bottom:16,9": {
       "parking": true,
       "mustReverse": true,
       "maxTrainLength": 0,
       "autoDestination": false
-    },
-    "1 - Main:6,4": {
-      "maxTrainLength": 0,
-      "facing": "N",
-      "priority": 1
     },
     "3 - Top Parking:17,12": {},
     "1 - Main:4,3": {},
@@ -140,9 +191,7 @@
       "autoDestination": false
     },
     "1 - Main:14,3": {
-      "loc": {"name": "75 407 DB"},
       "maxTrainLength": 0,
-      "facing": "E",
       "excludedLocs": [
         "EA 3005 DSB",
         "ER 2035 DSB",
@@ -151,7 +200,6 @@
         "MZ 1425 DSB",
         "SP45-204"
       ],
-      "arrivedFrom": "W",
       "priority": -2
     },
     "1 - Main:10,6": {
@@ -163,7 +211,7 @@
     "1 - Main:10,9": {
       "parking": true,
       "mustReverse": true,
-      "maxTrainLength": 0,
+      "maxTrainLength": 3,
       "autoDestination": false
     },
     "1 - Main:12,7": {},
@@ -194,8 +242,7 @@
       "parking": true,
       "mustReverse": true,
       "maxTrainLength": 0,
-      "autoDestination": false,
-      "home": "EN57-203"
+      "autoDestination": false
     },
     "2 - Bottom:17,6": {
       "parking": true,
@@ -209,30 +256,21 @@
       "maxTrainLength": 0,
       "autoDestination": false
     },
-    "1 - Main:13,11": {
-      "loc": {"name": "EN57-203"},
-      "maxTrainLength": 0,
-      "facing": "W"
-    },
+    "1 - Main:13,11": {"maxTrainLength": 0},
     "1 - Main:6,9": {},
     "1 - Main:17,10": {},
+    "2 - Bottom:22,10": {},
     "2 - Bottom:15,4": {
       "parking": true,
       "mustReverse": true,
       "maxTrainLength": 0,
       "autoDestination": false
     },
-    "2 - Bottom:19,0": {
-      "loc": {"name": "EN57-947"},
-      "maxTrainLength": 0,
-      "facing": "W"
-    },
-    "2 - Bottom:22,10": {},
+    "2 - Bottom:19,0": {"maxTrainLength": 0},
     "1 - Main:1,3": {},
     "1 - Main:10,13": {},
     "1 - Main:5,4": {
       "maxTrainLength": 0,
-      "facing": "N",
       "priority": 2
     },
     "1 - Main:7,2": {},
@@ -260,7 +298,9 @@
     "1 - Main:19,7": {},
     "2 - Bottom:11,13": {},
     "1 - Main:13,9": {
+      "loc": {"name": "EN57-203"},
       "maxTrainLength": 0,
+      "facing": "W",
       "excludedLocs": [
         "EA 3005 DSB",
         "ER 2035 DSB",
@@ -269,7 +309,9 @@
         "MZ 1425 DSB",
         "SP45-204"
       ],
-      "priority": -3
+      "arrivedFrom": "S",
+      "priority": -3,
+      "home": "EN57-947"
     },
     "1 - Main:11,7": {"speedMultiplier": 0.9}
   }
