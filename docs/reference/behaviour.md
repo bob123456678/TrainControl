@@ -1177,7 +1177,7 @@ the count below with nothing saying why.
 | | |
 |---|---|
 | ordered station pairs | 1980 (45 destination Points, each against the other 44) |
-| of those, routable | 1354 (1848 before OB-229) |
+| of those, routable | 1301 (1354 after OB-229, 1848 before it) |
 | train lengths asked, the census's own | 1, 2, 3, 4, 5, 6 |
 | journeys the widening NEWLY refuses | **610** (880 before OB-229) |
 | every one of them arriving at | BottomMainA (eastbound), BottomMainB (eastbound), BottomMainC (westbound), BottomMainPost (northbound) - each measured at **ONE** unit of room |
@@ -1191,11 +1191,21 @@ routes - every one of them refused before length ever arose - no longer count as
 rather than 1848, 610 newly refused rather than 880, 1030 refused at the berth rather than 1760. A probe put every route
 both searches could yield to the route check: none of the dropped pairs was drivable, and 153 pairs the old search
 never found became drivable. The four berths and their one unit of room are unchanged, and they are what this section
-reasons from. **One number rose, and its old zero was hiding it:** about 60 journeys now count as refused on the way -
+reasons from. **One number rose, and its old zero was hiding it:** about 60 journeys counted as refused on the way -
 the berth has room, and every route to it turns at a square too short for the train. Each of them used to have a route
 through a terminus as well, which the room rules alone admit and the route check always refused, so none was counted and
-none was ever drivable. The square refusing them is `BottomMainB (westbound, reverse)`, a turn copy of one of the four
+none was ever drivable. The square refusing them was `BottomMainB (westbound, reverse)`, a turn copy of one of the four
 berths below - the turn bound of 2026-09-11 at one of Adam's own one-unit squares, not a refusal somewhere new.
+
+**Re-measured again the same day, after the copy ruling** (AMR-B1, below in section 7). Every one of those 60 journeys
+was over a route that doubled back through another copy of its own start or end, and Adam ruled those out - *"We need
+to refuse both. A copy makes a cycle."* They are not walked at all now, so **routable pairs are 1301** and the
+journeys refused on the way are back to **0**: the pass-through rule of 2026-09-09 costs nothing on this railway
+today, and `BottomMainB (westbound, reverse)` no longer refuses anything. The turn bound still bites, at 15
+route-journeys rather than the 155 it reached after OB-229 - the same reason, the long routes being the laps. What
+holds those rules now that two of the census's numbers are zero or near it: the turn band of 5 to 40 in
+`core.testTheRoomRuleCensusOnTheRealLayout`, and `core.testATrainIsJudgedOnlyWhereItStops` on fixtures of its own.
+14 of the railway's 572 reachable station pairs lose their last route, every one of them from `BottomMainPost`.
 
 Those four are the berths Adam named himself, with the number he gave: *"bottommainb, which has a
 length of 1 leading up to its switch"*, and MT-262's own report of `BottomMainA (eastbound)` offered
@@ -1296,6 +1306,13 @@ not fight: the post-processor only ever sees what the focus owner did not want.
   only when the train has a home and its next move takes it there; a train the railway already had standing on one
   moves as before. Where the only arrangement needs anything else, the answer is `NO_PLAN_FOUND`.
   `core.testHomeStaging.testATrainThatCannotReverseIsTurnedOnTheWayOnlyToGoHome`.
+- **And not turned in the middle of a move either** (Adam, 2026-09-15, AMV-B1). A route may turn a train at a
+  reversing point on the way and carry on, which for a train that cannot reverse means running on backwards. That is
+  allowed only where the move ends somewhere the turn was for: its home, a berth, or a square it comes to rest facing
+  out of - which is how a train backs into a berth past a reversing point (MT-245). Adam, asked whether the ruling
+  covers a turn mid-move: *"It should be the first option, but the locking mechanism will refuse it. That's why we
+  started the 2 step process for parking, which is OK in my opinion."*
+  `core.testHomeStaging.testATrainThatCannotReverseIsNotTurnedMidMoveAndSentOn`.
 - **It knows where the tails of the trains it moves will lie** (OB-228, Adam on MT-335, 2026-09-15: *"the path
   stayed blocked"*). A train the plan has moved stands at the end of the route the plan gave it, having come in by
   that route's last rail and along that route - what an arrival records - so its tail is walked by the runtime's own
@@ -1438,10 +1455,22 @@ a reason by hand** (AMR-B2): a station that excludes the train, and a terminus a
 cannot reverse (OB-205) - `Layout.isOfferableToOperator`'s rule, asked through the same method, so the list and
 its explanation cannot disagree.  This paragraph used to list "a train excluded" among the bars that do not count,
 while the menu left the station out. A switched-off station
-is still refused by hand, as the first paragraph of this section says of both tiers: the route check refuses an
-inactive destination whatever sends the train, so it is listed there with that reason (MFV-C5). Switching the radio asks the
+is still refused by hand, as the first paragraph of this section says of both tiers: nothing may be sent to one,
+and the menu's rule is asked first, so it is listed there saying it is switched off (MFV-C5; the sentence said the
+reason came from the route check, which refuses it too - AMV-C6). Switching the radio asks the
 last square again. `Layout.explainDestinations(Locomotive, boolean)`;
 `regression.testPathTypeRedrawsTheTestInTheEditor.testWhyNotMovingFollowsPathType`.
+
+**And where the only way there is a lap, it says so** (Adam, 2026-09-15, AMR-B1). No route in any tier passes
+another copy of the square it starts at or the square it ends at: a square drawn as several Points is one piece of
+track, so such a route goes round a loop to where the train already was, or drives through its destination to reach
+it. Adam, shown the 22 such routes on his railway and the 14 the right-click menu was offering: *"We need to refuse
+both. A copy makes a cycle."* The railway's search and Return Home's both apply it. A station left unreachable by
+it is reported with a reason of its own - *"The only track route there doubles back through a square this journey
+already uses."* - rather than as missing track or a terminus in the way, which is the same distinction PTR-B1 drew
+for the terminus: the question the window puts to the TRACK may walk a lap, so the sentence is chosen from the route
+that question found. `core.testARouteIsFoundPastATerminus.testNoRoutePassesAnotherCopyOfTheTrainsOwnSquare`,
+`testNoRoutePassesAnotherCopyOfItsDestination` and `testWhyNotMovingSaysTheOnlyWayThereIsALap`.
 
 **And the drawn route says it too, in its colour** (Adam, 2026-09-09). A tested path is drawn yellow
 on the way out and orange on the way back; a leg whose **destination** is a station autonomy will

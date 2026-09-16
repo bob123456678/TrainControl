@@ -53,6 +53,8 @@ Before OB-229 the search returned the route through the terminus, `isPathClear` 
 
 The size test was `squares.size() >= ON_THE_WAY.length - 2`, which one entry never fails.  **Fixed:** with any square listed, at least one must still refuse.  Green before and after - the listed square refuses on this railway today; the claim now fails if it stops.
 
+**And it was already covered, which this entry got wrong** (AMV-C3).  The band floor asserts at least 50 journeys are refused on the way, every one of them putting its refusing square into the map the subset check then requires to be inside `ON_THE_WAY` - so the listed square stopping would already have failed one of those two, and the new line can never be the first to fail.  It is not vacuous, and it is not the guard this entry claimed it was.
+
 ### PTR-C3 - the sibling pins
 
 `core.testWhichSquaresTheRoomRuleClosesOff` and `core.testTheFrozenRailwayIsStillTheRailway` also walk `bfs` on the snapshot.  **Answered by running:** the full battery after `5742180a` was 257 classes green, those two among them - the zero the first pins and the half the second requires both hold under the new search.  The commit messages did not say so; this entry does.

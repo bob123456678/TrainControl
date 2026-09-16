@@ -1,6 +1,6 @@
 # The runtime railway, reviewed whole
 
-**Status:** open 2026-09-15 - round 1 fixed B2 and C1 (claims `8818d8cd`, fix `64169b0b`); B1 and B3 measured on the frozen railway and waiting on Adam; C2 and C3 open
+**Status:** open 2026-09-15 - round 1 fixed B2 and C1 (claims `8818d8cd`, fix `64169b0b`); round 2 fixed B1 to Adam's ruling (claims and fix `c02f7000`); B3 measured and left open; C2 and C3 open
 
 **Prefix:** AMR (checked free, with AMG, AMS, AMH and AMV: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`, every declaration spelling in `docs/reviews/`, and a grep of `src/`, `test/` and `docs/`)
 
@@ -20,7 +20,7 @@ None.
 
 | id | status | where |
 |---|---|---|
-| AMR-B1 | Open | `Layout.bfs` - a route may pass another copy of its own start square or of its destination square |
+| AMR-B1 | Fixed | `Layout.bfs` - a route may pass another copy of its own start square or of its destination square |
 | AMR-B2 | Fixed | `Layout.explainDestinations(loc, true)` - listed stations the right-click menu does not offer |
 | AMR-B3 | Open | `Layout.whyABerthCannotHoldIt` - reads only the last edge |
 
@@ -28,7 +28,7 @@ None.
 
 | | |
 |---|---|
-| **Disposition** | Open - measured; Adam's call |
+| **Disposition** | Fixed, round 2, to Adam's ruling |
 
 The search marks points visited by name, so another copy of the square a train stands on is new ground, and since OB-229 a route extends round a loop.  `getPossiblePaths` and `pickPath` test only the END against the train's square; `isPathClear` treats an intermediate copy of the train's own square as occupied by the train itself, which is exempt.  So a route may turn round by passing back through its own platform, or reach a destination by passing its other copy first - Adam's *"we should never do a round trip just to change direction"*, with the turn made on the way rather than at the end.
 
@@ -37,6 +37,23 @@ The search marks points visited by name, so another copy of the square a train s
 - 1066 clear routes counting every alternative; **22 pass another copy of the start square**, and 20 of those turn at a reversing square first - `BottomMainPost (southbound) -> BottomMainB (westbound, reverse) -> BottomMainPost (northbound) -> RampUp -> ...`, backing into the next platform and driving forward through its own.  Full autonomy never takes those (`reversesAlongTheWay`); the right-click menu offers **14** of them as the one route to a destination.
 - **2** pass both the start's and the destination's other copy and do not turn on the way, so autonomy could take them: `BottomMainC (westbound, reverse) -> BottomMainPost (northbound) -> RampUp -> ... the top level ... -> RampDown -> BottomSecondary -> Tunnel -> BottomMainBCPre -> BottomMainC (eastbound) -> BottomMainPost (northbound, reverse)` - a full lap through its own platform to the turning copy of the square next door.
 - No menu route passes the destination's other copy.
+
+**Adam's ruling, shown those numbers:** *"We need to refuse both.  A copy makes a cycle."*
+
+**Confirmed by running.**  `core.testARouteIsFoundPastATerminus.testNoRoutePassesAnotherCopyOfTheTrainsOwnSquare` and
+`testNoRoutePassesAnotherCopyOfItsDestination` - a loop out of one copy and back into the other, and a destination
+reached only by passing its twin.  Both red: *"expected [false] but found [true]"*.
+
+**Fixed, round 2.**  Neither `Layout.bfs` nor `HomeStaging.firstClearRoute` extends a route through another copy of
+its start or its end, so the menu, autonomy, Why Not Moving? and Return Home all refuse the lap.  A station left
+unreachable by it gets a sentence of its own - *"The only track route there doubles back through a square this
+journey already uses."* - because the question `firstClearOrWhyNot` puts to the TRACK may still walk a lap, and
+blaming a terminus for it was what the third claim caught: `testWhyNotMovingSaysTheOnlyWayThereIsALap`.
+
+**What it costs, measured:** 14 of 572 reachable pairs lose their last route, every one from `BottomMainPost`; the
+census's routable pairs fall from 1354 to 1301, its refusals at a turn from the 110-210 band to 15, and its refusals
+on the way from 50-75 to 0 - the journeys those two rules were refusing were the laps.  behaviour.md sections 5b and
+7 carry it.  MT-448.
 
 ### AMR-B2 - Why Not Moving? on Manual listed stations the menu leaves out
 

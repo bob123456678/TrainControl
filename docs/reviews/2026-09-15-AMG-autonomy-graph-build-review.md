@@ -1,6 +1,6 @@
 # Building the running graph from the track diagram, reviewed whole
 
-**Status:** open 2026-09-15 - round 1 fixed B1, C1 and C2 (claims `8818d8cd`, fix `64169b0b`); B2 confirms IND9X-A2 and waits on Adam for its new half; C3 open
+**Status:** open 2026-09-15 - round 1 fixed B1, C1 and C2 (claims `8818d8cd`, fix `64169b0b`); B2 ruled by Adam, no change; C3 open
 
 **Prefix:** AMG (checked free, with AMS, AMR, AMH and AMV: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`, every declaration spelling in `docs/reviews/`, and a grep of `src/`, `test/` and `docs/`)
 
@@ -21,7 +21,7 @@ None.
 | id | status | where |
 |---|---|---|
 | AMG-B1 | Fixed | `AutonomyBuilder.build` - `"blockedBy": [null]` for a watched square off the graph |
-| AMG-B2 | Open | `GraphReducer.roomAfterTheLastSwitch` - a permanent turnout or a diamond is summed as plain track |
+| AMG-B2 | Ruled | `GraphReducer.roomAfterTheLastSwitch` - a permanent turnout or a diamond is summed as plain track |
 
 ### AMG-B1 - a restriction watching a square off the graph invalidated the whole configuration
 
@@ -39,7 +39,7 @@ The standing-train half of FR-001 named each watched square through the reductio
 
 | | |
 |---|---|
-| **Disposition** | Open - the permanent-turnout half is IND9X-A2, unchanged since; the diamond half is new and needs Adam's word |
+| **Disposition** | Ruled - Adam, 2026-09-15, asked where the walk should stop: **"Neither"**.  Only addressed switches bound a berth's room, as today, and that settles IND9X-A2 as well |
 
 `roomAfterTheLastSwitch` and `unmeasuredAfterTheLastSwitch` stop at `isSwitch()`, which is the five addressed switch types and the scissors.  A permanent turnout or a diamond crossing is summed as plain track, so no `roomAtTheEnd` is written and a train can be admitted that comes to rest across it.  On the frozen railway every permanent turnout is on the excluded test page and no tile lengths are set, so nothing binds today.  Whether a diamond is "between the switch and the station" in the sense of his ruling is the question.
 

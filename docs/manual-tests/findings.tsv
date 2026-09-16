@@ -107,7 +107,7 @@ AD-D4	2026-08-17-autonomy-diagram-review.md	Closed	Not a defect; see B1
 AD-D5	2026-08-17-autonomy-diagram-review.md	Closed	Cannot collide
 AD-D6	2026-08-17-autonomy-diagram-review.md	Closed	Clean
 AMG-B1	2026-09-15-AMG-autonomy-graph-build-review.md	-	Fixed
-AMG-B2	2026-09-15-AMG-autonomy-graph-build-review.md	-	Open - the permanent-turnout half is IND9X-A2, unchanged since; the diamond half is new an
+AMG-B2	2026-09-15-AMG-autonomy-graph-build-review.md	-	Ruled - Adam, 2026-09-15, asked where the walk should stop: **"Neither"**. Only addressed 
 AMG-C1	2026-09-15-AMG-autonomy-graph-build-review.md	-	Fixed (stated in the body)
 AMG-C2	2026-09-15-AMG-autonomy-graph-build-review.md	-	Fixed (stated in the body)
 AMG-C3	2026-09-15-AMG-autonomy-graph-build-review.md	-	the parallel-route rule and the room walk's stopping tiles are under-pinned
@@ -117,7 +117,7 @@ AMG-D3	2026-09-15-AMG-autonomy-graph-build-review.md	-	`hasAnyConnection` counts
 AMG-D4	2026-09-15-AMG-autonomy-graph-build-review.md	-	A two-sensor oval reduces to one half: edge identity is a Point pair, warned by `WARN_PARA
 AMG-D5	2026-09-15-AMG-autonomy-graph-build-review.md	-	A station switched out of service is reported `STATION_UNREACHABLE` - deliberate and pinne
 AMH-B1	2026-09-15-AMH-return-home-planner-review.md	-	Fixed, to Adam's ruling
-AMH-B2	2026-09-15-AMH-return-home-planner-review.md	-	Open - depends on whether Adam's detection latches under a standing train's tail
+AMH-B2	2026-09-15-AMH-return-home-planner-review.md	-	Fixed, round 2 - Adam, asked: **"Yes, tails hold sensors."**
 AMH-C1	2026-09-15-AMH-return-home-planner-review.md	-	one route per (train, square), chosen by a shuffled search - neither limit is written down
 AMH-C2	2026-09-15-AMH-return-home-planner-review.md	-	the shared-metal half of the tail rule, and the reversing-intermediate room check, have no
 AMH-C3	2026-09-15-AMH-return-home-planner-review.md	-	Fixed (stated in the body)
@@ -125,8 +125,8 @@ AMH-D1	2026-09-15-AMH-return-home-planner-review.md	-	`canEnter` exempts the mov
 AMH-D2	2026-09-15-AMH-return-home-planner-review.md	-	A* can rewrite a closed state's bookkeeping; never happens, because unit move cost and a c
 AMH-D3	2026-09-15-AMH-return-home-planner-review.md	-	Entry i never meets entry i-1's lock edges: `unlockPath` precedes `activeLocomotives.remov
 AMH-D4	2026-09-15-AMH-return-home-planner-review.md	-	The reversal split into two paths leaves the train on `move.getEnd()` when the next leg's 
-AMH-D5	2026-09-15-AMH-return-home-planner-review.md	-	`blockedSensors(state)` ignores `state` on purpose: an unexplained sensor stays blocked fo
-AMR-B1	2026-09-15-AMR-autonomy-runtime-review.md	-	Open - measured; Adam's call
+AMH-D5	2026-09-15-AMH-return-home-planner-review.md	-	`blockedSensors(state)` ignored `state` on purpose, and that is still true of every sensor
+AMR-B1	2026-09-15-AMR-autonomy-runtime-review.md	-	Fixed, round 2, to Adam's ruling
 AMR-B2	2026-09-15-AMR-autonomy-runtime-review.md	-	Fixed
 AMR-B3	2026-09-15-AMR-autonomy-runtime-review.md	-	Open - measured; binds on nothing today
 AMR-C1	2026-09-15-AMR-autonomy-runtime-review.md	-	Fixed (stated in the body)
@@ -143,6 +143,16 @@ AMS-C3	2026-09-15-AMS-autonomy-setup-and-session-review.md	-	no test for A1, B1 
 AMS-D1	2026-09-15-AMS-autonomy-setup-and-session-review.md	-	Cancel does not undo a train moved in the autonomy editor: the railway wins and the close 
 AMS-D2	2026-09-15-AMS-autonomy-setup-and-session-review.md	-	`captureFromLayout` replaces `globals` wholesale; the only key set outside `Layout.toJSON`
 AMS-D3	2026-09-15-AMS-autonomy-setup-and-session-review.md	-	`putTheTrainsBack` of a non-reversible train backed into a terminus succeeds: `moveLocomot
+AMV-B1	2026-09-15-AMV-validation-of-the-autonomy-round.md	-	Fixed, to Adam's ruling
+AMV-C1	2026-09-15-AMV-validation-of-the-autonomy-round.md	-	Fixed (stated in the body)
+AMV-C2	2026-09-15-AMV-validation-of-the-autonomy-round.md	-	Fixed (stated in the body)
+AMV-C3	2026-09-15-AMV-validation-of-the-autonomy-round.md	-	PTR-C2's write-up credited the wrong assertion
+AMV-C4	2026-09-15-AMV-validation-of-the-autonomy-round.md	-	Fixed (stated in the body)
+AMV-C5	2026-09-15-AMV-validation-of-the-autonomy-round.md	-	Fixed (stated in the body)
+AMV-C6	2026-09-15-AMV-validation-of-the-autonomy-round.md	-	Fixed (stated in the body)
+AMV-C7	2026-09-15-AMV-validation-of-the-autonomy-round.md	-	Fixed (stated in the body)
+AMV-D1	2026-09-15-AMV-validation-of-the-autonomy-round.md	-	`whyNoRouteFitsTo` needs no terminus fallback: it only swaps a standing or menu bar for a 
+AMV-D2	2026-09-15-AMV-validation-of-the-autonomy-round.md	-	A PLACEMENT edit declined during a run is still overwritten by the clearing rebuild - `put
 AR-1	2026-08-22-adam-round.md	Closed	Fixed - the panel could not find the main window
 AR-10	2026-08-22-adam-round.md	Closed	Done - all three now guarded
 AR-11	2026-08-22-adam-round.md	Closed	Fixed - taller, and the scrollbar shows itself

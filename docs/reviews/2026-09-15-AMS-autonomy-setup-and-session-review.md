@@ -1,6 +1,6 @@
 # The autonomy setup and session, reviewed whole
 
-**Status:** open 2026-09-15 - round 1 fixed A1, B1, B2, C1 and C2 (claims `8818d8cd`, fix `64169b0b`); C3 answered by those claims
+**Status:** open 2026-09-15 - round 1 fixed A1, B1, B2, C1 and C2 (claims `8818d8cd`, fix `64169b0b`); C3 answered by those claims; B1's missing control added in round 2 as AMV-C7 (`c02f7000`)
 
 **Prefix:** AMS (checked free, with AMG, AMR, AMH and AMV: `SELECT DISTINCT ref FROM finding` in `docs/manual-tests/triage.db`, every declaration spelling in `docs/reviews/`, and a grep of `src/`, `test/` and `docs/`)
 

@@ -22650,7 +22650,7 @@ Found by the wide autonomy review.  A station can be set unavailable while anoth
 **Expected**
 
 - Step 3: nothing is ticked - the restriction went when the square stopped being a station, as its caption and its barred arrivals already do.
-- Between steps 2 and 3, a train routed through that square is not held up by a train standing on the other one.
+- Between steps 2 and 3, send a train TO the demoted square by hand while a train stands on the watched one: it is not refused, and *Why Not Moving?* does not name the watched square.  (Being routed THROUGH the square was never affected - the restriction is asked of where a train is going, and its lock edges are about a route already running - AMV-C4.)
 
 *What this is:* AMS-B2.  `regression.testStationBlockedByAnotherPoint.testDemotingTheStationTakesTheRestrictionWithIt`.  Seen red first (8818d8cd); fixed in 64169b0b.
 
