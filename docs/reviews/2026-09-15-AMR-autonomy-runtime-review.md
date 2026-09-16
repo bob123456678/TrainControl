@@ -44,15 +44,20 @@ The search marks points visited by name, so another copy of the square a train s
 `testNoRoutePassesAnotherCopyOfItsDestination` - a loop out of one copy and back into the other, and a destination
 reached only by passing its twin.  Both red: *"expected [false] but found [true]"*.
 
-**Fixed, round 2.**  Neither `Layout.bfs` nor `HomeStaging.firstClearRoute` extends a route through another copy of
-its start or its end, so the menu, autonomy, Why Not Moving? and Return Home all refuse the lap.  A station left
+**Fixed, round 2, and narrowed in round 3 on his ruling.**  `Layout.bfs` does not extend a route through another copy
+of its start or its end, so the menu, autonomy and Why Not Moving? refuse the lap.  `HomeStaging.firstClearRoute` does
+NOT apply it: round 2 put it there too, and that cost Return Home plans it used to find -
+`core.testTrainsComeHomeToTheirPlatforms` was green before the rule, failed three runs from three scatters with it, and
+passed twice with the clause bisected out.  Shown that, and reminded that Return Home is manual operation, Adam chose
+**"menu and autonomy only"**, so the planner keeps the looser search and `auditAgainstRuntime` exempts a destination
+only a lap reaches.  A station left
 unreachable by it gets a sentence of its own - *"The only track route there doubles back through a square this
 journey already uses."* - because the question `firstClearOrWhyNot` puts to the TRACK may still walk a lap, and
 blaming a terminus for it was what the third claim caught: `testWhyNotMovingSaysTheOnlyWayThereIsALap`.
 
 **What it costs, measured:** 14 of 572 reachable pairs lose their last route, every one from `BottomMainPost`; the
 census's routable pairs fall from 1354 to 1301, its refusals at a turn from the 110-210 band to 15, and its refusals
-on the way from 50-75 to 0 - the journeys those two rules were refusing were the laps.  behaviour.md sections 5b and
+on the way from 50-75 to 0 - the journeys those two rules were refusing were the laps.  behaviour.md sections 5c and
 7 carry it.  MT-448.
 
 ### AMR-B2 - Why Not Moving? on Manual listed stations the menu leaves out

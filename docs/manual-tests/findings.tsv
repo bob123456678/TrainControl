@@ -153,6 +153,16 @@ AMV-C6	2026-09-15-AMV-validation-of-the-autonomy-round.md	-	Fixed (stated in the
 AMV-C7	2026-09-15-AMV-validation-of-the-autonomy-round.md	-	Fixed (stated in the body)
 AMV-D1	2026-09-15-AMV-validation-of-the-autonomy-round.md	-	`whyNoRouteFitsTo` needs no terminus fallback: it only swaps a standing or menu bar for a 
 AMV-D2	2026-09-15-AMV-validation-of-the-autonomy-round.md	-	A PLACEMENT edit declined during a run is still overwritten by the clearing rebuild - `put
+AMW-B1	2026-09-15-AMW-validation-of-round-2.md	-	Fixed
+AMW-B2	2026-09-15-AMW-validation-of-round-2.md	-	Fixed
+AMW-B3	2026-09-15-AMW-validation-of-round-2.md	-	Fixed
+AMW-C1	2026-09-15-AMW-validation-of-round-2.md	-	Fixed (stated in the body)
+AMW-C2	2026-09-15-AMW-validation-of-round-2.md	-	Fixed (stated in the body)
+AMW-C3	2026-09-15-AMW-validation-of-round-2.md	-	Fixed (stated in the body)
+AMW-C4	2026-09-15-AMW-validation-of-round-2.md	-	Fixed (stated in the body)
+AMW-C5	2026-09-15-AMW-validation-of-round-2.md	-	Fixed (stated in the body)
+AMW-D1	2026-09-15-AMW-validation-of-round-2.md	-	The greedy pass generates moves without the turn rules; sound, because every greedy move e
+AMW-D2	2026-09-15-AMW-validation-of-round-2.md	-	`bfs` is now stricter than `isPathClear`, which still exempts an intermediate copy of the 
 AR-1	2026-08-22-adam-round.md	Closed	Fixed - the panel could not find the main window
 AR-10	2026-08-22-adam-round.md	Closed	Done - all three now guarded
 AR-11	2026-08-22-adam-round.md	Closed	Fixed - taller, and the scrollbar shows itself

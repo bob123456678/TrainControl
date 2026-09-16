@@ -742,7 +742,7 @@ The rest of this section is about the **first** rule.
   pairs and six train lengths - 11088 journeys - the berth rule refuses 1760 and this ruling refuses
   about 1655 more, so roughly one journey in three is refused for want of room, and **every square
   that does the refusing measures ONE unit**. (Those are the figures of 2026-09-09; since OB-229 the census walks
-  no route through a terminus, and section 5b's table gives today's.)
+  no route through a terminus, and section 5c's table gives today's.)
 
   **Those three one-unit tiles are a test configuration, not a survey of his track.** Adam,
   2026-09-10: *"A/B/C are distinct pieces of track. We put the lengths of 1 in there for testing.
@@ -1465,9 +1465,14 @@ last square again. `Layout.explainDestinations(Locomotive, boolean)`;
 another copy of the square it starts at or the square it ends at: a square drawn as several Points is one piece of
 track, so such a route goes round a loop to where the train already was, or drives through its destination to reach
 it. Adam, shown the 22 such routes on his railway and the 14 the right-click menu was offering: *"We need to refuse
-both. A copy makes a cycle."* The railway's search and Return Home's both apply it. A station left unreachable by
+both. A copy makes a cycle."* **The railway's search applies it; Return Home's does not** — shown that applying it
+there cost Return Home plans it used to find, and reminded that Return Home is manual operation (§1, his ruling of
+2026-09-04), he chose *"menu and autonomy only"*. So a lap is available to the planner when it is the only way a train
+can get home, and `HomeStaging.auditAgainstRuntime` exempts such a destination as a deliberate tier difference rather
+than a planner defect — the runtime agrees with the looser answer, because `isPathClear` exempts an intermediate copy
+of the train's own square as occupied by that train. A station left unreachable by
 it is reported with a reason of its own - *"The only track route there doubles back through a square this journey
-already uses."* - rather than as missing track or a terminus in the way, which is the same distinction PTR-B1 drew
+already uses."* - rather than as missing track, which is the same distinction PTR-B1 drew
 for the terminus: the question the window puts to the TRACK may walk a lap, so the sentence is chosen from the route
 that question found. `core.testARouteIsFoundPastATerminus.testNoRoutePassesAnotherCopyOfTheTrainsOwnSquare`,
 `testNoRoutePassesAnotherCopyOfItsDestination` and `testWhyNotMovingSaysTheOnlyWayThereIsALap`.
