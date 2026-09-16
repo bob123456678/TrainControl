@@ -428,6 +428,22 @@
              first thing a person reads when the battery goes red.  If this class fails now, it is a
              failure. -->
         <test-one-class class="testTrainsComeHomeToTheirPlatforms"/>
+
+        <!-- AND THE PINNED HALF OF THE SAME CLAIM, which Adam asked for on 2026-09-15: "make a pinned
+             version and keep the current version, aiming for both to be true.  normal autonomy runs
+             should always have a solution."
+
+             The class above lets autonomy rearrange the railway for twenty seconds and then sends
+             everybody home, so it starts somewhere different on every run.  That is the realistic
+             question and an ambiguous verdict - during the AMW round it failed once and passed once on
+             identical code, and a red from it cannot be told from chance without re-running.  The class
+             below displaces the same five trains to an arrangement that does not move, so a red there is
+             always a regression.
+
+             Both are expected to be true.  A red from the pinned one is a defect; a red from the live one
+             is an arrangement autonomy can reach and Return Home cannot solve, which by his ruling is
+             also a defect - it just needs the arrangement printed before anyone can act on it. -->
+        <test-one-class class="testTrainsComeHomeFromAPinnedArrangement"/>
         <test-one-class class="testRouteCapture"/>
         <test-one-class class="testRouteCommandParity"/>
         <test-one-class class="testRouteEditorLocked"/>

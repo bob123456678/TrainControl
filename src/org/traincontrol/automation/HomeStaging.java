@@ -723,6 +723,20 @@ public final class HomeStaging
 
             for (Point p : plannerSays)
             {
+                // A DESTINATION ONLY A LAP REACHES IS THE FOURTH CORRECT DIVERGENCE, and it belongs on THIS side
+                // (Adam, 2026-09-15).
+                //
+                // `Layout.bfs` refuses a route that doubles back through another copy of the square it starts or ends
+                // at, so the menu - this oracle - offers no such destination.  The planner does, because he ruled the
+                // copy rule onto the **menu and autonomy only** once it was shown that applying it here cost Return
+                // Home plans it used to find.  So the planner offering one is the tiers differing where he put the
+                // difference, and the RUNTIME agrees with the planner: `isPathClear` exempts an intermediate copy of
+                // the train's own square as occupied by that train.
+                //
+                // The first version of this exemption sat in the loop above - the one that reports the menu offering
+                // what the planner refuses - which is the opposite direction and could never fire.
+                if (onlyALapReachesIt(e.getKey(), p)) continue;
+
                 if (!runtimeSays.contains(p))
                 {
                     disagreements++;
@@ -946,8 +960,16 @@ public final class HomeStaging
                 // Both halves, because the search does not look ahead: a move onto such a square is made only by a
                 // train with a home to go to, and a train the PLAN has put on one moves next only to its home.  One
                 // the railway already had standing there was not turned by the plan, and moves as before.
-                boolean turnedByThePlan = !l.isReversible() && this.movedAlong.containsKey(l)
-                    && turnsATrainArrivingAt(at) && !atHome(ownHome, at);
+                // CARRIED BY THE TRAIN, NOT READ OFF THE SQUARE (AMW-B3).
+                //
+                // This asked whether the train is STANDING on a square that turns trains, which a plain parking berth
+                // is not - so a plan could turn a train on its way into a berth, which the ruling permits, and then
+                // take it out of the berth to an ordinary station, which it does not.  Neither move breaks a rule of
+                // its own; the pair does.  What follows the train instead is the route that brought it here: if that
+                // route turned it and it is not home, its next move owes itself to its home.
+                boolean turnedByThePlan = !l.isReversible() && !atHome(ownHome, at)
+                    && (turnsATrainArrivingAt(at)
+                        || turnedOnTheWay(this.movedAlong.get(l)));
 
                 for (Point to : this.stations)
                 {
@@ -1150,18 +1172,38 @@ public final class HomeStaging
         {
             Candidate current = queue.poll();
 
-            for (Edge e : this.layout.getNeighbors(current.at))
+            // BY NAME, NOT AS THE RAILWAY SHUFFLES THEM (AMH-C1, AMW's item 8).
+            //
+            // `Layout.getNeighbors` shuffles deliberately - that is how autonomy spreads its choices over a railway -
+            // and this search returns the FIRST clear route it finds, so a plan rode on that shuffle: the same railway
+            // answered READY on one press and NO_PLAN_FOUND on the next, and `core.testTrainsComeHomeToTheirPlatforms`
+            // was seen doing exactly that during this round.  A capability claim that answers differently each time
+            // spends the battery's authority, because the next red cannot be told from chance.
+            //
+            // Ordered here rather than at `getNeighbors`, which every tier shares: what a planner wants is a function
+            // of the track, and what a run wants is variety.
+            List<Edge> outward = new java.util.ArrayList<>(this.layout.getNeighbors(current.at));
+
+            java.util.Collections.sort(outward, (one, two) -> one.getName().compareTo(two.getName()));
+
+            for (Edge e : outward)
             {
                 Point next = e.getEnd();
 
-                // NOT THROUGH ANOTHER COPY OF WHERE IT STARTS OR WHERE IT IS GOING (Adam, 2026-09-15, AMR-B1).
+                // THE COPY RULE IS NOT APPLIED HERE, and that is Adam's ruling rather than an omission (2026-09-15).
                 //
-                // The guard above refuses a move BETWEEN two copies of one square; this refuses a route that passes
-                // one on the way, which is the same lap seen from the middle.  Adam: **"We need to refuse both.  A copy
-                // makes a cycle."**  `Layout.bfs` applies it too, and the two have to agree or the planner offers a
-                // route the railway will not drive.
-                if (!next.equals(to) && (next.isSamePlaceAs(from) || next.isSamePlaceAs(to))) continue;
-
+                // `Layout.bfs` refuses a route that passes another copy of the square it starts or ends at - his
+                // *"a copy makes a cycle"* - so the right-click menu and autonomy never offer a lap.  Applying it here
+                // as well cost Return Home plans it used to find: `core.testTrainsComeHomeToTheirPlatforms` was green
+                // before the rule, failed three runs from three different scatters with it, and passed twice with this
+                // clause bisected out.  Shown that, and reminded that Return Home is manual operation by his ruling of
+                // 2026-09-04, he chose **menu and autonomy only** - so the planner keeps the looser search, and a lap
+                // is available to it when that is the only way a train can get home.
+                //
+                // The runtime agrees with the looser answer: `Layout.isPathClear` treats an intermediate copy of the
+                // train's own square as occupied by that train and exempts it, so a lap the planner offers is a lap the
+                // railway will drive.  What differs is SELECTION, which is where his ruling put it.  `auditAgainstRuntime`
+                // knows about this divergence - see the exemption it makes for it.
                 // Whether the train has been turned round by the time it stands here.  Part of the
                 // STATE, not of the square - see Candidate.turned.
                 boolean turned = current.turned || next.isReversing();
@@ -1701,34 +1743,66 @@ public final class HomeStaging
     {
         Set<String> out = new HashSet<>();
 
-        // The sensors a standing train's tail was lying on, where the plan has since moved that train.
-        Set<String> freedByATailThatHasGone = new HashSet<>();
+        // PER CAUSE AND PER END, not per sensor (AMW-B2).
+        //
+        // The first version of this freed a sensor as soon as ONE tail that had lain on it moved, and freed both ends
+        // of every covered edge.  Both over-claim, and both in the direction this class must never take:
+        //
+        //  - `edgesCoveredByStandingTrains` claims an edge WHOLE or not at all - which is why
+        //    `placesCoveredByStandingTrains` exists to narrow it - so a point at the far end of a long edge was freed
+        //    although the tail never reached it;
+        //  - one boolean per sensor meant a departed tail freed a sensor a SECOND, unmoved tail was still lying on.
+        //
+        // Either way the planner becomes looser than the railway, which reads the live feedback and refuses an edge
+        // whose end reports a set sensor: OB-073, the failure staging exists to avoid.  So a sensor is freed only when
+        // every tail accounting for it has gone, and a tail accounts for the END OF AN EDGE only where the places say
+        // it reached that end.
+        Map<String, Boolean> everyTailHasGone = new LinkedHashMap<>();
 
         for (Map.Entry<Edge, Locomotive> covered : this.coveredAtStart.entrySet())
         {
+            Locomotive tail = covered.getValue();
+
             boolean moved = false;
 
             for (Map.Entry<Point, Locomotive> was : this.start.entrySet())
             {
-                if (!covered.getValue().equals(was.getValue())) continue;
+                if (!tail.equals(was.getValue())) continue;
 
-                moved = !covered.getValue().equals(state.get(was.getKey()));
+                moved = !tail.equals(state.get(was.getKey()));
 
                 break;
             }
 
-            if (!moved) continue;
+            List<String> places = covered.getKey().getPlaceIds();
 
-            // Both ends of the covered edge: the train stood on one of them, and its tail reached the other.
-            for (Point end : new Point[] { covered.getKey().getStart(), covered.getKey().getEnd() })
+            for (int which = 0; which < 2; which++)
             {
-                if (end != null && end.getS88() != null) freedByATailThatHasGone.add(end.getS88());
+                Point end = which == 0 ? covered.getKey().getStart() : covered.getKey().getEnd();
+
+                if (end == null || end.getS88() == null) continue;
+
+                // ONLY THE END THE TAIL ACTUALLY REACHED.  `Layout.tailLiesOn` answers about the whole edge - any place
+                // of it - which is the question its own callers want and the wrong one here: on a long edge that would
+                // free the far point as well.  The place ADJACENT to each end is the first for the start and the last
+                // for the end, in path order, and a tail that has not claimed it never lay on that square's section.
+                // With no places described, the edge is claimed whole, exactly as it was before 3.0.0.
+                if (!places.isEmpty())
+                {
+                    String nearest = places.get(which == 0 ? 0 : places.size() - 1);
+
+                    if (!tail.equals(this.placesCoveredAtStart.get(nearest))) continue;
+                }
+
+                Boolean soFar = everyTailHasGone.get(end.getS88());
+
+                everyTailHasGone.put(end.getS88(), (soFar == null || soFar) && moved);
             }
         }
 
         for (String sensor : this.sensorsSet)
         {
-            boolean explained = freedByATailThatHasGone.contains(sensor);
+            boolean explained = Boolean.TRUE.equals(everyTailHasGone.get(sensor));
 
             for (Point p : this.pointsBySensor.get(sensor))
             {
@@ -2429,6 +2503,59 @@ public final class HomeStaging
     private static boolean turnsATrainArrivingAt(Point where)
     {
         return where != null && (where.isTerminus() || where.isReversing());
+    }
+
+    /**
+     * Whether the only way from one square to another doubles back through a copy of either (Adam, 2026-09-15).
+     *
+     * The fourth correct divergence in `auditAgainstRuntime`, and the reason it needs naming: since his copy ruling
+     * `Layout.bfs` will not walk such a route, so the menu - the audit's oracle - offers no such destination, while the
+     * planner may still use one because he chose *"menu and autonomy only"*.  Where that is the ONLY way there, the two
+     * are meant to disagree.
+     *
+     * Asked as the two searches, the same shape `Layout.firstClearOrWhyNot` uses: nothing from the search that refuses
+     * laps, and something from the one that does not, means every route there is a lap.  Occupancy is not consulted -
+     * this is a question about the track, and the audit has already decided what to compare.
+     *
+     * @param from where the train stands
+     * @param to the destination the oracle did not offer
+     * @return true when the track connects them only by a lap
+     */
+    private boolean onlyALapReachesIt(Point from, Point to)
+    {
+        if (this.layout == null) return false;
+
+        try
+        {
+            if (this.layout.bfs(from, to, null) != null) return false;
+
+            return this.layout.anyTrackRouteBetween(from, to);
+        }
+        catch (Exception unsearchable)
+        {
+            return false;
+        }
+    }
+
+    /**
+     * Whether a route turned the train on its way, short of where it ends (AMW-B3).
+     *
+     * The end is the caller's own question - `turnsATrainArrivingAt` - because a route that ends at a turning square
+     * leaves the train facing out of it, which is the backing-in case MT-245 protects.  A reversing point PASSED on
+     * the way leaves it running the other way for the rest of the move.
+     *
+     * @param route the route the plan gave this train, or null where it has not moved
+     */
+    private static boolean turnedOnTheWay(List<Edge> route)
+    {
+        if (route == null) return false;
+
+        for (int at = 0; at + 1 < route.size(); at++)
+        {
+            if (route.get(at).getEnd().isReversing()) return true;
+        }
+
+        return false;
     }
 
     private static Point locationOf(Map<Point, Locomotive> state, Locomotive l)

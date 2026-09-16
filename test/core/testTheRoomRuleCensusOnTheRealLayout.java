@@ -369,10 +369,13 @@ public class testTheRoomRuleCensusOnTheRealLayout
     // through the train's own platform - and Adam ruled those out on the same day: *"We need to refuse both.  A copy
     // makes a cycle."*  They are not walked now, so the pass-through rule has nothing left to refuse here.
     //
-    // WHAT STILL CATCHES THE RULING BEING TAKEN OUT, now that the floor cannot: `refusedAtATurn` above, whose band is
-    // 5 to 40 over the same railway, and `core.testATrainIsJudgedOnlyWhereItStops`, which holds the rule on fixtures
-    // of its own.  The ceiling still catches the guard closing the railway down - the pass-through check coming back
-    // would add hundreds.
+    // WHAT STILL CATCHES THE RULING BEING TAKEN OUT, now that the floor cannot - and it is NOT this class (AMW-C2).
+    // `refusedAtATurn` was nominated here and cannot do it: it is counted by this class's own replica of the rule, as
+    // two other comments in this file say outright ("taking `comesToRest` out of production leaves this number exactly
+    // where it is"), so removing the production rule leaves every number here where it is.  What holds it is
+    // `core.testATrainIsJudgedOnlyWhereItStops`, on fixtures of its own, and `core.testNonReversibleTrains`, which
+    // goes through the real door.  The ceiling here still catches the guard closing the railway down - the
+    // pass-through check coming back would add hundreds.
     private static final int REFUSED_ON_THE_WAY_AT_LEAST = 0;
 
     /**
@@ -687,12 +690,20 @@ public class testTheRoomRuleCensusOnTheRealLayout
             + " 22,7, measuring BottomMainPost - and every square it costs on his railway is one he"
             + " has measured at a unit or three");
 
-        // AT LEAST ONE LISTED SQUARE STILL REFUSES, when any is listed (PTR-C2).  Which copy of a station gets named
-        // depends on the route order, so not every one on every run - but none at all is the ruling no longer reaching
-        // the squares it was measured on.  The size test this replaces was `>= length - 2`, which one entry never fails.
-        assertTrue(ON_THE_WAY.length == 0 || !squares.isEmpty(),
-            "none of " + java.util.Arrays.asList(ON_THE_WAY) + " refuses on the way any more (" + squares.keySet()
-            + "), so the ruling has stopped being enforced over the squares it was measured on");
+        // THE LIST AND THE COUNT SAY THE SAME THING, WHICHEVER WAY ROUND THEY ARE (PTR-C2, corrected by AMW-C2).
+        //
+        // `ON_THE_WAY.length == 0 || !squares.isEmpty()` was vacuous the moment the list emptied, which it did within
+        // hours: an empty list and a zero count are the expected state, so nothing failed either way.  What can still
+        // be asserted is that the two agree - a square refusing while the list is empty is the rule reaching somewhere
+        // it was not measured (the subset check above says which), and a list with entries that refuse nothing is a
+        // pin describing a railway that has moved on.
+        //
+        // What holds the RULE is not this class at all: `core.testATrainIsJudgedOnlyWhereItStops` and
+        // `core.testNonReversibleTrains` go through the production door.  See `REFUSED_ON_THE_WAY_AT_LEAST`.
+        assertEquals(squares.isEmpty(), ON_THE_WAY.length == 0,
+            "the squares refusing on the way (" + squares.keySet() + ") and the pinned list "
+            + java.util.Arrays.asList(ON_THE_WAY) + " disagree about whether any square refuses at all.  One of the two"
+            + " has moved: re-measure both, and behaviour.md section 5c with them");
 
         for (Map.Entry<String, Integer> square : squares.entrySet())
         {

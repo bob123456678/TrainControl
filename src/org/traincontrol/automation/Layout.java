@@ -3978,6 +3978,31 @@ public class Layout
     }
 
     /**
+     * Whether the track connects these two squares AT ALL, by any route a train may not take.
+     *
+     * The question `firstClearOrWhyNot` puts to the track rather than to a train: the search above refuses a route
+     * through a terminus that is not its end (OB-229) and one that doubles back through another copy of its own start
+     * or end (AMR-B1), so "nothing found" there covers three different answers - no rails, a terminus in the way, and
+     * only a lap.  This one walks all of them, and the caller decides which sentence to give.
+     *
+     * Also asked by `HomeStaging.auditAgainstRuntime`, to tell a destination only a lap reaches - where the planner and
+     * the menu are MEANT to disagree, since Adam's ruling of 2026-09-15 put the copy rule on the menu and autonomy
+     * alone - from a genuine planner defect.
+     *
+     * Nothing that sends a train asks this: `isPathClear` refuses a route through a terminus, and selection refuses the
+     * lap.
+     *
+     * @param start where from
+     * @param end where to
+     * @return true when some route exists, whatever a tier would make of it
+     * @throws Exception when either point is not on this layout
+     */
+    public boolean anyTrackRouteBetween(Point start, Point end) throws Exception
+    {
+        return bfs(start, end, null, true) != null;
+    }
+
+    /**
      * The same search, with a choice about termini.
      *
      * Through them only for a question about the TRACK rather than about a route a train may take: Why Not Moving?

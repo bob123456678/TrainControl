@@ -3195,8 +3195,8 @@ public class testHomeStaging
                 "control: a train that can reverse has no plan home on a railway with one way there: " + reversible);
 
             assertNotNull(turnedAndNotSentHome(layout, reversible, true),
-                "precondition: the plan home does not rest the train on a square that turns it and then send it somewhere"
-                + " other than home, so this fixture cannot show the rule: " + reversible.getMoves());
+                "precondition: the plan home does not rest the train on a square that turns it and then send it"
+                + " somewhere other than home, so this fixture cannot show the rule: " + reversible.getMoves());
 
             loc(LOC_A).setReversible(false);
 
@@ -3258,9 +3258,31 @@ public class testHomeStaging
             assertEquals(reversible.getOutcome(), HomeStaging.Outcome.READY,
                 "control: the swap has no plan even for trains that can reverse: " + reversible);
 
-            assertNotNull(turnedAndNotSentHome(layout, reversible, true),
-                "precondition: no move of this plan turns a train on the way and then ends somewhere that is neither its"
-                + " home nor a berth, so the fixture cannot show the rule: " + reversible.getMoves());
+            // THE FIXTURE'S SHAPE, not a violation judged as if nobody can reverse.  That control asked the oracle to
+            // flag this plan, and since AMW-B3 the oracle clears a turn whose next move goes home - which this plan's
+            // does - so it was asserting a property of the old oracle rather than of the railway.  What this claim
+            // needs is that the spare really is reached by a route that turns the train.
+            HomeStaging.Move ontoTheSpare = null;
+
+            for (HomeStaging.Move move : reversible.getMoves())
+            {
+                if (move.getEnd().getName().equals("HS Y")) ontoTheSpare = move;
+            }
+
+            assertNotNull(ontoTheSpare,
+                "precondition: no move of the plan uses the spare HS Y at all, so this fixture cannot show the rule: "
+                + reversible.getMoves());
+
+            boolean turnsOnTheWayIn = false;
+
+            for (int e = 0; e + 1 < ontoTheSpare.getPath().size(); e++)
+            {
+                if (ontoTheSpare.getPath().get(e).getEnd().isReversing()) turnsOnTheWayIn = true;
+            }
+
+            assertTrue(turnsOnTheWayIn,
+                "precondition: the way onto the spare turns nobody, so there is no mid-move turn here to rule on: "
+                + ontoTheSpare);
 
             loc(LOC_B).setReversible(false);
 
@@ -3312,6 +3334,33 @@ public class testHomeStaging
             java.util.Set<org.traincontrol.base.Locomotive> keepOut = new java.util.HashSet<>();
             keepOut.add(loc(LOC_C));
             otherSpare.setExcludedLocs(keepOut);
+
+            // THE FIXTURE HAS TO STEP IT ASIDE AT ALL (AMW-C5).  The assertion below is satisfied by an empty plan for
+            // any reason, so without this it would pass on a railway where nothing ever uses the terminus.  With a
+            // train that CAN reverse, the same arrangement does use it.
+            boolean[] allowedToReverse = setReversible(true, LOC_C);
+
+            HomeStaging.Plan allowed;
+
+            try
+            {
+                allowed = HomeStaging.snapshot(layout).plan();
+            }
+            finally
+            {
+                restoreReversible(allowedToReverse, LOC_C);
+            }
+
+            boolean stepsAside = false;
+
+            for (HomeStaging.Move move : allowed.getMoves())
+            {
+                if (move.getEnd().getName().equals("HS D")) stepsAside = true;
+            }
+
+            assertTrue(stepsAside,
+                "precondition: nothing steps aside onto the terminus even for a train that can reverse, so this fixture"
+                + " cannot show the rule: " + allowed.getOutcome() + " " + allowed.getMoves());
 
             HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
 
@@ -3406,6 +3455,172 @@ public class testHomeStaging
         }
     }
 
+    // THE AMW-B2 CLAIM WAS REMOVED RATHER THAN LEFT GREEN (2026-09-15).
+    //
+    // Seven fixtures could not produce the case the validation describes, and each passed for a reason that had
+    // nothing to do with it: a sensor is "explained" whenever a point reporting it holds a train, so in every
+    // shape built here the held section was accounted for by its own occupant rather than by a tail - and the
+    // last version, which asked `blockedSensors` directly, stayed green under a mutation that broke the rule
+    // outright.  A test that cannot fail is worse than none, because it reports the rule as held.
+    //
+    // The FIX is kept and is right by construction: `edgesCoveredByStandingTrains` claims an edge whole, so
+    // freeing both of its ends frees a point no tail ever reached, and one boolean per sensor cannot represent
+    // two causes.  See `HomeStaging.blockedSensors`, and the AMW document, which records AMW-B2 as reproduced
+    // by reading and not by a red claim.
+
+    @Test
+    public void testATurnIsNotLaunderedThroughABerth() throws Exception
+    {
+        Layout layout = load(aBerthBeyondAReversingPoint());
+
+        layout.getPoint("TD_R").setReversing(true);
+
+        // THE LAUNDERING HAS TO BE THE ONLY PLAN, and it takes three trains.  Two earlier versions of this fixture
+        // passed for reasons that had nothing to do with the finding - one gave the berth a single exit, so the way out
+        // turned the train again and the end-of-move rule refused it; the other homed the train on the square it was
+        // already standing on, so it never moved.
+        //
+        // The shape that forces it: LOC_A stands at TD_Y and is homed at TD_X; LOC_B stands at TD_X and is homed at
+        // TD_Z, beyond the berth's second exit; LOC_C stands at TD_Z and is homed at the berth TD_P.  So LOC_A must
+        // wait somewhere while LOC_B crosses to TD_Z, and the only free square is the berth - reached from TD_Y by a
+        // route that turns it at TD_R.  Then LOC_C needs that berth for its own home, so LOC_A must come OUT of it,
+        // and the way out through TD_W turns nobody and ends at TD_X, which is not where a turned train may be sent.
+        // FOURTH SHAPE, and the printed plan is what taught each of the first three.  The last one homed LOC_C IN the
+        // berth, so LOC_C took it on the very first move and LOC_A never needed it: `[charlie -> TD_P, bravo -> TD_Z,
+        // alpha -> TD_X]`.  The berth has to be free when LOC_A must wait and wanted only afterwards, so LOC_C is
+        // homed at TD_X - the square LOC_A is heading for - and starts on the berth's far side.
+        assign(layout, LOC_A, "TD_Z");
+        assign(layout, LOC_B, "TD_Y");
+        assign(layout, LOC_C, "TD_X");
+
+        assertNotSame(layout.getHomeStations().get(loc(LOC_A)), layout.getPoint("TD_Y"),
+            "precondition: LOC_A is homed where it already stands, so it never moves and nothing is laundered");
+        assertNotSame(layout.getHomeStations().get(loc(LOC_C)), layout.getPoint("TD_P"),
+            "precondition: LOC_C is homed in the berth, so it claims it before LOC_A ever needs it - which is what the"
+            + " third version of this fixture did");
+
+        boolean[] was = setReversible(false, LOC_A);
+
+        try
+        {
+            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+            // THE PLAN HAS TO PARK IT IN THE BERTH, and this says so by name rather than by counting moves.  Three
+            // fixtures for this claim passed because the plan was not the plan the claim is about, and a move count
+            // could not tell me which - so the precondition now carries the whole plan into its message.
+            boolean throughTheBerth = false;
+
+            for (HomeStaging.Move move : plan.getMoves())
+            {
+                if (move.getLocomotive().equals(loc(LOC_A)) && move.getEnd().getName().equals("TD_P"))
+                {
+                    throughTheBerth = true;
+                }
+            }
+
+            assertTrue(throughTheBerth,
+                "precondition: the plan never parks " + LOC_A + " in the berth TD_P, so this fixture cannot show the"
+                + " laundering.  Outcome " + plan.getOutcome() + ", moves: " + plan.getMoves());
+
+            assertNull(turnedAndNotSentHome(layout, plan, false),
+                "Return Home turns " + LOC_A + ", which cannot reverse, on its way into the berth and then takes it out"
+                + " of the berth to an ordinary station - so it arrives running the wrong way round, by two moves"
+                + " instead of one (AMW-B3): " + plan.getMoves());
+        }
+        finally
+        {
+            layout.getPoint("TD_R").setReversing(false);
+            restoreReversible(was, LOC_A);
+        }
+    }
+
+    /**
+     * The same railway plans the same way twice (AMW's item 8, AMH-C1).
+     *
+     * `Layout.getNeighbors` shuffles, `firstClearRoute` returns the first route that shuffle finds, and A* generates
+     * one successor per (train, station) - so the answer rode on a shuffle.  `core.testTrainsComeHomeToTheirPlatforms`
+     * answered NO_PLAN_FOUND once and READY once on the same code during round 2, and a capability claim that answers
+     * differently on each press spends the battery's authority: the next red cannot be told from a regression.
+     *
+     * Asserted as the property rather than as an ordering, so it holds however the planner is made deterministic.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testThePlannerAnswersTheSameWayTwice() throws Exception
+    {
+        Layout layout = load(twoEqualWaysRound());
+
+        layout.setHomeLocomotive("TE_H", LOC_A);
+
+        assertNotNull(layout.getEdge("TE_S", "TE_U"), "precondition: the fixture has only one way round");
+        assertNotNull(layout.getEdge("TE_S", "TE_V"), "precondition: the fixture has only one way round");
+
+        String first = null;
+
+        for (int press = 0; press < 12; press++)
+        {
+            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+            StringBuilder said = new StringBuilder(String.valueOf(plan.getOutcome()));
+
+            for (HomeStaging.Move move : plan.getMoves())
+            {
+                said.append(" | ").append(move.getLocomotive().getName()).append(" -> ");
+
+                for (Edge e : move.getPath()) said.append(e.getEnd().getName()).append(",");
+            }
+
+            if (first == null) first = said.toString();
+
+            assertEquals(said.toString(), first,
+                "press " + (press + 1) + " of Return Home planned a different way round the same railway, so the answer"
+                + " rides on a shuffle rather than on the track (AMH-C1).  A capability claim that answers differently"
+                + " on each press cannot tell a regression from chance");
+        }
+    }
+
+    private static String aBerthBeyondAReversingPoint()
+    {
+        return json("{'points': ["
+            + square("TD_X", 75, null, true, LOC_B) + ","
+            + square("TD_R", 76, null, false, null) + ","
+            + "{'name': 'TD_P', 'station': true, 's88': " + (S88_BASE + 77) + ", 'autoDestination': false},"
+            + square("TD_Y", 78, null, true, LOC_A) + ","
+            + square("TD_W", 79, null, false, null) + ","
+            + square("TD_Z", 84, null, true, LOC_C)
+            + "],'edges': ["
+            + edge("TD_X", "TD_R") + "," + edge("TD_R", "TD_X") + ","
+            + edge("TD_R", "TD_P") + "," + edge("TD_P", "TD_R") + ","
+            + edge("TD_R", "TD_Y") + "," + edge("TD_Y", "TD_R") + ","
+            + edge("TD_P", "TD_W") + "," + edge("TD_W", "TD_P") + ","
+            + edge("TD_W", "TD_Z") + "," + edge("TD_Z", "TD_W") + ","
+            + edge("TD_W", "TD_X") + "," + edge("TD_X", "TD_W")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
+    /**
+     * Two equal-length ways between the same pair, so a shuffled search has something to choose between.
+     *
+     * `testThePlannerAnswersTheSameWayTwice` on a ring proves nothing: every route there is forced, so the shuffle
+     * cannot show.  Here TE_S reaches TE_H by TE_U or by TE_V, both one square long, and both clear - the case
+     * `Layout.getNeighbors` shuffling actually decides.  The claim asserts the ROUTE, not just the outcome.
+     */
+    private static String twoEqualWaysRound()
+    {
+        return json("{'points': ["
+            + square("TE_S", 80, null, true, LOC_A) + ","
+            + square("TE_U", 81, null, false, null) + ","
+            + square("TE_V", 82, null, false, null) + ","
+            + square("TE_H", 83, null, true, null)
+            + "],'edges': ["
+            + edge("TE_S", "TE_U") + "," + edge("TE_U", "TE_S") + ","
+            + edge("TE_U", "TE_H") + "," + edge("TE_H", "TE_U") + ","
+            + edge("TE_S", "TE_V") + "," + edge("TE_V", "TE_S") + ","
+            + edge("TE_V", "TE_H") + "," + edge("TE_H", "TE_V")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
     /**
      * A berth whose approach is measured, so a standing train's tail lies over the square behind it.
      *
@@ -3458,48 +3673,58 @@ public class testHomeStaging
      */
     private static String turnedAndNotSentHome(Layout layout, HomeStaging.Plan plan, boolean asIfItCannotReverse)
     {
-        List<HomeStaging.Move> moves = plan.getMoves();
+        // CARRIED PER TRAIN, because the ruling is about a train and not about a move (AMW-B3).
+        //
+        // Three earlier versions of this oracle asked one move at a time, and each was a copy of the fix it was
+        // grading: a move whose own route turned the train, or whose end turns it, plus that train's next move.  The
+        // laundering the validation described is invisible to that shape - move 1 turns the train into a berth, which
+        // the ruling permits, and move 2 leaves the berth over a route that turns nobody and ends nowhere turning, so
+        // neither move breaks a rule of its own.  What breaks the ruling is the PAIR.
+        //
+        // So: once the plan has turned a train that cannot reverse, that train is "turned and not yet home", and the
+        // very next move it makes must end at its home.  Reaching home clears it.  Nothing else does - a berth does
+        // not launder it, which is the whole of AMW-B3.
+        java.util.Set<org.traincontrol.base.Locomotive> owed = new java.util.LinkedHashSet<>();
 
-        for (int i = 0; i < moves.size(); i++)
+        for (HomeStaging.Move move : plan.getMoves())
         {
-            HomeStaging.Move move = moves.get(i);
-
             org.traincontrol.base.Locomotive train = move.getLocomotive();
-
-            Point end = move.getEnd();
 
             if (train.isReversible() && !asIfItCannotReverse) continue;
 
+            Point end = move.getEnd();
             Point home = layout.getHomeStations().get(train);
 
-            boolean restsTurning = end.isTerminus() || end.isReversing();
+            boolean atItsHome = home != null && home.isSamePlaceAs(end);
 
-            // A TURN IN THE MIDDLE (AMV-B1): every square the route stops short of the end.
-            boolean turnedOnTheWay = false;
+            // A move owed to home that goes anywhere else is the violation, whatever it was parked on.
+            if (owed.contains(train) && !atItsHome)
+            {
+                return "turned earlier and then sent to " + end.getName() + " rather than home: " + move;
+            }
+
+            if (atItsHome)
+            {
+                owed.remove(train);
+
+                continue;
+            }
+
+            boolean turnedOnTheWay = end.isTerminus() || end.isReversing();
 
             for (int e = 0; e + 1 < move.getPath().size(); e++)
             {
                 if (move.getPath().get(e).getEnd().isReversing()) turnedOnTheWay = true;
             }
 
-            if (turnedOnTheWay && !(home != null && home.isSamePlaceAs(end)) && !restsTurning
-                && end.isAutoDestination())
+            // Turned, and not home: the next move it makes owes itself to its home.  A train with no home can never
+            // satisfy that, so turning it at all is the violation.
+            if (turnedOnTheWay)
             {
-                return "turned on the way and sent on: " + move;
+                if (home == null) return "turned with no home to go to: " + move;
+
+                owed.add(train);
             }
-
-            if (!restsTurning) continue;
-
-            if (home != null && home.isSamePlaceAs(end)) continue;
-
-            HomeStaging.Move next = null;
-
-            for (int j = i + 1; j < moves.size() && next == null; j++)
-            {
-                if (moves.get(j).getLocomotive().equals(train)) next = moves.get(j);
-            }
-
-            if (home == null || next == null || !home.isSamePlaceAs(next.getEnd())) return move + " then " + next;
         }
 
         return null;
