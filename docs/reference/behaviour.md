@@ -1280,6 +1280,19 @@ not fight: the post-processor only ever sees what the focus owner did not want.
 
 `regression.testTheKeyMapReachesTheWholeWindow` holds the three halves of that rule.
 
+**Which squares a length rule reads, and how Mass Assign Lengths asks for them** (FR-089, Adam 2026-09-16:
+*"per stretch, every relevant square a rule reads"*). On every approach to a station, a parking berth or a
+turn-round square: the track from that square back to the nearest switch, and where a leg crosses no switch, on
+through the sensor behind it onto the leg before - the room rule walks exactly that far (AMR-B3). The switch tile is
+not room. **Unmeasured Track** highlights those squares that have no length; **Mass Assign Lengths** asks for them
+one stretch at a time - one leg's share, between the square it arrives at and a switch or a sensor - takes the
+stretch's whole length, keeps any square already measured, and shares the rest evenly over the others, with any
+remainder farthest from where the train stops. The even share is an approximation of where the units really lie,
+chosen knowing that: the room rule needs only the total, and the tail and berth rules read where each unit is.
+
+Not the same question as the editor notice about turn-round squares with no length, which is said unprompted and
+so asks less (MT-305).
+
 ---
 
 ## 6. Parking and Return Home

@@ -211,6 +211,9 @@ public class AutonomyEditorPanel extends JPanel
     private static final String PREF_DIRECTIONS = "autonomyEditorDirections";
     private static final String PREF_LENGTHS = "autonomyEditorLengths";
 
+    /** Remembered like Track Lengths above it. */
+    private static final String PREF_UNMEASURED = "autonomyEditorUnmeasured";
+
     /**
      * Whether the captions in this editor name the train parked at a station or the station itself.
      *
@@ -270,6 +273,17 @@ public class AutonomyEditorPanel extends JPanel
      */
     private static final int DIRECTIONS_DEFAULT = 1;
     private final JCheckBox showLengths = new JCheckBox(I18n.t("autosetup.ui.btnShowLengths"), false);
+
+    /**
+     * Highlights every square a length rule reads that has no length (Adam, 2026-09-16: *"a display option to
+     * statically highlight all relevant unmeasured squares"*).
+     */
+    private final JCheckBox showUnmeasured = new JCheckBox(I18n.t("autosetup.ui.btnShowUnmeasured"), false);
+
+    /**
+     * The squares it highlights, worked out once per refresh rather than once per square painted - null until asked.
+     */
+    private java.util.Set<TileKey> unmeasuredSquares = null;
 
     /**
      * The keys `LayoutEditor` binds to this panel's actions, as their tooltips name them (OB-214).
@@ -709,6 +723,8 @@ public class AutonomyEditorPanel extends JPanel
 
         showLengths.setSelected(VIEW_PREFS.getBoolean(PREF_LENGTHS, false));
 
+        showUnmeasured.setSelected(VIEW_PREFS.getBoolean(PREF_UNMEASURED, false));
+
         // ONE REMEMBERED SETTING, and the two boxes follow it (FR-061).
         //
         // Station Names by default, as asked. The two older preferences are deliberately not read:
@@ -745,6 +761,10 @@ public class AutonomyEditorPanel extends JPanel
         // Addresses and Grid toggles beside it write theirs.
         showLengths.setToolTipText(SHORTCUT_LENGTHS);
 
+        // Not focusable either, for OB-019's reason above: a focusable box here takes the editor's shortcuts away.
+        showUnmeasured.setFocusable(false);
+        showUnmeasured.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipShowUnmeasured")));
+
         directions.addActionListener(e ->
         {
             VIEW_PREFS.putInt(PREF_DIRECTIONS, directions.getSelectedIndex());
@@ -754,6 +774,12 @@ public class AutonomyEditorPanel extends JPanel
         showLengths.addActionListener(e ->
         {
             VIEW_PREFS.putBoolean(PREF_LENGTHS, showLengths.isSelected());
+            refresh();
+        });
+
+        showUnmeasured.addActionListener(e ->
+        {
+            VIEW_PREFS.putBoolean(PREF_UNMEASURED, showUnmeasured.isSelected());
             refresh();
         });
 
@@ -2137,6 +2163,21 @@ public class AutonomyEditorPanel extends JPanel
 
                 bulk.add(nameEverythingItem);
             }
+
+            // MASS ASSIGN LENGTHS (Adam, 2026-09-16: *"the 'mass assign lengths' feature in the right click menu that
+            // cycles through each relevant square"*).  Greyed on its own count, which is the walk's own question - the
+            // same shape as Name Everything above it.
+            int toMeasure = session == null ? 0 : session.stretchesNeedingALengthOn(page).size();
+
+            javax.swing.JMenuItem massAssign =
+                item(I18n.t("autosetup.ui.menuMassAssignLengths"), () -> massAssignLengths());
+
+            massAssign.setEnabled(toMeasure > 0);
+            massAssign.setToolTipText(wrapped(toMeasure > 0
+                ? I18n.f("autosetup.ui.tooltipMassAssignLengths", toMeasure)
+                : I18n.t("autosetup.ui.infoNothingToMeasure")));
+
+            bulk.add(massAssign);
 
             bulk.addSeparator();
         }
@@ -8356,6 +8397,15 @@ public class AutonomyEditorPanel extends JPanel
         // without this the diagram can be read right through without seeing where the trains are.
         if (locomotiveAt(tile) != null) annotation.withTrain();
 
+        // UNMEASURED TRACK: every square a length rule reads that has no length, asked of the session's one answer so
+        // the highlight and Mass Assign Lengths cannot disagree about which squares those are.
+        if (showUnmeasured.isSelected())
+        {
+            if (unmeasuredSquares == null) unmeasuredSquares = session.squaresNeedingALength();
+
+            if (unmeasuredSquares.contains(tile)) annotation.needsALength();
+        }
+
         return annotation;
     }
 
@@ -8743,6 +8793,10 @@ public class AutonomyEditorPanel extends JPanel
     public final void refresh()
     {
         flowMarks = session.flowMarks();
+
+        // Forgotten rather than recomputed: worked out again the first time a square asks, and only if the display is
+        // on - so a refresh with the highlight off costs nothing.
+        unmeasuredSquares = null;
         runLeaders = session.runLeaders();
 
         // The box says what the setup says, so that opening the editor on a page already left out shows
@@ -9098,6 +9152,162 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * Goes through every stretch on this page that still needs a length, one at a time (Mass Assign Lengths).
+     *
+     * **Name Everything's walk, for lengths.**  Each stretch is outlined whole - it is one run somebody measures with
+     * one tape - and the first of its unmeasured squares on this page is scrolled to.  The prompt asks for the WHOLE
+     * length of the stretch, says how much of it is already measured, and the session shares the rest out over the
+     * squares with none (Adam, 2026-09-16: per stretch).  Skip leaves one stretch; Stop ends the walk, which a walk of
+     * forty needs.  A length too short to give every unmeasured square a unit is explained and asked again.
+     *
+     * Rebuilt once at the end, as Name Everything is: sixty stretches measured one rebuild at a time is sixty rebuilds.
+     */
+    private void massAssignLengths()
+    {
+        java.util.List<AutonomySession.Stretch> stretches = session.stretchesNeedingALengthOn(page);
+
+        if (stretches.isEmpty())
+        {
+            say(hint, I18n.t("autosetup.ui.infoNothingToMeasure"));
+
+            return;
+        }
+
+        boolean wroteAny = false;
+
+        for (int i = 0; i < stretches.size(); i++)
+        {
+            AutonomySession.Stretch stretch = stretches.get(i);
+
+            int measuredSquares = 0;
+            int measuredUnits = 0;
+            TileKey firstGapHere = null;
+
+            for (TileKey square : stretch.getTiles())
+            {
+                int length = session.getStore().getTileLength(square);
+
+                if (length > 0)
+                {
+                    measuredSquares++;
+                    measuredUnits += length;
+                }
+                else if (firstGapHere == null && page != null && page.equals(square.getPage()))
+                {
+                    firstGapHere = square;
+                }
+            }
+
+            // No stretch shares a square with another, so an earlier answer cannot have filled this one - asked again
+            // anyway, because a walk that trusts a list made before it started is how a prompt ends up about nothing.
+            if (measuredSquares == stretch.getTiles().size()) continue;
+
+            selection.clear();
+            selection.addAll(stretch.getTiles());
+            refresh();
+
+            if (onReveal != null && firstGapHere != null) onReveal.accept(firstGapHere);
+
+            String question = I18n.f("autosetup.ui.promptMassAssignLength", i + 1, stretches.size(),
+                nameForPrompt(stretch.getRestsAt()), stretch.getTiles().size(), measuredSquares, measuredUnits);
+
+            Integer whole = askForWholeLength(question);
+
+            while (whole != null && whole >= 0 && !session.assignStretchLength(stretch, whole))
+            {
+                JOptionPane.showMessageDialog(owner(), wrapped(I18n.f("autosetup.ui.errorStretchTooShort",
+                    measuredUnits, stretch.getTiles().size() - measuredSquares, session.leastWholeLengthOf(stretch))));
+
+                whole = askForWholeLength(question);
+            }
+
+            if (whole == null) break;
+
+            if (whole >= 0) wroteAny = true;
+        }
+
+        selection.clear();
+
+        if (wroteAny) setupChanged();
+        else refresh();
+    }
+
+    /**
+     * @return the name the setup gives this square, or where it is when it has none
+     */
+    private String nameForPrompt(TileKey tile)
+    {
+        String name = session.getStore().getPointName(tile);
+
+        return name == null || name.trim().isEmpty() ? String.valueOf(tile) : name;
+    }
+
+    /**
+     * Asks for one stretch's whole length, with Skip beside OK - the Name Everything dialog, for a number.
+     *
+     * @param question what to say above the field
+     * @return the length; -1 for Skip or a blank answer; null for Stop
+     */
+    private Integer askForWholeLength(String question)
+    {
+        final javax.swing.JTextField field = digitsOnly("");
+
+        field.addAncestorListener(new javax.swing.event.AncestorListener()
+        {
+            @Override
+            public void ancestorAdded(javax.swing.event.AncestorEvent event)
+            {
+                javax.swing.SwingUtilities.invokeLater(() -> field.requestFocusInWindow());
+            }
+
+            @Override
+            public void ancestorMoved(javax.swing.event.AncestorEvent event) { }
+
+            @Override
+            public void ancestorRemoved(javax.swing.event.AncestorEvent event) { }
+        });
+
+        JPanel panel = new JPanel(new java.awt.BorderLayout(0, 6));
+
+        panel.add(new JLabel(wrapped(question)), java.awt.BorderLayout.NORTH);
+        panel.add(field, java.awt.BorderLayout.CENTER);
+
+        final Object[] answers = { I18n.t("ui.ok"), I18n.t("autosetup.ui.btnSkipOne"), I18n.t("ui.cancel") };
+
+        final JOptionPane pane = new JOptionPane(panel, JOptionPane.PLAIN_MESSAGE,
+            JOptionPane.YES_NO_CANCEL_OPTION, null, answers, answers[0]);
+
+        final javax.swing.JDialog dialog = pane.createDialog(owner(), I18n.t("autosetup.ui.menuMassAssignLengths"));
+
+        field.addActionListener(e ->
+        {
+            pane.setValue(answers[0]);
+            dialog.dispose();
+        });
+
+        dialog.setVisible(true);
+        dialog.dispose();
+
+        Object chosen = pane.getValue();
+
+        if (chosen == null || answers[2].equals(chosen)) return null;
+        if (answers[1].equals(chosen)) return -1;
+
+        String entered = field.getText().trim();
+
+        if (entered.isEmpty()) return -1;
+
+        try
+        {
+            return Integer.parseInt(entered);
+        }
+        catch (NumberFormatException tooBig)
+        {
+            return -1;
+        }
+    }
+
+    /**
      * Forgets every length on every page, after asking (FR-069).
      *
      * **What it costs is stated in the dialog, because nothing brings a length back.**  There is no
@@ -9402,6 +9612,14 @@ public class AutonomyEditorPanel extends JPanel
     public void setOnReveal(java.util.function.Consumer<TileKey> onReveal)
     {
         this.onReveal = onReveal;
+    }
+
+    /**
+     * @return the Unmeasured Track display choice, for the window to mount under Track Lengths
+     */
+    public JCheckBox getShowUnmeasured()
+    {
+        return control(showUnmeasured);
     }
 
     /**

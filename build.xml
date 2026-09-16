@@ -240,6 +240,7 @@
         <test-one-class class="testAutonomyDiagramReducer"/>
         <test-one-class class="testAutonomyDiagramStore"/>
         <test-one-class class="testAutonomyDiagramSession"/>
+        <test-one-class class="testMassAssignLengths"/>
         <test-one-class class="testAutonomyDiagramMonitor"/>
         <test-one-class class="testAutonomyDiagramReversal"/>
         <test-one-class class="testAutonomyDiagramSampleLayout"/>

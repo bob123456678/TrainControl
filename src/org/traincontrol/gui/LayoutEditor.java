@@ -1840,6 +1840,11 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 visibility.add(autonomyPanel.getShowLengths());
 
+                // Directly under Track Lengths, with no gap: the two are one subject - what is measured, and what is
+                // not yet (Adam, 2026-09-16).
+                autonomyPanel.getShowUnmeasured().setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                visibility.add(autonomyPanel.getShowUnmeasured());
+
                 // WHAT THE CAPTIONS SAY, as one choice (FR-061).
                 //
                 // Adam: "add a Text Labels label and dropdown right above Track Directions, with the

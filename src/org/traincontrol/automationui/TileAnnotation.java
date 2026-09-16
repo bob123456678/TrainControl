@@ -641,6 +641,52 @@ public class TileAnnotation
 
     private boolean occupied = false;
 
+    /**
+     * Says a length rule reads this square and nobody has given it a length (the Unmeasured Track display).
+     *
+     * A builder, like `withTrain`, and for its reason: five constructors already chain into the longest.  And carried
+     * through `isBlank`, `equals` and `hashCode` as well as `paint`, because OB-007 is what happens to a mark that is
+     * not: plain track has nothing else to say, so a mark missing from `isBlank` is invisible on nearly every square it
+     * is for.
+     *
+     * @return this
+     */
+    public TileAnnotation needsALength()
+    {
+        this.unmeasured = true;
+
+        return this;
+    }
+
+    private boolean unmeasured = false;
+
+    /**
+     * @return whether this square is marked as needing a length
+     */
+    public boolean isUnmeasured()
+    {
+        return unmeasured;
+    }
+
+    /**
+     * Amber, and a wash rather than a border: the outline already means "selected", grey already means "autonomy
+     * cannot use this", and red is a finding.  Amber is none of those, and a wash over a whole run of squares reads as
+     * a run.
+     */
+    private static final Color UNMEASURED_COLOUR = new Color(245, 158, 11);
+    private static final float UNMEASURED_ALPHA = 0.38f;
+
+    private void paintUnmeasured(Graphics2D g, int width, int height)
+    {
+        java.awt.Composite before = g.getComposite();
+
+        g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, UNMEASURED_ALPHA));
+        g.setColor(UNMEASURED_COLOUR);
+        g.fillRect(0, 0, width, height);
+
+        g.setComposite(before);
+    }
+
     public boolean isIgnored()
     {
         return ignored;
@@ -696,7 +742,7 @@ public class TileAnnotation
         // above is about a field being left out of this method, and the next reader should not have to
         // work out whether this is the same mistake again.
         return marks.isEmpty() && length < 0 && !selected && badge == null && !ignored
-            && traces.isEmpty() && arrivals.isEmpty() && !occupied;
+            && traces.isEmpty() && arrivals.isEmpty() && !occupied && !unmeasured;
     }
 
     public List<Trace> getTraces()
@@ -876,6 +922,10 @@ public class TileAnnotation
                     g.setClip(beforeClip);
                 }
             }
+
+            // UNDER the arrows and the badge, so the highlight says "measure this" without hiding which way the track
+            // runs or what the square is.
+            if (unmeasured) paintUnmeasured(g, width, height);
 
             paintArrows(g, width, height);
 
@@ -2086,7 +2136,7 @@ public class TileAnnotation
             && (badge == null ? other.badge == null : badge.equals(other.badge))
             && ignored == other.ignored && curved == other.curved && portal == other.portal
             && traces.equals(other.traces) && blockedOnly == other.blockedOnly
-            && occupied == other.occupied && editing == other.editing
+            && occupied == other.occupied && editing == other.editing && unmeasured == other.unmeasured
             && marks.equals(other.marks) && arrivals.equals(other.arrivals);
     }
 
@@ -2097,7 +2147,7 @@ public class TileAnnotation
             + (selected ? 1 : 0) + (badge == null ? 0 : badge.hashCode() * 4)
             + (ignored ? 16 : 0) + (curved ? 64 : 0) + (portal ? 256 : 0) + (occupied ? 1024 : 0)
             + traces.hashCode() * 3
-            + (blockedOnly ? 512 : 0) + (editing ? 2048 : 0) + arrivals.hashCode() * 7;
+            + (blockedOnly ? 512 : 0) + (editing ? 2048 : 0) + (unmeasured ? 4096 : 0) + arrivals.hashCode() * 7;
     }
 
     @Override

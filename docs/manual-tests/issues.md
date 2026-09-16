@@ -1383,6 +1383,20 @@ Then ten presses of the relaxed arrangement, to see whether the planner is inter
 
 The probes are not committed; the figures above are their output.
 
+### FR-089 - 2026-09-16 - Mass Assign Lengths, and a display that highlights the track still needing a length
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-09-16  
+**Filed:** 2026-09-16  
+
+Adam, 2026-09-16, asking what it would take: *"How big of a lift would it be to add a "measurement view" which shows just the logical segments that require a measurement?  Basically, I am looking for a way to make it easy for me to ensure every relevant segment gets a measurement, similar to "name all"."*  Then, having been shown the trade-off between asking per square and per stretch: *"per stretch, every relevant square a rule reads. build it.  let's have: the "mass assign lengths" feature in the right click menu that cycles through each relevant square.  and a display option to statically highlight all relevant unmeasured squares."*
+
+**Which squares.**  Every square a length rule reads: on every approach to a station, parking berth or turn-round square, the track from that square back to the nearest switch - and where a leg crosses no switch, on through the sensor behind it onto the leg before, because the room rule does (AMR-B3).  The switch tile is not room and is not asked for.
+
+**Per stretch.**  A stretch is one leg's share of that - between the square it arrives at and the switch, or between two sensors.  One whole length is typed and shared evenly over the squares that have none; squares already measured keep theirs; any remainder goes to the squares farthest from where the train rests, the refusing direction for the tail and berth rules.
+
+**On his railway today** (a sandbox copy, 2026-09-16): 46 stretches and 181 squares - 33 stretches and 131 squares on 1 - Main, 13 and 50 on 2 - Bottom, none on the three pages left out of autonomy, and no stretch crossing a page.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1399,6 +1413,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-16 | FR-089 | feature request | Adam: *"per stretch, every relevant square a rule reads. build it."*  Mass Assign Lengths in Bulk Tools walks the stretches still needing a length, one whole length each; the Unmeasured Track display highlights the same squares. | - | `MT-454`, `MT-455` |
 | 2026-09-15 | OB-229 | bug | Return Home's agreement check blamed the planner for routes the railway's search never found: `Layout.bfs` spent squares on routes through a terminus.  Searched past termini, at Adam's choice. | - | `MT-441` |
 | 2026-09-15 | OB-228 | bug | Adam, on MT-335: *"Could not run EN57-203 from BottomInner (northbound) to TopMainR0Park - the path stayed blocked."*  Return Home routed a train over the tail of one it had just parked; the planner now models the tails of trains it moves. | - | `MT-440` |
 | 2026-09-15 | FR-088 | feature request | Adam, on MT-435: *"The closest sensor to the back should be the default selection in the length window"*.  Starts on the recorded road, else on the one sensor nearest the back, else nothing. | - | `MT-438` |
