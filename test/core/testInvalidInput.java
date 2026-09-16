@@ -342,15 +342,28 @@ public class testInvalidInput
     }
 
     /**
-     * A locomotive named in the config that is not in the database - what a rename or a deletion leaves
-     * behind - and the same locomotive placed at two points at once.
+     * A locomotive entry with no name, and the same locomotive placed at two points at once - a broken file,
+     * refused whole.
+     *
+     * **A locomotive the database does not have is NOT in this list any more.**  This claim used to require that
+     * too, and Adam overruled it on 2026-09-16 (AMR-C3): *"drop the train and keep the rest."*  What a rename or a
+     * deletion leaves behind is a file that has outlived its fleet, not a broken one, so the placement is dropped
+     * with a log line and the configuration loads - asserted below as the opposite of what stood here, and in full
+     * by `core.testHomeStaging.testAPlacementForALocomotiveNotInTheDatabaseDropsOnlyThePlacement`.  Changed because
+     * the RULING changed, not to make a red go away.
      */
     @Test
     public void testUnusableLocomotivePlacementsAreRejected()
     {
-        assertRejected("locomotive not in database",
-            config("{'name': 'IN A', 'station': true, 's88': 8880, 'loc': {'name': '" + LOC_UNKNOWN + "'}}",
-                "", ""));
+        Layout phantom = Layout.fromJSON(
+            config("{'name': 'IN A', 'station': true, 's88': 8880, 'loc': {'name': '" + LOC_UNKNOWN + "'}}", "", ""),
+            model);
+
+        assertNotNull(phantom, "locomotive not in database: fromJSON returned null");
+        assertTrue(phantom.isValid(), "locomotive not in database: the whole configuration was refused, where Adam"
+            + " ruled the placement is dropped and the rest kept (AMR-C3) - " + Layout.getLastError());
+        assertNull(phantom.getPoint("IN A").getCurrentLocomotive(),
+            "locomotive not in database: the phantom was placed on the railway");
 
         assertRejected("locomotive entry with no name",
             config("{'name': 'IN A', 'station': true, 's88': 8880, 'loc': {'speed': 30}}", "", ""));
