@@ -4334,6 +4334,12 @@ public class testEditorSurfaceRules
         excused.put("automationui/AutonomyChecks.java",
             "names the clause in a comment explaining why a notice is drawn");
 
+        excused.put("automation/HomeStaging.java",
+            "asks a DIFFERENT question of the same clause: whether a square is a PARKING BERTH, which is where a"
+            + " train that cannot reverse may be left facing out of - Adam's turn rulings of 2026-09-15 (AMV-B1,"
+            + " AMW-B3).  Sendability is not asked here at all: Return Home is manual operation and ignores it, which"
+            + " is why `canRest` tests `isDestination` and `isActive` and stops");
+
         excused.put("automationui/AutonomySession.java",
             "names the runtime rule in a comment, and narrows a set deliberately (MON-C1)");
 
