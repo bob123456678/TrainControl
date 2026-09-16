@@ -1423,6 +1423,20 @@ Adam, on MT-454, 2026-09-16: *"when the popup closes and reopens, make sure it r
 
 **Built.**  Each prompt of a walk opens where the last one was left; starting a round from the right-click menu opens its first prompt afresh.  Name Everything's walk had the same habit and shares it.  `core.testMassAssignLengths.testTheWalkPromptStaysWhereItWasLeftUntilANewRound` drives the real walk on the event thread: it moves the first prompt, presses Skip, and requires the next prompt where the first was left, then presses Cancel, starts a new round and requires its first prompt NOT to open there.  Red first - the second prompt opened centred, at 733,489 - and a mutation dropping the new-round reset fails its second half.
 
+### OB-232 - 2026-09-16 - The walk prompt's number field did not have the keyboard focus
+
+**Kind:** bug  
+**Raised from:** MT-454  
+**Filed:** 2026-09-16  
+
+Adam, on MT-454, 2026-09-16: *"make sure the entry field is focused, and when I hit enter after typing the number, it submits and goes to the next one (it may already do the latter)"*
+
+**Why.**  The prompt was a `JOptionPane` with OK as its initial value, so when the dialog gained the keyboard focus it gave it to the OK button.  The field did ask for the focus, but when it was added to the prompt - before the dialog was on screen - so that request lost.  What was typed went nowhere; Enter on the empty field did submit, as he suspected, and an empty answer counts as Skip.
+
+**Fixed.**  Both walk prompts - Mass Assign Lengths and Name Everything - now have no initial value, so no button takes the focus and the field, the first thing in the prompt that can, has it.  Enter in the field answers OK through the field's own listener, as it already did.  A window-focus listener was tried first and is not in the fix: it lost the same race, and once the initial value was gone a mutation removing it changed nothing, so it would have been code nothing proves.
+
+`core.testMassAssignLengths.testTheNumberFieldHasFocusAndEnterSubmits` drives the real walk: it waits for the prompt to take the keyboard focus, requires it to be in the number field, then types 3 and presses Enter on the field and requires the next prompt and the first piece measured.  Red first: the prompt had the focus and the OK button held it.  A desktop that never gives the test window focus would make it skip, not pass; this one gives it.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1439,6 +1453,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-16 | OB-232 | bug | Adam, on MT-454: *"make sure the entry field is focused"*.  OK was the prompt's initial value and took the focus; both walk prompts now have none, so the field has it, and Enter submits as before. | - | `MT-454` |
 | 2026-09-16 | FR-090 | feature request | Adam, on MT-454: *"make sure it remembers its location unless I reopen a new mass assignment round from the right click menu"*.  Each prompt opens where the last was left; a new round opens afresh; Name Everything too. | - | `MT-454` |
 | 2026-09-16 | OB-231 | bug | Adam, on MT-454: *"When iterating quickly on the assign lengths popup (like by clicking skip), it does not clear the prior highlights."*  Each reveal's yellow flash held 2.25 s and nothing ended it when the walk moved on; `reveal` now ends the last one first. | - | `MT-454` |
 | 2026-09-16 | FR-089 | feature request | Adam: *"per stretch, every relevant square a rule reads. build it."*  Mass Assign Lengths in Bulk Tools walks the stretches still needing a length, one whole length each; the Unmeasured Track display highlights the same squares. | - | `MT-454`, `MT-455` |

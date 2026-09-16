@@ -9352,21 +9352,6 @@ public class AutonomyEditorPanel extends JPanel
     {
         final javax.swing.JTextField field = digitsOnly("");
 
-        field.addAncestorListener(new javax.swing.event.AncestorListener()
-        {
-            @Override
-            public void ancestorAdded(javax.swing.event.AncestorEvent event)
-            {
-                javax.swing.SwingUtilities.invokeLater(() -> field.requestFocusInWindow());
-            }
-
-            @Override
-            public void ancestorMoved(javax.swing.event.AncestorEvent event) { }
-
-            @Override
-            public void ancestorRemoved(javax.swing.event.AncestorEvent event) { }
-        });
-
         JPanel panel = new JPanel(new java.awt.BorderLayout(0, 6));
 
         panel.add(new JLabel(wrapped(question)), java.awt.BorderLayout.NORTH);
@@ -9375,7 +9360,13 @@ public class AutonomyEditorPanel extends JPanel
         final Object[] answers = { I18n.t("ui.ok"), I18n.t("autosetup.ui.btnSkipOne"), I18n.t("ui.cancel") };
 
         final JOptionPane pane = new JOptionPane(panel, JOptionPane.PLAIN_MESSAGE,
-            JOptionPane.YES_NO_CANCEL_OPTION, null, answers, answers[0]);
+            // NO INITIAL VALUE, so the field has the keyboard focus (Adam, on MT-454: "make sure the entry field is
+            // focused").  With OK as the initial value, JOptionPane gave the focus to that button when the dialog gained
+            // it, and asking for the field earlier - when it was added, before the dialog was on screen - lost to that;
+            // so what was typed went nowhere, and Enter on the empty field counted as Skip.  With none, the field is the
+            // first thing in the prompt that can take the focus, and takes it.  Enter in the field still answers OK,
+            // through the field's own listener.
+            JOptionPane.YES_NO_CANCEL_OPTION, null, answers, null);
 
         final javax.swing.JDialog dialog = pane.createDialog(owner(), I18n.t("autosetup.ui.menuMassAssignLengths"));
 
@@ -9677,7 +9668,13 @@ public class AutonomyEditorPanel extends JPanel
             I18n.t("ui.cancel") };
 
         final JOptionPane pane = new JOptionPane(panel, JOptionPane.PLAIN_MESSAGE,
-            JOptionPane.YES_NO_CANCEL_OPTION, null, answers, answers[0]);
+            // NO INITIAL VALUE, so the field has the keyboard focus (Adam, on MT-454: "make sure the entry field is
+            // focused").  With OK as the initial value, JOptionPane gave the focus to that button when the dialog gained
+            // it, and asking for the field earlier - when it was added, before the dialog was on screen - lost to that;
+            // so what was typed went nowhere, and Enter on the empty field counted as Skip.  With none, the field is the
+            // first thing in the prompt that can take the focus, and takes it.  Enter in the field still answers OK,
+            // through the field's own listener.
+            JOptionPane.YES_NO_CANCEL_OPTION, null, answers, null);
 
         final javax.swing.JDialog dialog = pane.createDialog(owner(),
             I18n.t("autosetup.ui.btnNameEverything"));

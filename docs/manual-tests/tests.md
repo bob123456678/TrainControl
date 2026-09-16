@@ -22979,7 +22979,7 @@ Rewritten the same day after review MAL, to your rulings *"Every leg, cut at swi
 
 1. Open the autonomy editor on **1 - Main**, and tick **Track Lengths** so the numbers show.
 2. Right-click a TRACK square (an empty or text square has a different menu), open **Bulk Tools**, and hover **Mass Assign Lengths...** - the tooltip gives both counts.  Click it.
-3. For the first piece, type its whole length and press OK.
+3. For the first piece, type its whole length straight away - without clicking into the box - and press **Enter**.
 4. For the second, type **0** and press OK.
 5. Drag the prompt off the track diagram, then for the third piece press **Skip**.
 6. For the fourth, type a number and press **Escape**.
@@ -22988,6 +22988,7 @@ Rewritten the same day after review MAL, to your rulings *"Every leg, cut at swi
 **Expected**
 
 - Each prompt says which piece of how many and names its two ends - a station or sensor by name, a switch as *the switch at x,y* - and the piece is outlined on the diagram and scrolled into view.
+- Each prompt opens with the number box ready to type into, and Enter submits and moves to the next piece (OB-232).
 - After step 3 that piece's squares show numbers adding up to exactly what you typed.  A switch at either end of it shows no number.
 - Step 4 says 0 is the same as no length at all, and asks again, writing nothing.
 - Step 5 leaves that piece untouched, and the next prompt opens where you dragged the last one - not back in the middle (FR-090).

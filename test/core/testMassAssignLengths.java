@@ -410,6 +410,105 @@ public class testMassAssignLengths
         assertNotEquals(freshAt[0], movedTo, "a new round from the menu opened where the last round left its prompt");
     }
 
+    /**
+     * The number field has the keyboard focus, and Enter after typing a number submits it and moves on.
+     *
+     * Adam, on MT-454, 2026-09-16: *"make sure the entry field is focused, and when I hit enter after typing the number,
+     * it submits and goes to the next one"*.  The field asked for focus when it was added to the prompt - before the
+     * dialog was on screen - and when the dialog did gain focus, `JOptionPane`'s own handler gave it to the OK button.
+     * So what he typed went nowhere, and Enter on the empty field counted as Skip.
+     *
+     * Asked of the real walk.  A desktop that never lets the test's window take focus cannot show either half, and says
+     * so as a skip rather than passing.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheNumberFieldHasFocusAndEnterSubmits() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the walk's prompt needs a display");
+
+        openBerthBehindASwitch(key(5, 1));
+
+        final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+        final java.lang.reflect.Method walk = AutonomyEditorPanel.class.getDeclaredMethod("massAssignLengths");
+        walk.setAccessible(true);
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            try { walk.invoke(panel); } catch (Exception e) { throw new RuntimeException(e); }
+        });
+
+        final javax.swing.JDialog first = awaitPrompt(null);
+
+        // THE FOCUS: waited for, because it arrives after the window is shown.
+        final java.awt.Component[] owner = new java.awt.Component[1];
+        final boolean[] focused = new boolean[1];
+        long giveUp = System.currentTimeMillis() + 5000;
+
+        while (System.currentTimeMillis() < giveUp)
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                focused[0] = first.isFocused();
+                owner[0] = first.getFocusOwner();
+            });
+
+            if (focused[0] && owner[0] instanceof javax.swing.JTextField) break;
+
+            Thread.sleep(50);
+        }
+
+        if (!focused[0])
+        {
+            answer(first, org.traincontrol.util.I18n.t("ui.cancel"));
+            awaitNoPrompt();
+
+            throw new org.testng.SkipException("this desktop did not give the prompt the keyboard focus, so where the focus"
+                + " goes inside it cannot be seen");
+        }
+
+        final javax.swing.JTextField field = owner[0] instanceof javax.swing.JTextField
+            ? (javax.swing.JTextField) owner[0] : null;
+
+        if (field == null)
+        {
+            answer(first, org.traincontrol.util.I18n.t("ui.cancel"));
+            awaitNoPrompt();
+
+            fail("the prompt has the focus but the number field does not - it is on " + owner[0]
+                + ", so what is typed goes nowhere (Adam: \"make sure the entry field is focused\")");
+        }
+
+        // ENTER AFTER TYPING, as a key press on the field.
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            field.setText("3");
+
+            field.dispatchEvent(new java.awt.event.KeyEvent(field, java.awt.event.KeyEvent.KEY_PRESSED,
+                System.currentTimeMillis(), 0, java.awt.event.KeyEvent.VK_ENTER, java.awt.event.KeyEvent.CHAR_UNDEFINED));
+        });
+
+        javax.swing.JDialog second = awaitPrompt(first);
+
+        answer(second, org.traincontrol.util.I18n.t("ui.cancel"));
+        awaitNoPrompt();
+
+        int written = 0;
+
+        for (AutonomySession.Stretch piece : session.stretchesALengthRuleReads())
+        {
+            int total = 0;
+
+            for (TileKey square : piece.getTiles()) total += session.getStore().getTileLength(square);
+
+            if (total == 3) written++;
+        }
+
+        assertEquals(written, 1, "Enter after typing 3 did not give the first piece its length before moving on");
+    }
+
     private static javax.swing.JDialog awaitPrompt(javax.swing.JDialog notThisOne) throws Exception
     {
         String title = org.traincontrol.util.I18n.t("autosetup.ui.menuMassAssignLengths");
