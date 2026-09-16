@@ -314,6 +314,7 @@
         <!-- Added 2026-09-10: FR-069's bulk clear, and OB-198's one question about which square the
              pointer is over - three shortcuts used to ask it three ways and keep a stale answer. -->
         <test-one-class class="testClearAllTrackLengths"/>
+        <test-one-class class="testAWalkMovesTheFlashOn"/>
         <test-one-class class="testCutWithNothingHovered"/>
         <test-one-class class="testDeleteForgetsTheWholeSquare"/>
         <test-one-class class="testTheDiagramCeiling"/>

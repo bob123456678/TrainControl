@@ -2077,10 +2077,20 @@ public class LayoutEditor extends PositionAwareJFrame
 
         label.scrollRectToVisible(new java.awt.Rectangle(0, 0, label.getWidth(), label.getHeight()));
 
+        // ONE FLASH AT A TIME.  Every step of Mass Assign Lengths and Name Everything reveals a square, and the flash
+        // holds for over two seconds - so a walk moved on with Skip left a trail of yellow squares, each looking like
+        // the one being asked about (Adam, on MT-454).  The square revealed last has its flash ended first.
+        if (lastRevealed != null && lastRevealed != label) lastRevealed.endFlash();
+
+        lastRevealed = label;
+
         // The diagram's own yellow flash, not a border: a border here replaced the tile's grid line
         // and had to be cleared to null afterwards, which left the square without one.
         label.flashHighlight();
     }
+
+    /** The square `reveal` flashed last, so the next reveal can end that flash. */
+    private LayoutLabel lastRevealed;
 
     public void refreshAutonomyAnnotations()
     {

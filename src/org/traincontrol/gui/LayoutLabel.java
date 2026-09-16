@@ -1160,6 +1160,26 @@ public final class LayoutLabel extends JLabel
     private javax.swing.Timer flashTimer;
 
     /**
+     * Ends a flash now, rather than when its timer runs out.
+     *
+     * For a walk that moves from square to square - Mass Assign Lengths and Name Everything - where the flash on the
+     * square just left would otherwise stay yellow for its full hold and look like the square being asked about.
+     * Adam, on MT-454: *"When iterating quickly on the assign lengths popup (like by clicking skip), it does not clear
+     * the prior highlights."*  Does nothing when no flash is running.
+     */
+    public void endFlash()
+    {
+        if (flashTimer == null) return;
+
+        flashTimer.stop();
+
+        this.setIcon(flashRestore);
+
+        flashRestore = null;
+        flashTimer = null;
+    }
+
+    /**
      * Sets what autonomy is showing on this square, repainting if it changed.
      *
      * Repaints here rather than through updateImage, which returns early unless the icon name changed -

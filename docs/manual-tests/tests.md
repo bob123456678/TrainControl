@@ -22983,7 +22983,7 @@ Rewritten the same day after review MAL, to your rulings *"Every leg, cut at swi
 4. For the second, type **0** and press OK.
 5. For the third, press **Skip**.
 6. For the fourth, type a number and press **Escape**.
-7. Run it again, and this time press **Skip** through the pieces until the switch prompt appears; type one turnout length and press OK.
+7. Run it again, and this time press **Skip** through the pieces QUICKLY until the switch prompt appears; type one turnout length and press OK.
 
 **Expected**
 
@@ -22992,7 +22992,8 @@ Rewritten the same day after review MAL, to your rulings *"Every leg, cut at swi
 - Step 4 says 0 is the same as no length at all, and asks again, writing nothing.
 - Step 5 leaves that piece untouched.
 - Step 6 **stops the walk** and writes nothing for that piece.
-- In step 7 every switch on the page is outlined together, and each gets the one length; a switch that already had a length keeps it.
+- In step 7 only the piece being asked about is outlined and flashing - skipping quickly leaves no trail of yellow squares behind (OB-231).
+- Then every switch on the page is outlined together, and each gets the one length; a switch that already had a length keeps it.
 - On a page left out of autonomy, the greyed item says the page is left out rather than that everything is measured.
 
 *What this is:* FR-089, and review MAL (B1 to B4, C2, C3, C8).  `core.testMassAssignLengths` - twelve claims, eleven seen red first against the first version, and six mutations each caught.

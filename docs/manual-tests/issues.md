@@ -1399,6 +1399,18 @@ Adam, 2026-09-16, asking what it would take: *"How big of a lift would it be to 
 
 **Revised the same day after review MAL** (`docs/reviews/2026-09-16-MAL-mass-assign-lengths-review.md`).  The squares above are only the room rule's: the FR-087 allowance and the tail and berth walks read the switch and the track before it, and on this railway their reach is every leg.  Asked, Adam ruled *"Every leg, cut at switches"* and *"One length for all switches"*: every leg is cut into pieces between sensors and switches, switches are asked for together with one turnout length, and a piece needs a length only while its whole total is 0.  On a copy of the railway after the fix: 96 pieces (91 still with no length) and 54 switches.
 
+### OB-231 - 2026-09-16 - Mass Assign Lengths and Name Everything leave a trail of yellow flashes when skipped quickly
+
+**Kind:** bug  
+**Raised from:** MT-454  
+**Filed:** 2026-09-16  
+
+Adam, on MT-454, 2026-09-16: *"When iterating quickly on the assign lengths popup (like by clicking skip), it does not clear the prior highlights."*
+
+**Why.**  Every step of the walk calls `LayoutEditor.reveal`, which gives the square the diagram's yellow flash for 2.25 seconds by swapping its icon and starting a timer.  Nothing ended that flash when the walk moved on, so pressing Skip faster than 2.25 seconds left a trail of yellow squares, each looking like the one being asked about.  Name Everything reveals through the same door and had the same trail.  The orange outline of the stretch was replaced correctly at each step; the yellow flash was not.
+
+**Fixed.**  `LayoutLabel.endFlash` ends a flash at once, and `reveal` ends the flash on the square it revealed last before flashing the next.  `regression.testAWalkMovesTheFlashOn` opens the real editor on the live snapshot, reveals two squares in a row and requires the first to be back to its own picture at once - red first with the reported symptom, the first square still wearing the highlight.  The route editor's flash, which lights several squares on purpose, is untouched.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1415,6 +1427,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-16 | OB-231 | bug | Adam, on MT-454: *"When iterating quickly on the assign lengths popup (like by clicking skip), it does not clear the prior highlights."*  Each reveal's yellow flash held 2.25 s and nothing ended it when the walk moved on; `reveal` now ends the last one first. | - | `MT-454` |
 | 2026-09-16 | FR-089 | feature request | Adam: *"per stretch, every relevant square a rule reads. build it."*  Mass Assign Lengths in Bulk Tools walks the stretches still needing a length, one whole length each; the Unmeasured Track display highlights the same squares. | - | `MT-454`, `MT-455` |
 | 2026-09-15 | OB-229 | bug | Return Home's agreement check blamed the planner for routes the railway's search never found: `Layout.bfs` spent squares on routes through a terminus.  Searched past termini, at Adam's choice. | - | `MT-441` |
 | 2026-09-15 | OB-228 | bug | Adam, on MT-335: *"Could not run EN57-203 from BottomInner (northbound) to TopMainR0Park - the path stayed blocked."*  Return Home routed a train over the tail of one it had just parked; the planner now models the tails of trains it moves. | - | `MT-440` |
