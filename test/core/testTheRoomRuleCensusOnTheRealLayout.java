@@ -90,7 +90,11 @@ public class testTheRoomRuleCensusOnTheRealLayout
      * `isPathClear` of every route both searches could yield: none of the 494 was drivable, and 153 pairs the old search
      * never found became drivable.  A fact about the search this census walks, not a railway that came apart.
      */
-    private static final int PAIRS_WITH_A_PATH = 1354;
+    // 1301 SINCE AMR-B1 (2026-09-15, Adam: *"We need to refuse both.  A copy makes a cycle"*): the 53 pairs whose only
+    // routes doubled back through another copy of the square the journey starts or ends at are no longer walked.  Every
+    // one of them was a lap through the train's own platform, which is what he ruled out; measured separately on the
+    // same railway, 14 station pairs lose their last route and all 14 are from `BottomMainPost`.
+    private static final int PAIRS_WITH_A_PATH = 1301;
     // 880 when section 5c was written; 610 SINCE OB-229 (2026-09-15) - the 494 pairs whose only routes ran through a
     // terminus are no longer walked, and every journey over one was refused by the route check before length arose.
     private static final int NEWLY_REFUSED = 610;
@@ -353,19 +357,28 @@ public class testTheRoomRuleCensusOnTheRealLayout
      * doubling its reach, or being quietly taken out, moves the number by hundreds.  The exact figure
      * is printed on every run.
      */
-    // 0 UNTIL OB-229 (2026-09-15), AND THE ZERO WAS HIDING SOMETHING.  A journey counts here when its berth has room and
-    // every route to it is refused before the berth - which since MT-333 means at a square it turns at.  Until OB-229
-    // the census also walked routes through a terminus, which the room rules alone admit and the route check always
-    // refuses, so such a route "admitted" these journeys and none was counted.  With no route through a terminus
-    // walked, about 60 are left - journeys over routes that turn at a square too short, and none of them was ever
-    // drivable by the terminus route either.  The pass-through check coming back would add hundreds, so the band still
-    // catches it; `core.testATrainIsJudgedOnlyWhereItStops` holds that too.
-    private static final int REFUSED_ON_THE_WAY_AT_LEAST = 50;
+    // 0 UNTIL OB-229, THEN ABOUT 60, AND 0 AGAIN SINCE AMR-B1 (2026-09-15) - and the two zeroes mean opposite things.
+    //
+    // A journey counts here when its berth has room and every route to it is refused BEFORE the berth, which since
+    // MT-333 means at a square the train turns at.  The first zero was hiding the ruling: the census walked routes
+    // through a terminus, which the room rules alone admit and the route check always refuses, so such a route
+    // "admitted" every one of these journeys and none was counted.  OB-229 stopped walking them and about 60 appeared.
+    //
+    // This zero is the ruling costing nothing on this railway, and it is measured rather than hidden.  Every one of
+    // those 60 was a journey whose only routes doubled back through another copy of its own start or end - a lap
+    // through the train's own platform - and Adam ruled those out on the same day: *"We need to refuse both.  A copy
+    // makes a cycle."*  They are not walked now, so the pass-through rule has nothing left to refuse here.
+    //
+    // WHAT STILL CATCHES THE RULING BEING TAKEN OUT, now that the floor cannot: `refusedAtATurn` above, whose band is
+    // 5 to 40 over the same railway, and `core.testATrainIsJudgedOnlyWhereItStops`, which holds the rule on fixtures
+    // of its own.  The ceiling still catches the guard closing the railway down - the pass-through check coming back
+    // would add hundreds.
+    private static final int REFUSED_ON_THE_WAY_AT_LEAST = 0;
 
     /**
      * The other end of the band.  See `REFUSED_ON_THE_WAY_AT_LEAST` for why there is one.
      */
-    private static final int REFUSED_ON_THE_WAY_AT_MOST = 75;
+    private static final int REFUSED_ON_THE_WAY_AT_MOST = 10;
 
     /**
      * Route-journeys refused at a square the train turns at (Adam, 2026-09-11).
@@ -393,12 +406,18 @@ public class testTheRoomRuleCensusOnTheRealLayout
      */
     // 155 SINCE OB-229 (2026-09-15): the routes this census walks no longer include the ones through a terminus, which
     // were most of the long routes past a reversing point - and every one of them refused by the route check anyway.
-    private static final int AT_A_TURN_AT_LEAST = 110;
+    // AND 15 SINCE AMR-B1 (2026-09-15), which is the same story one step further on.  A route refused at a square the
+    // train turns at is a LONG route - it goes somewhere, turns, and comes back - and on this railway most of what was
+    // left after OB-229 were laps through another copy of the journey's own start or end.  Adam ruled those out
+    // ("a copy makes a cycle"), so they are no longer walked and what remains is the handful of genuine turn-backs.
+    // The band is still a band, for the reason above: which routes the search yields moves by a couple of per cent
+    // between JVMs.  A floor of 5 catches the bound being taken out altogether; the ceiling catches it spreading.
+    private static final int AT_A_TURN_AT_LEAST = 5;
 
     /**
      * The other end of that band.  See `AT_A_TURN_AT_LEAST`.
      */
-    private static final int AT_A_TURN_AT_MOST = 210;
+    private static final int AT_A_TURN_AT_MOST = 40;
 
     /**
      * Journeys refused at the destination, which is what the rule did before the ruling.
@@ -411,9 +430,14 @@ public class testTheRoomRuleCensusOnTheRealLayout
     private static final int REFUSED_AT_THE_BERTH = 1030;
 
     /**
-     * The squares that refuse on the way: none since MT-333 (2026-09-14), so the list is empty and any square at
-     * all appearing is the pass-through check back.  Eleven, every one a copy of the four berths below, under the
-     * ruling of 2026-09-09:
+     * The squares that refuse on the way: NONE since AMR-B1 (2026-09-15), so the list is empty and any square at all
+     * appearing here is the rule refusing somewhere Adam was not looking.  It held one entry for the few hours between
+     * OB-229 and his copy ruling - `BottomMainB (westbound, reverse)`, a turn copy of one of the four berths below -
+     * and every journey that square refused was over a route that doubled back through another copy of its own start or
+     * end.  Adam ruled those out (*"a copy makes a cycle"*), they are no longer walked, and the count went back to zero;
+     * `REFUSED_ON_THE_WAY_AT_LEAST` has the whole of that story and says what still guards the rule.
+     *
+     * Eleven of them, every one a copy of the four berths below, under the ruling of 2026-09-09:
      *
      * **Every one of them measures ONE unit**, and every one is a copy of the four berths the MT-262
      * census already names - the same tiles, now refusing a train running THROUGH them as well as one
@@ -424,12 +448,7 @@ public class testTheRoomRuleCensusOnTheRealLayout
      * three units in his UNCOMMITTED working copy and nothing at all in the repository - a pinned list
      * that was really a photograph of somebody's desk, which is the whole of the review's B8.
      */
-    //
-    // ONE SINCE OB-229 (2026-09-15): `BottomMainB (westbound, reverse)`, a turn copy of one of the four berths below.  Its
-    // journeys used to have a route through a terminus too, which the room rules alone admit - so the square never had to
-    // refuse them, and the route check refused that route anyway.  A turn square refusing a train too long for it is the
-    // turn bound of 2026-09-11, not the pass-through check; the room check below still requires three units or fewer.
-    private static final String[] ON_THE_WAY = { "BottomMainB (westbound, reverse)" };
+    private static final String[] ON_THE_WAY = { };
 
     /**
      * How many routes to one destination the census will look at.

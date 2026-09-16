@@ -246,6 +246,51 @@ public class testWhyStuck
     }
 
     /**
+     * By hand, the menu's own reason outranks being too short (Adam, 2026-09-15, AMV-C5).
+     *
+     * A physical refusal outranks a preference (MT-262), so a standing bar is replaced by "too long for the berth"
+     * where the train would not fit.  That is right for autonomy's bars and wrong for the menu's: a station the menu
+     * does not offer at all is not a station whose length matters.  Asked which the operator should see: **"The menu's
+     * reason."**
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testByHandTheMenusReasonOutranksBeingTooShort() throws Exception
+    {
+        Layout layout = twoStations("WSM");
+
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        Integer lengthWas = loc.getTrainLength();
+
+        try
+        {
+            assertTrue(layout.moveLocomotive(loc.getName(), "WSM_A", false), "could not stand the train at WSM_A");
+
+            Point b = layout.getPoint("WSM_B");
+
+            java.util.Set<org.traincontrol.base.Locomotive> excluded = new java.util.HashSet<>();
+            excluded.add(loc);
+            b.setExcludedLocs(excluded);
+
+            // AND too short for it, which is the combination that answered the wrong one.
+            loc.setTrainLength(9);
+            b.setMaxTrainLength(1);
+
+            String reason = layout.explainDestinations(loc, true).get("WSM_B");
+
+            assertEquals(reason, org.traincontrol.util.I18n.f("autolayout.why.excluded", loc.getName()),
+                "WSM_B excludes " + loc.getName() + ", so the right-click menu does not offer it at all - and Why Not"
+                + " Moving? on Manual answers about its length instead.  Adam: the menu's reason (AMV-C5).  Got: " + reason);
+        }
+        finally
+        {
+            loc.setTrainLength(lengthWas == null ? 0 : lengthWas);
+        }
+    }
+
+    /**
      * A train with no length recorded is not an error against a station with a stated limit (AMR-C1).
      *
      * `Point.validateTrainLength` unboxed the train's length, where every other reader of it treats null as nothing

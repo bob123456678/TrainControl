@@ -680,6 +680,64 @@ public class testCancelUndoesAutonomyEdits
         }
     }
 
+    /**
+     * A rebuild that did NOT replace the running layout leaves the guard up (AMV-C7).
+     *
+     * The control on the claim above: clearing the flag unconditionally would pass that one.  A load can decline - a
+     * configuration that will not build, a confirmation refused - and a declined load has carried no edit, so the fold
+     * it would allow would still write the pre-edit layout back over the setup.
+     */
+    @Test
+    public void testADeclinedRebuildLeavesTheDeclinedEditGuardUp() throws Exception
+    {
+        final java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
+        declined.setAccessible(true);
+        final org.json.JSONObject asFound = session.snapshotSetup();
+        try
+        {
+            declined.setBoolean(ui, true);
+            // A SETUP THAT WILL NOT BUILD, so `load` reverts before it replaces the running layout: one locomotive
+            // recorded on two squares is the blocking problem the setup refuses outright - "a locomotive can only be
+            // in one place, and autonomy refuses the whole setup while it is in two".
+            TileKey first = null;
+            TileKey second = null;
+            String twice = null;
+            for (TileKey tile : session.getReducer().getPoints().keySet())
+            {
+                String standing = session.getLocomotiveNameAt(tile);
+                if (standing != null && first == null)
+                {
+                    first = tile;
+                    twice = standing;
+                }
+                else if (standing == null && first != null)
+                {
+                    second = tile;
+                    break;
+                }
+            }
+            if (second == null) throw new SkipException("no square to record a second copy of a placed train on");
+            session.setPointProperty(second, "loc", new org.json.JSONObject().put("name", twice));
+            SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
+            settle();
+            // WHAT "DECLINED" MEANS HERE: the load ran and produced nothing usable.  A locomotive recorded on two
+            // squares does not stop the GRAPH being built - `hasBlockingProblems` asks the graph - so the rebuild gets
+            // as far as the railway, which refuses it: "a locomotive can only be in one place, and autonomy refuses the
+            // whole setup while it is in two".  An invalid railway has carried no edit, so the guard must stay up.
+            assertFalse(model.getAutoLayout() != null && model.getAutoLayout().isValid(),
+                "precondition: the rebuild produced a valid railway from a setup holding " + twice + " on two squares, so"
+                + " this is not the declined case and the claim below proves nothing");
+            assertTrue(declined.getBoolean(ui),
+                "the rebuild was declined - nothing carried the edit - and the guard came down anyway, so the next fold"
+                + " writes the layout from before the edit back over it (AMV-C7)");
+        }
+        finally
+        {
+            session.restoreSetup(asFound);
+            declined.setBoolean(ui, false);
+        }
+    }
+
     /** Every home the setup records, square by square, as a session holds it. */
     private static Map<String, String> homes(AutonomySession of)
     {

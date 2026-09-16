@@ -3216,10 +3216,243 @@ public class testHomeStaging
     }
 
     /**
-     * The first move of a plan that breaks the ruling of 2026-09-15 (AMH-B1), or null.
+     * A train that cannot reverse is not turned in the MIDDLE of a move and sent on (Adam, 2026-09-15, AMV-B1).
      *
-     * A move breaks it when it rests a train that cannot reverse on a square that turns it - a terminus or a reversing
-     * point - that is not its home, and that train's next move does not end at its home.
+     * The first half of his ruling governs where a move ENDS.  A route may also turn a train at a reversing point on
+     * the way - which is how a train that cannot reverse backs into a berth (MT-245) - and then carry on, arriving
+     * somewhere else the wrong way round.  Asked whether the ruling covers that: *"It should be the first option, but
+     * the locking mechanism will refuse it.  That's why we started the 2 step process for parking, which is OK in my
+     * opinion."*  So a turn on the way is allowed only where the move ends at the train's home, or at a square it
+     * comes to rest facing out of - a berth or a terminus, which is the backing-in case.
+     *
+     * X and H either side of a reversing point R, with a spare Y beyond it that only the train which cannot reverse
+     * may use.  The swap needs Y, and the only way to Y turns the train there.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testATrainThatCannotReverseIsNotTurnedMidMoveAndSentOn() throws Exception
+    {
+        Layout layout = load(aReversingPointInTheMiddle());
+
+        Point spare = layout.getPoint("HS Y");
+
+        layout.getPoint("HS R").setReversing(true);
+
+        // SWAPPED, so both trains are away from home and the spare is needed: the fixture stands LOC_A at HS H and
+        // LOC_B at HS X, and homing each where it already is answers ALREADY_HOME.
+        assign(layout, LOC_A, "HS X");
+        assign(layout, LOC_B, "HS H");
+
+        boolean[] was = setReversible(true, LOC_A, LOC_B);
+
+        try
+        {
+            // Only the train that cannot reverse may use the spare, so the plan has just one shape.
+            java.util.Set<org.traincontrol.base.Locomotive> keepOut = new java.util.HashSet<>();
+            keepOut.add(loc(LOC_A));
+            spare.setExcludedLocs(keepOut);
+
+            HomeStaging.Plan reversible = HomeStaging.snapshot(layout).plan();
+
+            assertEquals(reversible.getOutcome(), HomeStaging.Outcome.READY,
+                "control: the swap has no plan even for trains that can reverse: " + reversible);
+
+            assertNotNull(turnedAndNotSentHome(layout, reversible, true),
+                "precondition: no move of this plan turns a train on the way and then ends somewhere that is neither its"
+                + " home nor a berth, so the fixture cannot show the rule: " + reversible.getMoves());
+
+            loc(LOC_B).setReversible(false);
+
+            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+            assertNull(turnedAndNotSentHome(layout, plan, false),
+                "Return Home turns " + LOC_B + ", which cannot reverse, at a reversing point in the middle of a move and"
+                + " runs it on to a square that is neither its home nor a berth (AMV-B1)");
+        }
+        finally
+        {
+            spare.setExcludedLocs(new java.util.HashSet<org.traincontrol.base.Locomotive>());
+            layout.getPoint("HS R").setReversing(false);
+            restoreReversible(was, LOC_A, LOC_B);
+        }
+    }
+
+    /**
+     * A train that cannot reverse and has no home is never turned at all (AMH-B1's other half, AMV-C7).
+     *
+     * The ruling allows a turn only where the train is going to its berth next, so a free agent - one with no home -
+     * can never satisfy it.  Round 1 refused those squares to a homeless train and nothing pinned it.
+     *
+     * LOC_C stands on LOC_A's home with no home of its own, and the only square it may step aside to is a terminus.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testATrainWithNoHomeThatCannotReverseIsNeverTurnedAside() throws Exception
+    {
+        Layout layout = load(ring(LOC_C, LOC_A, null));
+
+        Point terminus = layout.getPoint("HS D");
+        Point otherSpare = layout.getPoint("HS C");
+
+        boolean[] was = setReversible(false, LOC_C);
+
+        try
+        {
+            terminus.setTerminus(true);
+
+            // LOC_C keeps no home of its own, and LOC_A's home is the square LOC_C is standing on.
+            layout.setHomeLocomotive("HS A", null);
+            assign(layout, LOC_A, "HS A");
+
+            assertNull(layout.getHomeStations().get(loc(LOC_C)), "precondition: LOC_C still has a home");
+
+            // ...and the only square it may step aside to is the terminus.
+            java.util.Set<org.traincontrol.base.Locomotive> keepOut = new java.util.HashSet<>();
+            keepOut.add(loc(LOC_C));
+            otherSpare.setExcludedLocs(keepOut);
+
+            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+            assertNull(turnedAndNotSentHome(layout, plan, false),
+                "Return Home steps " + LOC_C + " aside onto a terminus.  It cannot reverse and has no berth to be going"
+                + " to, so nothing can turn it back - Adam's ruling allows the turn only on the way home (AMV-C7)");
+        }
+        finally
+        {
+            otherSpare.setExcludedLocs(new java.util.HashSet<org.traincontrol.base.Locomotive>());
+            terminus.setTerminus(false);
+            restoreReversible(was, LOC_C);
+        }
+    }
+
+    /**
+     * A sensor a standing train's TAIL holds is not blocked for the whole plan (Adam, 2026-09-15, AMH-B2).
+     *
+     * `blockedSensors` treats a sensor reading occupied as unexplained unless a train is standing on a point that
+     * reports it - something on the track the graph knows nothing about, which no move can clear.  A train's tail
+     * holds the section behind it too: asked whether his detection stays occupied under a tail rather than under the
+     * locomotive, Adam: **"Yes, tails hold sensors."**  So the sensor behind a standing train read as unexplained, the
+     * point reporting it was closed for every move of the plan - including moves made after that train had gone - and
+     * Return Home answered NO_PLAN_FOUND where the railway would have carried the moves out.
+     *
+     * TB_A holds a three-unit train that came in over a three-unit approach from TB_B, so its tail lies over that
+     * approach and TB_B's sensor is set.  The only way home for the other train runs through TB_B.
+     *
+     * **THE TRAIN WHOSE TAIL IT IS HAS SOMEWHERE TO GO**, and that is the whole case.  While it stands there the
+     * railway refuses that section to anybody - `isPathClear` reads the live feedback - so a planner that let a train
+     * in would be offering what the runtime refuses, which is OB-073.  What was wrong is that the section stayed shut
+     * for the REST of the plan as well: its home is a spur off its own square, reached without touching the held
+     * section, so once it has gone the track behind it is clear and the other train can come home.
+     *
+     * TWO CONTROLS: with that sensor clear the plan is found, so the refusal is about the sensor; and a sensor NOTHING
+     * accounts for still blocks, which is the rule this narrows rather than removes.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testASensorHeldByAStandingTrainsTailIsNotBlocked() throws Exception
+    {
+        Layout layout = load(aTailOverTheApproach());
+
+        Point approachFrom = layout.getPoint("TB_B");
+        Point berth = layout.getPoint("TB_A");
+
+        Integer wasLength = loc(LOC_B).getTrainLength();
+
+        try
+        {
+            loc(LOC_B).setTrainLength(3);
+
+            layout.setHomeLocomotive("TB_H", LOC_A);
+            layout.setHomeLocomotive("TB_P", LOC_B);
+
+            // The tail: it came in from TB_B, along that approach, which is how a run leaves a train.
+            Edge approach = layout.getEdge("TB_B", "TB_A");
+
+            berth.setArrivedFrom(layout.entrySideOf(approach, berth));
+            berth.setArrivedAlong(java.util.Arrays.asList(approach));
+
+            assertTrue(layout.edgesCoveredByStandingTrains().containsKey(approach),
+                "precondition: the standing train's tail does not cover its approach, so no sensor is held by a tail");
+
+            assertEquals(HomeStaging.snapshot(layout).plan().getOutcome(), HomeStaging.Outcome.READY,
+                "control: with every sensor clear there is no plan home, so the refusal below would not be the sensor");
+
+            // Now the section under that tail reads occupied, as latching detection does.
+            model.setFeedbackState(approachFrom.getS88(), true);
+
+            assertEquals(HomeStaging.snapshot(layout).plan().getOutcome(), HomeStaging.Outcome.READY,
+                "the sensor behind a standing train reads occupied because that train's tail is lying on it, and Return"
+                + " Home treated it as an obstruction nothing can clear - so TB_B was shut for the whole plan and no"
+                + " train could pass it (AMH-B2)");
+
+            model.setFeedbackState(approachFrom.getS88(), false);
+
+            // AND THE RULE IT NARROWS still holds: a sensor no train accounts for blocks.
+            model.setFeedbackState(layout.getPoint("TB_H").getS88(), true);
+
+            assertNotEquals(HomeStaging.snapshot(layout).plan().getOutcome(), HomeStaging.Outcome.READY,
+                "control: a sensor nothing on the graph accounts for no longer blocks, so the fix has swallowed the rule");
+        }
+        finally
+        {
+            model.setFeedbackState(approachFrom.getS88(), false);
+            model.setFeedbackState(layout.getPoint("TB_H").getS88(), false);
+            berth.setArrivedFrom(null);
+            berth.setArrivedAlong(null);
+            loc(LOC_B).setTrainLength(wasLength == null ? 0 : wasLength);
+        }
+    }
+
+    /**
+     * A berth whose approach is measured, so a standing train's tail lies over the square behind it.
+     *
+     * S -> B -> H is the way home for the train at S; B -> A is the berth's approach, three units in one place, which
+     * is what lets the tail walk spend a three-unit train across it.  A -> P is the berth train's own way home, a spur
+     * off its own square: it never touches B, so that train can leave without entering the section its tail is holding
+     * - which is what leaves the held section free for the rest of the plan.
+     */
+    private static String aTailOverTheApproach()
+    {
+        return json("{'points': ["
+            + square("TB_S", 60, null, true, LOC_A) + ","
+            + square("TB_B", 61, null, true, null) + ","
+            + square("TB_H", 62, null, true, null) + ","
+            + square("TB_A", 63, null, true, LOC_B) + ","
+            + square("TB_P", 64, null, true, null)
+            + "],'edges': ["
+            + edge("TB_S", "TB_B") + "," + edge("TB_B", "TB_S") + ","
+            + edge("TB_B", "TB_H") + "," + edge("TB_H", "TB_B") + ","
+            + edge("TB_A", "TB_P") + "," + edge("TB_P", "TB_A") + ","
+            + "{'start': 'TB_B', 'end': 'TB_A', 'length': 3, 'places': [{'at': 'TB:approach', 'length': 3}]},"
+            + "{'start': 'TB_A', 'end': 'TB_B', 'length': 3, 'places': [{'at': 'TB:approach', 'length': 3}]}"
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
+    /** X and H either side of a square that can be made to reverse trains, with a spare Y beyond it. */
+    private static String aReversingPointInTheMiddle()
+    {
+        return json("{'points': ["
+            + square("HS X", 50, null, true, LOC_B) + ","
+            + square("HS R", 51, null, false, null) + ","
+            + square("HS H", 52, null, true, LOC_A) + ","
+            + square("HS Y", 53, null, true, null)
+            + "],'edges': ["
+            + edge("HS X", "HS R") + "," + edge("HS R", "HS X") + ","
+            + edge("HS R", "HS H") + "," + edge("HS H", "HS R") + ","
+            + edge("HS R", "HS Y") + "," + edge("HS Y", "HS R")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
+    /**
+     * The first move of a plan that breaks the rulings of 2026-09-15 (AMH-B1, AMV-B1), or null.
+     *
+     * A move breaks them when a train that cannot reverse is turned - because the move ends at a terminus or reversing
+     * point, or because its route passes one - and the move does not end where that turn is allowed to leave it: at its
+     * home, or at a square it comes to rest facing out of, which is a berth or a terminus it has backed into.  A rest
+     * at a turning square that is not its home must also be followed by that train's move home.
      *
      * @param asIfItCannotReverse judge every train as though it could not reverse, for the control
      */
@@ -3235,9 +3468,27 @@ public class testHomeStaging
 
             Point end = move.getEnd();
 
-            if ((train.isReversible() && !asIfItCannotReverse) || !(end.isTerminus() || end.isReversing())) continue;
+            if (train.isReversible() && !asIfItCannotReverse) continue;
 
             Point home = layout.getHomeStations().get(train);
+
+            boolean restsTurning = end.isTerminus() || end.isReversing();
+
+            // A TURN IN THE MIDDLE (AMV-B1): every square the route stops short of the end.
+            boolean turnedOnTheWay = false;
+
+            for (int e = 0; e + 1 < move.getPath().size(); e++)
+            {
+                if (move.getPath().get(e).getEnd().isReversing()) turnedOnTheWay = true;
+            }
+
+            if (turnedOnTheWay && !(home != null && home.isSamePlaceAs(end)) && !restsTurning
+                && end.isAutoDestination())
+            {
+                return "turned on the way and sent on: " + move;
+            }
+
+            if (!restsTurning) continue;
 
             if (home != null && home.isSamePlaceAs(end)) continue;
 

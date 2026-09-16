@@ -4058,7 +4058,22 @@ public class Layout
                 // top level down RampDown - clear, found by Return Home's planner, and never offered by the
                 // menu or autonomy.  Adam, asked how to fix it: *"Search past termini"*.  The planner's own
                 // search has always stopped at a terminus the same way.
-                else if (!visited.contains(next.getEnd()) && (throughTermini || !next.getEnd().isTerminus()))
+                // NOR THROUGH ANOTHER COPY OF THE SQUARE IT STARTS OR ENDS AT (Adam, 2026-09-15, AMR-B1).
+                //
+                // A square drawn as several Points is one piece of track, so a route that comes back through another
+                // copy of the train's own square has gone round a loop to where it already was - and one that passes
+                // another copy of its destination drives through that platform to reach it.  Adam ruled out the round
+                // trip to a copy as a DESTINATION on the same day; asked about the routes that merely pass one - 22 on
+                // his railway, 14 of them the one route the right-click menu offered for a destination - he ruled:
+                // **"We need to refuse both.  A copy makes a cycle."**  Measured: 14 of 572 reachable pairs lose their
+                // last route, every one of them from `BottomMainPost`'s two copies.
+                //
+                // NOT in the form that asks about the TRACK (`throughTermini`): that one exists to tell "a terminus is
+                // in the way" from "no track leads there" (PTR-B1), and a route it may not walk would come back as
+                // missing track.  `firstClearOrWhyNot` asks it, and says which of the two it found.
+                else if (!visited.contains(next.getEnd()) && (throughTermini || !next.getEnd().isTerminus())
+                    && (throughTermini || !next.getEnd().isSamePlaceAs(start))
+                    && (throughTermini || !next.getEnd().isSamePlaceAs(end)))
                 {
                     List<Edge> newPath = new LinkedList<>(path);
                     newPath.add(next);
@@ -5065,7 +5080,14 @@ public class Layout
                 // The grouping is untouched: this station is still reported among the ones autonomy
                 // will never choose, because it still is one.  `destinationsBarredFromAutonomy` asks
                 // `barredFromAutonomy` exactly as before.
-                String cannotFit = whyNoRouteFitsTo(loc, start, end);
+                // NOT ON A HAND-DRIVEN SEND, WHERE THE REASON IS THE MENU'S OWN (Adam, 2026-09-15, AMV-C5).
+                //
+                // MT-262's rule is about autonomy's bars: a station set not to be chosen is a preference, and being too
+                // long for the berth is a fact, so the fact wins.  The bars this branch now carries on Manual are the
+                // ones that keep a station OUT of the right-click menu - it excludes this train, or it is a terminus the
+                // train could not leave - and a station the operator is not offered at all is not one whose length is
+                // the answer.  Asked which the operator should see: **"The menu's reason."**
+                String cannotFit = byHand ? null : whyNoRouteFitsTo(loc, start, end);
 
                 if (cannotFit != null) reason = cannotFit;
             }
@@ -5256,13 +5278,35 @@ public class Layout
         // through a terminus, so a station whose every route passes one finds no route at all - and "No track route leads
         // there" sends the operator looking for rails that are there.  Asked of the track once more, through termini: if
         // a route exists that way, the reason is the terminus in the way, in the route check's own sentence.
+        // AND NOT "A TERMINUS" WHERE THE ONLY WAY IS A LAP (AMR-B1).  The question above is put to the TRACK, so it may
+        // walk both the routes a train may not take: through a terminus, and round through another copy of the square
+        // this journey starts or ends at.  Which of the two it found decides the sentence, read off the route it
+        // returned rather than by searching again.
         if (why == null)
         {
             try
             {
-                if (this.bfs(start, end, null, true) != null)
+                List<Edge> anyTrack = this.bfs(start, end, null, true);
+
+                if (anyTrack != null)
                 {
-                    return I18n.t("autolayout.errorIntermediateTerminusStation");
+                    boolean passesATerminus = false;
+                    boolean passesACopy = false;
+
+                    for (int at = 0; at + 1 < anyTrack.size(); at++)
+                    {
+                        Point midway = anyTrack.get(at).getEnd();
+
+                        if (midway.isTerminus()) passesATerminus = true;
+
+                        if (midway.isSamePlaceAs(start) || midway.isSamePlaceAs(end)) passesACopy = true;
+                    }
+
+                    // The terminus first, where a route meets both: it is the older rule and the one with a remedy on
+                    // the diagram.
+                    if (passesATerminus) return I18n.t("autolayout.errorIntermediateTerminusStation");
+
+                    if (passesACopy) return I18n.t("autolayout.why.onlyALapLeadsThere");
                 }
             }
             catch (Exception unsearchable)

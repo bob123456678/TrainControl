@@ -171,6 +171,155 @@ public class testARouteIsFoundPastATerminus
             + " just to change direction, which Adam ruled out and the menu never offers");
     }
 
+    /**
+     * No route passes another copy of the square the train is standing on (Adam, 2026-09-15).
+     *
+     * Reading what the terminus fix opened, Adam ruled out a round trip to another copy of a train's own square;
+     * `testNoRoundTripBackToTheTrainsOwnSquare` above is that square as a DESTINATION.  Asked about routes that pass
+     * one on the way - 22 of them on his railway, 14 offered by the right-click menu - he ruled: **"We need to refuse
+     * both.  A copy makes a cycle."**
+     *
+     * P is one square drawn as two Points, Pa and Pb; a loop leaves Pa, comes back into Pb, and goes on to E.  The
+     * only way to E passes the train's own square, so E is not somewhere it may be sent.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testNoRoutePassesAnotherCopyOfTheTrainsOwnSquare() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.setDefaultLocSpeed(30);
+
+        String[] names = { "RC9_Pa", "RC9_Pb", "RC9_K", "RC9_L", "RC9_E" };
+        boolean[] stations = { true, true, false, false, true };
+
+        for (int i = 0; i < names.length; i++)
+        {
+            MarklinFeedback sensor = model.newFeedback(3260 + i, null);
+
+            model.setFeedbackState(sensor.getName(), false);
+
+            layout.createPoint(names[i], stations[i], sensor.getName());
+        }
+
+        layout.getPoint("RC9_Pa").setBlock("RC9_P-square");
+        layout.getPoint("RC9_Pb").setBlock("RC9_P-square");
+
+        String[][] rails = { { "RC9_Pa", "RC9_K" }, { "RC9_K", "RC9_L" }, { "RC9_L", "RC9_Pb" }, { "RC9_Pb", "RC9_E" } };
+
+        for (String[] rail : rails) layout.createEdge(rail[0], rail[1]);
+
+        Locomotive loc = aTrainAt(layout, "RC9_Pa");
+
+        // The fixture, asserted without asking the search: the only track to E runs through the other copy.
+        assertNotNull(layout.getEdge("RC9_Pb", "RC9_E"), "precondition: the fixture has no rail from RC9_Pb to RC9_E");
+        assertTrue(layout.getPoint("RC9_Pa").isSamePlaceAs(layout.getPoint("RC9_Pb")),
+            "precondition: the two copies are not one square, so nothing below is about a copy");
+
+        assertFalse(ends(layout.getPossiblePaths(loc, true)).contains("RC9_E"),
+            "RC9_E is offered to a train at RC9_Pa, and the only way there goes round a loop and back through RC9_Pb -"
+            + " the same square the train is standing on.  Adam: a copy makes a cycle");
+
+        assertEquals(org.traincontrol.automation.HomeStaging.snapshot(layout).auditAgainstRuntime(), 0,
+            "Return Home's planner would use a route the railway refuses");
+    }
+
+    /**
+     * Nor another copy of the square it is being sent to (Adam, 2026-09-15: *"a copy makes a cycle"*).
+     *
+     * The other half of the same ruling: S reaches Qa only by passing Qb, which is the same platform, so the train
+     * would drive through its destination to reach it.  Qb itself is still somewhere to go, which is the control.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testNoRoutePassesAnotherCopyOfItsDestination() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.setDefaultLocSpeed(30);
+
+        String[] names = { "RD9_S", "RD9_Qa", "RD9_Qb", "RD9_M" };
+        boolean[] stations = { true, true, true, false };
+
+        for (int i = 0; i < names.length; i++)
+        {
+            MarklinFeedback sensor = model.newFeedback(3270 + i, null);
+
+            model.setFeedbackState(sensor.getName(), false);
+
+            layout.createPoint(names[i], stations[i], sensor.getName());
+        }
+
+        layout.getPoint("RD9_Qa").setBlock("RD9_Q-square");
+        layout.getPoint("RD9_Qb").setBlock("RD9_Q-square");
+
+        String[][] rails = { { "RD9_S", "RD9_Qb" }, { "RD9_Qb", "RD9_M" }, { "RD9_M", "RD9_Qa" } };
+
+        for (String[] rail : rails) layout.createEdge(rail[0], rail[1]);
+
+        Locomotive loc = aTrainAt(layout, "RD9_S");
+
+        assertTrue(ends(layout.getPossiblePaths(loc, true)).contains("RD9_Qb"),
+            "control: RD9_Qb is not offered at all, so the refusal below would not be about the copy");
+
+        assertFalse(ends(layout.getPossiblePaths(loc, true)).contains("RD9_Qa"),
+            "RD9_Qa is offered, and the only way there passes RD9_Qb - the same platform - so the train drives through"
+            + " its destination to reach it.  Adam: a copy makes a cycle");
+    }
+
+    /**
+     * And Why Not Moving? says a lap is the only way, rather than blaming the track or a terminus (AMR-B1).
+     *
+     * Since the copy rule the search finds nothing for such a square, and "No track route leads there" sends the
+     * operator looking for rails that are there - the same defect PTR-B1 fixed for a terminus in the way.  Worse, the
+     * question the fallback puts to the TRACK may walk a lap, so a route round one would have been reported as a
+     * terminus in the way when no terminus is involved.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testWhyNotMovingSaysTheOnlyWayThereIsALap() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.setDefaultLocSpeed(30);
+
+        String[] names = { "RL9_Pa", "RL9_Pb", "RL9_K", "RL9_L", "RL9_E", "RL9_Z" };
+        boolean[] stations = { true, true, false, false, true, true };
+
+        for (int i = 0; i < names.length; i++)
+        {
+            MarklinFeedback sensor = model.newFeedback(3280 + i, null);
+
+            model.setFeedbackState(sensor.getName(), false);
+
+            layout.createPoint(names[i], stations[i], sensor.getName());
+        }
+
+        layout.getPoint("RL9_Pa").setBlock("RL9_P-square");
+        layout.getPoint("RL9_Pb").setBlock("RL9_P-square");
+
+        String[][] rails = { { "RL9_Pa", "RL9_K" }, { "RL9_K", "RL9_L" }, { "RL9_L", "RL9_Pb" }, { "RL9_Pb", "RL9_E" } };
+
+        for (String[] rail : rails) layout.createEdge(rail[0], rail[1]);
+
+        Locomotive loc = aTrainAt(layout, "RL9_Pa");
+
+        String why = layout.explainDestinations(loc, true).get("RL9_E");
+
+        assertEquals(why, org.traincontrol.util.I18n.t("autolayout.why.onlyALapLeadsThere"),
+            "Why Not Moving? says '" + why + "' of RL9_E, whose only route doubles back through the other copy of the"
+            + " square the train is standing on - the track is there and no terminus is in the way, so neither of those"
+            + " two answers is true (AMR-B1)");
+
+        // AND A STATION NO TRACK REACHES STILL SAYS SO: the lap answer must not swallow the missing-track one.
+        assertEquals(layout.explainDestinations(loc, true).get("RL9_Z"),
+            org.traincontrol.util.I18n.t("autolayout.why.noRoute"),
+            "RL9_Z is joined to nothing, and Why Not Moving? does not say no track route leads there");
+    }
+
     /** S -> X -> T -> Y -> Q -> E, T a terminus; and, when asked for, S -> A -> B -> C -> D -> F -> Q. */
     private static Layout theTwoWays(String tag, int s88, boolean withTheLongerWay) throws Exception
     {

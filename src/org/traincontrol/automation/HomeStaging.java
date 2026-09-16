@@ -961,6 +961,30 @@ public final class HomeStaging
 
                     if (path == null) continue;
 
+                    // NOR TURNED IN THE MIDDLE OF THE MOVE AND SENT ON (Adam, 2026-09-15, AMV-B1).
+                    //
+                    // The two rules above are about where a move ENDS.  A route may also turn the train at a reversing
+                    // point on the way - which is how a train that cannot reverse backs into a berth (MT-245) - and then
+                    // carry on, so it arrives running the other way round.  Asked whether his ruling covers that: *"It
+                    // should be the first option, but the locking mechanism will refuse it.  That's why we started the 2
+                    // step process for parking, which is OK in my opinion."*
+                    //
+                    // So a turn on the way is allowed only where this move ends somewhere the turn was FOR: the train's
+                    // home, a berth, or a square it comes to rest facing out of.  Everywhere else it would be driven on
+                    // backwards.
+                    boolean turnedOnTheWay = false;
+
+                    for (int e = 0; e + 1 < path.size(); e++)
+                    {
+                        if (path.get(e).getEnd().isReversing()) turnedOnTheWay = true;
+                    }
+
+                    if (!l.isReversible() && turnedOnTheWay && !atHome(ownHome, to)
+                        && !turnsATrainArrivingAt(to) && to.isAutoDestination())
+                    {
+                        continue;
+                    }
+
                     Map<Point, Locomotive> next = new LinkedHashMap<>(current);
                     apply(next, l, to);
 
@@ -1129,6 +1153,14 @@ public final class HomeStaging
             for (Edge e : this.layout.getNeighbors(current.at))
             {
                 Point next = e.getEnd();
+
+                // NOT THROUGH ANOTHER COPY OF WHERE IT STARTS OR WHERE IT IS GOING (Adam, 2026-09-15, AMR-B1).
+                //
+                // The guard above refuses a move BETWEEN two copies of one square; this refuses a route that passes
+                // one on the way, which is the same lap seen from the middle.  Adam: **"We need to refuse both.  A copy
+                // makes a cycle."**  `Layout.bfs` applies it too, and the two have to agree or the planner offers a
+                // route the railway will not drive.
+                if (!next.equals(to) && (next.isSamePlaceAs(from) || next.isSamePlaceAs(to))) continue;
 
                 // Whether the train has been turned round by the time it stands here.  Part of the
                 // STATE, not of the square - see Candidate.turned.
@@ -1649,14 +1681,54 @@ public final class HomeStaging
      * leaves the section closed behind it is the mutual exclusion in canEnter - two active points
      * sharing an address cannot both be occupied.  Expressing it there rather than here is what makes
      * the rule structural instead of a function of whatever the feedback happened to read a moment ago.
+     *
+     * **AND A SENSOR A STANDING TRAIN'S TAIL IS LYING ON GOES WITH THAT TRAIN** (Adam, 2026-09-15, AMH-B2).
+     *
+     * Asked whether his detection stays occupied under a train's tail rather than under the locomotive: **"Yes, tails
+     * hold sensors."**  So the section behind a long train reads occupied with nothing standing on any square that
+     * reports it - unexplained here, and therefore shut for every move of the plan, including the moves made after that
+     * train has gone.  Return Home answered NO_PLAN_FOUND for arrangements the railway would have carried out.
+     *
+     * It stays shut while that train has not moved, which is not a nicety: `Layout.isPathClear` reads the live feedback
+     * and refuses an edge whose end reports a set sensor, so letting a train in there would be offering a leg the
+     * runtime refuses - OB-073, the failure this class exists to avoid.  What changes is only the rest of the plan: once
+     * the plan has moved the train whose tail it is, the tail is somewhere else and the section is free.
+     *
+     * Which is why this reads the STATE.  It used to ignore its argument deliberately - an unexplained sensor is
+     * unexplained for the whole plan - and that is still true of every sensor no train on the graph accounts for.
      */
     private Set<String> blockedSensors(Map<Point, Locomotive> state)
     {
         Set<String> out = new HashSet<>();
 
+        // The sensors a standing train's tail was lying on, where the plan has since moved that train.
+        Set<String> freedByATailThatHasGone = new HashSet<>();
+
+        for (Map.Entry<Edge, Locomotive> covered : this.coveredAtStart.entrySet())
+        {
+            boolean moved = false;
+
+            for (Map.Entry<Point, Locomotive> was : this.start.entrySet())
+            {
+                if (!covered.getValue().equals(was.getValue())) continue;
+
+                moved = !covered.getValue().equals(state.get(was.getKey()));
+
+                break;
+            }
+
+            if (!moved) continue;
+
+            // Both ends of the covered edge: the train stood on one of them, and its tail reached the other.
+            for (Point end : new Point[] { covered.getKey().getStart(), covered.getKey().getEnd() })
+            {
+                if (end != null && end.getS88() != null) freedByATailThatHasGone.add(end.getS88());
+            }
+        }
+
         for (String sensor : this.sensorsSet)
         {
-            boolean explained = false;
+            boolean explained = freedByATailThatHasGone.contains(sensor);
 
             for (Point p : this.pointsBySensor.get(sensor))
             {
