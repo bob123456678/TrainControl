@@ -2258,6 +2258,21 @@ public class AutonomyEditorPanel extends JPanel
 
         bulk.add(clearLengths);
 
+        // CLEAR ALL MAX TRAIN LENGTHS (Adam, 2026-09-17: *"Add a right click menu open to clear all max station train
+        // lengths (grouped with the other clear options)"*).  Built like the three clears above it, down to the tooltip
+        // being the sentence the dialog shows.
+        int limited = session == null ? 0 : session.tilesWithAMaxTrainLength().size();
+
+        javax.swing.JMenuItem clearMaxima = item(
+            I18n.f("autolayout.ui.menuClearAllMaxTrainLengths", limited), () -> clearAllMaxTrainLengths());
+
+        clearMaxima.setEnabled(limited > 0);
+        clearMaxima.setToolTipText(wrapped(limited > 0
+            ? I18n.f("autolayout.ui.confirmClearAllMaxTrainLengths", limited)
+            : I18n.t("autosetup.ui.infoNoMaxTrainLengthsToClear")));
+
+        bulk.add(clearMaxima);
+
         // HOME EVERY TRAIN WHERE IT STANDS (FR-075).  Adam: *"to bulk tools in the autonomy editor,
         // add an option to mass mark current train locations as their homes."*
         //
@@ -9527,6 +9542,43 @@ public class AutonomyEditorPanel extends JPanel
 
         // Lengths are what the room rule measures with, and it asks the RUNNING layout - so the same
         // door `applyLength` uses, one gesture over.
+        setupChanged();
+    }
+
+    /**
+     * Takes the maximum train length off every station on every page, after asking.
+     *
+     * Adam, 2026-09-17: *"Add a right click menu open to clear all max station train lengths (grouped with the other
+     * clear options)"*.  `clearAllHomes`' shape: the emptiness guard is kept although the item greys on the same
+     * question, and the confirmation is the item's tooltip.
+     */
+    private void clearAllMaxTrainLengths()
+    {
+        java.util.List<TileKey> limited = session.tilesWithAMaxTrainLength();
+
+        if (limited.isEmpty())
+        {
+            say(hint, I18n.t("autosetup.ui.infoNoMaxTrainLengthsToClear"));
+
+            return;
+        }
+
+        if (JOptionPane.showOptionDialog(owner(),
+            I18n.f("autolayout.ui.confirmClearAllMaxTrainLengths", limited.size()),
+            I18n.f("autolayout.ui.menuClearAllMaxTrainLengths", limited.size()),
+            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
+        {
+            return;
+        }
+
+        int cleared = session.clearEveryMaxTrainLength();
+
+        say(hint, I18n.f("autosetup.ui.infoMaxTrainLengthsCleared", cleared));
+
+        refresh();
+
+        // The maximum is read by the RUNNING layout's Points, so it is told - what `promptNumber` does for one.
         setupChanged();
     }
 

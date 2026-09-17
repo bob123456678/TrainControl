@@ -619,6 +619,99 @@ public class testMassAssignLengths
             "the walk's own list does not know the first station now has a maximum");
     }
 
+    /**
+     * Clear All Max Train Lengths takes every maximum off, on every page, and counts only the ones above 0.
+     *
+     * Adam, 2026-09-17: *"Add a right click menu open to clear all max station train lengths (grouped with the other
+     * clear options)"*.  The second page is the half a per-page clear would fail; the 0 is the half that would count
+     * stations with nothing to lose, because the setup writes an explicit 0 on every destination.
+     */
+    @Test
+    public void testClearAllMaxTrainLengthsClearsEveryPage() throws IOException
+    {
+        openBerthAndASecondPage();
+
+        session.setPointProperty(key(5, 1), "maxTrainLength", 8);
+        session.setStation(key(3, 0), true);
+        session.setPointProperty(key(3, 0), "maxTrainLength", 0);
+        session.setPointProperty(new TileKey("other", 3, 1), "maxTrainLength", 5);
+
+        assertEquals(new HashSet<>(session.tilesWithAMaxTrainLength()),
+            set(key(5, 1), new TileKey("other", 3, 1)), "the stations with a maximum are not the ones counted");
+
+        assertEquals(session.clearEveryMaxTrainLength(), 2, "the clear did not report the two maxima it took");
+
+        assertNull(session.getPointProperty(key(5, 1), "maxTrainLength"), "the maximum on this page survived");
+        assertNull(session.getPointProperty(new TileKey("other", 3, 1), "maxTrainLength"),
+            "the maximum on the other page survived - Clear All is across every page");
+
+        assertTrue(session.tilesWithAMaxTrainLength().isEmpty());
+
+        assertTrue(session.stationsWithoutAMaximumOn("main").contains(key(5, 1)),
+            "Mass Assign Max Train Lengths does not offer the station whose maximum was just cleared");
+    }
+
+    /**
+     * The menu item sits with the other clears, carries the count, greys when there is nothing to clear, and its
+     * tooltip is the sentence the confirmation shows.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheClearMaxTrainLengthsItemCountsAndGreys() throws Exception
+    {
+        openBerthAndASecondPage();
+
+        session.setPointProperty(key(5, 1), "maxTrainLength", 8);
+        session.setPointProperty(new TileKey("other", 3, 1), "maxTrainLength", 5);
+
+        final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+        javax.swing.JMenuItem item = clearMaximaItem(panel);
+
+        assertNotNull(item, "the Bulk Tools menu has no Clear All Max Train Lengths item");
+        assertTrue(item.isEnabled(), "the item is greyed with two maxima to clear");
+        assertEquals(item.getText(), org.traincontrol.util.I18n.f("autolayout.ui.menuClearAllMaxTrainLengths", 2));
+        assertEquals(item.getToolTipText().replaceAll("<[^>]*>", ""),
+            org.traincontrol.util.I18n.f("autolayout.ui.confirmClearAllMaxTrainLengths", 2),
+            "the tooltip is not the sentence the confirmation shows");
+
+        session.clearEveryMaxTrainLength();
+
+        item = clearMaximaItem(panel);
+
+        assertFalse(item.isEnabled(), "the item offers to clear maxima on a railway that has none");
+        assertEquals(item.getToolTipText().replaceAll("<[^>]*>", ""),
+            org.traincontrol.util.I18n.t("autosetup.ui.infoNoMaxTrainLengthsToClear"), "the greyed item does not say why");
+    }
+
+    /** The item, off the Bulk Tools menu as the right-click menu builds it, found by the clear it sits after. */
+    private static javax.swing.JMenuItem clearMaximaItem(AutonomyEditorPanel panel) throws Exception
+    {
+        final javax.swing.JMenuItem[] found = new javax.swing.JMenuItem[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            javax.swing.JMenu bulk = panel.buildBulkMenuForTest();
+
+            String lengths = org.traincontrol.util.I18n.f("autolayout.ui.menuClearAllTrackLengths", 0);
+            lengths = lengths.substring(0, lengths.indexOf('(')).trim();
+
+            for (int i = 0; i + 1 < bulk.getItemCount(); i++)
+            {
+                javax.swing.JMenuItem item = bulk.getItem(i);
+
+                // GROUPED WITH THE OTHER CLEARS: the item directly after Clear All Track Lengths.
+                if (item != null && item.getText() != null && item.getText().startsWith(lengths))
+                {
+                    found[0] = bulk.getItem(i + 1);
+                }
+            }
+        });
+
+        return found[0];
+    }
+
     private static final String LENGTHS = "autosetup.ui.menuMassAssignLengths";
     private static final String MAXIMA = "autosetup.ui.menuMassAssignMaxTrainLengths";
 
@@ -754,6 +847,39 @@ public class testMassAssignLengths
         session.initialize("Lengths");
         session.setStation(berth, true);
         session.setAutoDestination(berth, false);
+        session.rebuild();
+    }
+
+    /**
+     * The berth railway on "main", and a second page, "other": 1,1 sensor - 2,1 - 3,1 sensor, with 3,1 a station.
+     */
+    private void openBerthAndASecondPage() throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
+
+        wire(page, 3, 1, 7);
+
+        page.setPageId("1");
+
+        LayoutDiagram other = new LayoutDiagram("other", 9, 4, null, null);
+
+        other.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 21, 21, accessoryDecoderType.MM2, null);
+        other.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        other.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 22, 22, accessoryDecoderType.MM2, null);
+
+        other.setPageId("2");
+
+        session.open(Arrays.asList(page, other));
+        session.initialize("Lengths");
+        session.setStation(key(5, 1), true);
+        session.setStation(new TileKey("other", 3, 1), true);
         session.rebuild();
     }
 

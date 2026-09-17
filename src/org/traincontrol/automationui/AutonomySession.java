@@ -6781,6 +6781,43 @@ public class AutonomySession
     }
 
     /**
+     * Every square the active configuration gives a maximum train length above 0, on every page.
+     *
+     * Adam, 2026-09-17: *"Add a right click menu open to clear all max station train lengths (grouped with the other
+     * clear options)"*.  Above 0 because 0 is "any length" and is what the station has after the clear: the setup
+     * writes an explicit `maxTrainLength: 0` on every destination, and counting those would offer to clear stations
+     * that have nothing to lose.  Every page, as Clear All Home Locomotives and Clear All Track Lengths beside it.
+     *
+     * @return the squares, in NO PARTICULAR ORDER, for `tilesWithAHome`'s reason
+     */
+    public java.util.List<TileKey> tilesWithAMaxTrainLength()
+    {
+        return tilesWhere((key, point) -> point.opt("maxTrainLength") instanceof Number
+            && ((Number) point.opt("maxTrainLength")).intValue() > 0);
+    }
+
+    /**
+     * Takes the maximum train length off every square that has one, re-deriving the station index once.
+     *
+     * `clearEveryHome`'s shape and for its reason: one `setPointProperty` per station re-derives the index each time.
+     *
+     * @return how many squares were cleared
+     */
+    public int clearEveryMaxTrainLength()
+    {
+        java.util.List<TileKey> limited = tilesWithAMaxTrainLength();
+
+        for (TileKey tile : limited)
+        {
+            writePointProperty(tile, "maxTrainLength", null);
+        }
+
+        deriveStationIndex();
+
+        return limited.size();
+    }
+
+    /**
      * Every placement the bulk doors will act on: square against locomotive (SEV-C3).
      *
      * `tilesWithALocomotive()` reads the configuration's points directly and so answers for every
