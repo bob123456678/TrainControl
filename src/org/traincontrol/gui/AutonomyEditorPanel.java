@@ -2187,6 +2187,23 @@ public class AutonomyEditorPanel extends JPanel
 
             bulk.add(massAssign);
 
+            // MASS ASSIGN MAX TRAIN LENGTHS (Adam, 2026-09-17: *"add a similar feature to walk stations that don't have a
+            // max length set up, so I can enter it"*).  Greyed on the walk's own count, as the item above.
+            int stationsToLimit = session == null ? 0 : session.stationsWithoutAMaximumOn(page).size();
+
+            javax.swing.JMenuItem massAssignMaximum =
+                item(I18n.t("autosetup.ui.menuMassAssignMaxTrainLengths"), () -> massAssignMaxTrainLengths());
+
+            massAssignMaximum.setEnabled(stationsToLimit > 0);
+
+            massAssignMaximum.setToolTipText(wrapped(leftOut
+                ? I18n.t("autosetup.ui.infoPageLeftOutNothingToMeasure")
+                : stationsToLimit > 0
+                    ? I18n.f("autosetup.ui.tooltipMassAssignMaxTrainLengths", stationsToLimit)
+                    : I18n.t("autosetup.ui.infoEveryStationHasAMaximum")));
+
+            bulk.add(massAssignMaximum);
+
             bulk.addSeparator();
         }
 
@@ -9212,13 +9229,13 @@ public class AutonomyEditorPanel extends JPanel
             String question = I18n.f("autosetup.ui.promptMassAssignLength", i + 1, pieces.size(),
                 nameForPrompt(piece.getFrom()), nameForPrompt(piece.getTo()), piece.getTiles().size());
 
-            Integer whole = askForWholeLength(question);
+            Integer whole = askForWholeLength(question, LENGTHS_TITLE);
 
             while (whole != null && whole >= 0 && !session.assignStretchLength(piece, whole))
             {
                 JOptionPane.showMessageDialog(owner(), wrapped(I18n.t("autosetup.ui.errorLengthZero")));
 
-                whole = askForWholeLength(question);
+                whole = askForWholeLength(question, LENGTHS_TITLE);
             }
 
             if (whole == null) stopped = true;
@@ -9235,13 +9252,13 @@ public class AutonomyEditorPanel extends JPanel
 
                 String question = I18n.f("autosetup.ui.promptMassAssignSwitches", switches.size());
 
-                Integer turnout = askForWholeLength(question);
+                Integer turnout = askForWholeLength(question, LENGTHS_TITLE);
 
                 while (turnout != null && turnout >= 0 && !session.assignSwitchLength(switches, turnout))
                 {
                     JOptionPane.showMessageDialog(owner(), wrapped(I18n.t("autosetup.ui.errorLengthZero")));
 
-                    turnout = askForWholeLength(question);
+                    turnout = askForWholeLength(question, LENGTHS_TITLE);
                 }
 
                 if (turnout != null && turnout > 0) wroteAny = true;
@@ -9250,6 +9267,69 @@ public class AutonomyEditorPanel extends JPanel
 
         selection.clear();
 
+        if (wroteAny) setupChanged();
+        else refresh();
+    }
+
+    private static final String LENGTHS_TITLE = "autosetup.ui.menuMassAssignLengths";
+    private static final String MAXIMA_TITLE = "autosetup.ui.menuMassAssignMaxTrainLengths";
+
+    /**
+     * Goes through every station on this page that will still take a train of any length, asking for its maximum (Mass
+     * Assign Max Train Lengths).
+     *
+     * Adam, 2026-09-17: *"add a similar feature to walk stations that don't have a max length set up, so I can enter
+     * it"*.  **Mass Assign Lengths' walk, for stations**: the same prompt, so the number box has the focus, Enter
+     * submits, and each prompt opens where the last was left; OK, Skip and Cancel, with Escape stopping.  Each station
+     * is outlined and scrolled to before it is asked about.  0 is refused with a sentence saying why - it means "any
+     * length", which is what the station has now - and asked again.  The number lands where the right-click menu's
+     * Maximum Train Length puts it.
+     */
+    private void massAssignMaxTrainLengths()
+    {
+        // A NEW ROUND OPENS AFRESH, as the other two walks.
+        walkPromptAt = null;
+
+        java.util.List<TileKey> stations = session.stationsWithoutAMaximumOn(page);
+
+        if (stations.isEmpty())
+        {
+            say(hint, I18n.t("autosetup.ui.infoEveryStationHasAMaximum"));
+
+            return;
+        }
+
+        boolean wroteAny = false;
+
+        for (int i = 0; i < stations.size(); i++)
+        {
+            TileKey station = stations.get(i);
+
+            // Asked again, as Mass Assign Lengths asks: a list made before the walk began is not trusted.
+            if (!session.stationsWithoutAMaximumOn(page).contains(station)) continue;
+
+            outlineAndReveal(java.util.Collections.singleton(station));
+
+            String question = I18n.f("autosetup.ui.promptMassAssignMaxTrainLength", i + 1, stations.size(),
+                nameForPrompt(station));
+
+            Integer maximum = askForWholeLength(question, MAXIMA_TITLE);
+
+            while (maximum != null && maximum >= 0 && !session.assignMaxTrainLength(station, maximum))
+            {
+                JOptionPane.showMessageDialog(owner(), wrapped(I18n.t("autosetup.ui.errorMaxTrainLengthZero")));
+
+                maximum = askForWholeLength(question, MAXIMA_TITLE);
+            }
+
+            if (maximum == null) break;
+
+            if (maximum >= 0) wroteAny = true;
+        }
+
+        selection.clear();
+
+        // Persisted, and the running layout told - what `promptNumber` does for one station.
         if (wroteAny) setupChanged();
         else refresh();
     }
@@ -9343,12 +9423,14 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Asks for one stretch's whole length, with Skip beside OK - the Name Everything dialog, for a number.
+     * Asks for one number, with Skip beside OK - the Name Everything dialog, for a number.  Both number walks use it: a
+     * stretch's whole length, and a station's maximum train length.
      *
      * @param question what to say above the field
-     * @return the length; -1 for Skip or a blank answer; null for Stop
+     * @param titleKey the bundle key of the walk's name, which is the prompt's title
+     * @return the number; -1 for Skip or a blank answer; null for Stop
      */
-    private Integer askForWholeLength(String question)
+    private Integer askForWholeLength(String question, String titleKey)
     {
         final javax.swing.JTextField field = digitsOnly("");
 
@@ -9368,7 +9450,7 @@ public class AutonomyEditorPanel extends JPanel
             // through the field's own listener.
             JOptionPane.YES_NO_CANCEL_OPTION, null, answers, null);
 
-        final javax.swing.JDialog dialog = pane.createDialog(owner(), I18n.t("autosetup.ui.menuMassAssignLengths"));
+        final javax.swing.JDialog dialog = pane.createDialog(owner(), I18n.t(titleKey));
 
         placeWalkPrompt(dialog);
 

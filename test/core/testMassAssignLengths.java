@@ -509,9 +509,144 @@ public class testMassAssignLengths
         assertEquals(written, 1, "Enter after typing 3 did not give the first piece its length before moving on");
     }
 
+    // ------------------------------------------------------------------------------------------------ station maxima
+
+    /**
+     * The stations Mass Assign Max Train Lengths asks about: those on this page with no maximum, row by row.
+     *
+     * Adam, 2026-09-17: *"add a similar feature to walk stations that don't have a max length set up, so I can enter
+     * it"*.  Nothing on this railway is measured and no locomotive has a length, which is where the `NO_MAX_TRAIN_LENGTH`
+     * notice stays quiet - the walk must not, because opening it is saying lengths are being modelled.
+     */
+    @Test
+    public void testTheMaximumWalkAsksAboutStationsWithNone() throws IOException
+    {
+        openBerthBehindASwitch(key(5, 1));
+
+        session.setStation(key(3, 0), true);
+        session.setPointProperty(key(3, 0), "maxTrainLength", 6);
+
+        assertFalse(session.getStore().measuresAnyTrack(), "precondition: something on this railway is measured");
+
+        assertEquals(session.stationsWithoutAMaximumOn("main"), Arrays.asList(key(5, 1)),
+            "the stations without a maximum are not the ones asked about - 3,0 has one and 1,1 is no station");
+
+        session.setPointProperty(key(3, 0), "maxTrainLength", 0);
+
+        assertEquals(session.stationsWithoutAMaximumOn("main"), Arrays.asList(key(3, 0), key(5, 1)),
+            "a maximum of 0 is any length, so that station is asked about too - and the upper row first");
+
+        assertTrue(session.stationsWithoutAMaximumOn("elsewhere").isEmpty(), "a station on another page was offered");
+    }
+
+    /**
+     * A maximum of 0 is refused, and a station that already has one keeps it.
+     *
+     * 0 is "any length" to the railway (`Point.validateTrainLength`), which is what the station already has.
+     */
+    @Test
+    public void testAMaximumOfZeroIsRefusedAndOneAlreadySetIsKept() throws IOException
+    {
+        openBerthBehindASwitch(key(5, 1));
+
+        assertFalse(session.assignMaxTrainLength(key(5, 1), 0), "a maximum of 0 was taken");
+        assertNull(session.getPointProperty(key(5, 1), "maxTrainLength"), "a refused 0 was written anyway");
+
+        assertTrue(session.assignMaxTrainLength(key(5, 1), 8), "a real maximum was refused");
+        assertEquals(session.getPointProperty(key(5, 1), "maxTrainLength"), 8);
+
+        assertFalse(session.assignMaxTrainLength(key(5, 1), 9), "a station that has a maximum was given another");
+        assertEquals(session.getPointProperty(key(5, 1), "maxTrainLength"), 8, "the maximum already set was overwritten");
+
+        assertFalse(session.assignMaxTrainLength(key(1, 1), 5), "a square that is not a station was given a maximum");
+    }
+
+    /**
+     * The walk itself: a maximum typed and entered is written to the station asked about, and the walk moves on.
+     *
+     * Asked of the real walk on the event thread, through the same prompt Mass Assign Lengths uses - so its title is the
+     * walk's own name, Enter in the number box submits, and Skip leaves the next station as it was.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheMaximumWalkWritesWhatIsTypedAndMovesOn() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the walk's prompt needs a display");
+
+        openBerthBehindASwitch(key(5, 1));
+
+        session.setStation(key(3, 0), true);
+
+        assertEquals(session.stationsWithoutAMaximumOn("main"), Arrays.asList(key(3, 0), key(5, 1)), "precondition");
+
+        final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+        final java.lang.reflect.Method walk = AutonomyEditorPanel.class.getDeclaredMethod("massAssignMaxTrainLengths");
+        walk.setAccessible(true);
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            try { walk.invoke(panel); } catch (Exception e) { throw new RuntimeException(e); }
+        });
+
+        final javax.swing.JDialog first = awaitPrompt(null, MAXIMA);
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            javax.swing.JTextField field = findField(first.getContentPane());
+
+            assertNotNull(field, "the prompt has no number box");
+
+            field.setText("7");
+
+            field.dispatchEvent(new java.awt.event.KeyEvent(field, java.awt.event.KeyEvent.KEY_PRESSED,
+                System.currentTimeMillis(), 0, java.awt.event.KeyEvent.VK_ENTER, java.awt.event.KeyEvent.CHAR_UNDEFINED));
+        });
+
+        javax.swing.JDialog second = awaitPrompt(first, MAXIMA);
+
+        answer(second, org.traincontrol.util.I18n.t("autosetup.ui.btnSkipOne"));
+
+        awaitNoPrompt(MAXIMA);
+
+        assertEquals(session.getPointProperty(key(3, 0), "maxTrainLength"), 7,
+            "the maximum typed for the first station was not written to it");
+
+        assertNull(session.getPointProperty(key(5, 1), "maxTrainLength"), "the skipped station was given a maximum");
+
+        assertEquals(session.stationsWithoutAMaximumOn("main"), Arrays.asList(key(5, 1)),
+            "the walk's own list does not know the first station now has a maximum");
+    }
+
+    private static final String LENGTHS = "autosetup.ui.menuMassAssignLengths";
+    private static final String MAXIMA = "autosetup.ui.menuMassAssignMaxTrainLengths";
+
+    private static javax.swing.JTextField findField(java.awt.Container container)
+    {
+        for (java.awt.Component child : container.getComponents())
+        {
+            if (child instanceof javax.swing.JTextField) return (javax.swing.JTextField) child;
+
+            if (child instanceof java.awt.Container)
+            {
+                javax.swing.JTextField found = findField((java.awt.Container) child);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
+    }
+
     private static javax.swing.JDialog awaitPrompt(javax.swing.JDialog notThisOne) throws Exception
     {
-        String title = org.traincontrol.util.I18n.t("autosetup.ui.menuMassAssignLengths");
+        return awaitPrompt(notThisOne, LENGTHS);
+    }
+
+    private static javax.swing.JDialog awaitPrompt(javax.swing.JDialog notThisOne, String titleKey) throws Exception
+    {
+        String title = org.traincontrol.util.I18n.t(titleKey);
         long giveUp = System.currentTimeMillis() + 10000;
 
         while (System.currentTimeMillis() < giveUp)
@@ -528,14 +663,19 @@ public class testMassAssignLengths
             Thread.sleep(50);
         }
 
-        fail("no Mass Assign Lengths prompt appeared");
+        fail("no " + title + " prompt appeared");
 
         return null;
     }
 
     private static void awaitNoPrompt() throws Exception
     {
-        String title = org.traincontrol.util.I18n.t("autosetup.ui.menuMassAssignLengths");
+        awaitNoPrompt(LENGTHS);
+    }
+
+    private static void awaitNoPrompt(String titleKey) throws Exception
+    {
+        String title = org.traincontrol.util.I18n.t(titleKey);
         long giveUp = System.currentTimeMillis() + 10000;
 
         while (System.currentTimeMillis() < giveUp)
@@ -553,7 +693,7 @@ public class testMassAssignLengths
             Thread.sleep(50);
         }
 
-        fail("the Mass Assign Lengths prompt did not close");
+        fail("the " + title + " prompt did not close");
     }
 
     /** Presses one of the prompt's buttons, the way a click does: by giving the option pane that value. */

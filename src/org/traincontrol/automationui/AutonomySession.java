@@ -3081,6 +3081,73 @@ public class AutonomySession
     }
 
     /**
+     * The stations on this page that will still take a train of any length, in the order Mass Assign Max Train Lengths
+     * asks about them: row by row, left to right.
+     *
+     * Adam, 2026-09-17: *"add a similar feature to walk stations that don't have a max length set up, so I can enter
+     * it"*.  The same stations the `NO_MAX_TRAIN_LENGTH` notice lists, asked through `hasNoMaximumTrainLength` so the
+     * walk and the notice cannot come to disagree about which they are - **but not behind the notice's gate**.  The
+     * notice stays quiet on a railway that models no lengths, because there a list of every station is a list of things
+     * that are not wrong; somebody who opens this walk has just said they are modelling them.
+     *
+     * @param page the page being edited
+     * @return the station squares, each the square the right-click menu writes a maximum to
+     */
+    public java.util.List<TileKey> stationsWithoutAMaximumOn(String page)
+    {
+        java.util.List<TileKey> out = new java.util.ArrayList<>();
+
+        if (reducer == null || store == null || page == null) return out;
+
+        for (TileKey square : reducer.getPoints().keySet())
+        {
+            if (page.equals(square.getPage()) && hasNoMaximumTrainLength(square)) out.add(square);
+        }
+
+        out.sort(java.util.Comparator.comparingInt(TileKey::getY).thenComparingInt(TileKey::getX));
+
+        return out;
+    }
+
+    /**
+     * Gives a station its maximum train length, if it has none yet.
+     *
+     * **0 is refused**, because to the railway 0 is "any length" (`Point.validateTrainLength`) - the very setting the
+     * walk exists to replace - and the store writes it as no setting at all.  A station that already has a maximum keeps
+     * it, so a walk working from a list made before it began cannot overwrite one set in the meantime.
+     *
+     * @param station the station square
+     * @param length the longest train that may stop there, at least 1
+     * @return whether it was written
+     */
+    public boolean assignMaxTrainLength(TileKey station, int length)
+    {
+        if (station == null || length < 1 || !hasNoMaximumTrainLength(station)) return false;
+
+        setPointProperty(station, "maxTrainLength", length);
+
+        return true;
+    }
+
+    /**
+     * Whether this square is a station on the running graph that will take a train of any length.
+     *
+     * @param square the square
+     * @return true for a station with no maximum, or a maximum of 0
+     */
+    private boolean hasNoMaximumTrainLength(TileKey square)
+    {
+        if (reducer == null || store == null || !reducer.getPoints().containsKey(square) || !store.isStation(square))
+        {
+            return false;
+        }
+
+        Object value = getPointProperty(square, "maxTrainLength");
+
+        return !(value instanceof Number) || ((Number) value).intValue() <= 0;
+    }
+
+    /**
      * Every leg once, whichever direction the reducer found it in: its start, its track and its end, in order, taken
      * from the direction whose key sorts first so the answer does not depend on edge order.
      */
@@ -8009,13 +8076,7 @@ public class AutonomySession
 
         for (TileKey square : reducer.getPoints().keySet())
         {
-            if (!store.isStation(square)) continue;
-
-            Object value = getPointProperty(square, "maxTrainLength");
-
-            int max = value instanceof Number ? ((Number) value).intValue() : 0;
-
-            if (max <= 0) out.add(square);
+            if (hasNoMaximumTrainLength(square)) out.add(square);
         }
 
         return out;
