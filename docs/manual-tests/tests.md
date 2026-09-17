@@ -23102,7 +23102,7 @@ Your request: *"Add a right click menu open to clear all max station train lengt
 
 - In step 2 the item sits directly under Clear All Track Lengths, its number counts the stations with a maximum across both pages, and the tooltip is the same sentence the confirmation shows.
 - Step 3 changes nothing.
-- After step 4 the hint line says how many were cleared, and in step 5 both stations show **Any**.
+- After step 4 the hint line says how many were cleared, and in step 5 both stations show *Maximum Train Length (any)*.
 - In step 6 the item is greyed, and its tooltip says there is nothing to clear.
 - **Mass Assign Max Train Lengths** now offers those stations again.
 
