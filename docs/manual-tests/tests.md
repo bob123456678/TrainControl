@@ -57,8 +57,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-453](#mt-453) | 2026-09-16 | A lock naming track that is not in the file is dropped, and the log says so loudly | fixed unvalidated | AMR-C3 |
 | [MT-454](#mt-454) | 2026-09-16 | Mass Assign Lengths walks every piece of track on the page that has no length, then its switches | fixed unvalidated | FR-089 |
 | [MT-455](#mt-455) | 2026-09-16 | The Unmeasured Track display highlights the track still needing a length, and follows every edit | fixed unvalidated | FR-089 |
+| [MT-456](#mt-456) | 2026-09-17 | Mass Assign Max Train Lengths walks every station on the page that has no maximum | fixed unvalidated | FR-091 |
 
-Everything else - 425 of 455 - needs nothing from you unless the area changes again:
+Everything else - 425 of 456 - needs nothing from you unless the area changes again:
 374 **fixed validated** and 51 **superseded**.
 
 ---
@@ -23034,6 +23035,43 @@ Rewritten the same day after review MAL.  Your request: *"a display option to st
 - **3 - Top Parking** shows nothing, because it is one of the three pages left out of autonomy.
 
 *What this is:* FR-089 and review MAL (B1, B3).  `core.testMassAssignLengths.testTheHighlightIsADisplayChoiceAndMarksWhatIsStillUnmeasured` and `testAnEditThroughControlEUpdatesTheHighlight`, which was seen red against the first version.
+
+#### Comments
+
+---
+
+<a id="mt-456"></a>
+
+### MT-456 - 2026-09-17 - Mass Assign Max Train Lengths walks every station on the page that has no maximum
+
+**Disposition:** fixed unvalidated
+**From:** FR-091
+
+**Written:** 2026-09-17
+
+Your request: *"add a similar feature to walk stations that don't have a max length set up, so I can enter it"*.  **Mass Assign Max Train Lengths...** in Bulk Tools goes through the stations on the page that will still take a train of any length, top row first, and asks for each one's maximum with the same prompt as Mass Assign Lengths.  It lists the same stations as the notice *"has no maximum train length"*, but also on a railway where that notice stays quiet because nothing there models lengths yet.
+
+**Steps**
+
+1. Open the autonomy editor on **1 - Main**.
+2. Right-click a TRACK square, open **Bulk Tools**, and hover **Mass Assign Max Train Lengths...** - the tooltip gives the count.  Click it.
+3. For the first station, type its maximum straight away and press **Enter**.
+4. For the second, type **0** and press OK.
+5. For the third, press **Skip**.
+6. For the fourth, type a number and press **Escape**.
+7. Right-click the first station and look at **Maximum Train Length** in its station menu.
+8. Open **Bulk Tools** again and hover the item.
+
+**Expected**
+
+- Each prompt says which station of how many and names it; the station is outlined on the diagram and scrolled into view.
+- Each prompt opens with the number box ready to type into, and where the last one was left.
+- Step 4 says 0 means a train of any length, and asks again, writing nothing.
+- Step 5 leaves that station as it was; step 6 **stops the walk** and writes nothing for that station.
+- Step 7 shows the number you typed in step 3.
+- In step 8 the count is one lower than in step 2 - the station from step 3 is no longer asked about.  When every station on a page has a maximum, the item is greyed and its tooltip says so.
+
+*What this is:* FR-091.  `core.testMassAssignLengths` - three claims, one of them driving the real walk, and five mutations each caught.
 
 #### Comments
 

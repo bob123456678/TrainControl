@@ -1437,6 +1437,20 @@ Adam, on MT-454, 2026-09-16: *"make sure the entry field is focused, and when I 
 
 `core.testMassAssignLengths.testTheNumberFieldHasFocusAndEnterSubmits` drives the real walk: it waits for the prompt to take the keyboard focus, requires it to be in the number field, then types 3 and presses Enter on the field and requires the next prompt and the first piece measured.  Red first: the prompt had the focus and the OK button held it.  A desktop that never gives the test window focus would make it skip, not pass; this one gives it.
 
+### FR-091 - 2026-09-17 - Mass Assign Max Train Lengths walks the stations with no maximum
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-09-17  
+**Filed:** 2026-09-17  
+
+Adam, 2026-09-17: *"add a similar feature to walk stations that don't have a min length set up, so I can enter it"*, corrected at once: *"max length"*.
+
+**Built.**  **Mass Assign Max Train Lengths...** in Bulk Tools, beside Mass Assign Lengths.  It goes through the stations on the page that will still take a train of any length - no maximum, or a maximum of 0 - row by row, outlining and scrolling to each, and asks for its maximum through the same prompt as Mass Assign Lengths: the number box has the focus, Enter submits, each prompt opens where the last was left, OK / Skip / Cancel, Escape stops.  0 is refused with a sentence saying it means any length.  A station that already has a maximum keeps it.  The number lands where the right-click menu's Maximum Train Length and Control+B put it.  Greyed, with a tooltip saying so, when every station on the page has one.
+
+**The same stations the `NO_MAX_TRAIN_LENGTH` notice lists**, now through one predicate, `hasNoMaximumTrainLength`, so the walk and the notice cannot come to disagree about which they are - but not behind the notice's gate: the notice stays quiet on a railway that models no lengths, and somebody who opens this walk has just said they are modelling them.
+
+`core.testMassAssignLengths`: `testTheMaximumWalkAsksAboutStationsWithNone`, `testAMaximumOfZeroIsRefusedAndOneAlreadySetIsKept`, and `testTheMaximumWalkWritesWhatIsTypedAndMovesOn`, which drives the real walk - types 7, presses Enter, requires the next prompt, presses Skip, and requires the first station to hold 7 and the second nothing.  Five mutations each caught: 0 accepted, a set maximum overwritten, the notice's gate added to the walk, a non-station accepted, and the walk not writing.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1453,6 +1467,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-17 | FR-091 | feature request | Adam: *"add a similar feature to walk stations that don't have a min length set up"* (*"max length"*).  Mass Assign Max Train Lengths in Bulk Tools walks the stations with no maximum, through the Mass Assign Lengths prompt. | - | `MT-456` |
 | 2026-09-16 | OB-232 | bug | Adam, on MT-454: *"make sure the entry field is focused"*.  OK was the prompt's initial value and took the focus; both walk prompts now have none, so the field has it, and Enter submits as before. | - | `MT-454` |
 | 2026-09-16 | FR-090 | feature request | Adam, on MT-454: *"make sure it remembers its location unless I reopen a new mass assignment round from the right click menu"*.  Each prompt opens where the last was left; a new round opens afresh; Name Everything too. | - | `MT-454` |
 | 2026-09-16 | OB-231 | bug | Adam, on MT-454: *"When iterating quickly on the assign lengths popup (like by clicking skip), it does not clear the prior highlights."*  Each reveal's yellow flash held 2.25 s and nothing ended it when the walk moved on; `reveal` now ends the last one first. | - | `MT-454` |
