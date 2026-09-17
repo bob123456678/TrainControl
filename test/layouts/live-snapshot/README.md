@@ -109,6 +109,7 @@ before anything reads it, so the checked-in fixture is never written to either.
 - `core.testALegacyImportMatchesTheFileItCameFrom`
 - `core.testAnImportDoesNotSwitchYourRoutesOff`
 - `regression.testARememberedNoneOpensWithTheCaptionsOff`
+- `regression.testAWalkMovesTheFlashOn`
 - `core.testABerthAndAPlatformJudgeAnOverhangDifferently`
 - `core.testAMayTurnStationIsNotATerminus`
 - `core.testWhatCountsAsAParkingSquare`
