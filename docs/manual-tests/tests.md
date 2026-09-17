@@ -58,8 +58,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-454](#mt-454) | 2026-09-16 | Mass Assign Lengths walks every piece of track on the page that has no length, then its switches | fixed unvalidated | FR-089 |
 | [MT-455](#mt-455) | 2026-09-16 | The Unmeasured Track display highlights the track still needing a length, and follows every edit | fixed unvalidated | FR-089 |
 | [MT-456](#mt-456) | 2026-09-17 | Mass Assign Max Train Lengths walks every station on the page that has no maximum | fixed unvalidated | FR-091 |
+| [MT-457](#mt-457) | 2026-09-17 | Clear All Max Train Lengths takes the maximum off every station on every page | fixed unvalidated | FR-092 |
 
-Everything else - 425 of 456 - needs nothing from you unless the area changes again:
+Everything else - 425 of 457 - needs nothing from you unless the area changes again:
 374 **fixed validated** and 51 **superseded**.
 
 ---
@@ -23072,6 +23073,40 @@ Your request: *"add a similar feature to walk stations that don't have a max len
 - In step 8 the count is one lower than in step 2 - the station from step 3 is no longer asked about.  When every station on a page has a maximum, the item is greyed and its tooltip says so.
 
 *What this is:* FR-091.  `core.testMassAssignLengths` - three claims, one of them driving the real walk, and five mutations each caught.
+
+#### Comments
+
+---
+
+<a id="mt-457"></a>
+
+### MT-457 - 2026-09-17 - Clear All Max Train Lengths takes the maximum off every station on every page
+
+**Disposition:** fixed unvalidated
+**From:** FR-092
+
+**Written:** 2026-09-17
+
+Your request: *"Add a right click menu open to clear all max station train lengths (grouped with the other clear options)"*.  **Clear All Max Train Lengths (n)** in Bulk Tools, directly after **Clear All Track Lengths**.  It clears every page, not just the one in front of you, after asking.
+
+**Steps**
+
+1. Open the autonomy editor on **1 - Main**.  Make sure at least one station here, and one on **2 - Bottom**, has a maximum train length (Control+B on a station, or Mass Assign Max Train Lengths).
+2. Right-click a TRACK square, open **Bulk Tools**, and find **Clear All Max Train Lengths**.  Hover it.
+3. Click it, and answer **No**.
+4. Click it again, and answer **Yes**.
+5. Right-click a station from step 1, on each page, and look at **Maximum Train Length**.
+6. Open **Bulk Tools** again and hover the item.
+
+**Expected**
+
+- In step 2 the item sits directly under Clear All Track Lengths, its number counts the stations with a maximum across both pages, and the tooltip is the same sentence the confirmation shows.
+- Step 3 changes nothing.
+- After step 4 the hint line says how many were cleared, and in step 5 both stations show **Any**.
+- In step 6 the item is greyed, and its tooltip says there is nothing to clear.
+- **Mass Assign Max Train Lengths** now offers those stations again.
+
+*What this is:* FR-092.  `core.testMassAssignLengths` - two claims on a two-page railway, and five mutations each caught.
 
 #### Comments
 

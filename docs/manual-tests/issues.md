@@ -1451,6 +1451,18 @@ Adam, 2026-09-17: *"add a similar feature to walk stations that don't have a min
 
 `core.testMassAssignLengths`: `testTheMaximumWalkAsksAboutStationsWithNone`, `testAMaximumOfZeroIsRefusedAndOneAlreadySetIsKept`, and `testTheMaximumWalkWritesWhatIsTypedAndMovesOn`, which drives the real walk - types 7, presses Enter, requires the next prompt, presses Skip, and requires the first station to hold 7 and the second nothing.  Five mutations each caught: 0 accepted, a set maximum overwritten, the notice's gate added to the walk, a non-station accepted, and the walk not writing.
 
+### FR-092 - 2026-09-17 - Clear All Max Train Lengths, grouped with the other clears in Bulk Tools
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-09-17  
+**Filed:** 2026-09-17  
+
+Adam, 2026-09-17: *"Add a right click menu open to clear all max station train lengths (grouped with the other clear options)"*
+
+**Built.**  **Clear All Max Train Lengths (n)** in Bulk Tools, directly after Clear All Track Lengths.  It takes the maximum train length off every station on every page, after a confirmation that says how many and that each will then take a train of any length.  Built like the clears beside it: the tooltip is the confirmation's own sentence, the item is greyed with a reason when there is nothing to clear, and the walk keeps its own emptiness guard.  Only maxima above 0 are counted, because the setup writes an explicit 0 on every destination and 0 is what the clear leaves behind.  Through one session door, `clearEveryMaxTrainLength`, which re-derives the station index once rather than per station.
+
+`core.testMassAssignLengths.testClearAllMaxTrainLengthsClearsEveryPage` and `testTheClearMaxTrainLengthsItemCountsAndGreys`, on a two-page railway built in memory.  Five mutations each caught: clearing one page only, counting a 0, not clearing, never greying, and the item moved away from the other clears.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1467,6 +1479,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-17 | FR-092 | feature request | Adam: *"Add a right click menu open to clear all max station train lengths (grouped with the other clear options)"*.  Clear All Max Train Lengths, after Clear All Track Lengths in Bulk Tools; every page, after a confirmation. | - | `MT-457` |
 | 2026-09-17 | FR-091 | feature request | Adam: *"add a similar feature to walk stations that don't have a min length set up"* (*"max length"*).  Mass Assign Max Train Lengths in Bulk Tools walks the stations with no maximum, through the Mass Assign Lengths prompt. | - | `MT-456` |
 | 2026-09-16 | OB-232 | bug | Adam, on MT-454: *"make sure the entry field is focused"*.  OK was the prompt's initial value and took the focus; both walk prompts now have none, so the field has it, and Enter submits as before. | - | `MT-454` |
 | 2026-09-16 | FR-090 | feature request | Adam, on MT-454: *"make sure it remembers its location unless I reopen a new mass assignment round from the right click menu"*.  Each prompt opens where the last was left; a new round opens afresh; Name Everything too. | - | `MT-454` |
