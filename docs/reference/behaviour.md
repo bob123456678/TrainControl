@@ -273,10 +273,18 @@ about intermediates there is no declined turn for a journey to depend on, and th
 its helper, both door checks and its message in all eight bundles were removed the same day.
 
 **No journey is refused on the operator’s answer any more, and none can be** — a claim to the contrary
-stood here until 2026-09-07 and described a case that cannot arise. A journey ending at the *turning*
-copy of a may-reverse station ends at a terminus, and a terminus is never asked about; a journey
-ending at the *plain* copy needs no turn to complete, so there is nothing to decline. Declining leaves
-the train exactly as it drove in.
+stood here until 2026-09-07 and described a case that cannot arise.  Declining leaves the train
+exactly as it drove in: at the *plain* copy no turn was needed to complete the journey, and at the
+*turning* copy the train is re-stood on the copy it did not turn on (PRV-B2).
+
+**Every copy of a may-reverse square is asked about, the turning one included** (UIX-C1, 2026-09-19).
+The sentence here used to say the opposite - that a journey ending on the turning copy ends at a
+terminus and a terminus is never asked about - and the code has not worked that way since PRV-B2
+made "declined on the turning copy" a coherent outcome.  The door exempts a terminus only where the
+policy does not ask about it, and the manual policy asks about every copy of a square the setup marks
+as may reverse, which is Adam's own ruling three paragraphs above: *"May reverse should always prompt
+in manual mode."*  `core.testNonReversibleTrains.testEveryCopyOfAMayReverseSquareIsAskedAbout` and
+`core.testTheArrivalHonoursTheAnswer.testKeepDirectionIsHonouredAtAMayTurnSquare` hold it.
 
 ### What the runtime cannot answer
 
@@ -859,6 +867,28 @@ inside a measured piece may rightly hold 0 - so the least a piece can be given i
 over goes first to a square a train stands on, whose length its own tail never spends, which is the refusing direction
 (MAL-B2).
 
+**A square two roads cross is in no piece either** (Adam, 2026-09-19, on review SET-B2): *"For crossings: if its
+length is set, count that length once in each direction."*  A crossing - or a double curve with track on both of its
+roads - is an ordinary square to the room walk, which counts through it, and it lies on two legs at once.  Inside one
+leg's piece its share would be shared out by that leg's answer and then counted again on the other road, so both roads
+are cut at it and it is asked for on its own, one length for all such squares on a page.  The reduction adds that
+length to each road, which is the ruling.  A square whose geometry carries two roads but which only one leg runs over
+is ordinary track and stays in its piece.
+
+**The three bulk doors on Bulk Tools.**  **Mass Assign Lengths** (FR-089) walks the pieces of the page, then its
+switches, then its crossings.  **Mass Assign Max Train Lengths** (FR-091; Adam, 2026-09-17: *"add a similar feature to
+walk stations that don't have a max length set up, so I can enter it"*) walks the stations on the page that will take
+a train of any length, row by row, and asks each one's maximum - 0 is refused there, because 0 IS "any length", and a
+negative is refused because the configuration will not load with one (SET-B1).  **Clear All Track Lengths** (FR-069)
+and **Clear All Max Train Lengths** (FR-092) each take their setting off every page after a confirmation that says how
+many.  All four walks share one prompt: the number box has the keyboard focus, Enter submits, Skip leaves the square
+as it was, Cancel or Escape stops, and the prompt opens where the last one was left until a new round is started.
+
+**Segment Length speaks for the whole run** (SET-B3).  A run of plain track has one square that speaks for it, and
+that has to stay true now that Mass Assign Lengths shares a piece's length over every square it covers: the dialog
+opens on what the RUN measures and writes the typed total to the run, leaving the squares that follow the leader at
+nothing.  A shift-click selection is squares rather than runs, and gives each selected square the number typed.
+
 The editor notice about turn-round squares with no length is a different question, said unprompted and so asking less
 (MT-305).
 
@@ -1250,6 +1280,7 @@ after stepping to another page all three named a square on the page before (OB-1
 |---|---|
 | **Control+S** | Names the square — the right-click menu's **Rename**. Asks `canBeNamed`, so it does nothing on plain track (MT-313). |
 | **Control+E** | Opens **Segment Length** on it (FR-066). Adam picked the key: *"let's do E"*, Control+D being taken twice over. |
+| **Control+B** | Opens **Maximum Train Length** on it (OB-197's free letter, picked for the berth the maximum belongs to). Asks the station menu's own question, so it does nothing on a square that is not a station. |
 | **Control+H** | Sets the home locomotive. |
 
 **Control+E asks the menu's own question and writes where the menu writes.** `offersALength` is
@@ -1700,6 +1731,16 @@ that the page says so itself, and that it will not be written over until the fil
   different roles in what they control; they are just commanded via the same protocol."* So code that
   looks one up must not key on the type, and a person reading the diagram must not be told the two are
   interchangeable. Both halves are true and neither implies the other.
+
+  **Known limitation, accepted 2026-09-19 (CS3-B2).** One address drawn as a switch on one page and as
+  a signal on another is held as one accessory in the database, and the pages are wired in order, so
+  the page wired FIRST keeps a tile bound to the object the later page replaced: it stops following the
+  railway and shows the position it had when its page was last wired. On Adam's layout that is address
+  131, a turnout on 3 - Top Parking and a signal on 5 - Test. Nothing is commanded wrongly - every door
+  commands by address - and Adam's ruling is to leave it: *"Let's leave 5 as is and document the
+  limitation."* Changing a tile's type ON one page is a different thing and does update the database,
+  because that is the same re-creation seen from the other side; red is the turnout's turn and the
+  signal's red, green is the opposite.
 
 - **Occupancy and reservation are different facts.** A route holds track it intends to use; a
   standing train covers track it is lying on. Neither is the other.
