@@ -3242,6 +3242,32 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
+     * The route now executing that drives this locomotive, or null (CS3-B1).
+     *
+     * For the doors that edit or delete a locomotive: a route part-way through its commands is about to send this
+     * one a speed, and taking it out from under a running route is the shape that left ironwork half set.  Autonomy
+     * has its own refusal already (`isAutonomyRunning`), and a route runs by hand or from an s88 with autonomy idle,
+     * so it is a separate question.
+     *
+     * @param name the locomotive
+     * @return the route, or null when no running route names it
+     */
+    @Override
+    public MarklinRoute runningRouteDriving(String name)
+    {
+        if (name == null) return null;
+
+        for (String routeName : this.getRouteList())
+        {
+            MarklinRoute route = this.getRoute(routeName);
+
+            if (route != null && route.isExecuting() && route.commandsDrive(name)) return route;
+        }
+
+        return null;
+    }
+
+    /**
      * Deletes the locomotive with the given name
      * @param name
      * @return 

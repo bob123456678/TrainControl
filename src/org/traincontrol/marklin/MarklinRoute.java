@@ -301,6 +301,17 @@ public class MarklinRoute extends Route
      * @param auto 
      */
     @Override
+    /**
+     * EVERY WALK OF THIS COMMAND LIST TAKES A COPY FIRST (CS3-B1).
+     *
+     * `MarklinControlStation.deleteLoc` takes every command that drives the deleted locomotive out of every
+     * route, through `Iterator.remove()`, from the event thread - while `execRoute` is part-way along the
+     * same list on its own thread with 200 ms between commands.  Both list kinds used here are fail-fast, so
+     * the next step threw ConcurrentModificationException and that thread died: measured 2026-09-19, three of
+     * eight turnouts thrown and the rest never sent, leaving the road half set with nothing in the log to say
+     * so.  A route runs the commands it began with, and an edit lands on the next run - which is when it
+     * should land anyway.
+     */
     public void execRoute(boolean auto)
     {
         execRoute(auto, 1, false);
@@ -399,7 +410,7 @@ public class MarklinRoute extends Route
      */
     public boolean hasEmergencyStop()
     {
-        for (RouteCommand rc : this.route)
+        for (RouteCommand rc : new java.util.ArrayList<>(this.route))
         {
             if (rc != null && rc.isStop()) return true;
         }
@@ -421,7 +432,7 @@ public class MarklinRoute extends Route
      */
     private String[] accessoryHeldByAutonomy()
     {
-        for (RouteCommand rc : this.route)
+        for (RouteCommand rc : new java.util.ArrayList<>(this.route))
         {
             String[] why = heldReason(rc);
 
@@ -681,7 +692,7 @@ public class MarklinRoute extends Route
                     // one.  `accessoryHeldByAutonomy` is still what screens a route BEFORE it runs, at
                     // the human doors, through `conflictingAccessoryAndReason`.
 
-                    for (RouteCommand rc : this.route)
+                    for (RouteCommand rc : new java.util.ArrayList<>(this.route))
                     {
                         if (rc != null)
                         {
@@ -1122,7 +1133,7 @@ public class MarklinRoute extends Route
      */
     public final void setDelay(Integer key, Integer delayMs)
     {
-        for (RouteCommand rc : this.route)
+        for (RouteCommand rc : new java.util.ArrayList<>(this.route))
         {
             // Locomotive, function and route commands carry no address.  Skipping them matters:
             // calling getAddress() on one throws, and in the CS3 importer that exception is caught

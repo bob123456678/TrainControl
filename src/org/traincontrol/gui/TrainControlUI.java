@@ -5948,6 +5948,34 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param source what to hang the dialog off, usually the menu item pressed
      * @return true when the caller must not proceed
      */
+    /**
+     * Refuses to edit or delete a locomotive while a route that drives it is running, and says which route (CS3-B1).
+     *
+     * The autonomy refusal beside this one does not cover it: a route runs by hand, from its own button or from an
+     * s88 trigger, with autonomy idle.  Deleting a locomotive rewrites every route's commands, and a route part-way
+     * along its own list was then walking a list that had changed underneath it - three of eight turnouts thrown and
+     * the rest never sent, measured 2026-09-19.  The route no longer breaks (it runs the list it began with), so this
+     * is the second half rather than the only one: what it prevents is the operator taking a locomotive out from
+     * under a road that is being set for it.
+     *
+     * @param source what to hang the dialog off
+     * @param name the locomotive being edited or deleted
+     * @return true when the caller must not proceed
+     */
+    private boolean refuseWhileARouteDrivesIt(Component source, String name)
+    {
+        if (this.model == null) return false;
+
+        org.traincontrol.base.Route running = this.model.runningRouteDriving(name);
+
+        if (running == null) return false;
+
+        JOptionPane.showMessageDialog(source == null ? this : source,
+            I18n.f("loc.ui.errorLocomotiveDrivenByARunningRoute", name, running.getName()));
+
+        return true;
+    }
+
     private boolean refuseWhileAutonomyRunning(Component source)
     {
         if (this.model == null || !this.model.isAutonomyRunning()) return false;
@@ -20019,6 +20047,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
+        // AND NOT WHILE A ROUTE THAT DRIVES IT IS RUNNING (CS3-B1).  This door renames as well as re-addresses, and
+        // both rewrite what a running route is reading.
+        if (refuseWhileARouteDrivesIt(source, l == null ? null : l.getName())) return;
+
         try
         {
             if (l != null)
@@ -20902,6 +20934,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             JOptionPane.showMessageDialog(source, I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning"));
             return;
         }
+
+        // AND NOT WHILE A ROUTE THAT DRIVES IT IS RUNNING (CS3-B1).
+        if (refuseWhileARouteDrivesIt(source, value)) return;
         
         // THE ROUTES THAT DRIVE IT, COUNTED BEFORE IT GOES (Adam, 2026-09-01).
         //

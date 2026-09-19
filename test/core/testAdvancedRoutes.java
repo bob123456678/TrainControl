@@ -885,4 +885,96 @@ public class testAdvancedRoutes
             model.deleteRoute("Duplicate Import Probe");
         }
     }
+
+    /**
+     * A route finishes its commands even if the locomotive it names is deleted while it runs (CS3-B1).
+     *
+     * `deleteLoc` takes every command that drives that locomotive out of every route, through `Iterator.remove()`,
+     * from the event thread - while `execRoute` is part-way along the same list on its own thread with 200 ms between
+     * commands.  Both list kinds are fail-fast, so that thread died mid-route and everything after the command being
+     * sent was never sent: measured on 2026-09-19, three of eight turnouts thrown, the road left half set, and
+     * nothing in the log to say so - the route reports itself finished either way.
+     *
+     * The model half is here; the door half - the UI refusing the delete while such a route runs - is
+     * `runningRouteDriving`, asserted below.
+     *
+     * @throws Exception from the route thread
+     */
+    @Test
+    public void testARouteFinishesWhenItsLocomotiveIsDeletedMidRun() throws Exception
+    {
+        final String loc = "ProbeCME";
+        final String routeName = "ProbeCME route";
+
+        model.newMM2Locomotive(loc, 61);
+
+        List<RouteCommand> commands = new ArrayList<>();
+
+        for (int i = 0; i < 8; i++)
+        {
+            commands.add(RouteCommand.RouteCommandAccessory(90 + i, Accessory.accessoryDecoderType.MM2, true));
+        }
+
+        commands.add(RouteCommand.RouteCommandLocomotiveSpeed(loc, 30));
+
+        model.newRoute(routeName, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        final java.util.concurrent.atomic.AtomicInteger accessories = new java.util.concurrent.atomic.AtomicInteger();
+
+        model.setSentMessageObserver(m ->
+        {
+            if (m.isAccessoryCommand()) accessories.incrementAndGet();
+        });
+
+        try
+        {
+            assertTrue(model.getRoute(routeName).commandsDrive(loc),
+                "precondition: the route does not name the locomotive this deletes");
+
+            new Thread(() -> model.execRoute(routeName)).start();
+
+            long armed = System.currentTimeMillis() + 5000;
+
+            while (!model.getRoute(routeName).isExecuting() && System.currentTimeMillis() < armed)
+            {
+                Thread.sleep(20);
+            }
+
+            assertTrue(model.getRoute(routeName).isExecuting(), "precondition: the route never started");
+
+            // PART-WAY ALONG, which is where the hazard is: the first commands are out and the thread is sleeping.
+            Thread.sleep(400);
+
+            assertTrue(accessories.get() > 0 && accessories.get() < 8,
+                "precondition: the delete has to land in the middle of the route, and " + accessories.get()
+                + " of 8 commands had been sent");
+
+            // THE DOOR'S OWN QUESTION, which is what the UI refuses on.
+            assertNotNull(model.runningRouteDriving(loc),
+                "the model cannot tell that a running route is driving this locomotive, so no door can refuse the"
+                + " delete while it runs");
+
+            model.deleteLoc(loc);
+
+            long giveUp = System.currentTimeMillis() + 15000;
+
+            while (model.getRoute(routeName).isExecuting() && System.currentTimeMillis() < giveUp)
+            {
+                Thread.sleep(50);
+            }
+
+            assertFalse(model.getRoute(routeName).isExecuting(), "the route never finished");
+
+            assertEquals(accessories.get(), 8,
+                "the route stopped short after the locomotive it names was deleted mid-run, leaving the road half"
+                + " set - " + accessories.get() + " of 8 turnouts were thrown");
+        }
+        finally
+        {
+            model.setSentMessageObserver(null);
+
+            try { model.deleteRoute(routeName); } catch (Exception ignored) { }
+            try { model.deleteLoc(loc); } catch (Exception ignored) { }
+        }
+    }
 }

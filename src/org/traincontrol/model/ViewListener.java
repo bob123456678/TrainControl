@@ -111,6 +111,18 @@ public interface ViewListener
      * Reloads the track diagrams only, without re-importing routes or locomotives
      */
     public void refreshLayouts();
+    /**
+     * The route now executing that drives this locomotive, or null (CS3-B1).
+     *
+     * Asked by the doors that edit or delete a locomotive: a route part-way through its commands is about to send
+     * this one a speed, and a route runs by hand or from an s88 with autonomy idle, so `isAutonomyRunning` does not
+     * cover it.
+     *
+     * @param name the locomotive
+     * @return the route, or null when no running route names it
+     */
+    public Route runningRouteDriving(String name);
+
     public boolean isAutonomyRunning();
     public boolean isDebug();
     Accessory newSignal(int address, Accessory.accessoryDecoderType decoderType, boolean state);
