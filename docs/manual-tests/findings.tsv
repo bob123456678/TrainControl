@@ -214,6 +214,35 @@ AU-D5	2026-08-25-autonomous-round.md	Closed	-
 AU-D6	2026-08-25-autonomous-round.md	Closed	-
 AU-D7	2026-08-25-autonomous-round.md	Closed	-
 AU-D8	2026-08-25-autonomous-round.md	Closed	-
+AUR-B1	2026-09-19-AUR-autonomy-runtime-second-pass.md	-	a double curve's two roads are one piece of metal to the lock relation and to the tail wal
+AUR-C1	2026-09-19-AUR-autonomy-runtime-second-pass.md	-	`Point.reserve` keeps the arrival side and road a file left on an EMPTY square (the AMR-C3
+AUR-C2	2026-09-19-AUR-autonomy-runtime-second-pass.md	-	the crossing step of Mass Assign Lengths (SET-B2, today) is a third door into RTX-C2's sta
+AUR-C3	2026-09-19-AUR-autonomy-runtime-second-pass.md	-	`Layout.lastArrival` - the visit history `LEAST_RECENTLY_VISITED` ranks by - is not carrie
+AUR-D1	2026-09-19-AUR-autonomy-runtime-second-pass.md	-	**The length rules still agree with each other after SET-B2 and SVA-C2.** `GraphReducer.su
+AUR-D2	2026-09-19-AUR-autonomy-runtime-second-pass.md	-	**The runtime's fourteen refusals in `isPathClear`, against the planner's copies, one by o
+AUR-D3	2026-09-19-AUR-autonomy-runtime-second-pass.md	-	renameLoc('` over `marklin`, `gui`, `base`). `turnedOnArrivalAt` (3218-3221) has test call
+AUR-D4	2026-09-19-AUR-autonomy-runtime-second-pass.md	-	**A reserved DEAD-END destination walks a tail, and it is harmless - an extension of RTX-D
+AUR-D5	2026-09-19-AUR-autonomy-runtime-second-pass.md	-	**The mid-run failure handler can leave the model saying "at the destination" for a train 
+AUR-D6	2026-09-19-AUR-autonomy-runtime-second-pass.md	-	**Name-keyed state, the inventory.** Keyed by locomotive NAME: `reversedOnArrival` only, a
+AUR-D7	2026-09-19-AUR-autonomy-runtime-second-pass.md	-	**What a driver thread writes while the window reads it.** `Point.arrivedAlong` is a refer
+AUR-D8	2026-09-19-AUR-autonomy-runtime-second-pass.md	-	**The failure paths give everything back.** Refused before departure: `configureAndLockPat
+AUR-D9	2026-09-19-AUR-autonomy-runtime-second-pass.md	-	**Today's three hunks are what their messages say.** `HomeStaging` 980-983: the qualifier 
+AUS-B1	2026-09-19-AUS-autonomy-editor-second-pass.md	-	`TrainControlUI.buildAutonomyTileMenu` 4689-4756 / `AutonomyEditorPanel.refresh` 8968 - th
+AUS-C1	2026-09-19-AUS-autonomy-editor-second-pass.md	-	`AutonomyEditorPanel.setRunLength` 8684-8697 - one full reducer rebuild per square of the 
+AUS-C2	2026-09-19-AUS-autonomy-editor-second-pass.md	-	`autolayout.ui.confirmClearAllTrackLengths` (messages.properties 397) and the `clearAllTil
+AUS-C3	2026-09-19-AUS-autonomy-editor-second-pass.md	-	`AutonomyEditorPanel.annotationsChanged` 8838-8850 - the Unmeasured Track wash lags a run 
+AUS-C4	2026-09-19-AUS-autonomy-editor-second-pass.md	-	`AutonomyEditorPanel.nameForPrompt` 9594-9596 - a piece ending at an unnamed sensor is nam
+AUS-D1	2026-09-19-AUS-autonomy-editor-second-pass.md	-	**Every door out of an autonomy-mode editor rebuilds the running layout from the restored 
+AUS-D10	2026-09-19-AUS-autonomy-editor-second-pass.md	-	**Both length doors cap at three digits**, `digitsOnly` (6446-6452, OB-048), so `lengthSho
+AUS-D11	2026-09-19-AUS-autonomy-editor-second-pass.md	-	**`sharedSquaresALengthRuleReads` is asked twice per stretch prompt** by `nameForPrompt` (
+AUS-D2	2026-09-19-AUS-autonomy-editor-second-pass.md	-	**The station index is re-derived by every path that moves its inputs.** `rebuild()` (342-
+AUS-D3	2026-09-19-AUS-autonomy-editor-second-pass.md	-	**Count and act agree on all three walks and all four clears, mid-walk included** (extends
+AUS-D4	2026-09-19-AUS-autonomy-editor-second-pass.md	-	**The pieces list a walk takes before it starts stays valid across the per-answer rebuilds
+AUS-D5	2026-09-19-AUS-autonomy-editor-second-pass.md	-	**A run cleared through Segment Length after a walk is not offered by the next walk** - an
+AUS-D6	2026-09-19-AUS-autonomy-editor-second-pass.md	-	**`flowMarks` staleness on the viewer's panel has no reader.** Its only use is `annotation
+AUS-D7	2026-09-19-AUS-autonomy-editor-second-pass.md	-	**`setRunLength` on a square in no run writes that square alone**, and Control+E and the m
+AUS-D8	2026-09-19-AUS-autonomy-editor-second-pass.md	-	**A walk skipped throughout leaves no unsaved-work prompt behind.** `outlineAndReveal` (95
+AUS-D9	2026-09-19-AUS-autonomy-editor-second-pass.md	-	**The one-way tool cannot change the leg set on its own, so C3 needs the cycle click or th
 AUT9-B1	AUT-autonomy-review.md	-	-
 AUT9-B2	AUT-autonomy-review.md	-	-
 AUT9-C1	AUT-autonomy-review.md	-	-
@@ -882,6 +911,27 @@ GR-C2	2026-08-18-v3.0.0-branch-review.md	Closed	**Fixed 2026-08-18** (working tr
 GR-C3	2026-08-18-v3.0.0-branch-review.md	Closed	**Fixed 2026-08-18** (working tree at validation) - validated
 GR-D1	2026-08-18-v3.0.0-branch-review.md	Closed	Recorded
 GR-D2	2026-08-18-v3.0.0-branch-review.md	Closed	Recorded
+GUX-B1	2026-09-19-GUX-main-interface-second-pass.md	-	`RouteEditorFrame.onSave` (`RouteEditorFrame.java:2742`, the edit branch at `:2798-2803`) 
+GUX-C1	2026-09-19-GUX-main-interface-second-pass.md	-	`ui.main.tooltip.incrSpeed` / `decSpeed` (`messages.properties:1536-1537`) against `UpArro
+GUX-C2	2026-09-19-GUX-main-interface-second-pass.md	-	`route.ui.tooltipCaptureTarget` (`messages.properties:1975`, and the same sentence in the 
+GUX-C3	2026-09-19-GUX-main-interface-second-pass.md	-	`LocomotiveFunctionAssign.copyCustomizationsActionPerformed` (`:624-636`) against the Canc
+GUX-C4	2026-09-19-GUX-main-interface-second-pass.md	-	`DiagramExport.render` (`:91-172`): the grid's `discard()` at `:168-171` is not in a `fina
+GUX-C5	2026-09-19-GUX-main-interface-second-pass.md	-	`TrainControlUI.enableOrDisableRoute` (`:21420`) and `BulkEnableOrDisable` (`:21396`) sync
+GUX-C6	2026-09-19-GUX-main-interface-second-pass.md	-	`RouteEditorFrame.java:1421-1423`: `conditionCount`'s javadoc sits two hundred lines from 
+GUX-D1	2026-09-19-GUX-main-interface-second-pass.md	-	every `prefs.put*` in scope: written from a menu item, a chooser's approval, a page add/de
+GUX-D10	2026-09-19-GUX-main-interface-second-pass.md	-	`refreshAutonomyFindings` runs `session.check()` on the event thread after every page swit
+GUX-D11	2026-09-19-GUX-main-interface-second-pass.md	-	`diagramShowsRestrictionArrows()` has no caller in `gui/`
+GUX-D12	2026-09-19-GUX-main-interface-second-pass.md	-	a route tile's right-click opens the editor only with the power off or the network down
+GUX-D13	2026-09-19-GUX-main-interface-second-pass.md	-	`ui.main.tooltip.returnHome` says "the station it started on"; homes can be assigned
+GUX-D14	2026-09-19-GUX-main-interface-second-pass.md	-	`AutonomyMenu` greying, the overlay strip's copied Start button, the banner's linger timer
+GUX-D2	2026-09-19-GUX-main-interface-second-pass.md	-	every file write in scope, and every save of the autonomy setup made from the interface
+GUX-D3	2026-09-19-GUX-main-interface-second-pass.md	-	every `javax.swing.Timer` and `java.util.Timer` in scope: one-shot, stopped on discard, or
+GUX-D4	2026-09-19-GUX-main-interface-second-pass.md	-	the three registries a rebuilt grid can leak through, and the order the rebuild does thing
+GUX-D5	2026-09-19-GUX-main-interface-second-pass.md	-	every `invokeAndWait` in scope is guarded against the event thread; every `Thread.sleep` i
+GUX-D6	2026-09-19-GUX-main-interface-second-pass.md	-	`BusyDialog`: the fast-worker race, the `Closer` race, and the off-thread bounce
+GUX-D7	2026-09-19-GUX-main-interface-second-pass.md	-	`RouteEditorFrame.stateSignature` covers every input the window has - SVB's open question
+GUX-D8	2026-09-19-GUX-main-interface-second-pass.md	-	Cancel puts back: the layout editor (in-memory snapshot, not a re-read), the function dial
+GUX-D9	2026-09-19-GUX-main-interface-second-pass.md	-	fourteen tooltips that name a key or a gesture, traced to the code that answers for them
 HP-C1	2026-07-31-home-parity-review.md	Closed	Fixed - the sibling skip no longer tests isActive, so a train on a deactivated point close
 HP-C2	2026-07-31-home-parity-review.md	Closed	Fixed - `firstClearRoute` refuses an inactive origin, matching the rule `isPathClear` appl
 HP-C3	2026-07-31-home-parity-review.md	Closed	Fixed - the audit skips excluded destinations, symmetric with the inactive skip beside it.
@@ -1203,6 +1253,25 @@ MFX-D2	2026-09-15-MFX-fix-validation-round-three.md	-	`HomeStaging.clock` is pri
 MFX-D3	2026-09-15-MFX-fix-validation-round-three.md	-	The C3 claim's HashMap dependence is in the safe direction: the order that breaks it fails
 MFX-D4	2026-09-15-MFX-fix-validation-round-three.md	-	`lastWhyTile` cannot re-ask a stale square: every way of disarming the Why tool clears it
 MFX-D5	2026-09-15-MFX-fix-validation-round-three.md	-	The refusal quotes the route in only at a square autonomy may choose; a parking berth stil
+MKR-B1	2026-09-19-MKR-control-station-second-pass.md	-	Open
+MKR-C1	2026-09-19-MKR-control-station-second-pass.md	-	`syncLayouts` reads the `fileParser` field twice (`:796`, then `:805` and `:815`) and `syn
+MKR-C2	2026-09-19-MKR-control-station-second-pass.md	-	The sync's re-address path (`:1563-1568`) changes a locomotive's UID and does not rebuild 
+MKR-C3	2026-09-19-MKR-control-station-second-pass.md	-	`MarklinSimpleComponent(MarklinRoute)` (`:90`) stores the LIVE command list, and Backup Da
+MKR-C4	2026-09-19-MKR-control-station-second-pass.md	-	`getRouteList` (`:3646-3658`) snapshots the ids and then calls `getById(i).getName()` per 
+MKR-D1	2026-09-19-MKR-control-station-second-pass.md	-	Routes parsed from a station file are not armed - no phantom monitor threads from a sync
+MKR-D10	2026-09-19-MKR-control-station-second-pass.md	-	`syncWithCS2` unlocks every route and relocks only the ones the station still has
+MKR-D11	2026-09-19-MKR-control-station-second-pass.md	-	A waiter on a sensor the prune deleted recovers when the sensor next fires
+MKR-D12	2026-09-19-MKR-control-station-second-pass.md	-	`MarklinLocomotive.setAddress` resizes the function arrays with no lock
+MKR-D13	2026-09-19-MKR-control-station-second-pass.md	-	Failure paths of the three parsers and of `syncWithCS2`
+MKR-D14	2026-09-19-MKR-control-station-second-pass.md	-	A re-read station route arrives with the station's `enabled`, not the operator's
+MKR-D2	2026-09-19-MKR-control-station-second-pass.md	-	Lock ordering across the model, the locomotive, the proxy and the four static monitors
+MKR-D3	2026-09-19-MKR-control-station-second-pass.md	-	Today's CS3-B1 fix: the four walkers and the three locomotive doors
+MKR-D4	2026-09-19-MKR-control-station-second-pass.md	-	`Route.locomotiveRenamed` writes into a `RouteCommand` map a route thread may be reading
+MKR-D5	2026-09-19-MKR-control-station-second-pass.md	-	The sync's "has this route changed" comparison is by value, both sides normalised
+MKR-D6	2026-09-19-MKR-control-station-second-pass.md	-	`LayoutDiagramComponent`'s copy constructor carries the two fields this delta added
+MKR-D7	2026-09-19-MKR-control-station-second-pass.md	-	`Util.deleteTree`, `backupFolder`/`copyInto`, `writeAtomically` on the RuntimeException pa
+MKR-D8	2026-09-19-MKR-control-station-second-pass.md	-	`newFeedback` adds before it parses; the two creators racing for one new sensor
+MKR-D9	2026-09-19-MKR-control-station-second-pass.md	-	`importRoutes` drops every route's autonomy selection
 MON-A1	MON-month-2026-09-07.md	Closed	Reverted (the doors speak the geometry again); the proper fix needs a curved fixture and i
 MON-B1	MON-month-2026-09-07.md	Closed	Fixed (stated in the body)
 MON-B2	MON-month-2026-09-07.md	Closed	Fixed (stated in the body)
@@ -2845,6 +2914,29 @@ VB-C6	2026-08-29-c-round-validation.md	Closed	open
 VB-C7	2026-08-29-c-round-validation.md	Closed	open
 VB-C8	2026-08-29-c-round-validation.md	Closed	open
 VB-C9	2026-08-29-c-round-validation.md	Closed	open
+VB2-B1	2026-09-19-VB2-validation-round-two.md	-	`TrainControlUI.WindowClosed` `:19207-19217` asks the layout editor twice: its own block a
+VB2-B2	2026-09-19-VB2-validation-round-two.md	-	`testLayoutTiles.testAnyReplacedPictureGivesUpAnOutstandingFlash` `:282-320` never replace
+VB2-B3	2026-09-19-VB2-validation-round-two.md	-	SVA-C2 shipped with no test at all (`test/` in `2a36ade7` touches nothing for it), the ent
+VB2-C1	2026-09-19-VB2-validation-round-two.md	-	SVB-C4's status says "fixed - the three javadocs reattached"; the third, `MarklinRoute.jav
+VB2-C2	2026-09-19-VB2-validation-round-two.md	-	SVB-C5's fix (`TrainControlUI.java:629`) names `core.testLayoutTiles.testTheExitKnowsTheRo
+VB2-C3	2026-09-19-VB2-validation-round-two.md	-	`testHomeStaging.testTheTurnRecordFollowsARenameAndGoesWithADelete` `:6229-6255` calls `la
+VB2-C4	2026-09-19-VB2-validation-round-two.md	-	`LayoutLabel.java:1054`: the timer nulls `accessoryHighlight` whether or not it is still t
+VB2-C5	2026-09-19-VB2-validation-round-two.md	-	The SVT status table (`SVT-*.md:58-72`) still says "open" for C2, C4, C6, C8, C9, C10, C11
+VB2-C6	2026-09-19-VB2-validation-round-two.md	-	`TrainControlUI.java:26683-26697`: the SVB-C2 refusal is on `currentName` only; when the p
+VB2-D1	2026-09-19-VB2-validation-round-two.md	-	**SVB-B1's fix is right on every path it names, and what it costs is what SVB-B1 priced.**
+VB2-D10	2026-09-19-VB2-validation-round-two.md	-	**SVT-B3's wait is bounded and cannot pass early.** `testAdvancedRoutes.java:945-956`: a 1
+VB2-D11	2026-09-19-VB2-validation-round-two.md	-	**SVB-C2's line is where SVB-C2 asked for it**, inside the loop, after the name-usability 
+VB2-D12	2026-09-19-VB2-validation-round-two.md	-	**SVA-C6's sentence is now true of what it names.** `AutonomyEditorPanel.java:9738-9741`: 
+VB2-D13	2026-09-19-VB2-validation-round-two.md	-	**`behaviour.md` and the MT entries say what the code does**, with the one exception in VB
+VB2-D14	2026-09-19-VB2-validation-round-two.md	-	**Other windows the exit should ask.** Unchanged since SVB-D2: `LayoutEditor` and `RouteEd
+VB2-D2	2026-09-19-VB2-validation-round-two.md	-	**SVB-C1's null makes the highlight test's second half mean something.** `warmedSignalLabe
+VB2-D3	2026-09-19-VB2-validation-round-two.md	-	**`Layout.locRenamed` needs no monitor and is reached under one.** `reversedOnArrival` is 
+VB2-D4	2026-09-19-VB2-validation-round-two.md	-	\.rename('` in `src/`: the two UI doors, `l.rename` inside `renameLoc` itself, and `Point.
+VB2-D5	2026-09-19-VB2-validation-round-two.md	-	**`setRunLength` announces once, from the only door that calls it.** `applyLength`'s empty
+VB2-D6	2026-09-19-VB2-validation-round-two.md	-	entrySide` (`GraphReducer.java:1101`) and self-loops refused (`:1027-1030`). A square can 
+VB2-D7	2026-09-19-VB2-validation-round-two.md	-	**SVA-C3 names the crossing and says crossings in both sentences.** `nameForPrompt` (`Auto
+VB2-D8	2026-09-19-VB2-validation-round-two.md	-	**SVT-B1's hook and the exit test.** `discardAnswerForTest` (`RouteEditorFrame.java:452-46
+VB2-D9	2026-09-19-VB2-validation-round-two.md	-	**SVB-C4's two repairs, and the ratchet.** `RouteEditorFrame.java:440-452`: `hasUnsavedWor
 VD10-A1	2026-09-03-validation-round-two.md	Closed	fixed - the clear follows the release, as it does on the ordinary path; test seeds cleared
 VD10-A2	2026-09-03-validation-round-two.md	Closed	fixed - the premise was false and the real mechanism is the capture on the way out; MT-246
 VD10-B1	2026-09-03-validation-round-two.md	Closed	fixed - the failed locomotive is stopped before the track is given back
