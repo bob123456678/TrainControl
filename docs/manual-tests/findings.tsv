@@ -2937,6 +2937,23 @@ VB2-D6	2026-09-19-VB2-validation-round-two.md	-	entrySide` (`GraphReducer.java:1
 VB2-D7	2026-09-19-VB2-validation-round-two.md	-	**SVA-C3 names the crossing and says crossings in both sentences.** `nameForPrompt` (`Auto
 VB2-D8	2026-09-19-VB2-validation-round-two.md	-	**SVT-B1's hook and the exit test.** `discardAnswerForTest` (`RouteEditorFrame.java:452-46
 VB2-D9	2026-09-19-VB2-validation-round-two.md	-	**SVB-C4's two repairs, and the ratchet.** `RouteEditorFrame.java:440-452`: `hasUnsavedWor
+VC2-B1	2026-09-19-VC2-validation-round-three.md	-	The VB2-B1 fix has no guard: put the deleted block back above `TrainControlUI.java:19211` 
+VC2-B2	2026-09-19-VC2-validation-round-three.md	-	The rewritten rule cannot see the LAYOUT editor's question go missing: `bodyOf(ui, "public
+VC2-C1	2026-09-19-VC2-validation-round-three.md	-	`testLayoutTiles.java:317-318`: "BOUNDED WELL INSIDE THE FLASH'S OWN HOLD (5000 ms)" - `fl
+VC2-C2	2026-09-19-VC2-validation-round-three.md	-	`testMassAssignLengths.java:568`: the javadoc still says "Enter in the number box submits"
+VC2-C3	2026-09-19-VC2-validation-round-three.md	-	VB2-C4's fix shipped without the test its entry wrote out, and fixes the predicate only: t
+VC2-C4	2026-09-19-VC2-validation-round-three.md	-	The records did not follow the fixes: the VB2 status tables (`2026-09-19-VB2-*.md:32-34`, 
+VC2-C5	2026-09-19-VC2-validation-round-three.md	-	The figure-of-eight test pins the cut and not the arithmetic both SVA-C2 and VB2-B3 asked 
+VC2-C6	2026-09-19-VC2-validation-round-three.md	-	Two other tests assert, rather than skip on, a focus precondition that depends on this des
+VC2-D1	2026-09-19-VC2-validation-round-three.md	-	**VB2-B1's fix holds on every path, and the order is what OB-070 and WKV-B2 require.** `Wi
+VC2-D2	2026-09-19-VC2-validation-round-three.md	-	**`everyOpenWindowMaySettle` is reached from nowhere it should not be.** A grep for `every
+VC2-D3	2026-09-19-VC2-validation-round-three.md	-	**VB2-B2's test now goes red under the mutation it names.** The fixture is a bare FEEDBACK
+VC2-D4	2026-09-19-VC2-validation-round-three.md	-	**VB2-B3's fixture is a figure of eight, and the test asserts it.** `TilePorts` (`:26-27`,
+VC2-D5	2026-09-19-VC2-validation-round-three.md	-	**VB2-C4's field logic is right, and no wait can hang on it.** `mine` (`LayoutLabel.java:1
+VC2-D6	2026-09-19-VC2-validation-round-three.md	-	**Pressing OK is the right fix, and it needs no focus.** `answer(first, OK)` (`testMassAss
+VC2-D7	2026-09-19-VC2-validation-round-three.md	-	**The surface rule still pins the order, and cannot be satisfied by a comment or a rename.
+VC2-D8	2026-09-19-VC2-validation-round-three.md	-	**Nothing else in the tree moved.** `git diff HEAD --stat` over `src/`, `test/` and `docs/
+VC2-D9	2026-09-19-VC2-validation-round-three.md	-	**The SV tables the commit's fixes bear on still say true things.** SVA-C2 "fixed - a leg 
 VD10-A1	2026-09-03-validation-round-two.md	Closed	fixed - the clear follows the release, as it does on the ordinary path; test seeds cleared
 VD10-A2	2026-09-03-validation-round-two.md	Closed	fixed - the premise was false and the real mechanism is the capture on the way out; MT-246
 VD10-B1	2026-09-03-validation-round-two.md	Closed	fixed - the failed locomotive is stopped before the track is given back
