@@ -3227,12 +3227,11 @@ public class AutonomySession
 
         for (java.util.List<TileKey> leg : legsOnce())
         {
-            java.util.Set<TileKey> onceEach = new java.util.LinkedHashSet<>();
-
-            // The ends are where the leg STOPS, so they are not track it runs over.
-            for (int i = 1; i + 1 < leg.size(); i++) onceEach.add(leg.get(i));
-
-            for (TileKey tile : onceEach) crossedBy.merge(tile, 1, Integer::sum);
+            // EVERY CROSSING COUNTS, INCLUDING TWO BY THE SAME LEG (SVA-C2).  A figure of eight runs one leg over
+            // its own crossing twice - once on each road - and the square is then read twice by that leg's own
+            // length, which is the very error this rule exists to stop.  Counting occurrences rather than legs
+            // catches it; the ends are where the leg STOPS, so they are not track it runs over.
+            for (int i = 1; i + 1 < leg.size(); i++) crossedBy.merge(leg.get(i), 1, Integer::sum);
         }
 
         for (java.util.Map.Entry<TileKey, Integer> entry : crossedBy.entrySet())

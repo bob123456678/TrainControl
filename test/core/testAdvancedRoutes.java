@@ -942,8 +942,15 @@ public class testAdvancedRoutes
 
             assertTrue(model.getRoute(routeName).isExecuting(), "precondition: the route never started");
 
-            // PART-WAY ALONG, which is where the hazard is: the first commands are out and the thread is sleeping.
-            Thread.sleep(400);
+            // PART-WAY ALONG, which is where the hazard is: waited for rather than slept for, because a loaded
+            // machine can leave the route thread with nothing sent after any fixed sleep (SVT-B3).  The upper bound
+            // needs no waiting: the route pauses at least 200 ms between commands, so eight cannot be out yet.
+            long started = System.currentTimeMillis() + 10000;
+
+            while (accessories.get() < 1 && System.currentTimeMillis() < started)
+            {
+                Thread.sleep(20);
+            }
 
             assertTrue(accessories.get() > 0 && accessories.get() < 8,
                 "precondition: the delete has to land in the middle of the route, and " + accessories.get()

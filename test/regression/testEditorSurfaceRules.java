@@ -1457,7 +1457,9 @@ public class testEditorSurfaceRules
         // than by a branch: whatever icon the restore puts back, the next paint draws the train on
         // top of it.  What has to hold instead is that the paint really does it - which is the two
         // assertions below, and they are the same rule asked of the mechanism that now carries it.
-        int timer = label.indexOf("javax.swing.Timer restore");
+        // THE TIMER IS A FIELD SINCE UIX-B2, because a flash starting over it has to be able to end it - it was
+        // a local called `restore`, and this rule knew only that spelling.
+        int timer = label.indexOf("accessoryHighlight = new javax.swing.Timer");
 
         assertTrue(timer > 0,
             "the highlight timer has gone, so this checked the absence of something that is not there");

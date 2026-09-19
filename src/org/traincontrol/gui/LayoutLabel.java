@@ -996,6 +996,16 @@ public final class LayoutLabel extends JLabel
                             img
                         );
 
+                        // A FLASH THAT IS UP IS GIVEN UP WHENEVER THE PICTURE IS REPLACED (UIX-B2, corrected by
+                        // SVB-B1).  The flash's timer holds the icon it captured when it started, and setting it
+                        // back later draws the tile as it WAS - a switch in the position it was thrown out of, or a
+                        // sensor drawn clear while a train stands on it.  This ran only inside the accessory
+                        // highlight below it, which two ordinary cases skip: a switch thrown by clicking its own
+                        // flashed tile (the click exclusion), and any square the route editor flashes that is not a
+                        // switch or signal at all - an s88 named by a condition.  What is drawn now is the truth, so
+                        // the flash is dropped here, where every replacement passes.
+                        discardFlash();
+
                         this.setIcon(lastIcon);
 
                         // NEITHER MARK IS AN ICON (MT-309).
@@ -1019,15 +1029,6 @@ public final class LayoutLabel extends JLabel
                             // fires there too.  The overlay and the restore used to be applied from a
                             // raw thread, mutating a Swing component off the EDT - the one place in this
                             // class that did not marshal its work.
-                            // A FLASH THAT IS UP IS GIVEN UP, NOT RESTORED OVER THIS (UIX-B2).
-                            //
-                            // The route editor's Highlight on Diagram holds a five-second flash whose timer puts
-                            // back the icon it captured when it started - the position this switch was in BEFORE it
-                            // was thrown.  Left running, it fired after this highlight had finished and drew the
-                            // tile in the old position, where it stayed until that accessory changed again.  What is
-                            // on the tile now is the truth, so the flash is dropped rather than allowed to undo it.
-                            discardFlash();
-
                             this.setIcon(ImageUtil.addHighlightOverlay((ImageIcon) this.getIcon()));
 
                             accessoryHighlight = new javax.swing.Timer(HIGHLIGHT_DURATION, (restoreEvent) ->
@@ -1047,6 +1048,10 @@ public final class LayoutLabel extends JLabel
                                     // the wash and the train on top of it at the next paint.
                                     this.setIcon(lastIcon);
                                 }
+
+                                // AND IT IS NO LONGER OUTSTANDING (SVB-C1): the field is what says whether a
+                                // restore is still armed, and a timer that has fired holds nothing.
+                                accessoryHighlight = null;
                             });
 
                             accessoryHighlight.setRepeats(false);

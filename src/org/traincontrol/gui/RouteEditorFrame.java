@@ -437,19 +437,6 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
-     * Closes, asking first if anything would be lost.
-     *
-     * A route editor is a form with two tables in it, and closing one by accident - Escape, or the
-     * window's own X - threw away everything typed since it opened with no warning at all.  Save is
-     * the only way out that keeps anything, and nothing said so.
-     *
-     * Only asks when there IS something to lose, compared against what was loaded rather than against
-     * a flag: a flag has to be set by every path that changes anything, and the paths here are two
-     * table models, four fields and a capture that writes from another window.  One of them would have
-     * been missed, and a prompt that does not appear is worse than none - it teaches the user that
-     * closing is safe.
-     */
-    /**
      * Whether closing this window now would throw away work (UIX-B1).
      *
      * The question `closeIfThrowingNothingAway` asks, on its own and without a dialog, so that the exit can ask it
@@ -462,6 +449,15 @@ public class RouteEditorFrame extends JFrame
     {
         return !locked && !stateSignature().equals(loadedSignature);
     }
+
+    /**
+     * What a test answers the discard question with, or null to ask the operator (SVT-B1).
+     *
+     * `maySettleBeforeExit` is modal, and the exit that calls it ends in `System.exit`, so the only way to pin the
+     * exit's own decision rather than the predicate under it is to let a test answer the dialog.  Null in every
+     * other run, and the dialog is shown exactly as before.
+     */
+    public static Boolean discardAnswerForTest;
 
     /**
      * Asked by the application's exit, which is a door out of this window too (UIX-B1).
@@ -478,6 +474,8 @@ public class RouteEditorFrame extends JFrame
     {
         if (!hasUnsavedWork()) return true;
 
+        if (discardAnswerForTest != null) return discardAnswerForTest;
+
         toFront();
 
         return JOptionPane.showOptionDialog(this,
@@ -486,6 +484,19 @@ public class RouteEditorFrame extends JFrame
             JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) == 0;
     }
+    /**
+     * Closes, asking first if anything would be lost.
+     *
+     * A route editor is a form with two tables in it, and closing one by accident - Escape, or the
+     * window's own X - threw away everything typed since it opened with no warning at all.  Save is
+     * the only way out that keeps anything, and nothing said so.
+     *
+     * Only asks when there IS something to lose, compared against what was loaded rather than against
+     * a flag: a flag has to be set by every path that changes anything, and the paths here are two
+     * table models, four fields and a capture that writes from another window.  One of them would have
+     * been missed, and a prompt that does not appear is worse than none - it teaches the user that
+     * closing is safe.
+     */
 
     private void closeIfThrowingNothingAway()
     {

@@ -1932,6 +1932,40 @@ SV2-D3	2026-09-01-second-validation.md	Closed	closed — checked clean
 SV2-D4	2026-09-01-second-validation.md	Closed	closed — checked clean
 SV2-D5	2026-09-01-second-validation.md	Closed	closed — checked clean
 SV2-D6	2026-09-01-second-validation.md	Closed	closed — not a defect
+SVA-C1	2026-09-19-SVA-validation-of-the-autonomy-fixes.md	-	`AutonomySession.sharedSquaresALengthRuleReads` 3240-3241 - "two roads" is asked of the ge
+SVA-C2	2026-09-19-SVA-validation-of-the-autonomy-fixes.md	-	`AutonomySession.sharedSquaresALengthRuleReads` 3230-3233 - a crossing ONE leg runs over o
+SVA-C3	2026-09-19-SVA-validation-of-the-autonomy-fixes.md	-	`AutonomyEditorPanel.nameForPrompt`, `autosetup.ui.infoNothingToMeasure`, `autosetup.ui.to
+SVA-C4	2026-09-19-SVA-validation-of-the-autonomy-fixes.md	-	`Layout.locDeleted` 1044 shipped with no test, and the rename half named in RTX-C3 is not 
+SVA-C5	2026-09-19-SVA-validation-of-the-autonomy-fixes.md	-	`core.testMassAssignLengths.testTheSingleDoorSpeaksForTheWholeRunAfterAWalk` 903 - a headl
+SVA-C6	2026-09-19-SVA-validation-of-the-autonomy-fixes.md	-	`AutonomyEditorPanel.clearAllMaxTrainLengths` 9720-9723 - the comment says `setupChanged` 
+SVA-D1	2026-09-19-SVA-validation-of-the-autonomy-fixes.md	-	**SET-B1 holds on every door.** The negative is refused in `promptNumber` (4058-4065), whi
+SVA-D10	2026-09-19-SVA-validation-of-the-autonomy-fixes.md	-	**The crossing test's arithmetic is the reduction's.** Four pieces of two squares at 6 eac
+SVA-D2	2026-09-19-SVA-validation-of-the-autonomy-fixes.md	-	**SET-B3 does what it says, and what it says is narrower than "the stretch".** Empty selec
+SVA-D3	2026-09-19-SVA-validation-of-the-autonomy-fixes.md	-	**SET-B2's reduction is right and the walk's three questions agree.** `sumLength` (1320-13
+SVA-D4	2026-09-19-SVA-validation-of-the-autonomy-fixes.md	-	**SET-B2 on Adam's pages.** Read from the `.cs2` files: 3 `kreuzung`, 15 `doppelbogen`, 3 
+SVA-D5	2026-09-19-SVA-validation-of-the-autonomy-fixes.md	-	**RTX-B1 leaves AMH-B1 enforced, across several moves of one train.** `movedAlong` is the 
+SVA-D6	2026-09-19-SVA-validation-of-the-autonomy-fixes.md	-	**SET-C2 has one door and its write is inert where it looks odd.** The only demotion path 
+SVA-D7	2026-09-19-SVA-validation-of-the-autonomy-fixes.md	-	**RTX-C3's delete half is safe where it mutates.** 1044 runs under `locDeleted`'s `synchro
+SVA-D8	2026-09-19-SVA-validation-of-the-autonomy-fixes.md	-	**`behaviour.md` says what the code does.** 5b's crossing paragraph (870-877) matches 3220
+SVA-D9	2026-09-19-SVA-validation-of-the-autonomy-fixes.md	-	**SET-C3's sibling sweep, measured.** `refresh()` calls inside the four bulk doors: `clear
+SVB-B1	2026-09-19-SVB-validation-of-the-interface-fixes.md	-	`LayoutLabel.setImageOnEDT`, `LayoutLabel.java:995-1028`: `discardFlash()` sits inside the
+SVB-C1	2026-09-19-SVB-validation-of-the-interface-fixes.md	-	`LayoutLabel.java:1033-1050`: the accessory highlight's timer never clears `accessoryHighl
+SVB-C2	2026-09-19-SVB-validation-of-the-interface-fixes.md	-	`TrainControlUI.checkForRenameMenuItemActionPerformed`, `:26580-26700`: the fourth rename 
+SVB-C3	2026-09-19-SVB-validation-of-the-interface-fixes.md	-	`MarklinRoute.java:303-316`, `MarklinSimpleComponent.java:90`, `TrainControlUI.java:21956-
+SVB-C4	2026-09-19-SVB-validation-of-the-interface-fixes.md	-	three insertions anchored at the declaration orphaned a neighbour's javadoc or put one whe
+SVB-C5	2026-09-19-SVB-validation-of-the-interface-fixes.md	-	`TrainControlUI.java:604-606`: the javadoc names a test that does not exist
+SVB-C6	2026-09-19-SVB-validation-of-the-interface-fixes.md	-	`behaviour.md:1735-1743`: the CS3-B2 paragraph records the display half of the limitation 
+SVB-D1	2026-09-19-SVB-validation-of-the-interface-fixes.md	-	UIX-B1's question order: layout editor, route editor, trains
+SVB-D10	2026-09-19-SVB-validation-of-the-interface-fixes.md	-	the rest of the CS3-B2 paragraph, against the code and the files
+SVB-D11	2026-09-19-SVB-validation-of-the-interface-fixes.md	-	the four tests: red before green, preconditions, timing
+SVB-D2	2026-09-19-SVB-validation-of-the-interface-fixes.md	-	UIX-B1 siblings: every other window is modal or holds nothing; one route editor at a time;
+SVB-D3	2026-09-19-SVB-validation-of-the-interface-fixes.md	-	CS3-C2: every `newFeedback` caller, the constructor with `null`, and the waiters
+SVB-D4	2026-09-19-SVB-validation-of-the-interface-fixes.md	-	CS3-C1: every reader of a route's name, the route-in-route command, and nothing keyed by n
+SVB-D5	2026-09-19-SVB-validation-of-the-interface-fixes.md	-	CS3-C3: lock order, the callers' locks, and the cost
+SVB-D6	2026-09-19-SVB-validation-of-the-interface-fixes.md	-	CS3-B1, model half: the four copies, the readers left live, nested routes, no lock held by
+SVB-D7	2026-09-19-SVB-validation-of-the-interface-fixes.md	-	CS3-B1, door half: both doors and every path into them, the message in eight bundles, chec
+SVB-D8	2026-09-19-SVB-validation-of-the-interface-fixes.md	-	UIX-B2: `endAccessoryHighlight` while the picture is loading; what a discarded flash loses
+SVB-D9	2026-09-19-SVB-validation-of-the-interface-fixes.md	-	other timers and restores over a `LayoutLabel`
 SVN-A1	2026-09-01-week-of-commits-review.md	Closed	open
 SVN-A2	2026-09-01-fanout-index.md	Closed	`a33b9ae1`
 SVN-A2	2026-09-01-week-of-commits-review.md	Closed	open
@@ -1977,6 +2011,32 @@ SVN-C7	2026-09-01-week-of-commits-review.md	Closed	open
 SVN-C8	2026-09-01-week-of-commits-review.md	Closed	open
 SVN-C9	2026-09-01-week-of-commits-review.md	Closed	open
 SVN-C9	2026-09-03-c-sweep-report.md	Closed	Same class, same reason. Narrow: needs the editor, a curved feedback station, and shut
+SVT-B1	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	`testLayoutTiles.testTheExitKnowsTheRouteEditorHasUnsavedWork` - green with the UIX-B1 fix
+SVT-B2	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	`LayoutLabel.isAccessoryHighlightOutstanding` never returns to false on its own, so `await
+SVT-B3	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	`testAdvancedRoutes.testARouteFinishesWhenItsLocomotiveIsDeletedMidRun` - a fixed 400 ms s
+SVT-C1	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	`testANegativeMaximumTrainLengthIsRefused` never asserts the reason the rule exists - that
+SVT-C10	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	MT-460's "add up the numbers on the run's squares" gives 8 to a tester who counts the sens
+SVT-C11	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	MT-463's expected plan is one arrangement of several the planner may choose on the real ra
+SVT-C12	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	behaviour.md 5b: "three bulk doors" lists four; SET-B1's refusal is attributed to the walk
+SVT-C2	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	`testTheSingleDoorSpeaksForTheWholeRunAfterAWalk` throws `SkipException` on a headless mac
+SVT-C3	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	`testATrainTheRailwayHadOnATerminusMayStepAsideBeforeGoingHome`'s javadoc describes a fixt
+SVT-C4	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	`testTheExitKnowsTheRouteEditorHasUnsavedWork` puts `ui.routeEditor` back as null, not as 
+SVT-C5	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	CS3-B1 "the locomotive doors refuse": `checkForRenameMenuItemActionPerformed` renames thro
+SVT-C6	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	RTX-C3 is marked fixed; its rename half (the record is keyed by name and nothing in `Layou
+SVT-C7	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	Open ...
+SVT-C8	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	MT-461 expects a dialog "naming what it is about to lose"; the dialog names nothing. And w
+SVT-C9	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	MT-459 asserts four shared squares on 1 - Main; the rule as fixed needs legs on BOTH roads
+SVT-D1	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	**The SET-B2 tests pin the fix, deterministically.** `testACrossingIsCutOutOfEveryPieceAnd
+SVT-D10	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	**behaviour.md, sentence by sentence.** Section 3: the corrected paragraph and the new one
+SVT-D11	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	**"Seen red first" is plausible where it can be.** RTX-B1 (both), SET-B2 (the piece-contai
+SVT-D2	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	**`testADemotedStationKeepsNoMaximumTrainLength`** asserts its precondition (the maximum i
+SVT-D3	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	**`testARouteNameWithSpacesAroundItIsUsable`** pins the constructors, which are where the 
+SVT-D4	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	**The CS3-B1 copy is pinned by the real path.** `execRoute` is driven through `model.execR
+SVT-D5	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	**The two staging tests** - see C3: fix pinned without a seam, controls asserted, oracle a
+SVT-D6	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	**`testTheFlashAndTheAccessoryHighlightDoNotUndoEachOther`, case ONE**, is sound: the flas
+SVT-D7	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	**Global state.** `testMassAssignLengths` uses a temp folder per method and an `AutonomySe
+SVT-D8	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	**MT-458, MT-462, MT-464** are runnable as written and expect only what the fix does: the 
+SVT-D9	2026-09-19-SVT-validation-of-the-tests-and-records.md	-	**The dispositions match the code** for CS3-B1 (copies at `MarklinRoute.java:418, 440, 700
 SVV-B1	2026-09-13-SVV-fix-validation.md	Closed	`Layout.whyABerthCannotHoldIt` 8118-8125 against 8147
 SVV-B2	2026-09-13-SVV-fix-validation.md	Closed	`core/testABerthAndAPlatformJudgeAnOverhangDifferently` 334-345
 SVV-C1	2026-09-13-SVV-fix-validation.md	Closed	`Layout.turnsOnArrival` 5857 against `shouldReverseAt` 5924

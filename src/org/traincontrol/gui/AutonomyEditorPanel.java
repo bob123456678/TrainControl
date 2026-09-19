@@ -6689,8 +6689,12 @@ public class AutonomyEditorPanel extends JPanel
 
         if (selection.isEmpty())
         {
-            // ONE SQUARE SPEAKS FOR THE RUN, which means the run measures what was typed (SET-B3).
+            // ONE SQUARE SPEAKS FOR THE RUN, which means the run measures what was typed (SET-B3).  This
+            // announces the change itself, so the setupChanged below is for the selection arm.
             setRunLength(tile, length);
+            selection.clear();
+
+            return;
         }
         else
         {
@@ -8689,6 +8693,10 @@ public class AutonomyEditorPanel extends JPanel
         {
             session.setTileLength(square, square.equals(leader) ? length : 0);
         }
+
+        // AND THE RUNNING LAYOUT IS TOLD, because this is a door in its own right: it is public, the track
+        // diagram's own panel has no Save, and lengths are what the room rule measures with (MT-246).
+        setupChanged();
     }
 
     /**
@@ -9574,6 +9582,13 @@ public class AutonomyEditorPanel extends JPanel
         if (component != null && component.isSwitch())
         {
             return I18n.f("autosetup.ui.switchAtSquare", tile.getX() + "," + tile.getY());
+        }
+
+        // A CROSSING HAS NO NAME EITHER (SVA-C3).  A piece now ends at one as well as at a switch, and naming it by
+        // its raw key put `main:18,10` in the middle of a sentence.
+        if (session.sharedSquaresALengthRuleReads().contains(tile))
+        {
+            return I18n.f("autosetup.ui.crossingAtSquare", tile.getX() + "," + tile.getY());
         }
 
         String name = session.getStore().getPointName(tile);

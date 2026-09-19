@@ -599,11 +599,35 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private RouteEditorFrame routeEditor;
 
     /**
+     * Whether every window holding unsaved work is willing to be closed - the exit's first question (UIX-B1, SVT-B1).
+     *
+     * `WindowClosed` ends in `System.exit`, so no test can run it to the end; this is the part of it that decides,
+     * lifted out so `core.testLayoutTiles.testTheExitAsksEveryOpenWindow` can ask it with a dirty route editor open.
+     * The editors answer with their own modal question, which a test answers through `RouteEditorFrame`'s test hook.
+     *
+     * The layout editor is asked first, as it has been since OB-070: it is the window most likely to be open, and
+     * its Cancel cancels the exit in the same way.
+     *
+     * @return true when the exit may carry on
+     */
+    public boolean everyOpenWindowMaySettle()
+    {
+        if (openEditor != null && openEditor.isDisplayable() && !openEditor.maySettleBeforeExit()) return false;
+
+        // THE ROUTE EDITOR, which is the other window holding unsaved typing (UIX-B1).
+        //
+        // It is a non-modal frame with its own discard question on its X and on Escape, and the exit never consulted
+        // it - so File > Exit and the main window's X disposed it with the process and threw away whatever had been
+        // typed into it, with no dialog at all.  OB-070's sentence, on the sibling window.
+        return routeEditor == null || !routeEditor.isDisplayable() || routeEditor.maySettleBeforeExit();
+    }
+
+    /**
      * Whether an open route editor is holding work the exit would throw away (UIX-B1).
      *
      * The exit asks `maySettleBeforeExit`, which is modal and so cannot be asked by a test; this is the same
-     * question without the dialog, and `regression.testTheExitAsksTheRouteEditor` uses it on both sides of a typed
-     * change.
+     * question without the dialog, and `core.testLayoutTiles.testTheExitKnowsTheRouteEditorHasUnsavedWork` uses it
+     * on both sides of a typed change.
      *
      * @return true when the route editor is open and has unsaved work
      */
@@ -1643,11 +1667,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static final String LAYOUT_STATION_OWNER = "tcLayoutStationOwner";
     
     /**
-     * Gets a caption for the corresponding locomotive mapping tap
-     * @param tabNumber
-     * @return 
-     */
-    /**
      * How many locomotive mapping pages there are.
      */
     public int getNumLocMappings()
@@ -1798,6 +1817,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         repaintMappings();
     }
 
+    /**
+     * The caption on a locomotive mapping page's tab.
+     *
+     * This javadoc sat above `getNumLocMappings`, which is not what it describes, and was orphaned outright
+     * when a method was inserted beside it (SVB-C4).  Reattached to the method it was written for.
+     *
+     * @param tabNumber the page, counting from 1
+     * @return what to write on the tab
+     */
     private String getLocMappingPageTabTitle(int tabNumber)
     {
         String pageTitle = this.getPageName(tabNumber, true).trim();
@@ -5936,19 +5964,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Refuses to change the locomotive database while autonomy is running.
-     *
-     * Adam, MT-141: "Never allow any modifications to a running layout.  This includes locomotive
-     * database, the track diagram, the autonomy config, or the locomotive placements."
-     *
-     * The wording and the check were already at four of these doors, written out longhand at each.
-     * Collected here so a fifth door is one call rather than one more copy - the doors that had it were
-     * not the doors that needed it, which is how two of them came to have no check at all.
-     *
-     * @param source what to hang the dialog off, usually the menu item pressed
-     * @return true when the caller must not proceed
-     */
-    /**
      * Refuses to edit or delete a locomotive while a route that drives it is running, and says which route (CS3-B1).
      *
      * The autonomy refusal beside this one does not cover it: a route runs by hand, from its own button or from an
@@ -5975,6 +5990,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         return true;
     }
+    /**
+     * Refuses to change the locomotive database while autonomy is running.
+     *
+     * Adam, MT-141: "Never allow any modifications to a running layout.  This includes locomotive
+     * database, the track diagram, the autonomy config, or the locomotive placements."
+     *
+     * The wording and the check were already at four of these doors, written out longhand at each.
+     * Collected here so a fifth door is one call rather than one more copy - the doors that had it were
+     * not the doors that needed it, which is how two of them came to have no check at all.
+     *
+     * @param source what to hang the dialog off, usually the menu item pressed
+     * @return true when the caller must not proceed
+     */
 
     private boolean refuseWhileAutonomyRunning(Component source)
     {
@@ -19186,10 +19214,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // It is a non-modal frame with its own discard question on its X and on Escape, and this handler never
         // consulted it - so File > Exit and the main window's X disposed it with the process and threw away whatever
         // had been typed into it, with no dialog at all.  OB-070's sentence, on the sibling window.
-        if (routeEditor != null && routeEditor.isDisplayable() && !routeEditor.maySettleBeforeExit())
-        {
-            return;
-        }
+        if (!everyOpenWindowMaySettle()) return;
 
         // Trains first, and not conditional on a setting that has nothing to do with them.
         //
@@ -26654,6 +26679,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                                 continue;
                             }
+
+                            // AND NOT WHILE A ROUTE THAT DRIVES IT IS RUNNING (CS3-B1, corrected by SVB-C2).  The
+                            // Central Station's own name proposal is the fourth door into `renameLoc`, and it
+                            // rewrites every route command naming the locomotive exactly as the others do.
+                            if (refuseWhileARouteDrivesIt(this, currentName)) continue;
 
                             Locomotive l = model.getLocByName(currentName);
                             

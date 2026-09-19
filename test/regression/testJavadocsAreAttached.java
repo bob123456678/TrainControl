@@ -45,7 +45,10 @@ public class testJavadocsAreAttached
     // 96 -> 95 on 2026-08-30: LE-C7 re-attached TileSelection.bounds()'s javadoc, which had been
     // orphaned above handle().  Lowered so the improvement cannot be given back - which is what makes
     // this a ratchet rather than a ceiling, and why its per-file list had to lose that entry too.
-    private static final int ALLOWED = 92;
+    // 92 -> 91 on 2026-09-19: SVB-C4 found three javadocs orphaned by insertions in this round and one of
+    // them, TrainControlUI's caption block, was reattached to the method it was written for rather than just
+    // moved out of the way.  Lowered so the repair cannot be given back.
+    private static final int ALLOWED = 91;
 
     /**
      * WHICH files carry the orphans, not just how many (VAL-C8).
@@ -94,7 +97,7 @@ public class testJavadocsAreAttached
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "RouteEditorFrame.java (4)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "TrainControlUI.java (24)",
+            + "gui" + File.separator + "TrainControlUI.java (23)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "marklin" + File.separator + "MarklinControlStation.java (1)",
     };

@@ -900,8 +900,8 @@ public class testMassAssignLengths
     @Test
     public void testTheSingleDoorSpeaksForTheWholeRunAfterAWalk() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the panel needs a display");
-
+        // NO DISPLAY IS NEEDED (SVA-C5): the panel is built without one here and no dialog is opened - the two
+        // public seams are asked directly.  The skip that stood here would have hidden the claim on a headless run.
         openARunOfTwoPlainSquares();
 
         List<AutonomySession.Stretch> pieces = session.stretchesNeedingALength();

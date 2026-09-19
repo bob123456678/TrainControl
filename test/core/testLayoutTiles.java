@@ -266,7 +266,64 @@ public class testLayoutTiles
     }
 
     /**
+     * Any square whose picture is replaced gives up an outstanding flash, not only a switch or a signal (SVB-B1).
+     *
+     * The first fix dropped the flash inside the accessory-highlight branch, which two ordinary cases never reach:
+     * a switch thrown by clicking its own flashed tile - the click exclusion skips that branch - and a square the
+     * route editor flashes that is not a switch or signal at all, such as an s88 named by a condition.  In both the
+     * flash timer was left holding the picture the tile had before, and put it back seconds later: a switch drawn in
+     * the position it was thrown out of, or a sensor drawn clear with a train standing on it.
+     *
+     * Asked of a FEEDBACK square, which takes no accessory branch at all.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testAnyReplacedPictureGivesUpAnOutstandingFlash() throws Exception
+    {
+        final LayoutDiagramComponent sensor = new LayoutDiagramComponent(
+            LayoutDiagramComponent.componentType.FEEDBACK, 0, 0, 0, 0, 7, 12, MM2);
+
+        final JPanel parent = new JPanel();
+        final AtomicReference<LayoutLabel> ref = new AtomicReference<>();
+
+        SwingUtilities.invokeAndWait(() -> ref.set(new LayoutLabel(sensor, parent, 30, ui, false)));
+
+        final LayoutLabel label = ref.get();
+
+        long deadline = System.currentTimeMillis() + 10000;
+
+        while (label.getIcon() == null && System.currentTimeMillis() < deadline)
+        {
+            Thread.sleep(20);
+        }
+
+        assertNotNull(label.getIcon(), "the sensor tile never drew");
+
+        SwingUtilities.invokeAndWait(() -> label.flashHighlight());
+
+        assertTrue(label.isFlashOutstanding(), "precondition: the flash did not start");
+
+        // THE PICTURE IS REPLACED: what an occupancy change does to a sensor tile.
+        SwingUtilities.invokeAndWait(() -> label.updateImage(false));
+
+        long armed = System.currentTimeMillis() + 5000;
+
+        while (label.isFlashOutstanding() && System.currentTimeMillis() < armed)
+        {
+            Thread.sleep(20);
+        }
+
+        assertFalse(label.isFlashOutstanding(),
+            "the flash is still armed after this square was redrawn, so it will put the old picture back - a sensor"
+            + " drawn clear under a standing train, or a switch drawn in the position it was thrown out of");
+    }
+
+    /**
      * Waits for an accessory highlight to go up, which happens a pass or two after `updateImage` is called.
+     *
+     * Since SVT-B2 the timer nulls the field when it fires, so this cannot answer yes about a highlight that ended
+     * long ago - which is what made the second half of the flash test vacuous.
      *
      * @param label the label
      * @return whether it went up
@@ -301,10 +358,18 @@ public class testLayoutTiles
 
         SwingUtilities.invokeAndWait(() -> label.updateImage(true));
 
-        // The highlight is 2250 ms, and its restore is a Swing Timer.
-        Thread.sleep(2600);
+        awaitHighlight(label);
 
-        SwingUtilities.invokeAndWait(() -> { });
+        // The highlight is 2250 ms and its restore is a Swing Timer; waited out, then confirmed gone rather than
+        // assumed gone (SVT-B2).
+        long deadline = System.currentTimeMillis() + 10000;
+
+        while (label.isAccessoryHighlightOutstanding() && System.currentTimeMillis() < deadline)
+        {
+            Thread.sleep(50);
+        }
+
+        assertFalse(label.isAccessoryHighlightOutstanding(), "the warm-up highlight never ended");
 
         return label;
     }
@@ -363,15 +428,16 @@ public class testLayoutTiles
     }
 
     /**
-     * The application's exit knows when the route editor is holding unsaved typing (UIX-B1).
+     * The exit itself asks every open window, and a route editor holding unsaved typing can refuse it (UIX-B1).
      *
-     * `WindowClosed` asks the open layout editor whether it may settle (OB-070) and never asked the route editor, so
-     * File > Exit and the main window's X disposed it with the process and took whatever had been typed with them -
-     * silently, because that window's own discard question lives on its X and on Escape.
+     * `WindowClosed` asked the open layout editor whether it might settle (OB-070) and never asked the route
+     * editor, so File > Exit and the main window's X disposed it with the process and took whatever had been typed
+     * with them - silently, because that window's own discard question lives on its X and on Escape.
      *
-     * The exit's own question is modal and cannot be answered by a test; what is asked here is the predicate it is
-     * built on, on both sides of a typed change, plus that the exit consults the same field the door fills in.  The
-     * dialog itself is MT-458.
+     * **The decision, not the predicate under it** (SVT-B1).  The handler ends in `System.exit`, so what is asked
+     * here is `everyOpenWindowMaySettle` - everything the exit does before it saves anything - with the discard
+     * dialog answered through the route editor's test hook.  Answering No must stop the exit; answering Yes must
+     * let it carry on.
      *
      * Here rather than in a class of its own because it needs exactly what this one already opens: the real main
      * window, on a sandbox.
@@ -379,9 +445,11 @@ public class testLayoutTiles
      * @throws Exception from the event thread
      */
     @Test
-    public void testTheExitKnowsTheRouteEditorHasUnsavedWork() throws Exception
+    public void testTheExitAsksEveryOpenWindow() throws Exception
     {
         assertFalse(ui.routeEditorHasUnsavedWork(), "precondition: something is already holding unsaved work");
+
+        assertTrue(ui.everyOpenWindowMaySettle(), "precondition: the exit is already blocked by something else");
 
         final AtomicReference<RouteEditorFrame> ref = new AtomicReference<>();
 
@@ -389,31 +457,42 @@ public class testLayoutTiles
 
         final RouteEditorFrame editor = ref.get();
 
+        Field field = TrainControlUI.class.getDeclaredField("routeEditor");
+        field.setAccessible(true);
+
+        Object was = field.get(ui);
+
         try
         {
             SwingUtilities.invokeAndWait(() -> editor.setVisible(true));
 
-            java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("routeEditor");
-            field.setAccessible(true);
             field.set(ui, editor);
 
             assertFalse(editor.hasUnsavedWork(), "a window nobody has typed into has nothing to lose");
-            assertFalse(ui.routeEditorHasUnsavedWork(), "the exit thinks an untouched route editor has work to lose");
+            assertTrue(ui.everyOpenWindowMaySettle(), "an untouched route editor stopped the exit");
 
             // WHAT TYPING LOOKS LIKE from outside: the capture door appends a command row, which is one of the six
             // things `stateSignature` covers.
             SwingUtilities.invokeAndWait(() -> editor.appendCommand("Switch 90,turn"));
 
             assertTrue(editor.hasUnsavedWork(), "a command typed into the route editor is not counted as unsaved work");
+            assertTrue(ui.routeEditorHasUnsavedWork(), "the exit cannot see that the route editor has unsaved work");
 
-            assertTrue(ui.routeEditorHasUnsavedWork(),
-                "the exit does not know the route editor is holding unsaved work, so it exits without asking");
+            RouteEditorFrame.discardAnswerForTest = Boolean.FALSE;
+
+            assertFalse(ui.everyOpenWindowMaySettle(),
+                "the exit carries on although the route editor was asked and said no, so the typing goes with the"
+                + " process");
+
+            RouteEditorFrame.discardAnswerForTest = Boolean.TRUE;
+
+            assertTrue(ui.everyOpenWindowMaySettle(), "the exit is refused although the route editor said yes");
         }
         finally
         {
-            java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("routeEditor");
-            field.setAccessible(true);
-            field.set(ui, null);
+            RouteEditorFrame.discardAnswerForTest = null;
+
+            field.set(ui, was);
 
             SwingUtilities.invokeAndWait(() -> editor.dispose());
         }
