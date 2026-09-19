@@ -715,6 +715,107 @@ public class testMassAssignLengths
     // ------------------------------------------------------------------------------------ the 2026-09-19 review round
 
     /**
+     * A square two roads cross is in no piece, is asked for on its own, and counts on both roads (SET-B2).
+     *
+     * Adam, 2026-09-19, shown that such a square went into whichever leg was walked first and was missing from the
+     * other: *"For crossings: if its length is set, count that length once in each direction."*  The reduction
+     * already counts it on both roads - it adds every tile of every leg - so the only thing that could be wrong was
+     * the walk putting it inside one road's piece, whose whole length is then shared over its squares and counted on
+     * the other road as well.
+     *
+     * Measured before the fix, on this fixture: the crossing sat in the east-west piece, the north-south prompt
+     * covered four squares instead of five, and the north-south legs measured 9 and 10 where 7 and 8 had been typed.
+     */
+    @Test
+    public void testACrossingIsCutOutOfEveryPieceAndCountsOnBothRoads() throws IOException
+    {
+        openACrossing();
+
+        TileKey crossing = key(3, 2);
+
+        assertEquals(session.sharedSquaresALengthRuleReads(), set(crossing),
+            "the square two roads cross is not asked for on its own");
+
+        List<AutonomySession.Stretch> pieces = session.stretchesNeedingALength();
+
+        for (AutonomySession.Stretch piece : pieces)
+        {
+            assertFalse(piece.getTiles().contains(crossing),
+                "the crossing is inside a piece, so its share is counted on the other road too: " + describe(pieces));
+        }
+
+        assertEquals(pieces.size(), 4,
+            "each road should be cut into two pieces at the crossing: " + describe(pieces));
+
+        assertNoSquareIsInTwoPieces(pieces);
+
+        // EVERY PIECE 6, THE CROSSING 3.  Each road is then 6 + 6 + 3 = 15 of track, of which the reduction counts
+        // everything but the square the train starts on - 3 of it - so both legs measure 12.
+        for (AutonomySession.Stretch piece : pieces) assertTrue(session.assignStretchLength(piece, 6), "6 was refused");
+
+        assertTrue(session.assignSwitchLength(session.sharedSquaresNeedingALengthOn("main"), 3),
+            "the crossing would not take a length of its own");
+
+        session.rebuild();
+
+        assertEquals(edge(key(1, 2), key(5, 2)).getLength(), 12, "the east-west road does not add up");
+        assertEquals(edge(key(3, 0), key(3, 4)).getLength(), 12, "the north-south road does not add up");
+
+        assertEquals(session.getStore().getTileLength(crossing), 3,
+            "the crossing holds something other than the one length typed for it");
+
+        assertTrue(session.squaresNeedingALength().isEmpty(),
+            "everything has a length and something is still highlighted: " + session.squaresNeedingALength());
+    }
+
+    /**
+     * An unmeasured crossing is highlighted and offered, and the walk's counts include it.
+     */
+    @Test
+    public void testAnUnmeasuredCrossingIsOfferedAndHighlighted() throws IOException
+    {
+        openACrossing();
+
+        assertTrue(session.squaresNeedingALength().contains(key(3, 2)),
+            "the crossing is in no piece now, so nothing would ever ask the operator to measure it");
+
+        assertEquals(session.sharedSquaresNeedingALengthOn("main"), set(key(3, 2)));
+        assertTrue(session.sharedSquaresNeedingALengthOn("elsewhere").isEmpty(), "another page was offered it");
+
+        session.setTileLength(key(3, 2), 3);
+
+        assertFalse(session.squaresNeedingALength().contains(key(3, 2)), "a measured crossing is still highlighted");
+        assertTrue(session.sharedSquaresNeedingALengthOn("main").isEmpty(), "a measured crossing is still offered");
+    }
+
+    /**
+     * 1,2 - 2,2 - CROSSING 3,2 - 4,2 - 5,2 east to west, and 3,0 - 3,1 - the crossing - 3,3 - 3,4 north to south,
+     * each road running between two sensors.  Both roads carry track, so the crossing is a square two legs run over.
+     */
+    private void openACrossing() throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 9, 6, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.CROSSING, 3, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 4, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 5, 2, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+
+        page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 3, 1, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 3, 3, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 4, 1, 0, 8, 14, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("Lengths");
+        session.rebuild();
+    }
+
+
+    /**
      * A negative maximum train length is refused at the door, and one already stored can be cleared (SET-B1).
      *
      * `promptNumber` is shared with `priority`, where a negative is meaningful, so the refusal is asked per key.  The

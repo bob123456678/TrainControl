@@ -2170,19 +2170,23 @@ public class AutonomyEditorPanel extends JPanel
             int piecesToMeasure = session == null ? 0 : session.stretchesNeedingALengthOn(page).size();
             int switchesToMeasure = session == null ? 0 : session.switchesNeedingALengthOn(page).size();
 
+            // AND THE SQUARES TWO ROADS SHARE, asked for on their own as switches are (Adam, 2026-09-19).
+            int crossingsToMeasure = session == null ? 0 : session.sharedSquaresNeedingALengthOn(page).size();
+
             boolean leftOut = session != null && session.getStore().getExcludedPages().contains(page);
 
             javax.swing.JMenuItem massAssign =
                 item(I18n.t("autosetup.ui.menuMassAssignLengths"), () -> massAssignLengths());
 
-            massAssign.setEnabled(piecesToMeasure + switchesToMeasure > 0);
+            massAssign.setEnabled(piecesToMeasure + switchesToMeasure + crossingsToMeasure > 0);
 
             // A PAGE LEFT OUT says so (MAL-C8).  Its count is 0 because the graph has no such page, and "everything here
             // already has a length" was vacuously true of a page nothing had looked at.
             massAssign.setToolTipText(wrapped(leftOut
                 ? I18n.t("autosetup.ui.infoPageLeftOutNothingToMeasure")
-                : piecesToMeasure + switchesToMeasure > 0
-                    ? I18n.f("autosetup.ui.tooltipMassAssignLengths", piecesToMeasure, switchesToMeasure)
+                : piecesToMeasure + switchesToMeasure + crossingsToMeasure > 0
+                    ? I18n.f("autosetup.ui.tooltipMassAssignLengths", piecesToMeasure, switchesToMeasure,
+                        crossingsToMeasure)
                     : I18n.t("autosetup.ui.infoNothingToMeasure")));
 
             bulk.add(massAssign);
@@ -9330,8 +9334,9 @@ public class AutonomyEditorPanel extends JPanel
 
         java.util.List<AutonomySession.Stretch> pieces = session.stretchesNeedingALengthOn(page);
         java.util.Set<TileKey> switches = session.switchesNeedingALengthOn(page);
+        java.util.Set<TileKey> crossings = session.sharedSquaresNeedingALengthOn(page);
 
-        if (pieces.isEmpty() && switches.isEmpty())
+        if (pieces.isEmpty() && switches.isEmpty() && crossings.isEmpty())
         {
             say(hint, I18n.t("autosetup.ui.infoNothingToMeasure"));
 
@@ -9388,6 +9393,34 @@ public class AutonomyEditorPanel extends JPanel
                 }
 
                 if (turnout != null && turnout > 0) wroteAny = true;
+
+                if (turnout == null) stopped = true;
+            }
+        }
+
+        // AND THE SQUARES TWO ROADS SHARE (Adam, 2026-09-19: *"For crossings: if its length is set, count that length
+        // once in each direction"*).  Their own step, because a crossing is not a turnout and need not measure like
+        // one; one length for all of them, which is the shape his switch ruling chose.
+        if (!stopped)
+        {
+            crossings = session.sharedSquaresNeedingALengthOn(page);
+
+            if (!crossings.isEmpty())
+            {
+                outlineAndReveal(crossings);
+
+                String question = I18n.f("autosetup.ui.promptMassAssignCrossings", crossings.size());
+
+                Integer across = askForWholeLength(question, LENGTHS_TITLE);
+
+                while (across != null && across >= 0 && !session.assignSwitchLength(crossings, across))
+                {
+                    JOptionPane.showMessageDialog(owner(), wrapped(I18n.t("autosetup.ui.errorLengthZero")));
+
+                    across = askForWholeLength(question, LENGTHS_TITLE);
+                }
+
+                if (across != null && across > 0) wroteAny = true;
             }
         }
 

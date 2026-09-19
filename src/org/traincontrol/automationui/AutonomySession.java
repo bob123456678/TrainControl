@@ -2840,6 +2840,9 @@ public class AutonomySession
 
         java.util.Set<TileKey> placed = new java.util.HashSet<>();
 
+        // A SQUARE TWO LEGS RUN OVER IS CUT OUT, as a switch is (Adam, 2026-09-19, SET-B2).
+        java.util.Set<TileKey> shared = sharedSquaresALengthRuleReads();
+
         for (java.util.List<TileKey> leg : legsOnce())
         {
             java.util.List<TileKey> piece = new java.util.ArrayList<>();
@@ -2847,7 +2850,8 @@ public class AutonomySession
 
             for (int i = 0; i <= leg.size(); i++)
             {
-                boolean boundary = i == leg.size() || isSwitchSquare(leg.get(i));
+                boolean boundary = i == leg.size()
+                    || isSwitchSquare(leg.get(i)) || shared.contains(leg.get(i));
 
                 if (!boundary)
                 {
@@ -2985,6 +2989,13 @@ public class AutonomySession
         for (Stretch stretch : stretchesNeedingALength()) out.addAll(stretch.getTiles());
 
         for (TileKey tile : switchesALengthRuleReads())
+        {
+            if (store.getTileLength(tile) <= 0) out.add(tile);
+        }
+
+        // AND THE SQUARES TWO ROADS SHARE, which are in no piece and so would otherwise never be highlighted at all
+        // although a length rule reads them on both roads (SET-B2).
+        for (TileKey tile : sharedSquaresALengthRuleReads())
         {
             if (store.getTileLength(tile) <= 0) out.add(tile);
         }
@@ -3178,6 +3189,82 @@ public class AutonomySession
         }
 
         return new java.util.ArrayList<>(byRun.values());
+    }
+
+    /**
+     * The squares more than one leg runs OVER - crossings, and double curves whose both roads carry track.
+     *
+     * Adam, 2026-09-19, shown that such a square sat in one leg's piece and was missing from the other's:
+     * *"For crossings: if its length is set, count that length once in each direction."*  That is what the reduction
+     * already does - `GraphReducer.sumLength` adds every tile of every leg, so a crossing of 3 adds 3 to each road
+     * over it - and it is only right if no leg's PIECE contains it, because a piece's whole length is shared over its
+     * squares and would then be counted on the other road too.  So the square is cut out of every piece and asked for
+     * on its own, exactly as a switch is (MAL-B1), and the two roads each measure what was typed for them plus it.
+     *
+     * **Two ROADS, not two legs.**  Every square in front of a switch is run over by each leg through that switch -
+     * on the fixture behind `testEveryLegIsCutIntoPiecesAtItsSwitches`, the plain straight before the points is in
+     * both legs - and such a square is ordinary track that belongs in a piece.  What makes a crossing different is
+     * its geometry: `TilePorts` gives it two separate roads (`CROSSING` runs north-south and east-west, a
+     * `DOUBLE_CURVE` two unconnected curves), so a train on one road passes over the other's rail.  Both halves are
+     * required - the geometry, and legs actually running over it on more than one of those roads - so a double curve
+     * with track on only one of its roads stays ordinary track.
+     *
+     * **Intermediate occurrences only.**  A sensor square ends several legs and so appears in several, which is what
+     * MAL-C2's first-piece-keeps-it rule is for; it is an endpoint, never track a leg runs over (a Point tile is an
+     * edge endpoint, never an intermediate square), so counting endpoints here would cut every piece at both ends.
+     *
+     * **Switches are not listed**, because they have their own step and are already cut out.
+     *
+     * @return the squares, ordered by page, row then column
+     */
+    public java.util.Set<TileKey> sharedSquaresALengthRuleReads()
+    {
+        java.util.List<TileKey> out = new java.util.ArrayList<>();
+
+        if (store == null || reducer == null || getGraph() == null) return new java.util.LinkedHashSet<>(out);
+
+        java.util.Map<TileKey, Integer> crossedBy = new java.util.LinkedHashMap<>();
+
+        for (java.util.List<TileKey> leg : legsOnce())
+        {
+            java.util.Set<TileKey> onceEach = new java.util.LinkedHashSet<>();
+
+            // The ends are where the leg STOPS, so they are not track it runs over.
+            for (int i = 1; i + 1 < leg.size(); i++) onceEach.add(leg.get(i));
+
+            for (TileKey tile : onceEach) crossedBy.merge(tile, 1, Integer::sum);
+        }
+
+        for (java.util.Map.Entry<TileKey, Integer> entry : crossedBy.entrySet())
+        {
+            if (entry.getValue() > 1 && !isSwitchSquare(entry.getKey())
+                && getRoutes(entry.getKey()).size() > 1)
+            {
+                out.add(entry.getKey());
+            }
+        }
+
+        java.util.Collections.sort(out, this::compareSquares);
+
+        return new java.util.LinkedHashSet<>(out);
+    }
+
+    /**
+     * The shared squares on this page with no length, which Mass Assign Lengths asks for together.
+     *
+     * @param page the page being edited
+     * @return the squares
+     */
+    public java.util.Set<TileKey> sharedSquaresNeedingALengthOn(String page)
+    {
+        java.util.Set<TileKey> out = new java.util.LinkedHashSet<>();
+
+        for (TileKey tile : sharedSquaresALengthRuleReads())
+        {
+            if (tile.getPage() != null && tile.getPage().equals(page) && store.getTileLength(tile) <= 0) out.add(tile);
+        }
+
+        return out;
     }
 
     private boolean isSwitchSquare(TileKey tile)
