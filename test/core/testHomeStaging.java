@@ -3479,6 +3479,151 @@ public class testHomeStaging
     }
 
     /**
+     * A train the railway already had standing on a terminus may step aside on its way home (RTX-B1).
+     *
+     * `behaviour.md` section 6, Adam's ruling of 2026-09-15: a plan may rest a train that cannot reverse on a
+     * terminus or reversing point only when its next move takes it home - *"a train the railway already had standing
+     * on one moves as before"*.  The code asked whether the train was STANDING on such a square rather than whether
+     * this plan had put it there, so a train found on one could only ever be planned to its own home: where the home
+     * was occupied and the arrangement needed it to step aside first, the answer was NO_PLAN_FOUND.
+     *
+     * Adam, 2026-09-19, shown the two readings: *"the document is right and the fix goes in."*
+     *
+     * LOC_A stands on the terminus HS A and is homed to HS B; LOC_B stands on HS B and is homed to HS A.  The only
+     * way round is LOC_A to HS C, LOC_B to HS A, LOC_A to HS B - so LOC_A has to step aside before going home.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testATrainTheRailwayHadOnATerminusMayStepAsideBeforeGoingHome() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, null));
+
+        Point terminus = layout.getPoint("HS A");
+
+        boolean[] was = setReversible(true, LOC_A);
+
+        try
+        {
+            terminus.setTerminus(true);
+
+            assign(layout, LOC_A, "HS B");
+            assign(layout, LOC_B, "HS A");
+
+            // LOC_B CANNOT STEP ASIDE, so the only way round is LOC_A stepping aside first.  Without this the
+            // arrangement LOC_B -> HS C, LOC_A -> HS B, LOC_B -> HS A exists and never asks anything of LOC_A.
+            java.util.Set<org.traincontrol.base.Locomotive> keepOut = new java.util.HashSet<>();
+            keepOut.add(loc(LOC_B));
+
+            layout.getPoint("HS C").setExcludedLocs(keepOut);
+            layout.getPoint("HS D").setExcludedLocs(keepOut);
+
+            // THE CONTROL, with a train that may reverse: the arrangement exists and needs the step aside.
+            HomeStaging.Plan allowed = HomeStaging.snapshot(layout).plan();
+
+            assertEquals(allowed.getOutcome(), HomeStaging.Outcome.READY,
+                "precondition: the fixture has no plan even for a train that can reverse, so it cannot show the rule: "
+                + allowed.getMoves());
+
+            boolean stepsAside = false;
+
+            for (HomeStaging.Move move : allowed.getMoves())
+            {
+                if (move.getLocomotive().getName().equals(LOC_A) && !move.getEnd().getName().equals("HS B"))
+                {
+                    stepsAside = true;
+                }
+            }
+
+            assertTrue(stepsAside,
+                "precondition: nothing steps aside in this arrangement, so the rule is not exercised: "
+                + allowed.getMoves());
+
+            // AND NOW THE TRAIN THE RULE IS ABOUT.  It was not turned by this plan - the railway had it there.
+            restoreReversible(was, LOC_A);
+            was = setReversible(false, LOC_A);
+
+            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+            assertEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
+                "Return Home refuses to move a train that cannot reverse off the terminus the railway had it standing"
+                + " on, so nothing can come home: " + plan.getMoves());
+
+            assertNull(turnedAndNotSentHome(layout, plan, false),
+                "the plan turns a train that cannot reverse and then sends it somewhere other than home, which is the"
+                + " rule this must not break to satisfy the claim above");
+        }
+        finally
+        {
+            layout.getPoint("HS C").setExcludedLocs(new java.util.HashSet<org.traincontrol.base.Locomotive>());
+            layout.getPoint("HS D").setExcludedLocs(new java.util.HashSet<org.traincontrol.base.Locomotive>());
+
+            terminus.setTerminus(false);
+            restoreReversible(was, LOC_A);
+        }
+    }
+
+    /**
+     * A train with no home that the railway had standing on a terminus can still be moved off it (RTX-B1).
+     *
+     * The same clause, in the shape that strands two trains rather than one: a train placed on a square that is
+     * already somebody's home keeps no home of its own (`Layout.claimHome` calls it a free agent), so "may move only
+     * to its home" refuses it every square there is.  It cannot be moved aside, and the train whose berth it is
+     * standing on cannot come home.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testATrainWithNoHomeTheRailwayHadOnATerminusCanBeMovedOffIt() throws Exception
+    {
+        Layout layout = load(ring(LOC_C, LOC_A, null));
+
+        Point terminus = layout.getPoint("HS A");
+
+        boolean[] was = setReversible(true, LOC_C);
+
+        try
+        {
+            terminus.setTerminus(true);
+
+            layout.setHomeLocomotive("HS A", null);
+            assign(layout, LOC_A, "HS A");
+
+            assertNull(layout.getHomeStations().get(loc(LOC_C)), "precondition: LOC_C still has a home");
+
+            HomeStaging.Plan allowed = HomeStaging.snapshot(layout).plan();
+
+            assertEquals(allowed.getOutcome(), HomeStaging.Outcome.READY,
+                "precondition: no plan even for a train that can reverse: " + allowed.getMoves());
+
+            boolean movesOff = false;
+
+            for (HomeStaging.Move move : allowed.getMoves())
+            {
+                if (move.getLocomotive().getName().equals(LOC_C)) movesOff = true;
+            }
+
+            assertTrue(movesOff, "precondition: the free agent never moves in this arrangement: " + allowed.getMoves());
+
+            restoreReversible(was, LOC_C);
+            was = setReversible(false, LOC_C);
+
+            HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+            assertEquals(plan.getOutcome(), HomeStaging.Outcome.READY,
+                "a train with no home that cannot reverse is refused every move off the terminus the railway had it"
+                + " standing on, so the train whose berth it is on can never come home: " + plan.getMoves());
+
+            assertNull(turnedAndNotSentHome(layout, plan, false), "the plan breaks AMH-B1 to satisfy the claim above");
+        }
+        finally
+        {
+            terminus.setTerminus(false);
+            restoreReversible(was, LOC_C);
+        }
+    }
+
+    /**
      * A train that cannot reverse and has no home is never turned at all (AMH-B1's other half, AMV-C7).
      *
      * The ruling allows a turn only where the train is going to its berth next, so a free agent - one with no home -

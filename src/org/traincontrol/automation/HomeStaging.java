@@ -967,7 +967,18 @@ public final class HomeStaging
                 // take it out of the berth to an ordinary station, which it does not.  Neither move breaks a rule of
                 // its own; the pair does.  What follows the train instead is the route that brought it here: if that
                 // route turned it and it is not home, its next move owes itself to its home.
+                //
+                // AND ONLY OF A TRAIN THIS PLAN HAS MOVED (RTX-B1, Adam 2026-09-19: *"the document is right and the
+                // fix goes in"*).  `turnsATrainArrivingAt(at)` asks about the SQUARE, and the square cannot tell who
+                // turned the train standing on it: one the railway already had on a terminus - backed in by hand, or
+                // left there by an earlier session - was answering yes, so it could be planned nowhere but its own
+                // home.  Where that home was occupied and the way round needed it to step aside first, the answer
+                // was NO_PLAN_FOUND; and a train with no home at all (`Layout.claimHome`'s free agent) was refused
+                // every square there is, stranding both it and the train whose berth it was standing on.
+                // `movedAlong` is what knows: a train this plan has moved has an entry there, and one the railway
+                // had standing where it is has none.
                 boolean turnedByThePlan = !l.isReversible() && !atHome(ownHome, at)
+                    && this.movedAlong.containsKey(l)
                     && (turnsATrainArrivingAt(at)
                         || turnedOnTheWay(this.movedAlong.get(l)));
 
