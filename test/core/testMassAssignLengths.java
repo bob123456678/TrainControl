@@ -712,6 +712,106 @@ public class testMassAssignLengths
         return found[0];
     }
 
+    // ------------------------------------------------------------------------------------ the 2026-09-19 review round
+
+    /**
+     * A negative maximum train length is refused at the door, and one already stored can be cleared (SET-B1).
+     *
+     * `promptNumber` is shared with `priority`, where a negative is meaningful, so the refusal is asked per key.  The
+     * layer below does not clamp: `Layout.fromJSON` invalidates the WHOLE configuration for a maximum below 0, so a
+     * number typed here took the railway out of autonomy with only a log line - and Clear All Max Train Lengths, which
+     * counted only maxima above 0, greyed itself on the one setting that needed taking off.
+     *
+     * Measured before the fix, on the fixture below: `Layout.fromJSON` came back `isValid() == false` and
+     * `tilesWithAMaxTrainLength()` was empty.
+     */
+    @Test
+    public void testANegativeMaximumTrainLengthIsRefused() throws IOException
+    {
+        assertNotNull(AutonomyEditorPanel.whyNotThisNumber("maxTrainLength", -3),
+            "the door takes a negative maximum, which stops the configuration loading");
+
+        assertNull(AutonomyEditorPanel.whyNotThisNumber("maxTrainLength", 0), "0 is any length, and is allowed");
+        assertNull(AutonomyEditorPanel.whyNotThisNumber("maxTrainLength", 5), "a real maximum is allowed");
+
+        assertNull(AutonomyEditorPanel.whyNotThisNumber("priority", -3),
+            "a negative priority is meaningful and was refused with the maximum");
+
+        // AND THE ONE ALREADY WRITTEN can be taken off, which is the only remedy for a railway that will not load.
+        openBerthBehindASwitch(key(5, 1));
+
+        session.setPointProperty(key(5, 1), "maxTrainLength", -3);
+
+        assertEquals(session.tilesWithAMaxTrainLength(), Arrays.asList(key(5, 1)),
+            "Clear All Max Train Lengths cannot see a negative maximum, so it greys itself on the setting that is"
+            + " stopping the railway loading");
+
+        assertEquals(session.clearEveryMaxTrainLength(), 1, "the clear did not take it off");
+        assertNull(session.getPointProperty(key(5, 1), "maxTrainLength"));
+    }
+
+    /**
+     * After a walk, Segment Length shows the whole run and writes the whole run (SET-B3).
+     *
+     * `behaviour.md` section 5b: *"a run of plain track has one square that speaks for it, and both doors write
+     * there, so measuring a run through both does not count it twice."*  Mass Assign Lengths is a third door and it
+     * shares a piece's whole length over every square (MAL-B2), so the leader came to hold a share.  Measured before
+     * the fix on this fixture: the dialog opened on 1 for a run measured as 7, and writing 4 left the run at 6.
+     */
+    @Test
+    public void testTheSingleDoorSpeaksForTheWholeRunAfterAWalk() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the panel needs a display");
+
+        openARunOfTwoPlainSquares();
+
+        List<AutonomySession.Stretch> pieces = session.stretchesNeedingALength();
+
+        assertEquals(pieces.size(), 1, "precondition: the fixture made " + pieces.size() + " pieces");
+        assertTrue(session.assignStretchLength(pieces.get(0), 7), "the walk refused 7");
+
+        final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+        TileKey leader = panel.squareTheLengthWouldGoOn(key(3, 1));
+
+        assertNotNull(leader, "precondition: the menu offers no length on a plain square of the run");
+        assertTrue(session.getStore().getTileLength(leader) < 7,
+            "precondition: the walk did not share the length out, so there is nothing for this to be about");
+
+        // The walk gave the four squares of the piece 2, 2, 1 and 2; the RUN is the two plain squares, so what
+        // the dialog should open on is 3 - measured, not assumed.
+        assertEquals(panel.lengthShownFor(key(3, 1)), 3,
+            "Segment Length opens on one square's share rather than on what the run measures");
+
+        panel.setRunLength(key(3, 1), 4);
+
+        int run = session.getStore().getTileLength(key(2, 1)) + session.getStore().getTileLength(key(3, 1));
+
+        assertEquals(run, 4, "the run was given 4 through Segment Length and measures " + run);
+
+        assertEquals(panel.lengthShownFor(key(2, 1)), 4, "the dialog opened on a follower disagrees with its run");
+    }
+
+    /**
+     * 1,1 sensor - 2,1 - 3,1 - 4,1 station: a run of two plain squares between two sensors.
+     */
+    private void openARunOfTwoPlainSquares() throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("Lengths");
+        session.setStation(key(4, 1), true);
+        session.rebuild();
+    }
+
     private static final String LENGTHS = "autosetup.ui.menuMassAssignLengths";
     private static final String MAXIMA = "autosetup.ui.menuMassAssignMaxTrainLengths";
 

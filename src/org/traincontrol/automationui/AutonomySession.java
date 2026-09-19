@@ -6788,12 +6788,19 @@ public class AutonomySession
      * writes an explicit `maxTrainLength: 0` on every destination, and counting those would offer to clear stations
      * that have nothing to lose.  Every page, as Clear All Home Locomotives and Clear All Track Lengths beside it.
      *
+     * **A NEGATIVE COUNTS, because it is the one the operator most needs to be able to clear** (SET-B1, review round
+     * 2026-09-19).  `Layout.fromJSON` refuses a maximum below 0 and invalidates the whole configuration, so a railway
+     * carrying one has no autonomy at all until it is taken off; a clear that counted only what is above 0 greyed
+     * itself and said there was nothing to clear, on the very setting that was stopping the railway loading.  The
+     * editor door no longer writes one (`AutonomyEditorPanel.whyNotThisNumber`); this is how one already written -
+     * from an older build, or by hand - is removed.
+     *
      * @return the squares, in NO PARTICULAR ORDER, for `tilesWithAHome`'s reason
      */
     public java.util.List<TileKey> tilesWithAMaxTrainLength()
     {
         return tilesWhere((key, point) -> point.opt("maxTrainLength") instanceof Number
-            && ((Number) point.opt("maxTrainLength")).intValue() > 0);
+            && ((Number) point.opt("maxTrainLength")).intValue() != 0);
     }
 
     /**

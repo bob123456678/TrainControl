@@ -4007,6 +4007,30 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * Why this number cannot be stored under this key, or null when it can (SET-B1).
+     *
+     * **Only the maximum train length has a floor, and it is 0.**  `promptNumber` is shared with `priority`, where a
+     * negative is meaningful and always has been, so the refusal cannot live in the parse.  A negative maximum,
+     * though, is refused a layer down by `Layout.fromJSON` - which does not clamp it as `Point.setMaxTrainLength`
+     * does, but invalidates the whole configuration - so typing one here took the railway out of autonomy until
+     * somebody found it, with only a log line to say so.  Nothing between the two layers looked at the sign.
+     *
+     * Public and static so the rule can be asked of it directly; `promptNumber` is modal and no test can answer it.
+     * `core.testMassAssignLengths.testANegativeMaximumTrainLengthIsRefused` is that test, and it also asks what the
+     * clear makes of a negative already stored.
+     *
+     * @param key the point property being written
+     * @param value the number typed
+     * @return the sentence to show, already translated, or null when the number is fine
+     */
+    public static String whyNotThisNumber(String key, int value)
+    {
+        if ("maxTrainLength".equals(key) && value < 0) return I18n.t("autosetup.ui.errorMaxTrainLengthNegative");
+
+        return null;
+    }
+
+    /**
      * Asks for a number, storing nothing when it is left at the value that means "no setting".
      */
     private void promptNumber(TileKey tile, String key, String promptKey, int unset)
@@ -4024,6 +4048,17 @@ public class AutonomyEditorPanel extends JPanel
         try
         {
             int value = Integer.parseInt(entered.trim());
+
+            // REFUSED BEFORE IT IS WRITTEN, rather than by the layer that loads it (SET-B1).  Nothing is stored,
+            // which is what the NumberFormatException arm below does and for the same reason.
+            String refused = whyNotThisNumber(key, value);
+
+            if (refused != null)
+            {
+                JOptionPane.showMessageDialog(owner(), wrapped(refused));
+
+                return;
+            }
 
             session.setPointProperty(tile, key, value == unset ? null : value);
         }
@@ -6604,7 +6639,7 @@ public class AutonomyEditorPanel extends JPanel
         // afterwards (OB-043).  A number is the only answer this question has, so refusing the keystroke
         // is kinder than accepting it and then throwing it away with an error box.
         final javax.swing.JTextField field = digitsOnly(
-            String.valueOf(session.getStore().getTileLength(sample)));
+            String.valueOf(selection.isEmpty() ? lengthShownFor(sample) : session.getStore().getTileLength(sample)));
 
         // SELECTED, so the number can be typed over rather than cleared first (OB-176).
         //
@@ -6648,9 +6683,19 @@ public class AutonomyEditorPanel extends JPanel
         // more", and 0 is exactly what "no length" is stored as everywhere else here.
         int length = entered.isEmpty() ? 0 : Integer.parseInt(entered);
 
-        for (TileKey target : targets)
+        if (selection.isEmpty())
         {
-            session.setTileLength(target, length);
+            // ONE SQUARE SPEAKS FOR THE RUN, which means the run measures what was typed (SET-B3).
+            setRunLength(tile, length);
+        }
+        else
+        {
+            // A SELECTION IS SQUARES, NOT RUNS: shift-clicking several and typing a number has always given that
+            // number to each of them, and a run in the selection is reached through the leader that is in it.
+            for (TileKey target : targets)
+            {
+                session.setTileLength(target, length);
+            }
         }
 
         selection.clear();
@@ -8599,6 +8644,72 @@ public class AutonomyEditorPanel extends JPanel
         Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(tile);
 
         return routes.isEmpty() ? null : routes.values().iterator().next();
+    }
+
+    /**
+     * What Segment Length shows for this square: what the whole run measures, not one square's share (SET-B3).
+     *
+     * **A run of plain track has one square that speaks for it** (`behaviour.md` section 5b), and until Mass Assign
+     * Lengths existed that square held the whole number, so the leader's own length WAS the run's.  The walk shares a
+     * piece's whole length over every square it covers (MAL-B2), so after one the leader holds a share - a 1 or a 2 on
+     * a run the operator measured as 7 - and this dialog opened on that share as if it were the run's length.
+     *
+     * @param tile any square of the run
+     * @return the sum over every square the run covers
+     */
+    public int lengthShownFor(TileKey tile)
+    {
+        int total = 0;
+
+        for (TileKey square : runTilesOf(tile)) total += Math.max(0, session.getStore().getTileLength(square));
+
+        return total;
+    }
+
+    /**
+     * Gives a run the length typed for it: the leader holds it, and the squares that follow the leader hold nothing.
+     *
+     * The other half of `lengthShownFor` (SET-B3).  Writing the typed number to the leader alone left the shares Mass
+     * Assign Lengths had spread over the followers in place, so a run given 4 through this door measured 4 plus
+     * whatever the walk had left on the rest of it.  Zeroing the followers is how the run comes to measure exactly
+     * what was typed, and 0 is what "no length" is stored as everywhere here.
+     *
+     * @param tile any square of the run
+     * @param length the whole run's length
+     */
+    public void setRunLength(TileKey tile, int length)
+    {
+        TileKey leader = leaderOf(tile);
+
+        for (TileKey square : runTilesOf(tile))
+        {
+            session.setTileLength(square, square.equals(leader) ? length : 0);
+        }
+    }
+
+    /**
+     * Every square of the run this one belongs to - itself when it is in no run.
+     *
+     * `runLeaders` maps each follower to its leader, so the run is this square's leader together with every key that
+     * answers with it.
+     *
+     * @param tile any square
+     * @return the squares of its run, the leader included
+     */
+    private java.util.Set<TileKey> runTilesOf(TileKey tile)
+    {
+        TileKey leader = leaderOf(tile);
+
+        java.util.Set<TileKey> run = new LinkedHashSet<>();
+
+        run.add(leader);
+
+        for (java.util.Map.Entry<TileKey, TileKey> entry : runLeaders.entrySet())
+        {
+            if (leader.equals(entry.getValue())) run.add(entry.getKey());
+        }
+
+        return run;
     }
 
     /**
