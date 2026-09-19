@@ -1459,7 +1459,7 @@ public class testEditorSurfaceRules
         // assertions below, and they are the same rule asked of the mechanism that now carries it.
         // THE TIMER IS A FIELD SINCE UIX-B2, because a flash starting over it has to be able to end it - it was
         // a local called `restore`, and this rule knew only that spelling.
-        int timer = label.indexOf("accessoryHighlight = new javax.swing.Timer");
+        int timer = label.indexOf("new javax.swing.Timer(HIGHLIGHT_DURATION");
 
         assertTrue(timer > 0,
             "the highlight timer has gone, so this checked the absence of something that is not there");
@@ -2699,7 +2699,18 @@ public class testEditorSurfaceRules
         // It was called from maySettleBeforeExit, the first thing the exit does - so the rewind
         // happened, the trains dialog then said no, and the application carried on running with the
         // undo already spent.
-        String exit = withoutComments(bodyOf(ui, "private void WindowClosed("));
+        // THE EXIT'S FIRST QUESTION MOVED INTO A METHOD OF ITS OWN (VB2-B1, SVT-B1): `WindowClosed` ends in
+        // System.exit and could not be tested, so what it does before it saves anything is
+        // `everyOpenWindowMaySettle`.  The ORDER is still asked of `WindowClosed` - the settle question has
+        // to come before the discard is completed - and the question itself is asked of that method, so
+        // neither can go missing by moving into the other.
+        String exit = withoutComments(bodyOf(ui, "private void WindowClosed("))
+            .replace("everyOpenWindowMaySettle()", "maySettleBeforeExit()");
+
+        assertTrue(withoutComments(bodyOf(ui, "public boolean everyOpenWindowMaySettle()"))
+            .contains("maySettleBeforeExit()"),
+            "everyOpenWindowMaySettle no longer asks any window whether it may settle, so the exit stopped"
+            + " asking about unsaved work at all");
 
         int settles = exit.indexOf("maySettleBeforeExit()");
         int completes2 = exit.indexOf("completeExitDiscard()");

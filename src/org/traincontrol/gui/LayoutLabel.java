@@ -1031,7 +1031,9 @@ public final class LayoutLabel extends JLabel
                             // class that did not marshal its work.
                             this.setIcon(ImageUtil.addHighlightOverlay((ImageIcon) this.getIcon()));
 
-                            accessoryHighlight = new javax.swing.Timer(HIGHLIGHT_DURATION, (restoreEvent) ->
+                            final javax.swing.Timer[] mine = new javax.swing.Timer[1];
+
+                            mine[0] = new javax.swing.Timer(HIGHLIGHT_DURATION, (restoreEvent) ->
                             {
                                 if ((System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
                                 {
@@ -1050,9 +1052,14 @@ public final class LayoutLabel extends JLabel
                                 }
 
                                 // AND IT IS NO LONGER OUTSTANDING (SVB-C1): the field is what says whether a
-                                // restore is still armed, and a timer that has fired holds nothing.
-                                accessoryHighlight = null;
+                                // restore is still armed, and a timer that has fired holds nothing.  Only if
+                                // it is still THIS timer: a three-way drives twice, so a second highlight can
+                                // have replaced it, and clearing the field then would say no restore is armed
+                                // while one is (VB2-C4).
+                                if (accessoryHighlight == mine[0]) accessoryHighlight = null;
                             });
+
+                            accessoryHighlight = mine[0];
 
                             accessoryHighlight.setRepeats(false);
                             accessoryHighlight.start();

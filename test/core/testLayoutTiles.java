@@ -304,10 +304,19 @@ public class testLayoutTiles
 
         assertTrue(label.isFlashOutstanding(), "precondition: the flash did not start");
 
-        // THE PICTURE IS REPLACED: what an occupancy change does to a sensor tile.
-        SwingUtilities.invokeAndWait(() -> label.updateImage(false));
+        // THE PICTURE IS REPLACED.  `updateImage(false)` returns without doing anything unless the image NAME
+        // changed, and a bare feedback component with nothing bound to it always draws the same picture - so
+        // asked that way this proved nothing and the flash simply timed out inside the wait (VB2-B2).
+        // `updateImage(true)` replaces it, which is what an occupancy change does; a FEEDBACK square takes no
+        // accessory-highlight branch at all, so what is tested is the path that branch does not cover.
+        SwingUtilities.invokeAndWait(() -> label.updateImage(true));
 
-        long armed = System.currentTimeMillis() + 5000;
+        assertFalse(label.isAccessoryHighlightOutstanding(),
+            "precondition: this square took the accessory-highlight branch, so it is not the path this is for");
+
+        // BOUNDED WELL INSIDE THE FLASH'S OWN HOLD (5000 ms), so a flash that merely timed out cannot pass
+        // this (VB2-B2).
+        long armed = System.currentTimeMillis() + 1500;
 
         while (label.isFlashOutstanding() && System.currentTimeMillis() < armed)
         {

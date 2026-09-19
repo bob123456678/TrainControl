@@ -19204,16 +19204,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         //
         // Cancel here cancels the exit, which is what DO_NOTHING_ON_CLOSE makes possible: returning
         // from this handler leaves the window open.
-        if (openEditor != null && openEditor.isDisplayable() && !openEditor.maySettleBeforeExit())
-        {
-            return;
-        }
-
-        // AND THE ROUTE EDITOR, which is the other window holding unsaved typing (UIX-B1).
-        //
-        // It is a non-modal frame with its own discard question on its X and on Escape, and this handler never
-        // consulted it - so File > Exit and the main window's X disposed it with the process and threw away whatever
-        // had been typed into it, with no dialog at all.  OB-070's sentence, on the sibling window.
+        // ASKED ONCE PER WINDOW, in `everyOpenWindowMaySettle` (VB2-B1).  The layout editor's own call stood here
+        // as well when the route editor's was added beside it, so a dirty diagram editor was asked twice -
+        // and `settleUnsavedWork` decides from `canUndo()`, which a Save does not clear, so Discard then Save
+        // wrote the discarded work to disk on the way out.
         if (!everyOpenWindowMaySettle()) return;
 
         // Trains first, and not conditional on a setting that has nothing to do with them.

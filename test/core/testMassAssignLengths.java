@@ -599,10 +599,14 @@ public class testMassAssignLengths
             assertNotNull(field, "the prompt has no number box");
 
             field.setText("7");
-
-            field.dispatchEvent(new java.awt.event.KeyEvent(field, java.awt.event.KeyEvent.KEY_PRESSED,
-                System.currentTimeMillis(), 0, java.awt.event.KeyEvent.VK_ENTER, java.awt.event.KeyEvent.CHAR_UNDEFINED));
         });
+
+        // OK, NOT ENTER.  Enter goes through `JTextField.NotifyAction`, which acts on the FOCUSED text
+        // component - so dispatching it only works while this desktop has given the prompt the keyboard
+        // focus, and a battery machine does not always.  This claim is about what the walk writes and where
+        // it goes next; Enter has its own claim in `testTheNumberFieldHasFocusAndEnterSubmits`, which waits
+        // for the focus and skips rather than fails without it.
+        answer(first, org.traincontrol.util.I18n.t("ui.ok"));
 
         javax.swing.JDialog second = awaitPrompt(first, MAXIMA);
 
@@ -995,7 +999,21 @@ public class testMassAssignLengths
             Thread.sleep(50);
         }
 
-        fail("no " + title + " prompt appeared");
+        // WHAT WAS ON SCREEN INSTEAD, because "no prompt appeared" is the same message whether the walk never
+        // opened one or an earlier dialog is still up in front of it (VB2 round).
+        StringBuilder open = new StringBuilder();
+
+        for (java.awt.Window window : java.awt.Window.getWindows())
+        {
+            if (!window.isShowing()) continue;
+
+            open.append(open.length() > 0 ? ", " : "").append(window.getClass().getSimpleName());
+
+            if (window instanceof javax.swing.JDialog) open.append(" \"").append(((javax.swing.JDialog) window).getTitle()).append("\"");
+            if (window instanceof javax.swing.JFrame) open.append(" \"").append(((javax.swing.JFrame) window).getTitle()).append("\"");
+        }
+
+        fail("no " + title + " prompt appeared.  Showing now: " + (open.length() == 0 ? "nothing" : open));
 
         return null;
     }
@@ -1283,5 +1301,75 @@ public class testMassAssignLengths
             "a square that is no longer a station still carries a maximum, and the bulk clear counts it as a station");
 
         assertNull(session.getPointProperty(key(5, 1), "maxTrainLength"));
+    }
+
+    /**
+     * A leg that runs over one square twice - a figure of eight - is cut at it too (SVA-C2, VB2-B3).
+     *
+     * The rule counts how often a crossing is run OVER rather than how many legs run over it, because a single leg
+     * that uses both of a crossing's roads reads that square twice: its own answer would then be counted twice, and
+     * that is the very error Adam's ruling is about.  Counting legs would have missed it, and nothing pinned the
+     * difference until this.
+     *
+     * The fixture is one leg between two sensors that goes east through the crossing, round a loop, and back through
+     * it southbound.
+     *
+     * @throws IOException from the fixture
+     */
+    @Test
+    public void testALegThatCrossesItsOwnSquareTwiceIsCutAtIt() throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 9, 6, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.CROSSING, 3, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 4, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+
+        // The loop back over the top: W-N at 5,2, up the side, S-W at 5,0, along, and E-S at 3,0 into the crossing.
+        page.addComponent(componentType.CURVE, 5, 2, 2, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 5, 1, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.CURVE, 5, 0, 3, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 4, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.CURVE, 3, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 3, 1, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
+
+        page.addComponent(componentType.STRAIGHT, 3, 3, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 4, 1, 0, 6, 12, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("Lengths");
+        session.rebuild();
+
+        TileKey crossing = key(3, 2);
+
+        // PRECONDITION: one leg really does run over the crossing twice.  Without it this passes on a fixture where
+        // the loop never joined up, which would test nothing at all.
+        int twice = 0;
+
+        for (GraphReducer.ReducedEdge leg : session.getReducer().getEdges())
+        {
+            int over = 0;
+
+            for (GraphReducer.TileStep step : leg.getPath())
+            {
+                if (crossing.equals(step.getTile())) over++;
+            }
+
+            if (over > 1) twice++;
+        }
+
+        assertTrue(twice > 0, "precondition: no leg runs over the crossing twice, so the fixture does not show this");
+
+        assertTrue(session.sharedSquaresALengthRuleReads().contains(crossing),
+            "a square one leg runs over twice is left inside that leg's piece, so its share is counted on both of"
+            + " the roads the leg uses");
+
+        for (AutonomySession.Stretch piece : session.stretchesNeedingALength())
+        {
+            assertFalse(piece.getTiles().contains(crossing), "the crossing is in a piece: " + describe(session.stretchesNeedingALength()));
+        }
     }
 }
