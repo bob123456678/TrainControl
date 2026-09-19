@@ -6214,4 +6214,43 @@ public class testHomeStaging
         }
     }
 
+
+    /**
+     * The record of where the railway turned a train follows a rename, and goes when the train does (RTX-C3).
+     *
+     * `Layout.reversedOnArrival` is keyed by NAME, because what it feeds is a facing written into the setup and a
+     * file holds a name.  Deleting a locomotive left its entry behind - a later locomotive given the same name
+     * inherited a turn it never made - and renaming one lost the entry altogether, so a train turned on arrival and
+     * renamed before the window drained the record kept the facing it drove in with.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testTheTurnRecordFollowsARenameAndGoesWithADelete() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, null, null));
+
+        java.lang.reflect.Field record = Layout.class.getDeclaredField("reversedOnArrival");
+        record.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, String> turns = (java.util.Map<String, String>) record.get(layout);
+
+        turns.put(LOC_A, "HS A");
+
+        assertEquals(layout.turnedOnArrivalAt(LOC_A), "HS A", "precondition: the record was not written");
+
+        layout.locRenamed(LOC_A, "HS renamed");
+
+        assertNull(layout.turnedOnArrivalAt(LOC_A), "the record still answers under the old name");
+        assertEquals(layout.turnedOnArrivalAt("HS renamed"), "HS A",
+            "the turn was lost by the rename, so the train keeps the facing it drove in with");
+
+        layout.locRenamed("HS renamed", LOC_A);
+
+        layout.locDeleted(loc(LOC_A));
+
+        assertNull(layout.turnedOnArrivalAt(LOC_A),
+            "the record survives the locomotive, so a later one given the same name inherits a turn it never made");
+    }
 }

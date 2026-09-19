@@ -23162,7 +23162,7 @@ From the 2026-09-19 review round (SET-B1), fixed the same day.  Typing a negativ
 
 **Written:** 2026-09-19
 
-Your ruling of 2026-09-19: *"For crossings: if its length is set, count that length once in each direction."*  A square where two roads cross - a crossing, or a double curve with track on both roads - used to sit inside whichever road's stretch was walked first: that road's prompt covered it, the other road's prompt was one square short, and the other road then counted it twice.  **1 - Main** has four such squares: the crossing at 18,10 and the double curves at 20,10, 21,10 and 11,11.
+Your ruling of 2026-09-19: *"For crossings: if its length is set, count that length once in each direction."*  A square where two roads cross - a crossing, or a double curve with track on both roads - used to sit inside whichever road's stretch was walked first: that road's prompt covered it, the other road's prompt was one square short, and the other road then counted it twice.  **1 - Main** has four squares SHAPED like that - the crossing at 18,10 and the double curves at 20,10, 21,10 and 11,11 - and the walk asks about the ones that trains actually run over on both of their roads, which may be fewer.
 
 **Steps**
 
@@ -23174,7 +23174,7 @@ Your ruling of 2026-09-19: *"For crossings: if its length is set, count that len
 
 **Expected**
 
-- The tooltip counts stretches, switches and crossings separately.
+- The tooltip counts stretches, switches and crossings separately; the crossing count is of squares two roads really use, so it may be smaller than the four above.
 - No stretch prompt includes 18,10: the stretches stop on each side of it, and the outline has no hole in it.
 - After step 4 every crossing on the page carries the one length you typed, and the amber highlight leaves them.
 - The two roads through 18,10 each count its length once - with Track Lengths on, the numbers on each road add up including it.
@@ -23202,11 +23202,11 @@ From the 2026-09-19 review round (SET-B3), fixed the same day.  Mass Assign Leng
 2. Run **Mass Assign Lengths** and give that stretch a length of **7**.
 3. Right-click a square in the middle of the run and choose **Segment Length...** (or hover it and press Control+E).
 4. Type **4** and press OK.
-5. Add up the numbers on the run's squares.
+5. Add up the numbers on the run's PLAIN squares - not the sensors at its ends, which keep their own share from the walk.
 
 **Expected**
 
-- In step 3 the box opens on what the RUN measures, not on one square's share of it.
+- In step 3 the box opens on what the RUN measures - the plain squares between the two sensors, so less than the 7 you typed for the whole stretch.
 - After step 4 the run measures exactly 4: the square that speaks for the run holds 4 and the rest hold nothing.
 - Shift-clicking several squares and typing a number still gives that number to each of them.
 
@@ -23237,10 +23237,11 @@ From the 2026-09-19 review round (UIX-B1), fixed the same day.  The exit asked t
 
 **Expected**
 
-- Step 3 raises the route editor's own discard question, naming what it is about to lose.
+- Step 3 raises the route editor's own discard question - the same one its X and Escape raise.
 - No in step 4 leaves the application open with the route editor as it was.
 - Yes in step 5 exits, as before.
 - A route editor with nothing typed into it raises no question at all.
+- With the track diagram editor ALSO open and changed, its question comes first: answer that one, and the route editor's follows.
 
 *What this is:* review finding UIX-B1, fixed 2026-09-19 with a test seen failing first and a mutation for each half.
 
@@ -23299,7 +23300,7 @@ From the 2026-09-19 review round (RTX-B1), fixed the same day to your ruling *"t
 
 **Expected**
 
-- Step 3 produces a plan: the first train steps aside, the other comes home, and it then goes home itself.  It is never driven on out of a turn - the plan only turns such a train on the way into its own berth.
+- Step 3 produces a plan rather than *no plan found*, and it moves the train off the berth it was standing on.  Which squares it uses is the planner's choice; what matters is that the trains end up home.  It is never driven on out of a turn - the plan only turns such a train on the way into its own berth.
 - Step 4 moves the homeless train out of the way so the berth's owner can come home.
 - A train the PLAN turns still may only go home next, which is the rule this keeps.
 

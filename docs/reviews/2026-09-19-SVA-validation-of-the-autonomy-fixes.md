@@ -40,12 +40,12 @@ larger part of this document on purpose: it is the record of what was actually c
 
 | id | status | where |
 |---|---|---|
-| SVA-C1 | open | `AutonomySession.sharedSquaresALengthRuleReads` 3240-3241 - "two roads" is asked of the geometry and "two legs" of the count, never of the same square together: a defective switch (`CUSTOM_PERM_*`) or a two-road square whose one road lies in front of a switch is asked for as a crossing |
-| SVA-C2 | open | `AutonomySession.sharedSquaresALengthRuleReads` 3230-3233 - a crossing ONE leg runs over on both roads is deduplicated to one occurrence, stays in a piece, and the leg measures typed plus its share: the SET-B2 error in the shape the fix excludes |
-| SVA-C3 | open | `AutonomyEditorPanel.nameForPrompt`, `autosetup.ui.infoNothingToMeasure`, `autosetup.ui.tooltipShowUnmeasured` - the siblings of the crossing step that still know only sensors and switches |
-| SVA-C4 | open | `Layout.locDeleted` 1044 shipped with no test, and the rename half named in RTX-C3 is not fixed while the RTX table says "fixed" |
-| SVA-C5 | open | `core.testMassAssignLengths.testTheSingleDoorSpeaksForTheWholeRunAfterAWalk` 903 - a headless skip on a test that opens no dialog; on a headless run the SET-B3 guard vanishes and reads as green |
-| SVA-C6 | open | `AutonomyEditorPanel.clearAllMaxTrainLengths` 9720-9723 - the comment says `setupChanged` refreshes; it does not, and `clearAllHomes` 9750 keeps the extra `refresh()` the fix took out of its twin |
+| SVA-C1 | open - wording only | `AutonomySession.sharedSquaresALengthRuleReads` 3240-3241 - "two roads" is asked of the geometry and "two legs" of the count, never of the same square together: a defective switch (`CUSTOM_PERM_*`) or a two-road square whose one road lies in front of a switch is asked for as a crossing |
+| SVA-C2 | fixed - a leg crossing its own square twice counts | `AutonomySession.sharedSquaresALengthRuleReads` 3230-3233 - a crossing ONE leg runs over on both roads is deduplicated to one occurrence, stays in a piece, and the leg measures typed plus its share: the SET-B2 error in the shape the fix excludes |
+| SVA-C3 | fixed - the prompt and both sentences | `AutonomyEditorPanel.nameForPrompt`, `autosetup.ui.infoNothingToMeasure`, `autosetup.ui.tooltipShowUnmeasured` - the siblings of the crossing step that still know only sensors and switches |
+| SVA-C4 | fixed - renameLoc repairs it, with a test | `Layout.locDeleted` 1044 shipped with no test, and the rename half named in RTX-C3 is not fixed while the RTX table says "fixed" |
+| SVA-C5 | fixed - the skip is gone | `core.testMassAssignLengths.testTheSingleDoorSpeaksForTheWholeRunAfterAWalk` 903 - a headless skip on a test that opens no dialog; on a headless run the SET-B3 guard vanishes and reads as green |
+| SVA-C6 | fixed - the comment; clearAllHomes left as it is | `AutonomyEditorPanel.clearAllMaxTrainLengths` 9720-9723 - the comment says `setupChanged` refreshes; it does not, and `clearAllHomes` 9750 keeps the extra `refresh()` the fix took out of its twin |
 
 ### SVA-C1 - the crossing predicate asks two questions of two different things
 

@@ -27,7 +27,7 @@ None found.  Both B findings are about what the operator SEES and about a route 
 
 | | |
 |---|---|
-| **Disposition** | Open |
+| **Disposition** | Fixed 2026-09-19 - MT-464 |
 | **Introduced** | this delta - `5dc60db5` "Renaming or deleting a locomotive reaches everything that held it"; in 2.7.4c `deleteLoc` touched nothing but `locDB` and the id cache |
 
 **The code.**  `MarklinControlStation.deleteLoc` (`:3250-3318`) now walks every route and calls `r.locomotiveDeleted(name)` (`:3305`).  `Route.locomotiveDeleted` (`base/Route.java:194-199`) removes, through `Iterator.remove()`, every command in `this.route` that names the locomotive.  `MarklinRoute.execRoute` runs on a thread of its own (`MarklinRoute.java:585`, "Must be a thread for the UI to update correctly") and iterates `for (RouteCommand rc : this.route)` (`:684`) - the same live list, not a copy - sleeping `SLEEP_INTERVAL + max(delay, 150)` ms between commands (`:1035-1045`), so a route of a dozen commands is in that loop for seconds.  `hasEmergencyStop()` (`:402`) and the mid-route `askable` test (`:793`) walk the same list from the same thread.  Nothing in `Route` or `MarklinRoute` synchronises the list, and nothing in the model or the UI refuses a delete while a route is executing: `TrainControlUI.deleteLoc` (gui, about `:20962`) asks `isAutonomyRunning()` and nothing else, and a route runs by hand or by s88 trigger with autonomy idle.
@@ -51,7 +51,7 @@ None found.  Both B findings are about what the operator SEES and about a route 
 
 | | |
 |---|---|
-| **Disposition** | Open |
+| **Disposition** | Accepted 2026-09-19 - documented in behaviour.md 8 |
 | **Introduced** | before 2.7.4c (the type-mismatch re-creation is at `v2_7_4c:MarklinControlStation.java:332`); the extraction into `wireComponents` in this delta carried it unchanged.  Reported because it is live on Adam's railway, not because it is new. |
 | **behaviour.md** | disagrees with the code, and I believe the code is wrong - see below |
 
@@ -90,7 +90,7 @@ None found.  Both B findings are about what the operator SEES and about a route 
 
 | | |
 |---|---|
-| **Disposition** | Open - predates 2.7.4c (`v2_7_4c:MarklinControlStation.java:1249-1251` already trimmed the key); no fixture in the repository carries such a name, so this is a trap rather than a live defect |
+| **Disposition** | Fixed 2026-09-19 |
 
 `CS2File.parseRoutes` (`:882`) and `parseRoutesCS3` (`:1297`) build `new MarklinRoute(control, m.get("name"), id)` with the name exactly as the file has it; `Route`'s constructor stores it (`Route:34`).  `newRoute(MarklinRoute r)` (`:2043-2045`) checks and adds under `r.getName().trim()`.  Everything that later deletes goes through `deleteRoute(String)` (`:3471-3494`), which finds the route by whatever name it is handed and then deletes by `r.getName()` (`:3492`) - the raw one - so `RemoteDeviceCollection.delete` (`:166-179`) finds no such name and returns false, after the route has already been `disable()`d and stripped from the autonomy selection (`:3478-3490`).  The doors: the right-click Delete (`getRouteList()` at `:3608` hands the UI `getById(i).getName()`, raw); `changeRouteId` (`:3528`, then `add` at `:3531` puts the route into the database under BOTH ids); and the sync's own refresh, `:1478`, which means a station route whose commands changed can never be re-read.  The user-input `newRoute(String, ...)` (`:2211`) and the database-restore `newRoute(String, int, ...)` (`:2176`) both trim before the constructor, so only the two file parsers are the odd doors.
 
@@ -102,7 +102,7 @@ None found.  Both B findings are about what the operator SEES and about a route 
 
 | | |
 |---|---|
-| **Disposition** | Open - predates 2.7.4c (`newFeedback` is unchanged); reachable only through a sensor that autonomy references and no page draws |
+| **Disposition** | Fixed 2026-09-19 |
 
 `newFeedback` (`:2344-2352`) constructs the `MarklinFeedback` - whose constructor parses the message (`MarklinFeedback:38-41` -> `parseMessage` -> `Feedback._setState` -> `Locomotive.monitor.notifyAll()`, `Feedback:70-82`) - and only THEN `feedbackDB.add`s it.  A waiter in `Locomotive.waitForOccupiedFeedback` (`:789`) or `waitForClearFeedback` (`:889`) wakes on that notify, asks `isFeedbackSet(name)` -> `feedbackDB.hasName` -> false, and goes back to sleep.  The add happens after `updateTiles`, `feedbackChanged` and a `logf` - milliseconds, so the waiter almost always loses.  Nothing notifies again until the next `_setState` of ANY sensor.  The dispatch path polls every 5 s until its advisory has been given (`:807-814`), so a train is at worst 5 s late being seen; a route monitor thread ("Dummy Loc", untimed wait) stays parked until the next event anywhere.
 
@@ -114,7 +114,7 @@ None found.  Both B findings are about what the operator SEES and about a route 
 
 | | |
 |---|---|
-| **Disposition** | Open - trap; predates 2.7.4c |
+| **Disposition** | Fixed 2026-09-19 |
 
 `syncWithCS2` adds station locomotives through the five-argument `newLocomotive` (`:1534` -> `:3031-3039`), which - unlike the three-argument overload at `:3012-3022` - does not call `rebuildLocIdCache()`; the sync relies on the one call at `:1634`, which is after the `catch` at `:1626` returns -1.  So if anything in the locomotive loop throws after a locomotive has been added or re-addressed (`:1563-1568`), the cache stays stale, `receiveMessage`'s locomotive branch (`:2314-2316`) resolves the new UID to nothing, and every speed, direction and function echo for that locomotive is logged as "unknown locomotive" until the next add, rename, delete or successful sync.  I found no statement in that loop that a real file makes throw - `parseLocomotives` already catches per record - which is why this is a C.  Fix: rebuild in the five-argument overload as the three-argument one does, or move `:1634` into a `finally`.  Check by reading: the two overloads differ by that one line.
 

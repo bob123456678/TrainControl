@@ -875,14 +875,16 @@ are cut at it and it is asked for on its own, one length for all such squares on
 length to each road, which is the ruling.  A square whose geometry carries two roads but which only one leg runs over
 is ordinary track and stays in its piece.
 
-**The three bulk doors on Bulk Tools.**  **Mass Assign Lengths** (FR-089) walks the pieces of the page, then its
+**The four bulk doors on Bulk Tools.**  **Mass Assign Lengths** (FR-089) walks the pieces of the page, then its
 switches, then its crossings.  **Mass Assign Max Train Lengths** (FR-091; Adam, 2026-09-17: *"add a similar feature to
 walk stations that don't have a max length set up, so I can enter it"*) walks the stations on the page that will take
-a train of any length, row by row, and asks each one's maximum - 0 is refused there, because 0 IS "any length", and a
-negative is refused because the configuration will not load with one (SET-B1).  **Clear All Track Lengths** (FR-069)
+a train of any length, row by row, and asks each one's maximum - the walk refuses 0, because 0 IS "any length" and the station already has it.  A
+NEGATIVE is refused at the single door as well (SET-B1): `Layout.fromJSON` will not load a configuration
+carrying one, and the bulk clear counts any non-zero maximum so that one already stored can be taken off.  **Clear All Track Lengths** (FR-069)
 and **Clear All Max Train Lengths** (FR-092) each take their setting off every page after a confirmation that says how
-many.  All four walks share one prompt: the number box has the keyboard focus, Enter submits, Skip leaves the square
-as it was, Cancel or Escape stops, and the prompt opens where the last one was left until a new round is started.
+many.  The two WALKS - lengths and maxima - share one prompt: the number box has the keyboard focus, Enter submits,
+Skip leaves the square as it was, Cancel or Escape stops, and the prompt opens where the last one was left
+until a new round is started.  The two clears ask once, in a confirmation.
 
 **Segment Length speaks for the whole run** (SET-B3).  A run of plain track has one square that speaks for it, and
 that has to stay true now that Mass Assign Lengths shares a piece's length over every square it covers: the dialog
@@ -1737,8 +1739,10 @@ that the page says so itself, and that it will not be written over until the fil
   the page wired FIRST keeps a tile bound to the object the later page replaced: it stops following the
   railway and shows the position it had when its page was last wired. On Adam's layout that is address
   131, a turnout on 3 - Top Parking and a signal on 5 - Test. Nothing is commanded wrongly - every door
-  commands by address - and Adam's ruling is to leave it: *"Let's leave 5 as is and document the
-  limitation."* Changing a tile's type ON one page is a different thing and does update the database,
+  commands by address - but each wiring pass also re-creates the accessory twice and seeds its remembered state
+  from what the page file says, so after any diagram save the keyboard shows 131 as the file has it rather than
+  as the railway does, until the next echo.  Adam's ruling is to leave it: *"Let's leave 5 as is and document
+  the limitation."* Changing a tile's type ON one page is a different thing and does update the database,
   because that is the same re-creation seen from the other side; red is the turnout's turn and the
   signal's red, green is the opposite.
 

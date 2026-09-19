@@ -3424,6 +3424,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // rename changes the object, so there is nothing left to repair.  The setup keeps its
             // repair because a file has to hold a name.
             if (this.view != null) this.view.autonomyLocomotiveRenamed(name, newName);
+
+            // AND THE RUNNING LAYOUT'S RECORD OF WHERE IT WAS TURNED, which is keyed by name for the reason
+            // the setup is (RTX-C3, SVA-C4): a train turned on arrival and renamed before the window drained
+            // that record lost the turn, and kept the facing it drove in with.
+            if (this.hasAutoLayout()) this.getAutoLayout().locRenamed(name, newName);
             
             // Update names in routes
             for (MarklinRoute r : this.getRoutes())

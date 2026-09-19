@@ -323,11 +323,11 @@ CR-D6	2026-08-24-conversion-review.md	Closed	-
 CR-D7	2026-08-24-conversion-review.md	Closed	-
 CR-D8	2026-08-24-conversion-review.md	Closed	-
 CR-D9	2026-08-24-conversion-review.md	Closed	-
-CS3-B1	2026-09-19-CS3-control-station-and-model-review.md	-	Open
-CS3-B2	2026-09-19-CS3-control-station-and-model-review.md	-	Open
-CS3-C1	2026-09-19-CS3-control-station-and-model-review.md	-	Open - predates 2.7.4c (`v2_7_4c:MarklinControlStation.java:1249-1251` already trimmed the
-CS3-C2	2026-09-19-CS3-control-station-and-model-review.md	-	Open - predates 2.7.4c (`newFeedback` is unchanged); reachable only through a sensor that 
-CS3-C3	2026-09-19-CS3-control-station-and-model-review.md	-	Open - trap; predates 2.7.4c
+CS3-B1	2026-09-19-CS3-control-station-and-model-review.md	-	Fixed 2026-09-19 - MT-464
+CS3-B2	2026-09-19-CS3-control-station-and-model-review.md	-	Accepted 2026-09-19 - documented in behaviour.md 8
+CS3-C1	2026-09-19-CS3-control-station-and-model-review.md	-	Fixed 2026-09-19
+CS3-C2	2026-09-19-CS3-control-station-and-model-review.md	-	Fixed 2026-09-19
+CS3-C3	2026-09-19-CS3-control-station-and-model-review.md	-	Fixed 2026-09-19
 CS3-C4	2026-09-19-CS3-control-station-and-model-review.md	-	Open - trap; predates 2.7.4c (`v2_7_4c:MarklinRoute.java:299-306`)
 CS3-D1	2026-09-19-CS3-control-station-and-model-review.md	-	`Util.writeAtomically` / `saveState` / `restoreState` - the database-loss shapes
 CS3-D10	2026-09-19-CS3-control-station-and-model-review.md	-	`MarklinFeedback.parseMessage` calls into the view while holding the module's lock

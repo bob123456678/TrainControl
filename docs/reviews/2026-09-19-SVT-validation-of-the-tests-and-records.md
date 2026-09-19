@@ -20,9 +20,9 @@ None.  Nothing here is about the railway; the code changes themselves were read 
 
 | id | status | where |
 |---|---|---|
-| SVT-B1 | open | `testLayoutTiles.testTheExitKnowsTheRouteEditorHasUnsavedWork` - green with the UIX-B1 fix reverted; pins only the predicate the exit was refactored onto |
-| SVT-B2 | open | `LayoutLabel.isAccessoryHighlightOutstanding` never returns to false on its own, so `awaitHighlight` and the case-TWO precondition in `testTheFlashAndTheAccessoryHighlightDoNotUndoEachOther` cannot fail |
-| SVT-B3 | open | `testAdvancedRoutes.testARouteFinishesWhenItsLocomotiveIsDeletedMidRun` - a fixed 400 ms sleep must beat the route thread to its first command |
+| SVT-B1 | fixed - the exit's own decision is asked | `testLayoutTiles.testTheExitKnowsTheRouteEditorHasUnsavedWork` - green with the UIX-B1 fix reverted; pins only the predicate the exit was refactored onto |
+| SVT-B2 | fixed - the field is nulled and the wait is real | `LayoutLabel.isAccessoryHighlightOutstanding` never returns to false on its own, so `awaitHighlight` and the case-TWO precondition in `testTheFlashAndTheAccessoryHighlightDoNotUndoEachOther` cannot fail |
+| SVT-B3 | fixed - waits for the first command | `testAdvancedRoutes.testARouteFinishesWhenItsLocomotiveIsDeletedMidRun` - a fixed 400 ms sleep must beat the route thread to its first command |
 
 ### SVT-B1 - the exit test is green without the exit fix
 

@@ -9735,9 +9735,10 @@ public class AutonomyEditorPanel extends JPanel
 
         say(hint, I18n.f("autosetup.ui.infoMaxTrainLengthsCleared", cleared));
 
-        // ONE REDRAW, NOT THREE (SET-C3).  `setupChanged` refreshes, and `item()` refreshes again after the action,
-        // so the `refresh()` that stood here was a third full pass over the page for one press.  Its sibling
-        // `clearAllTileLengths` has never had one.
+        // ONE REDRAW, NOT TWO (SET-C3, corrected by SVA-C6).  `item()` refreshes after every action it runs, so
+        // the `refresh()` that stood here was a second full pass over the page for one press; `setupChanged`
+        // rebuilds the RUNNING layout and does not redraw this panel.  Its sibling `clearAllTileLengths` has
+        // never had the extra one.
         //
         // The maximum is read by the RUNNING layout's Points, so it is told - what `promptNumber` does for one.
         setupChanged();

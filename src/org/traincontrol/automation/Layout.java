@@ -3189,6 +3189,37 @@ public class Layout
     }
     
     /**
+     * Follows a rename in the record of which train the railway turned where (RTX-C3, SVA-C4).
+     *
+     * `reversedOnArrival` is keyed by NAME - it has to be, because what it feeds is a facing written into the
+     * setup, and a file holds a name.  Every other thing a rename has to repair is repaired by `renameLoc`,
+     * which says so at length; this one was missed, so a train turned on arrival and renamed before the window
+     * next drained the record lost its turn and kept the facing it drove in with.  Deleting a locomotive clears
+     * its entry, which is the same rule one door along.
+     *
+     * @param from the name it had
+     * @param to the name it has
+     */
+    public void locRenamed(String from, String to)
+    {
+        if (from == null || to == null) return;
+
+        String turnedAt = this.reversedOnArrival.remove(from);
+
+        if (turnedAt != null) this.reversedOnArrival.put(to, turnedAt);
+    }
+
+    /**
+     * What the record holds for this train, for the test that pins the two repairs above (RTX-C3).
+     *
+     * @param name the locomotive
+     * @return the square it was turned at, or null
+     */
+    public String turnedOnArrivalAt(String name)
+    {
+        return name == null ? null : this.reversedOnArrival.get(name);
+    }
+    /**
      * The locomotives turned round at their destination since this was last asked, and forgets them.
      *
      * Each name against the Point it was standing on when the turn happened, which is what makes the

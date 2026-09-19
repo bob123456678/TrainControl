@@ -31,7 +31,7 @@ Nothing reached A. The shapes looked for hardest: a fix that sends a wrong comma
 
 | id | status | where |
 |---|---|---|
-| SVB-B1 | open | `LayoutLabel.setImageOnEDT`, `LayoutLabel.java:995-1028`: `discardFlash()` sits inside the accessory-highlight branch, whose condition (`:1016`) excludes the two paths that also replace the picture under a flash |
+| SVB-B1 | fixed - every replacement gives up a flash | `LayoutLabel.setImageOnEDT`, `LayoutLabel.java:995-1028`: `discardFlash()` sits inside the accessory-highlight branch, whose condition (`:1016`) excludes the two paths that also replace the picture under a flash |
 
 ### SVB-B1: UIX-B2 is fixed on the path the test exercises and not on the two others that replace a flashed tile's picture
 
@@ -65,12 +65,12 @@ The picture itself is replaced earlier and unconditionally: `lastIcon = new Imag
 
 | id | status | where |
 |---|---|---|
-| SVB-C1 | open | `LayoutLabel.java:1033-1050`: the accessory highlight's timer never clears `accessoryHighlight`, so `isAccessoryHighlightOutstanding()` is true for ever after the first highlight |
-| SVB-C2 | open | `TrainControlUI.checkForRenameMenuItemActionPerformed`, `:26580-26700`: the fourth rename door has no `refuseWhileARouteDrivesIt` |
-| SVB-C3 | open | `MarklinRoute.java:303-316`, `MarklinSimpleComponent.java:90`, `TrainControlUI.java:21956-21957`: "every walk takes a copy" is wider than the code, and the copy itself is not atomic |
-| SVB-C4 | open | three insertions anchored at the declaration orphaned a neighbour's javadoc or put one where javadoc will not read it: `RouteEditorFrame.java:440-466`, `TrainControlUI.java:5940-5980`, `MarklinRoute.java:303-316` |
-| SVB-C5 | open | `TrainControlUI.java:604-606`: the javadoc names a test that does not exist |
-| SVB-C6 | open | `behaviour.md:1735-1743`: the CS3-B2 paragraph records the display half of the limitation and not the state half |
+| SVB-C1 | fixed - the timer nulls its field | `LayoutLabel.java:1033-1050`: the accessory highlight's timer never clears `accessoryHighlight`, so `isAccessoryHighlightOutstanding()` is true for ever after the first highlight |
+| SVB-C2 | fixed - the proposal door refuses too | `TrainControlUI.checkForRenameMenuItemActionPerformed`, `:26580-26700`: the fourth rename door has no `refuseWhileARouteDrivesIt` |
+| SVB-C3 | open - a lock, not a copy | `MarklinRoute.java:303-316`, `MarklinSimpleComponent.java:90`, `TrainControlUI.java:21956-21957`: "every walk takes a copy" is wider than the code, and the copy itself is not atomic |
+| SVB-C4 | fixed - the three javadocs reattached | three insertions anchored at the declaration orphaned a neighbour's javadoc or put one where javadoc will not read it: `RouteEditorFrame.java:440-466`, `TrainControlUI.java:5940-5980`, `MarklinRoute.java:303-316` |
+| SVB-C5 | fixed - the javadoc names the test that exists | `TrainControlUI.java:604-606`: the javadoc names a test that does not exist |
+| SVB-C6 | fixed - behaviour.md says the state half too | `behaviour.md:1735-1743`: the CS3-B2 paragraph records the display half of the limitation and not the state half |
 
 ### SVB-C1: the accessory-highlight predicate is stale after its timer fires
 
