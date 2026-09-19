@@ -598,6 +598,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private RouteEditorFrame routeEditor;
 
+    /**
+     * Whether an open route editor is holding work the exit would throw away (UIX-B1).
+     *
+     * The exit asks `maySettleBeforeExit`, which is modal and so cannot be asked by a test; this is the same
+     * question without the dialog, and `regression.testTheExitAsksTheRouteEditor` uses it on both sides of a typed
+     * change.
+     *
+     * @return true when the route editor is open and has unsaved work
+     */
+    public boolean routeEditorHasUnsavedWork()
+    {
+        return routeEditor != null && routeEditor.isDisplayable() && routeEditor.hasUnsavedWork();
+    }
+
     // Popup references
     private List<LayoutPopupUI> popups = new ArrayList<>();
     
@@ -19135,6 +19149,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Cancel here cancels the exit, which is what DO_NOTHING_ON_CLOSE makes possible: returning
         // from this handler leaves the window open.
         if (openEditor != null && openEditor.isDisplayable() && !openEditor.maySettleBeforeExit())
+        {
+            return;
+        }
+
+        // AND THE ROUTE EDITOR, which is the other window holding unsaved typing (UIX-B1).
+        //
+        // It is a non-modal frame with its own discard question on its X and on Escape, and this handler never
+        // consulted it - so File > Exit and the main window's X disposed it with the process and threw away whatever
+        // had been typed into it, with no dialog at all.  OB-070's sentence, on the sibling window.
+        if (routeEditor != null && routeEditor.isDisplayable() && !routeEditor.maySettleBeforeExit())
         {
             return;
         }

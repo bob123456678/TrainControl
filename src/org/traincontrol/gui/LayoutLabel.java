@@ -1019,9 +1019,18 @@ public final class LayoutLabel extends JLabel
                             // fires there too.  The overlay and the restore used to be applied from a
                             // raw thread, mutating a Swing component off the EDT - the one place in this
                             // class that did not marshal its work.
+                            // A FLASH THAT IS UP IS GIVEN UP, NOT RESTORED OVER THIS (UIX-B2).
+                            //
+                            // The route editor's Highlight on Diagram holds a five-second flash whose timer puts
+                            // back the icon it captured when it started - the position this switch was in BEFORE it
+                            // was thrown.  Left running, it fired after this highlight had finished and drew the
+                            // tile in the old position, where it stayed until that accessory changed again.  What is
+                            // on the tile now is the truth, so the flash is dropped rather than allowed to undo it.
+                            discardFlash();
+
                             this.setIcon(ImageUtil.addHighlightOverlay((ImageIcon) this.getIcon()));
 
-                            javax.swing.Timer restore = new javax.swing.Timer(HIGHLIGHT_DURATION, (restoreEvent) ->
+                            accessoryHighlight = new javax.swing.Timer(HIGHLIGHT_DURATION, (restoreEvent) ->
                             {
                                 if ((System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
                                 {
@@ -1040,8 +1049,8 @@ public final class LayoutLabel extends JLabel
                                 }
                             });
 
-                            restore.setRepeats(false);
-                            restore.start();
+                            accessoryHighlight.setRepeats(false);
+                            accessoryHighlight.start();
                         }
                         
                         // Show a tooltip in the UI
@@ -1132,6 +1141,11 @@ public final class LayoutLabel extends JLabel
         // meant a second flash arriving before the first had finished recorded the already-highlighted
         // icon as the thing to restore - so the tile was put back yellow and stayed that way, which is
         // exactly what repeated clicking on one run produced.
+        // AND AN ACCESSORY HIGHLIGHT THAT IS UP IS ENDED FIRST (UIX-B2), so what this captures to put back is the
+        // tile's own picture rather than a yellow-washed copy of it - which is what the other order produced: the
+        // flash restored the washed icon and the tile stayed yellow until that accessory changed again.
+        endAccessoryHighlight();
+
         if (flashTimer != null && flashTimer.isRunning())
         {
             flashTimer.stop();
@@ -1158,6 +1172,62 @@ public final class LayoutLabel extends JLabel
     // The icon to put back when the flash ends, and the timer that will do it
     private Icon flashRestore;
     private javax.swing.Timer flashTimer;
+
+    /** The accessory highlight's own timer, so it can be ended rather than left to fire later (UIX-B2). */
+    private javax.swing.Timer accessoryHighlight;
+
+    /**
+     * Whether a flash is outstanding on this tile - a restore that will put back the picture it captured.
+     *
+     * For `core.testLayoutTiles.testTheFlashAndTheAccessoryHighlightDoNotUndoEachOther`, which asks what is left
+     * outstanding rather than what is drawn: the picture is made on a worker and set through `invokeLater`, so which
+     * icon is showing at a given instant is not a thing a test can pin, and which restore is still armed is.
+     *
+     * @return true while a flash will still be put back
+     */
+    public boolean isFlashOutstanding()
+    {
+        return flashTimer != null;
+    }
+
+    /**
+     * Whether an accessory highlight is outstanding on this tile (UIX-B2).
+     *
+     * @return true while the yellow wash of a state change will still be taken off by its own timer
+     */
+    public boolean isAccessoryHighlightOutstanding()
+    {
+        return accessoryHighlight != null;
+    }
+
+    /**
+     * Ends an accessory highlight at once, putting back the picture it was laid over (UIX-B2).
+     *
+     * A no-op when none is up.  Public for the test that drives the two highlights against each other.
+     */
+    public void endAccessoryHighlight()
+    {
+        if (accessoryHighlight == null) return;
+
+        accessoryHighlight.stop();
+
+        if (lastIcon != null) this.setIcon(lastIcon);
+
+        accessoryHighlight = null;
+    }
+
+    /**
+     * Gives up a flash without putting its picture back (UIX-B2), because something truer has just been drawn.
+     */
+    private void discardFlash()
+    {
+        if (flashTimer == null) return;
+
+        flashTimer.stop();
+
+        flashRestore = null;
+        flashTimer = null;
+    }
 
     /**
      * Ends a flash now, rather than when its timer runs out.

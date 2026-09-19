@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.JPanel;
+import javax.swing.Icon;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
@@ -21,6 +22,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.gui.LayoutLabel;
+import org.traincontrol.gui.RouteEditorFrame;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
@@ -199,6 +201,222 @@ public class testLayoutTiles
 
         assertNull(captured.get(),
             "concurrent updateTiles()/addTile() must not fail - " + captured.get());
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // UIX-B1 and UIX-B2, the 2026-09-19 review round
+    // ------------------------------------------------------------------------------------------------
+
+    /**
+     * The two highlights do not put each other's stale picture back (UIX-B2).
+     *
+     * A tile has two independent "restore the icon later" timers over it: the accessory highlight in `setImage`,
+     * 2.25 seconds when a switch or signal changes from anywhere but a click here, and the flash the route editor's
+     * *Highlight on Diagram* starts for five seconds.  Each captured whatever icon it found and set it back when it
+     * fired, so whichever fired last won - and a switch thrown during a flash ended up drawn in the position it had
+     * BEFORE it was thrown, staying that way until that accessory changed again.
+     *
+     * Both orders are asked, because each one is a separate restore and the fix is a separate line.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheFlashAndTheAccessoryHighlightDoNotUndoEachOther() throws Exception
+    {
+        // WHAT IS ASKED IS WHICH RESTORE IS STILL ARMED, not which picture is showing.  A tile's image is made on a
+        // worker and set through invokeLater, so the icon at a given instant on a bare label is not something to pin;
+        // what goes wrong is a timer left holding a picture that has since been overtaken, and that is what is here.
+
+        // ONE: the flash is up and the accessory changes.  The flash holds the position the switch was in BEFORE it
+        // was thrown, so it must be given up rather than allowed to restore over the new picture.
+        LayoutLabel label = warmedSignalLabel();
+
+        SwingUtilities.invokeAndWait(() -> label.flashHighlight());
+
+        assertTrue(label.isFlashOutstanding(), "precondition: the flash did not start");
+
+        SwingUtilities.invokeAndWait(() -> label.updateImage(true));
+
+        // THE HIGHLIGHT IS LAID ON IN A LATER PASS: setImage queues its work with invokeLater, so the call above has
+        // only queued it.
+        assertTrue(awaitHighlight(label),
+            "precondition: the accessory change did not highlight the tile, so nothing below is tested");
+
+        assertFalse(label.isFlashOutstanding(),
+            "the flash is still armed after the accessory changed, so it will draw the switch in the position it was"
+            + " in before it was thrown - and leave it that way until that accessory changes again");
+
+        // TWO: the accessory highlight is up and a flash starts.  The flash must capture the tile's own picture, not
+        // the yellow-washed copy of it - so the highlight is ended first and only one restore is ever outstanding.
+        LayoutLabel second = warmedSignalLabel();
+
+        SwingUtilities.invokeAndWait(() -> second.updateImage(true));
+
+        assertTrue(awaitHighlight(second), "precondition: the accessory highlight never went up");
+
+        SwingUtilities.invokeAndWait(() -> second.flashHighlight());
+
+        assertTrue(second.isFlashOutstanding(), "precondition: the flash did not start");
+
+        assertFalse(second.isAccessoryHighlightOutstanding(),
+            "the accessory highlight is still armed under the flash, so the flash captured the washed picture and"
+            + " will put it back - the tile stays yellow until that accessory changes again");
+
+        SwingUtilities.invokeAndWait(() -> second.endFlash());
+    }
+
+    /**
+     * Waits for an accessory highlight to go up, which happens a pass or two after `updateImage` is called.
+     *
+     * @param label the label
+     * @return whether it went up
+     * @throws Exception while waiting
+     */
+    private static boolean awaitHighlight(LayoutLabel label) throws Exception
+    {
+        long deadline = System.currentTimeMillis() + 5000;
+
+        while (!label.isAccessoryHighlightOutstanding() && System.currentTimeMillis() < deadline)
+        {
+            Thread.sleep(20);
+        }
+
+        return label.isAccessoryHighlightOutstanding();
+    }
+
+    /**
+     * A drawn signal tile whose picture has settled: its image loaded, one highlight run and expired.
+     *
+     * **The first highlight on a fresh label is not the one to measure.**  The picture is made on a worker and set
+     * through `invokeLater`, so the overlay and the image can land in either order while a label is new - which is
+     * not what happens on a drawn diagram, where the image is already there and the switch changing is one event.
+     * One highlight is run and waited out, so what follows is the ordinary case.
+     *
+     * @return the label
+     * @throws Exception from the event thread
+     */
+    private static LayoutLabel warmedSignalLabel() throws Exception
+    {
+        LayoutLabel label = drawnSignalLabel();
+
+        SwingUtilities.invokeAndWait(() -> label.updateImage(true));
+
+        // The highlight is 2250 ms, and its restore is a Swing Timer.
+        Thread.sleep(2600);
+
+        SwingUtilities.invokeAndWait(() -> { });
+
+        return label;
+    }
+
+    /**
+     * Waits for the label's icon to stop being the one it was, because the picture arrives on a worker.
+     *
+     * @param label the label
+     * @param previous what it was showing
+     * @return what it is showing now
+     * @throws Exception while waiting
+     */
+    private static Icon awaitIconChange(LayoutLabel label, Icon previous) throws Exception
+    {
+        long deadline = System.currentTimeMillis() + 10000;
+
+        while (label.getIcon() == previous && System.currentTimeMillis() < deadline)
+        {
+            Thread.sleep(20);
+        }
+
+        return label.getIcon();
+    }
+
+    /**
+     * A signal tile with its picture loaded, on a label that is not an editor's.
+     *
+     * The highlight branch in `setImage` requires `isSignal()` or `isSwitch()`, `edit == false`, and an icon already
+     * set - the constructor loads it asynchronously, so it is waited for.
+     *
+     * @return the label
+     * @throws Exception from the event thread
+     */
+    private static LayoutLabel drawnSignalLabel() throws Exception
+    {
+        final LayoutDiagramComponent component = new LayoutDiagramComponent(
+            LayoutDiagramComponent.componentType.SIGNAL, 0, 0, 0, 0, 5, 10, MM2);
+
+        final JPanel parent = new JPanel();
+        final AtomicReference<LayoutLabel> ref = new AtomicReference<>();
+
+        SwingUtilities.invokeAndWait(() -> ref.set(new LayoutLabel(component, parent, 30, ui, false)));
+
+        LayoutLabel label = ref.get();
+
+        long deadline = System.currentTimeMillis() + 10000;
+
+        while (label.getIcon() == null && System.currentTimeMillis() < deadline)
+        {
+            Thread.sleep(20);
+        }
+
+        assertNotNull(label.getIcon(), "the tile's initial icon should have loaded");
+
+        return label;
+    }
+
+    /**
+     * The application's exit knows when the route editor is holding unsaved typing (UIX-B1).
+     *
+     * `WindowClosed` asks the open layout editor whether it may settle (OB-070) and never asked the route editor, so
+     * File > Exit and the main window's X disposed it with the process and took whatever had been typed with them -
+     * silently, because that window's own discard question lives on its X and on Escape.
+     *
+     * The exit's own question is modal and cannot be answered by a test; what is asked here is the predicate it is
+     * built on, on both sides of a typed change, plus that the exit consults the same field the door fills in.  The
+     * dialog itself is MT-458.
+     *
+     * Here rather than in a class of its own because it needs exactly what this one already opens: the real main
+     * window, on a sandbox.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheExitKnowsTheRouteEditorHasUnsavedWork() throws Exception
+    {
+        assertFalse(ui.routeEditorHasUnsavedWork(), "precondition: something is already holding unsaved work");
+
+        final AtomicReference<RouteEditorFrame> ref = new AtomicReference<>();
+
+        SwingUtilities.invokeAndWait(() -> ref.set(new RouteEditorFrame(ui, null, null)));
+
+        final RouteEditorFrame editor = ref.get();
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() -> editor.setVisible(true));
+
+            java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("routeEditor");
+            field.setAccessible(true);
+            field.set(ui, editor);
+
+            assertFalse(editor.hasUnsavedWork(), "a window nobody has typed into has nothing to lose");
+            assertFalse(ui.routeEditorHasUnsavedWork(), "the exit thinks an untouched route editor has work to lose");
+
+            // WHAT TYPING LOOKS LIKE from outside: the capture door appends a command row, which is one of the six
+            // things `stateSignature` covers.
+            SwingUtilities.invokeAndWait(() -> editor.appendCommand("Switch 90,turn"));
+
+            assertTrue(editor.hasUnsavedWork(), "a command typed into the route editor is not counted as unsaved work");
+
+            assertTrue(ui.routeEditorHasUnsavedWork(),
+                "the exit does not know the route editor is holding unsaved work, so it exits without asking");
+        }
+        finally
+        {
+            java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("routeEditor");
+            field.setAccessible(true);
+            field.set(ui, null);
+
+            SwingUtilities.invokeAndWait(() -> editor.dispose());
+        }
     }
 
     // ------------------------------------------------------------------------------------------------

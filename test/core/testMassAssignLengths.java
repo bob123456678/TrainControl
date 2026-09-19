@@ -789,6 +789,44 @@ public class testMassAssignLengths
     }
 
     /**
+     * A crossing only one road runs over is ordinary track, and stays inside its piece.
+     *
+     * Both halves of the rule are needed: the geometry says the square carries two roads, and the legs say more than
+     * one of them is used.  Without the second half every square in front of a switch qualifies - each leg through
+     * the points runs over it - and the pieces would be cut to bits; without the first, a crossing whose other road
+     * is bare track nobody can reach becomes a prompt of its own.
+     */
+    @Test
+    public void testACrossingOnlyOneRoadUsesStaysOrdinaryTrack() throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 9, 6, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.CROSSING, 3, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 4, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 5, 2, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("Lengths");
+        session.rebuild();
+
+        assertTrue(session.getRoutes(key(3, 2)).size() > 1,
+            "precondition: this square does not carry two roads, so it cannot show what the second half of the rule"
+            + " is for");
+
+        assertTrue(session.sharedSquaresALengthRuleReads().isEmpty(),
+            "a crossing with track on one road only is asked for on its own, although it is ordinary track there");
+
+        List<AutonomySession.Stretch> pieces = session.stretchesNeedingALength();
+
+        assertEquals(pieces.size(), 1, "the one road was cut into pieces: " + describe(pieces));
+        assertTrue(pieces.get(0).getTiles().contains(key(3, 2)), "the crossing is not in the piece it belongs to");
+    }
+
+    /**
      * 1,2 - 2,2 - CROSSING 3,2 - 4,2 - 5,2 east to west, and 3,0 - 3,1 - the crossing - 3,3 - 3,4 north to south,
      * each road running between two sensors.  Both roads carry track, so the crossing is a square two legs run over.
      */

@@ -449,9 +449,47 @@ public class RouteEditorFrame extends JFrame
      * been missed, and a prompt that does not appear is worse than none - it teaches the user that
      * closing is safe.
      */
+    /**
+     * Whether closing this window now would throw away work (UIX-B1).
+     *
+     * The question `closeIfThrowingNothingAway` asks, on its own and without a dialog, so that the exit can ask it
+     * too and a test can ask it at all.  Compared against what was loaded rather than against a flag, for the reason
+     * the close gives: a flag has to be set by every path that changes anything, and there are six here.
+     *
+     * @return true when something typed here is not saved
+     */
+    public boolean hasUnsavedWork()
+    {
+        return !locked && !stateSignature().equals(loadedSignature);
+    }
+
+    /**
+     * Asked by the application's exit, which is a door out of this window too (UIX-B1).
+     *
+     * The layout editor has had `maySettleBeforeExit` since OB-070 - *"one save/discard/cancel question, asked
+     * wherever a page is left"* - and this window, which is the other one holding unsaved typing, was not asked at
+     * all: File > Exit and the main window's X disposed it with the process and took the typing with them, silently.
+     * The same question the X and Escape ask, with the same two buttons; answering No leaves the application open,
+     * because the exit handler returns when this says no.
+     *
+     * @return true when the exit may carry on
+     */
+    public boolean maySettleBeforeExit()
+    {
+        if (!hasUnsavedWork()) return true;
+
+        toFront();
+
+        return JOptionPane.showOptionDialog(this,
+            I18n.t("route.ui.confirmDiscardChanges"),
+            I18n.t("route.ui.titleDiscardChanges"),
+            JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) == 0;
+    }
+
     private void closeIfThrowingNothingAway()
     {
-        if (locked || stateSignature().equals(loadedSignature))
+        if (!hasUnsavedWork())
         {
             dispose();
             return;
