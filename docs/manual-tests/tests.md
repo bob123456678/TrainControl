@@ -23267,11 +23267,15 @@ From the 2026-09-19 review round (UIX-B2), fixed the same day.  **Highlight on D
 3. Wait for both highlights to fade, and look at the tile.
 4. Now throw the turnout first, and press **Highlight on Diagram** within about two seconds.
 5. Wait for the highlights to fade, and look again.
+6. Press **Highlight on Diagram** again and, while the tiles are yellow, CLICK one of the highlighted turnouts on the diagram.
+7. Press it once more and, while the tiles are yellow, let a train run over one of the highlighted sensors.
 
 **Expected**
 
 - In step 3 the tile shows the turnout's real position.
 - In step 5 the tile shows the turnout's real position and is not left washed yellow.
+- In step 6 the turnout you clicked ends up drawn in the position you put it in, not the one it was in when the highlight began.
+- In step 7 the sensor shows the train, and does not go back to showing clear track when the highlight ends.
 - Route highlights still light every tile of the route, and accessory changes still flash.
 
 *What this is:* review finding UIX-B2, fixed 2026-09-19 with a test seen failing first and a mutation for each half.

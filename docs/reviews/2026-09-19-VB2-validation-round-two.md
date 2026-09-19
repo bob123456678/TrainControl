@@ -29,9 +29,9 @@ Nothing reached A. The shapes looked for: a command sent wrongly (no fix here to
 
 | id | status | where |
 |---|---|---|
-| VB2-B1 | open | `TrainControlUI.WindowClosed` `:19207-19217` asks the layout editor twice: its own block at `:19207` and again inside `everyOpenWindowMaySettle()` at `:19217`. In track mode every exit with a dirty diagram editor raises the Save/Discard/Cancel question twice, and Discard-then-Save saves what was discarded |
-| VB2-B2 | open | `testLayoutTiles.testAnyReplacedPictureGivesUpAnOutstandingFlash` `:282-320` never replaces the picture: the sensor has no feedback bound, so `updateImage(false)` returns at `:1878`, and the assertion is met by the flash's own 2250 ms timer inside the 5000 ms poll. Green with the SVB-B1 fix reverted; MT-462 has no step for either path either |
-| VB2-B3 | open | SVA-C2 shipped with no test at all (`test/` in `2a36ade7` touches nothing for it), the entry's probe over the live snapshot was not run, and the reducer does emit the shape (`GraphReducer.continueWalk` `:1101` keys `visited` by tile AND entry side), so the change is live and unguarded |
+| VB2-B1 | fixed - the exit asks once, with a runtime claim | `TrainControlUI.WindowClosed` `:19207-19217` asks the layout editor twice: its own block at `:19207` and again inside `everyOpenWindowMaySettle()` at `:19217`. In track mode every exit with a dirty diagram editor raises the Save/Discard/Cancel question twice, and Discard-then-Save saves what was discarded |
+| VB2-B2 | fixed - the test forces the redraw | `testLayoutTiles.testAnyReplacedPictureGivesUpAnOutstandingFlash` `:282-320` never replaces the picture: the sensor has no feedback bound, so `updateImage(false)` returns at `:1878`, and the assertion is met by the flash's own 2250 ms timer inside the 5000 ms poll. Green with the SVB-B1 fix reverted; MT-462 has no step for either path either |
+| VB2-B3 | fixed - the figure-of-eight claim | SVA-C2 shipped with no test at all (`test/` in `2a36ade7` touches nothing for it), the entry's probe over the live snapshot was not run, and the reducer does emit the shape (`GraphReducer.continueWalk` `:1101` keys `visited` by tile AND entry side), so the change is live and unguarded |
 
 ### VB2-B1 - the exit asks the layout editor twice
 
@@ -86,12 +86,12 @@ The test then polls up to 5000 ms (`:310-315`) for `isFlashOutstanding()` to go 
 
 | id | status | where |
 |---|---|---|
-| VB2-C1 | open | SVB-C4's status says "fixed - the three javadocs reattached"; the third, `MarklinRoute.java:305-320` (the CS3-B1 paragraph between `@Override` and `execRoute`), is untouched by either commit |
-| VB2-C2 | open | SVB-C5's fix (`TrainControlUI.java:629`) names `core.testLayoutTiles.testTheExitKnowsTheRouteEditorHasUnsavedWork`, which the same commit renamed to `testTheExitAsksEveryOpenWindow` (`testLayoutTiles.java:448`) |
-| VB2-C3 | open | `testHomeStaging.testTheTurnRecordFollowsARenameAndGoesWithADelete` `:6229-6255` calls `layout.locRenamed` and `layout.locDeleted` directly; the door at `MarklinControlStation.java:3431` is unpinned, and `model.renameLoc` is one line away in the same fixture |
-| VB2-C4 | open | `LayoutLabel.java:1054`: the timer nulls `accessoryHighlight` whether or not it is still the timer the field holds - a second state change inside 2250 ms (a three-way's two drives on one tile) leaves a restore armed while the predicate says none is |
-| VB2-C5 | open | The SVT status table (`SVT-*.md:58-72`) still says "open" for C2, C4, C6, C8, C9, C10, C11 and C12, all of which `2a36ade7`/`9cdfb0c0` addressed; C5 is half done (the proposal door, not `syncWithCS2`); C7's second status location was updated rather than removed |
-| VB2-C6 | open | `TrainControlUI.java:26683-26697`: the SVB-C2 refusal is on `currentName` only; when the proposed name already exists and a route drives THAT locomotive, `deleteLoc(newName)` refuses about the other locomotive and the proposal is skipped silently, which SVB-C2's own text described and the row marked "fixed" leaves |
+| VB2-C1 | fixed - SVB-C4 swept the fourth javadoc too | SVB-C4's status says "fixed - the three javadocs reattached"; the third, `MarklinRoute.java:305-320` (the CS3-B1 paragraph between `@Override` and `execRoute`), is untouched by either commit |
+| VB2-C2 | fixed - the javadoc names the test that exists | SVB-C5's fix (`TrainControlUI.java:629`) names `core.testLayoutTiles.testTheExitKnowsTheRouteEditorHasUnsavedWork`, which the same commit renamed to `testTheExitAsksEveryOpenWindow` (`testLayoutTiles.java:448`) |
+| VB2-C3 | open - the call site is pinned by the exit claim, not this one | `testHomeStaging.testTheTurnRecordFollowsARenameAndGoesWithADelete` `:6229-6255` calls `layout.locRenamed` and `layout.locDeleted` directly; the door at `MarklinControlStation.java:3431` is unpinned, and `model.renameLoc` is one line away in the same fixture |
+| VB2-C4 | fixed - the timer is stopped and only clears its own field | `LayoutLabel.java:1054`: the timer nulls `accessoryHighlight` whether or not it is still the timer the field holds - a second state change inside 2250 ms (a three-way's two drives on one tile) leaves a restore armed while the predicate says none is |
+| VB2-C5 | fixed - the tables say what was fixed | The SVT status table (`SVT-*.md:58-72`) still says "open" for C2, C4, C6, C8, C9, C10, C11 and C12, all of which `2a36ade7`/`9cdfb0c0` addressed; C5 is half done (the proposal door, not `syncWithCS2`); C7's second status location was updated rather than removed |
+| VB2-C6 | open - the proposal door refuses about the locomotive being renamed only | `TrainControlUI.java:26683-26697`: the SVB-C2 refusal is on `currentName` only; when the proposed name already exists and a route drives THAT locomotive, `deleteLoc(newName)` refuses about the other locomotive and the proposal is skipped silently, which SVB-C2's own text described and the row marked "fixed" leaves |
 
 ### VB2-C1 - the third orphan of SVB-C4 is still there
 
