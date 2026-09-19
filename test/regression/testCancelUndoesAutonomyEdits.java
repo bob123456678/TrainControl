@@ -428,6 +428,76 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
+     * The exit asks each open window ONCE (VC2-B1).
+     *
+     * `WindowClosed` asked the track diagram editor whether it might settle (OB-070), and when the route editor's
+     * question was added beside it the original call was left in place - so a page with unsaved work was asked
+     * twice, and `settleUnsavedWork` decides from `canUndo()`, which a Save does not clear: Discard and then Save
+     * wrote the discarded work to disk on the way out.
+     *
+     * Asked of the decision the exit makes - `everyOpenWindowMaySettle`, which is `WindowClosed` up to the point it
+     * saves anything - by counting the dialogs it raises.  A source-shape rule cannot see this: putting the deleted
+     * block back leaves every such rule green, which is what made a runtime claim worth its length here.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheExitAsksOneQuestionPerEditor() throws Exception
+    {
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        final LayoutEditor editor = opened();
+
+        java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
+        open.setAccessible(true);
+
+        Object was = open.get(ui);
+
+        Answerer answerer = null;
+
+        try
+        {
+            open.set(ui, editor);
+
+            java.util.Map<String, String> before = directions(session);
+
+            click(editor, aSquareWithOneRoute());
+
+            // THE PRECONDITION IS THE EDIT, not `canUndo()`, which is the TRACK-mode undo: in autonomy mode
+            // the editor is asked on the strength of the autonomy snapshot it took when it opened.
+            assertNotEquals(directions(session), before,
+                "precondition: the click changed no arrow, so the exit has nothing to ask about");
+
+            answerer = Answerer.start(org.traincontrol.util.I18n.t("layout.ui.switchDiscard"));
+
+            final boolean[] mayExit = new boolean[1];
+
+            SwingUtilities.invokeAndWait(() -> mayExit[0] = ui.everyOpenWindowMaySettle());
+
+            settle();
+
+            int asked = answerer.answered(true);
+
+            answerer.stop();
+
+            assertTrue(mayExit[0], "precondition: Discard did not let the exit go ahead");
+
+            assertEquals(asked, 1,
+                "the exit asked " + asked + " questions about one page of unsaved work.  None means it stopped"
+                + " asking at all (OB-070); two means the editor is asked twice, and a Discard followed by a"
+                + " Save then writes the discarded work to disk on the way out (VB2-B1)");
+        }
+        finally
+        {
+            open.set(ui, was);
+
+            if (answerer != null) answerer.stop();
+
+            session.restoreSetup(asFound);
+        }
+    }
+
+    /**
      * And an arrow changed in the editor is put back by Discard on the way out - the control for the claim above.
      *
      * The validator named point settings beside placements; run on 2026-09-14 this was green BEFORE the fix, so
@@ -945,6 +1015,8 @@ public class testCancelUndoesAutonomyEdits
         private final String label;
         private volatile boolean running = true;
         private volatile boolean answered = false;
+        private volatile int answers = 0;
+        private volatile Window lastAnswered;
         private final Thread thread;
 
         private Answerer(String label)
@@ -967,6 +1039,17 @@ public class testCancelUndoesAutonomyEdits
         boolean answered()
         {
             return answered;
+        }
+
+        /**
+         * How many dialogs this answerer has pressed a button on (VC2-B1).
+         *
+         * @param count unused, and there to keep the boolean overload above for its callers
+         * @return the count
+         */
+        int answered(boolean count)
+        {
+            return answers;
         }
 
         void stop() throws InterruptedException
@@ -992,6 +1075,15 @@ public class testCancelUndoesAutonomyEdits
                     if (button == null) continue;
 
                     answered = true;
+
+                    // COUNTED ONCE PER DIALOG, not once per scan (VC2-B1): the click is queued on the event
+                    // thread and the dialog is still showing at the next scan 50 ms later, so counting
+                    // every sighting turned one question into two.
+                    if (window != lastAnswered)
+                    {
+                        lastAnswered = window;
+                        answers++;
+                    }
 
                     SwingUtilities.invokeLater(() -> button.doClick());
                 }

@@ -48,7 +48,9 @@ public class testJavadocsAreAttached
     // 92 -> 91 on 2026-09-19: SVB-C4 found three javadocs orphaned by insertions in this round and one of
     // them, TrainControlUI's caption block, was reattached to the method it was written for rather than just
     // moved out of the way.  Lowered so the repair cannot be given back.
-    private static final int ALLOWED = 91;
+    // 91 -> 90 on 2026-09-19: GUX-C6, the fourth javadoc orphaned in RouteEditorFrame, reattached to
+    // conditionCount, which is the method it was written for.
+    private static final int ALLOWED = 90;
 
     /**
      * WHICH files carry the orphans, not just how many (VAL-C8).
@@ -95,7 +97,7 @@ public class testJavadocsAreAttached
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "LayoutRightclickAutonomyMenu.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "RouteEditorFrame.java (4)",
+            + "gui" + File.separator + "RouteEditorFrame.java (3)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "TrainControlUI.java (23)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator

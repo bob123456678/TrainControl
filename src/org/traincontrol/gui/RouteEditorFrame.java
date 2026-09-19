@@ -1418,9 +1418,6 @@ public class RouteEditorFrame extends JFrame
         return everythingWrong();
     }
     /**
-     * How many conditions the list holds, so a test can see that a capture arrived.
-     */
-    /**
      * Sets a cell of the command table, as typing in it would.
      *
      * For tests.  These four go through the table MODEL rather than round it, because the model is
@@ -1616,6 +1613,11 @@ public class RouteEditorFrame extends JFrame
         return ADD_HERE.equals(conditions.getValueAt(conditions.getRowCount() - 1, UP));
     }
 
+    /**
+     * How many conditions the list holds, so a test can see that a capture arrived.
+     *
+     * Reattached 2026-09-19 (GUX-C6): it sat above `setCommandKindForTest`, which has its own.
+     */
     public int conditionCount()
     {
         // Conditions, not lines.  The outline holds the joining words as lines of their own, so the

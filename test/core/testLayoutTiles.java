@@ -314,18 +314,27 @@ public class testLayoutTiles
         assertFalse(label.isAccessoryHighlightOutstanding(),
             "precondition: this square took the accessory-highlight branch, so it is not the path this is for");
 
-        // BOUNDED WELL INSIDE THE FLASH'S OWN HOLD (5000 ms), so a flash that merely timed out cannot pass
-        // this (VB2-B2).
-        long armed = System.currentTimeMillis() + 1500;
+        // BOUNDED WELL INSIDE THE FLASH'S OWN HOLD, which is HIGHLIGHT_DURATION - 2250 ms (VB2-B2, corrected by
+        // VC2-C1).  A flash that merely timed out cannot pass this, and the elapsed time is asserted below so that
+        // a slow machine says so rather than passing for the wrong reason.
+        long waitingFrom = System.currentTimeMillis();
+
+        long armed = waitingFrom + 1200;
 
         while (label.isFlashOutstanding() && System.currentTimeMillis() < armed)
         {
             Thread.sleep(20);
         }
 
+        long waited = System.currentTimeMillis() - waitingFrom;
+
         assertFalse(label.isFlashOutstanding(),
             "the flash is still armed after this square was redrawn, so it will put the old picture back - a sensor"
             + " drawn clear under a standing train, or a switch drawn in the position it was thrown out of");
+
+        assertTrue(waited < 2000,
+            "the flash went quiet after " + waited + " ms, which is long enough to be its own 2250 ms hold running"
+            + " out rather than the redraw giving it up");
     }
 
     /**

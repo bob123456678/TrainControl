@@ -419,7 +419,8 @@ public class testMassAssignLengths
      * So what he typed went nowhere, and Enter on the empty field counted as Skip.
      *
      * Asked of the real walk.  A desktop that never lets the test's window take focus cannot show either half, and says
-     * so as a skip rather than passing.
+     * so as a skip rather than passing - which is why this is the ONLY test here that presses Enter: `NotifyAction`
+     * acts on the focused text component, so every other walk test presses OK instead (VC2-C2).
      *
      * @throws Exception from the event thread
      */
@@ -565,7 +566,9 @@ public class testMassAssignLengths
      * The walk itself: a maximum typed and entered is written to the station asked about, and the walk moves on.
      *
      * Asked of the real walk on the event thread, through the same prompt Mass Assign Lengths uses - so its title is the
-     * walk's own name, Enter in the number box submits, and Skip leaves the next station as it was.
+     * walk's own name, and Skip leaves the next station as it was.  It presses OK rather than Enter, because Enter acts
+     * on whichever text component has the keyboard focus and a battery machine does not always give a window one
+     * (VC2-C2); `testTheNumberFieldHasFocusAndEnterSubmits` is where Enter is pinned.
      *
      * @throws Exception from the event thread
      */

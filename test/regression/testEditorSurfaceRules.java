@@ -2707,10 +2707,35 @@ public class testEditorSurfaceRules
         String exit = withoutComments(bodyOf(ui, "private void WindowClosed("))
             .replace("everyOpenWindowMaySettle()", "maySettleBeforeExit()");
 
-        assertTrue(withoutComments(bodyOf(ui, "public boolean everyOpenWindowMaySettle()"))
-            .contains("maySettleBeforeExit()"),
-            "everyOpenWindowMaySettle no longer asks any window whether it may settle, so the exit stopped"
-            + " asking about unsaved work at all");
+        String asksBoth = withoutComments(bodyOf(ui, "public boolean everyOpenWindowMaySettle()"));
+
+        // BOTH WINDOWS, NAMED (VC2-B2).  "contains maySettleBeforeExit" was satisfied by the route editor's call
+        // alone, so deleting the layout editor's left every test green and File > Exit discarded a page without
+        // asking - which is OB-070's original defect, on the window it was raised for.
+        assertTrue(asksBoth.contains("openEditor") && asksBoth.contains("maySettleBeforeExit()"),
+            "the exit no longer asks the open track diagram editor whether it may settle, so closing the"
+            + " application throws away an edited page without asking (OB-070)");
+
+        assertTrue(asksBoth.contains("routeEditor") && asksBoth.contains("maySettleBeforeExit()"),
+            "the exit no longer asks the open route editor whether it may settle, so closing the application"
+            + " throws away unsaved typing without asking (UIX-B1)");
+
+        // ASKED ONCE (VB2-B1, VC2-B1).  The layout editor's own call stood in `WindowClosed` as well when the
+        // route editor's was added, so a dirty diagram editor was asked twice and Discard-then-Save wrote the
+        // discarded work to disk.  `core.testCancelUndoesAutonomyEdits.testTheExitAsksOneQuestionPerEditor`
+        // counts the dialogs; this counts the calls, because the two fail differently.
+        int settleCalls = 0;
+
+        for (int at = exit.indexOf("maySettleBeforeExit()"); at >= 0;
+            at = exit.indexOf("maySettleBeforeExit()", at + 1))
+        {
+            settleCalls++;
+        }
+
+        assertEquals(settleCalls, 1,
+            "the exit asks whether a window may settle " + settleCalls + " times; twice means one editor is asked"
+            + " two questions about the same page, and a Discard followed by a Save then writes the discarded"
+            + " work to disk on the way out");
 
         int settles = exit.indexOf("maySettleBeforeExit()");
         int completes2 = exit.indexOf("completeExitDiscard()");

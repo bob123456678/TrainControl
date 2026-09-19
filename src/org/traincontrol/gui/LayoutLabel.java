@@ -1031,6 +1031,11 @@ public final class LayoutLabel extends JLabel
                             // class that did not marshal its work.
                             this.setIcon(ImageUtil.addHighlightOverlay((ImageIcon) this.getIcon()));
 
+                            // AND THE ONE BEFORE IT IS STOPPED (VC2-C3).  Nulling the field said "no restore is
+                            // armed" while the old timer was still counting down, and it fires `setIcon(lastIcon)`
+                            // over whatever is drawn by then - a three-way's second highlight, or a flash.
+                            endAccessoryHighlight();
+
                             final javax.swing.Timer[] mine = new javax.swing.Timer[1];
 
                             mine[0] = new javax.swing.Timer(HIGHLIGHT_DURATION, (restoreEvent) ->
