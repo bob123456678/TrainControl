@@ -86,7 +86,11 @@ public class MarklinRoute extends Route
      */
     public MarklinRoute(MarklinControlStation network, String name, int id)
     { 
-        super(name);
+        // TRIMMED HERE, where every door meets (CS3-C1).  `newRoute(MarklinRoute)` indexes under the trimmed name
+        // while `deleteRoute` deletes by the route's own - so a Central Station route whose name carries a leading or
+        // trailing space could be neither deleted nor re-read, and `changeRouteId` put it into the database twice.
+        // The two file parsers are the only doors that do not trim before they build; this is one place instead.
+        super(name == null ? null : name.trim());
         
         this.id = id;
         this.network = network;  
@@ -115,7 +119,8 @@ public class MarklinRoute extends Route
     public MarklinRoute(MarklinControlStation network, String name, int id, List<RouteCommand> route, int s88, s88Triggers triggerType, boolean enabled,
             NodeExpression conditions)
     { 
-        super(name, route);
+        // Trimmed, as the constructor above says (CS3-C1).
+        super(name == null ? null : name.trim(), route);
         
         this.id = id;
         this.network = network;    

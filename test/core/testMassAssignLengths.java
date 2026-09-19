@@ -1258,4 +1258,30 @@ public class testMassAssignLengths
 
         file.delete();
     }
+
+    /**
+     * A square that stops being a station keeps no maximum train length (SET-C2).
+     *
+     * The setting is offered only inside the station menu and read only of a square a journey ends at, so on a
+     * square that is not a station it decides nothing - but the bulk clear counts every point carrying one, and
+     * said "on {0} stations" about squares no menu would ever show one on.
+     *
+     * @throws IOException from the fixture
+     */
+    @Test
+    public void testADemotedStationKeepsNoMaximumTrainLength() throws IOException
+    {
+        openBerthBehindASwitch(key(5, 1));
+
+        session.setPointProperty(key(5, 1), "maxTrainLength", 8);
+
+        assertEquals(session.tilesWithAMaxTrainLength(), Arrays.asList(key(5, 1)), "precondition");
+
+        session.setStation(key(5, 1), false);
+
+        assertTrue(session.tilesWithAMaxTrainLength().isEmpty(),
+            "a square that is no longer a station still carries a maximum, and the bulk clear counts it as a station");
+
+        assertNull(session.getPointProperty(key(5, 1), "maxTrainLength"));
+    }
 }

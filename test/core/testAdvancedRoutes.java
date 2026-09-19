@@ -977,4 +977,38 @@ public class testAdvancedRoutes
             try { model.deleteLoc(loc); } catch (Exception ignored) { }
         }
     }
+
+    /**
+     * A route whose name carries a leading or trailing space can still be found and deleted (CS3-C1).
+     *
+     * The two file parsers build a `MarklinRoute` with the name exactly as the file has it; `newRoute` then indexed
+     * it under the trimmed name while `deleteRoute` deleted by the route's own - so such a route could be neither
+     * deleted nor re-read by a sync, and `changeRouteId` put it into the database under both ids.  Central Station
+     * route names are typed by people, and a trailing space is invisible.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testARouteNameWithSpacesAroundItIsUsable() throws Exception
+    {
+        MarklinRoute padded = new MarklinRoute(model, " Padded route ", 7701);
+
+        try
+        {
+            assertEquals(padded.getName(), "Padded route", "the name is not trimmed where every door meets");
+
+            assertTrue(model.newRoute(padded), "the route was refused");
+
+            assertNotNull(model.getRoute("Padded route"), "the route is not in the database under its own name");
+
+            model.deleteRoute("Padded route");
+
+            assertNull(model.getRoute("Padded route"), "the route survived a delete by the name it is indexed under");
+            assertNull(model.getRoute(7701), "the route survived by id, so the database still holds it");
+        }
+        finally
+        {
+            try { model.deleteRoute("Padded route"); } catch (Exception ignored) { }
+        }
+    }
 }

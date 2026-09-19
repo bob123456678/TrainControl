@@ -5467,6 +5467,15 @@ public class AutonomySession
 
     public void setStation(TileKey tile, boolean station)
     {
+        // A SQUARE THAT IS NO LONGER A STATION KEEPS NO MAXIMUM TRAIN LENGTH (SET-C2).
+        //
+        // The maximum is offered only inside the station menu and read only of a square a journey ENDS at, so on a
+        // square that is not a station it decides nothing - but `tilesWithAMaxTrainLength` counts every point that
+        // carries one, so Clear All Max Train Lengths counted squares no menu would ever show one on, and said
+        // "on {0} stations".  Swept with the caption, the barred arrivals, the protecting signal and the occupancy
+        // restriction, which this door already sweeps for the same reason.
+        if (!station) writePointProperty(tile, "maxTrainLength", null);
+
         store.setStation(tile, station);
 
         // A caption names a station, so demoting one takes its name plaque with it.

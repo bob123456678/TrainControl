@@ -1038,6 +1038,11 @@ public class Layout
             if (l.equals(entries.next().getLoc())) entries.remove();
         }
 
+        // The record that this train is standing where the railway turned it, which is keyed by NAME (RTX-C3).
+        // Left behind, a locomotive later given the same name inherits it and is believed to be facing the way the
+        // deleted one was left - and the entry is in no file, so nothing else ever clears it.
+        if (l.getName() != null) this.reversedOnArrival.remove(l.getName());
+
         // Points hold their own references, and nothing else was clearing them: a deleted locomotive
         // stayed excluded forever, and its name kept being written into the exported JSON as an
         // exclusion for a locomotive that no longer exists.
@@ -5172,9 +5177,10 @@ public class Layout
      * fits is enough to answer no.
      *
      * **It costs nothing on a railway with no lengths recorded**, which is most of them: a train with
-     * no length is answered before any search happens.  That matters because this runs on the event
-     * thread when the operator hovers the "no available paths" label, and it is the same order of
-     * work `firstClearOrWhyNot` already does for every station that is NOT barred.
+     * no length is answered before any search happens.  That matters because it is asked while the
+     * operator hovers the "no available paths" label - on the status window's own worker rather than
+     * on the event thread, which is where that work moved - and it is the same order of work
+     * `firstClearOrWhyNot` already does for every station that is NOT barred (RTX-C5).
      *
      * @param loc the train
      * @param start where it is standing
