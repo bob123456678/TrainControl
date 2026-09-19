@@ -59,8 +59,15 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-455](#mt-455) | 2026-09-16 | The Unmeasured Track display highlights the track still needing a length, and follows every edit | fixed unvalidated | FR-089 |
 | [MT-456](#mt-456) | 2026-09-17 | Mass Assign Max Train Lengths walks every station on the page that has no maximum | fixed unvalidated | FR-091 |
 | [MT-457](#mt-457) | 2026-09-17 | Clear All Max Train Lengths takes the maximum off every station on every page | fixed unvalidated | FR-092 |
+| [MT-458](#mt-458) | 2026-09-19 | A negative maximum train length is refused, and one already stored can be cleared | fixed unvalidated | SET-B1 |
+| [MT-459](#mt-459) | 2026-09-19 | Mass Assign Lengths asks for crossings on their own, and each road counts them once | fixed unvalidated | SET-B2 |
+| [MT-460](#mt-460) | 2026-09-19 | Segment Length shows and writes what the whole run measures | fixed unvalidated | SET-B3 |
+| [MT-461](#mt-461) | 2026-09-19 | Closing the application asks about unsaved work in the route editor | fixed unvalidated | UIX-B1 |
+| [MT-462](#mt-462) | 2026-09-19 | A switch thrown during a route highlight is drawn in its real position | fixed unvalidated | UIX-B2 |
+| [MT-463](#mt-463) | 2026-09-19 | Return Home moves a train the railway had standing on a terminus | fixed unvalidated | RTX-B1 |
+| [MT-464](#mt-464) | 2026-09-19 | A locomotive cannot be deleted or renamed while a route that drives it is running, and the route finishes | fixed unvalidated | CS3-B1 |
 
-Everything else - 425 of 457 - needs nothing from you unless the area changes again:
+Everything else - 425 of 464 - needs nothing from you unless the area changes again:
 374 **fixed validated** and 51 **superseded**.
 
 ---
@@ -23107,6 +23114,227 @@ Your request: *"Add a right click menu open to clear all max station train lengt
 - **Mass Assign Max Train Lengths** now offers those stations again.
 
 *What this is:* FR-092.  `core.testMassAssignLengths` - two claims on a two-page railway, and five mutations each caught.
+
+#### Comments
+
+---
+
+<a id="mt-458"></a>
+
+### MT-458 - 2026-09-19 - A negative maximum train length is refused, and one already stored can be cleared
+
+**Disposition:** fixed unvalidated
+**From:** SET-B1
+
+**Written:** 2026-09-19
+
+From the 2026-09-19 review round (SET-B1), fixed the same day.  Typing a negative number into **Maximum Train Length** used to save it, and the configuration then refused to load on every start with only a log line to say so - while **Clear All Max Train Lengths** greyed itself, because it counted only maxima above 0, and Mass Assign Max still offered the station.
+
+**Steps**
+
+1. Open the autonomy editor on **1 - Main**, right-click a station and choose **Maximum Train Length**.
+2. Type **-3** and press OK.
+3. Type **0** and press OK, then open the menu again.
+4. Type **6** and press OK.
+5. Open **Bulk Tools** and hover **Clear All Max Train Lengths**, then click it and answer Yes.
+6. Close the editor with **Save**, then stop and start autonomy.
+
+**Expected**
+
+- Step 2 says a maximum train length cannot be negative, and nothing is written - the menu still reads **Maximum Train Length (any)**.
+- Step 3 is accepted: 0 means any length.
+- After step 4 the menu reads **(6)**, and Clear All Max Train Lengths counts it.
+- After step 5 the station reads **(any)** again.
+- Autonomy still loads and runs in step 6 - nothing has invalidated the configuration.
+
+*What this is:* review finding SET-B1, fixed 2026-09-19 with a test seen failing first and a mutation for each half.
+
+#### Comments
+
+---
+
+<a id="mt-459"></a>
+
+### MT-459 - 2026-09-19 - Mass Assign Lengths asks for crossings on their own, and each road counts them once
+
+**Disposition:** fixed unvalidated
+**From:** SET-B2
+
+**Written:** 2026-09-19
+
+Your ruling of 2026-09-19: *"For crossings: if its length is set, count that length once in each direction."*  A square where two roads cross - a crossing, or a double curve with track on both roads - used to sit inside whichever road's stretch was walked first: that road's prompt covered it, the other road's prompt was one square short, and the other road then counted it twice.  **1 - Main** has four such squares: the crossing at 18,10 and the double curves at 20,10, 21,10 and 11,11.
+
+**Steps**
+
+1. Open the autonomy editor on **1 - Main** and tick **Track Lengths** and **Unmeasured Track**.
+2. Right-click a TRACK square, open **Bulk Tools**, and hover **Mass Assign Lengths...** - the tooltip now gives three counts.
+3. Run it, and press **Skip** through the stretches until the switch prompt appears; give the switches a length.
+4. The next prompt is about crossings: type one length and press OK.
+5. Look at 18,10 and at the track on each side of it.
+
+**Expected**
+
+- The tooltip counts stretches, switches and crossings separately.
+- No stretch prompt includes 18,10: the stretches stop on each side of it, and the outline has no hole in it.
+- After step 4 every crossing on the page carries the one length you typed, and the amber highlight leaves them.
+- The two roads through 18,10 each count its length once - with Track Lengths on, the numbers on each road add up including it.
+
+*What this is:* review finding SET-B2, fixed 2026-09-19 with a test seen failing first and a mutation for each half.
+
+#### Comments
+
+---
+
+<a id="mt-460"></a>
+
+### MT-460 - 2026-09-19 - Segment Length shows and writes what the whole run measures
+
+**Disposition:** fixed unvalidated
+**From:** SET-B3
+
+**Written:** 2026-09-19
+
+From the 2026-09-19 review round (SET-B3), fixed the same day.  Mass Assign Lengths shares a stretch's length over every square it covers, so after a walk the square that speaks for a run held only its own share - and **Segment Length** opened on that share and added the typed number to the rest of the run instead of replacing it.
+
+**Steps**
+
+1. Open the autonomy editor on a page with a run of plain track between two sensors, and tick **Track Lengths**.
+2. Run **Mass Assign Lengths** and give that stretch a length of **7**.
+3. Right-click a square in the middle of the run and choose **Segment Length...** (or hover it and press Control+E).
+4. Type **4** and press OK.
+5. Add up the numbers on the run's squares.
+
+**Expected**
+
+- In step 3 the box opens on what the RUN measures, not on one square's share of it.
+- After step 4 the run measures exactly 4: the square that speaks for the run holds 4 and the rest hold nothing.
+- Shift-clicking several squares and typing a number still gives that number to each of them.
+
+*What this is:* review finding SET-B3, fixed 2026-09-19 with a test seen failing first and a mutation for each half.
+
+#### Comments
+
+---
+
+<a id="mt-461"></a>
+
+### MT-461 - 2026-09-19 - Closing the application asks about unsaved work in the route editor
+
+**Disposition:** fixed unvalidated
+**From:** UIX-B1
+
+**Written:** 2026-09-19
+
+From the 2026-09-19 review round (UIX-B1), fixed the same day.  The exit asked the track diagram editor whether it might settle and never asked the route editor, so File > Exit threw away whatever had been typed there with no question at all.
+
+**Steps**
+
+1. Open the **Routes** tab, right-click a route and choose **Edit**.
+2. Change its name, or add a command row.  Leave the window open.
+3. Choose **File > Exit** (or close the main window with its X).
+4. Answer **No**.
+5. Exit again and answer **Yes**.
+
+**Expected**
+
+- Step 3 raises the route editor's own discard question, naming what it is about to lose.
+- No in step 4 leaves the application open with the route editor as it was.
+- Yes in step 5 exits, as before.
+- A route editor with nothing typed into it raises no question at all.
+
+*What this is:* review finding UIX-B1, fixed 2026-09-19 with a test seen failing first and a mutation for each half.
+
+#### Comments
+
+---
+
+<a id="mt-462"></a>
+
+### MT-462 - 2026-09-19 - A switch thrown during a route highlight is drawn in its real position
+
+**Disposition:** fixed unvalidated
+**From:** UIX-B2
+
+**Written:** 2026-09-19
+
+From the 2026-09-19 review round (UIX-B2), fixed the same day.  **Highlight on Diagram** in the route editor lights the route's tiles for five seconds, and an accessory changing from anywhere but a click lights that tile for 2.25 seconds - and each put back the picture the other had made stale, so a switch thrown during a highlight ended up drawn in the position it was in BEFORE it was thrown and stayed that way until it changed again.
+
+**Steps**
+
+1. Open a route that names a turnout and press **Highlight on Diagram**.
+2. While the tiles are still yellow, throw that turnout from the keyboard or from the Central Station.
+3. Wait for both highlights to fade, and look at the tile.
+4. Now throw the turnout first, and press **Highlight on Diagram** within about two seconds.
+5. Wait for the highlights to fade, and look again.
+
+**Expected**
+
+- In step 3 the tile shows the turnout's real position.
+- In step 5 the tile shows the turnout's real position and is not left washed yellow.
+- Route highlights still light every tile of the route, and accessory changes still flash.
+
+*What this is:* review finding UIX-B2, fixed 2026-09-19 with a test seen failing first and a mutation for each half.
+
+#### Comments
+
+---
+
+<a id="mt-463"></a>
+
+### MT-463 - 2026-09-19 - Return Home moves a train the railway had standing on a terminus
+
+**Disposition:** fixed unvalidated
+**From:** RTX-B1
+
+**Written:** 2026-09-19
+
+From the 2026-09-19 review round (RTX-B1), fixed the same day to your ruling *"the document is right and the fix goes in"*.  A train that cannot reverse and was already standing on a terminus or reversing berth was treated as one the plan had turned, so it could be planned only to its own home - and with no home of its own, nowhere at all, which also stranded the train whose berth it was standing on.
+
+**Steps**
+
+1. With autonomy loaded and idle, send a train that cannot reverse by hand into a berth that turns trains and is NOT its home.
+2. Make sure the berth it calls home is occupied by another train that has somewhere to go.
+3. Press **Return Home**.
+4. Now place a train that cannot reverse on a berth that belongs to another train, so it has no home of its own, and press **Return Home** again.
+
+**Expected**
+
+- Step 3 produces a plan: the first train steps aside, the other comes home, and it then goes home itself.  It is never driven on out of a turn - the plan only turns such a train on the way into its own berth.
+- Step 4 moves the homeless train out of the way so the berth's owner can come home.
+- A train the PLAN turns still may only go home next, which is the rule this keeps.
+
+*What this is:* review finding RTX-B1, fixed 2026-09-19 with a test seen failing first and a mutation for each half.
+
+#### Comments
+
+---
+
+<a id="mt-464"></a>
+
+### MT-464 - 2026-09-19 - A locomotive cannot be deleted or renamed while a route that drives it is running, and the route finishes
+
+**Disposition:** fixed unvalidated
+**From:** CS3-B1
+
+**Written:** 2026-09-19
+
+From the 2026-09-19 review round (CS3-B1), fixed the same day.  Deleting a locomotive rewrites every route's commands, and a route part-way through its own list was then walking a list that had changed underneath it: measured on a nine-command route, three of eight turnouts were thrown and the rest never were, leaving the road half set and the route reporting itself finished.
+
+**Steps**
+
+1. Make a route that sets several turnouts and then drives a locomotive, with delays between the commands if the road is short.
+2. Run it from the Routes tab, and while it is running right-click that locomotive and choose **Delete**.
+3. Do the same again, this time choosing to change its name or address while the route runs.
+4. Let the route finish, then try the delete again.
+
+**Expected**
+
+- Steps 2 and 3 refuse, naming the route that is running.
+- The route finishes every one of its commands - every turnout it names ends up set.
+- After the route has finished, the delete and the rename work as before.
+- Deleting a locomotive while autonomy is running is refused as it always was.
+
+*What this is:* review finding CS3-B1, fixed 2026-09-19 with a test seen failing first and a mutation for each half.
 
 #### Comments
 

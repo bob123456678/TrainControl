@@ -323,6 +323,23 @@ CR-D6	2026-08-24-conversion-review.md	Closed	-
 CR-D7	2026-08-24-conversion-review.md	Closed	-
 CR-D8	2026-08-24-conversion-review.md	Closed	-
 CR-D9	2026-08-24-conversion-review.md	Closed	-
+CS3-B1	2026-09-19-CS3-control-station-and-model-review.md	-	Open
+CS3-B2	2026-09-19-CS3-control-station-and-model-review.md	-	Open
+CS3-C1	2026-09-19-CS3-control-station-and-model-review.md	-	Open - predates 2.7.4c (`v2_7_4c:MarklinControlStation.java:1249-1251` already trimmed the
+CS3-C2	2026-09-19-CS3-control-station-and-model-review.md	-	Open - predates 2.7.4c (`newFeedback` is unchanged); reachable only through a sensor that 
+CS3-C3	2026-09-19-CS3-control-station-and-model-review.md	-	Open - trap; predates 2.7.4c
+CS3-C4	2026-09-19-CS3-control-station-and-model-review.md	-	Open - trap; predates 2.7.4c (`v2_7_4c:MarklinRoute.java:299-306`)
+CS3-D1	2026-09-19-CS3-control-station-and-model-review.md	-	`Util.writeAtomically` / `saveState` / `restoreState` - the database-loss shapes
+CS3-D10	2026-09-19-CS3-control-station-and-model-review.md	-	`MarklinFeedback.parseMessage` calls into the view while holding the module's lock
+CS3-D11	2026-09-19-CS3-control-station-and-model-review.md	-	`init()` forgets the IP preference in simulate mode
+CS3-D2	2026-09-19-CS3-control-station-and-model-review.md	-	`LayoutDiagram.writeLayoutIndex` and the page-id rule
+CS3-D3	2026-09-19-CS3-control-station-and-model-review.md	-	`CS2File.parseFileContents` and `parseLayout` - what a user-supplied file can do
+CS3-D4	2026-09-19-CS3-control-station-and-model-review.md	-	`CS2Message` parsing, `NetworkProxy` reader and reopen
+CS3-D5	2026-09-19-CS3-control-station-and-model-review.md	-	`RemoteDeviceCollection`, `linkedLocomotives`, the speed and power monitors
+CS3-D6	2026-09-19-CS3-control-station-and-model-review.md	-	behaviour.md sections 7a, 7b and 8 against the code
+CS3-D7	2026-09-19-CS3-control-station-and-model-review.md	-	`MarklinRoute.executeAutoRoute` re-enable reuses the parked monitor thread
+CS3-D8	2026-09-19-CS3-control-station-and-model-review.md	-	`MarklinRoute.hashCode` includes the mutable `enabled`
+CS3-D9	2026-09-19-CS3-control-station-and-model-review.md	-	`LayoutDiagramComponent.getAddress()` on a link tile is the halved artikel
 D1-D10	2026-09-02-three-days-review.md	Closed	-
 D1-D12	2026-09-01-regression-vs-2.8.1-review.md	Closed	checks that came back clean
 D1-D13	2026-09-02-regression-vs-2.8.1-review.md	Closed	verification of `R28`'s open findings, and checks that came back clean
@@ -1713,6 +1730,22 @@ RTG-D6	2026-09-01-autonomy-routing-review.md	Closed	`Point.setTerminus`/`setReve
 RTG-D7	2026-09-01-autonomy-routing-review.md	Closed	One-place invariant holds through every placement door; the planner is the stricter half b
 RTG-D8	2026-09-01-autonomy-routing-review.md	Closed	Correct by reading; the `Scored`-carries-its-own-score device does what its comment claims
 RTG-D9	2026-09-01-autonomy-routing-review.md	Closed	`executePathInternal:5296-5308` and `:5575-5582` reverse where the graph says; a non-rever
+RTX-B1	2026-09-19-RTX-autonomy-runtime-delta-review.md	-	`HomeStaging.astar` - a train that cannot reverse, standing at the START on a terminus or 
+RTX-C1	2026-09-19-RTX-autonomy-runtime-delta-review.md	-	`HomeStaging.tailKey` - the arrangement key carries the tails a route leaves and not wheth
+RTX-C2	2026-09-19-RTX-autonomy-runtime-delta-review.md	-	`whyABerthCannotHoldIt` and `walkOneTail` after Mass Assign's switch step: a measured swit
+RTX-C3	2026-09-19-RTX-autonomy-runtime-delta-review.md	-	`Layout.locDeleted` - the sweep does not clear `reversedOnArrival`, and the record is keye
+RTX-C4	2026-09-19-RTX-autonomy-runtime-delta-review.md	-	AMR-D1 and AMH-B2 rest on opposite statements about Adam's detection hardware
+RTX-C5	2026-09-19-RTX-autonomy-runtime-delta-review.md	-	`Layout.whyNoRouteFitsTo` javadoc says it runs on the event thread; the hover moved to a w
+RTX-D1	2026-09-19-RTX-autonomy-runtime-delta-review.md	-	**The three length rules agree between runtime and planner, with the reversal stop in both
+RTX-D10	2026-09-19-RTX-autonomy-runtime-delta-review.md	-	**`TimetablePath`'s delta is a comment** (X8-C4: the field is milliseconds despite its nam
+RTX-D2	2026-09-19-RTX-autonomy-runtime-delta-review.md	-	**The room rule counts the resting square and the tail does not spend it - deliberate on e
+RTX-D3	2026-09-19-RTX-autonomy-runtime-delta-review.md	-	**FR-087 lets a tail lie back past a through station on the route, and the place walk prot
+RTX-D4	2026-09-19-RTX-autonomy-runtime-delta-review.md	-	**The bounded-but-unmeasured bound (`roomAtTheEnd == -1`, 9403-9424) and FR-087 compose in
+RTX-D5	2026-09-19-RTX-autonomy-runtime-delta-review.md	-	**`executePathInternal` clears `arrivedFrom` on the departed square (8173-8177) but not `a
+RTX-D6	2026-09-19-RTX-autonomy-runtime-delta-review.md	-	**A reserved intermediate claims no tail.** `walkStandingTrains` (6648-6658) walks every P
+RTX-D7	2026-09-19-RTX-autonomy-runtime-delta-review.md	-	**Thread-safety of the fortnight's additions.** `edgesATailWouldCover` and `placesATailWou
+RTX-D8	2026-09-19-RTX-autonomy-runtime-delta-review.md	-	**What outlives a rebuild is what is meant to.** Pending turns are drained and put back on
+RTX-D9	2026-09-19-RTX-autonomy-runtime-delta-review.md	-	**AMR-C2's `whyNoRouteFitsTo` (5184-5234) asks both physical refusals of every alternative
 RV-C1	2026-08-01-reversing-destinations-review.md	Closed	Fixed (`b43fd36`) - `hasAutonomousDestination` filters the enumeration on exactly the two 
 RV-C2	2026-08-01-reversing-destinations-review.md	Closed	Fixed - the probe now applies `passesThroughReversingStation` and enumerates with `uniqueD
 RV-D1	2026-08-01-reversing-destinations-review.md	Closed	Clean - except its through-traffic bullet, whose judgment `b56b407` reverses; see "The thi
@@ -1804,6 +1837,23 @@ SA-V5	2026-08-18-station-arrivals-review.md	Closed	NOT a defect - see below
 SA-V6	2026-08-18-station-arrivals-review.md	Closed	accepted, measured - see below
 SA-V7	2026-08-18-station-arrivals-review.md	Closed	accepted, matches findPath - see below
 SA-V8	2026-08-18-station-arrivals-review.md	Closed	recorded here, history left alone
+SET-B1	2026-09-19-SET-autonomy-setup-and-editor-review.md	-	`AutonomyEditorPanel.promptNumber` - a negative maximum is written, the configuration then
+SET-B2	2026-09-19-SET-autonomy-setup-and-editor-review.md	-	`AutonomySession.stretchesALengthRuleReads` - a crossing or double curve shared by two leg
+SET-B3	2026-09-19-SET-autonomy-setup-and-editor-review.md	-	`AutonomyEditorPanel.applyLength` after Mass Assign Lengths - the single door shows and wr
+SET-C1	2026-09-19-SET-autonomy-setup-and-editor-review.md	-	`docs/reference/behaviour.md` - Mass Assign Max Train Lengths, Clear All Max Train Lengths
+SET-C2	2026-09-19-SET-autonomy-setup-and-editor-review.md	-	`AutonomySession.setStation(tile, false)` leaves `maxTrainLength`; Clear All Max Train Len
+SET-C3	2026-09-19-SET-autonomy-setup-and-editor-review.md	-	`AutonomyEditorPanel.clearAllMaxTrainLengths` refreshes three times for one gesture; its s
+SET-D1	2026-09-19-SET-autonomy-setup-and-editor-review.md	-	**Cancel puts lengths and maxima back.** `LayoutEditor.takeTheUndoPoint` (535-542) snapsho
+SET-D10	2026-09-19-SET-autonomy-setup-and-editor-review.md	-	**FR-090's remembered position reads a disposed dialog.** `walkPromptAt = dialog.getLocati
+SET-D11	2026-09-19-SET-autonomy-setup-and-editor-review.md	-	**Escape in the walk prompts** - `dialogAnswer` (MAL-B4) is asked by both walks through th
+SET-D2	2026-09-19-SET-autonomy-setup-and-editor-review.md	-	**The bulk and single doors write the maximum the same way.** `promptNumber` writes null f
+SET-D3	2026-09-19-SET-autonomy-setup-and-editor-review.md	-	**Affordance and guard ask one question on all four new bulk items.** Mass Assign Lengths 
+SET-D4	2026-09-19-SET-autonomy-setup-and-editor-review.md	-	**The Unmeasured Track cache is forgotten wherever its inputs change.** `unmeasuredSquares
+SET-D5	2026-09-19-SET-autonomy-setup-and-editor-review.md	-	**Clear All Max Train Lengths clears every page, excluded ones included** - as Clear All T
+SET-D6	2026-09-19-SET-autonomy-setup-and-editor-review.md	-	**Mass Assign Max is not behind `modelsAnyLength()` while the `NO_MAX_TRAIN_LENGTH` notice
+SET-D7	2026-09-19-SET-autonomy-setup-and-editor-review.md	-	**One full builder per station in the maximum walk.** `assignMaxTrainLength` goes through 
+SET-D8	2026-09-19-SET-autonomy-setup-and-editor-review.md	-	**`legsOnce()` keys a leg by its tile SET.** The two directions of a leg collapse to one, 
+SET-D9	2026-09-19-SET-autonomy-setup-and-editor-review.md	-	**A maximum set in the editor survives the close.** `setupChanged()` rebuilds the running 
 SEV-B1	2026-09-13-SEV-seven-day-review.md	Closed	`Layout.whyABerthCannotHoldIt` 8084-8086 against `walkStandingTrains` 6263
 SEV-B2	2026-09-13-SEV-seven-day-review.md	Closed	`Layout.turnsOnArrival` 5831 against `HomeStaging` 162/807/1128 and `executePathInternal` 
 SEV-B3	2026-09-13-SEV-seven-day-review.md	Closed	`Layout.walkStandingTrains` 6263 against 6271
@@ -2462,6 +2512,23 @@ UH-B4	2026-08-17-unread-half-review.md	Closed	**Fixed 2026-08-17**
 UH-B5	2026-08-17-unread-half-review.md	Closed	**Fixed 2026-08-17**
 UH-B6	2026-08-17-unread-half-review.md	Closed	**Fixed 2026-08-17**
 UH-B7	2026-08-17-unread-half-review.md	Open	Open - deferred with its class
+UIX-B1	2026-09-19-UIX-main-interface-review.md	-	`TrainControlUI.WindowClosed` (`TrainControlUI.java:19125-19214`), against `RouteEditorFra
+UIX-B2	2026-09-19-UIX-main-interface-review.md	-	`LayoutLabel.setImage`'s accessory highlight (`LayoutLabel.java:1017-1046`) against `Layou
+UIX-C1	2026-09-19-UIX-main-interface-review.md	-	`behaviour.md` section 3, the paragraph beginning *"No journey is refused on the operator'
+UIX-C2	2026-09-19-UIX-main-interface-review.md	-	`LayoutEditor.java:7320-7325`, the Control+B comment, against the post-processor's own gua
+UIX-C3	2026-09-19-UIX-main-interface-review.md	-	`GraphLocAssign.java:377`; `AutonomyBanner.java:211`
+UIX-C4	2026-09-19-UIX-main-interface-review.md	-	the eight `messages*.properties` bundles: about 237 keys nothing asks for
+UIX-C5	2026-09-19-UIX-main-interface-review.md	-	`ui.main.tooltip.switchDir` / `switchDirFwd` (`messages.properties:1533-1534`) against `Le
+UIX-D1	2026-09-19-UIX-main-interface-review.md	-	the eight bundles: key sets, ASCII, placeholders, apostrophes
+UIX-D10	2026-09-19-UIX-main-interface-review.md	-	the main window's bare `Delete` and `Enter` now fire from any non-text component
+UIX-D2	2026-09-19-UIX-main-interface-review.md	-	every literal and dynamic key asked for in scope resolves
+UIX-D3	2026-09-19-UIX-main-interface-review.md	-	no window-`synchronized` event-thread path takes the Layout's monitor (OB-192's AB-BA shap
+UIX-D4	2026-09-19-UIX-main-interface-review.md	-	timers and global listeners: all one-shot, stopped, or removed
+UIX-D5	2026-09-19-UIX-main-interface-review.md	-	the whole-window key map: text components, focus, the page combo, double delivery
+UIX-D6	2026-09-19-UIX-main-interface-review.md	-	the diagram's keyboard placement door honours the railway's answer and the prompts' dismis
+UIX-D7	2026-09-19-UIX-main-interface-review.md	-	`ManualReversalPrompt` against every sentence in behaviour.md section 3 that names it
+UIX-D8	2026-09-19-UIX-main-interface-review.md	-	state surviving a reopen: no mutable statics but test hooks; the hovered square is cleared
+UIX-D9	2026-09-19-UIX-main-interface-review.md	-	`WindowClosed` starts a graceful stop before asking whether to exit
 UR-1	2026-08-23-uninformed-review.md	Closed	CONFIRMED
 UR-10	2026-08-23-uninformed-review.md	Closed	CONFIRMED (mechanism), PLAUSIBLE (trigger)
 UR-11	2026-08-23-uninformed-review.md	Closed	PLAUSIBLE
