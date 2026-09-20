@@ -2624,12 +2624,28 @@ public final class HomeStaging
 
         List<String> tails = new ArrayList<>();
 
+        // AND WHICH TRAINS THE PLAN TURNED ON THE WAY (RTX-C1).
+        //
+        // `turnedByThePlan` reads `movedAlong.get(l)` back out of the one route this key keeps, and
+        // asks it whether the train passed a reversing point - so two roads to the same square that
+        // leave the same covered edges but differ in that one fact folded into one state, and
+        // whichever the search found first decided whether the train was restricted to its home on
+        // the next expansion.  The loop below drops a train from the key entirely when its tail covers
+        // nothing, which is exactly where the two roads are otherwise indistinguishable.
+        //
+        // Measured before it was written: over `core.testReturnHomeOnRealLayout`, 994 of 83,881 keys
+        // were reached with both answers.  MFR-B2's own shape, one fact further on, and the same
+        // spelling `firstClearRoute` uses for its own visited set.
+        List<String> turned = new ArrayList<>();
+
         for (Map.Entry<Locomotive, List<Edge>> moved : routes.entrySet())
         {
             Locomotive train = moved.getKey();
             List<Edge> road = moved.getValue();
 
             if (road == null || road.isEmpty()) continue;
+
+            if (turnedOnTheWay(road)) turned.add(train.getName());
 
             Point end = road.get(road.size() - 1).getEnd();
 
@@ -2650,11 +2666,23 @@ public final class HomeStaging
             tails.add(train.getName() + ":" + String.join(",", legs));
         }
 
-        if (tails.isEmpty()) return key(state);
+        StringBuilder out = new StringBuilder(key(state));
 
-        Collections.sort(tails);
+        if (!tails.isEmpty())
+        {
+            Collections.sort(tails);
 
-        return key(state) + "#" + String.join("|", tails);
+            out.append('#').append(String.join("|", tails));
+        }
+
+        if (!turned.isEmpty())
+        {
+            Collections.sort(turned);
+
+            out.append('/').append(String.join(",", turned));
+        }
+
+        return out.toString();
     }
 
     /** Identifies a configuration for the search's visited set. */

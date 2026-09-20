@@ -4266,6 +4266,97 @@ public class testHomeStaging
     // ---------------------------------------------------------------------------------------------
 
     /**
+     * Two roads to the same square that differ only in whether they passed a reversing point are two
+     * states, not one (RTX-C1).
+     *
+     * **The search keeps one route per key and reads it back to decide what the train may do next.**
+     * `astar` stores the route it took in `routesOf` against the state key, `turnedByThePlan` reads it
+     * out of `movedAlong`, and a train that was turned on the way is then restricted to squares the
+     * turn was for.  `tailKey` identified a state by where the trains stand and what their tails
+     * cover - and it dropped a train from the key altogether when its tail covered nothing, which is
+     * exactly the case where two roads are otherwise indistinguishable.  Whichever the search reached
+     * first decided the restriction for both.
+     *
+     * **Measured before it was fixed.**  A probe over `core.testReturnHomeOnRealLayout` logged the key
+     * and the turn answer at every expansion: 994 of 83,881 keys were reached with both answers, on
+     * Adam's own railway.
+     *
+     * Driven at `tailKey` because that is where the fact is dropped, with a fixture whose edges are
+     * unmeasured so the tails are empty for both roads and the turn is the only difference left.
+     *
+     * @throws Exception from the reflection
+     */
+    @Test
+    public void testARoadThatTurnedIsNotTheSameStateAsOneThatDidNot() throws Exception
+    {
+        Layout layout = load(json("{'points': ["
+            + station("HS A", 0, LOC_A) + ","
+            + station("HS B", 1, null) + ","
+            + "{'name': 'HS R', 'station': true, 's88': " + (S88_BASE + 2) + ", 'reversing': true},"
+            + station("HS Z", 3, null)
+            + "],'edges': ["
+            + edge("HS A", "HS B") + "," + edge("HS B", "HS Z") + ","
+            + edge("HS A", "HS R") + "," + edge("HS R", "HS Z")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}"));
+
+        assertTrue(layout.getPoint("HS R").isReversing(), "precondition: HS R does not reverse");
+
+        java.lang.reflect.Method tailKey = HomeStaging.class.getDeclaredMethod(
+            "tailKey", java.util.Map.class, java.util.Map.class);
+
+        tailKey.setAccessible(true);
+
+        HomeStaging staging = HomeStaging.snapshot(layout);
+
+        MarklinLocomotive train = loc(LOC_A);
+
+        java.util.Map<Point, org.traincontrol.base.Locomotive> state = new java.util.LinkedHashMap<>();
+
+        state.put(layout.getPoint("HS Z"), train);
+
+        String straight = (String) tailKey.invoke(staging, state,
+            oneRoute(train, layout.getEdge("HS A", "HS B"), layout.getEdge("HS B", "HS Z")));
+
+        String throughTheTurn = (String) tailKey.invoke(staging, state,
+            oneRoute(train, layout.getEdge("HS A", "HS R"), layout.getEdge("HS R", "HS Z")));
+
+        // THE CONTROL: the same road twice is the same state, so the claim below is about the turn
+        // and not about the key changing every time it is asked.
+        assertEquals(straight, (String) tailKey.invoke(staging, state,
+            oneRoute(train, layout.getEdge("HS A", "HS B"), layout.getEdge("HS B", "HS Z"))),
+            "the same arrangement reached the same way gave two different keys");
+
+        assertNotEquals(throughTheTurn, straight,
+            "a road that passed a reversing point and one that did not are the same state to the"
+            + " search (" + straight + ").  It keeps one route per key and reads it back to decide"
+            + " whether the train is restricted to where the turn was for, so whichever was found"
+            + " first answers for both (RTX-C1)");
+    }
+
+    /**
+     * One train's route, as `astar` hands it to `tailKey`.
+     *
+     * @param train the train that moved
+     * @param legs the road it took
+     * @return the routes map
+     */
+    private static java.util.Map<org.traincontrol.base.Locomotive, java.util.List<Edge>> oneRoute(
+        MarklinLocomotive train, Edge... legs)
+    {
+        java.util.Map<org.traincontrol.base.Locomotive, java.util.List<Edge>> out =
+            new java.util.LinkedHashMap<>();
+
+        for (Edge leg : legs)
+        {
+            assertTrue(leg != null, "precondition: the fixture is missing one of its edges");
+        }
+
+        out.put(train, java.util.Arrays.asList(legs));
+
+        return out;
+    }
+
+    /**
      * A reversing station is an ordinary station to the planner - drivable through, restable on.
      *
      * Neither the planner nor isPathClear has any rule about reversing points, so this pins the
