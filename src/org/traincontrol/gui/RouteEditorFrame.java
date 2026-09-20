@@ -90,6 +90,15 @@ public class RouteEditorFrame extends JFrame
      */
     private final String loadedFromDatabase;
 
+    /**
+     * The id of the route this window opened on, or null for a new one (OP2-C9).
+     *
+     * A route tile binds by id and so does an autonomy selection, so the id is what the route IS; the
+     * name is what it is called this minute.  Kept so that a rename under the window reads as a rename
+     * rather than as a deletion.
+     */
+    private final Integer loadedId;
+
     private final JTextField nameField = new JTextField(24);
     private final JTextField s88Field = digitsOnlyField(6);
     private final JComboBox<String> triggerBox = new JComboBox<>();
@@ -224,6 +233,9 @@ public class RouteEditorFrame extends JFrame
 
         // WHAT THE DATABASE SAID WHEN THIS WINDOW OPENED (GUX-B1), so Save can tell whether it still says it.
         this.loadedFromDatabase = signatureOf(route);
+
+        // AND WHICH ROUTE IT WAS, which the name alone cannot say once somebody renames it (OP2-C9).
+        this.loadedId = route == null ? null : route.getId();
 
         setTitle(routeName == null ? I18n.t("route.ui.frameNewRoute")
             : I18n.f("route.ui.frameEditRoute", routeName));
@@ -490,10 +502,16 @@ public class RouteEditorFrame extends JFrame
     /**
      * Whether the route this window is editing has changed in the database since it opened (GUX-B1).
      *
-     * Three answers, and they need different words: it is GONE (deleted, or replaced by an import that did not
-     * carry it), it has CHANGED (somebody toggled Enable/Disable, or edited it elsewhere), or it is as it was.
+     * Four answers, and they need different words: it is GONE (deleted, or replaced by an import that did not
+     * carry it), it has been RENAMED (it is still there, under another name), it has CHANGED (somebody toggled
+     * Enable/Disable, or edited it elsewhere), or it is as it was.
      *
-     * @return "gone", "changed", or null
+     * **Renamed used to read as gone** (OP2-C9), because this looked the route up by name only.  The message that
+     * followed named the two causes that had not happened - deleted, or replaced by an import - and the remedy it
+     * offered, save as new, would have left a second route beside the renamed one, with a fresh id that no route
+     * tile and no autonomy selection follows.
+     *
+     * @return "gone", "renamed", "changed", or null
      */
     public String howTheRouteMoved()
     {
@@ -504,9 +522,30 @@ public class RouteEditorFrame extends JFrame
 
         org.traincontrol.base.Route now = parent.getModel().getRoute(originalName);
 
-        if (now == null) return "gone";
+        if (now == null) return nameNowHeldById() != null ? "renamed" : "gone";
 
         return signatureOf(now).equals(loadedFromDatabase) ? null : "changed";
+    }
+
+    /**
+     * What the route this window opened on is called now, or null if no route carries that id (OP2-C9).
+     *
+     * By id, walking the list, because the view interface offers no lookup by id and a dialog can afford it.
+     *
+     * @return the current name, or null
+     */
+    public String nameNowHeldById()
+    {
+        if (loadedId == null || parent == null || parent.getModel() == null) return null;
+
+        for (String name : parent.getModel().getRouteList())
+        {
+            org.traincontrol.base.Route candidate = parent.getModel().getRoute(name);
+
+            if (candidate != null && candidate.getId() == loadedId) return candidate.getName();
+        }
+
+        return null;
     }
 
     /**
@@ -2881,7 +2920,31 @@ public class RouteEditorFrame extends JFrame
                 // again.  Asked rather than refused, because what to do about it is the operator's to decide.
                 String moved = howTheRouteMoved();
 
-                if ("gone".equals(moved))
+                if ("renamed".equals(moved))
+                {
+                    // RENAMED IS NOT DELETED (OP2-C9).  Saving onto the route under its new name keeps its
+                    // id, and with it every route tile bound to it and any autonomy selection on it - which
+                    // is what save-as-new would have thrown away while telling the operator it had been
+                    // deleted or replaced by an import.
+                    String nowCalled = nameNowHeldById();
+
+                    if (JOptionPane.showOptionDialog(this,
+                        I18n.f("route.ui.confirmRouteRenamed", originalName, nowCalled),
+                        I18n.t("route.ui.titleRouteMoved"),
+                        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
+                        TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != 0)
+                    {
+                        return;
+                    }
+
+                    if (!parent.getModel().editRoute(nowCalled, name, built, s88, trigger,
+                        enabledBox.isSelected(), expression))
+                    {
+                        JOptionPane.showMessageDialog(this, I18n.f("route.ui.errorEditRouteFailed", name));
+                        return;
+                    }
+                }
+                else if ("gone".equals(moved))
                 {
                     // ADDED BACK RATHER THAN LOST.  The old behaviour was `editRoute` returning false and a message
                     // with no way out: `originalName` is final, so the typing could never be saved as anything.

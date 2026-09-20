@@ -598,6 +598,29 @@ public class testLayoutTiles
                 "the route was enabled while this editor was open and the editor cannot tell, so its Save switches"
                 + " it off again without saying anything");
 
+            // A RENAME IS NOT A DELETION (OP2-C9).
+            //
+            // This looked the route up by NAME only, so a rename under the window read as "gone" - and the
+            // message that followed named the two causes that had not happened, deleted or replaced by an
+            // import, and offered save-as-new: a second route beside the renamed one, carrying a fresh id
+            // that no route tile and no autonomy selection follows.
+            model.editRoute(name, "Moving route renamed", commands, 0,
+                org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
+
+            assertNull(model.getRoute(name), "precondition: the rename left the old name in the database");
+
+            assertEquals(editor.howTheRouteMoved(), "renamed",
+                "the route was renamed while this editor was open and the editor reports it as gone, so Save"
+                + " offers to add it back as a new route - with a new id that the diagram's route tiles and"
+                + " the autonomy selection do not follow");
+
+            assertEquals(editor.nameNowHeldById(), "Moving route renamed",
+                "the editor cannot say what the route is called now, so it has nothing to offer to save onto");
+
+            // AND PUT BACK, so the rest of this method is about the name it started with.
+            model.editRoute("Moving route renamed", name, commands, 0,
+                org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
+
             // A RENAME IS A CHANGE TOO (OP2-B5).  `Route.locomotiveRenamed` rewrites the route's commands and
             // conditions IN PLACE, so nothing about the route object changes identity - and the signature used
             // to compare the conditions by object, which made a rename invisible and let Save put the dead name
