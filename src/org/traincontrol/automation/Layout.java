@@ -11553,7 +11553,13 @@ public class Layout
         {
             Point landed = layout.getPoint(entry.getKey());
 
-            if (landed != null) landed.setArrivedFrom(entry.getValue());
+            // AND ONLY ONTO A SQUARE WHOSE PLACEMENT WAS HONOURED (AUR-C1).  A file written before
+            // this rule can still name a side on a square whose locomotive the drop above skipped,
+            // and a tail with no train on it is handed to whoever reserves the square next.
+            if (landed != null && landed.getCurrentLocomotive() != null)
+            {
+                landed.setArrivedFrom(entry.getValue());
+            }
         }
 
         // AND THE ROADS, after the sides and for the same reason (WK7-B1): the placement pass above clears both
@@ -11563,7 +11569,10 @@ public class Layout
         {
             Point landed = layout.getPoint(entry.getKey());
 
-            if (landed != null) landed.setArrivedAlong(layout.roadNamed(entry.getValue()));
+            if (landed != null && landed.getCurrentLocomotive() != null)
+            {
+                landed.setArrivedAlong(layout.roadNamed(entry.getValue()));
+            }
         }
 
         // Applied only now, because an assignment may name a locomotive placed at any point, and until

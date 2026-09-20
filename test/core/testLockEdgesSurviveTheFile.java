@@ -257,6 +257,75 @@ public class testLockEdgesSurviveTheFile
             + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 35}").replace('\'', '"');
     }
 
+    /**
+     * A square whose placement the loader dropped hands no tail to whoever reserves it next.
+     *
+     * **A file outliving the fleet is a case Adam has already ruled on** - *"drop the train and keep
+     * the rest"* (2026-09-16, AMR-C3) - and the drop's own comment promises *"the next save writes the
+     * file back without the phantom"*.  That was true of the placement and false of its tail: the side
+     * and the road were written onto the square anyway, saved again on every write, and reloaded on
+     * every start.
+     *
+     * **What they cost.**  `Point.reserve` sets an occupant and nothing else, so the first locked path
+     * ending there gave the reserving train the file's side and the file's road - and
+     * `walkStandingTrains` then claimed the track behind the square along a road that train has never
+     * driven.  Every other train was refused over it, naming a train standing somewhere else, until
+     * the reservation cleared.
+     *
+     * Three doors, three claims: the load does not apply a side to an empty square, the save does not
+     * write one, and a reservation clears whatever it found.
+     *
+     * @throws Exception from the loader
+     */
+    @Test
+    public void testADroppedPlacementLeavesNoTailBehind() throws Exception
+    {
+        Layout layout = load(aSquareWhoseTrainHasGone());
+
+        Point stand = layout.getPoint("LE Stand");
+
+        assertNull(stand.getCurrentLocomotive(),
+            "precondition: the locomotive the file names does not exist, so the loader should have"
+            + " dropped the placement and left the square empty");
+
+        assertNull(stand.getArrivedFrom(),
+            "the square came out of the file with the side a train that is no longer in the database"
+            + " arrived by.  Nothing stands there, and the next thing to reserve the square inherits"
+            + " it (AUR-C1)");
+
+        assertNull(stand.getArrivedAlong(),
+            "and with the road that train came along, which is what the tail walk follows");
+
+        // THE RECORD.  The drop's own comment says the next save writes the file back without the
+        // phantom; it said nothing about the phantom's tail, which was written on every save for ever.
+        assertFalse(layout.toJSON().toString().contains("arrivedFrom"),
+            "the layout wrote back a side for a square with nobody on it, so a reload rebuilds the"
+            + " same state: " + layout.toJSON());
+
+        // AND THE LIVE DOOR, which is the one that mends every future way of leaving a side behind.
+        stand.setArrivedFrom("LE Junction");
+
+        java.lang.reflect.Method reserve = Point.class.getDeclaredMethod(
+            "reserve", org.traincontrol.base.Locomotive.class);
+
+        reserve.setAccessible(true);
+        reserve.invoke(stand, loc());
+
+        assertNull(stand.getArrivedFrom(),
+            "a reservation took the square over and kept the side left on it by somebody else."
+            + "  `setLocomotive` clears both on a change of occupant and this door did not, so the"
+            + " reserving train's tail is walked back along a road it has never driven (AUR-C1)");
+
+        // THE CONTROL: the train that is ALREADY there keeps the tail it really has, which is what
+        // reserving a square a running train stands on has to leave alone.
+        stand.setArrivedFrom("LE Junction");
+
+        reserve.invoke(stand, loc());
+
+        assertEquals(stand.getArrivedFrom(), "LE Junction",
+            "reserving a square for the train already standing on it threw away its real tail");
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Fixtures
     // ---------------------------------------------------------------------------------------------
@@ -287,6 +356,26 @@ public class testLockEdgesSurviveTheFile
         return placesFixture("{'at': 'P:1,1', 'length': 2},"
             + "{'at': 'P:1,2', 'length': 3},"
             + "{'length': 4}");
+    }
+
+    /**
+     * One square holding a locomotive the database has never heard of, with a side and a road.
+     *
+     * @return the graph JSON
+     */
+    private static String aSquareWhoseTrainHasGone()
+    {
+        return ("{'points': ["
+            + "{'name': 'LE Stand', 'station': true, 's88': " + (S88_BASE + 4)
+            + ", 'loc': {'name': 'LE ghost that is not in the database'}"
+            + ", 'arrivedFrom': 'LE Junction'"
+            + ", 'arrivedAlong': [['LE Behind', 'LE Junction'], ['LE Junction', 'LE Stand']]},"
+            + station("LE Junction", 5) + "," + station("LE Behind", 6)
+            + "],'edges': ["
+            + "{'start': 'LE Behind', 'end': 'LE Junction', 'length': 5},"
+            + "{'start': 'LE Junction', 'end': 'LE Stand', 'length': 3},"
+            + "{'start': 'LE Stand', 'end': 'LE Junction', 'length': 3}"
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 35}").replace('\'', '"');
     }
 
     /** The same fixture with nothing missing, so the claim above has a control. */

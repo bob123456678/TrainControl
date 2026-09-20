@@ -601,7 +601,25 @@ public class Point
 
     synchronized private Point assign(Locomotive l)
     {
+        Locomotive previousOccupant = this.currentLoc;
+
         this.currentLoc = l;
+
+        // AND THE TAIL BELONGS TO THE TRAIN THAT LEFT, HERE TOO (AUR-C1).
+        //
+        // `setLocomotive` clears both on a change of occupant and this door did not, so a square left
+        // holding a side and a road with nobody on it - a placement the loader dropped, which is a
+        // file that has outlived the fleet - handed them to whichever train reserved it next.  The
+        // tail walk then claimed edges back along a road that train has never driven, and every other
+        // train was refused over them with a message naming a train standing somewhere else.
+        //
+        // Same rule as the other door, and the same test: a locomotive reserving the square it is
+        // already standing on keeps the tail it really has.
+        if (l != previousOccupant)
+        {
+            this.arrivedFrom = null;
+            this.arrivedAlong = null;
+        }
 
         return this;
     }
@@ -1242,7 +1260,12 @@ public class Point
             jsonObj.put("blockedBy", new JSONArray(named));
         }
 
-        if (this.arrivedFrom != null)
+        // ONLY BESIDE AN OCCUPANT (AUR-C1).
+        //
+        // A side with nobody on the square is a record of a train the database no longer has, and it
+        // was written back on every save for ever - so the AMR-C3 drop's own promise, "the next save
+        // writes the file back without the phantom", was true of the placement and false of its tail.
+        if (this.arrivedFrom != null && this.currentLoc != null)
         {
             jsonObj.put("arrivedFrom", this.arrivedFrom);
         }
@@ -1256,7 +1279,7 @@ public class Point
         // looks up.
         String road = Layout.namesOfRoad(this.arrivedAlong);
 
-        if (road != null)
+        if (road != null && this.currentLoc != null)
         {
             jsonObj.put("arrivedAlong", new JSONArray(road));
         }
