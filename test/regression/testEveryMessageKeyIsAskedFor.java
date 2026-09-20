@@ -83,6 +83,11 @@ public class testEveryMessageKeyIsAskedFor
         // The path preference list and its tooltips, in AutonomyViewerPanel
         "autolayout.ui.pathPreference",
         "autolayout.ui.tooltip.pathPreference",
+
+        // AutonomyEditorPanel.bulkClearWarning -> <key> or <key>AtOnce, for the three bulk clears
+        // (OP2-C2).  The first builder written since this list replaced the loose prefix rule, and the
+        // list is exactly how it was meant to fail: loudly, naming the two keys, rather than silently.
+        "autolayout.ui.confirmClearAll",
     };
 
     /**

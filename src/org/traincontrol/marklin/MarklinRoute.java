@@ -312,8 +312,8 @@ public class MarklinRoute extends Route
      * This said *"every walk"*, and several do not: `toJSON`, `toCSV`, `otherRouteRenamed`, `namesLocomotives`
      * and `commandsDrive` walk the live list.  Every one of them is an event-thread caller, which is the same
      * thread the edits run on, so none can be part-way along a list another thread is changing.  The one walk
-     * that is NOT on the event thread is the backup menu's `saveState`, and its reader takes a copy at
-     * `MarklinSimpleComponent.java:94`.
+     * that is NOT on the event thread is the backup menu's `saveState`, and its reader takes a copy in
+     * `MarklinSimpleComponent`'s constructor.
      *
      * The copy is not atomic either: `new ArrayList<>(list)` is `toArray()` under the hood, which walks a
      * `LinkedList` with no modification check, so a removal landing inside it can shorten the copy.  The window
