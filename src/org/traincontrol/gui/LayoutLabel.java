@@ -1054,6 +1054,11 @@ public final class LayoutLabel extends JLabel
                                     // no longer arises: whatever the icon is, `paintCoveredMark` draws
                                     // the wash and the train on top of it at the next paint.
                                     this.setIcon(lastIcon);
+
+                                    // COUNTED, so a test can see how many restores actually fired - which is
+                                    // what distinguishes a superseded timer being stopped from being left to
+                                    // go off over the highlight that replaced it (VC2-C3).
+                                    accessoryRestores++;
                                 }
 
                                 // AND IT IS NO LONGER OUTSTANDING (SVB-C1): the field is what says whether a
@@ -1189,6 +1194,19 @@ public final class LayoutLabel extends JLabel
     // The icon to put back when the flash ends, and the timer that will do it
     private Icon flashRestore;
     private javax.swing.Timer flashTimer;
+
+    /** How many accessory highlights have put their picture back, for the test in VC2-C3. */
+    private int accessoryRestores;
+
+    /**
+     * How many accessory highlights have ended by putting the tile's picture back (VC2-C3).
+     *
+     * @return the count since this label was made
+     */
+    public int accessoryRestores()
+    {
+        return accessoryRestores;
+    }
 
     /** The accessory highlight's own timer, so it can be ended rather than left to fire later (UIX-B2). */
     private javax.swing.Timer accessoryHighlight;

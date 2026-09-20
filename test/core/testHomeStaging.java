@@ -6241,13 +6241,15 @@ public class testHomeStaging
 
         assertEquals(layout.turnedOnArrivalAt(LOC_A), "HS A", "precondition: the record was not written");
 
-        layout.locRenamed(LOC_A, "HS renamed");
+        // THROUGH THE DOOR THE OPERATOR USES (VB2-C3): `renameLoc` is what has to remember the record, and pinning
+        // `locRenamed` alone left the call site as the only thing that could be wrong.
+        assertTrue(model.renameLoc(LOC_A, "HS renamed"), "precondition: the rename was refused");
 
         assertNull(layout.turnedOnArrivalAt(LOC_A), "the record still answers under the old name");
         assertEquals(layout.turnedOnArrivalAt("HS renamed"), "HS A",
             "the turn was lost by the rename, so the train keeps the facing it drove in with");
 
-        layout.locRenamed("HS renamed", LOC_A);
+        assertTrue(model.renameLoc("HS renamed", LOC_A), "the name was not put back for the rest of the class");
 
         layout.locDeleted(loc(LOC_A));
 

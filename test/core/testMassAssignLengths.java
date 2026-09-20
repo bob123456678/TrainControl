@@ -1374,6 +1374,42 @@ public class testMassAssignLengths
         {
             assertFalse(piece.getTiles().contains(crossing), "the crossing is in a piece: " + describe(session.stretchesNeedingALength()));
         }
+
+        // AND THE ARITHMETIC, which is the point of cutting it out (VC2-C5).  Every piece 4, the crossing 3: the leg
+        // runs over the crossing twice, so it counts 3 twice, and the pieces' totals are counted once each.  What
+        // the reduction reports is everything but the square the train starts on.
+        for (AutonomySession.Stretch piece : session.stretchesNeedingALength())
+        {
+            assertTrue(session.assignStretchLength(piece, 4), "4 was refused for a piece");
+        }
+
+        assertTrue(session.assignSwitchLength(session.sharedSquaresNeedingALengthOn("main"), 3),
+            "the crossing would not take a length");
+
+        session.rebuild();
+
+        int pieces = 0;
+
+        for (AutonomySession.Stretch piece : session.stretchesALengthRuleReads()) pieces++;
+
+        for (GraphReducer.ReducedEdge leg : session.getReducer().getEdges())
+        {
+            int over = 0;
+
+            for (GraphReducer.TileStep step : leg.getPath())
+            {
+                if (crossing.equals(step.getTile())) over++;
+            }
+
+            if (over < 2) continue;
+
+            int expected = 4 * pieces + 3 * over - session.getStore().getTileLength(leg.getStart());
+
+            assertEquals(leg.getLength(), expected,
+                "the figure of eight does not add up: its pieces total " + (4 * pieces) + ", it runs over the"
+                + " crossing " + over + " times at 3 each, and the reduction does not count the square it starts"
+                + " on");
+        }
     }
 
     /**

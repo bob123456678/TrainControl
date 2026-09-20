@@ -26685,10 +26685,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 continue;
                             }
 
-                            // AND NOT WHILE A ROUTE THAT DRIVES IT IS RUNNING (CS3-B1, corrected by SVB-C2).  The
-                            // Central Station's own name proposal is the fourth door into `renameLoc`, and it
-                            // rewrites every route command naming the locomotive exactly as the others do.
+                            // AND NOT WHILE A ROUTE THAT DRIVES IT IS RUNNING (CS3-B1, corrected by SVB-C2 and
+                            // VB2-C6).  The Central Station's own name proposal is the fourth door into
+                            // `renameLoc`, and it rewrites every route command naming the locomotive exactly as the
+                            // others do - and it may DELETE a locomotive of the target name first, so that one is
+                            // asked about too.
                             if (refuseWhileARouteDrivesIt(this, currentName)) continue;
+
+                            if (refuseWhileARouteDrivesIt(this, newName)) continue;
 
                             Locomotive l = model.getLocByName(currentName);
                             

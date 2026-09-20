@@ -266,6 +266,45 @@ public class testLayoutTiles
     }
 
     /**
+     * A second accessory highlight stops the first, so only one restore ever fires (VC2-C3).
+     *
+     * A three-way drives twice, 350 ms apart, and each drive highlights the tile.  The first timer used to be left
+     * running: it fired 2.25 seconds after ITS start, part-way through the second highlight, and put the plain icon
+     * back over it - the tile stopped looking highlighted while it still was.  Counted rather than looked at,
+     * because what distinguishes the two is how many restores happen, not which picture is up.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testASecondHighlightStopsTheFirstsRestore() throws Exception
+    {
+        LayoutLabel label = warmedSignalLabel();
+
+        SwingUtilities.invokeAndWait(() -> label.updateImage(true));
+
+        assertTrue(awaitHighlight(label), "precondition: the first highlight never went up");
+
+        int before = label.accessoryRestores();
+
+        // THE SECOND DRIVE, well inside the first highlight's 2250 ms.
+        SwingUtilities.invokeAndWait(() -> label.updateImage(true));
+
+        assertTrue(awaitHighlight(label), "precondition: the second highlight never went up");
+
+        // Long enough for BOTH timers to have fired, if both were still armed.
+        Thread.sleep(3200);
+
+        SwingUtilities.invokeAndWait(() -> { });
+
+        int restores = label.accessoryRestores() - before;
+
+        assertEquals(restores, 1,
+            "the tile was put back " + restores + " times after the second highlight went up; two means the first"
+            + " highlight's timer was left running and fired over the second one, and none means the second"
+            + " highlight never ended");
+    }
+
+    /**
      * Any square whose picture is replaced gives up an outstanding flash, not only a switch or a signal (SVB-B1).
      *
      * The first fix dropped the flash inside the accessory-highlight branch, which two ordinary cases never reach:
