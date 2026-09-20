@@ -5239,6 +5239,9 @@ public class AutonomySession
             // The two halves of the length rule (FR-046), and the two of them disagreeing about one
             // platform (Adam, 2026-09-11).
             placedTrainsWithoutLength(), stationsWithoutMaxLength(), runInsShorterThanTheBerth(),
+            // AND THE HALF-MEASURED APPROACH, which closes a berth to everything until it is finished
+            // (Adam, 2026-09-19, on RTX-C2: *"we want clear warnings to the user"*).
+            stationsWithAHalfMeasuredApproach(),
             // A terminus with two ways in, which is a statement that cannot be true (MT-361).
             terminiWithTwoWaysIn(),
             // Pages sharing one sensor with another, which cannot be modelled at all (OB-150).
@@ -8216,6 +8219,63 @@ public class AutonomySession
         for (TileKey square : reducer.getPoints().keySet())
         {
             if (hasNoMaximumTrainLength(square)) out.add(square);
+        }
+
+        return out;
+    }
+
+    /**
+     * Stations whose approach is measured in part and not in whole - the state that closes a berth to every train.
+     *
+     * Adam, 2026-09-19, shown RTX-C2: *"as long as lengths are specified on the berth, it will work, right?  We want
+     * clear warnings to the user if so, then it's fine."*  It does work: with the whole approach measured, the berth
+     * walk spends real lengths and admits a train that fits.  Half measured is the trap.
+     *
+     * **Why half measured refuses everything.**  `Layout.whyABerthCannotHoldIt` declines to judge only when NOTHING
+     * on the approach but the berth's own square is measured (PRW-B1).  One measured square is enough to make it
+     * judge, and it then walks backwards CLAIMING each place before spending the train's length on it - so an
+     * unmeasured square, worth 0, is claimed for nothing and the train still has its whole length left when the walk
+     * runs out of places.  A one-unit train is refused as surely as a nine-unit one, and the refusal quotes the road
+     * rather than the hole in the measurements.  It is the refusing direction of a ruled rounding, so it is right;
+     * it is just not something anybody would guess at from the outside.
+     *
+     * **Which state is ordinary.**  Mass Assign Lengths gives every switch on a page one length in a step of its
+     * own, and MT-454's steps reach it by skipping pieces - so "switches measured, some pieces still at 0" is what
+     * the tool leaves behind between sittings.  That is exactly this.
+     *
+     * Asked of the legs that ARRIVE at each station, which is what the berth walk reads.
+     *
+     * @return the station squares, each mapped to how many squares of its approach still have no length
+     */
+    public java.util.Map<TileKey, Integer> stationsWithAHalfMeasuredApproach()
+    {
+        java.util.Map<TileKey, Integer> out = new LinkedHashMap<>();
+
+        if (reducer == null || store == null) return out;
+
+        for (TileKey square : reducer.getPoints().keySet())
+        {
+            if (!store.isStation(square)) continue;
+
+            boolean anyMeasured = false;
+            int unmeasured = 0;
+
+            for (GraphReducer.ReducedEdge arriving : reducer.getEdges())
+            {
+                if (!arriving.getEnd().equals(square)) continue;
+
+                for (GraphReducer.TileStep step : arriving.getPath())
+                {
+                    // The berth's own square is an allowance the walk never spends, and the start of the leg is
+                    // where a train would be coming FROM - neither is a place this walk claims.
+                    if (step.getTile().equals(square)) continue;
+
+                    if (store.getTileLength(step.getTile()) > 0) anyMeasured = true;
+                    else unmeasured++;
+                }
+            }
+
+            if (anyMeasured && unmeasured > 0) out.put(square, unmeasured);
         }
 
         return out;

@@ -1375,4 +1375,56 @@ public class testMassAssignLengths
             assertFalse(piece.getTiles().contains(crossing), "the crossing is in a piece: " + describe(session.stretchesNeedingALength()));
         }
     }
+
+    /**
+     * A berth whose approach is half measured is warned about, and a whole one is not (Adam, 2026-09-19, on RTX-C2).
+     *
+     * *"As long as lengths are specified on the berth, it will work, right?  We want clear warnings to the user if
+     * so, then it's fine."*  It does work whole; half measured is the trap, and it is the state this very tool
+     * leaves behind between sittings - Mass Assign Lengths gives every switch a length in a step of its own, and
+     * MT-454 reaches that step by skipping pieces.  The berth then takes no train at all, because the room walk
+     * judges as soon as anything is measured and an unmeasured square is worth nothing to it.
+     *
+     * Three states, in the order an operator meets them: nothing measured (no warning, nothing is known), the
+     * switch measured and the piece not (warned), everything measured (no warning).
+     *
+     * @throws IOException from the fixture
+     */
+    @Test
+    public void testAHalfMeasuredApproachIsWarnedAbout() throws IOException
+    {
+        openBerthBehindASwitch(key(5, 1));
+
+        assertTrue(session.stationsWithAHalfMeasuredApproach().isEmpty(),
+            "a railway with nothing measured is warned about, and nothing is known there");
+
+        // WHAT THE SWITCH STEP OF THE WALK LEAVES, with a piece skipped.
+        session.setTileLength(key(3, 1), 1);
+
+        assertTrue(session.stationsWithAHalfMeasuredApproach().containsKey(key(5, 1)),
+            "the berth behind a measured switch and an unmeasured piece takes no train at all, and nothing says so");
+
+        boolean warned = false;
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (org.traincontrol.automationui.AutonomyChecks.HALF_MEASURED_APPROACH.equals(finding.getMessageKey())
+                && key(5, 1).equals(finding.getTile()))
+            {
+                warned = true;
+            }
+        }
+
+        assertTrue(warned, "the editor's findings say nothing about a berth that is closed to every train");
+
+        // AND MEASURING THE REST ENDS IT.
+        session.setTileLength(key(4, 1), 2);
+        session.setTileLength(key(2, 1), 2);
+        session.setTileLength(key(1, 1), 2);
+        session.setTileLength(key(5, 1), 2);
+
+        assertTrue(session.stationsWithAHalfMeasuredApproach().isEmpty(),
+            "the approach is measured throughout and the warning is still up: " 
+            + session.stationsWithAHalfMeasuredApproach());
+    }
 }

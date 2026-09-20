@@ -335,6 +335,16 @@ public class AutonomyChecks
      */
     public static final String DUPLICATE_SENSOR_PAGE = "autosetup.ui.checkDuplicateSensorPage";
 
+    /**
+     * A berth whose approach is measured in part and not in whole (Adam, 2026-09-19, on RTX-C2).
+     *
+     * A WARNING rather than a notice, because while it stands the berth takes no train at all: the room walk judges
+     * as soon as anything on the approach is measured, and the squares that are not measured are worth nothing to
+     * it.  Adam's ruling was that the rule is right and the operator should be told - *"we want clear warnings to
+     * the user"* - so the sentence says what is happening and what ends it.
+     */
+    public static final String HALF_MEASURED_APPROACH = "autosetup.ui.checkHalfMeasuredApproach";
+
     private AutonomyChecks()
     {
     }
@@ -371,7 +381,8 @@ public class AutonomyChecks
         Set<TileKey> facingsImpossible, Map<TileKey, Set<TilePorts.Side>> barred,
         Set<TileKey> closed,
         Set<TileKey> withoutTrainLength, Set<TileKey> withoutMaxLength,
-        Map<TileKey, int[]> shortRunIns, Map<TileKey, Integer> terminiWithTwoWaysIn,
+        Map<TileKey, int[]> shortRunIns, Map<TileKey, Integer> halfMeasured,
+        Map<TileKey, Integer> terminiWithTwoWaysIn,
         Map<TileKey, String> repeatedSensorPages, Map<TileKey, Integer> reversalsWithoutLength,
         Set<TileKey> notAutoDestinations,
         Map<TileKey, String> copiesWithNoWayOut, Map<TileKey, String> copiesWithNoWayIn,
@@ -383,7 +394,7 @@ public class AutonomyChecks
 
         findings.addAll(checkDuplicateLocomotives(placedLocomotives));
         findings.addAll(checkLengths(reducer, withoutTrainLength, withoutMaxLength, shortRunIns,
-            placedLocomotives));
+            halfMeasured, placedLocomotives));
         findings.addAll(checkRepeatedSensorPages(repeatedSensorPages));
         findings.addAll(checkTermini(reducer, terminiWithTwoWaysIn));
 
@@ -990,9 +1001,24 @@ public class AutonomyChecks
      * @return one warning per square
      */
     private static List<Finding> checkLengths(GraphReducer reducer, Set<TileKey> withoutTrainLength,
-        Set<TileKey> withoutMaxLength, Map<TileKey, int[]> shortRunIns, Map<TileKey, String> placed)
+        Set<TileKey> withoutMaxLength, Map<TileKey, int[]> shortRunIns,
+        Map<TileKey, Integer> halfMeasured, Map<TileKey, String> placed)
     {
         List<Finding> findings = new ArrayList<>();
+
+        // THE BERTH THAT TAKES NOTHING AT ALL, said first because it is the one that stops trains today.
+        if (halfMeasured != null)
+        {
+            for (Map.Entry<TileKey, Integer> station : halfMeasured.entrySet())
+            {
+                GraphReducer.ReducedPoint point =
+                    reducer == null ? null : reducer.getPoints().get(station.getKey());
+
+                findings.add(new Finding(Severity.WARNING, HALF_MEASURED_APPROACH,
+                    point == null ? String.valueOf(station.getKey()) : point.getName(),
+                    station.getKey(), station.getValue()));
+            }
+        }
 
         for (TileKey square : withoutTrainLength)
         {
