@@ -981,10 +981,19 @@ public class testAutonomyDiagramSampleLayout
 
                 org.traincontrol.base.LayoutDiagramComponent c = graph.getTiles().get(stepA.getTile());
 
-                boolean overpass = c != null
-                    && c.getType() == org.traincontrol.base.LayoutDiagramComponent.componentType.OVERPASS;
+                // TWO ROADS THAT NEVER MEET ARE NOT SHARED TRACK, whichever square carries them (AUR-B1).
+                //
+                // This listed the overpass alone, and a double curve is the same thing drawn flat: `TilePorts`
+                // gives it `route(N, W)` and `route(E, S)`, two curves in opposite corners with no rail
+                // between them.  The reduction keys both per route now, so a pair crossing one on different
+                // roads is not locked - and this guard, knowing only the overpass, called that a gap.
+                boolean twoRoads = c != null
+                    && (c.getType() == org.traincontrol.base.LayoutDiagramComponent.componentType.OVERPASS
+                        || c.getType() == org.traincontrol.base.LayoutDiagramComponent.componentType.DOUBLE_CURVE
+                        || c.getType()
+                            == org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK_DOUBLE_CURVE);
 
-                if (overpass && !stepA.getRouteId().equals(stepB.getRouteId())) continue;
+                if (twoRoads && !stepA.getRouteId().equals(stepB.getRouteId())) continue;
 
                 return true;
             }
