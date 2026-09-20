@@ -3201,7 +3201,13 @@ public class AutonomySession
      * squares and would then be counted on the other road too.  So the square is cut out of every piece and asked for
      * on its own, exactly as a switch is (MAL-B1), and the two roads each measure what was typed for them plus it.
      *
-     * **Two ROADS, not two legs.**  Every square in front of a switch is run over by each leg through that switch -
+     * **Two ROADS THAT SHARE METAL, not two legs.**  A crossing's roads cross: a train on one is on the other's
+     * rail, which is why one length counts on both and why the square is asked for once.  A DOUBLE CURVE is the
+     * opposite - its two curves never touch, which is why the reduction keys it per road (AUR-B1) - and it is here
+     * only because both of its curves are measured by the one number the operator types for that square.  The two
+     * rules are about different things and agree (OP2-C4).
+     *
+     * Every square in front of a switch is run over by each leg through that switch -
      * on the fixture behind `testEveryLegIsCutIntoPiecesAtItsSwitches`, the plain straight before the points is in
      * both legs - and such a square is ordinary track that belongs in a piece.  What makes a crossing different is
      * its geometry: `TilePorts` gives it two separate roads (`CROSSING` runs north-south and east-west, a

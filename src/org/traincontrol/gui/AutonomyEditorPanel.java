@@ -8859,6 +8859,14 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void annotationsChanged()
     {
+        // THE WASH DEPENDS ON THE DIRECTIONS THIS DOOR CHANGES (AUS-C3).
+        //
+        // A run clicked through to closed has no leg in the reduction, so its squares stop being unmeasured track
+        // and the Unmeasured Track wash should leave them - and opening one back up is the mirror.  The cache was
+        // filled before the click, and this door, unlike `setupChanged`, did not forget it: the count in the menu
+        // moved and the wash did not, which is the one thing MT-455 says never happens.
+        unmeasuredSquares = null;
+
         if (onAnnotationsChanged == null)
         {
             setupChanged();
@@ -9615,7 +9623,11 @@ public class AutonomyEditorPanel extends JPanel
 
         String name = session.getStore().getPointName(tile);
 
-        return name == null || name.trim().isEmpty() ? String.valueOf(tile) : name;
+        if (name != null && !name.trim().isEmpty()) return name;
+
+        // AN UNNAMED SENSOR IS NAMED BY WHERE IT IS (AUS-C4), as a switch and a crossing already are.  The raw key
+        // - `1 - Main:18,10` - reads as a fault code in the middle of a sentence about a stretch of track.
+        return I18n.f("autosetup.ui.sensorAtSquare", tile.getX() + "," + tile.getY());
     }
 
     /**

@@ -1334,7 +1334,8 @@ public class GraphReducer
     /**
      * Two edges that share a tile are the same piece of railway and cannot run at once.
      *
-     * The one exception is an overpass, where the two tracks are at different heights: crossing it by
+     * The exceptions are the three tile types whose roads never meet - an overpass, where the two tracks are at
+     * different heights, and the two kinds of double curve, whose curves sit in opposite corners (AUR-B1, OP2-C3).  Crossing one by
      * different routes is not a conflict, though crossing it by the same one still is.  Getting that
      * backwards is costly either way - treating it as a conflict needlessly serialises two independent
      * routes, while treating a same-route share as safe would allow a real collision.
@@ -1411,7 +1412,7 @@ public class GraphReducer
     /**
      * The location identifiers a step occupies.
      *
-     * Normally the tile itself.  An overpass is identified per route, so its two levels are separate
+     * Normally the tile itself.  Three tile types are identified per route instead, so their roads are separate
      * places - and so is a DOUBLE CURVE, and a feedback double curve, for the same reason (AUR-B1, 2026-09-19).
      *
      * **Two roads that never meet must not be one place.**  `TilePorts` gives a double curve `route(N, W)` and

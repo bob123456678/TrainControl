@@ -1733,7 +1733,7 @@ that the page says so itself, and that it will not be written over until the fil
   refuses an edge whose end reports a set sensor, and the staging planner refuses a point whose sensor sibling
   holds a train - and because one s88 address is shared by more than one Point here (a sensor is not a place
   key), both refuse the SIBLING square of a standing train as well.  That is the refusing direction and it is
-  wanted.  **The simulation is the odd one out**: `HomeStaging.snapshot` pulses its feedback, which is why an
+  wanted.  **The simulation is the odd one out**: `Layout.simAnnounce` and `simClearBehind` pulse the feedback a simulated run reports, which is why an
   earlier review read the railway as clearing under a standing train (AMR-D1, corrected here by RTX-C4).
 
 - **Signals and switches are the same device to the protocol, and different things on the railway.**
