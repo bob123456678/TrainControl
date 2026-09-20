@@ -1367,6 +1367,35 @@ NSV-D3	NSV-validation.md	-	clean, with the correction in adjudication 2
 NSV-D4	NSV-validation.md	-	measured
 NSV-D5	NSV-validation.md	-	recorded
 NSV-D6	NSV-validation.md	-	verified
+OP2-B1	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	AUS-B1: the refresh at `TrainControlUI.java:4765` reaches `onChanged`, so every right-clic
+OP2-B2	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	RTX-C2: `stationsWithAHalfMeasuredApproach` filters on `isStation` and never asks `isAutoD
+OP2-B3	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	RTX-C2: "half measured" is pooled over every arriving edge; the rule decides per approach 
+OP2-B4	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	MKR-B1: `rebindRouteTiles` reads `layoutDB` through `getLayoutList()`/`getLayout()` withou
+OP2-B5	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	GUX-B1: `signatureOf` compares a route's CONDITIONS by object identity, so a locomotive re
+OP2-C1	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	RTX-C4: `behaviour.md` says `HomeStaging.snapshot` pulses the feedback. It reads it; the p
+OP2-C10	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	MKR-B1's test injects a page into `layoutDB` and never removes it
+OP2-C11	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	VB2-C3: the rename test has no `finally`, so a failure leaves "HS renamed" in the shared l
+OP2-C12	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	RTX-C2's message says "takes no train at all", which is true only where a road shares the 
+OP2-C13	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	`rebindRouteTiles` is silent where `wireComponents` logs `layout.routeButtonMissingRoute`
+OP2-C2	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	AUS-C2: the sentence is chosen by a ternary duplicated in four places, against the one-bui
+OP2-C3	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	AUR-B1: `deriveLocks`' javadoc still says "The one exception is an overpass". There are th
+OP2-C4	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	AUR-B1 contradicts `sharedSquaresALengthRuleReads`, written the same day, about whether a 
+OP2-C5	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	VC2-C5: the figure-of-eight arithmetic's `- getTileLength(leg.getStart())` term is 0 in it
+OP2-C6	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	VC2-C3: the restore-counter test turns on wall-clock timing, which is the hazard VC2-C6 re
+OP2-C7	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	SVT-C1: `assertFalse(built != null && built.isValid())` passes for any invalidation, and `
+OP2-C8	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	VC2-C6: nothing records that the two focus checks ever ran, so a desktop that never gives 
+OP2-C9	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	GUX-B1: a RENAMED route is reported "gone", and save-as-new takes a new id that no route t
+OP2-D1	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	The half-measured detector does NOT fire on a page with no lengths at all, nor on a statio
+OP2-D10	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	The MKR-B1 test would go red without the fix
+OP2-D11	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	Every new message line in all nine property files is ASCII
+OP2-D2	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	RTX-C4's two refusals are true of the code, and nothing else in `docs/` states the opposit
+OP2-D3	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	Both AUS-C2 sentences are true of their surface: the editor's `onChanged` does not save, t
+OP2-D4	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	Every route-database write door is covered by the re-bind, and a null route is safe at eve
+OP2-D5	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	`editRoute` refuses a rename onto a taken name BEFORE deleting, so "the name was taken in 
+OP2-D6	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	AUR-B1 cannot change a `FEEDBACK_DOUBLE_CURVE` Point's identity: a Point tile is never a p
+OP2-D7	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	Place ids are persisted, and the persisted key is stable and only ever compared within one
+OP2-D8	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	AUS-B1's refresh cannot interleave with a walk of that panel, and cannot commit a layout e
+OP2-D9	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	VB2-C6 is right: the Central Station proposal really does delete a locomotive of the targe
 OPV-B1	2026-09-04-opus-validation.md	Closed	fixed for the finding's headline case - `testALockPhaseFailureLeavesTheTrainWhereItStands`
 OPV-C1	2026-09-04-opus-validation.md	Closed	fixed - the key is `block`, and each of the three markers is now asserted separately, beca
 OPV-C2	2026-09-04-opus-validation.md	Closed	fixed - the ACC-C2 disposition now says the paragraph is in the generator and the checked-
