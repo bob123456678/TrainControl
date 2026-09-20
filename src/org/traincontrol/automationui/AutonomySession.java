@@ -7254,6 +7254,28 @@ public class AutonomySession
     }
 
     /**
+     * Writes several squares' lengths and re-derives once (AUS-C1).
+     *
+     * `touched()` is a full builder construction - a new graph, a new reduction, a new station index - and the
+     * single setter calls it per square, which is right for one square and wrong for a run: Segment Length on a run
+     * of four paid for four of them on the event thread, and then the running layout's rebuild on top.  The two
+     * bulk doors beside this one already have this shape, and `clearEveryTileLength`'s javadoc says why.
+     *
+     * @param lengths what each square is to measure
+     */
+    public void setTileLengths(java.util.Map<TileKey, Integer> lengths)
+    {
+        if (lengths == null || lengths.isEmpty()) return;
+
+        for (java.util.Map.Entry<TileKey, Integer> square : lengths.entrySet())
+        {
+            store.setTileLength(square.getKey(), square.getValue() == null ? 0 : square.getValue());
+        }
+
+        touched();
+    }
+
+    /**
      * Every square that has a length recorded (FR-069).
      *
      * @return the measured squares

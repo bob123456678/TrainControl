@@ -8705,10 +8705,16 @@ public class AutonomyEditorPanel extends JPanel
     {
         TileKey leader = leaderOf(tile);
 
+        // ONE RE-DERIVATION FOR THE WHOLE RUN (AUS-C1).  Writing square by square paid for a new graph, reduction
+        // and station index per square, on the event thread.
+        java.util.Map<TileKey, Integer> lengths = new java.util.LinkedHashMap<>();
+
         for (TileKey square : runTilesOf(tile))
         {
-            session.setTileLength(square, square.equals(leader) ? length : 0);
+            lengths.put(square, square.equals(leader) ? length : 0);
         }
+
+        session.setTileLengths(lengths);
 
         // AND THE RUNNING LAYOUT IS TOLD, because this is a door in its own right: it is public, the track
         // diagram's own panel has no Save, and lengths are what the room rule measures with (MT-246).

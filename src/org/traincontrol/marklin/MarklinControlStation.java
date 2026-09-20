@@ -769,6 +769,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     private void syncLayouts() throws Exception
     {
+        // ONE PARSER FOR THE WHOLE METHOD (MKR-C1, completing RC-B9).
+        //
+        // RC-B9 wrote down the hazard - `syncWithCS2` reassigns `fileParser` outside the lock that
+        // serialises this method, so a question asked twice can be answered by two different parsers - and
+        // said a local removes the question rather than answering it.  The locals it took were assigned from
+        // a SECOND read of the field, after the parse: a refresh whose parse straddles the swap read both
+        // counts off a parser that had parsed nothing, which is zero pages unreadable and zero pages named,
+        // and the prune then ran on a partial railway.  Read once, here, and every question below asked of
+        // this one.
+        final CS2File parser = this.fileParser;
+
         // Prune stale feedbacks
         List<Integer> feedbackAddresses = new LinkedList<>();
         
@@ -778,7 +789,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         try
         {
             // true to prefer the local file
-            accs = fileParser.getMagList(true);
+            accs = parser.getMagList(true);
         }
         catch (Exception e)
         {
@@ -793,7 +804,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // for every layout page, seconds rather than a repaint - and anything asking for a diagram in
         // that window was told there were none.  Nothing here is atomic, but the empty state now lasts
         // as long as a loop over already-parsed objects instead of as long as a network round trip.
-        List<LayoutDiagram> parsed = fileParser.parseLayout(accs);
+        List<LayoutDiagram> parsed = parser.parseLayout(accs);
 
         // ASKED ONCE, HERE, AND CARRIED (RC-B9).
         //
@@ -802,7 +813,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // method - so a concurrent refresh could have put a fresh parser there, the second question
         // would have been answered with its zero, and the pruning would have run on a partial read.
         // A local removes the question rather than answering it.
-        final int couldNotBeRead = fileParser.getPagesThatCouldNotBeRead();
+        final int couldNotBeRead = parser.getPagesThatCouldNotBeRead();
 
         // AND THE INDEX'S OWN COUNT, ASKED IN THE SAME BREATH (TWV-C2).
         //
@@ -812,7 +823,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // the hazard the paragraph above was written about. The window is smaller than the one RC-B9
         // closed and the cost is milder - a spurious revert to the Central Station, or a missed one -
         // but the rule was already written down here and the new line did not follow it.
-        final int namedByTheIndex = fileParser.getPagesTheIndexNamed();
+        final int namedByTheIndex = parser.getPagesTheIndexNamed();
 
         // NOTHING READ IS STILL A FAILURE (RC-A4).
         //
@@ -966,10 +977,23 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return true;
     }
        
+    /**
+     * The monitor the three autonomy-layout doors share (CS3-C4).
+     *
+     * ITS OWN, not the model's.  `getAutoLayout` is asked constantly - by the driving threads, by the window's
+     * repaints and by every route that mentions autonomy - and the model's own monitor is held by other work
+     * (`changeLocAddress`, the id-cache rebuild).  Sharing it would put the event thread behind that work for
+     * no reason, which is the freeze this codebase has taken off the event thread twice before.
+     */
+    private final Object autoLayoutLock = new Object();
+
     @Override
     public boolean hasAutoLayout()
     {
-        return this.autoLayout != null;
+        synchronized (this.autoLayoutLock)
+        {
+            return this.autoLayout != null;
+        }
     }
     
     /**
@@ -979,12 +1003,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public Layout getAutoLayout()
     {
-        if (this.autoLayout == null)
+        synchronized (this.autoLayoutLock)
         {
-            this.autoLayout = new Layout(this);
+        // SYNCHRONIZED, AND READ ONCE (CS3-C4).  A route thread asks `hasAutoLayout()` and then this, and the
+        // event thread can clear the layout between the two - so the route thread built an empty `Layout`
+        // over the configuration the operator had just cleared, after which `hasAutoLayout()` answered yes
+        // about nothing and the static layout version had ticked.  `clearAutoLayout` takes the same monitor,
+        // so the clear and the create cannot interleave.
+            if (this.autoLayout == null)
+            {
+                this.autoLayout = new Layout(this);
+            }
+
+            return this.autoLayout;
         }
-        
-        return this.autoLayout;
     }
     
     /**
@@ -1000,13 +1032,22 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public void clearAutoLayout()
     {
-        if (this.autoLayout != null)
+        Layout going;
+
+        synchronized (this.autoLayoutLock)
         {
-            this.autoLayout.invalidate();
-            this.autoLayout.stopLocomotives();
+            going = this.autoLayout;
+            this.autoLayout = null;
         }
 
-        this.autoLayout = null;
+        // STOPPED OUTSIDE THE LOCK (CS3-C4).  `stopLocomotives` talks to the railway and waits on it, and
+        // nothing else may be made to queue behind that - the lock is only there so a route thread cannot
+        // build a fresh layout in the middle of a clear.
+        if (going != null)
+        {
+            going.invalidate();
+            going.stopLocomotives();
+        }
     }
 
     /**
@@ -1566,6 +1607,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         MarklinLocomotive existingLoc = this.locDB.getByName(l.getName());
                         this.locDB.delete(l.getName());
                         this.locDB.add(existingLoc, existingLoc.getName(), existingLoc.getUID());
+
+                        // AND THE CACHE FOLLOWS THE NEW UID AT ONCE (MKR-C2).  The rebuild at the end of the sync
+                        // is on the success path only, and until it runs every echo for this locomotive resolves
+                        // to nothing - the address it now answers to is not in the cache, and the one it used to
+                        // answer to names a locomotive the database no longer has under that key.
+                        this.rebuildLocIdCache();
 
                         this.logf("loc.addressUpdated",
                             existingLoc.getName(),
@@ -3704,12 +3751,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
         List<String> l = new LinkedList<>();
         List<Integer> ids = this.routeDB.getItemIds();
         Collections.sort(ids);
-        
+
         for (int i : ids)
         {
-            l.add(this.routeDB.getById(i).getName());
+            // RESOLVED ONCE, AND SKIPPED IF IT HAS GONE (MKR-C4).  The ids are a copy taken under the collection's
+            // lock; the lookups are not, and the sync's re-read of a changed station route deletes an id and puts
+            // it back a few statements later on its own thread.  A reader landing between the two used to take a
+            // NullPointerException out of a menu action - `receiveMessage` was given this same treatment twice.
+            MarklinRoute route = this.routeDB.getById(i);
+
+            if (route != null) l.add(route.getName());
         }
-                
+
         return l;
     }
     

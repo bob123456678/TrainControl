@@ -1491,4 +1491,44 @@ public class testMassAssignLengths
             "an ordinary platform is warned about a refusal that never happens there - the berth rule exempts"
             + " every station autonomy may choose");
     }
+
+    /**
+     * Segment Length on a run re-derives the railway once, not once per square (AUS-C1).
+     *
+     * `touched()` is a full builder construction - a new graph, a new reduction, a new station index - and the
+     * single-square setter calls it every time.  Writing a run square by square paid for one of those per square,
+     * on the event thread, and then the running layout's rebuild on top.  Counted through the graph's identity,
+     * which is what a rebuild replaces.
+     *
+     * @throws IOException from the fixture
+     */
+    @Test
+    public void testSettingARunsLengthRebuildsOnce() throws IOException
+    {
+        openARunOfTwoPlainSquares();
+
+        java.util.Map<TileKey, Integer> run = new java.util.LinkedHashMap<>();
+
+        run.put(key(2, 1), 3);
+        run.put(key(3, 1), 0);
+
+        Object before = session.getGraph();
+
+        session.setTileLengths(run);
+
+        assertNotSame(session.getGraph(), before, "precondition: nothing was re-derived at all, so nothing was written");
+
+        assertEquals(session.getStore().getTileLength(key(2, 1)), 3, "the run did not take its length");
+        assertEquals(session.getStore().getTileLength(key(3, 1)), 0, "the follower was not cleared");
+
+        // AND ONE PER CALL, not one per square: a second write of two squares re-derives once more, so two writes
+        // of two squares are two derivations and not four.
+        Object after = session.getGraph();
+
+        run.put(key(2, 1), 4);
+
+        session.setTileLengths(run);
+
+        assertNotSame(session.getGraph(), after, "the second write re-derived nothing");
+    }
 }
