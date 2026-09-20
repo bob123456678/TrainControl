@@ -12784,6 +12784,55 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
     
+    /**
+     * Whether a button click carried Control, the way the key handler asks `isControlDown` (UIX-C5).
+     *
+     * **The four arrow buttons' tooltips have promised Control and Alt behaviour since 2.7.4 and only
+     * the keyboard delivered it.**  Their listeners took the `ActionEvent` and never looked at it, so a
+     * Control click on Switch Direction toggled - reversing a locomotive that was already reversed -
+     * and an Alt click on Increase Speed moved one ordinary step.  The behaviour the tooltips describe
+     * is the key handler's, at `VK_LEFT` and `VK_UP`; these three methods are what let the buttons
+     * reach it, and the numbers are read off those arms so the two halves cannot drift apart.
+     *
+     * Null is plain, because the key handler's own plain arms call the listeners with no event at all.
+     *
+     * @param evt the click, or null
+     * @return whether Control was held
+     */
+    private static boolean controlHeld(java.awt.event.ActionEvent evt)
+    {
+        return evt != null && (evt.getModifiers() & java.awt.event.ActionEvent.CTRL_MASK) != 0;
+    }
+
+    /**
+     * Whether a button click carried Alt.
+     *
+     * @param evt the click, or null
+     * @return whether Alt was held
+     */
+    private static boolean altHeld(java.awt.event.ActionEvent evt)
+    {
+        return evt != null && (evt.getModifiers() & java.awt.event.ActionEvent.ALT_MASK) != 0;
+    }
+
+    /**
+     * How far one press of a speed button moves the throttle: Alt doubles the step, Control fine-tunes.
+     *
+     * Alt is asked first, which is the order `VK_UP` and `VK_DOWN` ask in, so a press holding both
+     * answers the same on the button as on the keyboard.
+     *
+     * @param evt the click, or null for the keyboard's plain arrow
+     * @return the step to move
+     */
+    private static int speedStepFor(java.awt.event.ActionEvent evt)
+    {
+        if (altHeld(evt)) return SPEED_STEP * 2;
+
+        if (controlHeld(evt)) return 1;
+
+        return SPEED_STEP;
+    }
+
     private void backwardLoc()
     {
         if (this.activeLoc != null) // && this.activeLoc.goingForward())
@@ -23483,19 +23532,35 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_SpacebarButtonActionPerformed
 
     private void LeftArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LeftArrowLetterButtonPressed
-        switchDirection();
+        // Control FORCES reverse, which is what this button's tooltip says it does (UIX-C5, controlHeld).
+        if (controlHeld(evt))
+        {
+            backwardLoc();
+        }
+        else
+        {
+            switchDirection();
+        }
     }//GEN-LAST:event_LeftArrowLetterButtonPressed
 
     private void RightArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RightArrowLetterButtonPressed
-        switchDirection();
+        // And Control forces forward here (UIX-C5, controlHeld).
+        if (controlHeld(evt))
+        {
+            forwardLoc();
+        }
+        else
+        {
+            switchDirection();
+        }
     }//GEN-LAST:event_RightArrowLetterButtonPressed
 
     private void DownArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DownArrowLetterButtonPressed
-        decrementLocSpeed(SPEED_STEP);
+        decrementLocSpeed(speedStepFor(evt));
     }//GEN-LAST:event_DownArrowLetterButtonPressed
 
     private void UpArrowLetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UpArrowLetterButtonPressed
-        incrementLocSpeed(SPEED_STEP);
+        incrementLocSpeed(speedStepFor(evt));
     }//GEN-LAST:event_UpArrowLetterButtonPressed
 
     private void updateSliderSpeed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_updateSliderSpeed

@@ -374,7 +374,11 @@ public class GraphLocAssign extends javax.swing.JPanel
         // two things, and each says so where it is.
         this.arrivedFromLabel = new javax.swing.JLabel(I18n.t("autolayout.ui.trainArrived"));
         this.arrivedFromLabel.setFont(new java.awt.Font("Segoe UI", 0, 14));
-        this.arrivedFromLabel.setForeground(new java.awt.Color(0, 0, 115));
+        // THE STANDARD'S BLUE, not the retired one (UIX-C3).  `docs/UI-standards.md` gives minor headings
+        // 0,0,155; the 0,0,115 labels beside this one are inside the generated block below, which the
+        // standard exempts because it cannot be hand-edited.  This label is hand-written and newer than
+        // the standard, so it follows it.
+        this.arrivedFromLabel.setForeground(new java.awt.Color(0, 0, 155));
 
         // A HAND on the combo is remembered, so that picking a different locomotive - which moves the
         // suggestion, because it is worked out from THAT train's heading - does not overwrite what the

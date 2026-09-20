@@ -383,6 +383,8 @@
         <test-one-class class="testTimetableCaptureThroughARealRun"/>
         <test-one-class class="testTheWindowAttachesItsRefreshCallback"/>
         <test-one-class class="testTheWindowTakesTheKeyboard"/>
+        <test-one-class class="testTheToolbarButtonsHonourTheirTooltips"/>
+        <test-one-class class="testEveryMessageKeyIsAskedFor"/>
         <test-one-class class="testTheMenuShowsWhereALinkGoes"/>
         <test-one-class class="testTheAutonomyEditorKnowsWhichSquare"/>
         <test-one-class class="testTheDiagramPrintsItsCoordinates"/>
