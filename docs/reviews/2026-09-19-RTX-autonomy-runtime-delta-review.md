@@ -64,7 +64,7 @@ Neither shape is what AMH-B1 was for.  The rule exists so that a plan does not T
 
 | id | status | where |
 |---|---|---|
-| RTX-C1 | open | `HomeStaging.tailKey` - the arrangement key carries the tails a route leaves and not whether it turned the train; `turnedByThePlan` reads the second on the next expansion |
+| RTX-C1 | fixed 2026-09-19 - probe fired (994 of 83,881 keys); turned trains carry a suffix | `HomeStaging.tailKey` - the arrangement key carries the tails a route leaves and not whether it turned the train; `turnedByThePlan` reads the second on the next expansion |
 | RTX-C2 | open | `whyABerthCannotHoldIt` and `walkOneTail` after Mass Assign's switch step: a measured switch and an unmeasured piece behind a berth refuse every train of every length |
 | RTX-C3 | fixed - locDeleted clears it | `Layout.locDeleted` - the sweep does not clear `reversedOnArrival`, and the record is keyed by name |
 | RTX-C4 | closed by Adam's ruling 2026-09-19 - the sensor stays on; behaviour.md 8 says so and AMR-D1 cites it | AMR-D1 and AMH-B2 rest on opposite statements about Adam's detection hardware |
@@ -75,6 +75,14 @@ Neither shape is what AMH-B1 was for.  The rule exists so that a plan does not T
 `tailKey` (HomeStaging 2610-2647) identifies an arrangement by where the trains stand and the edges each moved train's tail covers - MFR-B2's fix, so that two orders leaving different tails are two states.  `astar` then keeps one `routesOf` entry per key (1017-1028, overwritten on a cheaper cost) and reads it back as `this.movedAlong` (925) - and `turnedByThePlan` (970-972) asks `turnedOnTheWay(this.movedAlong.get(l))` of it.  Two routes to the same square that leave the same covered edges but differ in whether they passed a reversing point - a short train, whose tail never reaches back to the turn, brought in over a headshunt and over the direct road - therefore fold into one key, and whichever was found first decides whether the train is restricted to its home next expansion.  MFR-B2's own shape one fact further on.
 
 Reachable only where `firstClearRoute` yields different routes for the same (train, station) from different predecessor states, since it is deterministic per state (1185-1187); a narrow corner, and after B1 only for a train the plan moved.  **How to prove it:** a probe rather than a claim - log `nextKey` and `turnedOnTheWay(path)` at 1017 over the round-3 scatter (`core.testTrainsComeHomeFromAPinnedArrangement`) and grep for one key with both values.  If it never fires there, record that here and close it; if it does, the fix is a `/turned` suffix per train in `tailKey`, the same spelling `firstClearRoute` already uses for its own visited set (1351).
+
+**The probe was run, 2026-09-19, and it fires.**  `nextKey` and `turnedOnTheWay(path)` were logged at every
+expansion over `core.testReturnHomeOnRealLayout`: **994 of 83,881 keys were reached with both answers**, on
+Adam's own railway.  So the fold is not theoretical, and the fix named above went in - `tailKey` now carries a
+`/turned` list, and the loop that dropped a train from the key when its tail covered nothing is exactly where
+the two roads were otherwise indistinguishable.  Pinned by
+`core.testHomeStaging.testARoadThatTurnedIsNotTheSameStateAsOneThatDidNot`; every planner class and the blessed
+baseline are unchanged by it.
 
 ### RTX-C2 - a measured switch behind an unmeasured piece closes the berth to everything
 

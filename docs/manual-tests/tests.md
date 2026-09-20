@@ -66,8 +66,13 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-462](#mt-462) | 2026-09-19 | A switch thrown during a route highlight is drawn in its real position | fixed unvalidated | UIX-B2 |
 | [MT-463](#mt-463) | 2026-09-19 | Return Home moves a train the railway had standing on a terminus | fixed unvalidated | RTX-B1 |
 | [MT-464](#mt-464) | 2026-09-19 | A locomotive cannot be deleted or renamed while a route that drives it is running, and the route finishes | fixed unvalidated | CS3-B1 |
+| [MT-465](#mt-465) | 2026-09-19 | The four arrow buttons honour the Control and Alt clicks their tooltips promise | fixed unvalidated | UIX-C5, GUX-C1 |
+| [MT-466](#mt-466) | 2026-09-19 | Cancel on the function editor undoes a Copy Customizations | fixed unvalidated | GUX-C3 |
+| [MT-467](#mt-467) | 2026-09-19 | Turning a local route's automatic execution on or off does not wait for the Central Station | fixed unvalidated | GUX-C5 |
+| [MT-468](#mt-468) | 2026-09-19 | Every screen still finds its text after 118 unused message keys were removed | fixed unvalidated | UIX-C4 |
+| [MT-469](#mt-469) | 2026-09-19 | The capture-target tooltip and the arrival-side label read correctly | fixed unvalidated | GUX-C2, UIX-C3 |
 
-Everything else - 425 of 464 - needs nothing from you unless the area changes again:
+Everything else - 425 of 469 - needs nothing from you unless the area changes again:
 374 **fixed validated** and 51 **superseded**.
 
 ---
@@ -23340,6 +23345,167 @@ From the 2026-09-19 review round (CS3-B1), fixed the same day.  Deleting a locom
 - Deleting a locomotive while autonomy is running is refused as it always was.
 
 *What this is:* review finding CS3-B1, fixed 2026-09-19 with a test seen failing first and a mutation for each half.
+
+#### Comments
+
+---
+
+<a id="mt-465"></a>
+
+### MT-465 - 2026-09-19 - The four arrow buttons honour the Control and Alt clicks their tooltips promise
+
+**Disposition:** fixed unvalidated
+**From:** UIX-C5, GUX-C1
+
+**Written:** 2026-09-19
+
+From the 2026-09-19 review round, fixed the same day.  The tooltips on the two direction buttons and the two speed buttons have promised Control and Alt behaviour since 2.7.4, and only the keyboard delivered it: the listeners took the click event and never looked at it, so a Control click reversed a locomotive that was already reversed and an Alt click on Increase Speed moved one ordinary step.  Driven in the tests through the listeners; this is the same gesture with a real mouse.
+
+**Steps**
+
+1. Pick a locomotive on the Locomotive tab and set it going forward at a middling speed.
+2. Hover over each of the four arrow buttons and read what the tooltip promises.
+3. Hold **Control** and click the reverse (left) arrow twice.
+4. Hold **Control** and click the forward (right) arrow twice.
+5. Hold **Alt** and click **Increase Speed**, then **Alt** and **Decrease Speed**.
+6. Hold **Control** and click **Increase Speed**, then **Control** and **Decrease Speed**.
+7. Click all four buttons plainly, with no modifier.
+8. Do the same four things from the keyboard - Control+Left, Control+Right, Alt+Up, Control+Up.
+
+**Expected**
+
+- Control plus the reverse arrow leaves the locomotive reversed BOTH times - it forces a direction, it does not toggle.
+- Control plus the forward arrow leaves it going forward both times.
+- Alt plus a speed button moves twice the ordinary step; Control plus one moves a single unit.
+- A plain click still switches direction, and still moves one ordinary step.
+- The keyboard behaves exactly as it always has, and the buttons now agree with it.
+
+*What this is:* review findings UIX-C5 and GUX-C1, fixed 2026-09-19 with a test seen failing first.
+
+#### Comments
+
+---
+
+<a id="mt-466"></a>
+
+### MT-466 - 2026-09-19 - Cancel on the function editor undoes a Copy Customizations
+
+**Disposition:** fixed unvalidated
+**From:** GUX-C3
+
+**Written:** 2026-09-19
+
+From the 2026-09-19 review round, fixed the same day.  Copy Customizations writes the other locomotive's function types and icons straight onto this one so the panel can show them at once - the same reason the two autonomy slots write straight through - but unlike the slots it was not put back on Cancel.  The comment above the restore said everything else in the dialog waits for OK, so a reader had been told this door did not exist.
+
+**Steps**
+
+1. Find a locomotive with customized functions and right-click it, then **Copy**.
+2. Right-click a DIFFERENT locomotive with ordinary functions, pick one of its function buttons and choose **Edit**.
+3. Press **Copy customizations from ...**, and look at the function list it now shows.
+4. Press **Cancel**.
+5. Look at that locomotive's function buttons and icons.
+6. Do the whole thing again, this time pressing **OK**.
+7. For good measure, open the editor, change the departure or arrival slot tick, press Copy customizations, then Cancel.
+
+**Expected**
+
+- The panel shows the copied functions as soon as the button is pressed - the preview is honest.
+- After **Cancel** the locomotive has its own functions and icons back, exactly as before the dialog was opened.
+- After **OK** it keeps the copied ones.
+- The slot ticks are put back by Cancel as they always were, and the copy is put back with them.
+
+*What this is:* review finding GUX-C3, fixed 2026-09-19 with a test seen failing first and a check on the call site.
+
+#### Comments
+
+---
+
+<a id="mt-467"></a>
+
+### MT-467 - 2026-09-19 - Turning a local route's automatic execution on or off does not wait for the Central Station
+
+**Disposition:** fixed unvalidated
+**From:** GUX-C5
+
+**Written:** 2026-09-19
+
+From the 2026-09-19 review round, fixed the same day.  OB-155 took the post-change station sync off Delete and off the route editor's Save for routes this application allocated, because the round trip fetches the whole database behind a modal spinner and, with the station off, waits twice the connect timeout to learn nothing.  Enable/Disable did not get that sweep, and neither did the bulk version.
+
+**Steps**
+
+1. With the Central Station switched OFF (or unplugged), open the Routes tab.
+2. Right-click a route you created in TrainControl and choose **Enable Automatic Execution**, then **Disable** it again.
+3. Note whether a spinner appears and how long the window is busy.
+4. Use the bulk enable/disable on a search that matches several of your own routes.
+5. Now do the same for a route that came FROM the Central Station, if you have one.
+6. Switch the station back on and repeat the first two steps.
+
+**Expected**
+
+- Toggling your own routes is immediate: no spinner, no wait, and the list shows the new state.
+- The bulk version is immediate too, however many routes it matched.
+- A route that came from the station still syncs, as it always did.
+- With the station on, everything behaves as before - nothing about which routes fire has changed.
+
+*What this is:* review finding GUX-C5, fixed 2026-09-19; the guard is the same isLocalRouteId test Delete already asks.
+
+#### Comments
+
+---
+
+<a id="mt-468"></a>
+
+### MT-468 - 2026-09-19 - Every screen still finds its text after 118 unused message keys were removed
+
+**Disposition:** fixed unvalidated
+**From:** UIX-C4
+
+**Written:** 2026-09-19
+
+From the 2026-09-19 review round, fixed the same day.  118 keys in all eight language files belonged to windows that left the build - GraphViewer, GraphEdgeEdit, GraphLocExclude and the old route editor - and they hid the live keys among the dead for anyone reading a bundle to find out what a screen says.  A key removed by mistake shows as the key's own name, or an error, where the text should be.
+
+**Steps**
+
+1. Open TrainControl and visit every tab: Locomotives, Routes, the track diagram, the layout editor, the autonomy editor.
+2. Open the dialogs you use: add a locomotive, edit its functions, edit a route, the diagram export, the autonomy setup walks.
+3. Switch the language (Settings) to German, then to one more language, and walk the same screens again.
+4. Look for anything that reads like `route.ui.somethingOrOther` instead of a sentence, or a blank where a label should be.
+
+**Expected**
+
+- Every label, button, menu item and tooltip reads as a sentence in the chosen language.
+- Nothing shows a key name, an empty label, or an error about a missing resource.
+
+*What this is:* review finding UIX-C4, fixed 2026-09-19; testEveryMessageKeyIsAskedFor recomputes the dead set on every run.
+
+#### Comments
+
+---
+
+<a id="mt-469"></a>
+
+### MT-469 - 2026-09-19 - The capture-target tooltip and the arrival-side label read correctly
+
+**Disposition:** fixed unvalidated
+**From:** GUX-C2, UIX-C3
+
+**Written:** 2026-09-19
+
+From the 2026-09-19 review round, fixed the same day.  The route editor's capture-target tooltip still said s88 feedback is not captured; it has been, deliberately and throttled, since LT-A5 on 2026-08-22.  And the arrival-side label added for REV9-B2 was hand-written three weeks after the interface standard was set and used the retired blue.
+
+**Steps**
+
+1. Open a route in the route editor and hover over the capture-target selector.
+2. Set it to capture into conditions, turn capture on, and roll a train over a sensor.
+3. Open the autonomy locomotive assignment window and look at the **arrived from** label.
+
+**Expected**
+
+- The tooltip says both accessories and sensors are captured, and that a repeat of the same one within a few seconds is ignored.
+- The sensor does land in the conditions, which is what the tooltip now describes.
+- The arrival-side label is the same blue as the other section labels on hand-written screens.
+
+*What this is:* review findings GUX-C2 and UIX-C3, fixed 2026-09-19; both are text and colour, so there is nothing a test can read.
 
 #### Comments
 
