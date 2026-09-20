@@ -598,6 +598,42 @@ public class testLayoutTiles
                 "the route was enabled while this editor was open and the editor cannot tell, so its Save switches"
                 + " it off again without saying anything");
 
+            // A RENAME IS A CHANGE TOO (OP2-B5).  `Route.locomotiveRenamed` rewrites the route's commands and
+            // conditions IN PLACE, so nothing about the route object changes identity - and the signature used
+            // to compare the conditions by object, which made a rename invisible and let Save put the dead name
+            // back.
+            model.newMM2Locomotive("Moving loc", 62);
+
+            List<org.traincontrol.base.RouteCommand> driving = new ArrayList<>();
+
+            driving.add(org.traincontrol.base.RouteCommand.RouteCommandAccessory(93, MM2, true));
+            driving.add(org.traincontrol.base.RouteCommand.RouteCommandLocomotiveSpeed("Moving loc", 20));
+
+            model.editRoute(name, name, driving, 0,
+                org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+            final AtomicReference<RouteEditorFrame> second = new AtomicReference<>();
+
+            SwingUtilities.invokeAndWait(() -> second.set(new RouteEditorFrame(ui, name, model.getRoute(name))));
+
+            try
+            {
+                assertNull(second.get().howTheRouteMoved(), "precondition: the second editor starts out of step");
+
+                assertTrue(model.renameLoc("Moving loc", "Moved loc"), "precondition: the rename was refused");
+
+                assertEquals(second.get().howTheRouteMoved(), "changed",
+                    "a locomotive this route drives was renamed while the editor was open and the editor cannot"
+                    + " tell, so its Save writes the old name back into every command that drives it");
+            }
+            finally
+            {
+                SwingUtilities.invokeAndWait(() -> second.get().dispose());
+
+                try { model.deleteLoc("Moved loc"); } catch (Exception ignored) { }
+                try { model.deleteLoc("Moving loc"); } catch (Exception ignored) { }
+            }
+
             model.deleteRoute(name);
 
             assertEquals(editor.howTheRouteMoved(), "gone",

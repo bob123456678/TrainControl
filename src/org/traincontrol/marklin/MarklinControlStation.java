@@ -3536,17 +3536,23 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     public final void rebindRouteTiles()
     {
-        for (String page : this.getLayoutList())
+        // UNDER THE LOCK THE PAGE DATABASE IS WRITTEN WITH (OP2-B4).  `clearLayouts` empties those maps and the
+        // configured-source sync refills them, both from other threads and both under this lock, and the maps are
+        // plain HashMaps - so a walk taken without it can see the emptied state, or nothing at all.
+        synchronized (this.layoutRefreshLock)
         {
-            LayoutDiagram diagram = this.getLayout(page);
-
-            if (diagram == null) continue;
-
-            for (LayoutDiagramComponent c : diagram.getAll())
+            for (String page : this.getLayoutList())
             {
-                if (c == null || !c.isRoute()) continue;
+                LayoutDiagram diagram = this.getLayout(page);
 
-                c.setRoute(this.routeDB.getById(c.getAddress()));
+                if (diagram == null) continue;
+
+                for (LayoutDiagramComponent c : diagram.getAll())
+                {
+                    if (c == null || !c.isRoute()) continue;
+
+                    c.setRoute(this.routeDB.getById(c.getAddress()));
+                }
             }
         }
     }

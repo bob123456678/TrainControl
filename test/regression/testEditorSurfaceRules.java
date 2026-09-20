@@ -4547,7 +4547,7 @@ public class testEditorSurfaceRules
 
         String door = withoutComments(bodyOf(ui, "public javax.swing.JPopupMenu buildAutonomyTileMenu("));
 
-        int refreshes = door.indexOf("autonomyTileMenus.refresh()");
+        int refreshes = door.indexOf("autonomyTileMenus.refreshRunLeaders()");
         int builds = door.indexOf("autonomyTileMenus.buildTileMenu(");
 
         assertTrue(refreshes >= 0,

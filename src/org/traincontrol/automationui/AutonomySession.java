@@ -8257,12 +8257,23 @@ public class AutonomySession
         {
             if (!store.isStation(square)) continue;
 
-            boolean anyMeasured = false;
-            int unmeasured = 0;
+            // THE RULE EXEMPTS A STATION AUTONOMY CHOOSES (OP2-B2).  `whyABerthCannotHoldIt` returns at once for a
+            // berth that `isAutoDestination` - Adam's ruling, and the default for a station - so a warning about
+            // ordinary platforms would be about a refusal that never happens there.  What is left is the parking
+            // berths, which is what the rule is for.
+            if (isAutoDestination(square)) continue;
+
+            // ONE APPROACH AT A TIME (OP2-B3).  The walk judges the approach a train arrives on, so a station with
+            // one approach measured throughout and another with nothing measured is not half measured on either -
+            // pooling them said it was, and counted squares from legs that are not in the same walk.
+            int worst = 0;
 
             for (GraphReducer.ReducedEdge arriving : reducer.getEdges())
             {
                 if (!arriving.getEnd().equals(square)) continue;
+
+                boolean anyMeasured = false;
+                int unmeasured = 0;
 
                 for (GraphReducer.TileStep step : arriving.getPath())
                 {
@@ -8273,9 +8284,11 @@ public class AutonomySession
                     if (store.getTileLength(step.getTile()) > 0) anyMeasured = true;
                     else unmeasured++;
                 }
+
+                if (anyMeasured && unmeasured > worst) worst = unmeasured;
             }
 
-            if (anyMeasured && unmeasured > 0) out.put(square, unmeasured);
+            if (worst > 0) out.put(square, worst);
         }
 
         return out;

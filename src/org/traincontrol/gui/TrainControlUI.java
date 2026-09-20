@@ -4762,7 +4762,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // to the square itself, so Segment Length wrote the follower - the run then measured leader plus
         // follower - and a direction choice one-wayed a single square of the run.  Refreshing here costs one
         // cheap derivation per right-click and cannot go stale at all.
-        autonomyTileMenus.refresh();
+        autonomyTileMenus.refreshRunLeaders();
 
         return autonomyTileMenus.buildTileMenu(tile, null);
     }

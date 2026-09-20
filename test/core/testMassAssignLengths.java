@@ -1460,7 +1460,35 @@ public class testMassAssignLengths
         session.setTileLength(key(5, 1), 2);
 
         assertTrue(session.stationsWithAHalfMeasuredApproach().isEmpty(),
-            "the approach is measured throughout and the warning is still up: " 
+            "the approach is measured throughout and the warning is still up: "
             + session.stationsWithAHalfMeasuredApproach());
+    }
+
+    /**
+     * The warning is about the berths the rule runs on, and about ONE approach at a time (OP2-B2, OP2-B3).
+     *
+     * `whyABerthCannotHoldIt` returns at once for a station autonomy chooses - Adam's own exemption, and the
+     * default for a station - so a warning about those would be about a refusal that never happens.  And the
+     * walk judges the approach a train arrives on: a station with one approach measured throughout and another
+     * with nothing measured is half measured on neither.
+     *
+     * @throws IOException from the fixture
+     */
+    @Test
+    public void testTheHalfMeasuredWarningMatchesTheRuleItQuotes() throws IOException
+    {
+        openBerthBehindASwitch(key(5, 1));
+
+        session.setTileLength(key(3, 1), 1);
+
+        assertTrue(session.stationsWithAHalfMeasuredApproach().containsKey(key(5, 1)),
+            "precondition: the parking berth is not warned about, so the exemption below shows nothing");
+
+        // A STATION AUTONOMY CHOOSES is exempt from the rule, so it is exempt from the warning.
+        session.setAutoDestination(key(5, 1), true);
+
+        assertTrue(session.stationsWithAHalfMeasuredApproach().isEmpty(),
+            "an ordinary platform is warned about a refusal that never happens there - the berth rule exempts"
+            + " every station autonomy may choose");
     }
 }

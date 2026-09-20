@@ -474,7 +474,15 @@ public class RouteEditorFrame extends JFrame
             out.append(String.valueOf(command)).append('\u0003');
         }
 
-        out.append(String.valueOf(route.getConditions()));
+        // THE CONDITIONS BY THEIR CONTENT, not by the object (OP2-B5).  `NodeExpression` has no `toString`, so
+        // `String.valueOf` printed an identity hash - and `Route.locomotiveRenamed` rewrites condition commands IN
+        // PLACE, so a locomotive renamed while this window was open left the signature identical and Save wrote the
+        // dead name back into every condition.
+        for (org.traincontrol.base.RouteCommand condition
+            : org.traincontrol.base.NodeExpression.toList(route.getConditions()))
+        {
+            out.append(String.valueOf(condition)).append('\u0004');
+        }
 
         return out.toString();
     }

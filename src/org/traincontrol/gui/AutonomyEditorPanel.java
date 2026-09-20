@@ -8658,6 +8658,19 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * Re-derives what the MENU needs to bind an item to the right square, and announces nothing (OP2-B1).
+     *
+     * `refresh()` ends in `onChanged.run()`, and on the track diagram's own menu that runnable saves the setup file
+     * and rebuilds the static autonomy layer - so calling it before every right-click, which AUS-B1 did, ran the
+     * whole findings pass and wrote the file twice per menu.  What the menu actually needs is the run map: which
+     * squares belong to a run, and which square speaks for each.  That is one cheap derivation.
+     */
+    public void refreshRunLeaders()
+    {
+        runLeaders = session.runLeaders();
+    }
+
+    /**
      * What Segment Length shows for this square: what the whole run measures, not one square's share (SET-B3).
      *
      * **A run of plain track has one square that speaks for it** (`behaviour.md` section 5b), and until Mass Assign
