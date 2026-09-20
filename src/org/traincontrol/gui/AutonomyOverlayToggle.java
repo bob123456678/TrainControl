@@ -119,7 +119,14 @@ public class AutonomyOverlayToggle extends JPanel
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e)
             {
-                ui.openAutonomyPagesMenu();
+                // STRAIGHT TO THE EDITOR, not to the Pages menu (Adam, 2026-09-19: "just make it
+                // attempt to click the edit button if it's enabled ... since there is no entry for
+                // disabled pages").
+                //
+                // The label says "click Edit to change that" and used to open the Pages submenu - and
+                // a page left out of autonomy has no entry there, so the one gesture the sentence
+                // names led to a list that did not contain the page it was about.
+                ui.openAutonomyEditorIfItCan();
             }
         });
 

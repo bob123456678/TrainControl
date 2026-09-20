@@ -23,12 +23,21 @@ import org.testng.annotations.Test;
  * screen. Nothing at runtime cost anything - that is why they survived four releases.
  *
  * **What counts as asking for a key.** The exact key spelled as a string literal anywhere in `src/` or
- * `test/`, or a literal that is a PROPER PREFIX of it - because the code builds keys by concatenation
- * in at least five places (`route.kind.`, `autosetup.ui.side`, `autosetup.ui.facing`, and the two path
- * preferences), and a rule that knew only those five would report every builder written after it as
- * dead text and invite somebody to delete a live line. The prefix rule costs precision - a key is
- * shielded by any literal it happens to start with - and it buys never being wrong in the direction
- * that breaks a window.
+ * `test/`, or a key beginning with one of the five prefixes `BUILDERS` names - the five places the
+ * code actually builds a key by concatenation.
+ *
+ * **The first version of this let ANY literal that was a prefix shield a key, and that hid 119 dead
+ * keys from it** (OP3-B1). Three literals did the hiding, and two of them are not builders at all:
+ * `"autolayout."` inside an `assertFalse(... .startsWith(...))` in `test/ui/testStagingOutcomeMessages
+ * .java` shielded ninety-eight on its own, `"autosetup.ui."` in `testEditorSurfaceRules` nineteen
+ * more, and `"route.ui.route"` - which is the live key for the word "Route" - two. So this reported a
+ * clean bill of health over half the dead text it was written to find, and its own comment argued
+ * that the floors below made that impossible. They do not: the floors catch a reader that has stopped
+ * seeing literals, not one that sees a literal too generously.
+ *
+ * The narrow rule has the opposite risk - a builder written in future and not added here reports its
+ * keys as dead - and that is the direction to fail in: it is a visible failure that names the keys,
+ * rather than silence. `EXPECTED` and this list are both the way past.
  *
  * **The floors are what stop this reporting a clean bill of health about nothing.** A regex that
  * silently stopped matching literals would call every key dead, which is loud; one that matched
@@ -50,9 +59,31 @@ public class testEveryMessageKeyIsAskedFor
     /**
      * How many unreferenced keys are allowed to stand, and why.
      *
-     * Zero since 2026-09-19, when the 118 the deleted windows left behind came out.
+     * Zero since 2026-09-19, when the 237 the deleted windows left behind came out - 118 of them on
+     * the first pass and the other 119 once OP3-B1 showed that this class could not see them.
      */
     private static final int EXPECTED = 0;
+
+    /**
+     * The five places the code builds a message key by concatenation rather than spelling it out.
+     *
+     * A key beginning with one of these is shielded. Nothing else shields a key: see the class comment
+     * for the 119 that a looser rule hid (OP3-B1). Add to this list when a new builder is written, and
+     * say in the comment beside the entry where it is.
+     */
+    private static final String[] BUILDERS =
+    {
+        // Route.getKind() -> route.kind.<kind>
+        "route.kind.",
+
+        // The side and facing menus in AutonomyEditorPanel
+        "autosetup.ui.side",
+        "autosetup.ui.facing",
+
+        // The path preference list and its tooltips, in AutonomyViewerPanel
+        "autolayout.ui.pathPreference",
+        "autolayout.ui.tooltip.pathPreference",
+    };
 
     /**
      * A Java string literal, escapes and all.
@@ -93,8 +124,8 @@ public class testEveryMessageKeyIsAskedFor
         int keys = keysOf(new File(BUNDLE)).size();
         int literals = literals().size();
 
-        assertTrue(keys > 1800,
-            "only " + keys + " keys were read out of " + BUNDLE + "; the bundle has over two thousand, "
+        assertTrue(keys > 1700,
+            "only " + keys + " keys were read out of " + BUNDLE + "; the bundle has over 1,700 of them, "
             + "so the reader is broken and everything else this class says is about nothing");
 
         assertTrue(literals > 15000,
@@ -111,12 +142,6 @@ public class testEveryMessageKeyIsAskedFor
     private static List<String> deadKeys() throws IOException
     {
         Set<String> literals = literals();
-        List<String> prefixes = new ArrayList<>();
-
-        for (String literal : literals)
-        {
-            if (literal.length() >= 6 && literal.contains(".")) prefixes.add(literal);
-        }
 
         List<String> dead = new ArrayList<>();
 
@@ -126,9 +151,9 @@ public class testEveryMessageKeyIsAskedFor
 
             boolean built = false;
 
-            for (String prefix : prefixes)
+            for (String prefix : BUILDERS)
             {
-                if (key.startsWith(prefix) && !key.equals(prefix))
+                if (key.startsWith(prefix))
                 {
                     built = true;
 

@@ -8444,6 +8444,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Reached from the diagram itself, because that is where the user finds out the page is left out -
      * and a statement they cannot act on from where they are standing is half an answer.
      */
+    /**
+     * Opens the autonomy editor if the Edit item would be enabled, and does nothing if it would not.
+     *
+     * The excluded-page label's gesture (Adam, 2026-09-19).  It asks the same question the menu item
+     * asks - `whyAutonomyEditorCannotOpen`, which is the guard `AutonomyMenu` enables Edit by - so a
+     * click cannot reach a door the menu would have shown greyed out.  Silent rather than complaining
+     * when it cannot: the label carries the reason in its own tooltip already.
+     */
+    public void openAutonomyEditorIfItCan()
+    {
+        if (whyAutonomyEditorCannotOpen() != null) return;
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            if (refuseWhileEditorOpen()) return;
+
+            openAutonomyEditor(null);
+        });
+    }
+
     public void openAutonomyPagesMenu()
     {
         if (autonomyMenu == null) return;
