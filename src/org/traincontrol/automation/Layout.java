@@ -453,6 +453,40 @@ public class Layout
         new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
+     * The visit history, so a rebuild can put it back (AUR-C3).
+     *
+     * **A session is longer than a `Layout`.**  This map says it is kept in memory because it describes
+     * this session's running - but `parseAuto` replaces the whole object on every setup gesture, and
+     * applying a diagram edit, placing a locomotive or loading a configuration all come through there.
+     * So `LEAST_RECENTLY_VISITED` went back to knowing nothing each time, and every station read as
+     * never visited: random, and then worse than random once the near ones started being re-visited.
+     *
+     * A copy, because the caller holds it across the moment the old layout is invalidated.
+     *
+     * @return where trains have been, by the key the recency rule uses
+     */
+    public java.util.Map<String, Long> getVisitHistory()
+    {
+        return new java.util.HashMap<>(this.lastArrival);
+    }
+
+    /**
+     * Puts a previous layout's visit history back after a rebuild (AUR-C3).
+     *
+     * Keyed by block or unique id, which survives a rebuild of the same railway; a key naming a point
+     * this configuration no longer has simply never matches, which is the same answer as never having
+     * been there.
+     *
+     * @param history what the outgoing layout knew
+     */
+    public void restoreVisitHistory(java.util.Map<String, Long> history)
+    {
+        if (history == null || history.isEmpty()) return;
+
+        this.lastArrival.putAll(history);
+    }
+
+    /**
      * Records an arrival at a point, for a test that needs a known visit history.
      *
      * The real recording happens at the end of executePath, which means driving a train - minutes of

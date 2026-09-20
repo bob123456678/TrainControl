@@ -970,6 +970,70 @@ public class testAutoLayout
     }
 
     /**
+     * Where the trains have been survives a setup gesture (AUR-C3).
+     *
+     * **A session is longer than a `Layout`.**  `lastArrival` says in its own javadoc that it is kept
+     * in memory because it describes this session's running - but `parseAuto` replaces the whole object,
+     * and applying a diagram edit, placing a locomotive from the right-click menu or loading a
+     * configuration all come through there.  `TrainControlUI` already carries placements, sides, roads
+     * and pending turns across that rebuild; nothing carried this.
+     *
+     * So an operator running with Least Recently Visited, who stops to place a train and starts again,
+     * got a rule that knew nothing: every station never visited, the choice random, and then worse than
+     * random once the near ones began beating the far corner again.  That degraded state is the one the
+     * preference's own javadoc was written to end.
+     *
+     * **What this asserts, and what it does not.**  It asserts the state the rule reads - the map
+     * `recencyOf` looks a destination up in - across a real `parseAuto`.  It does not drive `pickPath`
+     * afterwards: a first draft built a three-point fixture, round-tripped it through JSON and asked
+     * the rule to choose, and the parsed layout offered no route at all, so the claim rested on a
+     * fixture rather than on the rebuild.  `testLeastRecentlyVisitedGoesWhereTrainsHaveNotBeen` above is
+     * what says the map is read; this is what says it is still there to read.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testTheVisitHistorySurvivesASetupRebuild() throws Exception
+    {
+        Layout before = model.getAutoLayout();
+
+        assertNotNull(before, "precondition: no autonomy layout is loaded at all");
+
+        // THE SHARED SETUP IS PUT BACK.  This is the only test here that goes through parseAuto, which
+        // replaces the layout every other test in this class reads.
+        String was = before.toJSON().toString();
+
+        try
+        {
+            String visited = before.getPoints().iterator().next().getName();
+
+            before.noteArrivalForTest(visited);
+
+            java.util.Map<String, Long> history = before.getVisitHistory();
+
+            assertFalse(history.isEmpty(),
+                "precondition: noting an arrival at " + visited + " recorded nothing, so there is no"
+                + " history for a rebuild to lose");
+
+            // THE GESTURE.  This is what applying a diagram edit or placing a locomotive does.
+            model.parseAuto(was);
+
+            Layout rebuilt = model.getAutoLayout();
+
+            assertNotSame(rebuilt, before, "precondition: parseAuto did not actually build a new layout");
+
+            assertEquals(rebuilt.getVisitHistory(), history,
+                "after a setup rebuild the layout no longer knows a train has just been to " + visited
+                + ", so every station reads as never visited and Least Recently Visited chooses at"
+                + " random - the degraded state that rule was written to end (AUR-C3)");
+        }
+        finally
+        {
+            model.parseAuto(was);
+        }
+    }
+
+    /**
      * The name of the point a route reaches first, which is what says which way it went.
      */
     private String nameOfSecondPoint(java.util.List<Edge> path)

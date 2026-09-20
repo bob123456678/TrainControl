@@ -1073,6 +1073,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Read before the old layout is discarded, applied after the new one exists.
         boolean wasCapturing = this.autoLayout != null && this.autoLayout.isTimetableCapture();
 
+        // AND WHERE THE TRAINS HAVE BEEN (AUR-C3), for the same reason and by the same route.
+        //
+        // `lastArrival` is what `LEAST_RECENTLY_VISITED` reads, and it lives on the Layout - so every
+        // gesture that rebuilds the setup emptied it and the rule went back to choosing at random,
+        // which is the degraded state its own javadoc was written to end.  A session is longer than a
+        // Layout; the history belongs to the session.
+        java.util.Map<String, Long> wasVisited =
+            this.autoLayout != null ? this.autoLayout.getVisitHistory() : null;
+
         if (this.autoLayout != null)
         {
             this.autoLayout.invalidate();
@@ -1081,7 +1090,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         this.autoLayout = Layout.fromJSON(s, this);
 
-        if (this.autoLayout != null) this.autoLayout.setTimetableCapture(wasCapturing);
+        if (this.autoLayout != null)
+        {
+            this.autoLayout.setTimetableCapture(wasCapturing);
+            this.autoLayout.restoreVisitHistory(wasVisited);
+        }
 
         this.applyAutonomyRouteActivations();
     }
