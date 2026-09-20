@@ -516,6 +516,63 @@ public class testLayoutTiles
         }
     }
 
+    /**
+     * The route editor notices its route being changed or deleted underneath it (GUX-B1).
+     *
+     * This window is not modal and does not hold the route: Enable/Disable in the route list, a delete, an import or
+     * another editor can change it while it is open, and Save is a delete-and-re-add of everything the window holds.
+     * So a toggle made while an editor was open was silently undone by that editor's Save, and after a delete the
+     * Save simply failed with a message that had no remedy - the typing could not be kept at all.
+     *
+     * Asked of the question Save now puts, on all three states.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheRouteEditorNoticesItsRouteMoving() throws Exception
+    {
+        final String name = "Moving route";
+        final int id = 7703;
+
+        List<org.traincontrol.base.RouteCommand> commands = new ArrayList<>();
+
+        commands.add(org.traincontrol.base.RouteCommand.RouteCommandAccessory(93, MM2, true));
+
+        model.newRoute(name, id, commands, 0, org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED,
+            false, null);
+
+        final AtomicReference<RouteEditorFrame> ref = new AtomicReference<>();
+
+        SwingUtilities.invokeAndWait(() -> ref.set(new RouteEditorFrame(ui, name, model.getRoute(name))));
+
+        final RouteEditorFrame editor = ref.get();
+
+        try
+        {
+            assertNull(editor.howTheRouteMoved(), "nothing has touched the route and the editor says it moved");
+
+            // WHAT THE ROUTE LIST'S OWN TOGGLE DOES: a delete and a re-add with the flag flipped.
+            model.editRoute(name, name, commands, 0,
+                org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
+
+            assertEquals(editor.howTheRouteMoved(), "changed",
+                "the route was enabled while this editor was open and the editor cannot tell, so its Save switches"
+                + " it off again without saying anything");
+
+            model.deleteRoute(name);
+
+            assertEquals(editor.howTheRouteMoved(), "gone",
+                "the route was deleted while this editor was open and the editor cannot tell, so its Save fails with"
+                + " a message that leaves nowhere to put the typing");
+        }
+        finally
+        {
+            try { model.deleteRoute(name); } catch (Exception ignored) { }
+
+            SwingUtilities.invokeAndWait(() -> editor.dispose());
+        }
+    }
+
     // ------------------------------------------------------------------------------------------------
     // B10 - LayoutLabel mutates Swing state off the EDT
     // ------------------------------------------------------------------------------------------------

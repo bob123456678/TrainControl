@@ -79,6 +79,17 @@ public class RouteEditorFrame extends JFrame
     /** The route being edited, or empty when this is a new one. */
     private final String originalName;
 
+    /**
+     * What the route looked like in the database when this window opened (GUX-B1).
+     *
+     * Everything the window can write, as one string.  Compared at Save against the route as it stands now: this
+     * window is not modal and does not hold the route, so Enable/Disable, a delete, an import or another editor can
+     * change it underneath - and Save is a delete-and-re-add of everything, so it would write this window's idea of
+     * the route over theirs without either of them being told.  Null for a new route, which has nothing to conflict
+     * with.
+     */
+    private final String loadedFromDatabase;
+
     private final JTextField nameField = new JTextField(24);
     private final JTextField s88Field = digitsOnlyField(6);
     private final JComboBox<String> triggerBox = new JComboBox<>();
@@ -210,6 +221,9 @@ public class RouteEditorFrame extends JFrame
     {
         this.parent = parent;
         this.originalName = routeName == null ? "" : routeName;
+
+        // WHAT THE DATABASE SAID WHEN THIS WINDOW OPENED (GUX-B1), so Save can tell whether it still says it.
+        this.loadedFromDatabase = signatureOf(route);
 
         setTitle(routeName == null ? I18n.t("route.ui.frameNewRoute")
             : I18n.f("route.ui.frameEditRoute", routeName));
@@ -434,6 +448,57 @@ public class RouteEditorFrame extends JFrame
             javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW);
 
         return content;
+    }
+
+    /**
+     * Everything a route says about itself, as one string, for the comparison above (GUX-B1).
+     *
+     * Tolerant on purpose, like `stateSignature`: it is only ever compared with another of its own kind.
+     *
+     * @param route the route, or null
+     * @return its signature, or null when there is no such route
+     */
+    private static String signatureOf(org.traincontrol.base.Route route)
+    {
+        if (route == null) return null;
+
+        StringBuilder out = new StringBuilder();
+
+        out.append(route.getName()).append('\u0001')
+           .append(route.getS88()).append('\u0001')
+           .append(String.valueOf(route.getTriggerType())).append('\u0001')
+           .append(route.isEnabled()).append('\u0002');
+
+        for (org.traincontrol.base.RouteCommand command : route.getRoute())
+        {
+            out.append(String.valueOf(command)).append('\u0003');
+        }
+
+        out.append(String.valueOf(route.getConditions()));
+
+        return out.toString();
+    }
+
+    /**
+     * Whether the route this window is editing has changed in the database since it opened (GUX-B1).
+     *
+     * Three answers, and they need different words: it is GONE (deleted, or replaced by an import that did not
+     * carry it), it has CHANGED (somebody toggled Enable/Disable, or edited it elsewhere), or it is as it was.
+     *
+     * @return "gone", "changed", or null
+     */
+    public String howTheRouteMoved()
+    {
+        if (originalName == null || originalName.isEmpty() || parent == null || parent.getModel() == null)
+        {
+            return null;
+        }
+
+        org.traincontrol.base.Route now = parent.getModel().getRoute(originalName);
+
+        if (now == null) return "gone";
+
+        return signatureOf(now).equals(loadedFromDatabase) ? null : "changed";
     }
 
     /**
@@ -2797,11 +2862,54 @@ public class RouteEditorFrame extends JFrame
                     return;
                 }
             }
-            else if (!parent.getModel().editRoute(originalName, name, built, s88, trigger,
-                enabledBox.isSelected(), expression))
+            else
             {
-                JOptionPane.showMessageDialog(this, I18n.f("route.ui.errorEditRouteFailed", name));
-                return;
+                // THE ROUTE MAY HAVE MOVED UNDER THIS WINDOW (GUX-B1).
+                //
+                // This is not a modal window and it does not hold the route: Enable/Disable, a delete, an import or
+                // another editor can change it while it is open, and Save is a delete-and-re-add of everything the
+                // window holds - so it wrote this window's idea of the route over theirs, silently.  The common one
+                // is the enable flag: toggle a route in the list with its editor open, press Save, and it is off
+                // again.  Asked rather than refused, because what to do about it is the operator's to decide.
+                String moved = howTheRouteMoved();
+
+                if ("gone".equals(moved))
+                {
+                    // ADDED BACK RATHER THAN LOST.  The old behaviour was `editRoute` returning false and a message
+                    // with no way out: `originalName` is final, so the typing could never be saved as anything.
+                    if (JOptionPane.showOptionDialog(this,
+                        I18n.f("route.ui.confirmRouteGoneSaveAsNew", originalName),
+                        I18n.t("route.ui.titleRouteMoved"),
+                        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
+                        TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[0]) != 0)
+                    {
+                        return;
+                    }
+
+                    if (!parent.getModel().newRoute(name, built, s88, trigger, enabledBox.isSelected(), expression))
+                    {
+                        JOptionPane.showMessageDialog(this, I18n.f("route.ui.errorEditRouteFailed", name));
+                        return;
+                    }
+                }
+                else
+                {
+                    if ("changed".equals(moved) && JOptionPane.showOptionDialog(this,
+                        I18n.f("route.ui.confirmRouteChangedUnderneath", originalName),
+                        I18n.t("route.ui.titleRouteMoved"),
+                        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
+                        TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != 0)
+                    {
+                        return;
+                    }
+
+                    if (!parent.getModel().editRoute(originalName, name, built, s88, trigger,
+                        enabledBox.isSelected(), expression))
+                    {
+                        JOptionPane.showMessageDialog(this, I18n.f("route.ui.errorEditRouteFailed", name));
+                        return;
+                    }
+                }
             }
 
             // A finished edit puts every play button back (FR-043).  The route that was edited is a
