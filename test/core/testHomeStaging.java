@@ -3489,8 +3489,9 @@ public class testHomeStaging
      *
      * Adam, 2026-09-19, shown the two readings: *"the document is right and the fix goes in."*
      *
-     * LOC_A stands on the terminus HS A and is homed to HS B; LOC_B stands on HS B and is homed to HS A.  The only
-     * way round is LOC_A to HS C, LOC_B to HS A, LOC_A to HS B - so LOC_A has to step aside before going home.
+     * LOC_A stands on the terminus HS A and is homed to HS B; LOC_B stands on HS B and is homed to HS A.  LOC_B is
+     * kept off the two spare squares, so the only way round is LOC_A stepping aside, LOC_B going home, and LOC_A
+     * following it - which is what the control with a reversible LOC_A asserts before the claim is made (SVT-C3).
      *
      * @throws Exception on a failure to build the fixture
      */

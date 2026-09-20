@@ -58,17 +58,17 @@ Also: the test thread polls `flashTimer`/`accessoryHighlight` (non-volatile, wri
 | id | status | where |
 |---|---|---|
 | SVT-C1 | open | `testANegativeMaximumTrainLengthIsRefused` never asserts the reason the rule exists - that the load refuses a negative |
-| SVT-C2 | open | `testTheSingleDoorSpeaksForTheWholeRunAfterAWalk` throws `SkipException` on a headless machine; the class header does not say the class needs a display |
-| SVT-C3 | open | `testATrainTheRailwayHadOnATerminusMayStepAsideBeforeGoingHome`'s javadoc describes a fixture the ring does not have |
-| SVT-C4 | open | `testTheExitKnowsTheRouteEditorHasUnsavedWork` puts `ui.routeEditor` back as null, not as it was |
-| SVT-C5 | open | CS3-B1 "the locomotive doors refuse": `checkForRenameMenuItemActionPerformed` renames through `renameLoc` with only the autonomy refusal; `syncWithCS2` still walks `getRoute()` off the event thread |
-| SVT-C6 | open | RTX-C3 is marked fixed; its rename half (the record is keyed by name and nothing in `Layout` hears a rename) is not |
-| SVT-C7 | open | the CS3 document carries a second `**Disposition**` row per finding, all saying Open, and the catalogue quotes those |
-| SVT-C8 | open | MT-461 expects a dialog "naming what it is about to lose"; the dialog names nothing.  And with both editors open the layout editor's question is settled before the route editor's No cancels the exit |
-| SVT-C9 | open | MT-459 asserts four shared squares on 1 - Main; the rule as fixed needs legs on BOTH roads, which nobody has counted |
-| SVT-C10 | open | MT-460's "add up the numbers on the run's squares" gives 8 to a tester who counts the sensor squares, which keep their shares |
-| SVT-C11 | open | MT-463's expected plan is one arrangement of several the planner may choose on the real railway |
-| SVT-C12 | open | behaviour.md 5b: "three bulk doors" lists four; SET-B1's refusal is attributed to the walk, whose field cannot take a minus sign; "all four walks" is ambiguous after four doors |
+| SVT-C2 | fixed - the headless skip is gone | `testTheSingleDoorSpeaksForTheWholeRunAfterAWalk` throws `SkipException` on a headless machine; the class header does not say the class needs a display |
+| SVT-C3 | fixed - the javadoc describes the fixture that exists | `testATrainTheRailwayHadOnATerminusMayStepAsideBeforeGoingHome`'s javadoc describes a fixture the ring does not have |
+| SVT-C4 | fixed - the field is put back as it was | `testTheExitKnowsTheRouteEditorHasUnsavedWork` puts `ui.routeEditor` back as null, not as it was |
+| SVT-C5 | fixed for the rename door; the sync's live-list walk stays open as MKR-C3 | CS3-B1 "the locomotive doors refuse": `checkForRenameMenuItemActionPerformed` renames through `renameLoc` with only the autonomy refusal; `syncWithCS2` still walks `getRoute()` off the event thread |
+| SVT-C6 | fixed - renameLoc repairs the record, with a test | RTX-C3 is marked fixed; its rename half (the record is keyed by name and nothing in `Layout` hears a rename) is not |
+| SVT-C7 | fixed - the CS3 rows say what was done | the CS3 document carries a second `**Disposition**` row per finding, all saying Open, and the catalogue quotes those |
+| SVT-C8 | fixed - MT-461 says the editor's own question, and the order | MT-461 expects a dialog "naming what it is about to lose"; the dialog names nothing.  And with both editors open the layout editor's question is settled before the route editor's No cancels the exit |
+| SVT-C9 | fixed - MT-459 says squares two roads use | MT-459 asserts four shared squares on 1 - Main; the rule as fixed needs legs on BOTH roads, which nobody has counted |
+| SVT-C10 | fixed - MT-460 excludes the sensors | MT-460's "add up the numbers on the run's squares" gives 8 to a tester who counts the sensor squares, which keep their shares |
+| SVT-C11 | fixed - MT-463 asks for a plan, not one arrangement | MT-463's expected plan is one arrangement of several the planner may choose on the real railway |
+| SVT-C12 | fixed - behaviour.md 5b says four doors and two walks | behaviour.md 5b: "three bulk doors" lists four; SET-B1's refusal is attributed to the walk, whose field cannot take a minus sign; "all four walks" is ambiguous after four doors |
 
 ### SVT-C1 - the negative-maximum test does not pin why a negative is refused
 

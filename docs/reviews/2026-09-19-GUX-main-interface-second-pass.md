@@ -135,7 +135,7 @@ writes. Refusing is simpler and honest: *"That route is open in the editor."*
 | GUX-C3 | open | `LocomotiveFunctionAssign.copyCustomizationsActionPerformed` (`:624-636`) against the Cancel branch in `RightClickFunctionMenu` (`:288-306`) and its comment |
 | GUX-C4 | open | `DiagramExport.render` (`:91-172`): the grid's `discard()` at `:168-171` is not in a `finally` |
 | GUX-C5 | open | `TrainControlUI.enableOrDisableRoute` (`:21420`) and `BulkEnableOrDisable` (`:21396`) sync with the Central Station for a route it has never heard of; `deleteRoute` (`:19353`) and the route editor stopped doing that under OB-155 |
-| GUX-C6 | open | `RouteEditorFrame.java:1421-1423`: `conditionCount`'s javadoc sits two hundred lines from its method, directly above another doc comment - SVB-C4's shape, a fourth instance in the same file |
+| GUX-C6 | fixed 2026-09-19 - reattached to conditionCount | `RouteEditorFrame.java:1421-1423`: `conditionCount`'s javadoc sits two hundred lines from its method, directly above another doc comment - SVB-C4's shape, a fourth instance in the same file |
 
 ### GUX-C1: the speed buttons promise Control and Alt behaviour they do not have - UIX-C5's twin, one row up
 
