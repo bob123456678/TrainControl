@@ -22,7 +22,7 @@ None.
 
 | id | status | where |
 |---|---|---|
-| AUS-B1 | open | `TrainControlUI.buildAutonomyTileMenu` 4689-4756 / `AutonomyEditorPanel.refresh` 8968 - the viewer's menu panel keeps the run map it was built with; after the editor brings a page back into autonomy, the first right-click on a run there binds every item to the clicked square, not the run's leader |
+| AUS-B1 | fixed 2026-09-19 - the menu re-derives run leaders and announces nothing (OP2-B1) | `TrainControlUI.buildAutonomyTileMenu` 4689-4756 / `AutonomyEditorPanel.refresh` 8968 - the viewer's menu panel keeps the run map it was built with; after the editor brings a page back into autonomy, the first right-click on a run there binds every item to the clicked square, not the run's leader |
 
 ### AUS-B1 - the track diagram's autonomy menu binds a run to the wrong square after the editor includes a page
 
@@ -62,10 +62,10 @@ The fix is one line in either of two places: `autonomyTileMenus.refresh()` befor
 
 | id | status | where |
 |---|---|---|
-| AUS-C1 | open | `AutonomyEditorPanel.setRunLength` 8684-8697 - one full reducer rebuild per square of the run, where the walk beside it rebuilds once |
-| AUS-C2 | open | `autolayout.ui.confirmClearAllTrackLengths` (messages.properties 397) and the `clearAllTileLengths` javadoc 9660-9674 - say the clear cannot be undone; in the editor Cancel undoes it |
-| AUS-C3 | open | `AutonomyEditorPanel.annotationsChanged` 8838-8850 - the Unmeasured Track wash lags a run closed by the cycle click or the One-Way tool, because the reducer's legs depend on directions and this door does not forget the cache |
-| AUS-C4 | open | `AutonomyEditorPanel.nameForPrompt` 9594-9596 - a piece ending at an unnamed sensor is named `page:x,y` in the stretch prompt, the raw key SVA-C3 took out for crossings |
+| AUS-C1 | fixed 2026-09-19 - setTileLengths writes a run and re-derives once | `AutonomyEditorPanel.setRunLength` 8684-8697 - one full reducer rebuild per square of the run, where the walk beside it rebuilds once |
+| AUS-C2 | fixed 2026-09-20 - one builder, bulkClearWarning, with a test that runs the sentence (OP2-C2) | `autolayout.ui.confirmClearAllTrackLengths` (messages.properties 397) and the `clearAllTileLengths` javadoc 9660-9674 - say the clear cannot be undone; in the editor Cancel undoes it |
+| AUS-C3 | fixed 2026-09-19 - annotationsChanged forgets the unmeasured wash | `AutonomyEditorPanel.annotationsChanged` 8838-8850 - the Unmeasured Track wash lags a run closed by the cycle click or the One-Way tool, because the reducer's legs depend on directions and this door does not forget the cache |
+| AUS-C4 | fixed 2026-09-19 - an unnamed sensor is named by where it is | `AutonomyEditorPanel.nameForPrompt` 9594-9596 - a piece ending at an unnamed sensor is named `page:x,y` in the stretch prompt, the raw key SVA-C3 took out for crossings |
 
 ### AUS-C1 - Segment Length on a run rebuilds the graph once per square
 

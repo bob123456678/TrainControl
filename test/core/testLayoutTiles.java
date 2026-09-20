@@ -667,6 +667,31 @@ public class testLayoutTiles
             assertTrue(source.contains("editRoute(nowCalled, saveAs,"),
                 "the renamed-route branch no longer saves under the name nameToSaveAs chose");
 
+            // AND THE OLD NAME COMING BACK ON A DIFFERENT ROUTE IS NOT THIS ROUTE (FNL-C5).
+            //
+            // A route renamed away and a second one given its old name leaves something answering to
+            // `originalName` that this window never opened - and saving onto it overwrites a stranger.
+            model.editRoute(name, "Moving route renamed", commands, 0,
+                org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
+
+            model.newRoute(name, 7704, commands, 0,
+                org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+            try
+            {
+                assertNotNull(model.getRoute(name), "precondition: the impostor was not created");
+
+                assertEquals(editor.howTheRouteMoved(), "renamed",
+                    "a different route now answers to the name this window opened, and the editor reports"
+                    + " it as merely changed - so Save writes this window's contents over a stranger");
+            }
+            finally
+            {
+                model.deleteRoute(name);
+                model.editRoute("Moving route renamed", name, commands, 0,
+                    org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
+            }
+
             // AND PUT BACK, so the rest of this method is about the name it started with.
             model.editRoute("Moving route renamed", name, commands, 0,
                 org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);

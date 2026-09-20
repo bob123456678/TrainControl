@@ -3378,6 +3378,14 @@ public class AutonomyEditorPanel extends JPanel
         //
         // This is the rule this method's own javadoc already states - *"a tail belongs to a train, and
         // a square with none has nothing to say"* - and it is where the two stores go back to agreeing.
+        // `appendTailCrossed` and `armTailPick` both ask it already; this was the odd one out.
+        //
+        // WHAT IT COSTS, so nobody rediscovers it as a bug report (FXV-C6).  `setupChanged` asks for a
+        // rebuild of the running layout, so the placement normally catches up within the gesture and the
+        // item comes back.  It does not catch up while the running layout is held - during a run, and
+        // before the first rebuild after a configuration is loaded - and in those two states the item is
+        // absent rather than greyed.  That is the right way round: the side it would write would go onto
+        // a square with no train on it, which is the state AUR-C1 was about.
         if (point.getCurrentLocomotive() == null) return null;
 
         // THE BUILD’S SIDES, which the model now reads as well (OB-182).  See the note at the paste

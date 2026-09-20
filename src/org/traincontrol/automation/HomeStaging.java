@@ -2639,7 +2639,7 @@ public final class HomeStaging
         //
         // Measured before it was written: over `core.testReturnHomeOnRealLayout`, 994 of 83,881 keys
         // were reached with both turn answers.  Written `<name>/turned` or `<name>/straight`, which is
-        // the spelling `firstClearRoute` uses for its own visited set (:1362) - a word after the slash
+        // the spelling `firstClearRoute` uses for its own visited set - a word after the slash
         // in both cases, rather than a name that is present or absent.
         List<String> turned = new ArrayList<>();
 

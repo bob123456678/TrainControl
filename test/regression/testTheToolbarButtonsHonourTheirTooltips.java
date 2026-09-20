@@ -62,8 +62,16 @@ public class testTheToolbarButtonsHonourTheirTooltips
 
         MarklinLocomotive loc;
 
+        /**
+         * How many direction commands have been sent since it was last zeroed (FNL-C6).
+         */
+        final java.util.concurrent.atomic.AtomicInteger directions =
+            new java.util.concurrent.atomic.AtomicInteger();
+
         void close() throws Exception
         {
+            if (model != null) model.setSentMessageObserver(null);
+
             if (ui != null)
             {
                 final TrainControlUI window = ui;
@@ -102,7 +110,18 @@ public class testTheToolbarButtonsHonourTheirTooltips
                 + " button says it forces reverse");
 
             // AND AGAIN, with nothing to do.  A toggle would send it forward here.
+            //
+            // WAITED FOR BY THE COMMAND, not by a clock (FNL-C6).  This is the press that tells a force
+            // from a toggle, and the state it should leave - still reversed - is the state the press
+            // BEFORE it left.  A `sleep` that ran out before the door's worker did would have seen the
+            // right answer for the wrong reason, which is how the first draft of this class passed.
+            up.directions.set(0);
+
             press(up, "LeftArrowLetterButtonPressed", ActionEvent.CTRL_MASK);
+
+            assertTrue(awaitACommand(up),
+                "Control plus the reverse button sent no direction command at all, so nothing here says"
+                + " whether it forces or toggles");
 
             assertTrue(awaitDirection(up.loc, false),
                 "Control plus the reverse button TOGGLED a locomotive that was already reversed; the"
@@ -277,6 +296,25 @@ public class testTheToolbarButtonsHonourTheirTooltips
     }
 
     /**
+     * Waits until a direction command has actually been sent (FNL-C6).
+     *
+     * @param up the fixture
+     * @return whether one arrived
+     * @throws Exception from the sleep
+     */
+    private static boolean awaitACommand(Started up) throws Exception
+    {
+        for (int waited = 0; waited < PATIENCE; waited += 25)
+        {
+            if (up.directions.get() > 0) return true;
+
+            Thread.sleep(25);
+        }
+
+        return false;
+    }
+
+    /**
      * Waits for the locomotive to reach a speed; every one of these doors works on its own thread.
      *
      * @param loc the locomotive
@@ -359,6 +397,17 @@ public class testTheToolbarButtonsHonourTheirTooltips
 
             up.loc = new MarklinLocomotive(up.model, 80, MarklinLocomotive.decoderType.MM2,
                 "Tooltip Test Loc");
+
+            final Started counting = up;
+
+            up.model.setSentMessageObserver(m ->
+            {
+                if (m.getCommand() != null
+                    && m.getCommand() == org.traincontrol.marklin.udp.CS2Message.CMD_LOCO_DIRECTION)
+                {
+                    counting.directions.incrementAndGet();
+                }
+            });
 
             assertEquals(up.loc.getSpeed(), 0, "precondition: a new locomotive is not at a stand");
 

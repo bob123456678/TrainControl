@@ -325,17 +325,17 @@ public class testLockEdgesSurviveTheFile
             + "  `setLocomotive` clears both on a change of occupant and this door did not, so the"
             + " reserving train's tail is walked back along a road it has never driven (AUR-C1)");
 
+        // THE SAME INSTANCE BOTH TIMES, which is what makes this a control: the guard in `assign` is a
+        // reference comparison, so a `loc()` that built a new object each call would fail here for a
+        // reason that has nothing to do with the rule (OP3-C4, moved above the call it qualifies by FXV-C15).
+        assertSame(loc(), loc(), "precondition: loc() no longer returns one instance, so the control that follows"
+            + " is not testing the same-occupant case at all");
+
         // THE CONTROL: the train that is ALREADY there keeps the tail it really has, which is what
         // reserving a square a running train stands on has to leave alone.
         stand.setArrivedFrom("LE Junction");
 
         reserve.invoke(stand, loc());
-
-        // THE SAME INSTANCE BOTH TIMES, which is what makes this a control: the guard in `assign` is a
-        // reference comparison, so a `loc()` that built a new object each call would fail here for a
-        // reason that has nothing to do with the rule (OP3-C4).
-        assertSame(loc(), loc(), "precondition: loc() no longer returns one instance, so the control below"
-            + " is not testing the same-occupant case at all");
 
         assertEquals(stand.getArrivedFrom(), "LE Junction",
             "reserving a square for the train already standing on it threw away its real tail");

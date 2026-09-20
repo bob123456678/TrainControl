@@ -273,8 +273,12 @@ public class testTheBulkClearSaysWhatCancelDoes
         assertFalse(session.tilesWithAMaxTrainLength().isEmpty(),
             "precondition: no station took a maximum, so that clear has nothing to warn about");
 
-        assertFalse(session.tilesWithALocomotive().isEmpty(),
-            "precondition: no square holds a locomotive, so that clear has nothing to warn about");
+        // THE SET THE MENU ITEM READS (FXV-C7).  `tilesWithALocomotive` walks every page; the clear is
+        // gated on `placementsAutonomyWillWrite`, and the comment beside the item says the two disagree -
+        // so asserting the wrong one could have left the item disabled with its notice showing while this
+        // test believed it was reading a warning.
+        assertFalse(session.placementsAutonomyWillWrite().isEmpty(),
+            "precondition: autonomy would write no placements, so that clear has nothing to warn about");
 
         final java.util.List<String> tips = new java.util.ArrayList<>();
 

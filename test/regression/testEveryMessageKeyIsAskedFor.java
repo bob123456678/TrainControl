@@ -91,6 +91,21 @@ public class testEveryMessageKeyIsAskedFor
     };
 
     /**
+     * A block comment, or a line comment, with any string literals inside it.
+     *
+     * **Commented-out code asks for nothing** (FNL-C2).  Two keys read as live because the only thing
+     * naming them was a disabled menu inside a `/* We no longer need these *\/` block, and the sweep's
+     * own record then said the bundles were clean.  Stripped before the literals are read, so a key
+     * kept alive by code nobody compiles is reported like any other dead one.
+     *
+     * Strings are not stripped first, so a `"//"` inside a literal can start a false comment.  That
+     * removes literals rather than inventing them, which is the safe direction here: the worst it does
+     * is report a live key as dead, loudly, rather than pass a dead one in silence.
+     */
+    private static final Pattern COMMENT = Pattern.compile(
+        "/\\*.*?\\*/|//[^\\n]*", Pattern.DOTALL);
+
+    /**
      * A Java string literal, escapes and all.
      */
     private static final Pattern LITERAL = Pattern.compile("\"((?:[^\"\\\\\\n]|\\\\.)*)\"");
@@ -235,8 +250,8 @@ public class testEveryMessageKeyIsAskedFor
 
             if (!file.getName().endsWith(".java") || MYSELF.equals(file.getName())) continue;
 
-            Matcher m = LITERAL.matcher(
-                new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
+            Matcher m = LITERAL.matcher(COMMENT.matcher(
+                new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8)).replaceAll(" "));
 
             while (m.find()) out.add(m.group(1));
         }

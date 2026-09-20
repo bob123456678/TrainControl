@@ -117,20 +117,6 @@ public class RightClickMenuListener extends MouseAdapter
 
             if (ui.buttonHasLocomotive(source))
             {
-                // We no longer need these since users can just drag or copy entire pages
-                /*addSeparator();
-
-                menuItem = new JMenuItem(
-                    I18n.t("loc.ui.menuCopyToNextPage")
-                );
-                menuItem.addActionListener(event -> ui.copyToNextPage(source));
-                add(menuItem);
-
-                menuItem = new JMenuItem(
-                    I18n.t("loc.ui.menuCopyToPreviousPage")
-                );
-                menuItem.addActionListener(event -> ui.copyToPrevPage(source));
-                add(menuItem);*/
 
                 addSeparator();
 

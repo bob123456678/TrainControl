@@ -152,7 +152,7 @@ highlight is up - or capture `lastIcon` rather than `getIcon()`.
 | UIX-C1 | fixed - behaviour.md section 3 corrected | `behaviour.md` section 3, the paragraph beginning *"No journey is refused on the operator's answer any more"* (lines 275-279), against `ManualReversalPrompt.forJourney` (`ManualReversalPrompt.java:97-100`) |
 | UIX-C2 | fixed 2026-09-20 - the comment no longer claims the key map reaches the editor | `LayoutEditor.java:7320-7325`, the Control+B comment, against the post-processor's own guard at `TrainControlUI.java:9395` |
 | UIX-C3 | fixed 2026-09-19 - the hand-written label takes the standard's blue; AutonomyBanner left for Adam | `GraphLocAssign.java:377`; `AutonomyBanner.java:211` |
-| UIX-C4 | fixed 2026-09-19 - 118 keys out of all eight bundles, guarded by testEveryMessageKeyIsAskedFor | the eight `messages*.properties` bundles: about 237 keys nothing asks for |
+| UIX-C4 | fixed 2026-09-19/20 - 237 keys out of all eight bundles (118 then 119, OP3-B1), guarded by testEveryMessageKeyIsAskedFor | the eight `messages*.properties` bundles: about 237 keys nothing asks for |
 | UIX-C5 | fixed 2026-09-19 - the listeners read the modifiers, with GUX-C1 | `ui.main.tooltip.switchDir` / `switchDirFwd` (`messages.properties:1533-1534`) against `LeftArrowLetterButtonPressed` / `RightArrowLetterButtonPressed` (`TrainControlUI.java:23396-23403`) |
 
 ### UIX-C1: behaviour.md says the turning copy of a may-reverse square is never asked about; the code asks, and is tested asking

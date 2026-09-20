@@ -764,6 +764,36 @@ FBR-D6	2026-08-24-fable-round-review.md	Closed	OB-071: no page-key colon split r
 FBR-D7	2026-08-24-fable-round-review.md	Closed	OB-070: both exit doors go through the editor question
 FBR-D8	2026-08-24-fable-round-review.md	Closed	OB-069: the repair targets the container the timetable actually lives in
 FBR-D9	2026-08-24-fable-round-review.md	Closed	OB-076: the editor-open proxy is true during a layout refresh, and that is fine
+FNL-C1	2026-09-20-FNL-final-validation.md	-	`DiagramExport.java:128-146` (the comment) against `:196-201` (the `finally`) and `LayoutG
+FNL-C2	2026-09-20-FNL-final-validation.md	-	`RightClickMenuListener.java:121-133`; `TrainControlUI.java:10374`, `:10388`; `testEveryMe
+FNL-C3	2026-09-20-FNL-final-validation.md	-	`HomeStaging.java:2637` against `testEveryCitationResolves.java:232-233`
+FNL-C4	2026-09-20-FNL-final-validation.md	-	`Layout.java:489-493`, the `restoreVisitHistory` javadoc
+FNL-C5	2026-09-20-FNL-final-validation.md	-	`RouteEditorFrame.java:2942-2950`; the FXV-B2 status row
+FNL-C6	2026-09-20-FNL-final-validation.md	-	`test/regression/testTheToolbarButtonsHonourTheirTooltips.java`, `SETTLE` and the second p
+FNL-D1	2026-09-20-FNL-final-validation.md	-	the dead-key guard's rule, re-derived: 0 dead, 43 keys resting on `BUILDERS`, all 43 live,
+FNL-D10	2026-09-20-FNL-final-validation.md	-	the arrival side has one writer door, and the load, the save and the reservation all agree
+FNL-D11	2026-09-20-FNL-final-validation.md	-	`DiagramExport.render`'s seam is safe to read across threads, and the export test discrimi
+FNL-D12	2026-09-20-FNL-final-validation.md	-	FXV-B4: all ten `getRoute`-then-dereference sites in `TrainControlUI` are guarded, not onl
+FNL-D13	2026-09-20-FNL-final-validation.md	-	FXV-B3: both `@AfterClass` floors ask TestNG per class, and both runners read the second s
+FNL-D14	2026-09-20-FNL-final-validation.md	-	OP3-C4's test is now a test of `Point.toJSON`'s gate; the reserve door and its control are
+FNL-D15	2026-09-20-FNL-final-validation.md	-	OP3-C6: the cancel test asserts the triggers; OP3-C5: the export test asserts it had capti
+FNL-D16	2026-09-20-FNL-final-validation.md	-	OP3-C10: the crossing test asks every ordered pair and fails loudly on a non-uniform answe
+FNL-D17	2026-09-20-FNL-final-validation.md	-	the SET-B1 load refusal, the SET-B2 crossing cut and the SET-B3 run rule are each pinned b
+FNL-D18	2026-09-20-FNL-final-validation.md	-	FXV-C10 was declined correctly, and FXV had the path wrong: the untracked file was in `ran
+FNL-D19	2026-09-20-FNL-final-validation.md	-	`behaviour.md`'s four additions name things that exist and say what the code does
+FNL-D2	2026-09-20-FNL-final-validation.md	-	237 keys removed by key-set arithmetic (2,022 - 237 + 12 added = 1,797), none referenced i
+FNL-D20	2026-09-20-FNL-final-validation.md	-	every "fixed" row in OP3 and FXV describes something in the tree; the rows FXV-C9 names ar
+FNL-D21	2026-09-20-FNL-final-validation.md	-	the three comments the fix commits rewrote are true: OP3-C1, FXV-C2, SVB-C3
+FNL-D22	2026-09-20-FNL-final-validation.md	-	the battery registries: four new classes in `build.xml`, the window-building pin is 49 for
+FNL-D23	2026-09-20-FNL-final-validation.md	-	`git status` is clean, and `.gitignore` hides only what `5d1e23b8` said
+FNL-D24	2026-09-20-FNL-final-validation.md	-	the July-cycle "twin site" rule was followed everywhere this round touched a guard
+FNL-D3	2026-09-20-FNL-final-validation.md	-	all eight bundles: identical 1,797-key sets, no duplicate keys, no non-ASCII, identical pl
+FNL-D4	2026-09-20-FNL-final-validation.md	-	the 20 shortened tooltips: 20 values changed in each bundle, placeholders intact; FXV-C13'
+FNL-D5	2026-09-20-FNL-final-validation.md	-	FXV-B1: `autolayout.ui.confirmClearAll` is in `BUILDERS`; the two `AtOnce` keys carry `{0}
+FNL-D6	2026-09-20-FNL-final-validation.md	-	`tailKey` keys both facts `turnedByThePlan` reads, a finer key cannot lose a plan, and the
+FNL-D7	2026-09-20-FNL-final-validation.md	-	the visit history: carried by name, translated back, restored before anything can record; 
+FNL-D8	2026-09-20-FNL-final-validation.md	-	the rename branch: `nameToSaveAs` is right, the sentence landed in all eight bundles, the 
+FNL-D9	2026-09-20-FNL-final-validation.md	-	`buildArrivedFromMenu`'s gate matches its two siblings and `bulkClearWarning` is what its 
 FP-B1	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)
 FP-B2	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)
 FP-B3	2026-07-27-fresh-perspective-review.md	Open	**Open - deferred by author 2026-07-27**, judged unlikely in practice

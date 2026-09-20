@@ -8464,19 +8464,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Opens the Autonomy menu on the list of pages, which is where a page is put back into autonomy.
-     *
-     * Reached from the diagram itself, because that is where the user finds out the page is left out -
-     * and a statement they cannot act on from where they are standing is half an answer.
-     */
-    public void openAutonomyPagesMenu()
-    {
-        if (autonomyMenu == null) return;
-
-        javax.swing.SwingUtilities.invokeLater(() -> autonomyMenu.showPages());
-    }
-
-    /**
      * What the diagram says about autonomy when there is something to say.  See refreshAutonomyPrompt.
      */
     private AutonomyBanner autonomyDiagramBanner;
@@ -10367,33 +10354,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
     
-    /**
-     * Copies a locomotive mapping to the next page
-     * @param button 
-     */
-    public void copyToNextPage(JButton button)
-    {        
-        this.nextLocMapping().put(button, this.currentLocMapping().get(button));
-        
-        if (button.equals(this.currentButton))
-        {
-            displayCurrentButtonLoc(this.currentButton);
-        }
-    }
     
-    /**
-     * Copies a locomotive mapping to the previous page
-     * @param button 
-     */
-    public void copyToPrevPage(JButton button)
-    {        
-        this.prevLocMapping().put(button, this.currentLocMapping().get(button));
-        
-        if (button.equals(this.currentButton))
-        {
-            displayCurrentButtonLoc(this.currentButton);
-        }
-    }
     
     /**
      * Has the copy target been set?

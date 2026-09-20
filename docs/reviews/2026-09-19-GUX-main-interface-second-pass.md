@@ -45,7 +45,7 @@ for the session (D4 - the ordering is right on every path but the one in C4).
 
 | id | status | where |
 |---|---|---|
-| GUX-B1 | open | `RouteEditorFrame.onSave` (`RouteEditorFrame.java:2742`, the edit branch at `:2798-2803`) against `MarklinControlStation.editRoute` (`:1957-1972`) and the three doors that change a route under an open editor: `TrainControlUI.deleteRoute` (`:19330`), `importRoutesMenuItemActionPerformed` (`:25374`), `enableOrDisableRoute` / `BulkEnableOrDisable` (`:21403`, `:21344`) |
+| GUX-B1 | fixed 2026-09-19 - howTheRouteMoved, and the Save asks before overwriting | `RouteEditorFrame.onSave` (`RouteEditorFrame.java:2742`, the edit branch at `:2798-2803`) against `MarklinControlStation.editRoute` (`:1957-1972`) and the three doors that change a route under an open editor: `TrainControlUI.deleteRoute` (`:19330`), `importRoutesMenuItemActionPerformed` (`:25374`), `enableOrDisableRoute` / `BulkEnableOrDisable` (`:21403`, `:21344`) |
 
 ### GUX-B1: the route editor does not know its route has changed underneath it, and its Save either fails with no way out or silently undoes the change
 

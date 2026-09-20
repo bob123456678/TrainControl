@@ -665,6 +665,31 @@ public class LayoutGrid
             new java.util.WeakHashMap<JPanel, java.lang.ref.WeakReference<LayoutGrid>>());
 
     /**
+     * Retires whatever grid is registered against this panel, whether or not the caller ever got a reference
+     * to it (FNL-C1).
+     *
+     * **A constructor that throws part-way has already registered.**  `LIVE.put` is the first thing the
+     * constructor does, before a tile is built or a caption registered - so a build that fails later leaves a
+     * grid holding captions with no reference anywhere for a `finally` to discard.  The diagram export's
+     * bracket had exactly that hole: it discards `grid[0]`, and `grid[0]` is only assigned if the constructor
+     * returned.
+     *
+     * Idempotent, and safe on a panel that never had a grid.
+     *
+     * @param host the panel a grid was built into
+     */
+    public static void retire(JPanel host)
+    {
+        if (host == null) return;
+
+        java.lang.ref.WeakReference<LayoutGrid> was = LIVE.get(host);
+
+        LayoutGrid standing = was == null ? null : was.get();
+
+        if (standing != null && !standing.isDiscarded()) standing.discard();
+    }
+
+    /**
      * @return whether this grid has been retired and should not touch its panel again
      */
     public boolean isDiscarded()

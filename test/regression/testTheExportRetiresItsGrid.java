@@ -123,6 +123,50 @@ public class testTheExportRetiresItsGrid
     }
 
     /**
+     * A grid can be retired by the panel it was built into, without a reference to it (FNL-C1).
+     *
+     * **This is the door the export's bracket could not cover.**  `LayoutGrid`'s constructor registers itself
+     * against its panel before it builds anything, and assigns the caller's reference only by returning - so a
+     * constructor that threw part-way left captions registered with nothing for a `finally` to discard.  The
+     * export retires by panel now, and this is what says that works.
+     *
+     * Driven on a grid that was built normally, because a constructor made to throw part-way needs a hook
+     * `LayoutGrid` does not have.  What is pinned is the mechanism the bracket depends on.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testAGridCanBeRetiredByItsPanel() throws Exception
+    {
+        Started up = start();
+
+        try
+        {
+            int before = quiesced(up.ui);
+
+            final javax.swing.JPanel host = new javax.swing.JPanel();
+
+            SwingUtilities.invokeAndWait(() ->
+                new org.traincontrol.gui.LayoutGrid(up.page, 30, host, null, true, up.ui));
+
+            assertTrue(quiesced(up.ui) > before,
+                "precondition: building a grid into a panel registered no captions at all, so retiring it"
+                + " cannot be shown to hand any back");
+
+            // BY THE PANEL, with no reference to the grid - which is all a failed constructor leaves.
+            SwingUtilities.invokeAndWait(() -> org.traincontrol.gui.LayoutGrid.retire(host));
+
+            assertEquals(quiesced(up.ui), before,
+                "retiring by the panel left the grid's caption labels in the window's table, so the export's"
+                + " bracket cannot clean up after a constructor that threw part-way (FNL-C1)");
+        }
+        finally
+        {
+            up.close();
+        }
+    }
+
+    /**
      * How many caption labels the window is holding, once the count has stopped moving.
      *
      * **Start-up registers captions on its own, asynchronously**, so a count taken the moment

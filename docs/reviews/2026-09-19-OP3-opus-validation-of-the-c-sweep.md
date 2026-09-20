@@ -33,8 +33,8 @@ None. Nothing in the day's work produces wrong behaviour on the layout or loses 
 
 | id | status | where |
 |---|---|---|
-| OP3-B1 | open | `testEveryMessageKeyIsAskedFor.java:129-137` (the prefix shield), `test/ui/testStagingOutcomeMessages.java:56`, `test/regression/testEditorSurfaceRules.java:1187`, `TrainControlUI.java:23101`; and the UIX-C4 status row in `2026-09-19-UIX-main-interface-review.md` |
-| OP3-B2 | open | `TrainControlUI.enableOrDisableRoute` (`TrainControlUI.java:21481`, `:21489`, `:21513`) against the guard added beside it at `:21440-21445` |
+| OP3-B1 | fixed 2026-09-20 - the other 119 keys out, the shield narrowed to declared builders | `testEveryMessageKeyIsAskedFor.java:129-137` (the prefix shield), `test/ui/testStagingOutcomeMessages.java:56`, `test/regression/testEditorSurfaceRules.java:1187`, `TrainControlUI.java:23101`; and the UIX-C4 status row in `2026-09-19-UIX-main-interface-review.md` |
+| OP3-B2 | fixed 2026-09-19 - the guard is in enableOrDisableRoute; three more swept by FXV-B4 | `TrainControlUI.enableOrDisableRoute` (`TrainControlUI.java:21481`, `:21489`, `:21513`) against the guard added beside it at `:21440-21445` |
 
 ### OP3-B1: UIX-C4 took out 118 of the 237 keys it named, and the guard that certifies the rest cannot see them
 

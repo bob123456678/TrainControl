@@ -122,8 +122,12 @@ public final class DiagramExport
         //
         // THE BUILD IS INSIDE THE BRACKET TOO.  `LayoutGrid`'s constructor is what registers the
         // captions, so a constructor that threw part-way - after registering some and before
-        // returning - left `grid[0]` unassigned and the `finally` unentered: the same leak by the one
-        // door the first version of this fix did not cover.  The discard already null-checks.
+        // returning - left the `finally` unentered: the same leak by the one door the first version of
+        // this fix did not cover.
+        //
+        // Moving the build in was not enough on its own (FNL-C1): a constructor that throws never
+        // assigns `grid[0]`, so a `finally` discarding `grid[0]` still discarded nothing.  It retires by
+        // the PANEL now, which is the key the constructor registers under before it builds anything.
         try
         {
             javax.swing.SwingUtilities.invokeAndWait(() ->
@@ -195,10 +199,29 @@ public final class DiagramExport
             //
             // Its panel is a local, so it is never in the page cache and the window will always agree
             // it is finished with.
-            javax.swing.SwingUtilities.invokeAndWait(() ->
+            // AND THE RETIRING DOES NOT REPLACE WHAT WENT WRONG (FXV-C8).
+            //
+            // `invokeAndWait` throws `InterruptedException` when the calling thread's interrupt flag is
+            // set, which is exactly one of the failures this bracket exists for - so the interrupt came
+            // out of here in place of the paint's own exception, and the caller was told the wrong
+            // thing about why its export failed.  The discard still happens either way: the event is
+            // posted before the wait.  Nothing else is swallowed.
+            try
             {
-                if (grid[0] != null) grid[0].discard();
-            });
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    // BY THE PANEL, not by the reference (FNL-C1).  `grid[0]` is assigned only if the
+                    // constructor returned, and a constructor that threw part-way has already
+                    // registered itself and may already have registered captions - so discarding what
+                    // this call holds covered every door but that one.  `LayoutGrid.retire` asks the
+                    // registry the constructor writes first.
+                    LayoutGrid.retire(host);
+                });
+            }
+            catch (InterruptedException marshalling)
+            {
+                Thread.currentThread().interrupt();
+            }
         }
 
         return wanted == NATIVE_TILE_SIZE ? image[0] : scaled(image[0], wanted);

@@ -26,7 +26,7 @@ Every disagreement traced below is in the refusing direction: a road the railway
 
 | id | status | where |
 |---|---|---|
-| AUR-B1 | open | a double curve's two roads are one piece of metal to the lock relation and to the tail walk, though `TilePorts` says they never touch - so two routes cannot use the two roads of one double curve at once (live on `1 - Main` today), and once the square is measured a tail on one road refuses the other |
+| AUR-B1 | fixed 2026-09-19 - locationsOf keys three tile types per route; guard and baseline updated | a double curve's two roads are one piece of metal to the lock relation and to the tail walk, though `TilePorts` says they never touch - so two routes cannot use the two roads of one double curve at once (live on `1 - Main` today), and once the square is measured a tail on one road refuses the other |
 
 ### AUR-B1 - two roads that never meet are locked and fouled as one
 

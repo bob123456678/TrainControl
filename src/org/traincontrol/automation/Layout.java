@@ -488,9 +488,10 @@ public class Layout
     /**
      * Puts a previous layout's visit history back after a rebuild (AUR-C3).
      *
-     * Keyed by block or unique id, which survives a rebuild of the same railway; a key naming a point
-     * this configuration no longer has simply never matches, which is the same answer as never having
-     * been there.
+     * Keyed by POINT NAME on the way in, and translated back into this layout's own keys here (FNL-C4).
+     * This used to say "block or unique id, which survives a rebuild" - unique ids do not: they come from
+     * a global allocator, so a rebuilt railway's squares get new ones.  A name this configuration does not
+     * have is dropped, which is the same answer as never having been there.
      *
      * @param history what the outgoing layout knew
      */

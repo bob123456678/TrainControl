@@ -2027,10 +2027,20 @@ public class testAutonomyDiagramReducer
 
             if (edge.getStart().getY() == 2) eastWest.add(edge);
             else if (edge.getStart().getX() == 3) northSouth.add(edge);
+            else fail("a leg over the " + type + " starts at " + edge.getStart() + ", which is on neither"
+                + " road this test knows about - so it is being dropped rather than asked about");
         }
 
-        assertFalse(eastWest.isEmpty(), "precondition: no leg runs over the " + type + " east to west");
-        assertFalse(northSouth.isEmpty(), "precondition: no leg runs over the " + type + " north to south");
+        // HOW MANY LEGS THERE ARE, not merely that there is one (FXV-C11).  The javadoc claims a double
+        // slip carries four roads and eight directed legs, and `assertFalse(isEmpty())` is satisfied by
+        // one of each - so a reduction that stopped emitting the diagonals would leave this green while
+        // the claim above it went on being made.
+        int legs = eastWest.size() + northSouth.size();
+        int wanted = type == componentType.SWITCH_CROSSING ? 8 : 4;
+
+        assertEquals(legs, wanted,
+            "the " + type + " is crossed by " + legs + " legs, not the " + wanted + " its two or four"
+            + " roads should give in both directions: " + eastWest + " and " + northSouth);
 
         Boolean answer = null;
 

@@ -524,6 +524,14 @@ public class RouteEditorFrame extends JFrame
 
         if (now == null) return nameNowHeldById() != null ? "renamed" : "gone";
 
+        // AND THE NAME MAY BE BACK, HELD BY SOMEBODY ELSE (FNL-C5).  A route renamed away and a second one
+        // given its old name leaves a route answering to `originalName` that is not the one this window
+        // opened: saving onto it would overwrite a stranger.  The id is what the route IS.
+        if (loadedId != null && now.getId() != loadedId)
+        {
+            return nameNowHeldById() != null ? "renamed" : "gone";
+        }
+
         return signatureOf(now).equals(loadedFromDatabase) ? null : "changed";
     }
 
@@ -2948,6 +2956,18 @@ public class RouteEditorFrame extends JFrame
                     // is what save-as-new would have thrown away while telling the operator it had been
                     // deleted or replaced by an import.
                     String nowCalled = nameNowHeldById();
+
+                    // ASKED TWICE, AND IT CAN ANSWER DIFFERENTLY (FNL-C5).  `howTheRouteMoved` found a
+                    // route under this id a moment ago; if it has gone since, the message would name it
+                    // as "renamed to null" and the save would edit a route called null.  Treated as gone,
+                    // which is what it now is.
+                    if (nowCalled == null)
+                    {
+                        JOptionPane.showMessageDialog(this,
+                            I18n.f("route.ui.errorEditRouteFailed", originalName));
+
+                        return;
+                    }
 
                     // AND IT KEEPS THE NAME THE OTHER PARTY GAVE IT (FXV-B2).
                     //

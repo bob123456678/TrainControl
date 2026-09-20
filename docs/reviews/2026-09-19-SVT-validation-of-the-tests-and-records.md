@@ -57,7 +57,7 @@ Also: the test thread polls `flashTimer`/`accessoryHighlight` (non-volatile, wri
 
 | id | status | where |
 |---|---|---|
-| SVT-C1 | open | `testANegativeMaximumTrainLengthIsRefused` never asserts the reason the rule exists - that the load refuses a negative |
+| SVT-C1 | fixed 2026-09-20 - the refusal is asserted by its reason (OP2-C7) | `testANegativeMaximumTrainLengthIsRefused` never asserts the reason the rule exists - that the load refuses a negative |
 | SVT-C2 | fixed - the headless skip is gone | `testTheSingleDoorSpeaksForTheWholeRunAfterAWalk` throws `SkipException` on a headless machine; the class header does not say the class needs a display |
 | SVT-C3 | fixed - the javadoc describes the fixture that exists | `testATrainTheRailwayHadOnATerminusMayStepAsideBeforeGoingHome`'s javadoc describes a fixture the ring does not have |
 | SVT-C4 | fixed - the field is put back as it was | `testTheExitKnowsTheRouteEditorHasUnsavedWork` puts `ui.routeEditor` back as null, not as it was |
