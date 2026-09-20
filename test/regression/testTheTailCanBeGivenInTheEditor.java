@@ -492,6 +492,64 @@ public class testTheTailCanBeGivenInTheEditor
         }
     }
 
+    /**
+     * The arrival-side menu is not offered for a square no train is standing on (OP3-C7).
+     *
+     * **The offer and the write disagreed about which store they were reading.**  The item appears when
+     * the SETUP says a locomotive is at the square (`session.getLocomotiveNameAt`), and it writes to a
+     * Point on the running layout chosen by `pointOnTheLayout` - which prefers an occupied copy but
+     * falls back to ANY copy.  So with a train assigned in the setup and not placed on the running
+     * railway, the side went onto an empty Point: nothing reads it there, and since AUR-C1 nothing
+     * saves it either, so the two stores quietly stopped agreeing.
+     *
+     * The rule now matches the method's own javadoc - *"a tail belongs to a train, and a square with
+     * none has nothing to say"*.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheArrivalSideIsNotOfferedForAnEmptySquare() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            final javax.swing.JMenu[] offered = new javax.swing.JMenu[1];
+
+            SwingUtilities.invokeAndWait(() -> offered[0] = f.panel.buildArrivedFromMenu(f.tile));
+
+            assertNotNull(offered[0],
+                "precondition: the arrival-side menu is not offered even with a train standing there,"
+                + " so this test cannot tell the two cases apart");
+
+            // THE RUNNING RAILWAY LETS GO OF THE TRAIN, and the setup keeps it - which is the state an
+            // operator is in between assigning a locomotive and placing one.
+            Layout running = model.getAutoLayout();
+
+            for (String name : session.getStationIndex().pointNamesAt(f.tile))
+            {
+                Point copy = running.getPoint(name);
+
+                if (copy != null) copy.setLocomotive(null);
+            }
+
+            assertNotNull(session.getLocomotiveNameAt(f.tile),
+                "precondition: the SETUP stopped naming a locomotive here too, so the two stores agree"
+                + " and the case this is about no longer exists");
+
+            SwingUtilities.invokeAndWait(() -> offered[0] = f.panel.buildArrivedFromMenu(f.tile));
+
+            assertNull(offered[0],
+                "the arrival-side menu was offered for a square with no train standing on it.  What it"
+                + " writes goes onto an unoccupied Point, where nothing reads it and nothing saves it"
+                + " (OP3-C7)");
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
     // ---------------------------------------------------------------- the fixture
 
     /** One claim's railway: the setup as found, measured, a long train found, an editor open on its page. */

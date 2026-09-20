@@ -3370,6 +3370,18 @@ public class AutonomyEditorPanel extends JPanel
 
         if (point == null) return null;
 
+        // AND A TRAIN HAS TO BE STANDING THERE ON THE RUNNING RAILWAY (OP3-C7).
+        //
+        // The offer above asks the SETUP - `locomotiveAt` reads `session.getLocomotiveNameAt` - and
+        // `pointOnTheLayout` prefers an occupied copy but falls back to any copy at all.  So a square
+        // the setup assigns a train to, while the running layout has not placed one, wrote a side onto
+        // an unoccupied Point: a side with nobody on the square, which `Point.toJSON` now declines to
+        // save (AUR-C1) and which nothing reads in the meantime.
+        //
+        // This is the rule this method's own javadoc already states - *"a tail belongs to a train, and
+        // a square with none has nothing to say"* - and it is where the two stores go back to agreeing.
+        if (point.getCurrentLocomotive() == null) return null;
+
         // THE BUILD’S SIDES, which the model now reads as well (OB-182).  See the note at the paste
         // door in TrainControlUI: the entry side travels in the configuration, and `Layout.entrySideOf`
         // is what both the arrival write and the tail walk consult - so offering it here stores a value
