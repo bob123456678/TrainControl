@@ -983,6 +983,13 @@ public class testAutoLayout
      * random once the near ones began beating the far corner again.  That degraded state is the one the
      * preference's own javadoc was written to end.
      *
+     * **And the carry has to be READABLE, not merely copied** (FXV-C5, second round).  The first version
+     * moved `lastArrival` across as it stood, keyed by `recencyKeyOf` - the block, or failing that the unique
+     * id.  Unique ids come from a global allocator that hands a new one to every Point built, so every entry
+     * for a point with no block was dead weight the rebuilt railway could never match.  This test passed
+     * anyway, because the map had been copied faithfully.  The carry is keyed by point NAME now, and this
+     * assertion is about names, so a key the rule cannot use is a key this notices.
+     *
      * **What this asserts, and what it does not.**  It asserts the state the rule reads - the map
      * `recencyOf` looks a destination up in - across a real `parseAuto`.  It does not drive `pickPath`
      * afterwards: a first draft built a three-point fixture, round-tripped it through JSON and asked

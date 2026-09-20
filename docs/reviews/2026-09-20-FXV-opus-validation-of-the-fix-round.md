@@ -212,15 +212,15 @@ and it was not run this time either.
 | id | status | where |
 |---|---|---|
 | FXV-C1 | fixed 2026-09-20 - the constant sits above the javadoc | `test/core/testLayoutTiles.java:268-286`, and `testJavadocsAreAttached` which only reads `src/` |
-| FXV-C2 | open | `TrainControlUI.openAutonomyEditorIfItCan` (`:8444-8460`) against `AutonomyMenu.java:410-413` |
+| FXV-C2 | fixed 2026-09-20 - the javadoc says which half it asks and why the other does not apply | `TrainControlUI.openAutonomyEditorIfItCan` (`:8444-8460`) against `AutonomyMenu.java:410-413` |
 | FXV-C3 | open | `TrainControlUI.openAutonomyPagesMenu` (`:8463-8475`) |
 | FXV-C4 | open | `HomeStaging.tailKey` (`:2635-2643`) |
-| FXV-C5 | open | `Layout.restoreVisitHistory` (`:480-487`) against `MarklinControlStation.parseAuto` (`:1076-1097`) and `TrainControlUI.java:23916` |
+| FXV-C5 | fixed 2026-09-20 - filtered to squares this configuration has | `Layout.restoreVisitHistory` (`:480-487`) against `MarklinControlStation.parseAuto` (`:1076-1097`) and `TrainControlUI.java:23916` |
 | FXV-C6 | open | `AutonomyEditorPanel.buildArrivedFromMenu:3371-3381` against `TrainControlUI.rebuildRunningLayoutFromSetup:6439-6446` |
 | FXV-C7 | open | `test/regression/testTheBulkClearSaysWhatCancelDoes.java:253-301` |
 | FXV-C8 | open | the OP3-C11 and OP3-C9 status rows against `DiagramExport.java:187-202` and `HomeStaging.java:2674-2688` |
 | FXV-C9 | open | the OP3-B1 / OP3-B2 rows in `2026-09-19-OP3-…` and the UIX-C4 row in `2026-09-19-UIX-…` |
-| FXV-C10 | open | `cs2_sample_layout/config/autonomy/configuration-Main_bak.json` against `5d1e23b8`'s message |
+| FXV-C10 | declined 2026-09-20 - measured: all seven are on disk; the scratch file was rewritten by a later run, not deleted | `cs2_sample_layout/config/autonomy/configuration-Main_bak.json` against `5d1e23b8`'s message |
 | FXV-C11 | open | `test/core/testAutonomyDiagramReducer.java`, `locksItsTwoRoads` (`:2007-2060`) |
 | FXV-C12 | open | `fde1b7fb`'s message against `a4da36d5`'s content |
 | FXV-C13 | open | `ui.main.toolbar.tooltip.pathIntegrityValidation` against `Layout.java:56-60` |

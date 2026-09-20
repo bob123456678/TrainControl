@@ -461,13 +461,28 @@ public class Layout
      * So `LEAST_RECENTLY_VISITED` went back to knowing nothing each time, and every station read as
      * never visited: random, and then worse than random once the near ones started being re-visited.
      *
+     * **Keyed by POINT NAME, not by the key the rule uses** (FXV-C5, second round).  `recencyKeyOf` is the
+     * block, or failing that `getUniqueId` - and unique ids come from a global allocator that hands a new one
+     * to every Point built, so a rebuilt railway's squares have different ids.  Carried over as they stood,
+     * every entry for a point with no block was dead weight the rule could never match: the map moved and
+     * nothing could read it.  A name survives a rebuild of the same railway, which is the case this is for.
+     *
      * A copy, because the caller holds it across the moment the old layout is invalidated.
      *
-     * @return where trains have been, by the key the recency rule uses
+     * @return where trains have been, by point name
      */
     public java.util.Map<String, Long> getVisitHistory()
     {
-        return new java.util.HashMap<>(this.lastArrival);
+        java.util.Map<String, Long> out = new java.util.HashMap<>();
+
+        for (Point point : this.getPoints())
+        {
+            Long last = this.lastArrival.get(recencyKeyOf(point));
+
+            if (last != null) out.put(point.getName(), last);
+        }
+
+        return out;
     }
 
     /**
@@ -483,7 +498,18 @@ public class Layout
     {
         if (history == null || history.isEmpty()) return;
 
-        this.lastArrival.putAll(history);
+        // TRANSLATED BACK INTO THIS RAILWAY'S OWN KEYS.
+        //
+        // The names come from the outgoing layout; the keys the rule reads belong to this one.  A name
+        // this configuration does not have is simply dropped, which also answers the other door
+        // `parseAuto` serves (FXV-C5): the configuration text box takes any railway the operator pastes
+        // in, and a station that is not on it has never been visited.
+        for (java.util.Map.Entry<String, Long> been : history.entrySet())
+        {
+            Point here = this.getPoint(been.getKey());
+
+            if (here != null) this.lastArrival.put(recencyKeyOf(here), been.getValue());
+        }
     }
 
     /**

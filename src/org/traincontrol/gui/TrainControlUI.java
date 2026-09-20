@@ -8443,10 +8443,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Opens the autonomy editor if the Edit item would be enabled, and does nothing if it would not.
      *
-     * The excluded-page label's gesture (Adam, 2026-09-19).  It asks the same question the menu item
-     * asks - `whyAutonomyEditorCannotOpen`, which is the guard `AutonomyMenu` enables Edit by - so a
-     * click cannot reach a door the menu would have shown greyed out.  Silent rather than complaining
-     * when it cannot: the label carries the reason in its own tooltip already.
+     * The excluded-page label's gesture (Adam, 2026-09-19).  It asks the REFUSAL half of the question
+     * the menu item asks - `whyAutonomyEditorCannotOpen`, which is one of the two things `AutonomyMenu`
+     * enables Edit by.  The other is `pagesAvailable`, the count of pages the submenu managed to build,
+     * and it is not asked here (FXV-C2): it is a property of that menu's own construction rather than
+     * of the editor, and this label is only ever shown on a page that exists - the page it is sitting
+     * on.  Silent rather than complaining when the refusal bites: the label carries the reason in its
+     * own tooltip already.
      */
     public void openAutonomyEditorIfItCan()
     {
