@@ -333,10 +333,14 @@ public class testTheKeyMapReachesTheWholeWindow
 
         settle();
 
-        assertSame(ui.getMostRecentFocusOwner(), on,
-            "the keyboard would not go to " + on.getClass().getSimpleName() + ", so this test would "
-            + "be about whatever holds it instead - which is the tabbed pane, the one component the "
-            + "map already listens to");
+        // A DESKTOP THAT WILL NOT GIVE THE WINDOW THE KEYBOARD CANNOT SHOW THIS (VC2-C6).  Asserted, this
+        // failed at random on a loaded battery machine and said nothing about the key map; skipped, the
+        // class says it could not be asked.
+        if (ui.getMostRecentFocusOwner() != on)
+        {
+            throw new org.testng.SkipException("this desktop would not give the keyboard to "
+                + on.getClass().getSimpleName() + ", so the key map cannot be asked about it here");
+        }
     }
 
 

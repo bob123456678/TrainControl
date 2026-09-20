@@ -6256,4 +6256,40 @@ public class testHomeStaging
         assertNull(layout.turnedOnArrivalAt(LOC_A),
             "the record survives the locomotive, so a later one given the same name inherits a turn it never made");
     }
+
+    /**
+     * A configuration carrying a negative maximum train length does not load at all (SET-B1, SVT-C1).
+     *
+     * This is the reason the editor door refuses one: `Layout.fromJSON` requires `maxTrainLength >= 0` and
+     * invalidates the WHOLE configuration otherwise, so a number typed into one station took the railway out of
+     * autonomy until somebody found it.  The test that pins the refusal is in `core.testMassAssignLengths`, and it
+     * could not show this half - it builds no running layout.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testANegativeMaximumStopsTheConfigurationLoading() throws Exception
+    {
+        String config = ring(LOC_A, null, null);
+
+        String plain = json(station("HS B", 1, null));
+        String limited = json(station("HS B", 1, null).replace("}", ", 'maxTrainLength': -3}"));
+
+        assertTrue(config.contains(plain), "precondition: the ring fixture no longer emits HS B plainly");
+
+        model.parseAuto(config.replace(plain, limited));
+
+        Layout built = model.getAutoLayout();
+
+        assertFalse(built != null && built.isValid(),
+            "a configuration with a maximum train length of -3 loaded, so the editor door's refusal is guarding"
+            + " nothing - and the reason SET-B1 mattered was that it does not load");
+
+        // AND THE CONTROL: the same railway without the negative loads.
+        model.parseAuto(config);
+
+        assertTrue(model.getAutoLayout().isValid(),
+            "the plain fixture does not load either, so the claim above is about the fixture and not the maximum: "
+            + Layout.getLastError());
+    }
 }
