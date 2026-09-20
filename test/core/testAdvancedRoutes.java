@@ -1018,4 +1018,77 @@ public class testAdvancedRoutes
             try { model.deleteRoute("Padded route"); } catch (Exception ignored) { }
         }
     }
+
+    /**
+     * A route tile on the diagram runs the route the database holds now, not the one it was wired to (MKR-B1).
+     *
+     * `wireComponents` hands the tile the route OBJECT, and `LayoutDiagramComponent.execSwitching` runs whatever it
+     * was handed.  Every door that changes a route replaces that object - `editRoute` deletes and re-adds, the sync
+     * re-reads a station route that changed, an import replaces the lot - and only a full re-wire re-bound the
+     * tiles.  With the Central Station as the diagram source that happens once a session, so the tile went on
+     * running last session's commands, and a deleted route still fired from its tile.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testARouteTileFollowsTheDatabase() throws Exception
+    {
+        final int id = 7702;
+        final String name = "Tile route";
+
+        List<RouteCommand> commands = new ArrayList<>();
+        commands.add(RouteCommand.RouteCommandAccessory(91, Accessory.accessoryDecoderType.MM2, true));
+
+        model.newRoute(name, id, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        org.traincontrol.base.LayoutDiagram page = new org.traincontrol.base.LayoutDiagram("tiles", 4, 4, null, null);
+
+        page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.ROUTE, 1, 1, 0, 0, id, 0,
+            Accessory.accessoryDecoderType.MM2, null);
+
+        page.setPageId("9");
+
+        model.wireComponents(page, null);
+
+        // THE PAGE HAS TO BE ONE THE MODEL KNOWS, because that is what the re-bind walks - and it is also
+        // what makes this the real case: a page the model never heard of is not on anybody's diagram.
+        java.lang.reflect.Field pages = MarklinControlStation.class.getDeclaredField("layoutDB");
+        pages.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String> layouts =
+            (org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String>)
+                pages.get(model);
+
+        layouts.add(page, page.getName(), page.getName());
+
+        org.traincontrol.base.LayoutDiagramComponent tile = page.getComponent(1, 1);
+
+        try
+        {
+            assertNotNull(tile.getRoute(), "precondition: the tile was not wired to the route at all");
+            assertSame(tile.getRoute(), model.getRoute(id), "precondition: the tile holds some other route");
+
+            // WHAT AN EDIT DOES: delete and re-add, which is a new object under the same id.
+            List<RouteCommand> changed = new ArrayList<>();
+            changed.add(RouteCommand.RouteCommandAccessory(92, Accessory.accessoryDecoderType.MM2, true));
+
+            assertTrue(model.editRoute(name, name, changed, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false,
+                null), "precondition: the edit was refused");
+
+            assertSame(tile.getRoute(), model.getRoute(id),
+                "the tile still holds the route object it was wired to, so pressing it runs the commands the route"
+                + " had before it was edited");
+
+            // AND WHAT A DELETE DOES.
+            model.deleteRoute(name);
+
+            assertNull(tile.getRoute(),
+                "the tile still holds a route the database no longer has, so pressing it fires a deleted route");
+        }
+        finally
+        {
+            try { model.deleteRoute(name); } catch (Exception ignored) { }
+        }
+    }
 }

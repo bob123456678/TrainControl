@@ -2143,6 +2143,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
         if (!this.routeDB.hasId(r.getId()) && !this.routeDB.hasName(r.getName().trim()))
         {
             this.routeDB.add(r, r.getName().trim(), r.getId());
+
+            // AND THE TILES FOLLOW THE DATABASE (MKR-B1): a route tile runs the OBJECT it was wired to, so
+            // every add, replace or delete has to re-point it or the diagram keeps firing the old one.
+            rebindRouteTiles();
             return true;
         }
         else
@@ -2177,7 +2181,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         if (!this.routeDB.hasId(id) && !this.routeDB.hasName(name))
         {
-            this.routeDB.add(new MarklinRoute(this, name, id, route, s88, s88Trigger, routeEnabled, conditions), name, id);    
+            this.routeDB.add(new MarklinRoute(this, name, id, route, s88, s88Trigger, routeEnabled, conditions), name, id);
+
+            // AND THE TILES FOLLOW THE DATABASE (MKR-B1): a route tile runs the OBJECT it was wired to, so
+            // every add, replace or delete has to re-point it or the diagram keeps firing the old one.
+            rebindRouteTiles();    
             return true;
         }
         else
@@ -2212,7 +2220,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         if (!this.routeDB.hasName(name))
         {
-            this.routeDB.add(new MarklinRoute(this, name, newId, route, s88, s88Trigger, routeEnabled, conditions), name, newId);  
+            this.routeDB.add(new MarklinRoute(this, name, newId, route, s88, s88Trigger, routeEnabled, conditions), name, newId);
+
+            // AND THE TILES FOLLOW THE DATABASE (MKR-B1): a route tile runs the OBJECT it was wired to, so
+            // every add, replace or delete has to re-point it or the diagram keeps firing the old one.
+            rebindRouteTiles();  
                         
             return true;
         }
@@ -3510,8 +3522,38 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
     
     /**
+     * Points every route tile on every page at the route the database holds now (MKR-B1).
+     *
+     * **A tile runs the route OBJECT it was wired to**, not the route by that id: `wireComponents` calls
+     * `setRoute(routeDB.getById(...))` and `LayoutDiagramComponent.execSwitching` runs whatever it was handed.  Every
+     * door that changes a route replaces that object - `editRoute` deletes and re-adds, the sync re-reads a station
+     * route that changed, an import replaces the lot - or removes it, and only a full re-wire re-bound the tiles.
+     * With the Central Station as the diagram source that happens once a session, so a tile went on firing last
+     * session's commands, and a deleted route still fired from its tile.
+     *
+     * Cheap: the pages are already in memory and a route tile is rare.  Called from every door that touches the
+     * route database, so no door has to remember to re-wire.
+     */
+    public final void rebindRouteTiles()
+    {
+        for (String page : this.getLayoutList())
+        {
+            LayoutDiagram diagram = this.getLayout(page);
+
+            if (diagram == null) continue;
+
+            for (LayoutDiagramComponent c : diagram.getAll())
+            {
+                if (c == null || !c.isRoute()) continue;
+
+                c.setRoute(this.routeDB.getById(c.getAddress()));
+            }
+        }
+    }
+
+    /**
      * Deletes the route with the specified name if it exists
-     * @param name 
+     * @param name
      */
     @Override
     public final void deleteRoute(String name)
@@ -3536,6 +3578,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
             
             this.routeDB.delete(r.getName());
+
+            // AND THE TILES FOLLOW THE DATABASE (MKR-B1): a route tile runs the OBJECT it was wired to, so
+            // every add, replace or delete has to re-point it or the diagram keeps firing the old one.
+            rebindRouteTiles();
         }        
     }
     
@@ -3575,6 +3621,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         r.setId(newId);
         this.routeDB.add(r, name, newId);
+
+        // AND THE TILES FOLLOW (MKR-B1).  A route tile is bound by ADDRESS, which is the id, so a route whose
+        // id changes leaves its old tile pointing at it and its new tile pointing at nothing.
+        rebindRouteTiles();
         
         // Update auto layout route selections
         if (this.hasAutoLayout())
