@@ -21480,6 +21480,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             Route r = this.model.getRoute(routeName);
 
+            // A NAME FROM A LIST IS NOT A ROUTE (MKR-C4's shape, swept here by OP3-B2).
+            //
+            // `editRoute` is a delete-then-re-add, and the sync's re-read of a station route does the
+            // same on its own thread - so a route can be absent for a moment between the name being
+            // chosen and this lookup.  This runs on a worker with no handler: the dereference below
+            // would take the toggle, the sync and the refresh down with it, silently.  The bulk door
+            // six lines up was given this guard in the same change and this one was not.
+            if (r == null) return;
+
             // UXR-B6: an s88 is what lets the route FIRE itself, so it is only enabling that needs
             // one - turning auto-fire back off never reads a sensor. This used to require it either
             // way, so a route that was somehow enabled with no s88 (BulkEnableOrDisable's own filter,
