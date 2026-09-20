@@ -9154,6 +9154,16 @@ public class Layout
 
         Set<String> claimed = new LinkedHashSet<>();
 
+        // HOW MUCH OF WHAT IS CLAIMED WAS NEVER MEASURED (RTX-C2, AUR-C2).
+        //
+        // An unmeasured place costs the walk nothing and is claimed anyway, which is the refusing side of
+        // the rounding and is ruled behaviour.  What the refusal never said is that this is why the whole
+        // approach ended up claimed: the operator reads a train length and a road, measures neither, and
+        // has nothing pointing at the piece Mass Assign Lengths left at zero.
+        //
+        // Counted over the places the walk actually claims, so a fully measured approach adds nothing.
+        int unmeasured = 0;
+
         int left = loc.getTrainLength();
 
         for (int n = ids.size() - 1; n >= 0; n--)
@@ -9174,6 +9184,8 @@ public class Layout
             // edge's start - so this is the same "first square of the walk" the guard skips.
             boolean onTheAllowance = (n == ids.size() - 1);
 
+            if (!onTheAllowance && (spans.get(n) == null || spans.get(n) <= 0)) unmeasured++;
+
             if (!onTheAllowance) left -= Math.max(0, spans.get(n));
 
             if (left <= 0) break;
@@ -9192,8 +9204,13 @@ public class Layout
             {
                 if (!claimed.contains(place)) continue;
 
-                return I18n.f("autolayout.errorBerthWouldFoulAnotherRoad", loc.getName(),
+                String why = I18n.f("autolayout.errorBerthWouldFoulAnotherRoad", loc.getName(),
                     placeNameOf(berth), placeNameOf(sharing), loc.getTrainLength());
+
+                // AND WHY THE WHOLE APPROACH WAS CLAIMED, when that is what happened (RTX-C2).
+                return unmeasured > 0
+                    ? why + " " + I18n.f("autolayout.errorBerthApproachPartlyUnmeasured", unmeasured)
+                    : why;
             }
         }
 

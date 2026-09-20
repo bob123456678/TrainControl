@@ -214,7 +214,7 @@ and it was not run this time either.
 | FXV-C1 | fixed 2026-09-20 - the constant sits above the javadoc | `test/core/testLayoutTiles.java:268-286`, and `testJavadocsAreAttached` which only reads `src/` |
 | FXV-C2 | fixed 2026-09-20 - the javadoc says which half it asks and why the other does not apply | `TrainControlUI.openAutonomyEditorIfItCan` (`:8444-8460`) against `AutonomyMenu.java:410-413` |
 | FXV-C3 | fixed 2026-09-20 - the method had no callers and is gone | `TrainControlUI.openAutonomyPagesMenu` (`:8463-8475`) |
-| FXV-C4 | open | `HomeStaging.tailKey` (`:2635-2643`) |
+| FXV-C4 | fixed 2026-09-20 - measured: 77,828 states against 72,204, about 8% more, same plans | `HomeStaging.tailKey` (`:2635-2643`) |
 | FXV-C5 | fixed 2026-09-20 - filtered to squares this configuration has | `Layout.restoreVisitHistory` (`:480-487`) against `MarklinControlStation.parseAuto` (`:1076-1097`) and `TrainControlUI.java:23916` |
 | FXV-C6 | fixed 2026-09-20 - what the gate costs is written beside it | `AutonomyEditorPanel.buildArrivedFromMenu:3371-3381` against `TrainControlUI.rebuildRunningLayoutFromSetup:6439-6446` |
 | FXV-C7 | fixed 2026-09-20 - the precondition reads the set the menu item reads | `test/regression/testTheBulkClearSaysWhatCancelDoes.java:253-301` |
@@ -222,9 +222,9 @@ and it was not run this time either.
 | FXV-C9 | fixed 2026-09-20 - the B rows and UIX-C4's count corrected | the OP3-B1 / OP3-B2 rows in `2026-09-19-OP3-…` and the UIX-C4 row in `2026-09-19-UIX-…` |
 | FXV-C10 | declined 2026-09-20 - measured: all seven are on disk; the scratch file was rewritten by a later run, not deleted | `cs2_sample_layout/config/autonomy/configuration-Main_bak.json` against `5d1e23b8`'s message |
 | FXV-C11 | fixed 2026-09-20 - a floor on the leg count, and an unclassifiable leg fails | `test/core/testAutonomyDiagramReducer.java`, `locksItsTwoRoads` (`:2007-2060`) |
-| FXV-C12 | open | `fde1b7fb`'s message against `a4da36d5`'s content |
+| FXV-C12 | acknowledged 2026-09-20 - the provenance is wrong and a commit message cannot be amended once pushed; corrected here and in the OP2-C13 row | `fde1b7fb`'s message against `a4da36d5`'s content |
 | FXV-C13 | fixed 2026-09-20 - the tooltip says what the flag does again | `ui.main.toolbar.tooltip.pathIntegrityValidation` against `Layout.java:56-60` |
-| FXV-C14 | open | `test/regression/testTheTailCanBeGivenInTheEditor.java`, `Fixture.open` (`:574-635`) |
+| FXV-C14 | fixed 2026-09-20 - the claim has a fixture that needs only a standing train | `test/regression/testTheTailCanBeGivenInTheEditor.java`, `Fixture.open` (`:574-635`) |
 | FXV-C15 | fixed 2026-09-20 - the precondition sits above the call it qualifies | `test/core/testLockEdgesSurviveTheFile.java:334-341`, the precondition asserted after the call it qualifies |
 
 ### FXV-C1: the OP2-C6 constant was inserted between a javadoc and the method it documents

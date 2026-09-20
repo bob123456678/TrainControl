@@ -297,6 +297,82 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
      *
      * @throws Exception from the railway
      */
+    /**
+     * One measured square behind an unmeasured piece closes the berth, and the refusal now says why
+     * (RTX-C2, AUR-C2).
+     *
+     * **This is the ordinary intermediate state of Mass Assign Lengths.**  MAL-B1's ruling gives every switch
+     * on a page one length in a step of its own, and MT-455 tells the operator to reach that prompt by
+     * skipping a piece - so switches measured with pieces still at zero is not an odd state, it is the state
+     * the tool leaves between sittings.  A berth behind such a piece then has an approach where `anyMeasured`
+     * is true on the switch alone: the walk claims every place, spends nothing on the unmeasured ones, and
+     * refuses the berth to a one-unit train as readily as to a nine-unit one.
+     *
+     * Ruled behaviour on both sides and the refusing direction, so this pins it rather than changing it -
+     * Adam, on the half-measured case: *"we want clear warnings to the user if so, then it's fine."*  What
+     * was missing is that the refusal named a road and a train length and never the unmeasured piece, so the
+     * operator had nothing pointing at what to measure.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testAMeasuredSquareBehindAnUnmeasuredPieceSaysWhyItRefuses() throws Exception
+    {
+        Edge approach = toTheBerth;
+
+        List<Integer> was = new ArrayList<>(approach.getPlaceLengths());
+
+        assertTrue(was.size() >= 3,
+            "precondition: this approach has fewer than three places, so there is no room for a measured"
+            + " square with an unmeasured piece behind it");
+
+        try
+        {
+            // ONE SQUARE MEASURED, the rest at zero - switches measured, pieces skipped.
+            List<Integer> spans = new ArrayList<>();
+
+            for (int i = 0; i < was.size(); i++) spans.add(i == 0 ? 1 : 0);
+
+            approach.setPlaces(approach.getPlaceIds(), spans);
+
+            train.setTrainLength(1);
+
+            String refused = Layout.whyABerthCannotHoldIt(justTheApproach(approach), train);
+
+            assertNotNull(refused,
+                "one square of the approach is measured and the rest are not, and the berth was offered to"
+                + " a one-unit train.  The walk claims a place before it spends on it and an unmeasured"
+                + " place spends nothing, so the whole approach is claimed - this is the refusing side of"
+                + " the rounding, and it is what the operator meets between sittings of Mass Assign"
+                + " Lengths");
+
+            assertTrue(refused.contains(org.traincontrol.util.I18n.f("autolayout.errorBerthApproachPartlyUnmeasured",
+                was.size() - 2)) || refused.contains(org.traincontrol.util.I18n.f("autolayout.errorBerthApproachPartlyUnmeasured",
+                was.size() - 1)),
+                "the refusal names the road and the train's length and says nothing about the unmeasured"
+                + " piece that caused it, so there is nothing to point the operator at what to measure."
+                + "  Said: " + refused);
+
+            // AND MEASURING THE PIECE CLEARS IT, which is the other half and what the sentence promises.
+            List<Integer> measured = new ArrayList<>();
+
+            for (int i = 0; i < was.size(); i++) measured.add(3);
+
+            approach.setPlaces(approach.getPlaceIds(), measured);
+
+            assertNull(Layout.whyABerthCannotHoldIt(justTheApproach(approach), train),
+                "with every square of the approach measured at three, a one-unit train is still refused the"
+                + " berth - so the refusal above was not about the unmeasured piece after all, and the"
+                + " sentence this adds would be pointing the operator at the wrong thing.  Said: "
+                + Layout.whyABerthCannotHoldIt(justTheApproach(approach), train));
+        }
+        finally
+        {
+            approach.setPlaces(approach.getPlaceIds(), was);
+            train.setTrainLength(0);
+        }
+    }
+
     @Test
     public void testAnUnmeasuredApproachRefusesNothing() throws Exception
     {

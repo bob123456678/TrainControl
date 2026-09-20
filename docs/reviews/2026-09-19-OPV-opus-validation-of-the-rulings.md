@@ -279,7 +279,7 @@ cannot catch this: it builds the route with `conditions` = `null` and passes the
 | OP2-C10 | fixed 2026-09-20 - the injected page is removed again | MKR-B1's test injects a page into `layoutDB` and never removes it |
 | OP2-C11 | fixed 2026-09-20 - the shared rename is put back in a finally | VB2-C3: the rename test has no `finally`, so a failure leaves "HS renamed" in the shared locomotive database |
 | OP2-C12 | fixed 2026-09-20 - can refuse, not does, in the sentence and the javadoc | RTX-C2's message says "takes no train at all", which is true only where a road shares the approach, and never for a train with no length |
-| OP2-C13 | fixed 2026-09-20 - the re-bind logs what the wiring logs | `rebindRouteTiles` is silent where `wireComponents` logs `layout.routeButtonMissingRoute` |
+| OP2-C13 | fixed 2026-09-20 in a4da36d5 - the re-bind logs what the wiring logs (fde1b7fb's message names it by mistake; FXV-C12) | `rebindRouteTiles` is silent where `wireComponents` logs `layout.routeButtonMissingRoute` |
 
 ### OP2-C1 - the behaviour document names the wrong site for the pulse
 

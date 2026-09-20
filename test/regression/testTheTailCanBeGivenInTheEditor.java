@@ -510,7 +510,10 @@ public class testTheTailCanBeGivenInTheEditor
     @Test
     public void testTheArrivalSideIsNotOfferedForAnEmptySquare() throws Exception
     {
-        Fixture f = Fixture.open();
+        // ANY STANDING TRAIN WILL DO (FXV-C14).  This claim is about a square with nobody on it; the
+        // junction the other claims here need has nothing to do with it, and riding their fixture made this
+        // skip - which reads as green - on any snapshot without one.
+        Fixture f = Fixture.openOnAnyStandingTrain();
 
         try
         {
@@ -572,7 +575,27 @@ public class testTheTailCanBeGivenInTheEditor
             this.lengthWas = lengthWas;
         }
 
+        /**
+         * The same fixture for a claim that needs only a square with a train standing on it (FXV-C14).
+         *
+         * `open()` searches for a train whose tail can have crossed a sensor past a junction, which is what the
+         * tail-crossing claims are about - and a snapshot without one skips, which reads as green.  The
+         * arrival-side gate has nothing to do with junctions, so it asked for far more than it needed.
+         *
+         * @return the fixture
+         * @throws Exception from the event thread
+         */
+        static Fixture openOnAnyStandingTrain() throws Exception
+        {
+            return open(false);
+        }
+
         static Fixture open() throws Exception
+        {
+            return open(true);
+        }
+
+        static Fixture open(boolean needsAJunction) throws Exception
         {
             final org.json.JSONObject asFound = session.snapshotSetup();
 
@@ -601,7 +624,8 @@ public class testTheTailCanBeGivenInTheEditor
 
                 if (at == null || model.getLayout(at.getPage()) == null) continue;
 
-                if (!TailCrossedPrompt.wouldAsk(running, point, point.getArrivedFrom(), LONG)) continue;
+                if (needsAJunction
+                    && !TailCrossedPrompt.wouldAsk(running, point, point.getArrivedFrom(), LONG)) continue;
 
                 found = at;
                 train = loc;
@@ -614,8 +638,10 @@ public class testTheTailCanBeGivenInTheEditor
             {
                 session.restoreSetup(asFound);
 
-                throw new SkipException("no standing train on the snapshot, measured at one unit, has a tail of " + LONG
-                    + " units that can have crossed a sensor past a junction");
+                throw new SkipException(needsAJunction
+                    ? "no standing train on the snapshot, measured at one unit, has a tail of " + LONG
+                        + " units that can have crossed a sensor past a junction"
+                    : "no train is standing anywhere on the snapshot at all");
             }
 
             train.setTrainLength(LONG);

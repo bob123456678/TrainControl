@@ -2633,9 +2633,14 @@ public final class HomeStaging
         // the next expansion.
         //
         // Both are carried here, and every moved train is named whether it turned or not - which is
-        // what keys the first fact, at no cost over keying the second alone.  The tails list below
-        // cannot stand in for it: it drops a train whose tail covers nothing, which is exactly where
-        // two roads are otherwise indistinguishable.
+        // what keys the first fact.  The tails list below cannot stand in for it: it drops a train whose
+        // tail covers nothing, which is exactly where two roads are otherwise indistinguishable.
+        //
+        // WHAT IT COSTS, measured rather than asserted (FXV-C4).  Over
+        // `core.testReturnHomeOnRealLayout`, naming every moved train visits 77,828 distinct states
+        // against 72,204 for the narrower key that named only the turned ones - about 8% more, and the
+        // same plans.  A finer key can spend more of SEARCH_LIMIT; it cannot lose a plan, because every
+        // state it separates was two states the search was treating as one.
         //
         // Measured before it was written: over `core.testReturnHomeOnRealLayout`, 994 of 83,881 keys
         // were reached with both turn answers.  Written `<name>/turned` or `<name>/straight`, which is

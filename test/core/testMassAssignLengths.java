@@ -64,6 +64,79 @@ public class testMassAssignLengths
         delete(folder);
     }
 
+    /**
+     * How many squares of Adam's own **1 - Main** the crossing prompt really asks about (VC2-C5, SVA-C2).
+     *
+     * **MT-459 says "which may be fewer" and has never said a number.**  The page has four squares SHAPED
+     * like a crossing - the crossing at 18,10 and the double curves at 20,10, 21,10 and 11,11 - and the walk
+     * asks only about the ones trains actually run over on BOTH roads.  Three validation rounds deferred
+     * measuring it, so the entry has been telling him to expect a count he cannot check.
+     *
+     * Read off the frozen snapshot of his railway rather than a fixture, because the number is a fact about
+     * his layout and nothing else.  If the reduction ever stops seeing one of those roads, this says so in
+     * the same breath as the manual test goes stale.
+     *
+     * @throws Exception from the sandbox
+     */
+    @Test
+    public void testHowManySharedSquaresHisOwnMainPageAsksAbout() throws Exception
+    {
+        support.LayoutSandbox sandbox = support.LayoutSandbox.open(
+            support.Scenario.folderFor("live-snapshot"));
+
+        try
+        {
+            org.traincontrol.marklin.MarklinControlStation model =
+                org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+
+            try
+            {
+                java.util.List<org.traincontrol.base.LayoutDiagram> pages = new java.util.ArrayList<>();
+
+                for (String name : model.getLayoutList()) pages.add(model.getLayout(name));
+
+                assertFalse(pages.isEmpty(), "precondition: the snapshot opened with no pages at all");
+
+                session.open(pages);
+                session.initialize("Lengths");
+                session.rebuild();
+
+                java.util.Set<TileKey> shared = session.sharedSquaresALengthRuleReads();
+
+                int onMain = 0;
+
+                for (TileKey square : shared)
+                {
+                    if ("1 - Main".equals(square.getPage())) onMain++;
+                }
+
+                // MEASURED 2026-09-20: NONE of them, on that page.
+                //
+                // All four squares shaped like a crossing on 1 - Main are run over on one road only, so
+                // the crossing prompt has nothing to ask about there.  MT-459 said "which may be fewer";
+                // the answer is fewer by all four, and the entry now says so.
+                assertEquals(onMain, 0,
+                    "the crossing prompt asks about " + onMain + " squares of 1 - Main.  It asked about"
+                    + " none when this was measured, and MT-459 tells him so - if it has moved, the entry"
+                    + " has gone stale: " + shared);
+
+                // THE CONTROL: the walk does find shared squares elsewhere, so nought on this page is an
+                // answer about the page rather than about a rule that has stopped running.
+                assertFalse(shared.isEmpty(),
+                    "the rule found no shared squares anywhere on his railway, so the nought above says"
+                    + " nothing about 1 - Main");
+            }
+            finally
+            {
+                model.stop();
+            }
+        }
+        finally
+        {
+            sandbox.close();
+        }
+    }
+
     // ------------------------------------------------------------------------------------------------ which squares
 
     /**
@@ -1337,8 +1410,13 @@ public class testMassAssignLengths
         page.addComponent(componentType.CURVE, 3, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.STRAIGHT, 3, 1, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
 
-        page.addComponent(componentType.STRAIGHT, 3, 3, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 4, 1, 0, 6, 12, accessoryDecoderType.MM2, null);
+        // THE SECOND SENSOR SITS DIRECTLY BELOW THE CROSSING (VC2-C5).
+        //
+        // With a straight between them the second crossing fell at index 10 of a 13-square leg, and the
+        // off-by-one VB2-B3 named - counting `i + 1 < leg.size() - 1`, which drops the LAST intermediate
+        // square - still counted it, so this fixture could not tell that mutation from the rule.  Putting
+        // the sensor here makes the crossing the last intermediate square on the leg.
+        page.addComponent(componentType.FEEDBACK, 3, 3, 1, 0, 6, 12, accessoryDecoderType.MM2, null);
 
         page.setPageId("1");
 

@@ -49,12 +49,12 @@ None. I looked for one hardest in `tailKey` (a finer key cannot lose a plan; it 
 
 | id | status | where |
 |---|---|---|
-| FNL-C1 | open | `DiagramExport.java:128-146` (the comment) against `:196-201` (the `finally`) and `LayoutGrid.java:709-733` |
-| FNL-C2 | open | `RightClickMenuListener.java:121-133`; `TrainControlUI.java:10374`, `:10388`; `testEveryMessageKeyIsAskedFor.LITERAL` and `collect` |
-| FNL-C3 | open | `HomeStaging.java:2637` against `testEveryCitationResolves.java:232-233` |
-| FNL-C4 | open | `Layout.java:489-493`, the `restoreVisitHistory` javadoc |
-| FNL-C5 | open | `RouteEditorFrame.java:2942-2950`; the FXV-B2 status row |
-| FNL-C6 | open | `test/regression/testTheToolbarButtonsHonourTheirTooltips.java`, `SETTLE` and the second press in `testControlOnADirectionButtonForcesThatDirection` |
+| FNL-C1 | fixed 2026-09-20 - the export retires by the panel, which the constructor registers before it builds | `DiagramExport.java:128-146` (the comment) against `:196-201` (the `finally`) and `LayoutGrid.java:709-733` |
+| FNL-C2 | fixed 2026-09-20 - comments are stripped before the literal scan; the two keys and the dead code are gone | `RightClickMenuListener.java:121-133`; `TrainControlUI.java:10374`, `:10388`; `testEveryMessageKeyIsAskedFor.LITERAL` and `collect` |
+| FNL-C3 | fixed 2026-09-20 - the line citation is out | `HomeStaging.java:2637` against `testEveryCitationResolves.java:232-233` |
+| FNL-C4 | fixed 2026-09-20 - the javadoc describes the name-keyed carry | `Layout.java:489-493`, the `restoreVisitHistory` javadoc |
+| FNL-C5 | fixed 2026-09-20 - the null second lookup and the impostor are both handled, and pinned | `RouteEditorFrame.java:2942-2950`; the FXV-B2 status row |
+| FNL-C6 | fixed 2026-09-20 - the discriminating press waits for the direction command | `test/regression/testTheToolbarButtonsHonourTheirTooltips.java`, `SETTLE` and the second press in `testControlOnADirectionButtonForcesThatDirection` |
 
 ### FNL-C1: the export's `try` was widened for a case the `finally` still cannot reach
 

@@ -23167,7 +23167,7 @@ From the 2026-09-19 review round (SET-B1), fixed the same day.  Typing a negativ
 
 **Written:** 2026-09-19
 
-Your ruling of 2026-09-19: *"For crossings: if its length is set, count that length once in each direction."*  A square where two roads cross - a crossing, or a double curve with track on both roads - used to sit inside whichever road's stretch was walked first: that road's prompt covered it, the other road's prompt was one square short, and the other road then counted it twice.  **1 - Main** has four squares SHAPED like that - the crossing at 18,10 and the double curves at 20,10, 21,10 and 11,11 - and the walk asks about the ones that trains actually run over on both of their roads, which may be fewer.
+Your ruling of 2026-09-19: *"For crossings: if its length is set, count that length once in each direction."*  A square where two roads cross - a crossing, or a double curve with track on both roads - used to sit inside whichever road's stretch was walked first: that road's prompt covered it, the other road's prompt was one square short, and the other road then counted it twice.  **1 - Main** has four squares SHAPED like that - the crossing at 18,10 and the double curves at 20,10, 21,10 and 11,11 - and the walk asks about the ones that trains actually run over on both of their roads - which on that page is **none of them** (measured 2026-09-20, VC2-C5, pinned by `core.testMassAssignLengths.testHowManySharedSquaresHisOwnMainPageAsksAbout`).  So on **1 - Main** expect the crossing step to be skipped or to report nothing; the squares the rule does find are on **2 - Bottom** and **3 - Top Parking**.
 
 **Steps**
 

@@ -65,7 +65,7 @@ Neither shape is what AMH-B1 was for.  The rule exists so that a plan does not T
 | id | status | where |
 |---|---|---|
 | RTX-C1 | fixed 2026-09-19 - probe fired (994 of 83,881 keys); turned trains carry a suffix | `HomeStaging.tailKey` - the arrangement key carries the tails a route leaves and not whether it turned the train; `turnedByThePlan` reads the second on the next expansion |
-| RTX-C2 | open | `whyABerthCannotHoldIt` and `walkOneTail` after Mass Assign's switch step: a measured switch and an unmeasured piece behind a berth refuse every train of every length |
+| RTX-C2 | closed 2026-09-20 - behaviour is Adam's ruling; pinned red-first, and the refusal now names the unmeasured piece | `whyABerthCannotHoldIt` and `walkOneTail` after Mass Assign's switch step: a measured switch and an unmeasured piece behind a berth refuse every train of every length |
 | RTX-C3 | fixed - locDeleted clears it | `Layout.locDeleted` - the sweep does not clear `reversedOnArrival`, and the record is keyed by name |
 | RTX-C4 | closed by Adam's ruling 2026-09-19 - the sensor stays on; behaviour.md 8 says so and AMR-D1 cites it | AMR-D1 and AMH-B2 rest on opposite statements about Adam's detection hardware |
 | RTX-C5 | fixed - the javadoc says the worker | `Layout.whyNoRouteFitsTo` javadoc says it runs on the event thread; the hover moved to a worker (OB-079) |
