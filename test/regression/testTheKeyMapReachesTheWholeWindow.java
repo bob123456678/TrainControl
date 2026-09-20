@@ -342,31 +342,38 @@ public class testTheKeyMapReachesTheWholeWindow
                 + on.getClass().getSimpleName() + ", so the key map cannot be asked about it here");
         }
 
-        FOCUSED.incrementAndGet();
     }
 
     /**
-     * How many times this class got the keyboard where it needed it (OP2-C8).
+     * The floor: at least one of this class's claims was actually asked (OP2-C8, corrected by FXV-B3).
      *
      * **A class where every claim skips reports green while asking nothing**, which is the SOP's "green
-     * is not no failures" in its quietest form: the skip message is honest about the one case, and the
-     * class as a whole still says the rule holds.  This counts the times the desktop cooperated, and
-     * the check below fails the class when the answer is never.
-     */
-    private static final java.util.concurrent.atomic.AtomicInteger FOCUSED =
-        new java.util.concurrent.atomic.AtomicInteger();
-
-    /**
-     * The floor: this desktop let at least one claim be asked.
+     * is not no failures" in its quietest form: each skip message is honest about its own case, and the
+     * class as a whole still reads as saying the rule holds.
+     *
+     * Asked of the RESULTS rather than of a counter.  The counter version was incremented at ONE of the
+     * eight skip gates in the keyboard class, so it failed that whole class whenever that one gesture
+     * was unavailable - even when six other claims had run and passed.  A guard that goes red about
+     * something it never tested is worse than no guard.
+     *
+     * Filtered to this class, because a run of several classes shares one context.
+     *
+     * @param context TestNG's own record of what ran
      */
     @org.testng.annotations.AfterClass(alwaysRun = true)
-    public static void testSomethingWasActuallyAsked()
+    public static void testSomethingWasActuallyAsked(org.testng.ITestContext context)
     {
-        if (FOCUSED.get() == 0)
+        int passed = 0;
+
+        for (org.testng.ITestResult result : context.getPassedTests().getAllResults())
         {
-            throw new AssertionError("this desktop never gave the keyboard where it was needed, so every"
-                + " claim in this class skipped and the class reported green having asked nothing"
-                + " (OP2-C8)");
+            if (result.getTestClass().getRealClass() == testTheKeyMapReachesTheWholeWindow.class) passed++;
+        }
+
+        if (passed == 0)
+        {
+            throw new AssertionError("every claim in this class skipped, so it reported green having"
+                + " asked nothing: this desktop would not give a window the keyboard at all (OP2-C8)");
         }
     }
 

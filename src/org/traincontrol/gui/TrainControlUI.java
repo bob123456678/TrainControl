@@ -21277,10 +21277,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         new Thread(()->
         {  
-            if (routeName != null && this.model.getRoute(routeName) != null)
-            {          
+            Route asked = routeName == null ? null : this.model.getRoute(routeName);
+
+            // LOOKED UP ONCE (FXV-B4).  This tested one lookup and then dereferenced a second, so a
+            // route deleted between the two threw on a worker with nothing to catch it.
+            if (asked != null)
+            {
                 {
-                    Route currentRoute = this.model.getRoute(routeName);
+                    Route currentRoute = asked;
                     
                     // Realised on the EDT.  Everything above - the model lookups, toCSV - belongs
                     // off it and stays off it, but constructing, packing and showing a JFrame is not
@@ -22758,6 +22762,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             for (String routeName : this.model.getRouteList())
             {
                 Route r = this.model.getRoute(routeName);
+
+                // A NAME FROM A LIST IS NOT A ROUTE (MKR-C4's shape, swept here by FXV-B4).  The list
+                // is a copy of the names; the lookup is live, and both `editRoute` and the station's
+                // re-read of a route are a delete followed by a re-add.
+                if (r == null) continue;
 
                 if (r.isEnabled())
                 {
@@ -25128,6 +25137,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 for (String routeName : this.model.getRouteList())
                 {
                     Route r = this.model.getRoute(routeName);
+
+                    // A NAME FROM A LIST IS NOT A ROUTE (MKR-C4's shape, swept here by FXV-B4).  This
+                    // runs on a worker with nothing to catch it, so a route deleted between the listing
+                    // and the lookup meant a Start press that did nothing and logged nothing.
+                    if (r == null) continue;
 
                     if (r.isEnabled())
                     {

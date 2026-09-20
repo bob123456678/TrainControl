@@ -266,6 +266,13 @@ public class testLayoutTiles
     }
 
     /**
+     * How long an accessory highlight is held for, as `LayoutLabel` holds it.
+     *
+     * Named here because the test below turns on the second drive landing inside it (OP2-C6).
+     */
+    private static final long HIGHLIGHT_HOLD_MS = 2250;
+
+    /**
      * A second accessory highlight stops the first, so only one restore ever fires (VC2-C3).
      *
      * A three-way drives twice, 350 ms apart, and each drive highlights the tile.  The first timer used to be left
@@ -275,13 +282,6 @@ public class testLayoutTiles
      *
      * @throws Exception from the event thread
      */
-    /**
-     * How long an accessory highlight is held for, as `LayoutLabel` holds it.
-     *
-     * Named here because the test above turns on the second drive landing inside it (OP2-C6).
-     */
-    private static final long HIGHLIGHT_HOLD_MS = 2250;
-
     @Test
     public void testASecondHighlightStopsTheFirstsRestore() throws Exception
     {
@@ -644,6 +644,28 @@ public class testLayoutTiles
 
             assertEquals(editor.nameNowHeldById(), "Moving route renamed",
                 "the editor cannot say what the route is called now, so it has nothing to offer to save onto");
+
+            // AND A SAVE KEEPS THE NAME THE OTHER PARTY GAVE IT (FXV-B2).
+            //
+            // The window does not refresh and `originalName` is final, so the name field still holds the
+            // name it opened with - and the first version of this passed that as the NEW name, renaming
+            // the route straight back while the comment above it said it saved under the new name.
+            assertEquals(editor.nameToSaveAs(name, "Moving route renamed"), "Moving route renamed",
+                "saving onto a renamed route uses this window's own name, which renames it back to "
+                + name + " - and neither the dialog nor the comment says so");
+
+            assertEquals(editor.nameToSaveAs("Something the operator typed", "Moving route renamed"),
+                "Something the operator typed",
+                "a name the operator typed is a rename they are asking for, and it is being discarded");
+
+            // AND THE CALL SITE USES IT, so pinning the rule does not leave the one place that was wrong
+            // as the only thing nothing checks.
+            String source = new String(java.nio.file.Files.readAllBytes(
+                java.nio.file.Paths.get("src/org/traincontrol/gui/RouteEditorFrame.java")),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            assertTrue(source.contains("editRoute(nowCalled, saveAs,"),
+                "the renamed-route branch no longer saves under the name nameToSaveAs chose");
 
             // AND PUT BACK, so the rest of this method is about the name it started with.
             model.editRoute("Moving route renamed", name, commands, 0,

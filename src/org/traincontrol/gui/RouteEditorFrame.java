@@ -528,6 +528,27 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
+     * Which name a save onto a renamed route should use (FXV-B2).
+     *
+     * The window does not refresh and `originalName` is final, so the name field still holds the name this
+     * window opened with unless the operator has typed in it.  Passing that as the new name renames the route
+     * back to what it was called before somebody else renamed it - which the first version of this did, while
+     * its own comment said it saved under the new name.
+     *
+     * Typing in the field is a rename the operator is asking for, and is honoured; leaving it alone is not.
+     *
+     * @param typed what the name field holds
+     * @param nowCalled what the route is called now, by whoever renamed it
+     * @return the name to save it under
+     */
+    public String nameToSaveAs(String typed, String nowCalled)
+    {
+        if (nowCalled == null) return typed;
+
+        return typed != null && typed.equals(originalName) ? nowCalled : typed;
+    }
+
+    /**
      * What the route this window opened on is called now, or null if no route carries that id (OP2-C9).
      *
      * By id, walking the list, because the view interface offers no lookup by id and a dialog can afford it.
@@ -2928,6 +2949,18 @@ public class RouteEditorFrame extends JFrame
                     // deleted or replaced by an import.
                     String nowCalled = nameNowHeldById();
 
+                    // AND IT KEEPS THE NAME THE OTHER PARTY GAVE IT (FXV-B2).
+                    //
+                    // `name` is what the name field holds, and this window does not refresh - so unless
+                    // the operator has typed in it themselves it is still the name the window opened
+                    // with, and passing it as the new name renamed the route straight back.  The first
+                    // version of this did exactly that while its own comment said it saved "under its
+                    // new name".
+                    //
+                    // Typing in the field is still honoured: that is the operator asking for a rename,
+                    // which is a different thing from not having touched it.
+                    String saveAs = nameToSaveAs(name, nowCalled);
+
                     if (JOptionPane.showOptionDialog(this,
                         I18n.f("route.ui.confirmRouteRenamed", originalName, nowCalled),
                         I18n.t("route.ui.titleRouteMoved"),
@@ -2937,10 +2970,10 @@ public class RouteEditorFrame extends JFrame
                         return;
                     }
 
-                    if (!parent.getModel().editRoute(nowCalled, name, built, s88, trigger,
+                    if (!parent.getModel().editRoute(nowCalled, saveAs, built, s88, trigger,
                         enabledBox.isSelected(), expression))
                     {
-                        JOptionPane.showMessageDialog(this, I18n.f("route.ui.errorEditRouteFailed", name));
+                        JOptionPane.showMessageDialog(this, I18n.f("route.ui.errorEditRouteFailed", saveAs));
                         return;
                     }
                 }

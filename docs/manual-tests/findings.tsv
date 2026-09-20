@@ -886,6 +886,44 @@ FX2-5	2026-09-01-fanout-index.md	Closed	**Closed** (`6f729027`)
 FX2-6	2026-09-01-fanout-index.md	Closed	**Withdrawn**
 FX2-D24	2026-09-01-fanout-index.md	Closed	1 A, 5 B, 11 C, 8 D
 FX2-R28	2026-09-01-fanout-index.md	Closed	1 A, 2 B, 5 C, 12 D
+FXV-B1	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	`AutonomyEditorPanel.bulkClearWarning` (`:9883-9886`) against `testEveryMessageKeyIsAskedF
+FXV-B2	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	`RouteEditorFrame.onSave` (`:2923-2946`), `route.ui.confirmRouteRenamed` in all eight bund
+FXV-B3	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	`test/regression/testTheWindowTakesTheKeyboard.java:459` against its seven `@Test` methods
+FXV-B4	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	`TrainControlUI.java:21283`, `:22760`, `:25130` against the guard added at `:21503-21512`
+FXV-C1	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	`test/core/testLayoutTiles.java:268-286`, and `testJavadocsAreAttached` which only reads `
+FXV-C10	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	`cs2_sample_layout/config/autonomy/configuration-Main_bak.json` against `5d1e23b8`'s messa
+FXV-C11	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	`test/core/testAutonomyDiagramReducer.java`, `locksItsTwoRoads` (`:2007-2060`)
+FXV-C12	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	`fde1b7fb`'s message against `a4da36d5`'s content
+FXV-C13	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	`ui.main.toolbar.tooltip.pathIntegrityValidation` against `Layout.java:56-60`
+FXV-C14	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	`test/regression/testTheTailCanBeGivenInTheEditor.java`, `Fixture.open` (`:574-635`)
+FXV-C15	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	`test/core/testLockEdgesSurviveTheFile.java:334-341`, the precondition asserted after the 
+FXV-C2	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	`TrainControlUI.openAutonomyEditorIfItCan` (`:8444-8460`) against `AutonomyMenu.java:410-4
+FXV-C3	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	`TrainControlUI.openAutonomyPagesMenu` (`:8463-8475`)
+FXV-C4	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	`HomeStaging.tailKey` (`:2635-2643`)
+FXV-C5	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	`Layout.restoreVisitHistory` (`:480-487`) against `MarklinControlStation.parseAuto` (`:107
+FXV-C6	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	`AutonomyEditorPanel.buildArrivedFromMenu:3371-3381` against `TrainControlUI.rebuildRunnin
+FXV-C7	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	`test/regression/testTheBulkClearSaysWhatCancelDoes.java:253-301`
+FXV-C8	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	the OP3-C11 and OP3-C9 status rows against `DiagramExport.java:187-202` and `HomeStaging.j
+FXV-C9	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	the OP3-B1 / OP3-B2 rows in `2026-09-19-OP3-…` and the UIX-C4 row in `2026-09-19-UIX-…`
+FXV-D1	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	none of the 119 newly-removed keys is reachable at runtime by any route I could construct
+FXV-D10	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	OP3-B2's two named neighbours are both guarded
+FXV-D11	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	UIX-C2's corrected comment about the key post-processor is accurate
+FXV-D12	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	OP3-C1's replacement sentence is true: `ui.main.toolbar.functions` is in no bundle
+FXV-D13	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	every citation added in this round resolves in `findings.tsv`, and no new test class was a
+FXV-D14	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	the bulk menu really does have exactly three sentences that can name Cancel
+FXV-D15	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	`testMessageBundles`' duplicate-key example cites a key that has gone, and is past tense a
+FXV-D16	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	the other 19 shortened tooltips still describe what the code does
+FXV-D17	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	the javadoc `49de68b7` orphaned in `TrainControlUI` was repaired by `a4da36d5`, onto the r
+FXV-D18	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	every test class touched here owns its sandbox, so the new mutations cannot reach another 
+FXV-D19	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	the `.gitignore` narrowing is narrow, and `git status` is clean
+FXV-D2	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	all eight bundles hold identical key sets at every revision in this round, with no duplica
+FXV-D3	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	20 tooltip values changed in all eight bundles: no placeholder lost or renumbered, no stra
+FXV-D4	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	`route.ui.confirmRouteRenamed` landed in all eight bundles with `{0}`, `{1}`, `{1}` in eac
+FXV-D5	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	`candidate.getId() == loadedId` is a value comparison, and the null case returns before th
+FXV-D6	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	the OP2-C9 test's closing `"gone"` assertion is the control that separates the new branch 
+FXV-D7	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	OP3-C7's gate matches its two siblings, and every other door that writes an arrival side a
+FXV-D8	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	the AUR-C3 test is not tautological: a real `parseAuto`, two preconditions, and a red with
+FXV-D9	2026-09-20-FXV-opus-validation-of-the-fix-round.md	-	the widened `tailKey` really does key `movedAlong.containsKey(l)` - no moved train escapes
 GAP-B1	GAP-acceptance-coverage.md	-	-
 GAP-C1	GAP-acceptance-coverage.md	-	-
 GAP-D1	GAP-acceptance-coverage.md	-	-
