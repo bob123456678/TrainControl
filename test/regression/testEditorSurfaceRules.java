@@ -4559,4 +4559,5 @@ public class testEditorSurfaceRules
         assertTrue(refreshes < builds,
             "the refresh comes after the menu is built, which is the same as not refreshing at all");
     }
+
 }

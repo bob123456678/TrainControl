@@ -21431,9 +21431,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         new Thread(()->
         {
+            // WHETHER THE STATION HAS HEARD OF ANY OF THEM (OB-155, swept here by GUX-C5).  One sync
+            // per batch, and none at all when every route touched was allocated here.
+            boolean anyOnTheStation = false;
+
             for (String routeName : this.model.getRouteList())
             {
                 Route r = this.model.getRoute(routeName);
+
+                // A NAME FROM A LIST IS NOT A ROUTE (MKR-C4's shape).  The list is a copy; the lookup
+                // is not, and the sync's re-read of a station route deletes an id and puts it back a
+                // few statements later on its own thread.
+                if (r == null) continue;
 
                 if (r.hasS88() || r.isEnabled())
                 {
@@ -21448,12 +21457,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                          // once per route, and folding in enableOrDisableRoute's own sync/refresh
                          // would turn one sync into as many as there are matching routes.
                          writeRouteEnabledState(r, enable);
+
+                         if (!org.traincontrol.marklin.MarklinControlStation.isLocalRouteId(r.getId()))
+                         {
+                             anyOnTheStation = true;
+                         }
                     }
                 }
             }
 
-            // Ensure route changes are synced
-            this.syncWithCS2();
+            if (anyOnTheStation) this.syncWithCS2();
+
             this.repaintLayout();
 
             refreshRouteList();
@@ -21476,8 +21490,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 writeRouteEnabledState(r, enable);
 
-                // Ensure route changes are synced
-                this.syncWithCS2();
+                // ONLY WHEN THE STATION COULD HAVE KNOWN THE ROUTE (OB-155, swept here by GUX-C5).
+                //
+                // Delete and the editor's Save were given this test and this door was not.  The write
+                // above is a delete-and-re-add in the LOCAL database and tells the station nothing, so
+                // for a route this application allocated the round trip - the whole database, behind a
+                // modal spinner, and twice the connect timeout with the station off - can bring back
+                // nothing about the route that was just toggled.
+                if (!org.traincontrol.marklin.MarklinControlStation.isLocalRouteId(r.getId()))
+                {
+                    this.syncWithCS2();
+                }
+
                 this.repaintLayout();
 
                 refreshRouteList();

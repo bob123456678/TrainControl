@@ -54,6 +54,21 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
     String customIconPath;
     
     /**
+     * The function types Copy Customizations overwrote, or null if it was never pressed (GUX-C3).
+     */
+    private int[] typesBeforeACopy;
+
+    /**
+     * The function triggers it overwrote.
+     */
+    private int[] triggersBeforeACopy;
+
+    /**
+     * Whether the locomotive already counted as customized before it was pressed.
+     */
+    private boolean customBeforeACopy;
+
+    /**
      * Creates new form LocomotiveFunctionAssign
      * @param l
      * @param parent
@@ -263,6 +278,48 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         this.fIcon.requestFocus();
     }
     
+    /**
+     * Remembers what a Copy Customizations press is about to overwrite, the first time it is pressed.
+     *
+     * **This door does not wait for OK, and the dialog's Cancel branch says everything does** (GUX-C3).
+     * The copy writes the other locomotive's function types, triggers and custom flag straight onto
+     * this one so the panel can show them at once, which is the same reason the two autonomy slots
+     * write straight through - and those are restored on Cancel.  These were not, so Cancel kept the
+     * copied functions and the comment beside it in `RightClickFunctionMenu` said nothing had changed.
+     *
+     * Only the FIRST press is remembered: two copies in a row still have to undo to what was there
+     * before either of them.
+     */
+    private void rememberBeforeACopy()
+    {
+        if (this.typesBeforeACopy != null) return;
+
+        this.typesBeforeACopy = java.util.Arrays.copyOf(
+            this.loc.getFunctionTypes(), this.loc.getFunctionTypes().length);
+
+        this.triggersBeforeACopy = java.util.Arrays.copyOf(
+            this.loc.getFunctionTriggerTypes(), this.loc.getFunctionTriggerTypes().length);
+
+        this.customBeforeACopy = this.loc.isCustomFunctions();
+    }
+
+    /**
+     * Puts back what Copy Customizations overwrote, and does nothing if it was never pressed.
+     *
+     * Restored rather than deferred, which is the shape the slots beside it already use: the preview
+     * stays honest while the dialog is open, and Cancel still means cancel.
+     */
+    public void undoCopiedCustomizations()
+    {
+        if (this.typesBeforeACopy == null) return;
+
+        this.loc.setFunctionTypes(this.typesBeforeACopy, this.triggersBeforeACopy);
+        this.loc.setCustomFunctions(this.customBeforeACopy);
+
+        this.typesBeforeACopy = null;
+        this.triggersBeforeACopy = null;
+    }
+
     /**
      * External call to apply shown values
      */
@@ -627,6 +684,9 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         
         if (copyFrom != null)
         {
+            // WHAT THE COPY IS ABOUT TO OVERWRITE, so that Cancel can put it back (GUX-C3).
+            rememberBeforeACopy();
+
             this.loc.setFunctionTypes(copyFrom.getFunctionTypes(), copyFrom.getFunctionTriggerTypes());
             this.loc.setCustomFunctions(true);
             parent.repaintLoc(true, null);

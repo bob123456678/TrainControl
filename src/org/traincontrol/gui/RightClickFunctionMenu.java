@@ -302,6 +302,12 @@ public class RightClickFunctionMenu extends MouseAdapter
                 // cancel.  Its sibling door applies at commit time instead (GraphLocAssign.commitChanges).
                 activeLoc.setDepartureFunc(departureWas);
                 activeLoc.setArrivalFunc(arrivalWas);
+
+                // AND THE COPIED FUNCTIONS (GUX-C3).  Copy Customizations is the third door that
+                // writes straight through, for the same reason the slots do - the panel shows the
+                // other locomotive's functions the moment it is pressed - and it was the one the
+                // comment above was wrong about.
+                edit.undoCopiedCustomizations();
             }
         }
     }

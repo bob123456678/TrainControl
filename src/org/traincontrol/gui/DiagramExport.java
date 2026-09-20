@@ -72,6 +72,11 @@ public final class DiagramExport
     }
 
     /**
+     * Set by a test to make a render fail after its grid is built; null everywhere else (GUX-C4).
+     */
+    public static Runnable stumbleForTest;
+
+    /**
      * Draws a diagram into an image.
      *
      * Must be called OFF the event thread, and says so by throwing rather than by producing a blank
@@ -115,60 +120,81 @@ public final class DiagramExport
             grid[0] = new LayoutGrid(layout, size, host, null, true, ui);
         });
 
-        awaitTiles(ui);
-
         final BufferedImage[] image = new BufferedImage[1];
 
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-        {
-            // A component that has never been shown has no size, and painting one paints nothing.
-            // Giving it its preferred size and laying it out by hand is what makes an offscreen render
-            // work at all.
-            Dimension preferred = host.getPreferredSize();
-
-            int width = Math.max(preferred.width, grid[0].maxWidth);
-            int height = Math.max(preferred.height, grid[0].maxHeight);
-
-            if (width < 1) width = 1;
-            if (height < 1) height = 1;
-
-            host.setSize(width, height);
-
-            layoutEverything(host);
-
-            image[0] = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-
-            Graphics2D g = image[0].createGraphics();
-
-            try
-            {
-                g.setColor(Color.WHITE);
-                g.fillRect(0, 0, width, height);
-
-                // paint, NOT printAll or paintAll.  Both of those begin with an isShowing() check and
-                // do nothing at all for a component that is not on screen - which is every component
-                // in an offscreen render, and the second reason the first version came out blank.
-                host.paint(g);
-            }
-            finally
-            {
-                g.dispose();
-            }
-        });
-
-        // Finished with, and said so (NR-3).
+        // EVERY PATH OUT OF HERE RETIRES THE GRID (GUX-C4).
         //
-        // This grid is built for one render into a panel nobody will ever show, and then dropped - so
-        // nothing ever retired it, and every caption it registered stayed in the window's label table
-        // for the session, keeping the whole grid and its tiles reachable through them.  One page
-        // retained per export.
-        //
-        // Its panel is a local, so it is never in the page cache and the window will always agree it is
-        // finished with.
-        javax.swing.SwingUtilities.invokeAndWait(() ->
+        // The discard below used to sit after the paint with no `finally`, so an export that was
+        // interrupted, or whose paint threw, left the grid registered: the NR-3 leak the comment on
+        // the discard describes, back again for that one export, and with no second chance at it -
+        // the host panel is a local, so nothing else will ever match its owner and prune its labels.
+        try
         {
-            if (grid[0] != null) grid[0].discard();
-        });
+            // A WAY TO MAKE THIS FAIL ON PURPOSE (GUX-C4).
+            //
+            // Null in the application.  Nothing between here and the discard throws on any input a
+            // test can hand in - the wait answers to an interrupt, and an interrupt lands at whichever
+            // statement it happens to reach, which is not a failure a test can repeat - so the seam is
+            // the only way to say "the render threw" and mean it.  Same shape as the route editor's
+            // `discardAnswerForTest`.
+            if (stumbleForTest != null) stumbleForTest.run();
+
+            awaitTiles(ui);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                // A component that has never been shown has no size, and painting one paints nothing.
+                // Giving it its preferred size and laying it out by hand is what makes an offscreen render
+                // work at all.
+                Dimension preferred = host.getPreferredSize();
+
+                int width = Math.max(preferred.width, grid[0].maxWidth);
+                int height = Math.max(preferred.height, grid[0].maxHeight);
+
+                if (width < 1) width = 1;
+                if (height < 1) height = 1;
+
+                host.setSize(width, height);
+
+                layoutEverything(host);
+
+                image[0] = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+
+                Graphics2D g = image[0].createGraphics();
+
+                try
+                {
+                    g.setColor(Color.WHITE);
+                    g.fillRect(0, 0, width, height);
+
+                    // paint, NOT printAll or paintAll.  Both of those begin with an isShowing() check and
+                    // do nothing at all for a component that is not on screen - which is every component
+                    // in an offscreen render, and the second reason the first version came out blank.
+                    host.paint(g);
+                }
+                finally
+                {
+                    g.dispose();
+                }
+            });
+
+        }
+        finally
+        {
+            // Finished with, and said so (NR-3).
+            //
+            // This grid is built for one render into a panel nobody will ever show, and then dropped -
+            // so nothing ever retired it, and every caption it registered stayed in the window's label
+            // table for the session, keeping the whole grid and its tiles reachable through them.  One
+            // page retained per export.
+            //
+            // Its panel is a local, so it is never in the page cache and the window will always agree
+            // it is finished with.
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                if (grid[0] != null) grid[0].discard();
+            });
+        }
 
         return wanted == NATIVE_TILE_SIZE ? image[0] : scaled(image[0], wanted);
     }
