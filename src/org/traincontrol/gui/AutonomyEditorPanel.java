@@ -2256,8 +2256,10 @@ public class AutonomyEditorPanel extends JPanel
             () -> clearAllTileLengths());
 
         clearLengths.setEnabled(measured > 0);
+        // THE SENTENCE THE DIALOG WILL SHOW, whichever of the two that is (AUS-C2).
         clearLengths.setToolTipText(wrapped(measured > 0
-            ? I18n.f("autolayout.ui.confirmClearAllTrackLengths", measured)
+            ? I18n.f(page == null ? "autolayout.ui.confirmClearAllTrackLengthsAtOnce"
+                : "autolayout.ui.confirmClearAllTrackLengths", measured)
             : I18n.t("autosetup.ui.infoNoTrackLengthsToClear")));
 
         bulk.add(clearLengths);
@@ -2272,7 +2274,8 @@ public class AutonomyEditorPanel extends JPanel
 
         clearMaxima.setEnabled(limited > 0);
         clearMaxima.setToolTipText(wrapped(limited > 0
-            ? I18n.f("autolayout.ui.confirmClearAllMaxTrainLengths", limited)
+            ? I18n.f(page == null ? "autolayout.ui.confirmClearAllMaxTrainLengthsAtOnce"
+                : "autolayout.ui.confirmClearAllMaxTrainLengths", limited)
             : I18n.t("autosetup.ui.infoNoMaxTrainLengthsToClear")));
 
         bulk.add(clearMaxima);
@@ -9663,10 +9666,11 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Forgets every length on every page, after asking (FR-069).
      *
-     * **What it costs is stated in the dialog, because nothing brings a length back.**  There is no
-     * undo here and no file to restore from until the setup is saved, so the confirmation says how
-     * many squares it is about to empty and that typing them again is the only way back - the same
-     * shape OB-194 gave the locomotive clear, and for the same reason.
+     * **What it costs is stated in the dialog, and what it costs depends on the surface** (AUS-C2).  In the editor
+     * the lengths come back on Cancel - they are in the setup snapshot taken when the window opened (OB-223), which
+     * `discardAutonomyWork` restores - so the confirmation says so.  On the track diagram's own menu, where this
+     * panel is served with no page and every gesture saves at once, it says the other thing.  Two sentences chosen
+     * by one question, which is the shape WK7-C2 gave the locomotive clear after it was found saying the wrong one.
      *
      * The empty case is said in the hint line rather than in a dialog: a dialog for "there was nothing
      * to clear" is a second press to dismiss an answer nobody needed.  Kept even though the item greys
@@ -9684,8 +9688,16 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
+        // WHAT CANCEL DOES DEPENDS ON WHICH SURFACE THIS IS (AUS-C2, Adam 2026-09-19: *"fix the sentence"*).
+        //
+        // The sentence said the clear could not be undone.  That was true before OB-223 and is not now: tile
+        // lengths are in the setup snapshot the editor takes when it opens, and Cancel restores it - so in the
+        // EDITOR the lengths come back.  The track diagram's own menu is this panel served with no page, and it
+        // saves as it goes, so there the old sentence is the true one.  Chosen the way `clearLocomotivesWarning`
+        // chooses, for the same reason and by the same test (WK7-C2).
         if (JOptionPane.showOptionDialog(owner(),
-            I18n.f("autolayout.ui.confirmClearAllTrackLengths", measured.size()),
+            I18n.f(page == null ? "autolayout.ui.confirmClearAllTrackLengthsAtOnce"
+                : "autolayout.ui.confirmClearAllTrackLengths", measured.size()),
             I18n.f("autolayout.ui.menuClearAllTrackLengths", measured.size()),
             JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
@@ -9722,8 +9734,10 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
+        // The same two sentences as the track-length clear beside it (AUS-C2).
         if (JOptionPane.showOptionDialog(owner(),
-            I18n.f("autolayout.ui.confirmClearAllMaxTrainLengths", limited.size()),
+            I18n.f(page == null ? "autolayout.ui.confirmClearAllMaxTrainLengthsAtOnce"
+                : "autolayout.ui.confirmClearAllMaxTrainLengths", limited.size()),
             I18n.f("autolayout.ui.menuClearAllMaxTrainLengths", limited.size()),
             JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)

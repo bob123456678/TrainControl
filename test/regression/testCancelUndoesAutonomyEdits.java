@@ -216,6 +216,62 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
+     * Cancel puts back the track lengths a bulk clear took, which is what its confirmation now says (AUS-C2).
+     *
+     * The sentence said the clear could not be undone.  That was true before OB-223 and is not now - `tileLengths`
+     * is in the setup snapshot the editor takes when it opens - so the editor's confirmation says Cancel puts them
+     * back and the viewer's, where every gesture saves at once, says the other thing.  A sentence nobody has run is
+     * how the locomotive clear came to say the wrong one for a fortnight (WK7-C2), so this runs it.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testCancelPutsTheLengthsBack() throws Exception
+    {
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        TileKey square = aSquareWithOneRoute();
+
+        // MEASURED BEFORE THE EDITOR OPENS, because what Cancel puts back is the setup as the window found
+        // it: a length typed after it opened is an edit, and discarding it is the same mechanism working.
+        session.setTileLength(square, 4);
+
+        final LayoutEditor editor = opened();
+
+        Answerer answerer = null;
+
+        try
+        {
+            assertEquals(session.getStore().getTileLength(square), 4, "precondition: the length was not written");
+
+            int cleared = session.clearEveryTileLength();
+
+            assertTrue(cleared > 0, "precondition: the clear took nothing, so Cancel has nothing to put back");
+            assertEquals(session.getStore().getTileLength(square), 0, "precondition: the clear left the length");
+
+            answerer = Answerer.start(String.valueOf(TrainControlUI.YES_NO_OPTS[0]));
+
+            cancel(editor);
+
+            answerer.stop();
+
+            settle();
+
+            assertEquals(session.getStore().getTileLength(square), 4,
+                "Cancel did not put back the length a bulk clear took, although the confirmation says it does"
+                + " - the sentence and the behaviour have to agree (AUS-C2)");
+        }
+        finally
+        {
+            if (answerer != null) answerer.stop();
+
+            dispose(editor);
+
+            session.restoreSetup(asFound);
+        }
+    }
+
+    /**
      * Save keeps the arrow - the control for the two above.
      */
     @Test
