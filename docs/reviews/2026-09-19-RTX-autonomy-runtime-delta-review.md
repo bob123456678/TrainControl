@@ -67,7 +67,7 @@ Neither shape is what AMH-B1 was for.  The rule exists so that a plan does not T
 | RTX-C1 | open | `HomeStaging.tailKey` - the arrangement key carries the tails a route leaves and not whether it turned the train; `turnedByThePlan` reads the second on the next expansion |
 | RTX-C2 | open | `whyABerthCannotHoldIt` and `walkOneTail` after Mass Assign's switch step: a measured switch and an unmeasured piece behind a berth refuse every train of every length |
 | RTX-C3 | fixed - locDeleted clears it | `Layout.locDeleted` - the sweep does not clear `reversedOnArrival`, and the record is keyed by name |
-| RTX-C4 | open | AMR-D1 and AMH-B2 rest on opposite statements about Adam's detection hardware |
+| RTX-C4 | closed by Adam's ruling 2026-09-19 - the sensor stays on; behaviour.md 8 says so and AMR-D1 cites it | AMR-D1 and AMH-B2 rest on opposite statements about Adam's detection hardware |
 | RTX-C5 | fixed - the javadoc says the worker | `Layout.whyNoRouteFitsTo` javadoc says it runs on the event thread; the hover moved to a worker (OB-079) |
 
 ### RTX-C1 - the key does not carry what the turn rule reads

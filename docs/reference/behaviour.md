@@ -1727,6 +1727,15 @@ that the page says so itself, and that it will not be written over until the fil
 
 - **Facing is encoded as one-way edges.** There is no direction field on a train's route; the sparse
   and doubled edges *are* the direction.
+- **A sensor stays occupied while a train is standing on it.**  Adam, 2026-09-19, asked directly: *"the sensor
+  will remain on while a train is standing there."*  The detection latches; it does not pulse as the train
+  arrives and then clear.  Two things in the model follow from it and are therefore right to bite: `isPathClear`
+  refuses an edge whose end reports a set sensor, and the staging planner refuses a point whose sensor sibling
+  holds a train - and because one s88 address is shared by more than one Point here (a sensor is not a place
+  key), both refuse the SIBLING square of a standing train as well.  That is the refusing direction and it is
+  wanted.  **The simulation is the odd one out**: `HomeStaging.snapshot` pulses its feedback, which is why an
+  earlier review read the railway as clearing under a standing train (AMR-D1, corrected here by RTX-C4).
+
 - **Signals and switches are the same device to the protocol, and different things on the railway.**
   They are commanded identically and share one address space - a signal and a switch at one address
   are one accessory, and `accessoryType` only decides which icon is drawn. Adam: *"they play very

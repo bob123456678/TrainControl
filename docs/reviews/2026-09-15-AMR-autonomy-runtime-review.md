@@ -138,7 +138,7 @@ The Load JSON door only; homes, exclusions, restrictions and roads are dropped w
 
 | id | what |
 |---|---|
-| AMR-D1 | `isPathClear` refuses an edge end whose sensor reads occupied, including one sharing the standing train's sensor; Adam's runs show the sensor clears under a standing train, so it does not bite - correct by a hardware property rather than by the model |
+| AMR-D1 | `isPathClear` refuses an edge end whose sensor reads occupied, including one sharing the standing train's sensor.  **Corrected 2026-09-19 (RTX-C4):** this said the sensor clears under a standing train, so the refusal does not bite.  It does bite - Adam: *"the sensor will remain on while a train is standing there"* - and it is wanted, because it is the refusing direction; what pulses is the simulated feedback in `HomeStaging.snapshot`, which is where the wrong reading came from.  `behaviour.md` section 8 now states the hardware once |
 | AMR-D2 | The train cap fences on the run's flag, not the dispatch's tier; unreachable, because both hand doors decline to offer paths while a run is going |
 
 ---
