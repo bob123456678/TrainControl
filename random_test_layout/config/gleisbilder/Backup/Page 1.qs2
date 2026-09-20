@@ -1,0 +1,124 @@
+[gleisbildseite]
+version
+ .major=1
+element
+ .id=0x102
+ .typ=bogen
+ .artikel=-1
+element
+ .id=0x103
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x104
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x105
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x106
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x107
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x108
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x109
+ .typ=bogen
+ .drehung=3
+ .artikel=-1
+element
+ .id=0x202
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x209
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x302
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x309
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x402
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x409
+ .typ=gerade
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x502
+ .typ=bogen
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x503
+ .typ=rechtsweiche
+ .drehung=3
+ .artikel=4
+element
+ .id=0x504
+ .typ=signal
+ .artikel=8
+element
+ .id=0x505
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x506
+ .typ=s88kontakt
+ .artikel=1
+element
+ .id=0x507
+ .typ=linksweiche
+ .drehung=1
+ .artikel=2
+element
+ .id=0x508
+ .typ=signal
+ .artikel=6
+element
+ .id=0x509
+ .typ=bogen
+ .drehung=2
+ .artikel=-1
+element
+ .id=0x603
+ .typ=bogen
+ .drehung=1
+ .artikel=-1
+element
+ .id=0x604
+ .typ=signal
+ .artikel=10
+element
+ .id=0x605
+ .typ=gerade
+ .artikel=-1
+element
+ .id=0x606
+ .typ=s88kontakt
+ .artikel=2
+element
+ .id=0x607
+ .typ=bogen
+ .drehung=2
+ .artikel=-1

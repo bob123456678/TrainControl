@@ -1931,4 +1931,100 @@ public class testAutonomyDiagramReducer
                 + " and a train lying on one fouls the other - and they never touch");
         }
     }
+
+    /**
+     * Which squares let two roads run at once, and which do not (Adam, 2026-09-19).
+     *
+     * *"For crossings vs overpasses, does one route of the overpass correctly not block the other, whereas the
+     * crossing does?"*  Three answers, and they follow the metal:
+     *
+     *  - an **overpass** carries its roads at different heights, so they never touch: two routes may run at once;
+     *  - a **crossing** carries them at the same height across each other, so a train on one is on the other's rail:
+     *    the two roads lock;
+     *  - a **double slip** (`SWITCH_CROSSING`) is a switch, thrown one way or the other, and its roads share the
+     *    frog: they lock too - and it is cut out of the length pieces with the other switches.
+     *
+     * The double curve is the fourth case and has its own claim above: two curves in opposite corners, which never
+     * touch, so they do not lock.
+     *
+     * @throws IOException from the fixtures
+     */
+    @Test
+    public void testWhichCrossingTilesLockTheirTwoRoads() throws IOException
+    {
+        assertFalse(locksItsTwoRoads(componentType.OVERPASS),
+            "an overpass locks its two roads against each other, though one is above the other - two independent"
+            + " routes are serialised for nothing");
+
+        assertTrue(locksItsTwoRoads(componentType.CROSSING),
+            "a crossing does NOT lock its two roads, and they cross at the same height - two trains can be sent"
+            + " over the same rail at once");
+
+        assertTrue(locksItsTwoRoads(componentType.SWITCH_CROSSING),
+            "a double slip does NOT lock its two roads.  It is one switch, thrown one way or the other, and its"
+            + " roads share the frog");
+    }
+
+    /**
+     * Builds a square of this type with two roads through it, and says whether the reduction locks them together.
+     *
+     * @param type the tile in the middle
+     * @return whether a leg over one road locks a leg over the other
+     * @throws IOException from the fixture
+     */
+    private boolean locksItsTwoRoads(componentType type) throws IOException
+    {
+        LayoutDiagram page = page("main", 8, 6);
+
+        feedback(page, 1, 2, 11);
+        straight(page, 2, 2);
+        add(page, type, 3, 2, 0);
+        straight(page, 4, 2);
+        feedback(page, 5, 2, 12);
+
+        feedbackNS(page, 3, 0, 13);
+        straightNS(page, 3, 1);
+        straightNS(page, 3, 3);
+        feedbackNS(page, 3, 4, 14);
+
+        if (type == componentType.SWITCH_CROSSING) wire(page, 3, 2, 77, Accessory.accessoryType.SWITCH);
+
+        TileGraph graph = graph(page);
+
+        // A switch defaults to one state; both roads have to be open for the question to be about the tile.
+        for (TileKey tile : graph.getTiles().keySet())
+        {
+            for (RouteId routeId : graph.getRoutes(tile).keySet())
+            {
+                graph.setDirection(tile, routeId, Direction.BOTH);
+            }
+        }
+
+        GraphReducer reduced = reduce(graph, authored(new HashMap<>(), null, null));
+
+        ReducedEdge acrossOne = null;
+        ReducedEdge acrossTwo = null;
+
+        for (ReducedEdge edge : reduced.getEdges())
+        {
+            boolean over = false;
+
+            for (GraphReducer.TileStep step : edge.getPath())
+            {
+                if (key("main", 3, 2).equals(step.getTile())) over = true;
+            }
+
+            if (!over) continue;
+
+            if (edge.getStart().getY() == 2 && acrossOne == null) acrossOne = edge;
+            if (edge.getStart().getX() == 3 && acrossTwo == null) acrossTwo = edge;
+        }
+
+        assertNotNull(acrossOne, "precondition: no leg runs over the " + type + " east to west");
+        assertNotNull(acrossTwo, "precondition: no leg runs over the " + type + " north to south");
+
+        java.util.Set<ReducedEdge> locked = reduced.getLocks().get(acrossOne);
+
+        return locked != null && locked.contains(acrossTwo);
+    }
 }
