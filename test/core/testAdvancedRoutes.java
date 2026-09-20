@@ -1089,6 +1089,12 @@ public class testAdvancedRoutes
         finally
         {
             try { model.deleteRoute(name); } catch (Exception ignored) { }
+
+            // AND THE PAGE COMES OUT AGAIN (OP2-C10).  It was put into the model's own page database by
+            // reflection a few statements up, and left there - so every class that ran after this one in
+            // the same JVM saw a page the layout never had, and anything that counts pages or walks them
+            // counted it.
+            try { layouts.delete(page.getName()); } catch (Exception ignored) { }
         }
     }
 }

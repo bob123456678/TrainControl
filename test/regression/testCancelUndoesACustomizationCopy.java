@@ -54,6 +54,12 @@ public class testCancelUndoesACustomizationCopy
         {
             int[] wereTypes = Arrays.copyOf(up.loc.getFunctionTypes(), up.loc.getFunctionTypes().length);
 
+            // THE TRIGGERS TOO (OP3-C6).  `undoCopiedCustomizations` puts back two arrays and a flag,
+            // and asserting one array let a regression that dropped the triggers from either the save
+            // or the restore pass.
+            int[] wereTriggers = Arrays.copyOf(
+                up.loc.getFunctionTriggerTypes(), up.loc.getFunctionTriggerTypes().length);
+
             assertFalse(up.loc.isCustomFunctions(),
                 "precondition: the locomotive counted as customized before anything was copied");
 
@@ -76,6 +82,10 @@ public class testCancelUndoesACustomizationCopy
             assertEquals(up.loc.getFunctionTypes(), wereTypes,
                 "Cancel left the copied function types on the locomotive; it puts the two autonomy"
                 + " slots back and this door writes through in exactly the same way");
+
+            assertEquals(up.loc.getFunctionTriggerTypes(), wereTriggers,
+                "Cancel put the function types back and left the copied TRIGGERS, which decide when each"
+                + " function fires");
         }
         finally
         {

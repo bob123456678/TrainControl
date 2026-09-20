@@ -2624,18 +2624,23 @@ public final class HomeStaging
 
         List<String> tails = new ArrayList<>();
 
-        // AND WHICH TRAINS THE PLAN TURNED ON THE WAY (RTX-C1).
+        // AND WHAT THE PLAN DID TO EACH TRAIN IT MOVED (RTX-C1, widened by OP3-C2).
         //
-        // `turnedByThePlan` reads `movedAlong.get(l)` back out of the one route this key keeps, and
-        // asks it whether the train passed a reversing point - so two roads to the same square that
-        // leave the same covered edges but differ in that one fact folded into one state, and
-        // whichever the search found first decided whether the train was restricted to its home on
-        // the next expansion.  The loop below drops a train from the key entirely when its tail covers
-        // nothing, which is exactly where the two roads are otherwise indistinguishable.
+        // `turnedByThePlan` reads two facts out of `movedAlong`: whether the train is in it at all, and
+        // whether the route it holds passed a reversing point.  `key(state)` carries neither.  So two
+        // states with the same arrangement could disagree about either and still share a key, and
+        // whichever the search reached first decided whether that train was restricted to its home on
+        // the next expansion.
+        //
+        // Both are carried here, and every moved train is named whether it turned or not - which is
+        // what keys the first fact, at no cost over keying the second alone.  The tails list below
+        // cannot stand in for it: it drops a train whose tail covers nothing, which is exactly where
+        // two roads are otherwise indistinguishable.
         //
         // Measured before it was written: over `core.testReturnHomeOnRealLayout`, 994 of 83,881 keys
-        // were reached with both answers.  MFR-B2's own shape, one fact further on, and the same
-        // spelling `firstClearRoute` uses for its own visited set.
+        // were reached with both turn answers.  Written `<name>/turned` or `<name>/straight`, which is
+        // the spelling `firstClearRoute` uses for its own visited set (:1362) - a word after the slash
+        // in both cases, rather than a name that is present or absent.
         List<String> turned = new ArrayList<>();
 
         for (Map.Entry<Locomotive, List<Edge>> moved : routes.entrySet())
@@ -2645,7 +2650,7 @@ public final class HomeStaging
 
             if (road == null || road.isEmpty()) continue;
 
-            if (turnedOnTheWay(road)) turned.add(train.getName());
+            turned.add(train.getName() + (turnedOnTheWay(road) ? "/turned" : "/straight"));
 
             Point end = road.get(road.size() - 1).getEnd();
 

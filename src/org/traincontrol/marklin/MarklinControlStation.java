@@ -3598,7 +3598,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     if (c == null || !c.isRoute()) continue;
 
-                    c.setRoute(this.routeDB.getById(c.getAddress()));
+                    MarklinRoute bound = this.routeDB.getById(c.getAddress());
+
+                    // SAID OUT LOUD, as the wiring already says it (OP2-C13).
+                    //
+                    // `wireComponents` logs `layout.routeButtonMissingRoute` for exactly this - a tile
+                    // naming a route the database does not have - and this door, which runs after every
+                    // routeDB write, cleared the tile in silence.  So a route deleted out from under its
+                    // tile left a dead button and no line anywhere saying which square had lost what.
+                    if (bound == null && c.getRoute() != null)
+                    {
+                        this.logf("layout.routeButtonMissingRoute", c.getAddress(), c.getX(), c.getY());
+                    }
+
+                    c.setRoute(bound);
                 }
             }
         }

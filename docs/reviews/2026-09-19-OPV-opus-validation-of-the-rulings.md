@@ -267,10 +267,10 @@ cannot catch this: it builds the route with `conditions` = `null` and passes the
 
 | id | status | where |
 |---|---|---|
-| OP2-C1 | open | RTX-C4: `behaviour.md` says `HomeStaging.snapshot` pulses the feedback. It reads it; the pulse is `Layout.simAnnounce` / `simClearBehind` |
+| OP2-C1 | fixed 2026-09-19 - behaviour.md and the AMR-D1 row both name simAnnounce/simClearBehind; verified 2026-09-20 | RTX-C4: `behaviour.md` says `HomeStaging.snapshot` pulses the feedback. It reads it; the pulse is `Layout.simAnnounce` / `simClearBehind` |
 | OP2-C2 | open | AUS-C2: the sentence is chosen by a ternary duplicated in four places, against the one-builder rule the locomotive clear's own comment states - and no test runs either sentence |
-| OP2-C3 | open | AUR-B1: `deriveLocks`' javadoc still says "The one exception is an overpass". There are three |
-| OP2-C4 | open | AUR-B1 contradicts `sharedSquaresALengthRuleReads`, written the same day, about whether a double curve's two roads share metal |
+| OP2-C3 | fixed 2026-09-19 - the javadoc says three tile types; verified 2026-09-20 | AUR-B1: `deriveLocks`' javadoc still says "The one exception is an overpass". There are three |
+| OP2-C4 | fixed 2026-09-19 - the crossings comment says which roads share metal and which do not; verified 2026-09-20 | AUR-B1 contradicts `sharedSquaresALengthRuleReads`, written the same day, about whether a double curve's two roads share metal |
 | OP2-C5 | open | VC2-C5: the figure-of-eight arithmetic's `- getTileLength(leg.getStart())` term is 0 in its fixture, so the convention the failure message names is not tested |
 | OP2-C6 | open | VC2-C3: the restore-counter test turns on wall-clock timing, which is the hazard VC2-C6 removed from two other tests in the next commit |
 | OP2-C7 | open | SVT-C1: `assertFalse(built != null && built.isValid())` passes for any invalidation, and `Layout.getLastError()` is never asserted |

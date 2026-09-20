@@ -338,10 +338,17 @@ public class AutonomyChecks
     /**
      * A berth whose approach is measured in part and not in whole (Adam, 2026-09-19, on RTX-C2).
      *
-     * A WARNING rather than a notice, because while it stands the berth takes no train at all: the room walk judges
-     * as soon as anything on the approach is measured, and the squares that are not measured are worth nothing to
-     * it.  Adam's ruling was that the rule is right and the operator should be told - *"we want clear warnings to
-     * the user"* - so the sentence says what is happening and what ends it.
+     * A WARNING rather than a notice, because while it stands the berth can refuse a train that fits: the room walk
+     * judges as soon as anything on the approach is measured, and the squares that are not measured are worth
+     * nothing to it.  Adam's ruling was that the rule is right and the operator should be told - *"we want clear
+     * warnings to the user"* - so the sentence says what is happening and what ends it.
+     *
+     * **CAN refuse, not does** (OP2-C12).  This said *"takes no train at all"*, and two things narrow it: the claim
+     * becomes a refusal only where a lock edge shares one of the claimed places, so a berth on a branch nothing
+     * else touches is half measured and still takes everything; and `whyABerthCannotHoldIt` returns at once for a
+     * locomotive with no train length, which is admitted either way.  The warning is worth showing on both counts -
+     * the state is still wrong and still ends the same way - but the sentence should not promise more than it
+     * knows about the railway in front of the operator.
      */
     public static final String HALF_MEASURED_APPROACH = "autosetup.ui.checkHalfMeasuredApproach";
 

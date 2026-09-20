@@ -93,6 +93,9 @@ public class testTheRefusalsAreAskedAtTheDoors
             + "refusal posts its dialog rather than showing it"},
         {"doSync", AUTONOMY,
             "a Central Station sync replaces the databases underneath a running railway"},
+        {"openAutonomyEditorIfItCan", EDITOR,
+            "the excluded-page label on the diagram opens the editor directly, so it needs the same "
+            + "refusal the menu item it stands for is greyed out by"},
         {"refreshAutonomyPrompt", EDITOR,
             "the banner is a single button drawn before the state it guards against is entered, so it "
             + "cannot grey itself the way the menu does - and it asks TWICE, once per action, which "

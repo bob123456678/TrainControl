@@ -1396,6 +1396,32 @@ OP2-D6	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	AUR-B1 cannot change a
 OP2-D7	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	Place ids are persisted, and the persisted key is stable and only ever compared within one
 OP2-D8	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	AUS-B1's refresh cannot interleave with a walk of that panel, and cannot commit a layout e
 OP2-D9	2026-09-19-OPV-opus-validation-of-the-rulings.md	-	VB2-C6 is right: the Central Station proposal really does delete a locomotive of the targe
+OP3-B1	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	`testEveryMessageKeyIsAskedFor.java:129-137` (the prefix shield), `test/ui/testStagingOutc
+OP3-B2	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	`TrainControlUI.enableOrDisableRoute` (`TrainControlUI.java:21481`, `:21489`, `:21513`) ag
+OP3-C1	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	`TrainControlUI.java:918`
+OP3-C10	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	`test/core/testAutonomyDiagramReducer.java`, `locksItsTwoRoads`
+OP3-C11	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	`DiagramExport.render` - the `try` opens after the grid is built
+OP3-C2	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	`HomeStaging.tailKey` (`:2621-2686`) against `turnedByThePlan` (`:980-983`)
+OP3-C3	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	`bash.exe.stackdump`, `cs2_sample_layout/config/autonomy/Main_bak.json`, `random_test_layo
+OP3-C4	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	`test/core/testLockEdgesSurviveTheFile.java:291-303`
+OP3-C5	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	`test/regression/testTheExportRetiresItsGrid.java:47-84`
+OP3-C6	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	`test/regression/testCancelUndoesACustomizationCopy.java:49-84`
+OP3-C7	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	`Point.toJSON` (`:1268`, `:1282`) against `AutonomyEditorPanel.buildArrivedFromMenu` (`:33
+OP3-C8	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	the UIX-C3 status row in `2026-09-19-UIX-main-interface-review.md`, against `AutonomyBanne
+OP3-C9	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	`HomeStaging.java:2636-2638` against `HomeStaging.java:1362`
+OP3-D1	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	all eight bundles lost exactly the same 118 keys, and nothing was added
+OP3-D10	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	CS3-C4's new lock has no ordering hazard
+OP3-D11	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	GUX-C2's new tooltip sentence is true, and landed in all eight bundles
+OP3-D12	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	GUX-C3's save and restore survive a copy from a locomotive with a different function count
+OP3-D13	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	the deprecated modifier API in `controlHeld`/`altHeld` works and is the same one the codeb
+OP3-D2	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	none of the 118 is reachable at runtime by any route I could construct
+OP3-D3	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	the new guard's floors are real, with the margins measured
+OP3-D4	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	`speedStepFor` matches the key handler's arms, and the arrow listeners have no third calle
+OP3-D5	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	`r.getId()` after `writeRouteEnabledState` is sound, and `anyOnTheStation` is set on every
+OP3-D6	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	neither call site of `Point.reserve` can throw away a live train's real tail
+OP3-D7	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	the AUR-C1 defect is live on Adam's own railway, and the reader that makes it visible is t
+OP3-D8	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	the RTX-C1 test genuinely fails without the fix, and carries a control
+OP3-D9	2026-09-19-OP3-opus-validation-of-the-c-sweep.md	-	the toolbar test's discriminating half is the second press, and the class says so
 OPV-B1	2026-09-04-opus-validation.md	Closed	fixed for the finding's headline case - `testALockPhaseFailureLeavesTheTrainWhereItStands`
 OPV-C1	2026-09-04-opus-validation.md	Closed	fixed - the key is `block`, and each of the three markers is now asserted separately, beca
 OPV-C2	2026-09-04-opus-validation.md	Closed	fixed - the ACC-C2 disposition now says the paragraph is in the generator and the checked-

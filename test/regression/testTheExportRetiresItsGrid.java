@@ -52,6 +52,12 @@ public class testTheExportRetiresItsGrid
         {
             int before = quiesced(up.ui);
 
+            // THE PAGE HAS CAPTIONS TO LOSE (OP3-C5).  Both claims below compare a count with itself, so
+            // a sandbox page with no station squares would make them pass about nothing at all.
+            assertTrue(before > 0,
+                "the first page of the sandbox registered no caption labels, so this class is comparing"
+                + " zero with zero and says nothing about whether an export hands its own back");
+
             boolean threw = false;
 
             DiagramExport.stumbleForTest = () ->

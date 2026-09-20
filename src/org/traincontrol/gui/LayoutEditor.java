@@ -7318,10 +7318,14 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             // Control+B is the same door onto the STATION's own maximum (Adam, 2026-09-12).
             //
             // He asked for Control+M - *"is control+M taken in the autonomy editor?  If not, map it to
-            // the station maximum train length"* - and it is: the main window toggles the menu bar with
-            // it, and since 2026-09-11 a `KeyEventPostProcessor` delivers the main window's shortcuts
-            // from anywhere in it that is not a text box, so that reaches this editor too. Shift does
-            // not help either; that map never looks at it.
+            // the station maximum train length"* - and it is taken in the MAIN window, which toggles the
+            // menu bar with it.  Shift does not help either; that map never looks at it.
+            //
+            // It is NOT taken in this one, and this comment used to say it was (UIX-C2).  The main
+            // window's `KeyEventPostProcessor` is JVM-wide but returns at once unless the focus owner
+            // `isDescendingFrom` that window, and a top-level frame's parent is null - so Control+M
+            // pressed in this editor reaches nothing at all.  The choice below stands on its own; what
+            // is corrected is the reason given for it, in a file whose comments are the authority.
             //
             // `regression.testNoTwoShortcutsShareAKey` printed what was actually free in both windows -
             // B J O P Q U W - and he chose **B**, for berth, which is the word this project already

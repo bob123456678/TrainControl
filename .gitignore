@@ -68,3 +68,12 @@ __pycache__/
 # whenever an icon is cropped, so tracking them means every crop turns up as an uncommitted change or
 # gets committed by accident.
 /tc_loc_icons/
+
+# Untracked 2026-09-19: swept in by a `git add -A` after a test run wrote them (OP3-C3).
+# The scratch layout a probe builds, never part of the record:
+/random_test_layout/
+# A crash dump Git Bash drops at the root:
+bash.exe.stackdump
+# The backup the application writes beside the blessed fixture while a test drives it.
+# Narrow on purpose: real changes to cs2_sample_layout must still show up as changes.
+/cs2_sample_layout/config/autonomy/*_bak.json

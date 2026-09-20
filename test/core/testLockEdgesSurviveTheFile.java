@@ -298,9 +298,18 @@ public class testLockEdgesSurviveTheFile
 
         // THE RECORD.  The drop's own comment says the next save writes the file back without the
         // phantom; it said nothing about the phantom's tail, which was written on every save for ever.
+        //
+        // THE SIDE IS PUT BACK FIRST, which is what makes this a test of the SAVE (OP3-C4).  Asserting
+        // straight after the assertion above proved nothing: the field is null by then, so `toJSON`
+        // could not write it whatever `toJSON` does, and reverting the occupant test in `Point.toJSON`
+        // left this passing.  Set on the empty square, the gate is the only thing that can keep it out.
+        stand.setArrivedFrom("LE Junction");
+
         assertFalse(layout.toJSON().toString().contains("arrivedFrom"),
             "the layout wrote back a side for a square with nobody on it, so a reload rebuilds the"
             + " same state: " + layout.toJSON());
+
+        stand.setArrivedFrom(null);
 
         // AND THE LIVE DOOR, which is the one that mends every future way of leaving a side behind.
         stand.setArrivedFrom("LE Junction");
@@ -321,6 +330,12 @@ public class testLockEdgesSurviveTheFile
         stand.setArrivedFrom("LE Junction");
 
         reserve.invoke(stand, loc());
+
+        // THE SAME INSTANCE BOTH TIMES, which is what makes this a control: the guard in `assign` is a
+        // reference comparison, so a `loc()` that built a new object each call would fail here for a
+        // reason that has nothing to do with the rule (OP3-C4).
+        assertSame(loc(), loc(), "precondition: loc() no longer returns one instance, so the control below"
+            + " is not testing the same-occupant case at all");
 
         assertEquals(stand.getArrivedFrom(), "LE Junction",
             "reserving a square for the train already standing on it threw away its real tail");

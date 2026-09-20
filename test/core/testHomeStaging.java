@@ -6336,11 +6336,20 @@ public class testHomeStaging
         // `locRenamed` alone left the call site as the only thing that could be wrong.
         assertTrue(model.renameLoc(LOC_A, "HS renamed"), "precondition: the rename was refused");
 
-        assertNull(layout.turnedOnArrivalAt(LOC_A), "the record still answers under the old name");
-        assertEquals(layout.turnedOnArrivalAt("HS renamed"), "HS A",
-            "the turn was lost by the rename, so the train keeps the facing it drove in with");
-
-        assertTrue(model.renameLoc("HS renamed", LOC_A), "the name was not put back for the rest of the class");
+        // PUT BACK WHATEVER HAPPENS (OP2-C11).  The locomotive database is shared with every other
+        // class in this suite, and a failure between here and the restore used to leave a locomotive
+        // called "HS renamed" in it for the rest of the run.
+        try
+        {
+            assertNull(layout.turnedOnArrivalAt(LOC_A), "the record still answers under the old name");
+            assertEquals(layout.turnedOnArrivalAt("HS renamed"), "HS A",
+                "the turn was lost by the rename, so the train keeps the facing it drove in with");
+        }
+        finally
+        {
+            assertTrue(model.renameLoc("HS renamed", LOC_A),
+                "the name was not put back for the rest of the class");
+        }
 
         layout.locDeleted(loc(LOC_A));
 
@@ -6372,9 +6381,21 @@ public class testHomeStaging
 
         Layout built = model.getAutoLayout();
 
+        // REFUSED, AND REFUSED FOR THE MAXIMUM (OP2-C7).
+        //
+        // `assertFalse(built != null && built.isValid())` passes for ANY invalidation - a typo in the
+        // fixture, a sensor clash, a graph that never parsed - so it could not tell "the negative
+        // maximum was rejected" from "this fixture stopped loading for some other reason".  The error
+        // the loader recorded is what distinguishes them.
         assertFalse(built != null && built.isValid(),
             "a configuration with a maximum train length of -3 loaded, so the editor door's refusal is guarding"
             + " nothing - and the reason SET-B1 mattered was that it does not load");
+
+        String why = Layout.getLastError();
+
+        assertTrue(why != null && why.toLowerCase().contains("length"),
+            "the configuration was refused, but not for the train length: " + why + ".  A refusal for"
+            + " some other reason would hide the maximum loading perfectly well");
 
         // AND THE CONTROL: the same railway without the negative loads.
         model.parseAuto(config);

@@ -1942,7 +1942,9 @@ public class testAutonomyDiagramReducer
      *  - a **crossing** carries them at the same height across each other, so a train on one is on the other's rail:
      *    the two roads lock;
      *  - a **double slip** (`SWITCH_CROSSING`) is a switch, thrown one way or the other, and its roads share the
-     *    frog: they lock too - and it is cut out of the length pieces with the other switches.
+     *    frog: they lock too - and it is cut out of the length pieces with the other switches.  It carries FOUR
+     *    roads rather than two, because its thrown state adds both diagonals, so eight directed legs cross it;
+     *    every pair of different roads locks, and only a road against its own reverse does not (OP3-C10).
      *
      * The double curve is the fourth case and has its own claim above: two curves in opposite corners, which never
      * touch, so they do not lock.
@@ -2002,8 +2004,15 @@ public class testAutonomyDiagramReducer
 
         GraphReducer reduced = reduce(graph, authored(new HashMap<>(), null, null));
 
-        ReducedEdge acrossOne = null;
-        ReducedEdge acrossTwo = null;
+        // EVERY LEG OVER THE SQUARE, not the first of each kind (OP3-C10).
+        //
+        // Four directed legs run over the middle tile - east and west, north and south - and taking
+        // the first match of each made the answer depend on what order `getEdges()` happened to yield.
+        // The claim in the javadoc is about the TILE, so every ordered pair across the two roads is
+        // asked, and a tile that locked some pairs and not others fails here rather than answering
+        // differently on different runs.
+        java.util.List<ReducedEdge> eastWest = new java.util.ArrayList<>();
+        java.util.List<ReducedEdge> northSouth = new java.util.ArrayList<>();
 
         for (ReducedEdge edge : reduced.getEdges())
         {
@@ -2016,15 +2025,39 @@ public class testAutonomyDiagramReducer
 
             if (!over) continue;
 
-            if (edge.getStart().getY() == 2 && acrossOne == null) acrossOne = edge;
-            if (edge.getStart().getX() == 3 && acrossTwo == null) acrossTwo = edge;
+            if (edge.getStart().getY() == 2) eastWest.add(edge);
+            else if (edge.getStart().getX() == 3) northSouth.add(edge);
         }
 
-        assertNotNull(acrossOne, "precondition: no leg runs over the " + type + " east to west");
-        assertNotNull(acrossTwo, "precondition: no leg runs over the " + type + " north to south");
+        assertFalse(eastWest.isEmpty(), "precondition: no leg runs over the " + type + " east to west");
+        assertFalse(northSouth.isEmpty(), "precondition: no leg runs over the " + type + " north to south");
 
-        java.util.Set<ReducedEdge> locked = reduced.getLocks().get(acrossOne);
+        Boolean answer = null;
 
-        return locked != null && locked.contains(acrossTwo);
+        for (ReducedEdge one : eastWest)
+        {
+            for (ReducedEdge two : northSouth)
+            {
+                // A LEG AND ITS OWN REVERSE ARE NOT TWO ROADS.
+                //
+                // A double slip has FOUR roads, not two - its thrown state adds the two diagonals -
+                // so eight directed legs run over the square, and the two groups below each pick up
+                // one direction of a diagonal.  Asking whether `W->N` locks `N->W` is asking whether a
+                // road locks itself, which the lock rule does not answer and the occupancy rule does.
+                if (one.getStart().equals(two.getEnd()) && one.getEnd().equals(two.getStart())) continue;
+
+                java.util.Set<ReducedEdge> locked = reduced.getLocks().get(one);
+
+                boolean locks = locked != null && locked.contains(two);
+
+                if (answer == null) answer = locks;
+
+                assertEquals(locks, answer.booleanValue(),
+                    "the " + type + " locks some pairs of its two roads and not others, so what this"
+                    + " class reports about it depends on which leg it happened to look at first");
+            }
+        }
+
+        return answer;
     }
 }

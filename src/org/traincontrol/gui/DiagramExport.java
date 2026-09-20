@@ -111,25 +111,30 @@ public final class DiagramExport
         final JPanel host = new JPanel();
         final LayoutGrid[] grid = new LayoutGrid[1];
 
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-        {
-            host.setBackground(Color.WHITE);
-
-            // popup = true, because that is the mode that lays a grid out to its own natural size
-            // rather than to fit a container it has been given
-            grid[0] = new LayoutGrid(layout, size, host, null, true, ui);
-        });
-
         final BufferedImage[] image = new BufferedImage[1];
 
-        // EVERY PATH OUT OF HERE RETIRES THE GRID (GUX-C4).
+        // EVERY PATH OUT OF HERE RETIRES THE GRID (GUX-C4, widened by OP3-C11).
         //
         // The discard below used to sit after the paint with no `finally`, so an export that was
         // interrupted, or whose paint threw, left the grid registered: the NR-3 leak the comment on
         // the discard describes, back again for that one export, and with no second chance at it -
         // the host panel is a local, so nothing else will ever match its owner and prune its labels.
+        //
+        // THE BUILD IS INSIDE THE BRACKET TOO.  `LayoutGrid`'s constructor is what registers the
+        // captions, so a constructor that threw part-way - after registering some and before
+        // returning - left `grid[0]` unassigned and the `finally` unentered: the same leak by the one
+        // door the first version of this fix did not cover.  The discard already null-checks.
         try
         {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                host.setBackground(Color.WHITE);
+
+                // popup = true, because that is the mode that lays a grid out to its own natural size
+                // rather than to fit a container it has been given
+                grid[0] = new LayoutGrid(layout, size, host, null, true, ui);
+            });
+
             // A WAY TO MAKE THIS FAIL ON PURPOSE (GUX-C4).
             //
             // Null in the application.  Nothing between here and the discard throws on any input a

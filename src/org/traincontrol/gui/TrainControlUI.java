@@ -915,8 +915,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // would overwrite anything put there.  Setting it after `initComponents` is the same rule every
         // other string in this window follows when the form has hard-coded one.
         //
-        // A new key rather than reusing `ui.main.toolbar.functions`: that one is the word "Functions",
-        // which is a different menu and a different idea in this program.  This heading now covers the
+        // A new key rather than reusing the old `ui.main.toolbar.functions`, which was the word
+        // "Functions" - a different menu and a different idea in this program.  That key has since gone
+        // with the others nothing asked for (UIX-C4), so there is nothing left to grep for; the sentence
+        // is kept because it says why this heading is not that word (OP3-C1).  The heading covers the
         // odds and ends, so the translations say tools rather than functions - Werkzeuge, Utilitaires,
         // Hulpmiddelen.
         this.functionsMenu.setText(I18n.t("ui.main.menu.utilities"));
@@ -8439,12 +8441,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Opens the Autonomy menu on the list of pages, which is where a page is put back into autonomy.
-     *
-     * Reached from the diagram itself, because that is where the user finds out the page is left out -
-     * and a statement they cannot act on from where they are standing is half an answer.
-     */
-    /**
      * Opens the autonomy editor if the Edit item would be enabled, and does nothing if it would not.
      *
      * The excluded-page label's gesture (Adam, 2026-09-19).  It asks the same question the menu item
@@ -8464,6 +8460,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
     }
 
+    /**
+     * Opens the Autonomy menu on the list of pages, which is where a page is put back into autonomy.
+     *
+     * Reached from the diagram itself, because that is where the user finds out the page is left out -
+     * and a statement they cannot act on from where they are standing is half an answer.
+     */
     public void openAutonomyPagesMenu()
     {
         if (autonomyMenu == null) return;

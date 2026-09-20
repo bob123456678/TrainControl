@@ -208,10 +208,14 @@ public class AutonomyBanner extends JPanel
         // the answer.  Hidden unless something has been offered, so an ordinary message is unchanged.
         action.setFocusable(false);
         action.setVisible(false);
-        // BOLD 11, Adam's own call (2026-09-19), asked for after UIX-C3 raised this button's font.
-        // `docs/UI-standards.md` says buttons are bold 12; this one sits in a one-line strip whose
-        // message is smaller than a form's, and he wanted it a point down from the table.
-        action.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 11));
+        // THE STANDARD'S BUTTON FONT (UIX-C3, closed by Adam 2026-09-20: *"align the buttons to the
+        // standard, make them 12 bold"*).
+        //
+        // This was `PLAIN, 12` from 2026-08-17, two days before `docs/UI-standards.md` was written, so
+        // it was not wrong when it was made - which is why the finding was put to him rather than
+        // swept.  It was briefly bold 11 on 2026-09-19 while he looked at it; the ruling above settles
+        // it at the table's own value, so the strip needs no exception in the standard.
+        action.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
         action.setMargin(new java.awt.Insets(0, 10, 0, 10));
 
         right = new javax.swing.JPanel(
