@@ -81,11 +81,16 @@ public class testMassAssignLengths
     @Test
     public void testHowManySharedSquaresHisOwnMainPageAsksAbout() throws Exception
     {
-        support.LayoutSandbox sandbox = support.LayoutSandbox.open(
-            support.Scenario.folderFor("live-snapshot"));
+        // OPENED INSIDE THE TRY (TSX-B8, OB-111).  The open redirects the machine-global layout
+        // preference; anything throwing between it and the try - including a SkipException, which is
+        // not a failure at all - would leave that preference pointing at a folder under %TEMP%, which
+        // is the railway TrainControl opens next time it starts.
+        support.LayoutSandbox sandbox = null;
 
         try
         {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
             org.traincontrol.marklin.MarklinControlStation model =
                 org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
 
@@ -133,7 +138,7 @@ public class testMassAssignLengths
         }
         finally
         {
-            sandbox.close();
+            if (sandbox != null) sandbox.close();
         }
     }
 
