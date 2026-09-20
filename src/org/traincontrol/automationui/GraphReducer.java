@@ -1412,7 +1412,15 @@ public class GraphReducer
      * The location identifiers a step occupies.
      *
      * Normally the tile itself.  An overpass is identified per route, so its two levels are separate
-     * places.
+     * places - and so is a DOUBLE CURVE, and a feedback double curve, for the same reason (AUR-B1, 2026-09-19).
+     *
+     * **Two roads that never meet must not be one place.**  `TilePorts` gives a double curve `route(N, W)` and
+     * `route(E, S)`: two curves in opposite corners of the square, with no rail between them.  Keyed by the tile
+     * alone they became one location, so `deriveLocks` made the two curves rivals for the same track and a
+     * route over one refused a route over the other; once lengths are recorded, the tail walk and
+     * `whyABerthCannotHoldIt` then blamed the road the train is not on.  Adam has three of these on 1 - Main.
+     * A CROSSING is different and stays one place: its two roads cross, so a train on one really is on the
+     * other's metal.
      *
      * A paired portal is NOT unioned with its partner here, although a tunnel and its far end are one
      * piece of track drawn twice.  It does not need to be, and the reason is worth writing down because
@@ -1429,7 +1437,9 @@ public class GraphReducer
 
         LayoutDiagramComponent component = graph.getTiles().get(step.getTile());
 
-        if (component != null && component.getType() == componentType.OVERPASS)
+        if (component != null && (component.getType() == componentType.OVERPASS
+            || component.getType() == componentType.DOUBLE_CURVE
+            || component.getType() == componentType.FEEDBACK_DOUBLE_CURVE))
         {
             out.add(step.getTile().toString() + "/" + step.getRouteId());
         }

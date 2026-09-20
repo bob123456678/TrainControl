@@ -1874,4 +1874,61 @@ public class testAutonomyDiagramReducer
             "a station that refuses arrivals from every side is still offered as a destination, so "
             + "the refusal has been dropped rather than moved");
     }
+
+    /**
+     * The two roads of a double curve are separate places; a crossing's two roads are one (AUR-B1).
+     *
+     * `TilePorts` gives a double curve `route(N, W)` and `route(E, S)` - two curves in opposite corners with no rail
+     * between them - so a train on one is not on the other's metal, and they must not be rivals for the same track.
+     * Keyed by the tile alone they were: `deriveLocks` made the two curves lock each other, and once lengths are
+     * recorded the tail walk blamed the road the train is not on.  Adam has three of these on 1 - Main.
+     *
+     * The crossing is the control, and it is the other answer: its roads cross, so one place is right there.
+     *
+     * @throws IOException from the fixture
+     */
+    @Test
+    public void testTheTwoRoadsOfADoubleCurveAreSeparatePlaces() throws IOException
+    {
+        LayoutDiagram page = page("main", 8, 6);
+
+        // Road one, west to north through the double curve at 3,2.
+        feedback(page, 1, 2, 11);
+        straight(page, 2, 2);
+        add(page, componentType.DOUBLE_CURVE, 3, 2, 0);
+        straightNS(page, 3, 1);
+        feedbackNS(page, 3, 0, 12);
+
+        // Road two, east to south through the same square.
+        feedback(page, 5, 2, 13);
+        straight(page, 4, 2);
+        straightNS(page, 3, 3);
+        feedbackNS(page, 3, 4, 14);
+
+        GraphReducer reduced = reduce(graph(page), authored(new HashMap<>(), null, null));
+
+        java.util.Set<String> north = new java.util.LinkedHashSet<>();
+        java.util.Set<String> south = new java.util.LinkedHashSet<>();
+
+        for (ReducedEdge edge : reduced.getEdges())
+        {
+            for (GraphReducer.Place place : reduced.placesAlong(edge))
+            {
+                if (!place.getId().startsWith(key("main", 3, 2).toString())) continue;
+
+                if (edge.getStart().getY() <= 2 && edge.getEnd().getY() <= 2) north.add(place.getId());
+                else south.add(place.getId());
+            }
+        }
+
+        assertFalse(north.isEmpty(), "precondition: no leg runs over the double curve at all");
+        assertFalse(south.isEmpty(), "precondition: only one road of the double curve carries track");
+
+        for (String id : north)
+        {
+            assertFalse(south.contains(id),
+                "the two roads of the double curve share the place " + id + ", so a route over one locks the other"
+                + " and a train lying on one fouls the other - and they never touch");
+        }
+    }
 }
