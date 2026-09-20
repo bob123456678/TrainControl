@@ -87,17 +87,17 @@ Two neighbours worth the same glance while the file is open, though I did not tr
 
 | id | status | where |
 |---|---|---|
-| OP3-C1 | open | `TrainControlUI.java:918` |
-| OP3-C2 | open | `HomeStaging.tailKey` (`:2621-2686`) against `turnedByThePlan` (`:980-983`) |
-| OP3-C3 | open | `bash.exe.stackdump`, `cs2_sample_layout/config/autonomy/Main_bak.json`, `random_test_layout/**` - all added by `82828987` |
-| OP3-C4 | open | `test/core/testLockEdgesSurviveTheFile.java:291-303` |
-| OP3-C5 | open | `test/regression/testTheExportRetiresItsGrid.java:47-84` |
-| OP3-C6 | open | `test/regression/testCancelUndoesACustomizationCopy.java:49-84` |
-| OP3-C7 | open | `Point.toJSON` (`:1268`, `:1282`) against `AutonomyEditorPanel.buildArrivedFromMenu` (`:3359-3453`) and `pointOnTheLayout` (`:5093-5110`) |
-| OP3-C8 | open | the UIX-C3 status row in `2026-09-19-UIX-main-interface-review.md`, against `AutonomyBanner.java:211` |
-| OP3-C9 | open | `HomeStaging.java:2636-2638` against `HomeStaging.java:1362` |
-| OP3-C10 | open | `test/core/testAutonomyDiagramReducer.java`, `locksItsTwoRoads` |
-| OP3-C11 | open | `DiagramExport.render` - the `try` opens after the grid is built |
+| OP3-C1 | fixed 2026-09-20 - the sentence says the key has gone | `TrainControlUI.java:918` |
+| OP3-C2 | fixed 2026-09-20 - every moved train is keyed /turned or /straight | `HomeStaging.tailKey` (`:2621-2686`) against `turnedByThePlan` (`:980-983`) |
+| OP3-C3 | fixed 2026-09-20 - all seven untracked, files left on disk, .gitignore narrowed | `bash.exe.stackdump`, `cs2_sample_layout/config/autonomy/Main_bak.json`, `random_test_layout/**` - all added by `82828987` |
+| OP3-C4 | fixed 2026-09-20 - the side is set before the save is asked; proved by reverting the gate | `test/core/testLockEdgesSurviveTheFile.java:291-303` |
+| OP3-C5 | fixed 2026-09-20 - the export asserts it had captions to lose | `test/regression/testTheExportRetiresItsGrid.java:47-84` |
+| OP3-C6 | fixed 2026-09-20 - the triggers are asserted too | `test/regression/testCancelUndoesACustomizationCopy.java:49-84` |
+| OP3-C7 | fixed 2026-09-20 - the menu asks the running railway, pinned red-first | `Point.toJSON` (`:1268`, `:1282`) against `AutonomyEditorPanel.buildArrivedFromMenu` (`:3359-3453`) and `pointOnTheLayout` (`:5093-5110`) |
+| OP3-C8 | closed 2026-09-20 - Adam ruled: align the buttons to the standard, bold 12 | the UIX-C3 status row in `2026-09-19-UIX-main-interface-review.md`, against `AutonomyBanner.java:211` |
+| OP3-C9 | fixed 2026-09-20 - the comment says what the key actually spells | `HomeStaging.java:2636-2638` against `HomeStaging.java:1362` |
+| OP3-C10 | fixed 2026-09-20 - total over every pair of different roads; a double slip has four | `test/core/testAutonomyDiagramReducer.java`, `locksItsTwoRoads` |
+| OP3-C11 | fixed 2026-09-20 - the grid build is inside the bracket too | `DiagramExport.render` - the `try` opens after the grid is built |
 
 ### OP3-C1: a comment cites a key the same commit deleted
 

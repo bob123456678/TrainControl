@@ -1403,6 +1403,14 @@ public class testMassAssignLengths
 
             if (over < 2) continue;
 
+            // THE ENDPOINT TERM IS NOT ZERO HERE, which OP2-C5 supposed it was.
+            //
+            // Measured 2026-09-20 rather than reasoned about: `getTileLength(leg.getStart())` is 2 on
+            // this fixture, so the subtraction is doing work and the claim in the message can fail.
+            // The review read the leg as starting on a sensor, which is in no piece and so never
+            // measured; what a piece's length actually does is share itself over the piece's squares,
+            // and the square this leg starts on takes a share.  Recorded here so the next reader does
+            // not re-raise it.
             int expected = 4 * pieces + 3 * over - session.getStore().getTileLength(leg.getStart());
 
             assertEquals(leg.getLength(), expected,

@@ -268,18 +268,18 @@ cannot catch this: it builds the route with `conditions` = `null` and passes the
 | id | status | where |
 |---|---|---|
 | OP2-C1 | fixed 2026-09-19 - behaviour.md and the AMR-D1 row both name simAnnounce/simClearBehind; verified 2026-09-20 | RTX-C4: `behaviour.md` says `HomeStaging.snapshot` pulses the feedback. It reads it; the pulse is `Layout.simAnnounce` / `simClearBehind` |
-| OP2-C2 | open | AUS-C2: the sentence is chosen by a ternary duplicated in four places, against the one-builder rule the locomotive clear's own comment states - and no test runs either sentence |
+| OP2-C2 | fixed 2026-09-20 - one builder, and a test that runs the sentence | AUS-C2: the sentence is chosen by a ternary duplicated in four places, against the one-builder rule the locomotive clear's own comment states - and no test runs either sentence |
 | OP2-C3 | fixed 2026-09-19 - the javadoc says three tile types; verified 2026-09-20 | AUR-B1: `deriveLocks`' javadoc still says "The one exception is an overpass". There are three |
 | OP2-C4 | fixed 2026-09-19 - the crossings comment says which roads share metal and which do not; verified 2026-09-20 | AUR-B1 contradicts `sharedSquaresALengthRuleReads`, written the same day, about whether a double curve's two roads share metal |
-| OP2-C5 | open | VC2-C5: the figure-of-eight arithmetic's `- getTileLength(leg.getStart())` term is 0 in its fixture, so the convention the failure message names is not tested |
-| OP2-C6 | open | VC2-C3: the restore-counter test turns on wall-clock timing, which is the hazard VC2-C6 removed from two other tests in the next commit |
-| OP2-C7 | open | SVT-C1: `assertFalse(built != null && built.isValid())` passes for any invalidation, and `Layout.getLastError()` is never asserted |
-| OP2-C8 | open | VC2-C6: nothing records that the two focus checks ever ran, so a desktop that never gives focus turns both classes green while asking nothing |
-| OP2-C9 | open | GUX-B1: a RENAMED route is reported "gone", and save-as-new takes a new id that no route tile follows |
-| OP2-C10 | open | MKR-B1's test injects a page into `layoutDB` and never removes it |
-| OP2-C11 | open | VB2-C3: the rename test has no `finally`, so a failure leaves "HS renamed" in the shared locomotive database |
-| OP2-C12 | open | RTX-C2's message says "takes no train at all", which is true only where a road shares the approach, and never for a train with no length |
-| OP2-C13 | open | `rebindRouteTiles` is silent where `wireComponents` logs `layout.routeButtonMissingRoute` |
+| OP2-C5 | declined 2026-09-20 - measured, the term is 2 on that fixture and the claim can fail | VC2-C5: the figure-of-eight arithmetic's `- getTileLength(leg.getStart())` term is 0 in its fixture, so the convention the failure message names is not tested |
+| OP2-C6 | fixed 2026-09-20 - the window is measured and a slow machine skips | VC2-C3: the restore-counter test turns on wall-clock timing, which is the hazard VC2-C6 removed from two other tests in the next commit |
+| OP2-C7 | fixed 2026-09-20 - the refusal is asserted by its reason | SVT-C1: `assertFalse(built != null && built.isValid())` passes for any invalidation, and `Layout.getLastError()` is never asserted |
+| OP2-C8 | fixed 2026-09-20 - both classes have a floor | VC2-C6: nothing records that the two focus checks ever ran, so a desktop that never gives focus turns both classes green while asking nothing |
+| OP2-C9 | fixed 2026-09-20 - renamed is its own answer, and saves onto the route by id | GUX-B1: a RENAMED route is reported "gone", and save-as-new takes a new id that no route tile follows |
+| OP2-C10 | fixed 2026-09-20 - the injected page is removed again | MKR-B1's test injects a page into `layoutDB` and never removes it |
+| OP2-C11 | fixed 2026-09-20 - the shared rename is put back in a finally | VB2-C3: the rename test has no `finally`, so a failure leaves "HS renamed" in the shared locomotive database |
+| OP2-C12 | fixed 2026-09-20 - can refuse, not does, in the sentence and the javadoc | RTX-C2's message says "takes no train at all", which is true only where a road shares the approach, and never for a train with no length |
+| OP2-C13 | fixed 2026-09-20 - the re-bind logs what the wiring logs | `rebindRouteTiles` is silent where `wireComponents` logs `layout.routeButtonMissingRoute` |
 
 ### OP2-C1 - the behaviour document names the wrong site for the pulse
 

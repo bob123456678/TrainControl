@@ -236,6 +236,71 @@ public class testTheBulkClearSaysWhatCancelDoes
     }
 
     /**
+     * The two LENGTH clears carry their sentence on the menu too, and it is the editor's one (OP2-C2).
+     *
+     * **Nothing ran either sentence.**  AUS-C2 built the track-length and maximum pairs by copying the
+     * `page == null` choice into four places, and the commit said
+     * `testCancelUndoesAutonomyEdits.testCancelPutsTheLengthsBack` ran it - which it does not: that test
+     * calls `session.clearEveryTileLength()` and never goes near a sentence.  So a swapped pair of keys in
+     * one of the four would have shown a clear promising a Cancel on the surface that has none, and nothing
+     * would have said so.
+     *
+     * Asked of the built menu, like the locomotive claim above it, and of the same editor surface - where
+     * Cancel is real, so the sentence naming it is the true one here.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheLengthClearsCarryTheEditorsSentence() throws Exception
+    {
+        // ALL THREE CLEARS HAVE SOMETHING TO CLEAR.  A clear with nothing to do carries its "nothing to
+        // clear" notice instead of the warning, and a test that counted those would be counting the wrong
+        // sentence - which is what the first draft of this did.
+        TileKey measured = null;
+        TileKey limited = null;
+
+        for (TileKey square : session.getGraph().getTiles().keySet())
+        {
+            if (measured == null) { session.setTileLength(square, 5); measured = square; }
+            else if (limited == null && session.assignMaxTrainLength(square, 40)) limited = square;
+        }
+
+        session.rebuild();
+
+        assertFalse(session.tilesWithALength().isEmpty(),
+            "precondition: no square took a length, so the track-length clear has nothing to warn about");
+
+        assertFalse(session.tilesWithAMaxTrainLength().isEmpty(),
+            "precondition: no station took a maximum, so that clear has nothing to warn about");
+
+        assertFalse(session.tilesWithALocomotive().isEmpty(),
+            "precondition: no square holds a locomotive, so that clear has nothing to warn about");
+
+        final java.util.List<String> tips = new java.util.ArrayList<>();
+
+        SwingUtilities.invokeAndWait(() -> collect(
+            editor.getAutonomyPanel().buildBulkMenuForTest(), tips));
+
+        assertFalse(tips.isEmpty(), "the Bulk Tools menu has no items with tooltips at all");
+
+        int namingCancel = 0;
+
+        for (String tip : tips)
+        {
+            if (tip != null && tip.contains(I18n.t("ui.cancel"))) namingCancel++;
+        }
+
+        // THREE CLEARS, THREE SENTENCES THAT NAME CANCEL.  The locomotives, the track lengths and the
+        // station maxima: on this surface all three are undone by Cancel, so all three say so.  A pair of
+        // keys swapped in any of the four places that choose between the two sentences takes one of these
+        // away, which is the mistake the copied ternary made possible and nothing was watching for.
+        assertTrue(namingCancel >= 3,
+            "only " + namingCancel + " of this editor's bulk clears say what Cancel does, and there are"
+            + " three - the locomotives, the track lengths and the station maxima.  One of them is showing"
+            + " the track diagram's sentence, which promises the clear is already saved. Tooltips: " + tips);
+    }
+
+    /**
      * The track diagram's own right-click menu does not promise a Cancel it does not have (WKV-B1).
      *
      * The same Bulk Tools item is on the diagram's tile menu - this panel's menus served with no page - and

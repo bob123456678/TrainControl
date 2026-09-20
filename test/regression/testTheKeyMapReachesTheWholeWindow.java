@@ -341,7 +341,35 @@ public class testTheKeyMapReachesTheWholeWindow
             throw new org.testng.SkipException("this desktop would not give the keyboard to "
                 + on.getClass().getSimpleName() + ", so the key map cannot be asked about it here");
         }
+
+        FOCUSED.incrementAndGet();
     }
+
+    /**
+     * How many times this class got the keyboard where it needed it (OP2-C8).
+     *
+     * **A class where every claim skips reports green while asking nothing**, which is the SOP's "green
+     * is not no failures" in its quietest form: the skip message is honest about the one case, and the
+     * class as a whole still says the rule holds.  This counts the times the desktop cooperated, and
+     * the check below fails the class when the answer is never.
+     */
+    private static final java.util.concurrent.atomic.AtomicInteger FOCUSED =
+        new java.util.concurrent.atomic.AtomicInteger();
+
+    /**
+     * The floor: this desktop let at least one claim be asked.
+     */
+    @org.testng.annotations.AfterClass(alwaysRun = true)
+    public static void testSomethingWasActuallyAsked()
+    {
+        if (FOCUSED.get() == 0)
+        {
+            throw new AssertionError("this desktop never gave the keyboard where it was needed, so every"
+                + " claim in this class skipped and the class reported green having asked nothing"
+                + " (OP2-C8)");
+        }
+    }
+
 
 
     /**

@@ -63,7 +63,7 @@ Readers 2 and 3 need lengths. They arrive together with the measurement: SET-B2'
 |---|---|---|
 | AUR-C1 | fixed 2026-09-19 - assign clears, toJSON and fromJSON gate on an occupant | `Point.reserve` keeps the arrival side and road a file left on an EMPTY square (the AMR-C3 drop), so a route reserving that square walks a phantom tail for the reserving train; and `Point.toJSON` writes the orphaned side and road back on every save |
 | AUR-C2 | open - extends RTX-C2 | the crossing step of Mass Assign Lengths (SET-B2, today) is a third door into RTX-C2's state; at a double curve the refusal also names a road the train is not on (B1) |
-| AUR-C3 | open | `Layout.lastArrival` - the visit history `LEAST_RECENTLY_VISITED` ranks by - is not carried across the rebuild every setup gesture makes, so the preference restarts from "never visited" between runs |
+| AUR-C3 | fixed 2026-09-20 - carried across parseAuto, pinned red-first | `Layout.lastArrival` - the visit history `LEAST_RECENTLY_VISITED` ranks by - is not carried across the rebuild every setup gesture makes, so the preference restarts from "never visited" between runs |
 
 ### AUR-C1 - a reservation inherits a tail nobody has
 

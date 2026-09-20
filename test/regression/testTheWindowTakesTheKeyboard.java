@@ -456,6 +456,8 @@ public class testTheWindowTakesTheKeyboard
                     + " pane, so the state OB-170 describes cannot be set up here");
             }
 
+            FOCUSED.incrementAndGet();
+
             javax.swing.JButton before = (javax.swing.JButton) field(up.ui, "currentButton");
 
             // Whether the activation was DELIVERED, which is a separate question from what it did.
@@ -1020,5 +1022,30 @@ public class testTheWindowTakesTheKeyboard
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    /**
+     * How many times this class got the keyboard where it needed it (OP2-C8).
+     *
+     * **A class where every claim skips reports green while asking nothing**, which is the SOP's "green
+     * is not no failures" in its quietest form: the skip message is honest about the one case, and the
+     * class as a whole still says the rule holds.  This counts the times the desktop cooperated, and
+     * the check below fails the class when the answer is never.
+     */
+    private static final java.util.concurrent.atomic.AtomicInteger FOCUSED =
+        new java.util.concurrent.atomic.AtomicInteger();
+
+    /**
+     * The floor: this desktop let at least one claim be asked.
+     */
+    @org.testng.annotations.AfterClass(alwaysRun = true)
+    public static void testSomethingWasActuallyAsked()
+    {
+        if (FOCUSED.get() == 0)
+        {
+            throw new AssertionError("this desktop never gave the keyboard where it was needed, so every"
+                + " claim in this class skipped and the class reported green having asked nothing"
+                + " (OP2-C8)");
+        }
     }
 }

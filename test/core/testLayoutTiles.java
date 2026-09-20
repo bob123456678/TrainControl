@@ -275,6 +275,13 @@ public class testLayoutTiles
      *
      * @throws Exception from the event thread
      */
+    /**
+     * How long an accessory highlight is held for, as `LayoutLabel` holds it.
+     *
+     * Named here because the test above turns on the second drive landing inside it (OP2-C6).
+     */
+    private static final long HIGHLIGHT_HOLD_MS = 2250;
+
     @Test
     public void testASecondHighlightStopsTheFirstsRestore() throws Exception
     {
@@ -286,10 +293,31 @@ public class testLayoutTiles
 
         int before = label.accessoryRestores();
 
-        // THE SECOND DRIVE, well inside the first highlight's 2250 ms.
+        // THE SECOND DRIVE HAS TO LAND INSIDE THE FIRST HIGHLIGHT (OP2-C6).
+        //
+        // The hold is 2250 ms.  If getting here takes longer than that - `awaitHighlight` plus two
+        // `invokeAndWait` hops, on a machine running the whole battery - the first timer has already
+        // fired and been counted, and the assertion below sees two restores with the fix in place.
+        // That is a flake, and a flake in a class about timers is the worst kind: it reads as the
+        // defect it was written to catch.
+        //
+        // So the window is measured rather than assumed, and a machine too slow to make it says so and
+        // skips instead of failing about something it never tested.
+        long armed = System.currentTimeMillis();
+
         SwingUtilities.invokeAndWait(() -> label.updateImage(true));
 
         assertTrue(awaitHighlight(label), "precondition: the second highlight never went up");
+
+        long took = System.currentTimeMillis() - armed;
+
+        if (took >= HIGHLIGHT_HOLD_MS)
+        {
+            throw new org.testng.SkipException(
+                "this machine took " + took + " ms to put the second highlight up, and the first one's"
+                + " hold is only " + HIGHLIGHT_HOLD_MS + " ms - so the first restore has already fired"
+                + " and there is no superseded timer left to ask about");
+        }
 
         // Long enough for BOTH timers to have fired, if both were still armed.
         Thread.sleep(3200);

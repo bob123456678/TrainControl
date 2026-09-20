@@ -67,7 +67,7 @@ The picture itself is replaced earlier and unconditionally: `lastIcon = new Imag
 |---|---|---|
 | SVB-C1 | fixed - the timer nulls its field | `LayoutLabel.java:1033-1050`: the accessory highlight's timer never clears `accessoryHighlight`, so `isAccessoryHighlightOutstanding()` is true for ever after the first highlight |
 | SVB-C2 | fixed - the proposal door refuses too | `TrainControlUI.checkForRenameMenuItemActionPerformed`, `:26580-26700`: the fourth rename door has no `refuseWhileARouteDrivesIt` |
-| SVB-C3 | open - a lock, not a copy | `MarklinRoute.java:303-316`, `MarklinSimpleComponent.java:90`, `TrainControlUI.java:21956-21957`: "every walk takes a copy" is wider than the code, and the copy itself is not atomic |
+| SVB-C3 | fixed 2026-09-20 - the claim is narrowed to the truth; the one worker-thread reader already copies | `MarklinRoute.java:303-316`, `MarklinSimpleComponent.java:90`, `TrainControlUI.java:21956-21957`: "every walk takes a copy" is wider than the code, and the copy itself is not atomic |
 | SVB-C4 | fixed - the three javadocs reattached | three insertions anchored at the declaration orphaned a neighbour's javadoc or put one where javadoc will not read it: `RouteEditorFrame.java:440-466`, `TrainControlUI.java:5940-5980`, `MarklinRoute.java:303-316` |
 | SVB-C5 | fixed - the javadoc names the test that exists | `TrainControlUI.java:604-606`: the javadoc names a test that does not exist |
 | SVB-C6 | fixed - behaviour.md says the state half too | `behaviour.md:1735-1743`: the CS3-B2 paragraph records the display half of the limitation and not the state half |

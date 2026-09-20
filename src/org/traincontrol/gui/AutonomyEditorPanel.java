@@ -2258,8 +2258,7 @@ public class AutonomyEditorPanel extends JPanel
         clearLengths.setEnabled(measured > 0);
         // THE SENTENCE THE DIALOG WILL SHOW, whichever of the two that is (AUS-C2).
         clearLengths.setToolTipText(wrapped(measured > 0
-            ? I18n.f(page == null ? "autolayout.ui.confirmClearAllTrackLengthsAtOnce"
-                : "autolayout.ui.confirmClearAllTrackLengths", measured)
+            ? bulkClearWarning("autolayout.ui.confirmClearAllTrackLengths", measured)
             : I18n.t("autosetup.ui.infoNoTrackLengthsToClear")));
 
         bulk.add(clearLengths);
@@ -2274,8 +2273,7 @@ public class AutonomyEditorPanel extends JPanel
 
         clearMaxima.setEnabled(limited > 0);
         clearMaxima.setToolTipText(wrapped(limited > 0
-            ? I18n.f(page == null ? "autolayout.ui.confirmClearAllMaxTrainLengthsAtOnce"
-                : "autolayout.ui.confirmClearAllMaxTrainLengths", limited)
+            ? bulkClearWarning("autolayout.ui.confirmClearAllMaxTrainLengths", limited)
             : I18n.t("autosetup.ui.infoNoMaxTrainLengthsToClear")));
 
         bulk.add(clearMaxima);
@@ -9739,8 +9737,7 @@ public class AutonomyEditorPanel extends JPanel
         // saves as it goes, so there the old sentence is the true one.  Chosen the way `clearLocomotivesWarning`
         // chooses, for the same reason and by the same test (WK7-C2).
         if (JOptionPane.showOptionDialog(owner(),
-            I18n.f(page == null ? "autolayout.ui.confirmClearAllTrackLengthsAtOnce"
-                : "autolayout.ui.confirmClearAllTrackLengths", measured.size()),
+            bulkClearWarning("autolayout.ui.confirmClearAllTrackLengths", measured.size()),
             I18n.f("autolayout.ui.menuClearAllTrackLengths", measured.size()),
             JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
@@ -9779,8 +9776,7 @@ public class AutonomyEditorPanel extends JPanel
 
         // The same two sentences as the track-length clear beside it (AUS-C2).
         if (JOptionPane.showOptionDialog(owner(),
-            I18n.f(page == null ? "autolayout.ui.confirmClearAllMaxTrainLengthsAtOnce"
-                : "autolayout.ui.confirmClearAllMaxTrainLengths", limited.size()),
+            bulkClearWarning("autolayout.ui.confirmClearAllMaxTrainLengths", limited.size()),
             I18n.f("autolayout.ui.menuClearAllMaxTrainLengths", limited.size()),
             JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
@@ -9865,6 +9861,28 @@ public class AutonomyEditorPanel extends JPanel
         // operator has just cleared.  `clearAllPlacements`, its sibling three items along the
         // same menu, has ended in `placementChanged()` all along.
         setupChanged();
+    }
+
+    /**
+     * The sentence a bulk clear will show, for the surface this panel is serving (OP2-C2).
+     *
+     * **One builder, so the pair cannot drift.**  `clearLocomotivesWarning` below states the rule for its own
+     * pair - *"used by the confirmation AND by the menu item's tooltip, so the warning cannot be shown in one
+     * place and not the other"* - and AUS-C2 built the track-length and maximum pairs by copying the choice
+     * instead, into four places for two menu items.  Nothing in that shape stops a fifth copy, or a pair of
+     * keys swapped in one of them; the comment above the track-length tooltip already records that this pair
+     * had drifted once.
+     *
+     * The choice itself is the one both sentences turn on: a panel serving the track diagram has no page and
+     * saves as it goes, so the clear is immediate and says so; inside the editor it is undone by Cancel.
+     *
+     * @param key the message key for the editor's sentence, whose "AtOnce" sibling is the other one
+     * @param count how many squares the clear will touch
+     * @return the sentence, already translated
+     */
+    private String bulkClearWarning(String key, int count)
+    {
+        return I18n.f(page == null ? key + "AtOnce" : key, count);
     }
 
     /**

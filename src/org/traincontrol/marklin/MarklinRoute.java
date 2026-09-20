@@ -307,7 +307,19 @@ public class MarklinRoute extends Route
      */
     @Override
     /**
-     * EVERY WALK OF THIS COMMAND LIST TAKES A COPY FIRST (CS3-B1).
+     * EVERY WALK OF THIS COMMAND LIST OFF THE EVENT THREAD TAKES A COPY FIRST (CS3-B1, narrowed by SVB-C3).
+     *
+     * This said *"every walk"*, and several do not: `toJSON`, `toCSV`, `otherRouteRenamed`, `namesLocomotives`
+     * and `commandsDrive` walk the live list.  Every one of them is an event-thread caller, which is the same
+     * thread the edits run on, so none can be part-way along a list another thread is changing.  The one walk
+     * that is NOT on the event thread is the backup menu's `saveState`, and its reader takes a copy at
+     * `MarklinSimpleComponent.java:94`.
+     *
+     * The copy is not atomic either: `new ArrayList<>(list)` is `toArray()` under the hood, which walks a
+     * `LinkedList` with no modification check, so a removal landing inside it can shorten the copy.  The window
+     * went from seconds to microseconds, which is the whole of this fix's value; it did not go to zero, and
+     * closing it would mean locking the list on both sides - which is a bigger claim than the one this
+     * comment needs to make.
      *
      * `MarklinControlStation.deleteLoc` takes every command that drives the deleted locomotive out of every
      * route, through `Iterator.remove()`, from the event thread - while `execRoute` is part-way along the
