@@ -4753,6 +4753,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             listening[0] = true;
         }
 
+        // WHAT THE PANEL KNOWS IS REFRESHED BEFORE THE MENU IS BUILT (AUS-B1).
+        //
+        // This panel is built once per session and kept, and it learns which squares are runs - and which
+        // square speaks for each run - only when it refreshes, which it does after its OWN actions.  Nothing
+        // told it when the editor changed the railway underneath it: after a page was brought back into
+        // autonomy, the first right-click on a run there found no leader for the square and bound every item
+        // to the square itself, so Segment Length wrote the follower - the run then measured leader plus
+        // follower - and a direction choice one-wayed a single square of the run.  Refreshing here costs one
+        // cheap derivation per right-click and cannot go stale at all.
+        autonomyTileMenus.refresh();
+
         return autonomyTileMenus.buildTileMenu(tile, null);
     }
 

@@ -4524,4 +4524,39 @@ public class testEditorSurfaceRules
             "the diagram's Control+X / Control+V / Delete door no longer refreshes the marks, so a"
             + " train moved from the keyboard leaves its old squares greyed - which is OB-180 exactly");
     }
+
+    /**
+     * The track diagram's own autonomy menu refreshes before it binds anything to a square (AUS-B1).
+     *
+     * That panel is built once per session and kept.  It learns which squares belong to a run - and which square
+     * speaks for each run - only when it refreshes, and nothing told it when the EDITOR changed the railway: after a
+     * page was brought back into autonomy, the first right-click on a run there bound every item to the clicked
+     * square rather than the run's leader, so Segment Length wrote a follower and the run measured leader plus
+     * follower.  One gesture wide and self-correcting on the next click, which is why it went unnoticed.
+     *
+     * Asked of the source, because the panel is reached through a menu this suite cannot open without a display and
+     * the binding happens inside `buildTileMenu`: what has to hold is that the refresh comes first.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheDiagramMenuRefreshesBeforeItBinds() throws Exception
+    {
+        String ui = new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")), StandardCharsets.UTF_8);
+
+        String door = withoutComments(bodyOf(ui, "public javax.swing.JPopupMenu buildAutonomyTileMenu("));
+
+        int refreshes = door.indexOf("autonomyTileMenus.refresh()");
+        int builds = door.indexOf("autonomyTileMenus.buildTileMenu(");
+
+        assertTrue(refreshes >= 0,
+            "the diagram's autonomy menu is built without refreshing the panel first, so it binds a run to the"
+            + " square that was clicked rather than the square that speaks for the run (AUS-B1)");
+
+        assertTrue(builds >= 0, "the door no longer builds a tile menu at all, so the check above tests nothing");
+
+        assertTrue(refreshes < builds,
+            "the refresh comes after the menu is built, which is the same as not refreshing at all");
+    }
 }
