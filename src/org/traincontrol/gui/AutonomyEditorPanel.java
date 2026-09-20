@@ -9626,7 +9626,7 @@ public class AutonomyEditorPanel extends JPanel
         if (name != null && !name.trim().isEmpty()) return name;
 
         // AN UNNAMED SENSOR IS NAMED BY WHERE IT IS (AUS-C4), as a switch and a crossing already are.  The raw key
-        // - `1 - Main:18,10` - reads as a fault code in the middle of a sentence about a stretch of track.
+        // - the page name, a colon and two numbers - reads as a fault code in a sentence about a stretch of track.
         return I18n.f("autosetup.ui.sensorAtSquare", tile.getX() + "," + tile.getY());
     }
 
