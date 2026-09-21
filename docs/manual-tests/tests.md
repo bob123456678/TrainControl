@@ -37,12 +37,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-326](#mt-326) | 2026-09-07 | A declined setup edit survives quitting (a race, not a mode) | fixed unvalidated | ACC-B3 (split from MT-269) |
 | [MT-380](#mt-380) | 2026-09-13 | Autonomy can be set up by importing, from the menu, with nothing set up yet | fixed unvalidated | FR-007 |
 | [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
-| [MT-436](#mt-436) | 2026-09-15 | Control+N shows a station's name on the square under the pointer | fixed unvalidated | FR-086 |
-| [MT-437](#mt-437) | 2026-09-15 | What the measured route in holds, and which tier is bound by it | fixed unvalidated | FR-087 |
+| [MT-437](#mt-437) | 2026-09-15 | What the measured route in holds, and which tier is bound by it | needs test | FR-087 |
 | [MT-438](#mt-438) | 2026-09-15 | The tail question: a sensor at exactly the length, roads a train can drive, and a default | fixed unvalidated | OB-226, OB-227, FR-088 |
 | [MT-439](#mt-439) | 2026-09-15 | Why Not Moving? and Test a Path both follow Path Type | fixed unvalidated | OB-225 |
 | [MT-440](#mt-440) | 2026-09-15 | Return Home does not route a train over the tail of one it has just parked | fixed unvalidated | OB-228 |
-| [MT-441](#mt-441) | 2026-09-15 | 75 407 DB is offered RampDown and BottomSecondary from Tunnel, the long way round | fixed unvalidated | OB-229 |
 | [MT-442](#mt-442) | 2026-09-15 | Why Not Moving? says a terminus is in the way, not that no track leads there | fixed unvalidated | PTR-B1 (OB-229) |
 | [MT-443](#mt-443) | 2026-09-15 | Making a square no longer a station takes Unavailable While Occupied with it | fixed unvalidated | AMS-B2 |
 | [MT-444](#mt-444) | 2026-09-15 | Why Not Moving? on Manual gives a reason for a station the right-click menu leaves out | fixed unvalidated | AMR-B2 (OB-225) |
@@ -50,7 +48,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-446](#mt-446) | 2026-09-15 | After an edit declined at the start of a run, where the trains are is saved again | fixed unvalidated | AMS-B1 (MT-267) |
 | [MT-447](#mt-447) | 2026-09-15 | Unavailable While Occupied naming a station on an excluded page does not stop autonomy loading | fixed unvalidated | AMG-B1 |
 | [MT-448](#mt-448) | 2026-09-15 | No route goes round to another copy of the square it starts or ends at | fixed unvalidated | AMR-B1 |
-| [MT-449](#mt-449) | 2026-09-15 | Return Home does not turn a train that cannot reverse in the middle of a move | fixed unvalidated | AMV-B1 (MT-445) |
 | [MT-450](#mt-450) | 2026-09-15 | Return Home is not stopped by the sensor under a standing train's tail | fixed unvalidated | AMH-B2 |
 | [MT-451](#mt-451) | 2026-09-16 | Why Not Moving? gives the berth's own reason for a parking berth, not autonomy's preference | fixed unvalidated | AMR-C2 |
 | [MT-452](#mt-452) | 2026-09-16 | Loading a configuration that names a train you no longer have keeps the rest of it | fixed unvalidated | AMR-C3 |
@@ -62,7 +59,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-458](#mt-458) | 2026-09-19 | A negative maximum train length is refused, and one already stored can be cleared | fixed unvalidated | SET-B1 |
 | [MT-459](#mt-459) | 2026-09-19 | Mass Assign Lengths asks for crossings on their own, and each road counts them once | fixed unvalidated | SET-B2 |
 | [MT-460](#mt-460) | 2026-09-19 | Segment Length shows and writes what the whole run measures | fixed unvalidated | SET-B3 |
-| [MT-461](#mt-461) | 2026-09-19 | Closing the application asks about unsaved work in the route editor | fixed unvalidated | UIX-B1 |
 | [MT-462](#mt-462) | 2026-09-19 | A switch thrown during a route highlight is drawn in its real position | fixed unvalidated | UIX-B2 |
 | [MT-463](#mt-463) | 2026-09-19 | Return Home moves a train the railway had standing on a terminus | fixed unvalidated | RTX-B1 |
 | [MT-464](#mt-464) | 2026-09-19 | A locomotive cannot be deleted or renamed while a route that drives it is running, and the route finishes | fixed unvalidated | CS3-B1 |
@@ -70,10 +66,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-466](#mt-466) | 2026-09-19 | Cancel on the function editor undoes a Copy Customizations | fixed unvalidated | GUX-C3 |
 | [MT-467](#mt-467) | 2026-09-19 | Turning a local route's automatic execution on or off does not wait for the Central Station | fixed unvalidated | GUX-C5 |
 | [MT-468](#mt-468) | 2026-09-19 | Every screen still finds its text after 239 unused message keys were removed | fixed unvalidated | UIX-C4 |
-| [MT-469](#mt-469) | 2026-09-19 | The capture-target tooltip and the arrival-side label read correctly | fixed unvalidated | GUX-C2, UIX-C3 |
 
-Everything else - 425 of 469 - needs nothing from you unless the area changes again:
-374 **fixed validated** and 51 **superseded**.
+Everything else - 430 of 469 - needs nothing from you unless the area changes again:
+379 **fixed validated** and 51 **superseded**.
 
 ---
 
