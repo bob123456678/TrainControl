@@ -849,8 +849,9 @@ public class testSwitchingToACentralStationLayout
         // 46 on 2026-09-16: regression.testAWalkMovesTheFlashOn (OB-231), which opens a sandbox first.
         // 49 on 2026-09-19, three at once, each opening a sandbox first: the toolbar buttons
         // (UIX-C5/GUX-C1), the cancelled function copy (GUX-C3) and the export's grid (GUX-C4).
-        assertEquals(checked, 49,
-            checked + " test classes were found to build a window, not the 49 there were when this "
+        // 50 on 2026-09-20: the declined setup edit (MT-267, MT-326), which opens a sandbox first too.
+        assertEquals(checked, 50,
+            checked + " test classes were found to build a window, not the 50 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating - and "
             + "nothing else in this method is hidden by that any more, because the checks that "
