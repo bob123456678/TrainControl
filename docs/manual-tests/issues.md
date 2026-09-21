@@ -1751,6 +1751,52 @@ road but is built in code rather than on tiles.
 Low, because what it changes today is how FAR a tail is claimed rather than whether the claim is right,
 and it errs towards claiming less.
 
+### OB-242 - 2026-09-21 - a covered-track mark outlives the train that justified it
+
+**Kind:** bug  
+**Raised from:** MT-438, measured 2026-09-21  
+**Filed:** 2026-09-21  
+
+**Adam, MT-438, 2026-09-21:** *"75 407 DB's tail was there earlier, but it never crossed the
+switches.  it departed, so the tail would be gone as of the time of this screenshot."*
+
+So the orange mark outlived the train that justified it. The claim was true when it was made.
+
+**What the screenshot says, read off it as data.** On its true 30-pixel grid the TRAIN_MARK line is six
+tiles: `10,12 11,12 12,12 13,12 14,12 14,11` - the first places of the edge `BottomMainAPre ->
+RampDown`, stopping at switch 99. Everything else orange in that image is a badge (uniform 134-pixel
+blobs; parking points autonomy leaves alone).
+
+**The state that produces exactly those six**: searched, not assumed - of 1,590 placements on
+`live-snapshot` (every point, every arrival side, lengths 1 to 6), exactly ONE matches: a three-unit
+train at `BottomMainAPre (eastbound)` recorded as arrived from the east, with 13,12 and the two
+switches measured at one unit each so three units land at 14,11.
+
+**What is already ruled out, by reading:**
+
+- the refresh IS asked as a train moves - `Layout` fires its callbacks at each milestone,
+  `DiagramMonitor.markDirty` sets the flag, the driver's tick calls `updateVisiblePoints` ->
+  `refreshCoveredTrack`;
+- the coalescing hole that would drop the last ask of a run is closed, in `workOutCoveredTrack`'s
+  `finally`, with a comment describing that exact case;
+- `repaintTheWashWhereItChanged` repaints the symmetric difference, so a set that became empty should
+  have repainted all six squares.
+
+**Two candidates, and one gesture tells them apart.** With the stale orange on screen, switch pages and
+back (or resize):
+
+- **it goes** - the covered SET was already correct and the fault is the repaint reaching those labels.
+  The suspect is `DiagramTileRegistry` handing back labels a grid rebuild has replaced, which is the
+  OB-109 / MT-273 area: a rebuild that does not hide itself also does not re-register.
+- **it stays** - the model still claims the tail, so a Point still lists the locomotive as its
+  occupant. The suspect is `Point.assign`, the RESERVATION door: it puts a locomotive on a point
+  without sweeping it off anywhere else - *"reserving sets the locomotive exactly as arriving does"* -
+  and `walkStandingTrains` asks only `getCurrentLocomotive()`, so it cannot tell a reservation from a
+  standing train.
+
+Cheap either way once the answer is known. The second would also mean `isPathClear` refuses that track
+while nothing is on it, which is the more serious half.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
