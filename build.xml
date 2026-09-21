@@ -389,6 +389,7 @@
         <test-one-class class="testTheExportRetiresItsGrid"/>
         <test-one-class class="testTheRefusalToStartSaysWhichThing"/>
         <test-one-class class="testASecondImportFillsGapsAndDoesNotOverwrite"/>
+        <test-one-class class="testADeclinedSetupEditSaysSoAndSurvivesTheExit"/>
         <test-one-class class="testTheMenuShowsWhereALinkGoes"/>
         <test-one-class class="testTheAutonomyEditorKnowsWhichSquare"/>
         <test-one-class class="testTheDiagramPrintsItsCoordinates"/>

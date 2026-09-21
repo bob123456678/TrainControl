@@ -30,11 +30,11 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-244](#mt-244) | 2026-08-31 | The Auto tab on a layout that has only an autonomy.json | fixed unvalidated | RGN-A2 |
 | [MT-247](#mt-247) | 2026-09-01 | A refused route still cuts the power at the two human doors | fixed unvalidated | FX2-2, SVN-A4 |
 | [MT-256](#mt-256) | 2026-09-02 | Switching a signal by hand while a train stands at its platform | fixed unvalidated | SVN-B16, WK3-B1 |
-| [MT-263](#mt-263) | 2026-09-03 | The three refusals, when the graph will not build | needs test | V31-C1, V32-C1, DY3-C7 |
-| [MT-267](#mt-267) | 2026-09-04 | A setup edit made the instant autonomy starts | needs test | VD11-C8 |
+| [MT-263](#mt-263) | 2026-09-03 | The three refusals, when the graph will not build | fixed unvalidated | V31-C1, V32-C1, DY3-C7 |
+| [MT-267](#mt-267) | 2026-09-04 | A setup edit made the instant autonomy starts | fixed unvalidated | VD11-C8 |
 | [MT-291](#mt-291) | 2026-09-07 | The Grid tooltip, in a language you read | needs test | FR-057 (split from MT-274) |
-| [MT-298](#mt-298) | 2026-09-07 | A second import fills gaps and does not overwrite | needs test | IPR-A1 (split from MT-243) |
-| [MT-326](#mt-326) | 2026-09-07 | A declined setup edit survives quitting | needs test | ACC-B3 (split from MT-269) |
+| [MT-298](#mt-298) | 2026-09-07 | A second import fills gaps and does not overwrite | fixed unvalidated | IPR-A1 (split from MT-243) |
+| [MT-326](#mt-326) | 2026-09-07 | A declined setup edit survives quitting (a race, not a mode) | fixed unvalidated | ACC-B3 (split from MT-269) |
 | [MT-380](#mt-380) | 2026-09-13 | Autonomy can be set up by importing, from the menu, with nothing set up yet | fixed unvalidated | FR-007 |
 | [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
 | [MT-436](#mt-436) | 2026-09-15 | Control+N shows a station's name on the square under the pointer | fixed unvalidated | FR-086 |
@@ -155,7 +155,7 @@ What this test is still about is the NOTICES: one per stretch between a switch a
 
 ### MT-263 - 2026-09-03 - The three refusals, when the graph will not build
 
-**Disposition:** needs test
+**Disposition:** fixed unvalidated
 **From:** V31-C1, V32-C1, DY3-C7
 
 **Written:** 2026-09-03
@@ -182,6 +182,12 @@ scissors crossing, or two included pages sharing an s88, is the usual way in.
 5. **And with three blocking problems**, the start door should say three, not "one thing".
 
 *Run against v3_0_0_rc8 or later.*
+
+**Claude, 2026-09-20.**
+
+Automated, as you asked twice over. `regression.testTheRefusalToStartSaysWhichThing` holds the rule all three doors now share, and it found two of them still wrong: the greyed Start item's tooltip and the scripting API's exception chose their wording from the error count alone, so with three blocking problems - where that count is zero, because nothing turned the problem into a finding - both read "one thing has to be dealt with first". That is your step 5, red at two of the three doors. The wording and the counting live in one place now, and the test reads the three call sites so it cannot drift back.
+
+**What is left for your hands:** steps 2 and 3 as gestures - that the greyed item really is greyed, and that pressing Start really shows that sentence. The words themselves are pinned.
 
 ---
 
@@ -324,7 +330,7 @@ would look exactly the same.
 
 ### MT-267 - 2026-09-04 - A setup edit made the instant autonomy starts
 
-**Disposition:** needs test
+**Disposition:** fixed unvalidated
 **From:** VD11-C8
 
 **Written:** 2026-09-04
@@ -356,6 +362,14 @@ reintroducing to save a message.
    top of the warning.
 
 *Run against v3_0_0_rc12 or later.*
+
+**Claude, 2026-09-20.**
+
+Automated, with MT-326. Your step 2 said this is deliberately hard to hit and you may never manage it, which is a test asking to be written rather than run.
+
+`regression.testADeclinedSetupEditSaysSoAndSurvivesTheExit.testTheRefusedRebuildSaysSo` asserts the sentence is logged when a rebuild is refused because the railway is busy, and its two siblings are the controls: the courtesy door says nothing, and an ordinary rebuild says nothing.
+
+**What is left for your hands:** step 4 - that editing the setup with autonomy running normally does not give you a second message on top of the warning you already get.
 
 ---
 
@@ -16629,7 +16643,7 @@ The class builds and enables a route of its own rather than relying on the fixtu
 
 ### MT-298 - 2026-09-07 - A second import fills gaps and does not overwrite
 
-**Disposition:** needs test
+**Disposition:** fixed unvalidated
 **From:** IPR-A1 (split from MT-243)
 
 **Written:** 2026-09-07
@@ -16645,6 +16659,14 @@ The class builds and enables a route of its own rather than relying on the fixtu
 **Expected**
 
 Your change survives. The import fills what is missing; it does not replace what is there.
+
+**Claude, 2026-09-20.**
+
+Automated. `core.testASecondImportFillsGapsAndDoesNotOverwrite` imports your own 2.7.4c file from the frozen snapshot, changes a station's maximum by hand between the two imports, and asserts the change survives - with the measured lengths and the station names checked too.
+
+It took two goes to make it mean anything: the first fixture picked a square the FILE says nothing about, so the carry skipped it either way and turning gap-filling into overwriting still passed. It now picks a square the file has an opinion about, and that mutation goes red.
+
+**What is left for your hands:** step 1 as a gesture - that the Autonomy menu's import item reaches this at all.
 
 ---
 
@@ -17644,9 +17666,9 @@ no idea what this is talking about, re-file as a clear test if needed, otherwise
 
 <a id="mt-326"></a>
 
-### MT-326 - 2026-09-07 - A declined setup edit survives quitting
+### MT-326 - 2026-09-07 - A declined setup edit survives quitting (a race, not a mode)
 
-**Disposition:** needs test
+**Disposition:** fixed unvalidated
 **From:** ACC-B3 (split from MT-269)
 
 **Written:** 2026-09-07
@@ -17692,6 +17714,14 @@ What the fix does is make the message's second half true. The save on the way ou
 OK, run the test on your end, then close this if green.
 
 *Run against commit ac960047, build\classes, compiled 12 Sep 10:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-20.**
+
+Automated, with MT-267, and your objection was right: the entry was badly written. Autonomy is not editable while running - this is a race, not a mode, and the entry now reads that way where the test names it.
+
+`regression.testADeclinedSetupEditSaysSoAndSurvivesTheExit` reaches the state without racing anything: `isAutonomyBusy()` answers true for a staging flow as well as a running layout, so the consequence can be asserted directly. It holds all three cases - the refused rebuild records itself so the exit save is skipped, a close carrying no edit records nothing (OPV-C5), and an ordinary rebuild records nothing at all. Removing the record makes it red.
+
+**What is left for your hands:** nothing that a railway is needed for.
 
 ---
 

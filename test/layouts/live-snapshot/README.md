@@ -76,6 +76,7 @@ before anything reads it, so the checked-in fixture is never written to either.
 - `core.testACompulsoryTurnIsNotAQuestion`
 - `core.testMassAssignLengths`
 - `core.testASecondImportFillsGapsAndDoesNotOverwrite`
+- `regression.testADeclinedSetupEditSaysSoAndSurvivesTheExit`
 - `regression.testTheArrowsKeepTheirAim`
 - `regression.testAPlacedTrainRecordsWhereItCameFrom`
 - `core.testAPasteDoesNotTurnTheTrainRound`
