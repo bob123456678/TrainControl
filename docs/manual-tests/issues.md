@@ -1797,6 +1797,61 @@ back (or resize):
 Cheap either way once the answer is known. The second would also mean `isPathClear` refuses that track
 while nothing is on it, which is the more serious half.
 
+### OB-243 - 2026-09-21 - the tail walk picks one of several same-side roads by list order
+
+**Kind:** bug  
+**Raised from:** MT-438, measured 2026-09-21  
+**Filed:** 2026-09-21  
+
+**Adam, MT-438, 2026-09-21:** *"coloring switch 99 and 100 is still an error regardless"* and *"why
+is the tail from bottommainapre to bottommaina not orange.  it's almost as if you are shifting the
+location of the train"*.
+
+Both sentences have one cause, and it is measured.
+
+**Four roads leave `BottomMainAPre (eastbound)` on side E, and they agree for five tiles:**
+
+| road | first places |
+|---|---|
+| -> BottomCrossover (northbound) | 10,12 11,12 12,12 13,12 14,12 **14,11** 15,11 |
+| -> BottomMainA (eastbound) | 10,12 11,12 12,12 13,12 14,12 **15,12** 16,12 |
+| -> RampDown (northbound) | 10,12 11,12 12,12 13,12 14,12 **14,11** 15,11 |
+| -> RampDown (northbound, reverse) | same |
+
+Every edge that ARRIVES at that point comes in on side W (from Tunnel and the three Tunnel parks). So
+with `arrivedFrom = E` no arriving edge matches, and `walkOneTail` falls through to *"The other copy is
+still taken when there is no arriving one"* - which here is not a copy of anything, but one of four
+different roads. It takes the FIRST in `getNeighborsAndIncoming` order: `-> BottomCrossover`.
+
+Measured, three units, no road recorded: claimed `BottomMainAPre -> BottomCrossover`, painted
+`10,12 11,12 12,12 13,12 14,12 14,11` - which is Adam's screenshot exactly.
+
+**So both of his observations are the same fault.** The switches are coloured because the road picked
+turns up at them; the road to BottomMainA is NOT coloured past the divergence because that is not the
+road picked; and the picture describes a train that came from BottomCrossover rather than from
+BottomMainA, which is what *"shifting the location of the train"* means.
+
+**This supersedes what I wrote earlier.** I called that claim true-when-made. It was not: it was the
+wrong road from the start, and the staleness (OB-242) is a second, separate fault on top of it.
+
+**Two remedies, and the choice is Adam's because it is his over-claim/under-claim trade.**
+
+- **(a) Claim what they agree on.** All four roads share the first five tiles, so the tail is CERTAIN
+  there and unknowable beyond; claim the common prefix and stop at the divergence. This gives exactly
+  the picture he expects - orange along row 12, nothing at 14,11 - and protects the track that really
+  is covered. It needs a cap on how far a claim reaches into an edge, which the `Edge -> Locomotive`
+  map has no room for today; `isPathClear` already narrows by places, so the reader side exists.
+- **(b) Claim nothing when the side is ambiguous.** One line, no model change: where more than one
+  distinct neighbour matches the side and the recorded road does not resolve it, stop - the same
+  reasoning the fork rule already uses one hop later. Never paints a wrong road; gives up the five
+  tiles that really are covered, which is the direction that lets another train onto occupied track.
+
+I lean to (a) and would build it behind the fork rule's own sentence. Nothing is changed until he says.
+
+**What holds it either way**: a fixture where two roads leave one square on the same side and diverge
+after a known number of tiles. `single-switch` has the shape (Approach's two arms), so no new scenario
+is needed.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
