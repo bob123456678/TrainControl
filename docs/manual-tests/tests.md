@@ -22945,7 +22945,7 @@ Found by the wide autonomy review, and your ruling on it: *"drop the train and k
 - **Tunnel** is empty.  The other three trains are where the file puts them: 2-8-4 3505 SP at TopMainR1, EN57-947 at TopMainR2Inter, EN57-203 at TopMainR1Inter.
 - The log says: *"Locomotive MT-452 phantom (not in your database) is standing at Tunnel but is not in the database.  The placement has been removed."*
 
-*What this is:* AMR-C3.  `core.testHomeStaging.testAPlacementForALocomotiveNotInTheDatabaseDropsOnlyThePlacement`.  Seen red first - *"Auto layout error: Locomotive LD phantom, sold years ago does not exist in database"*, with the whole configuration invalid.
+*What this is:* AMR-C3.  `core.testHomeStaging.testAPlacementForALocomotiveNotInTheDatabaseDropsOnlyThePlacement`.  Seen red first - *"Auto layout error: Locomotive LD phantom, sold years ago does not exist in database"*, with the whole configuration invalid.  **The log sentence is now asserted there too** (2026-09-20): it was the one half of this entry a test did not hold, so all that is left for the railway is that the import gesture itself works.
 
 #### Comments
 

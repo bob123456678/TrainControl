@@ -1695,7 +1695,57 @@ public class testHomeStaging
     @Test
     public void testAPlacementForALocomotiveNotInTheDatabaseDropsOnlyThePlacement() throws Exception
     {
-        model.parseAuto(aPlacementForAPhantom());
+        // AND THE LINE THE OPERATOR READS, which was MT-452's only unautomated half.
+        //
+        // The drop is silent unless it says so - that is the whole of Adam's ruling, *"drop the train and
+        // keep the rest"*, being survivable - and the sentence was checked by hand alone.  Its sibling
+        // `testALockEdgeNamingMissingTrackIsDroppedLoudly` already listens this way.
+        final List<String> heard = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        java.util.logging.Handler ear = new java.util.logging.Handler()
+        {
+            @Override
+            public void publish(java.util.logging.LogRecord record)
+            {
+                heard.add(record.getMessage());
+            }
+
+            @Override
+            public void flush()
+            {
+            }
+
+            @Override
+            public void close()
+            {
+            }
+        };
+
+        java.util.logging.Logger modelLog =
+            java.util.logging.Logger.getLogger(org.traincontrol.marklin.MarklinControlStation.class.getName());
+
+        modelLog.addHandler(ear);
+
+        try
+        {
+            model.parseAuto(aPlacementForAPhantom());
+        }
+        finally
+        {
+            modelLog.removeHandler(ear);
+        }
+
+        boolean said = false;
+
+        for (String line : heard)
+        {
+            if (line != null && line.contains("is not in the database")
+                && line.contains("placement has been removed")) said = true;
+        }
+
+        assertTrue(said,
+            "the placement was dropped without a word, so the operator's file quietly stops matching his"
+            + " railway and nothing tells him which train went.  Heard: " + heard);
 
         Layout layout = model.getAutoLayout();
 
