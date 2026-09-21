@@ -23548,7 +23548,8 @@ From the 2026-09-19 review round, fixed the same day.  Copy Customizations write
 
 **Steps**
 
-1. Find a locomotive with customized functions and right-click it, then **Copy**.
+1. Find a locomotive with customized functions **and at least one custom function icon** - the icon is
+   the half this test did not ask about until 2026-09-21 - and right-click it, then **Copy**.
 2. Right-click a DIFFERENT locomotive with ordinary functions, pick one of its function buttons and choose **Edit**.
 3. Press **Copy customizations from ...**, and look at the function list it now shows.
 4. Press **Cancel**.
@@ -23559,6 +23560,10 @@ From the 2026-09-19 review round, fixed the same day.  Copy Customizations write
 **Expected**
 
 - The panel shows the copied functions as soon as the button is pressed - the preview is honest.
+- **The source's custom ICONS arrive with its function types** (your note of 2026-09-21).  A source
+  whose F0 carries a custom icon gives the target that icon on F0; icons the target had of its own are
+  gone, because a copy is a copy rather than a merge.  Until 2026-09-21 only the types were copied, so
+  every button's picture changed and the one real customization did not arrive.
 - After **Cancel** the locomotive has its own functions and icons back, exactly as before the dialog was opened.
 - After **OK** it keeps the copied ones.
 - The slot ticks are put back by Cancel as they always were, and the copy is put back with them.
@@ -23572,6 +23577,10 @@ From the 2026-09-19 review round, fixed the same day.  Copy Customizations write
 Does not work- all icons are cleared (source locomotive only had f0 with an icon), but the one customized icon on f0 is not loaded on the target loc.
 
 *Run against commit d8e2b3f7, build\classes, compiled 21 Sep 07:55 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-21.**
+
+Both halves of what you saw come from one omission, and it is fixed. The copy wrote the source's function TYPES, triggers and custom flag and never read the local image URLs - so the one thing you wanted carried was not, while writing the types changed which standard icon every other button draws, which is the 'all icons are cleared' half. There is one statement of what a customization IS now: Locomotive.Customizations, captured and applied as a value, so the copy and the Cancel that undoes it cannot disagree about it again - they were three parallel fields and three assignments, and the icons were in neither list. Copy Customizations is applyCustomizations(source.capture()); Cancel is applyCustomizations of what was captured first. Two details worth knowing: the map is copied rather than shared, because setLocalFunctionImageURLs keeps the reference it is handed and two locomotives sharing one map would follow each other's edits; and the custom flag is only written back when the answer would otherwise be wrong, because isCustomFunctions is DERIVED - any custom icon makes it true whatever the flag says - so writing it unconditionally would mark a locomotive customized that was only ever customized by its icons. core.testACopiedCustomizationBringsTheIcons holds three claims: the copy brings the icon and drops the target's own, Cancel puts the target's own back and takes the copied one away, and the two never share a map. The mutation - drop the icon line from applyCustomizations - reddens two of the three. core.testLocomotive and regression.testCancelUndoesACustomizationCopy are green. One fixture lesson recorded in the test: the first draft put the target's icon on F8, which setLocalFunctionImageURL silently refuses above numF, so the claim failed against code that was right.
 
 ---
 
@@ -23643,7 +23652,7 @@ From the 2026-09-19 review round, finished the next day.  Keys in all eight lang
 
 ### MT-469 - 2026-09-19 - The capture-target tooltip and the arrival-side label read correctly
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** GUX-C2, UIX-C3
 
 **Written:** 2026-09-19

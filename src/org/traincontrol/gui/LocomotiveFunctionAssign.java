@@ -54,19 +54,14 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
     String customIconPath;
     
     /**
-     * The function types Copy Customizations overwrote, or null if it was never pressed (GUX-C3).
+     * What Copy Customizations overwrote, or null if it was never pressed (GUX-C3, MT-466).
+     *
+     * One value rather than the three fields this was: the types, the triggers and the custom flag
+     * were remembered and put back one by one, and the custom ICONS - the other half of what the
+     * button copies - were in neither list.  `Locomotive.Customizations` is now the single statement
+     * of what a customization is, so the copy and this undo cannot disagree again.
      */
-    private int[] typesBeforeACopy;
-
-    /**
-     * The function triggers it overwrote.
-     */
-    private int[] triggersBeforeACopy;
-
-    /**
-     * Whether the locomotive already counted as customized before it was pressed.
-     */
-    private boolean customBeforeACopy;
+    private Locomotive.Customizations beforeACopy;
 
     /**
      * Creates new form LocomotiveFunctionAssign
@@ -292,15 +287,9 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
      */
     private void rememberBeforeACopy()
     {
-        if (this.typesBeforeACopy != null) return;
+        if (this.beforeACopy != null) return;
 
-        this.typesBeforeACopy = java.util.Arrays.copyOf(
-            this.loc.getFunctionTypes(), this.loc.getFunctionTypes().length);
-
-        this.triggersBeforeACopy = java.util.Arrays.copyOf(
-            this.loc.getFunctionTriggerTypes(), this.loc.getFunctionTriggerTypes().length);
-
-        this.customBeforeACopy = this.loc.isCustomFunctions();
+        this.beforeACopy = this.loc.captureCustomizations();
     }
 
     /**
@@ -311,13 +300,11 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
      */
     public void undoCopiedCustomizations()
     {
-        if (this.typesBeforeACopy == null) return;
+        if (this.beforeACopy == null) return;
 
-        this.loc.setFunctionTypes(this.typesBeforeACopy, this.triggersBeforeACopy);
-        this.loc.setCustomFunctions(this.customBeforeACopy);
+        this.loc.applyCustomizations(this.beforeACopy);
 
-        this.typesBeforeACopy = null;
-        this.triggersBeforeACopy = null;
+        this.beforeACopy = null;
     }
 
     /**
@@ -684,11 +671,20 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         
         if (copyFrom != null)
         {
-            // WHAT THE COPY IS ABOUT TO OVERWRITE, so that Cancel can put it back (GUX-C3).
+            // WHAT THE COPY IS ABOUT TO OVERWRITE, so that Cancel can put it back (GUX-C3), icons
+            // included since MT-466.
             rememberBeforeACopy();
 
-            this.loc.setFunctionTypes(copyFrom.getFunctionTypes(), copyFrom.getFunctionTriggerTypes());
+            // THE ICONS AS WELL AS THE TYPES (MT-466).  This wrote the types and set the flag, so a
+            // source locomotive whose F0 carried a custom icon copied everything about F0 except the
+            // icon - while the type change altered every other button's picture.
+            this.loc.copyCustomizationsFrom(copyFrom);
+
+            // Kept though `copyCustomizationsFrom` copies the source's flag: a source that is not
+            // itself marked customized still leaves this one customized, because it now carries
+            // somebody else's functions.
             this.loc.setCustomFunctions(true);
+
             parent.repaintLoc(true, null);
 
             updateFNumber(this.fNo.getSelectedIndex()); 

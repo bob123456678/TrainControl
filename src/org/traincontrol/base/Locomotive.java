@@ -1528,6 +1528,112 @@ public abstract class Locomotive
         return new SimpleDateFormat("yyyy-MM-dd").format(ts);
     }
     
+    /**
+     * Everything "Copy Customizations" means, as one value (MT-466).
+     *
+     * **A customization is the function types AND the custom icons, and the copy carried only the
+     * first half.**  Adam, 2026-09-21, having copied from a locomotive whose F0 carried an icon:
+     * *"all icons are cleared (source locomotive only had f0 with an icon), but the one customized
+     * icon on f0 is not loaded on the target loc."*  Both halves of what he saw come from the same
+     * omission: writing the source's function TYPES changes which standard icon every button draws -
+     * so the target's icons all change - while the one thing he actually wanted carried, the local
+     * image on F0, was never read.
+     *
+     * Captured and applied as a value so that the copy and the UNDO cannot come to disagree about
+     * what a customization is: `copyCustomizationsFrom` is `applyCustomizations(capture())`, and the
+     * dialog's Cancel is `applyCustomizations` of what it captured first.  They were three parallel
+     * fields and three assignments before, which is how the icons came to be in neither.
+     */
+    public static final class Customizations
+    {
+        private final int[] types;
+
+        private final int[] triggers;
+
+        private final boolean custom;
+
+        private final java.util.Map<Integer, String> icons;
+
+        private Customizations(int[] types, int[] triggers, boolean custom,
+            java.util.Map<Integer, String> icons)
+        {
+            this.types = types;
+            this.triggers = triggers;
+            this.custom = custom;
+            this.icons = icons;
+        }
+
+        /**
+         * @return the custom icon paths, by function number
+         */
+        public java.util.Map<Integer, String> getIcons()
+        {
+            return java.util.Collections.unmodifiableMap(this.icons);
+        }
+
+        /**
+         * @return the function types
+         */
+        public int[] getTypes()
+        {
+            return Arrays.copyOf(this.types, this.types.length);
+        }
+    }
+
+    /**
+     * What this locomotive's customizations are right now, detached from it.
+     *
+     * COPIES, not the live arrays and map.  `setLocalFunctionImageURLs` stores the map it is given by
+     * reference, so a snapshot holding the live one would follow every later edit - and a Cancel would
+     * then restore the state it was cancelling.
+     *
+     * @return the snapshot
+     */
+    public Customizations captureCustomizations()
+    {
+        return new Customizations(
+            Arrays.copyOf(this.getFunctionTypes(), this.getFunctionTypes().length),
+            Arrays.copyOf(this.getFunctionTriggerTypes(), this.getFunctionTriggerTypes().length),
+            this.isCustomFunctions(),
+            new java.util.HashMap<>(this.getLocalFunctionImageURLs()));
+    }
+
+    /**
+     * Makes this locomotive's customizations the ones in a snapshot.
+     *
+     * @param was the snapshot, or null to do nothing
+     */
+    public void applyCustomizations(Customizations was)
+    {
+        if (was == null) return;
+
+        this.setFunctionTypes(was.types, was.triggers);
+
+        // A FRESH MAP EACH TIME, for the reason `captureCustomizations` gives: the setter keeps the
+        // reference, so applying one snapshot twice would otherwise hand two locomotives one map.
+        this.setLocalFunctionImageURLs(new java.util.HashMap<>(was.icons));
+
+        // ONLY WHERE THE ANSWER IS NOT ALREADY RIGHT, because `isCustomFunctions` is DERIVED: a
+        // locomotive with any custom icon reads as customized whatever the flag says
+        // (`MarklinLocomotive.isCustomFunctions`).  A snapshot can therefore only ever capture the
+        // derived answer, and writing it back unconditionally would set the flag on a locomotive that
+        // was customized by its icons alone - which reads the same until the last icon is deleted, and
+        // then does not.  Restoring the icons first makes this comparison the honest one.
+        if (this.isCustomFunctions() != was.custom) this.setCustomFunctions(was.custom);
+    }
+
+    /**
+     * Copies another locomotive's customizations onto this one.
+     *
+     * @param source where to copy from, or null to do nothing
+     */
+    public void copyCustomizationsFrom(Locomotive source)
+    {
+        if (source == null) return;
+
+        applyCustomizations(source.captureCustomizations());
+    }
+
     public void setLocalFunctionImageURLs(Map<Integer, String> urls)
     {
         // The instanceof half was always true - the parameter is declared a Map - and instanceof is

@@ -1651,6 +1651,51 @@ covered edges themselves, in order, and then the two answers cannot differ by co
 Measured 2026-09-21 on a copy of your railway with every tile measured and four long tails: 16 refused
 edges, 100 painted squares, no divergence - so this shape does not fire on your current geometry.
 
+### OB-240 - 2026-09-21 - deleting a joining word silently turns an OR into an AND
+
+**Kind:** bug  
+**Raised from:** your note on MT-469, 2026-09-21  
+**Filed:** 2026-09-21  
+
+**Your note on MT-469, 2026-09-21:** *"in the layout view, we can review [remove] operators (like
+and) without deleting the conditions they are linked to.  This permanently leaves an orphan entry.  Any
+linked entries should also be deleted."*
+
+**Measured, because the consequence is worse than an orphan.**  The condition outline holds the joining
+words as lines of their own, and `removeAt` takes out only the line you picked: taking out a CONDITION
+also removes the word beside it (deliberately - "1 and 2" without 2 is "1"), but taking out a WORD
+leaves the two conditions with nothing between them.  `tidy()` sweeps a word with nothing on one side
+and two words in a row, and a RUN WITH NO WORD AT ALL is legal to it.  What that outline then means,
+run through `ConditionOutline.toExpression`:
+
+| the outline | what the route fires on |
+|---|---|
+| `1`, `and`, `2` | 1 AND 2 |
+| `1`, `or`, `2` | 1 OR 2 |
+| `1`, `2` - the word deleted | **1 AND 2** |
+| `1`, `or`, `2`, `3` | 1 OR 2 OR 3 - the wordless third is folded into the run |
+
+And `ConditionOutline.whatIsWrong` returns EMPTY for both wordless cases, so no row goes red and Save
+writes it.
+
+**So deleting an OR silently turns it into an AND.**  That is a change to when the route fires, made by
+a delete that says nothing about firing - the same shape as FR3-B1, whose comment in `tidy()` describes
+the level-0 word defaulting to AND after an unrelated deletion.
+
+**Two ways to put it right, and it is your call which:**
+
+- **(a) As you wrote it.** Deleting a word deletes what it joins. Destructive - one keystroke takes two
+  conditions with it - so it would want the confirmation the bulk tools have.
+- **(b) The word cannot be deleted on its own.** Delete is refused (or greyed) on a joining line, with
+  a sentence saying to delete a condition instead - the word goes with it, which is the behaviour that
+  already exists and works. Nothing is ever silently re-joined.
+
+I lean to (b): it is the smaller change, it cannot lose a condition somebody wanted, and the existing
+condition-delete already keeps the outline a sentence. Either way `whatIsWrong` should flag a wordless
+run, so that an outline arriving from anywhere else cannot be saved with a meaning nobody typed.
+
+Nothing is changed until you pick. MT-469 itself passed and is validated.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
