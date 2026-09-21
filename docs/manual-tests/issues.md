@@ -1648,8 +1648,12 @@ covered edges themselves, in order, and then the two answers cannot differ by co
 
 **What it needs to ship**: a fixture with two roads between one pair of sensors, which no scenario in
 `test/layouts` has today - a claim that goes red on the road it paints rather than on how many squares.
-Measured 2026-09-21 on a copy of your railway with every tile measured and four long tails: 16 refused
-edges, 100 painted squares, no divergence - so this shape does not fire on your current geometry.
+**Swept 2026-09-21 and it does not fire on your railway.**  127 placements - every point as the
+standing square, every incoming edge as the recorded road, forty-unit tails, every tile measured at one
+unit - and the paint never once left the edges the railway itself refuses.  So this is a hazard in the
+code rather than something you are seeing: `pathBetween` would have to find a reduced edge joining two
+covered endpoints that no covered edge joins, and your geometry does not offer one.  It stays open
+because the next page you draw might.
 
 ### OB-240 - 2026-09-21 - deleting a joining word silently turns an OR into an AND
 
@@ -1695,6 +1699,48 @@ condition-delete already keeps the outline a sentence. Either way `whatIsWrong` 
 run, so that an outline arriving from anywhere else cannot be saved with a meaning nobody typed.
 
 Nothing is changed until you pick. MT-469 itself passed and is validated.
+
+### OB-241 - 2026-09-21 - the tail walk uses the recorded road for the first hop only
+
+**Kind:** bug  
+**Raised from:** measured while answering MT-438, 2026-09-21  
+**Filed:** 2026-09-21  
+
+**Found by measurement while answering MT-438, 2026-09-21.**
+
+`Layout.walkOneTail` uses the recorded road (`arrivedAlong`) to choose the way back at the FIRST hop
+only - its own comment says so: *"Only the first hop can be chosen this way; past that the train is
+somewhere it never stopped, and the deterministic rule below takes over."*  Past that it uses the fork
+rule: one way back means the tail certainly lies there, several means stop.
+
+But the road is the whole journey, not one leg.  Measured on your railway, with 75 407 DB standing at
+Tunnel and the twelve-edge road your configuration records:
+
+| the railway claims | your road says |
+|---|---|
+| `TunnelPre (northbound) -> Tunnel (southbound)` | the same |
+| `BottomSecondary -> TunnelPre (northbound)` | the same |
+| `RampDown (northbound, reverse) -> BottomSecondary` | **`RampDown (southbound) -> BottomSecondary`** |
+
+The third hop took the other COPY of the rail.  Here that costs nothing - two copies of one rail are one
+piece of metal, and `getLockEdges` treats them alike - but it shows the shape: at a square where the
+road knows which way the train came, the walk asks the graph instead.  Where the two roads back are
+DIFFERENT metal (RampDown has BottomMainAPre on one side and TopMainPost on the other), the fork rule
+stops rather than guessing, so nothing is claimed - but the road would have said which one, and the
+tail would have been claimed correctly and further back.
+
+**The fix is to follow the road for every hop it covers**, and let the fork rule take over only past
+its start. `cameFromAlong` already looks the road up by place and is called only from
+`roadBackAtTheFirstHop`; the change is to ask it at every hop and to keep the fork rule as the
+fallback.
+
+**What it needs to ship**: a claim that goes red on the road CHOSEN rather than on how much is claimed -
+a fixture where the two ways back are different metal and the road names one of them. `single-switch`
+has the shape of a fork but not the recorded road; the tail suite's `aPlatformBehindAJunction` has the
+road but is built in code rather than on tiles.
+
+Low, because what it changes today is how FAR a tail is claimed rather than whether the claim is right,
+and it errs towards claiming less.
 
 ## What has been picked up
 
