@@ -1,6 +1,7 @@
 # The four package sweeps, closed
 
-`C1-C29` from [`2026-08-17-whole-project-review.md`](../reviews/2026-08-17-whole-project-review.md).
+`C1-C29` from the whole-project review of 2026-08-17, deleted with the review folder; its findings are
+in the catalogue (`grep "^WP-" ../manual-tests/findings.tsv`).
 They were filed as four bundle rows - `automation/`, `marklin/`, `base/`, `gui/` - and never triaged,
 so "four open items" was really twenty-nine - and the count was wrong three ways, which is recorded
 here rather than quietly corrected (MON-C9).  The prose said twenty-nine three times, the adjudicating

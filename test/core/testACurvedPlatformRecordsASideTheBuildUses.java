@@ -24,7 +24,7 @@ import org.traincontrol.marklin.MarklinLocomotive;
  * (REV9-B3).
  *
  * **FIXED 2026-09-08, and this class was written RED first.**
- * `docs/reviews-2026-09-09/REV-reversal-mechanics-review.md` B3 was found by reading, and a defect
+ * REV9-B3 was found by reading, and a defect
  * found by reading is a claim until something executes it - so this ran against the unrepaired door
  * and failed in its own words, on exactly the two methods about the curve, while the two CONTROL
  * methods over a straight platform passed.  That split is what makes it a statement about the curve

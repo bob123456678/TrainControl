@@ -1,10 +1,12 @@
 # Issues
 
 Bugs and feature requests, in one inbox. Adam writes here - by hand, or through
-[triage.py](triage.py)'s **New issue** button. Claude reads here, turns each item into a finding in
-`docs/reviews/` (for a bug, under that round's prefix) or works it directly (for a feature request),
-opens an `MT-###` entry in [tests.md](tests.md) to cover a bug fix (a feature request only if the work
-turns out to need one), and clears the item out of the Inbox.
+[triage.py](triage.py)'s **New issue** button. Claude reads here, turns each item into a finding under
+the round's prefix (for a bug) or works it directly (for a feature request), opens an `MT-###` entry in
+[tests.md](tests.md) to cover a bug fix (a feature request only if the work turns out to need one), and
+clears the item out of the Inbox. Findings live in the `finding` table of `triage.db`; the review
+document that first wrote one is deleted with its round - see
+[../reviews/README.md](../reviews/README.md).
 
 This replaces the separate `bug-reports.md` and `feature-requests.md` files from 2026-08-22 - the two
 inboxes worked identically and existed only because bugs and features felt like different things when
@@ -1359,7 +1361,7 @@ in `badb0a2c`; MT-441.
 **Raised from:** review finding AMH-C1  
 **Filed:** 2026-09-15  
 
-**Raised from review finding AMH-C1** (`docs/reviews/2026-09-15-AMH-return-home-planner-review.md`), and **deferred at Adam's word, 2026-09-15:** *"I want to do the heuristic, but I think this needs to be deferred until I deliver you the fully measured layout.  So, let's mark this as an open OB for now and continue."*
+**Raised from review finding AMH-C1** (`grep "^AMH-C1" docs/manual-tests/findings.tsv`), and **deferred at Adam's word, 2026-09-15:** *"I want to do the heuristic, but I think this needs to be deferred until I deliver you the fully measured layout.  So, let's mark this as an open OB for now and continue."*
 
 **What happens.**  Return Home answers `NO_PLAN_FOUND` on arrangements a person can solve by eye.  The round 3 battery left one: five trains, every one of them with a route home, three of those routes merely not clear yet because another train is standing on the destination - an ordinary rearrangement, and the order that solves it is visible by inspection (loc 3 home first, its route being clear; then loc 0 off loc 2's home; then loc 2; then loc 1).  The blocked list came back empty, which is honest: nothing on the railway is barred, the search simply did not find the order in the time it had.
 
@@ -1397,7 +1399,7 @@ Adam, 2026-09-16, asking what it would take: *"How big of a lift would it be to 
 
 **On his railway today** (a sandbox copy, 2026-09-16): 46 stretches and 181 squares - 33 stretches and 131 squares on 1 - Main, 13 and 50 on 2 - Bottom, none on the three pages left out of autonomy, and no stretch crossing a page.
 
-**Revised the same day after review MAL** (`docs/reviews/2026-09-16-MAL-mass-assign-lengths-review.md`).  The squares above are only the room rule's: the FR-087 allowance and the tail and berth walks read the switch and the track before it, and on this railway their reach is every leg.  Asked, Adam ruled *"Every leg, cut at switches"* and *"One length for all switches"*: every leg is cut into pieces between sensors and switches, switches are asked for together with one turnout length, and a piece needs a length only while its whole total is 0.  On a copy of the railway after the fix: 96 pieces (91 still with no length) and 54 switches.
+**Revised the same day after review MAL** (`grep "^MAL-" docs/manual-tests/findings.tsv`).  The squares above are only the room rule's: the FR-087 allowance and the tail and berth walks read the switch and the track before it, and on this railway their reach is every leg.  Asked, Adam ruled *"Every leg, cut at switches"* and *"One length for all switches"*: every leg is cut into pieces between sensors and switches, switches are asked for together with one turnout length, and a piece needs a length only while its whole total is 0.  On a copy of the railway after the fix: 96 pieces (91 still with no length) and 54 switches.
 
 ### OB-231 - 2026-09-16 - Mass Assign Lengths and Name Everything leave a trail of yellow flashes when skipped quickly
 
@@ -1462,6 +1464,157 @@ Adam, 2026-09-17: *"Add a right click menu open to clear all max station train l
 **Built.**  **Clear All Max Train Lengths (n)** in Bulk Tools, directly after Clear All Track Lengths.  It takes the maximum train length off every station on every page, after a confirmation that says how many and that each will then take a train of any length.  Built like the clears beside it: the tooltip is the confirmation's own sentence, the item is greyed with a reason when there is nothing to clear, and the walk keeps its own emptiness guard.  Only maxima above 0 are counted, because the setup writes an explicit 0 on every destination and 0 is what the clear leaves behind.  Through one session door, `clearEveryMaxTrainLength`, which re-derives the station index once rather than per station.
 
 `core.testMassAssignLengths.testClearAllMaxTrainLengthsClearsEveryPage` and `testTheClearMaxTrainLengthsItemCountsAndGreys`, on a two-page railway built in memory.  Five mutations each caught: clearing one page only, counting a 0, not clearing, never greying, and the item moved away from the other clears.
+
+### OB-233 - 2026-09-21 - the berth-room walk does not stop at a permanently-set turnout
+
+**Kind:** bug  
+**Raised from:** review finding IND9X-A2, 2026-09-09  
+**Filed:** 2026-09-21  
+
+**Needs your ruling first, and it is A-severity.**
+
+`LayoutDiagramComponent.isSwitch()` names SWITCH_LEFT/RIGHT/CROSSING/THREE/Y and CUSTOM_SCISSORS, and
+not CUSTOM_PERM_LEFT/RIGHT/Y/THREEWAY - the permanently-set turnouts. Both berth-room walks in
+`GraphReducer` (`roomAfterTheLastSwitch` and `unmeasuredAfterTheLastSwitch`) walk the run-in backwards
+and stop at the first tile where `isSwitch()` answers true, so for a berth approached over a
+permanently-set turnout the walk counts the track on the far side of it as room. An edge whose only
+turnout is a CUSTOM_PERM also reports `crossesASwitch() == false`, so the caller keeps accumulating
+straight across the points, and the editor's measure-these-tiles prompt asks you to measure tiles on
+the wrong side of it.
+
+**What it costs.** A four-unit train sent to a two-unit berth reached over a CUSTOM_PERM_LEFT is
+admitted and comes to rest fouling the merge of a junction no command can clear. behaviour.md 5a's
+last-switch rule exists to prevent exactly that, and this is the over-admission direction the document
+itself says to rule on first. Once the train is standing, the 5c tail walk does cover the edge over the
+turnout, so conflicting routes are then refused - the admission is the wrong part, not what follows it.
+
+**The question.** Is a permanently-set turnout "the last switch"? Physically it is shared metal;
+topologically it is not a choice. If yes, the fix is adding the four CUSTOM_PERM types to the stop test
+in both walks, and then deciding whether `isSwitch()` itself should answer true for them - which has
+other callers and needs the sibling sweep.
+
+**Verified still true on 2026-09-21**, when the review that found it was deleted. No fixture contains
+any switch of any kind, so no test in the suite can tell "switch" from "permanently-set switch" here;
+one would have to be built with the fix.
+
+### OB-234 - 2026-09-21 - clicking the findings list kills the autonomy editor keyboard shortcuts for the session
+
+**Kind:** bug  
+**Raised from:** review finding IND9X-B4, 2026-09-09  
+**Filed:** 2026-09-21  
+
+The findings list in the autonomy editor (`AutonomyEditorPanel`, the `JList` behind
+`findingsModel`) is focusable, and every other control in that column is not: `button()` calls
+`setFocusable(false)` on each one, deliberately, so that the FRAME keeps the keyboard. Clicking a
+finding therefore moves focus into the list, and the frame's `KeyListener` - which is where the
+editor's shortcuts live - stops seeing keys until something hands focus back.
+
+**The fix is one line**, `setFocusable(false)` on the list, which is what its siblings do. What it
+needs beside it is a claim that can fail: the shortcuts are a `KeyListener` on the frame, so a test can
+give the list focus, dispatch a key, and assert the frame saw it.
+
+**Verified still true on 2026-09-21**, when the review that found it was deleted.
+
+### OB-235 - 2026-09-21 - the One-way tool is not greyed on an excluded page, unlike its two siblings
+
+**Kind:** bug  
+**Raised from:** review finding IND9X-C6, 2026-09-09  
+**Filed:** 2026-09-21  
+
+`AutonomyEditorPanel.refresh()` greys `testButton` and `whyButton` on an excluded page, under a
+comment saying nothing in that column can do anything on a page autonomy takes no notice of.
+`oneWayButton` is not in that pair, and its `tileClicked` branches run before the `isIgnored(tile)`
+check.
+
+**What you see.** On an excluded page the two-click one-way gesture completes, the direction dialog
+appears, and the refusal reads "no path between the squares" - which is the wrong explanation for a
+refusal whose real cause is that the page is excluded. This is the affordance-and-guard shape of
+OB-057 and OB-090: the control that offers an action has to ask the same question the action does.
+
+**The fix** is `oneWayButton.setEnabled(!ignored)` beside its two siblings.
+
+**Verified still true on 2026-09-21**, when the review that found it was deleted.
+
+### OB-236 - 2026-09-21 - the cut half of cut-and-paste builds the autonomy session it deliberately does not tell
+
+**Kind:** bug  
+**Raised from:** review finding FV3-C6, 2026-09-10  
+**Filed:** 2026-09-21  
+
+`LayoutEditor.deleteSelection(boolean tellAutonomy)` reads
+`parent.getAutonomySession()` before it tests `tellAutonomy`. The cut half of cut-and-paste passes
+`false` on purpose - the paste carries the setup - so it now reaches the lazy builder that
+`delete(label, false)` never did. That getter parses every page, runs the caption migration (which
+writes page files) and can put a dialog on screen; three comments in this codebase, `pageIdFloor`'s
+among them, warn against reaching it from a gesture that has nothing to do with autonomy.
+
+In practice the session is normally already cached while the editor is open, which is why this is low
+rather than medium. **Moving the read inside the `if` is the whole fix.**
+
+**Verified still true on 2026-09-21**, when the review that found it was deleted.
+
+### OB-237 - 2026-09-21 - refreshReturnHomeButton materialises the autonomy Layout from a repaint
+
+**Kind:** bug  
+**Raised from:** review finding D3-C3, 2026-09-09  
+**Filed:** 2026-09-21  
+
+`TrainControlUI.refreshReturnHomeButton()` asks `this.model.getAutoLayout()`, and
+`getAutoLayout()` creates a layout when it has none (that is CS3-C4's subject, now synchronized but
+still creating). So a repaint of the Return Home button can bring a Layout into being, which its own
+sibling paths take care not to do - they ask `hasAutoLayout()` first.
+
+**The fix** is the same shape: ask `hasAutoLayout()` and treat absence as "no button", which is what
+the method does with a null layout anyway.
+
+**Verified still true on 2026-09-21**, when the review that found it was deleted.
+
+### OB-238 - 2026-09-21 - the two arms of a double-curve tile are locked as one piece of metal
+
+**Kind:** bug  
+**Raised from:** review finding IND9X-C9, 2026-09-09  
+**Filed:** 2026-09-21  
+
+**Your call rather than a defect, and of a piece with the crossing ruling.**
+
+`TilePorts` declares DOUBLE_CURVE (and FEEDBACK_DOUBLE_CURVE) as two independent routes -
+`route(N, W)` and `route(E, S)` - two arcs in opposite corners of the square that do not touch. The
+lock treats the square as one piece of metal, so a train on one arc blocks the other.
+
+That is conservative: it refuses more than the metal requires, which is safe and can be annoying, and
+it is the opposite direction from the over-admission above. You ruled on 2026-09-20 that a crossing
+locks both roads and an overpass does not, on exactly this question of whether the metal is shared. A
+double curve is the third case: two arcs that share a square and no metal.
+
+Nothing to fix until you say which way it goes.
+
+### FR-093 - 2026-09-21 - manual-only destinations shown by the transparent treatment, as you ruled
+
+**Kind:** feature request  
+**Raised from:** your ruling of 2026-09-09, carried from the deleted for-adam note  
+**Filed:** 2026-09-21  
+
+**Your ruling of 2026-09-09, which has never been built.** It was recorded in
+`docs/for-adam-2026-09-09.md`, which was deleted on 2026-09-21 with the rest of the stale review prose,
+so it is here instead - an unbuilt ruling in a document nobody opens is an unbuilt ruling nobody
+builds.
+
+Your words: *"Already answered this: keep the orange to represent the train, and make the tiles
+transparent just like when we block edges."*
+
+So there is no new arrow overlay of any kind. Orange keeps one meaning on the running diagram - where
+a train is - and a **manual-only destination** is shown by the same treatment blocked track already
+gets: the tile goes transparent.
+
+**What is there today.** Nothing draws it. The grey wash is computed for track a train covers, and
+neither `LayoutGrid` nor `LayoutLabel` asks anything about the parking marking (*Can Be Chosen in Full
+Autonomy*) when it paints. The marking is visible in the editor and on the notice surfaces, and not on
+the running diagram.
+
+**What it needs.** The same path the blocked-edge treatment uses, asked of
+`AutonomySession`'s parking marking rather than of the block list, on the running diagram only. Worth
+settling at the same time: whether it applies while autonomy is stopped, where "manual-only" describes
+every square.
 
 ## What has been picked up
 
@@ -1676,8 +1829,8 @@ not, never both.
 | 2026-08-26 | OB-113 | bug | A reversing point that reaches no station is reported - your own case was a missing one, and nothing said so | - | [MT-193](tests.md#mt-193) |
 | 2026-08-26 | FR-026 | feature request | The full editor is one item away on the diagram’s own menu | - | [MT-192](tests.md#mt-192) |
 | 2026-08-26 | OB-112 | bug | The diagram’s autonomy menu says which square it is about | - | [MT-192](tests.md#mt-192) |
-| 2026-08-25 | FB-A1..C2 | bug | [Independent pass over the last day](../reviews/2026-08-25-independent-fable.md) - two more A, one of them a defect in an LD fix **Claude, 2026-09-14.** Closed on Adam's word, 2026-09-14: *"close the 11 internal ones"* - an internal or test-only fix with automated coverage and nothing to check by hand. | fixed validated | - |
-| 2026-08-25 | LD-A1..C5 | bug | [The last day, reviewed](../reviews/2026-08-25-last-day.md) - six A and seven B, seven of them from that same day; C6-C9 left open **Claude, 2026-09-14.** Tracked through its tests from now on, so this row's state follows theirs. | - | `MT-184, MT-189, MT-191` |
+| 2026-08-25 | FB-A1..C2 | bug | Independent pass over the last day (`grep "^FB-" findings.tsv`) - two more A, one of them a defect in an LD fix **Claude, 2026-09-14.** Closed on Adam's word, 2026-09-14: *"close the 11 internal ones"* - an internal or test-only fix with automated coverage and nothing to check by hand. | fixed validated | - |
+| 2026-08-25 | LD-A1..C5 | bug | The last day, reviewed (`grep "^LD-" findings.tsv`) - six A and seven B, seven of them from that same day; C6-C9 left open **Claude, 2026-09-14.** Tracked through its tests from now on, so this row's state follows theirs. | - | `MT-184, MT-189, MT-191` |
 | 2026-08-25 | OB-108 | bug | A layout edit that never finished is put back to how it was | - | [MT-191](tests.md#mt-191) |
 | 2026-08-25 | OB-025 | bug | The store keeps a registry of what it keeps **Claude, 2026-09-14.** Closed on Adam's word, 2026-09-14: *"close the 11 internal ones"* - an internal or test-only fix with automated coverage and nothing to check by hand. | fixed validated | - |
 | 2026-08-25 | OB-107 | bug | The signal window opened over the diagram it describes | - | [MT-182](tests.md#mt-182) |
@@ -1878,7 +2031,7 @@ they were filed under, and this mapping is how to trace one to the other.*
 
 ## Where the older backlog is
 
-`docs/reviews/2026-08-18-manual-test-plan.md` has a "Feature backlog (Adam, 18 August)" section -
+The deleted `2026-08-18-manual-test-plan.md` had a "Feature backlog (Adam, 18 August)" section -
 things written down so they would not be lost, none of them scheduled. It has not been picked up into
 this mechanism, deliberately: filing something here is a decision, and those were explicitly not
 decisions. Anything from it you want on the ledger, paste into the Inbox above and it will be.

@@ -4,7 +4,7 @@ The companion to [`behaviour.md`](behaviour.md). That document says what the rai
 this one says what is **known to be wrong with it**, what was **ruled on and closed**, and where the
 rules **deliberately under-claim**.
 
-It replaces reading 135 review documents. Those stay in `docs/reviews/` for now and in git history
+It replaces reading 208 review documents. Those are gone from the tree and live in git history
 afterwards; nothing below needs them to be understood.
 
 ---
@@ -35,7 +35,12 @@ and this one was quoted in three other documents.
 
 **Nothing on this list is a known railway-behaviour defect.** Every remaining row is about the codebase
 or the tests. Worth stating plainly, because an unread backlog reads like a railway full of bugs and it
-is not one - the railway defects live in `docs/manual-tests/issues.md`, and that inbox is empty.
+is not one.
+
+The railway defects live in the Inbox of `docs/manual-tests/issues.md`. **It is not empty**, and this
+paragraph said it was for twelve days (IND9X-B3, 2026-09-09): it holds 99 entries, most of them carrying
+a receipt row that says the work was done - the protocol is that an entry is cleared out when its fix
+has a test, and clearing has lagged. Read the receipts, not the presence of an entry.
 
 ---
 
@@ -47,7 +52,23 @@ otherwise be reported as bugs.
 
 ## Reversals
 
-**Open:** none.
+**Open: one, and it is Adam's call rather than a defect.** A journey that passes a compulsory-turn
+square is turned there, invisibly to the operator, so at a may-reverse destination the answer *"Yes -
+keep the current direction"* can leave the train **net-reversed**: measured 2026-09-08, keep ends
+backward and reverse ends forward. Section 3 of `behaviour.md` promises the opposite in as many words.
+Recorded on **OB-190** in the Inbox, where it has said "ALSO STILL OPEN" since 2026-09-08; this section
+said "none" until 2026-09-21 (IND9X-B3).
+
+**Decided, and each of these reversed an implemented behaviour** - which is exactly what this section
+is for.
+
+- **A direction command arriving while a run is under way is ignored, not queued** (Adam, 2026-09-07,
+  `bc6120f1`): *"The arrival writes the graph - but if a manual command is sent, ignore it, as this is
+  likely corrective by the user."* This inverted `ca0265f4` of the day before, which had made mid-run
+  reversals deferred-until-idle and argues for deferral in its own commit message;
+  `reconcileFacingWhenIdle` brings the baseline forward so there is no backlog. Section 3 of
+  `behaviour.md` carries the mechanism. Recorded here 2026-09-21 (W7B-C1) - it had been missing from
+  this list for twelve days, which is how a settled question gets re-argued from the losing side.
 
 **Recently closed.**
 
@@ -132,10 +153,27 @@ either.
   exemption is for a person who has looked at the railway; Return Home is a plan for every staged
   locomotive at once.
 - *Inactive means nothing can pass*, in every tier, with the square a train already occupies exempt.
+- **Occupancy restrictions bind every tier** (Adam, 2026-09-10): *"If it's cleaner to go with
+  consistency across the board, then let's enforce the occupancy ruling in all modes and then rely on
+  isPathClear. Revert the prior lax ruling."* It was fenced twice before - behind `isAutoRunning` until
+  2026-09-09 and behind `isFullAutonomyRunning` after it, on his earlier ruling that the restriction is
+  *"for modifying pathing prioritization"* while the length checks are the anti-collision mechanism.
+  Both fences are gone; one rule, asked once, in `Layout.isPathClear`, and `HomeStaging` keeps its own
+  copy because a planner that does not apply it offers a leg the runtime refuses (OB-073). Section 1 of
+  `behaviour.md` carries it. Recorded here 2026-09-21 (W7B-C1); this list stopped at 2026-09-07, and
+  the question had been answered three different ways by three tiers in the week before the ruling.
 
 **Limits.** The Path Type control answers about **destination eligibility only**. The tiers differ in
 other ways (Return Home runs under the autonomy `running` flag, so `isRunning()` is true for it);
 that is not what the control is about, and the tooltip says so.
+
+**Route choice is not reproducible between runs, and Adam asked to keep an eye on it** (2026-09-10).
+`bfs` returns *some* route avoiding the ones already found rather than the next in a defined order, so
+a census of the whole railway gives a different number each time: four runs gave 2,116, 2,146, 1,648
+and 1,617. It is a limit rather than a defect - every route it returns is legal - but it means no
+measurement over all routes can be compared with an earlier one, which is why the figures in this file
+are quoted with the run that produced them. Recorded here on 2026-09-21 because it was living in a
+resume note that has been deleted.
 
 ---
 
@@ -298,8 +336,10 @@ this document exactly the thing it replaces.
 *Written 2026-09-07. If this document and the code disagree, the code wins and this is stale — say so.*
 
 **2026-09-08: `docs/reviews/` was deleted**, down to its README, once its 2,226 findings were in
-`docs/manual-tests/triage.db`. Everything still open above is open in that store too, so it can be
-queried rather than re-read:*
+`docs/manual-tests/triage.db`. **2026-09-21: the same for the 65 documents written since**, in three
+dated folders beside it, on Adam's *"I don't want more reviews living in the repo"* - 3,353 findings in
+the store now, every one of them with a status. Everything still open above is open in that store too,
+so it can be queried rather than re-read:*
 
 ```sql
 SELECT ref, severity, title, evidence FROM finding WHERE status LIKE 'Open%' ORDER BY severity, ref;

@@ -1810,9 +1810,10 @@ were rulings: intermediates are not asked about, and the arrival side may be set
 is still owed: the written evaluation of whether the two copies could be replaced by following the
 edges. Nothing has been built on that one.
 
-The review documents in `docs/reviews/` were the working record of how these rules were arrived at.
-This is the answer they were working towards, and on 2026-09-08 they were deleted in its favour: 143
-documents that could no longer say who needed to do what, against one that says what is true.
+The review documents were the working record of how these rules were arrived at. This is the answer
+they were working towards, and they were deleted in its favour: 143 on 2026-09-08 - documents that
+could no longer say who needed to do what, against one that says what is true - and the last 65 on
+2026-09-21, on Adam's *"I don't want more reviews living in the repo."*
 
 ---
 
@@ -1822,9 +1823,9 @@ Comments in this codebase cite review findings constantly - `RGD-B2`, `MON-C6`, 
 locomotive but `DY3-C7` is a finding - because that is how a comment says *why* rather than *what*.
 The documents those ids came from are gone. **The findings are not.**
 
-All 2,265 of them are in `docs/manual-tests/triage.db`, in the `finding` table, with the document they
-came from, the line in it, the severity, the file and line of the evidence, the commit that fixed it
-where one is named, and the source files that cite it. `docs/manual-tests/findings.tsv` is a plain-text
+All 3,353 of them are in `docs/manual-tests/triage.db`, in the `finding` table, with the document they
+came from, the line in it, the severity, what it was about, the file and line of the evidence, the
+commit that fixed it where one is named, and the source files that cite it. `docs/manual-tests/findings.tsv` is a plain-text
 mirror of the same rows, rendered from the database, for the two readers that cannot open one: a person
 with a citation and a `grep`, and `regression.testEveryCitationResolves`, which resolves every citation
 in `src/` and `test/` against it and fails if a new comment names a finding that does not exist.
@@ -1858,16 +1859,41 @@ SELECT ref, severity, title FROM finding WHERE document LIKE '%test-suite%' ORDE
 **`disposition` is a quotation, `status` is the answer to it.** The disposition column is what a
 document said on the day it was written, and nothing ever updated one: 63 A-severity findings still
 read `open` on 2026-09-08, and of the thirteen checked against the code that day, all thirteen had
-been fixed. Every row was therefore given a `status` of `Closed`, and eight that had been explicitly
-deferred for Adam say so. **Read a row to find out what a citation referred to, never whether it is
-still true.** For that, read the code - or write the test.
+been fixed. Every row therefore carries a `status`, set deliberately and with its evidence in
+`status_note` - the commit that named it, the comment that cites it, or the check that was made and
+when. **Read a row to find out what a citation referred to, never whether it is still true.** For
+that, read the code - or write the test.
+
+The 2026-09-21 round of the same work gave a status to the 996 rows of the last 65 documents that had
+none:
+
+| how it was decided | |
+|---|---|
+| a D finding - a clean check by the review convention, nothing to do | 415 |
+| cited from `src/` or `test/`, where a fix landed and left a comment naming it | 416 |
+| its own document's closing word | 101 |
+| named by a commit message | 5 |
+| checked by hand against the code that day | 49 |
+| **`Open - unverified`** - no evidence either way | 10 |
+
+The last ten are all C-severity and all but one from 2026-09-09. Saying so is the point: a status
+invented to tidy a row is worse than a row that admits nobody has looked. Five more are **open and
+verified still true** on the day their document was deleted, and each is in the Inbox as an OB, which
+is where open work belongs; one is Adam's ruling to make; two are deferred by his own word. The whole
+list, at any time:
+
+```sql
+SELECT ref, severity, status, status_note FROM finding WHERE status LIKE 'Open%';
+```
 
 Forty-five citations resolve to no finding at all; they are rolled in the `dead_citation` table and at
 the foot of the mirror, with the files that cite each one. They cluster into whole prefixes whose
 declaring document never existed - `RC` above A5, all of `LE2` and `LD` - so they were dead ends before
 the deletion, not because of it.
 
-`docs/reviews/README.md` survives, and records the convention the folder used.
+[`docs/reviews/README.md`](../reviews/README.md) survives, and is now the convention rather than an
+index: how a round is run, and the rule that its documents are catalogued and deleted in the same
+round rather than left to go stale.
 
 Regenerate the mirror after any change to the store:
 

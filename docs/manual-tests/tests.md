@@ -23287,6 +23287,10 @@ From the 2026-09-19 review round (UIX-B1), fixed the same day.  The exit asked t
 
 #### Comments
 
+**Adam, 2026-09-21 (triage).** Works.
+
+*Run against commit d8e2b3f7, build\classes, compiled 21 Sep 07:55 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-462"></a>
@@ -23322,6 +23326,14 @@ From the 2026-09-19 review round (UIX-B2), fixed the same day.  **Highlight on D
 
 #### Comments
 
+**Adam, 2026-09-21 (triage).** Does not work.
+
+The highlighting animation itself works as described in this test.  BUT:
+
+(tested with route 7): links, unrelated routes (58), and S88s (10) are highlighted.  Should be switches and signals and the S88 that triggers the route or is involved in conditions only.  Seems the highlighting doesn't care about item type.
+
+*Run against commit d8e2b3f7, build\classes, compiled 21 Sep 07:55 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-463"></a>
@@ -23351,6 +23363,12 @@ From the 2026-09-19 review round (RTX-B1), fixed the same day to your ruling *"t
 *What this is:* review finding RTX-B1, fixed 2026-09-19 with a test seen failing first and a mutation for each half.
 
 #### Comments
+
+**Adam, 2026-09-21 (triage).** Could not run this.
+
+make an automated test for this with appropriate placements.
+
+*Run against commit d8e2b3f7, build\classes, compiled 21 Sep 07:55 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -23382,6 +23400,12 @@ From the 2026-09-19 review round (CS3-B1), fixed the same day.  Deleting a locom
 *What this is:* review finding CS3-B1, fixed 2026-09-19 with a test seen failing first and a mutation for each half.
 
 #### Comments
+
+**Adam, 2026-09-21 (triage).** Does not work.
+
+I made Route 1, that fires a loc a route that fires a loc function after 10000ms.  Then I tried deleting alco UP (the target loc) from the loc db browser, and it went through on deleting ALCO UP.  Also, there is no validation of the function count on mm2 locomotives in the route view, F32 was accepted.
+
+*Run against commit d8e2b3f7, build\classes, compiled 21 Sep 07:55 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -23419,6 +23443,10 @@ From the 2026-09-19 review round, fixed the same day.  The tooltips on the two d
 
 #### Comments
 
+**Adam, 2026-09-21 (triage).** Works.
+
+*Run against commit d8e2b3f7, build\classes, compiled 21 Sep 07:55 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-466"></a>
@@ -23452,6 +23480,12 @@ From the 2026-09-19 review round, fixed the same day.  Copy Customizations write
 *What this is:* review finding GUX-C3, fixed 2026-09-19 with a test seen failing first and a check on the call site.
 
 #### Comments
+
+**Adam, 2026-09-21 (triage).** Does not work.
+
+Does not work- all icons are cleared (source locomotive only had f0 with an icon), but the one customized icon on f0 is not loaded on the target loc.
+
+*Run against commit d8e2b3f7, build\classes, compiled 21 Sep 07:55 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -23550,5 +23584,11 @@ From the 2026-09-19 review round, fixed the same day.  The route editor's captur
 *What this is:* review findings GUX-C2 and UIX-C3, fixed 2026-09-19; both are text and colour, so there is nothing a test can read.
 
 #### Comments
+
+**Adam, 2026-09-21 (triage).** Works, with notes.
+
+Works as tested.  However, in the layout view, we can review operators (like and) without deleting the conditions they are linked to.  This permanently leaves an orphan entry.  Any linked entries should also be deleted.
+
+*Run against commit d8e2b3f7, build\classes, compiled 21 Sep 07:55 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---

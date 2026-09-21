@@ -274,6 +274,15 @@ public class testEveryCitationResolves
     }
 
     /**
+     * How many sub-lettered findings the catalogue held when the last review documents were deleted.
+     *
+     * `DD-D7a`, a severity revision in a document deleted on 2026-09-08, and `WP-C19d`, a dead
+     * citation.  Both name documents that are gone, which is why the floor above could no longer be
+     * "at least one row is resolvable".
+     */
+    private static final int SUBLETTERED = 2;
+
+    /**
      * No catalogued finding carries a sub-letter its document does not write (N8-B3, NSV-B1).
      *
      * **A parser read a mutation table as findings.** `catalog-findings.py` accepted any table row whose
@@ -326,6 +335,10 @@ public class testEveryCitationResolves
             // COUNTED OVER EVERY ROW, not only the sub-lettered ones (FV3).  The floor asks whether the
             // resolution works at all, and sub-lettered refs are legitimately rare - scoping the count
             // inside the filter below made the floor as vacuous as the check it was added to guard.
+            // COUNTED AND REPORTED, not asserted on.  It is zero today - no review document is left
+            // in the tree - and the failure below names it, because "2 rows, 0 of them checkable"
+            // and "2 rows, all checked and clean" are two different states and the reader has to be
+            // told which one held.
             if (documentExists(cells[1].trim())) resolvable++;
 
             java.util.regex.Matcher m = sublettered.matcher(cells[0].trim());
@@ -358,14 +371,26 @@ public class testEveryCitationResolves
             if (!body.contains(cells[0].trim())) unwritten.add(cells[0].trim() + " in " + cells[1].trim());
         }
 
-        // THE FLOOR.  Sub-lettered refs are rare by design and the parser fault that produced them is
-        // fixed, so "none left to check" is the expected state and cannot itself be asserted against.
-        // What CAN be asserted is that the resolution works at all: if no catalogued row names a
-        // document still in the tree, this is measuring nothing.
-        assertTrue(resolvable > 0,
-            "no row in the catalogue names a review document that still exists, so this guard compared "
-            + "nothing at all - which is how it passed as shipped (FV3).  " + seen + " sub-lettered "
-            + "row(s) were seen and none of them could be resolved to a document");
+        // THE FLOOR, AND WHAT REPLACED IT.
+        //
+        // It used to be `resolvable > 0` - at least one catalogued row naming a document still in the
+        // tree - because both sub-lettered rows name deleted documents, so every row was skipped and
+        // the guard reported success having compared nothing (FV3).
+        //
+        // The last review folders were deleted on 2026-09-21 and `resolvable` is now zero by design, so
+        // that floor would fail for the reason it was written: a guard anchored to files scheduled for
+        // deletion.  What can still be held with no document to read is the COUNT.  The fault this
+        // catches - a Method or mutation table read as findings - always ADDS sub-lettered rows, so a
+        // ratchet on how many exist catches it whether or not anything can be resolved.
+        assertTrue(seen <= SUBLETTERED,
+            "the catalogue now holds " + seen + " sub-lettered findings (" + resolvable + " of its "
+            + "rows name a document still in the tree) and held " + SUBLETTERED
+            + " when the last review documents were deleted.  Sub-letters are rare by design - of "
+            + "3,353 rows exactly two carry one - and a fresh crop of them is the signature of a "
+            + "Method or mutation table being read as findings (NSV-B1), which is what this guard is "
+            + "for.  No document survives to check the new ones against, so the count is all there "
+            + "is: re-run `python docs/tools/catalog-findings.py --add <folder>` and look at what it "
+            + "added.  Lower this number if rows were legitimately removed");
 
         assertTrue(unwritten.isEmpty(),
             "the catalogue holds " + unwritten.size() + " finding(s) whose own document never writes "

@@ -63,7 +63,7 @@ PREFIX = re.compile(r"^\*\*(?:Citation [Pp]refix|Prefix(?: for citing [^:]{0,40}
 # section called `## B - medium` is not read as a finding named B.
 # The separator is optional: one document writes bare `### A1` and puts the finding in the body.
 # `## B - medium` cannot match either way - a severity banner carries no digit.
-SHORT_HEADING = re.compile(r"^#{2,4}\s+([A-Z]\d{1,3}[a-z]?)\s*(?:[-\u2013\u2014:.]\s*(.*))?$")
+SHORT_HEADING = re.compile(r"^#{2,4}\s+([A-D]\d{1,3}[a-z]?)\s*(?:[-\u2013\u2014:.]\s*(.*))?$")
 
 # Evidence in a body: Foo.java:123, Foo.java:123-125
 SOURCE = re.compile(r"`?([A-Za-z][A-Za-z0-9_]*\.(?:java|md|json|properties|xml|sh|py))`?:(\d+)(?:-(\d+))?")
@@ -100,7 +100,11 @@ def severity_of(ref, title, body):
 # sometimes in one document.
 FULL_ROW = r"\|\s*[`*]{0,2}\s*([A-Z][A-Z0-9]{1,7}-[A-Z]?\d+[a-z]?)\s*[`*]{0,2}\s*\|(.*)$"
 
-SHORT_ROW = r"\|\s*[`*]{0,2}\s*([A-Z]\d{1,3}[a-z]?)\s*[`*]{0,2}\s*\|(.*)$"
+# SEVERITY LETTERS ONLY.  The short form numbers findings by severity - A1, B2, C3, D5 - so a row
+# beginning `| T10 |` or `| W21 |` is not one: those are the PREFIXES of other documents,
+# tabulated by a validation that was checking their findings.  `TWV-T10` and `TWV-W21` were
+# catalogued as findings at severity "?" that no document ever made.
+SHORT_ROW = r"\|\s*[`*]{0,2}\s*([A-D]\d{1,3}[a-z]?)\s*[`*]{0,2}\s*\|(.*)$"
 
 
 # The first severity section of a document, after which its tables are about findings.
@@ -108,6 +112,54 @@ SHORT_ROW = r"\|\s*[`*]{0,2}\s*([A-Z]\d{1,3}[a-z]?)\s*[`*]{0,2}\s*\|(.*)$"
 # Before it, a document's tables are about anything - a method, a measurement, a corpus.  See
 # table_rows.
 SEVERITY_BANNER = r"^##\s+[A-D]\b"
+
+
+# WHICH COLUMN IS WHICH, by the header the table itself carries.  Both vocabularies are the spellings
+# in use across the 208 review documents; a header in neither falls back to the positional reading.
+DESCRIBES = ("what", "what was checked", "title", "one line", "finding", "the finding", "subject",
+             "description", "summary", "what it asked for", "claim", "what it says")
+
+DISPOSES = ("disposition", "status", "verdict", "result", "outcome", "what was left", "note",
+            "where", "caught?")
+
+# Where a table has a verdict column and no description column, the substance is in one of these: 111
+# tables are `| id | status | where |`, and for a D finding the "where" cell IS what was checked.
+SUBSTANCE = ("where", "subject", "note", "what was left")
+
+
+# What a one-cell row says when its table carries no header at all - 86 tables write `| | |`.  A cell
+# opening with one of these is the document's verdict; anything else is the finding's description, and
+# for a D finding that line is the whole record.
+VERDICT_OPENERS = ("open", "fixed", "closed", "ruled", "cancelled", "declined", "accepted", "answered",
+                   "confirmed", "unconfirmed", "clean", "partial", "half", "deferred", "superseded",
+                   "agreed", "dropped", "done", "pending", "needs", "withdrawn", "upheld", "refuted",
+                   "verified", "unverified", "red", "green", "no", "not", "none", "yes", "stands",
+                   "correct", "wrong", "true", "false", "as", "already")
+
+
+def reads_as_a_verdict(cell):
+    """Whether a lone cell is a disposition rather than a description.
+
+    :param cell: the cell's text
+    :return: True where it opens with a verdict word
+    """
+    word = cell.strip().strip("*`_ ").split(" ")[0].strip(",.:;-").lower()
+
+    return word in VERDICT_OPENERS
+
+
+def cell_under(row, names):
+    """The cell of a table row whose own header is one of `names`.
+
+    :param row: a `table_rows` entry
+    :param names: header spellings, most specific first
+    :return: the cell, or "" where the table's header says nothing
+    """
+    for name in names:
+        if name in row["under"]:
+            return row["under"][name]
+
+    return ""
 
 
 def table_rows(text, prefix=None):
@@ -144,8 +196,21 @@ def table_rows(text, prefix=None):
 
             break
 
+    headers = []
+
     for i, line in enumerate(lines):
         bare = line.strip()
+
+        # THE TABLE THIS ROW IS IN, by its own header (FNL-D-shaped rows).  A two-column table under
+        # `| id | what |` holds a DESCRIPTION in its one cell and a table under `| id | status |` holds
+        # a disposition, and nothing in the row itself says which.  Reading the last cell as the
+        # disposition either way cost 200 D findings their text - they were catalogued as "(listed in a
+        # table, no section of its own)" with the description filed as a disposition, and a D finding
+        # has nothing but that line, so the record of 200 clean checks was the parse.
+        if not bare.startswith("|"):
+            headers = []
+        elif i > 0 and set(bare) <= set("|-: ") and "-" in bare:
+            headers = [c.strip().lower() for c in lines[i - 1].strip().strip("|").split("|")]
 
         m = re.match(FULL_ROW, bare)
 
@@ -163,33 +228,60 @@ def table_rows(text, prefix=None):
         if not m:
             continue
 
-        cells = [c.strip() for c in m.group(2).split("|")]
+        raw = [c.strip() for c in m.group(2).split("|")]
 
-        cells = [c for c in cells if c]
+        if raw and not raw[-1]:
+            raw = raw[:-1]
+
+        cells = [c for c in raw if c]
 
         if cells:
-            out[ref] = cells
+            # The header of the id column is dropped, so the rest line up with the cells after the ref.
+            under = {}
+
+            for at, name in enumerate(headers[1:]):
+                if at < len(raw) and raw[at]:
+                    under.setdefault(name, raw[at])
+
+            out[ref] = {"cells": cells, "under": under}
 
     return out
 
 
 def disposition_of(body, fromTable):
+    """What the document says became of a finding, in one line.
+
+    **THE HEAD TABLE FIRST, THEN THE SECTION (SVT-C7).**  A document may say this in two places - the
+    status table at the head of its severity section, and a `| **Disposition** | ... |` row under the
+    finding itself - and where it does, only the head table is maintained: the section's row is written
+    on the day and never revisited.  Reading the section first made the catalogue say `CS3-B1 ... Open`
+    where the document's own table said "Fixed - MT-464", for five of that document's six findings, and
+    anybody reading the catalogue for open work got five false positives.
+
+    Where the two disagree the section's word is kept after the table's, because it is sometimes the
+    fuller sentence and a quotation should not be silently dropped.
+
+    :param body: the finding's own section
+    :param fromTable: what the head status table says, or ""
+    :return: the line
+    """
     m = DISPOSITION.search(body)
 
-    if m:
-        return " ".join(m.group(1).split())[:120]
+    section = " ".join(m.group(1).split()) if m else ""
 
-    # A body that says it was fixed, in the house style, without a table
-    if re.search(r"\*\*Fixed\b", body):
-        return "Fixed (stated in the body)"
+    if not section:
+        # A body that says it was fixed, in the house style, without a table
+        if re.search(r"\*\*Fixed\b", body):
+            section = "Fixed (stated in the body)"
+        elif re.search(r"\*\*(Cancelled|Declined|Ruled)\b", body):
+            section = "Ruled (stated in the body)"
 
-    if re.search(r"\*\*(Cancelled|Declined|Ruled)\b", body):
-        return "Ruled (stated in the body)"
+    table = " ".join((fromTable or "").split())
 
-    if fromTable:
-        return " ".join(fromTable.split())[:120]
+    if table and section and table.lower() != section.lower():
+        return (table[:110] + " [its own section said: " + section[:60] + "]")[:180]
 
-    return "-"
+    return (table or section or "-")[:120]
 
 
 def first_evidence(body):
@@ -260,6 +352,24 @@ def citations_in_the_code():
     return used
 
 
+def fromTheTable(row):
+    """What a document's status table says about a ref, in one line, for a finding that has a heading.
+
+    The disposition column where the table names one, its last cell otherwise - which is where the
+    README's layout puts it.  A `| id | status | where |` table was read to its last cell, so the
+    fallback disposition of a headed finding was the EVIDENCE column.
+
+    :param row: a `table_rows` entry, or None
+    :return: the line, or "" for a ref no table mentions
+    """
+    if not row:
+        return ""
+
+    said = cell_under(row, DISPOSES[:-2]) or (row["cells"][-1] if row["cells"] else "")
+
+    return " ".join(said.split())
+
+
 def collect():
     rows = []
 
@@ -311,20 +421,49 @@ def collect():
         # resolved to nothing until these were collected.
         headed = set(ref for _, ref, _ in marks)
 
-        for ref, cells in summary.items():
+        for ref, row in summary.items():
             if ref in headed:
                 continue
 
-            # The first cell is the document's own one-line description; the last is its disposition by
-            # the README's layout.  With only one cell it is the disposition, and there is no title.
-            described = " ".join(cells[0].split())[:150] if len(cells) > 1 else ""
+            cells = row["cells"]
+
+            # BY THE TABLE'S OWN HEADER first.  Positionally, the first cell is the description and the
+            # last is the disposition by the README's layout - but a `| id | what |` table has one cell
+            # and it is the description, while a `| id | status |` table has one and it is not.  Two
+            # hundred D findings were catalogued with no text at all because the difference was guessed.
+            described = cell_under(row, DESCRIBES)
+            disposed = cell_under(row, DISPOSES)
+
+            if not described:
+                described = cell_under(row, SUBSTANCE)
+
+                # Unless that column is the one the verdict came from, in which case there is only one
+                # cell of substance and it is already recorded.
+                if described == disposed:
+                    described = ""
+
+            if not described and not disposed:
+                if len(cells) > 1:
+                    described = cells[0]
+                    disposed = cells[-1]
+                elif cells:
+                    # ONE CELL AND NO HEADER.  `| **PFX-D1** | The getNeighbors shuffle at its other
+                    # ten callers |` is a description and `| SVV-C2 | answered |` is a verdict.  The
+                    # text is kept as the disposition either way, so nothing is lost by reading it
+                    # wrongly - but a D finding whose row was read as a verdict has no description at
+                    # all, and the row is the record once the document is gone.
+                    disposed = cells[0]
+                    described = "" if reads_as_a_verdict(cells[0]) else cells[0]
+                else:
+                    disposed = "-"
 
             rows.append({
                 "ref": ref,
                 "document": name,
                 "severity": severity_of(ref, "", ""),
-                "what": described or "(listed in a table, no section of its own)",
-                "disposition": " ".join(cells[-1].split())[:120] if cells else "-",
+                "what": " ".join(described.split())[:150]
+                        or "(listed in a table, no section of its own)",
+                "disposition": " ".join((disposed or "-").split())[:120],
                 "where": "",
                 "commit": "",
                 "line": 0,
@@ -344,7 +483,7 @@ def collect():
                 # Headings read `### FP-B1. Rename-on-import can delete...`, so the remainder after the
                 # ref starts with the separator.  Stripped, or every title in the catalogue opens ". ".
                 "what": " ".join(title.split()).lstrip(".:-\u2013\u2014 ")[:150] or "(no heading text)",
-                "disposition": disposition_of(body, " ".join(summary.get(ref, [""])[-1].split())),
+                "disposition": disposition_of(body, fromTheTable(summary.get(ref))),
                 "where": where,
                 "commit": commit,
                 "line": at + 1,

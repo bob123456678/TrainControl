@@ -19,9 +19,11 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 /**
  * What drawing the track diagram actually costs, measured rather than guessed.
  *
- * A MEASUREMENT, and deliberately generous about what it will accept. Its job is to keep the numbers
- * in docs/reviews/2026-08-19-rendering-cost.md honest: a report saying "this is fast now" that is
- * never re-run stops being true the first time somebody puts a loop where a lookup should be.
+ * A MEASUREMENT, and deliberately generous about what it will accept. Its job is to keep the figures
+ * of the 2026-08-19 rendering-cost report honest - a report saying "this is fast now" that is never
+ * re-run stops being true the first time somebody puts a loop where a lookup should be. That report
+ * was deleted with the review folder; the thresholds below are what is left of it, which is the half
+ * that can fail.
  *
  * Thresholds are roughly ten times the measured cost. A tenfold regression is not a micro-optimisation
  * anybody argues about - it is a loop that should not be there - and setting them near the real figure

@@ -6,9 +6,11 @@ needs the real railway or a display lives there and nowhere else.
 Set 2026-08-22, at Adam's request, after the tests had spread across three documents and their results
 had to be pieced together from comments interleaved with the instructions.
 
-This changes nothing about `docs/reviews/` - findings, severities and dispositions carry on exactly as
-[docs/reviews/README.md](../reviews/README.md) describes. What changes is where the HANDS-ON half is
-written down.
+This changes nothing about how findings are recorded - severities and dispositions carry on exactly as
+[docs/reviews/README.md](../reviews/README.md) describes, and since 2026-09-21 that file is the
+convention rather than a folder of documents: a round's reviews are catalogued into
+`docs/manual-tests/triage.db` and deleted in the round that wrote them. What changes here is where the
+HANDS-ON half is written down.
 
 ---
 
@@ -115,9 +117,11 @@ the next round.
 **Emptying it means a one-line receipt in the table at the bottom of the inbox, and the item leaves
 the Inbox section - but where it goes from there depends on what it is.**
 
-A **bug** becomes a finding in `docs/reviews/` under that round's prefix, gets fixed there, and gets
-an entry in `tests.md` with a new `MT-###` tag and the disposition **needs test** - a bug fix needs a
-repeatable hands-on check that the regression stays fixed, which is exactly what `tests.md` is for.
+A **bug** becomes a finding under the round's prefix - in the round's own review document while it is
+being worked, and in the `finding` table of `triage.db` once the round is catalogued and its documents
+deleted - gets fixed, and gets an entry in `tests.md` with a new `MT-###` tag and the disposition
+**needs test**: a bug fix needs a repeatable hands-on check that the regression stays fixed, which is
+exactly what `tests.md` is for.
 
 A **feature request** is tracked directly in the receipt table instead: a **State** column, in
 three of the four words `tests.md`'s disposition uses (not **superseded**, which has no meaning
@@ -305,9 +309,9 @@ does that from what you wrote.
    the table is for Adam; the command is the same information without a chance of a mis-scan.
 2. Read the Comments on every entry that is not validated.
 3. A comment saying the test passed moves that entry to **fixed validated**.
-4. A comment describing something wrong becomes a finding in `docs/reviews/` under that round's prefix,
-   fixed there, and the entry moves to **fixed unvalidated** with the new finding tag added to its
-   **From** line.
+4. A comment describing something wrong becomes a finding under the round's prefix - catalogued into
+   `triage.db` like every other, whether or not a document survives to hold it - is fixed, and the
+   entry moves to **fixed unvalidated** with the new finding tag added to its **From** line.
 5. **Before a comment asking for something new becomes a new entry, run `triage.py issues` and check
    the existing ledger for one that already covers it.** Only if nothing does, add a NEW entry at the
    bottom, referencing the tag it came from. This is the step that goes missing when a round is in a

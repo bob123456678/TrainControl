@@ -14,7 +14,8 @@ control.
 leaves to the north. So a train that arrived by E is facing N, and the compass opposite of its facing —
 S — is a side that square has no track on at all.
 
-That is the shape behind **REV9-B3** (`docs/reviews-2026-09-09/REV-reversal-mechanics-review.md`): the
+That is the shape behind **REV9-B3** (`grep REV9-B3 docs/manual-tests/findings.tsv`; the review itself
+was deleted with the rest of the folder on 2026-09-21): the
 hand-placement door computes an ordinary station's arrival side as the compass opposite of the facing,
 which on a curved station records a side no build edge enters by, and the tail walk in
 `Layout.edgesCoveredByStandingTrains` then silently blocks nothing. Every tail fixture in this suite

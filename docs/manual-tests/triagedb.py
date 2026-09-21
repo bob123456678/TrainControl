@@ -480,10 +480,12 @@ def render_findings(conn, path=FINDINGS_MIRROR):
     out = ["# Every review finding. Rendered from docs/manual-tests/triage.db - do not hand-edit.",
            "# Regenerate: python -c \"import triagedb; triagedb.render_findings(triagedb.connect())\"",
            "#",
-           "# ref<TAB>document<TAB>status<TAB>disposition-as-that-document-stated-it",
+           "# ref<TAB>document<TAB>status<TAB>disposition-as-stated<TAB>what it was about",
            "#",
-           "# The DOCUMENTS ARE GONE - deleted 2026-09-08, and in git history before that. This file and",
-           "# the database are what is left of them.",
+           "# The DOCUMENTS ARE GONE - 143 deleted 2026-09-08 and the last 65 on 2026-09-21, and in git",
+           "# history before that. This file and the database are what is left of them, and the last",
+           "# column is here so that this file is enough on its own: somebody who has just found a",
+           "# citation in a comment should not need a SQLite driver to find out what it referred to.",
            "#",
            "# `disposition` is what a document said ON THE DAY IT WAS WRITTEN, and nothing ever updated",
            "# one: of 63 A-severity findings still reading `open`, 13 were checked against the code and",
@@ -494,18 +496,19 @@ def render_findings(conn, path=FINDINGS_MIRROR):
 
     n = 0
 
-    for r in conn.execute("SELECT ref, document, status, disposition FROM finding"
+    for r in conn.execute("SELECT ref, document, status, disposition, title FROM finding"
                           " ORDER BY ref, document"):
-        out.append("%s\t%s\t%s\t%s" % (
+        out.append("%s\t%s\t%s\t%s\t%s" % (
             r["ref"], r["document"], r["status"] or "-",
-            " ".join((r["disposition"] or "-").split())[:90]))
+            " ".join((r["disposition"] or "-").split())[:90],
+            " ".join((r["title"] or "-").split())[:150]))
 
         n += 1
 
     out.append("# DEAD - cited, no finding behind them")
 
     for r in conn.execute("SELECT ref FROM dead_citation ORDER BY ref"):
-        out.append("%s\t-\t-\t-" % r["ref"])
+        out.append("%s\t-\t-\t-\t-" % r["ref"])
 
     out.append("")
 

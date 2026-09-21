@@ -1,15 +1,45 @@
 # Code review discipline
 
-How reviews in this folder are run and recorded. Every rule below exists because it was broken during
-the July 2026 review; the example after each one is what it cost.
+How a review round is run and recorded. Every rule below exists because it was broken during the July
+2026 review; the example after each one is what it cost.
 
-The documents already in this folder predate the A/B/C/D convention below and use several ad-hoc
-letters. They are left as they are - their identifiers are referenced from commits and from each other,
-and renumbering would break that for no gain. The convention applies to new reviews.
+**This folder holds no reviews, and that is deliberate.** It is the convention, not the home. Two
+hundred and eight review documents were written between 26 July and 20 September 2026 and every one of
+them has been deleted - 143 on 2026-09-08, the last 65 on 2026-09-21 - once the catalogue was carrying
+what they found. What survives a round:
 
-[2026-07-cycle-summary.md](2026-07-cycle-summary.md) indexes the July 2026 cycle: which pass covered
-what, the patterns that recurred across passes, and the consolidated reviewer-error tally. Start there
-rather than with any single document.
+| | |
+|---|---|
+| every finding | the `finding` table in `docs/manual-tests/triage.db` - ref, severity, what it was about, the evidence, the commit, which source files cite it, and a `status` set deliberately |
+| the same, greppable | `docs/manual-tests/findings.tsv`, rendered from the store: `grep "^MKR-B1" docs/manual-tests/findings.tsv` |
+| the rules it settled | [../reference/behaviour.md](../reference/behaviour.md) |
+| the questions it left | [../reference/open-questions.md](../reference/open-questions.md) |
+| the work it left | the Inbox in [../manual-tests/issues.md](../manual-tests/issues.md) |
+| the tests it asked for | [../manual-tests/tests.md](../manual-tests/tests.md), tagged `MT-###` |
+
+Adam's ruling on MON-C11, 2026-09-08: *"update our MT triage database to catalog each review item. Now,
+no reference will ever be stale or lost, but useless prose will go away. Then everything relevant, that
+needs to be in prose, will live in behaviour.md."*  And on 2026-09-21: *"let's clean up all the stale
+code reviews in /docs/ ... I don't want more reviews living in the repo."*
+
+**So a round's documents are written, catalogued and deleted in the same round.** Write them - a review
+nobody can read while it is being acted on is no use - then run
+
+```
+python docs/tools/catalog-findings.py --add docs/<the round's folder>
+```
+
+which is authoritative for the documents in it, and delete them in the commit that closes the round.
+
+A document that outlives its round is a document whose status table stops being maintained, and every
+audit of these has found the same thing in the same direction: rows reading "open" for work finished
+days earlier. Thirteen such rows on 2026-09-08, and on 2026-09-21 six findings whose own tables said
+Open while the code carried the fix and a comment naming it. Nothing has ever been found to read
+"fixed" when it was not.
+
+The findings themselves keep their old identifiers. Several early documents predate the A/B/C/D
+convention below and use ad-hoc letters; their ids are cited from commits, from comments and from each
+other, and renumbering would break that for no gain.
 
 **Hands-on tests live somewhere else.** Everything that needs the real railway or a display is in
 [../manual-tests/tests.md](../manual-tests/tests.md), under the rules in
@@ -24,10 +54,7 @@ here.
 
 ---
 
-## Archiving
-
-The main folder is for work that still needs somebody. Everything else lives in
-[archive/](archive/README.md).
+## While the round is running
 
 ### Every document carries an overall status
 
@@ -49,20 +76,24 @@ Three values, and no others:
 archiving something that still needs attention, and forgetting to write a line is far more likely than
 writing the wrong one.
 
-### Moving
+### What the status line is for, now that nothing is archived
 
-- `open` -> stays in `docs/reviews/`.
-- `closed` -> moved to `docs/reviews/archive/`, and a row added to the table in its README saying when
-  and why.
-- `reopened` -> moved straight back out of the archive, whatever else is true.
+There was an `archive/` folder and a rule about moving documents into it. Both are gone: a closed
+document is catalogued and deleted, so there is nothing to move and nowhere to move it to.
 
-Nothing is renamed when it moves. Identifiers are cited from commits and from other documents, and a
-document that changes name breaks those silently - which is the same rule the findings themselves
+The status line still earns its place while the round is open. It is the one line a fix commit has to
+change, and it is what makes the end of a round checkable: a folder in which every document reads
+`closed` is a folder that can be deleted, and one in which any document reads `open` is a round that is
+not finished. Write it, and keep it true - the audits above are all of documents whose status tables
+were left behind by their own fixes.
+
+Nothing is renamed, ever. Identifiers are cited from commits, from comments and from other documents,
+and a document that changes name breaks those silently - which is the same rule the findings themselves
 follow.
 
 ### Three kinds of document, not one
 
-The folder holds three things, and only the first is a review:
+A round produces three things, and only the first is a review:
 
 1. **Reviews** - findings with severities and dispositions. Closed when every finding is.
 2. **Plans and proposals** - a decision written down before the work. Closed when the work is done, or
