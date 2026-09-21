@@ -439,14 +439,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     // The guard has this third arm and got it in the same commit that widened it; the
                     // affordance did not.  `errorCannotBuildDetailOne` is the load door's own wording
                     // for exactly this state.
-                    int errors = ui.autonomyErrorCount();
-
-                    menuItem.setToolTipText(AutonomyEditorPanel.wrapped(
-                        errors > 0
-                            ? I18n.f("autolayout.ui.errorCannotStartWithErrors", errors)
-                            : ui.autonomyHasErrors()
-                                ? I18n.t("autosetup.ui.errorCannotBuildDetailOne")
-                                : I18n.t("autolayout.errorUnableToStartAutonomyWaitForTrains")));
+                    // THROUGH THE ONE RULE (MT-263).  This wording was chosen here, and it never asked
+                    // how many blocking problems there were - so three of them read as one.
+                    menuItem.setToolTipText(AutonomyEditorPanel.wrapped(ui.whyAutonomyWillNotStart()));
                 }
 
                 menuItem.addActionListener(event -> 

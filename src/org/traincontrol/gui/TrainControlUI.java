@@ -5949,29 +5949,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // not the checks also managed to turn it into a finding.
         if (!getAutonomySession().hasErrors()) return false;
 
-        int errors = getAutonomySession().errorCount();
-
-        // The count when there is one, and the graph's own message when there is not.
+        // THROUGH THE ONE RULE (MT-263), which is where the wording and the counting now live.
         //
-        // `errorCannotBuildDetailOne` is the LOAD door's singular form, and it is right here for the
-        // reason that door has a singular at all: this branch is reached when nothing produced a
-        // finding and the graph simply will not build, which is one thing rather than a number of
-        // them (DY3-C7).
-        // THE SAME PAIR THE LOAD DOOR PICKS FROM, and picked the same way (DY3-C7).
-        //
-        // `errorCannotBuildDetailOne` is the singular of two and this took it unconditionally, so with
-        // three blocking problems it said one thing has to be dealt with.  The load door counts, and
-        // says why: "1 things" in the one message a user meets before their railway will run is not
-        // the first impression to make.
-        org.traincontrol.automationui.AutonomySession asked = getAutonomySession();
-
-        int blocking = asked == null ? 0 : asked.blockingProblemCount();
-
-        JOptionPane.showMessageDialog(this, errors > 0
-            ? I18n.f("autolayout.ui.errorCannotStartWithErrors", errors)
-            : blocking > 1
-                ? I18n.f("autosetup.ui.errorCannotBuildDetail", blocking)
-                : I18n.t("autosetup.ui.errorCannotBuildDetailOne"));
+        // This door was the only one of the three that counted: the singular is the load door's form and
+        // is right where nothing produced a finding and the graph simply will not build, but taken
+        // unconditionally - as the tooltip and the scripting API both took it - three blocking problems
+        // read as one thing to deal with (DY3-C7).  The load door counts and says why: "1 things" in the
+        // one message a user meets before their railway will run is not the first impression to make.
+        JOptionPane.showMessageDialog(this, whyAutonomyWillNotStart());
 
         return true;
     }
@@ -24073,6 +24058,60 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Why autonomy will not start, in the words the operator should read (MT-263).
+     *
+     * **Three doors ask this and two of them were wording it themselves.**  The greyed Start item's tooltip on
+     * the diagram menu and the scripting API's exception both read *"one thing has to be dealt with first"*
+     * whenever `hasErrors()` was true and the error COUNT was zero - which is precisely a graph that will not
+     * build, where the count is zero because nothing turned the problem into a finding.  With three such
+     * problems they said one.  The Start dialog had been given the count and its two twins had not, which is
+     * the shape DY3-C7 filed and OB-090 wore twice.
+     *
+     * The wait-for-trains sentence is the other half.  It is the right answer only when nothing is wrong with
+     * the setup at all and the refusal is about trains being in motion; reached with a broken graph it tells
+     * the operator to wait for trains that are not running and never will be.
+     *
+     * Four answers, in the order they have to be asked:
+     *
+     *  - error findings -> name how many, because the editor can take them there;
+     *  - more than one blocking problem -> name how many, and point at the count along the top;
+     *  - exactly one, or a setup that will not run for any other reason -> the singular of the same sentence;
+     *  - nothing wrong with the setup -> wait for the trains, which is now the only way to reach it.
+     *
+     * @return the sentence, already translated
+     */
+    public String whyAutonomyWillNotStart()
+    {
+        org.traincontrol.automationui.AutonomySession asked = getAutonomySession();
+
+        return whyAutonomyWillNotStart(autonomyErrorCount(),
+            asked == null ? 0 : asked.blockingProblemCount(), autonomyHasErrors());
+    }
+
+    /**
+     * The same rule as a function of the three things it reads, so it can be asked directly.
+     *
+     * The window above supplies them; separated because what went wrong was the ARITHMETIC - words chosen
+     * from the error count while the blocking count was the thing that was not zero - and a test of that
+     * should not have to build a broken railway to ask it.
+     *
+     * @param errors how many error findings the setup has
+     * @param blocking how many problems would stop it being built
+     * @param broken whether the setup will not run for any reason at all
+     * @return the sentence, already translated
+     */
+    static String whyAutonomyWillNotStart(int errors, int blocking, boolean broken)
+    {
+        if (errors > 0) return I18n.f("autolayout.ui.errorCannotStartWithErrors", errors);
+
+        if (blocking > 1) return I18n.f("autosetup.ui.errorCannotBuildDetail", blocking);
+
+        if (blocking == 1 || broken) return I18n.t("autosetup.ui.errorCannotBuildDetailOne");
+
+        return I18n.t("autolayout.errorUnableToStartAutonomyWaitForTrains");
+    }
+
+    /**
      * How many blocking findings the loaded setup has, or zero when there is nothing to ask.
      *
      * The number, for saying WHAT is wrong - not the question that decides (TS3-B6).
@@ -24129,15 +24168,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // finding - and in that case the count is zero, so this fell to "wait for trains" and told
             // the caller to wait for something that is not happening.  The guard itself gained this
             // third arm in the commit that widened it; its two twins did not.
-            int errors = autonomyErrorCount();
-
-            throw new Exception(
-                errors > 0
-                    ? I18n.f("autolayout.ui.errorCannotStartWithErrors", errors)
-                    : autonomyHasErrors()
-                        ? I18n.t("autosetup.ui.errorCannotBuildDetailOne")
-                        : I18n.t("autolayout.errorUnableToStartAutonomyWaitForTrains")
-            );
+            // THROUGH THE ONE RULE (MT-263).  This said "one thing has to be dealt with first" for any
+            // number of blocking problems, because it never asked how many there were.
+            throw new Exception(whyAutonomyWillNotStart());
         }
     }
 
