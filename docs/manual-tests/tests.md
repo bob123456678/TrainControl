@@ -69,7 +69,7 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-465](#mt-465) | 2026-09-19 | The four arrow buttons honour the Control and Alt clicks their tooltips promise | fixed unvalidated | UIX-C5, GUX-C1 |
 | [MT-466](#mt-466) | 2026-09-19 | Cancel on the function editor undoes a Copy Customizations | fixed unvalidated | GUX-C3 |
 | [MT-467](#mt-467) | 2026-09-19 | Turning a local route's automatic execution on or off does not wait for the Central Station | fixed unvalidated | GUX-C5 |
-| [MT-468](#mt-468) | 2026-09-19 | Every screen still finds its text after 118 unused message keys were removed | fixed unvalidated | UIX-C4 |
+| [MT-468](#mt-468) | 2026-09-19 | Every screen still finds its text after 239 unused message keys were removed | fixed unvalidated | UIX-C4 |
 | [MT-469](#mt-469) | 2026-09-19 | The capture-target tooltip and the arrival-side label read correctly | fixed unvalidated | GUX-C2, UIX-C3 |
 
 Everything else - 425 of 469 - needs nothing from you unless the area changes again:
@@ -19298,6 +19298,9 @@ that he would rather have no check than one that refuses something legal.
    At...*. The dialog now has an **arrived from** row at the bottom.
 2. Leave it as it opened, pick a locomotive and press OK.
 3. Right-click that square again, open *Train arrived from* in the menu, and see which side is ticked.
+   If that item is **missing**, check whether a train is standing on the square on the RUNNING railway:
+   since 2026-09-20 it is offered only there, because a side written onto an empty square is one nothing
+   reads and nothing saves (OP3-C7).  Placing a train asks for a rebuild, so it should be there.
 4. Do the same thing from the **track diagram's** right-click menu, on a different station.
 5. Open the dialog again on a train that is already standing somewhere with a side recorded - change an
    arrival function only, and press OK.
@@ -23022,6 +23025,8 @@ Rewritten the same day after review MAL, to your rulings *"Every leg, cut at swi
 
 ### MT-455 - 2026-09-16 - The Unmeasured Track display highlights the track still needing a length, and follows every edit
 
+**One thing to expect while you are part-way through** (RTX-C2, and your ruling of 2026-09-19 that clear warnings are enough here): skipping a piece to reach the switch prompt leaves that piece at zero with the switches around it measured, and while it is in that state every parking berth behind it is closed to any train whose length is known.  The room rule claims a square before it spends on it and an unmeasured square spends nothing, so the whole approach is claimed.  Since 2026-09-20 the refusal says so - it names how many squares of that approach still have no length - and measuring them clears it.
+
 **Disposition:** fixed unvalidated
 **From:** FR-089
 
@@ -23455,14 +23460,16 @@ From the 2026-09-19 review round, fixed the same day.  OB-155 took the post-chan
 
 <a id="mt-468"></a>
 
-### MT-468 - 2026-09-19 - Every screen still finds its text after 118 unused message keys were removed
+### MT-468 - 2026-09-19 - Every screen still finds its text after 239 unused message keys were removed
 
 **Disposition:** fixed unvalidated
 **From:** UIX-C4
 
 **Written:** 2026-09-19
 
-From the 2026-09-19 review round, fixed the same day.  118 keys in all eight language files belonged to windows that left the build - GraphViewer, GraphEdgeEdit, GraphLocExclude and the old route editor - and they hid the live keys among the dead for anyone reading a bundle to find out what a screen says.  A key removed by mistake shows as the key's own name, or an error, where the text should be.
+From the 2026-09-19 review round, finished the next day.  Keys in all eight language files belonged to windows that left the build - GraphViewer, GraphEdgeEdit, GraphLocExclude and the old route editor - and they hid the live keys among the dead for anyone reading a bundle to find out what a screen says.  A key removed by mistake shows as the key's own name, or an error, where the text should be.
+
+**239 keys, not the 118 this entry first said.**  The guard written to certify the clean-up could not see half of them: it let any string literal that happened to be a prefix of a key shield it, and a literal inside an ASSERTION in a test file shielded ninety-eight on its own (OP3-B1).  A second pass took the other 119 out and narrowed the rule to the five places the code really builds a key by concatenation.  A third took two more that were alive only inside a commented-out menu (FNL-C2).  The bundles went from 2,033 keys to 1,796, so this walk matters more than it did when it was written.
 
 **Steps**
 
@@ -23498,12 +23505,17 @@ From the 2026-09-19 review round, fixed the same day.  The route editor's captur
 1. Open a route in the route editor and hover over the capture-target selector.
 2. Set it to capture into conditions, turn capture on, and roll a train over a sensor.
 3. Open the autonomy locomotive assignment window and look at the **arrived from** label.
+4. Load a layout whose autonomy setup you have not loaded, go to the track diagram, and look at the
+   **Load this configuration** button on the strip above it.
 
 **Expected**
 
 - The tooltip says both accessories and sensors are captured, and that a repeat of the same one within a few seconds is ignored.
 - The sensor does land in the conditions, which is what the tooltip now describes.
 - The arrival-side label is the same blue as the other section labels on hand-written screens.
+- The banner's button is bold, the same weight as the buttons on the other hand-written screens - your
+  ruling of 2026-09-20, *"align the buttons to the standard, make them 12 bold"*.  It was plain 12 from
+  2026-08-17, two days before the interface standard was written down.
 
 *What this is:* review findings GUX-C2 and UIX-C3, fixed 2026-09-19; both are text and colour, so there is nothing a test can read.
 
