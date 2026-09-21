@@ -37,7 +37,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-326](#mt-326) | 2026-09-07 | A declined setup edit survives quitting (a race, not a mode) | fixed unvalidated | ACC-B3 (split from MT-269) |
 | [MT-380](#mt-380) | 2026-09-13 | Autonomy can be set up by importing, from the menu, with nothing set up yet | fixed unvalidated | FR-007 |
 | [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
-| [MT-437](#mt-437) | 2026-09-15 | What the measured route in holds, and which tier is bound by it | needs test | FR-087 |
 | [MT-438](#mt-438) | 2026-09-15 | The tail question: a sensor at exactly the length, roads a train can drive, and a default | fixed unvalidated | OB-226, OB-227, FR-088 |
 | [MT-439](#mt-439) | 2026-09-15 | Why Not Moving? and Test a Path both follow Path Type | fixed unvalidated | OB-225 |
 | [MT-440](#mt-440) | 2026-09-15 | Return Home does not route a train over the tail of one it has just parked | fixed unvalidated | OB-228 |
@@ -62,13 +61,12 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-462](#mt-462) | 2026-09-19 | A switch thrown during a route highlight is drawn in its real position | fixed unvalidated | UIX-B2 |
 | [MT-463](#mt-463) | 2026-09-19 | Return Home moves a train the railway had standing on a terminus | fixed unvalidated | RTX-B1 |
 | [MT-464](#mt-464) | 2026-09-19 | A locomotive cannot be deleted or renamed while a route that drives it is running, and the route finishes | fixed unvalidated | CS3-B1 |
-| [MT-465](#mt-465) | 2026-09-19 | The four arrow buttons honour the Control and Alt clicks their tooltips promise | fixed unvalidated | UIX-C5, GUX-C1 |
 | [MT-466](#mt-466) | 2026-09-19 | Cancel on the function editor undoes a Copy Customizations | fixed unvalidated | GUX-C3 |
 | [MT-467](#mt-467) | 2026-09-19 | Turning a local route's automatic execution on or off does not wait for the Central Station | fixed unvalidated | GUX-C5 |
 | [MT-468](#mt-468) | 2026-09-19 | Every screen still finds its text after 239 unused message keys were removed | fixed unvalidated | UIX-C4 |
 
-Everything else - 430 of 469 - needs nothing from you unless the area changes again:
-379 **fixed validated** and 51 **superseded**.
+Everything else - 432 of 469 - needs nothing from you unless the area changes again:
+381 **fixed validated** and 51 **superseded**.
 
 ---
 
@@ -22522,7 +22520,7 @@ Works, and the tooltip you pointed at is shorter. Fifteen of the longest tooltip
 
 ### MT-437 - 2026-09-15 - What the measured route in holds, and which tier is bound by it
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-087
 
 **Written:** 2026-09-15
@@ -22552,27 +22550,26 @@ for.  Write the total down and judge the steps against it rather than against th
 - Step 3: orange back over the track it stands across, towards Tunnel - its tail is on the route it came
   in by, and other trains are kept off it.
 - Step 4, by hand: **offered.**  Your ruling of 2026-09-21 - *"in manual operation, A should be
-  selectable"* - and it is the tier rule rather than the length rule doing the work.
-- Step 4, autonomy: **never chosen.**  *"but in auto, not."*
+  selectable"* - and it is the room rule doing the work, not a tier rule.
+- Step 4, autonomy: **also chosen, unless the station's own maximum refuses it.**  Your ruling of
+  2026-09-21: *"let's go for the 9-12 ruling, since the max train length at the station should be the
+  main auto gate."*  So what keeps a long train out of a station in autonomy is that station's **Max
+  Train Length** - `Point.validateTrainLength`, asked at every tier and untouched by FR-087 - and not
+  the geometry of its approach.  BottomMainA has no maximum set, so it is chosen.
 - Step 5: refused as before - a parking berth still has to hold the train past its last switch.
 
-**ONE QUESTION BEFORE THE AUTONOMY HALF CAN BE BUILT, and it is a question about two of your own
-rulings rather than about the code.**  On 2026-09-12 you ruled that a station autonomy may choose MAY
-take a train that comes to rest across the points - *"so we need a clear rule to govern that this is
-OK, or simply make a rule that parking berths cant block any other edges, but not make that check for
-active stations"* - and that is FR-087, which is what `Layout.whyTooLongForThisRoute` now implements for
-every tier alike.  On 2026-09-21 you wrote *"in manual operation, A should be selectable, but in auto,
-not"*, which narrows it: autonomy would then refuse a station where the train stands over the points
-even though the route in measures enough.
+**SETTLED, 2026-09-21: FR-087 STANDS AT BOTH TIERS.**  Your verdict on this entry asked for a station
+autonomy may choose to be refused where a train comes to rest across the points, which contradicted your
+ruling of 2026-09-12 that such a station MAY take it - *"or simply make a rule that parking berths cant
+block any other edges, but not make that check for active stations"*.  Shown the two, you chose the
+first: *"Let's go for the 9-12 ruling, since the max train length at the station should be the main auto
+gate."*
 
-Both cannot hold.  Which is it:
-
-- **(a) FR-087 stands.** A train the measured route in holds may be sent there by hand AND chosen by
-  autonomy; what you saw at length 4 was right in both tiers, and the only fix here is this entry.
-- **(b) The allowance is manual's alone.** Autonomy chooses a station only where the train fits without
-  standing across the points; the room rule gains a tier argument, and the refusal moves with it.
-
-Nothing is changed in the code until you say.  Reading (a) is what ships today.
+So there is one room rule and every tier asks it, which is what `Layout.whyTooLongForThisRoute` already
+does; **the gate that keeps a long train out of a station in autonomy is that station's own Max Train
+Length**, which is a number you set per square and is asked of every arrival
+(`Point.validateTrainLength`, `core.testATrainTooLongIsRefusedTheBerth`).  Nothing in the code changed
+for this ruling; what was wrong was step 4 of this entry, and it now reads the way your run behaved.
 
 *What this is:* FR-087, which turns round step 4 of MT-431.  At a station autonomy may choose, a train fits if the measured track of the route it drives in on holds it, counted back without a gap and never back past a square it turns at; parking berths are unchanged.  `regression.testAPassingTrainMayStandAcrossThePoints.testTheRouteInHoldsAThreeUnitTrainAndNotAFourUnitOne`, seen red first; commit `9cc6a874`.
 
@@ -22587,6 +22584,10 @@ Both 3 and 4 offered BottomMainA, and ran there.    But this is OK behavior- in 
 **Claude, 2026-09-21.**
 
 Your verdict splits into three things, and two of them are mine to fix. (1) The lengths this entry named were never a property of the railway: the rule is that the measured route in holds the train, and the route in is the two legs Tunnel-BottomMainAPre plus BottomMainAPre-BottomMainA. Measured on your layout today those are 1 and 3, so the room is FOUR and a four-unit train fits - which is exactly what you saw. When the entry was written it was three, from the measurements MT-431 asked for. The entry now tells you to read the total first and judge against it, and MT-431's note has been corrected the same way. (2) The manual half is right and is already what ships: the right-click door asks Layout.whyTooLongForThisRoute, the same rule isPathClear asks, so a send by hand is refused only when the room really is short. (3) The autonomy half cannot be built until you settle a contradiction between two of your own rulings, and it is written out in the entry: on 2026-09-12 you ruled that a station autonomy may choose MAY take a train that comes to rest across the points, which is FR-087 and is what the code does in every tier; on 2026-09-21 you wrote 'in manual operation, A should be selectable, but in auto, not', which takes that allowance away from autonomy. Reading (a) keeps FR-087 for both tiers and there is nothing to change; reading (b) gives the room rule a tier argument. Nothing has been changed in the code. Disposition left at needs test until you pick.
+
+**Claude, 2026-09-21.**
+
+Your ruling, 2026-09-21: reading (a) - 'let's go for the 9-12 ruling, since the max train length at the station should be the main auto gate.' So FR-087 stands at both tiers, there is one room rule and every tier asks it, and what keeps a long train out of a station in autonomy is that station's own Max Train Length (Point.validateTrainLength, asked of every arrival). Nothing in the code changed: the behaviour you saw at lengths 3 and 4 was right at both doors. Step 4 of this entry is rewritten to say so, the contradiction block is replaced by the ruling, and the entry is closed on your run - both offered, both ran, and the tails were where you say they were.
 
 ---
 
@@ -23488,6 +23489,10 @@ make an automated test for this with appropriate placements.
 
 *Run against commit d8e2b3f7, build\classes, compiled 21 Sep 07:55 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-21.**
+
+Built, and it runs on your own railway rather than on a four-station ring. core.testReturnHomeOnRealLayout.testATrainOnATurningSquareCanStillBeBroughtHome stages the placements itself: for each train it finds a terminus or reversing square that is not that train's home and is standing empty, puts the train there through the same moveLocomotive door you use, asks for a plan as the train is (the control), then asks again with the train unable to reverse - which must still plan - and puts it back. A hand placement does not re-home an already-homed locomotive, which is what makes the arrangement stageable at all. Two things worth knowing. The first version ran autonomy and took whatever came to rest on a turning square, and over three runs on your layout nothing did: the test SKIPPED, which is no better than the 'could not run this' it was written for, so the placements are staged now and there is a floor that fails if no train could be staged. And the mutation was measured, not assumed: taking the RTX-B1 fix back out (turnedByThePlan asking the square instead of the journey) turns this red on your railway as well as the two hand-built claims in core.testHomeStaging - so the arrangement genuinely arises there. Those two hand-built claims, which were written with the fix and seen red first, cover step 4's homeless train; this one covers step 3 on real track.
+
 ---
 
 <a id="mt-464"></a>
@@ -23507,6 +23512,13 @@ From the 2026-09-19 review round (CS3-B1), fixed the same day.  Deleting a locom
 2. Run it from the Routes tab, and while it is running right-click that locomotive and choose **Delete**.
 3. Do the same again, this time choosing to change its name or address while the route runs.
 4. Let the route finish, then try the delete again.
+5. **The chain.**  Make two routes: an INNER one whose only command is a function on a locomotive, and
+   an OUTER one that sets a turnout with a ten-second delay and then fires the inner route.  Run the
+   outer one, and while it is still sitting in that delay - before the inner route has fired anything -
+   try to delete that locomotive from the locomotive database.
+6. **The function number.**  In the route editor, give a command the kind **Function**, name an **MM2**
+   locomotive as its target, and open the function-number cell.  Then type a number past the end of
+   what that decoder has - F32 on an MM2 - and press Save.
 
 **Expected**
 
@@ -23514,6 +23526,11 @@ From the 2026-09-19 review round (CS3-B1), fixed the same day.  Deleting a locom
 - The route finishes every one of its commands - every turnout it names ends up set.
 - After the route has finished, the delete and the rename work as before.
 - Deleting a locomotive while autonomy is running is refused as it always was.
+- Step 5 refuses as well, and names the **outer** route: a route that is about to fire another route
+  drives whatever that route drives, seconds later, on a thread that has not started yet.
+- Step 6: the cell offers **only the functions that locomotive has** - F0 to F4 on an MM2, and nothing
+  else.  A number already stored out of range is offered too, so that merely opening the cell cannot
+  change the command; and if you get one in by any other road, Save refuses it by name.
 
 *What this is:* review finding CS3-B1, fixed 2026-09-19 with a test seen failing first and a mutation for each half.
 
@@ -23525,13 +23542,17 @@ I made Route 1, that fires a loc a route that fires a loc function after 10000ms
 
 *Run against commit d8e2b3f7, build\classes, compiled 21 Sep 07:55 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-21.**
+
+Both halves are real and both are fixed; each was a different defect from the one this entry was written for, so the entry has gained a step for each. (1) THE DELETE. runningRouteDriving - the question every door asks before it edits or deletes a locomotive - asked each executing route about its OWN command list. Your Route 1 fires a route, and the route it fires is what drives ALCO UP: that happens seconds later on a thread nobody has started yet, so Route 1 answered no and every door stood open for the whole ten-second delay. It now follows the ROUTE command one hop, which is all execRoute permits (it starts at a recursion limit of 1 and hands limit-1 down). commandsDrive is unchanged, because it answers a different question - which commands a delete will take out of THIS route - and following chains there would overcount your warning. core.testAdvancedRoutes.testARunningRouteIsDrivingWhatTheRouteItChainsToDrives, seen red first: the guard returned null four seconds before the function was due. (2) F32. The Save gate has always checked this - number >= loco.getNumF(), and an MM2 reports five - but nothing said so as you typed, because the command table has no live mark and column 5 was a plain digits-only cell. Two things follow. The gate itself had never been exercised anywhere: testRouteEditorValidation builds its editors with no parent window, so problemsWith returns before any per-row rule, and a behavioural test for it needed a real window and a real locomotive database. That test exists now and passes, so what you met was the affordance, not a missing check. And the cell now offers that locomotive's own functions - F0 to F4 on an MM2 - which is what the old editor did by building its list from the locomotive, and what this one gave up when it started taking a typed number. A number already in the row is offered too, out of range or not: a combo box handed a value it has not got keeps its own selection, so a route already carrying F32 would have had that cell rewritten to F0 - the lights - by a click and a click away. Where the target is not a locomotive this database has, a typed number is still taken. ui.testTheRouteEditorAsksHowManyFunctionsALocomotiveHas, two claims with a control each.
+
 ---
 
 <a id="mt-465"></a>
 
 ### MT-465 - 2026-09-19 - The four arrow buttons honour the Control and Alt clicks their tooltips promise
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** UIX-C5, GUX-C1
 
 **Written:** 2026-09-19
@@ -23564,6 +23585,10 @@ From the 2026-09-19 review round, fixed the same day.  The tooltips on the two d
 **Adam, 2026-09-21 (triage).** Works.
 
 *Run against commit d8e2b3f7, build\classes, compiled 21 Sep 07:55 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-21.**
+
+Closed on your verdict: the four buttons now read the click the way the keyboard always did, and the tooltips are true at both doors.
 
 ---
 
@@ -23717,5 +23742,9 @@ From the 2026-09-19 review round, fixed the same day.  The route editor's captur
 Works as tested.  However, in the layout view, we can review operators (like and) without deleting the conditions they are linked to.  This permanently leaves an orphan entry.  Any linked entries should also be deleted.
 
 *Run against commit d8e2b3f7, build\classes, compiled 21 Sep 07:55 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-21.**
+
+Your orphan is fixed (OB-240), the way your note asked: deleting a joining word now takes the term it joins on, so '1 and 2' without the 'and' is '1' - the mirror of deleting a condition, which has always taken the word beside it. It matters more than tidiness: the orphan left the two conditions with nothing between them, tidy() is happy with a wordless run, and toExpression folds one with AND - so deleting an OR silently turned it into an AND and nothing went red. The term is not always one line: a group's rows sit a level in, so 'A or (B and C)' loses the whole bracket rather than its first line, and both shapes are asserted. No confirmation dialog: one keystroke now removes exactly what the mirror-image keystroke already removed. ui.testRouteEditorValidation.testDeletingAJoiningWordTakesTheTermItJoinsWithIt, seen red first.
 
 ---

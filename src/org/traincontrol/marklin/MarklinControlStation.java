@@ -3348,10 +3348,53 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             MarklinRoute route = this.getRoute(routeName);
 
-            if (route != null && route.isExecuting() && route.commandsDrive(name)) return route;
+            if (route == null || !route.isExecuting()) continue;
+
+            // AND THE ROUTE IT IS ABOUT TO FIRE (MT-464).
+            if (route.commandsDrive(name) || this.chainDrives(route, name)) return route;
         }
 
         return null;
+    }
+
+    /**
+     * Whether a route this running one will FIRE drives the locomotive (MT-464).
+     *
+     * Adam, 2026-09-21: *"I made Route 1, that fires a loc a route that fires a loc function after
+     * 10000ms.  Then I tried deleting alco UP (the target loc) from the loc db browser, and it went
+     * through on deleting ALCO UP."*
+     *
+     * A route whose command is another ROUTE drives everything that route drives, and it does so seconds
+     * later on a thread nobody has started yet - so every door that asks this question was open for as
+     * long as the chain was pending, which on his ten-second delay is ten seconds with nothing to see.
+     * `commandsDrive` is the right answer to a different question - which commands a delete will take out
+     * of THIS route - and is left alone for it.
+     *
+     * ONE HOP, because that is all the engine reaches: `execRoute` starts at a recursion limit of 1 and
+     * hands `limit - 1` to the route it fires, which refuses at less than zero.  Asking further would
+     * refuse a delete for a route that cannot fire, and a check that refuses something legal is worse
+     * than no check (S14-C1).
+     *
+     * @param running the route now executing
+     * @param name the locomotive
+     * @return whether the route it will fire drives that locomotive
+     */
+    private boolean chainDrives(MarklinRoute running, String name)
+    {
+        // A COPY, for the reason the walks in MarklinRoute take one: a delete rewrites these lists from
+        // the event thread while a route is part-way along its own.
+        for (RouteCommand rc : new ArrayList<>(running.getRoute()))
+        {
+            if (rc == null || !rc.isRoute()) continue;
+
+            MarklinRoute next = this.getRoute(rc.getName());
+
+            // Not itself.  The editor refuses a route that calls its own name, and a hand-edited file is
+            // still a way in - an endless walk here would hang the door rather than answer it.
+            if (next != null && next != running && next.commandsDrive(name)) return true;
+        }
+
+        return false;
     }
 
     /**

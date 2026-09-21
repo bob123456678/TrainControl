@@ -1585,6 +1585,20 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
+     * The function NUMBER of a row, which is its own column and not the setting (MT-464).
+     *
+     * A function command is edited in two cells and stored as one value, so the number goes in through
+     * column 5 and `setCommandSettingForTest` reaches only the on-or-off half.
+     *
+     * @param row which row
+     * @param number the function number, as typed
+     */
+    public void setCommandFunctionNumberForTest(int row, String number)
+    {
+        commands.getModel().setValueAt(number, row, 5);
+    }
+
+    /**
      * @param row which row
      * @return what that row of the command table holds, or null where it is a kept command
      */
@@ -2576,6 +2590,54 @@ public class RouteEditorFrame extends JFrame
         }
 
         return wrong;
+    }
+
+    /**
+     * The function numbers a row's locomotive has, or null where nothing can be said (MT-464).
+     *
+     * **A NUMBER ALREADY IN THE CELL IS ALWAYS OFFERED, even one out of range.**  A combo box cannot show
+     * a value it has not got: handed one, it keeps whatever was selected, so a route already holding F32
+     * on a five-function locomotive would have had that cell quietly rewritten to F0 by nothing more than
+     * a click and a click away - and F0 is the lights, a command that does something.  Offered, the value
+     * survives being looked at, and the Save gate still names it.
+     *
+     * @param row the row, or null
+     * @return the numbers to offer, or null for a free typed number
+     */
+    private String[] functionsOffered(CommandRow row)
+    {
+        if (row == null || !CommandRow.isFunction(row.getKind())) return null;
+
+        if (parent == null || parent.getModel() == null) return null;
+
+        String target = row.getTarget() == null ? "" : row.getTarget().trim();
+
+        org.traincontrol.base.Locomotive loco = parent.getModel().getLocByName(target);
+
+        if (loco == null || loco.getNumF() <= 0) return null;
+
+        java.util.List<String> out = new ArrayList<>();
+
+        for (int f = 0; f < loco.getNumF(); f++) out.add(String.valueOf(f));
+
+        String has = functionNumberOf(row.getSetting());
+
+        if (has != null && !has.trim().isEmpty() && !out.contains(has.trim())) out.add(has.trim());
+
+        return out.toArray(new String[0]);
+    }
+
+    /**
+     * What the function column would offer for a row, for a test (MT-464).
+     *
+     * @param row which row
+     * @return the numbers offered, or null where the cell takes a typed number
+     */
+    public java.util.List<String> functionChoicesForTest(int row)
+    {
+        String[] offered = functionsOffered(commands.rows.get(row).getRow());
+
+        return offered == null ? null : java.util.Arrays.asList(offered);
     }
 
     /**
@@ -3693,7 +3755,27 @@ public class RouteEditorFrame extends JFrame
             // A number where a number is meant.  An address is a number and a delay is a number, and
             // a cell that will take "twelve" or "12a" is a cell that produces a route refused at Save
             // for something typed several minutes earlier.
-            if (column == 5 || column == 8) return digitsOnly();
+            if (column == 8) return digitsOnly();
+
+            // AND THE FUNCTIONS THAT LOCOMOTIVE ACTUALLY HAS (MT-464).
+            //
+            // Adam, 2026-09-21: *"there is no validation of the function count on mm2 locomotives in the
+            // route view, F32 was accepted"*.  The Save gate has refused a function past the end of the
+            // locomotive since this editor was written - and nothing on the way in said so, because the
+            // command table has no live mark: the number sat in the cell looking ordinary until Save.
+            //
+            // This is the rule the two doors are meant to share (OB-057, OB-090): the control that
+            // offers a value asks the same question the guard asks.  Where the target names a locomotive
+            // this database has, the cell offers that locomotive's functions and nothing else - which is
+            // what the OLD editor did by building its list from the locomotive, and what this one gave up
+            // when it started taking a typed number.  Where it names one the database has not, there is
+            // nothing to ask and a typed number is still taken.
+            if (column == 5)
+            {
+                String[] functions = functionsOffered(rows.get(row).getRow());
+
+                return functions == null ? digitsOnly() : chooseFrom(functions);
+            }
 
             if (column == 4)
             {
@@ -4251,16 +4333,36 @@ public class RouteEditorFrame extends JFrame
         }
 
         /**
-         * Removes a line, and the word that went with it.
+         * Removes a line, and whatever cannot stay behind without it.
          *
          * A condition taken out on its own leaves the word that joined it with nothing on one side,
          * which is not what removing a requirement means.
+         *
+         * AND A WORD TAKEN OUT TAKES THE TERM IT JOINS ON (OB-240, from Adam's note on MT-469,
+         * 2026-09-21: *"we can remove operators (like and) without deleting the conditions they are
+         * linked to.  This permanently leaves an orphan entry.  Any linked entries should also be
+         * deleted."*).
+         *
+         * **What the orphan actually did is worse than looking untidy.**  Taking out the word left the
+         * two conditions with nothing between them; `tidy()` sweeps a word with nothing on one side and
+         * two words in a row, and a RUN WITH NO WORD AT ALL is legal to it.  `ConditionOutline.toExpression`
+         * then folds a wordless run with AND - so deleting an `or` silently turned it into an `and`,
+         * which is a change to WHEN THE ROUTE FIRES made by a delete that says nothing about firing.
+         * `whatIsWrong` returns empty for that shape, so no row went red and Save wrote it.  This door
+         * was the only way into it.
+         *
+         * The two halves are then symmetrical, which is the point: "1 and 2" without the 2 is "1", and
+         * "1 and 2" without the `and` is "1" as well.  Neither leaves a sentence that means something
+         * nobody typed.
          */
         void removeAt(int line)
         {
             if (line < 0 || line >= rows.size()) return;
 
             boolean joiner = rows.get(line).isJoiner();
+
+            // BEFORE THE REMOVAL, because the term a word joins on is found by comparing depths with it.
+            int depth = rows.get(line).getDepth();
 
             rows.remove(line);
 
@@ -4269,6 +4371,23 @@ public class RouteEditorFrame extends JFrame
                 // The word before it by preference, since "1 and 2" without 2 is "1"
                 if (line - 1 >= 0 && rows.get(line - 1).isJoiner()) rows.remove(line - 1);
                 else if (line < rows.size() && rows.get(line).isJoiner()) rows.remove(line);
+            }
+            else if (line < rows.size())
+            {
+                // THE WHOLE TERM, WHICH MAY BE A GROUP.  `ConditionOutline.write` puts a group's rows
+                // one level in, so the term after a word at depth d is either a single line at d - the
+                // `C` of `(A or B) and C` - or the run of deeper lines that follows - the `(B and C)` of
+                // `A or (B and C)`.  Removing only the first line of a group would leave the rest of it
+                // behind with its own leading word, which tidy() then sweeps, leaving the wordless run
+                // this exists to prevent.
+                if (rows.get(line).getDepth() > depth)
+                {
+                    while (line < rows.size() && rows.get(line).getDepth() > depth) rows.remove(line);
+                }
+                else
+                {
+                    rows.remove(line);
+                }
             }
 
             tidy();

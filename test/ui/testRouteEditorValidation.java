@@ -353,6 +353,93 @@ public class testRouteEditorValidation
     }
 
     /**
+     * Deleting a joining word takes the term it joins with it, leaving no orphan (OB-240).
+     *
+     * Adam's note on MT-469, 2026-09-21: *"in the layout view, we can remove operators (like and)
+     * without deleting the conditions they are linked to.  This permanently leaves an orphan entry.  Any
+     * linked entries should also be deleted."*
+     *
+     * **The orphan is not only untidy - it changes when the route fires.**  Taking the word out left the
+     * two conditions with nothing between them.  `tidy()` sweeps a word with nothing on one side and two
+     * words in a row, and a RUN WITH NO WORD AT ALL is legal to it; `ConditionOutline.toExpression` then
+     * folds such a run with AND.  So deleting an `or` turned it into an `and`, `whatIsWrong` returned
+     * empty for the shape, no row went red, and Save wrote a route that fires at times nobody asked for
+     * - the hazard `everythingWrong`'s own comment names.
+     *
+     * **Two shapes, because the term after a word is not always one line.**  `1 or 2`, where it is, and
+     * `1 or (2 and 3)`, where it is a whole group one level in - `ConditionOutline.write` puts a group's
+     * rows a level deeper.  Removing only the group's first line would leave `and 3` behind, tidy() would
+     * sweep the now-leading word, and the same wordless run would arrive by another road.
+     *
+     * MUTATION: put back the bare `rows.remove(line)` for a joiner and the first pair of claims goes red
+     * with `And(x,x)`; keep the single-line removal but drop the group loop and the second does.
+     */
+    @Test
+    public void testDeletingAJoiningWordTakesTheTermItJoinsWithIt() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            final java.util.List<org.traincontrol.base.ConditionOutline.Row> pair =
+                new java.util.ArrayList<>();
+
+            pair.add(org.traincontrol.base.ConditionOutline.Row.condition(0, feedback(1)));
+            pair.add(org.traincontrol.base.ConditionOutline.Row.joining(0,
+                org.traincontrol.base.ConditionOutline.Joiner.OR));
+            pair.add(org.traincontrol.base.ConditionOutline.Row.condition(0, feedback(2)));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(pair));
+
+            assertTrue(reads(frame).startsWith("Or("),
+                "the fixture does not start as an OR of two conditions, so nothing below is about an OR: "
+                + reads(frame));
+
+            // THE WORD ITSELF, which is row 1.
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.deleteConditionForTest(1));
+
+            assertEquals(frame.conditionRowsForTest().size(), 1,
+                "deleting the joining word left " + frame.conditionRowsForTest().size() + " lines behind."
+                + "  The word joined two conditions and one of them has nothing to be joined to any more"
+                + " - Adam's orphan entry (OB-240)");
+
+            assertFalse(reads(frame).contains("And("),
+                "deleting the OR left both conditions with nothing between them, and a wordless run is"
+                + " folded with AND - so the route now fires only when BOTH sensors are on, which is the"
+                + " opposite of what was typed and nothing says so: " + reads(frame));
+
+            // AND THE GROUP, where the term after the word is three lines rather than one.
+            final java.util.List<org.traincontrol.base.ConditionOutline.Row> group =
+                new java.util.ArrayList<>();
+
+            group.add(org.traincontrol.base.ConditionOutline.Row.condition(0, feedback(1)));
+            group.add(org.traincontrol.base.ConditionOutline.Row.joining(0,
+                org.traincontrol.base.ConditionOutline.Joiner.OR));
+            group.add(org.traincontrol.base.ConditionOutline.Row.condition(1, feedback(2)));
+            group.add(org.traincontrol.base.ConditionOutline.Row.joining(1,
+                org.traincontrol.base.ConditionOutline.Joiner.AND));
+            group.add(org.traincontrol.base.ConditionOutline.Row.condition(1, feedback(3)));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(group));
+
+            assertTrue(reads(frame).contains("Or("),
+                "the second fixture is not an OR in front of a group: " + reads(frame));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.deleteConditionForTest(1));
+
+            assertEquals(frame.conditionRowsForTest().size(), 1,
+                "deleting the word in front of a bracketed group left part of the group behind: "
+                + frame.conditionRowsForTest() + ", reading " + reads(frame));
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
      * FR-068: a nested group that is NOT the first term can be built here, by indenting.
      *
      * Adam, 2026-09-09: **"it should be representable already in the UI, right?"**  The question came

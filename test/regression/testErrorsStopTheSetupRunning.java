@@ -303,18 +303,49 @@ public class testErrorsStopTheSetupRunning
             "the strip asks the guard's question and then decides on something else, which is OB-090 "
             + "with the fix's own words still in the file.  The decision reads: " + decision);
 
-        // The body here too (V37-C2).  Fixing one whole-file grep and leaving its twin five lines
-        // below is the sweep-the-siblings miss this project files more often than any other, and it
-        // happened at the site of the fix for it.
-        String item = withoutComments(bodyOf(menu, "private static javax.swing.JMenuItem startItem("));
+        // THE MENU'S HALF, AND IT NO LONGER COUNTS FOR ITSELF (MT-263, measured 2026-09-21).
+        //
+        // This asked for the literal `autonomyErrorCount()` in this file - twice, once through a
+        // `bodyOf` for a method called `startItem` that this class has never had (so that assertion
+        // was vacuous from the day it was written, passing on an empty body) and once as a whole-file
+        // grep.  `52b05706` then moved the tooltip onto `whyAutonomyWillNotStart()`, which is where
+        // MT-263 put the wording AND the counting, and the whole-file grep went red on a menu whose
+        // OB-090 fix is entirely intact.  A guard that fails when a fix is expressed better is a guard
+        // that argues for the worse expression.
+        //
+        // What the pair actually requires is unchanged, so it is asked of the things that now carry it:
+        // the item's ENABLED state comes from the guard's own question, its REASON comes from the one
+        // rule, and the one rule is what reaches the number.
+        //
+        // WITHOUT COMMENTS, over the whole file rather than one body: the item is built in the
+        // constructor, whose signature spans three lines and cannot be named by `bodyOf`.  Stripping
+        // the comments is what a whole-file grep needs to be worth anything - this file's own prose
+        // mentions `autonomyErrorCount` twice, which is how the old rule could have gone on passing
+        // after the call had gone.
+        String menuCode = withoutComments(menu);
 
-        assertTrue(item.isEmpty() || item.contains("autonomyErrorCount()"),
-            "the right-click Start item no longer reads autonomyErrorCount() - it needs the number "
-            + "for its tooltip, which is the only thing that says WHY the item is grey");
+        assertTrue(menuCode.contains("canStartAutonomy()"),
+            "the right-click Start item no longer takes its enabled state from the guard's own "
+            + "question, so it can offer a Start that every press refuses - OB-090, at the third of "
+            + "its three sites");
 
-        assertTrue(menu.contains("autonomyErrorCount()"),
-            "LayoutRightclickAutonomyMenu no longer reads autonomyErrorCount() at all - the right-click "
-            + "Start item's own OB-090 fix has gone");
+        assertTrue(menuCode.contains("whyAutonomyWillNotStart()"),
+            "the right-click Start item is greyed with nothing saying why.  The number used to be read "
+            + "here for the tooltip; MT-263 moved the wording and the counting into "
+            + "whyAutonomyWillNotStart(), and one of the two has to be present or the operator meets a "
+            + "dead item and no reason");
+
+        // AND THE ONE RULE HAS TO REACH THE NUMBER, which is the correspondence the assertion above
+        // cannot see: a `whyAutonomyWillNotStart` that stopped counting would leave every affordance
+        // asking it and saying nothing about how many problems there are (V32-C2's lesson, one rule on).
+        String why = withoutComments(bodyOf(ui, "public String whyAutonomyWillNotStart()"));
+
+        assertFalse(why.isEmpty(), "whyAutonomyWillNotStart() has moved or been renamed");
+
+        assertTrue(why.contains("autonomyErrorCount()"),
+            "whyAutonomyWillNotStart() no longer asks how many errors there are, so every affordance "
+            + "that now takes its reason from it - the menu item, the load door, the scripting API - "
+            + "reports a count of nothing.  Body: " + why);
     }
 
     /**

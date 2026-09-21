@@ -395,4 +395,158 @@ public class testReturnHomeOnRealLayout
             "releasing sensor " + home.getS88() + " must make the same journey possible again - if not,"
             + " the refusal above proved nothing about the sensor");
     }
+
+    /**
+     * A train standing on a square that turns trains can still be brought home (MT-463).
+     *
+     * Adam, 2026-09-21, on MT-463: *"Could not run this.  make an automated test for this with
+     * appropriate placements."*  The rule is `behaviour.md` section 6 and his ruling of 2026-09-15: a
+     * plan may rest a train that cannot reverse on a terminus or reversing point only when its next move
+     * takes it home, *"a train the railway already had standing on one moves as before"*.  RTX-B1 was
+     * that second clause: the code asked the SQUARE whether it turns trains, and a square cannot say who
+     * turned the train standing on it, so a train merely FOUND on one could be planned nowhere but its
+     * own home - and where that home was occupied, or the train had no home at all, the answer was
+     * NO_PLAN_FOUND and the train whose berth it was standing on was stranded with it.
+     *
+     * **The two halves have hand-built fixtures already** -
+     * `core.testHomeStaging.testATrainTheRailwayHadOnATerminusMayStepAsideBeforeGoingHome` and
+     * `testATrainWithNoHomeTheRailwayHadOnATerminusCanBeMovedOffIt`, both seen red before the fix.  What
+     * they cannot do is what he was trying to do by hand: meet the arrangement on HIS railway, where the
+     * turning squares are real berths with real approaches and real neighbours.
+     *
+     * **THE PLACEMENTS ARE STAGED, NOT WAITED FOR.**  The first version of this ran autonomy, stopped it
+     * and took whatever had come to rest on a turning square away from home - and on his layout, over
+     * three runs, nothing did: the test SKIPPED, which is no test at all when a skip is what he reported
+     * in the first place.  So it puts each train on a turning square itself, through the same
+     * `moveLocomotive` door the operator uses, and puts it back afterwards.  A hand placement does not
+     * re-home an already-homed locomotive (`Layout.claimHome` returns at `containsKey`), which is what
+     * makes the arrangement stageable at all.
+     *
+     * **THE CONTROL IS WHAT MAKES EACH CLAIM MEAN ANYTHING.**  A plan can be impossible for reasons that
+     * have nothing to do with this rule - an occupied approach, a berth nothing may enter, a square this
+     * train is excluded from.  So each train is asked twice on the same square: once as it is, which must
+     * produce a plan, and then unable to reverse, which must still produce one.  A train whose own
+     * control fails is passed over and named.
+     *
+     * MUTATION, MEASURED rather than reasoned (2026-09-21): drop `&& this.movedAlong.containsKey(l)` from
+     * `turnedByThePlan` in `HomeStaging` - the pre-RTX-B1 reading - and this goes RED on his railway,
+     * together with both claims in `testHomeStaging`.  So the arrangement really does arise there: a
+     * train staged on one of his turning squares cannot be planned home at all once the square rather
+     * than the journey decides whether it was turned.  The guess written here first was that his layout
+     * would let every such train reach its own free home and the mutation would pass; running it says
+     * otherwise, and the run is what counts.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testATrainOnATurningSquareCanStillBeBroughtHome() throws Exception
+    {
+        Layout layout = load();
+
+        // EVERY SQUARE THAT TURNS A TRAIN ARRIVING AT IT.
+        List<Point> turning = new ArrayList<>();
+
+        for (Point p : layout.getPoints())
+        {
+            if (p.isTerminus() || p.isReversing()) turning.add(p);
+        }
+
+        if (turning.isEmpty())
+        {
+            throw new SkipException("this configuration has no terminus and no reversing point, so the"
+                + " arrangement MT-463 is about cannot exist on it");
+        }
+
+        List<String> passedOver = new ArrayList<>();
+
+        int asked = 0;
+
+        for (Locomotive l : new ArrayList<>(layout.getLocomotivesToRun()))
+        {
+            Point home = layout.getHomeStation(l);
+            Point was = standingAt(layout, l);
+
+            for (Point onto : turning)
+            {
+                // AT HOME IS A DIFFERENT CASE and the rule does not reach it: a train resting at its own
+                // home is asked for nothing.
+                if (home != null && home.isSamePlaceAs(onto)) continue;
+
+                // Not on top of somebody else: a hand placement DISPLACES the occupant, which would be
+                // this test rearranging his railway rather than staging one train.
+                if (onto.getCurrentLocomotive() != null && !onto.getCurrentLocomotive().equals(l)) continue;
+
+                boolean reversible = l.isReversible();
+
+                boolean moved = false;
+
+                try
+                {
+                    moved = layout.moveLocomotive(l.getName(), onto.getName(), false);
+
+                    if (!moved) continue;
+
+                    l.setReversible(true);
+
+                    if (!layout.planReturnToHome().isPossible())
+                    {
+                        passedOver.add(l.getName() + "@" + onto.getName());
+
+                        continue;
+                    }
+
+                    l.setReversible(false);
+
+                    asked++;
+
+                    HomeStaging.Plan plan = layout.planReturnToHome();
+
+                    assertTrue(plan.isPossible(),
+                        l.getName() + " cannot reverse and is standing on " + onto.getName()
+                        + ", which turns a train arriving at it - and Return Home refuses to move it,"
+                        + " although the same arrangement plans perfectly well for a train that may"
+                        + " reverse.  A train the PLAN turns owes its next move to its home; one the"
+                        + " railway was already holding there moves as before (MT-463, RTX-B1)."
+                        + "  Outcome " + plan.getOutcome() + ", blocked " + plan.getBlocked()
+                        + ", home " + (home == null ? "(none)" : home.getName())
+                        + ", arrangement " + describe(layout) + andTheSeed());
+                }
+                finally
+                {
+                    l.setReversible(reversible);
+
+                    // BACK WHERE IT WAS, so the next locomotive is staged against his arrangement rather
+                    // than against this loop's leftovers.
+                    if (moved && was != null) layout.moveLocomotive(l.getName(), was.getName(), false);
+                }
+
+                break;
+            }
+        }
+
+        // THE FLOOR.  Every train could have been passed over by its own control, or never staged at
+        // all, which would leave this green having asked nothing - the hole TST-B12 found in the round
+        // loop above, and the skip this test was rewritten to stop.
+        assertTrue(asked > 0,
+            "no train could be staged on a turning square at all, so the rule this is about was never"
+            + " reached.  Passed over: " + passedOver + ", arrangement " + describe(layout)
+            + andTheSeed());
+    }
+
+    /**
+     * The Point a locomotive stands on, or null.
+     *
+     * @param layout the railway
+     * @param loc the locomotive
+     * @return where it stands
+     */
+    private static Point standingAt(Layout layout, Locomotive loc)
+    {
+        for (Point p : layout.getPoints())
+        {
+            if (loc.equals(p.getCurrentLocomotive())) return p;
+        }
+
+        return null;
+    }
 }

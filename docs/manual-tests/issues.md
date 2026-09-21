@@ -1686,19 +1686,32 @@ writes it.
 a delete that says nothing about firing - the same shape as FR3-B1, whose comment in `tidy()` describes
 the level-0 word defaulting to AND after an unrelated deletion.
 
-**Two ways to put it right, and it is your call which:**
+**FIXED 2026-09-21, AS YOU WROTE IT.**  Asked whether this was done, you said the deletion of the
+and/or followed by orphaning is what you wanted put right, and your note on MT-469 already said how:
+*"Any linked entries should also be deleted."*
 
-- **(a) As you wrote it.** Deleting a word deletes what it joins. Destructive - one keystroke takes two
-  conditions with it - so it would want the confirmation the bulk tools have.
-- **(b) The word cannot be deleted on its own.** Delete is refused (or greyed) on a joining line, with
-  a sentence saying to delete a condition instead - the word goes with it, which is the behaviour that
-  already exists and works. Nothing is ever silently re-joined.
+**Built in the form that mirrors the rule already there, which is the smallest version of (a).**
+Deleting a CONDITION has always taken the word beside it - "1 and 2" without the 2 is "1" - so deleting
+the WORD now takes the term it joins on, and "1 and 2" without the `and` is "1" as well.  One term, not
+both sides: a keystroke removes exactly as much as the mirror-image keystroke already removed, so no
+confirmation dialog was added.  Say if you would rather it asked.
 
-I lean to (b): it is the smaller change, it cannot lose a condition somebody wanted, and the existing
-condition-delete already keeps the outline a sentence. Either way `whatIsWrong` should flag a wordless
-run, so that an outline arriving from anywhere else cannot be saved with a meaning nobody typed.
+**The term, which is not always one line.**  `ConditionOutline.write` puts a group's rows one level in,
+so the term after a word at depth *d* is either a single line at *d* - the `C` of `(A or B) and C` - or
+the run of deeper lines that follows - the `(B and C)` of `A or (B and C)`.  Taking only a group's first
+line would leave the rest of it behind with its own leading word, which `tidy()` then sweeps, producing
+the same wordless run by another road.  Both shapes are asserted.
 
-Nothing is changed until you pick. MT-469 itself passed and is validated.
+`ui.testRouteEditorValidation.testDeletingAJoiningWordTakesTheTermItJoinsWithIt`, seen red first: the
+pair case left two lines behind and read back as `And(x,x)`.
+
+**One thing deliberately NOT added, so you can ask for it.**  `whatIsWrong` still returns empty for a
+wordless run.  Nothing can now produce one: this door was the only way in, and an outline that arrives
+from a file is built by `ConditionOutline.of` from a parsed expression, which always carries its
+operators.  A flag there would be a check for a state nothing reaches - cheap to add through the same
+seam the tests use if you want belt and braces.
+
+MT-469 itself passed and is validated.
 
 ### OB-241 - 2026-09-21 - the tail walk uses the recorded road for the first hop only
 

@@ -986,6 +986,104 @@ public class testAdvancedRoutes
     }
 
     /**
+     * A running route about to CHAIN to another one is driving what that other route drives (MT-464).
+     *
+     * **What Adam did**, 2026-09-21: *"I made Route 1, that fires a loc a route that fires a loc
+     * function after 10000ms.  Then I tried deleting alco UP (the target loc) from the loc db browser,
+     * and it went through on deleting ALCO UP."*
+     *
+     * `runningRouteDriving` is the question every door asks before it edits or deletes a locomotive, and
+     * it asked each executing route about its OWN command list.  A route whose command is another ROUTE
+     * drives every locomotive that route drives, seconds later, on a thread nobody has started yet - so
+     * the running route answered no, the delete was allowed, and the function was then sent for a
+     * locomotive the database no longer has.
+     *
+     * The window is as long as the delays sitting ahead of the chain command.  Here it is one accessory
+     * command with a four-second pause, which is the shape of his ten-second one.
+     *
+     * ONE HOP, because that is all the engine reaches: `execRoute` starts at a recursion limit of 1 and
+     * passes `limit - 1` down, so a route fired BY a route cannot fire a third.
+     *
+     * MUTATION: take the chain walk out of `MarklinControlStation.runningRouteDriving` and the claim
+     * below goes red.
+     *
+     * @throws Exception from the route thread
+     */
+    @Test
+    public void testARunningRouteIsDrivingWhatTheRouteItChainsToDrives() throws Exception
+    {
+        final String loc = "ProbeChain";
+        final String inner = "ProbeChain inner";
+        final String outer = "ProbeChain outer";
+
+        model.newMM2Locomotive(loc, 62);
+
+        List<RouteCommand> fires = new ArrayList<>();
+
+        fires.add(RouteCommand.RouteCommandFunction(loc, 1, true));
+
+        model.newRoute(inner, fires, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        List<RouteCommand> chain = new ArrayList<>();
+
+        RouteCommand waits = RouteCommand.RouteCommandAccessory(94,
+            Accessory.accessoryDecoderType.MM2, true);
+
+        // THE WINDOW.  A command's pause is taken AFTER the command it sits on, so these are the four
+        // seconds during which the outer route is executing and the inner one has not been started.
+        waits.setDelay(4000);
+
+        chain.add(waits);
+        chain.add(RouteCommand.RouteCommandRoute(inner));
+
+        model.newRoute(outer, chain, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        try
+        {
+            assertFalse(model.getRoute(outer).commandsDrive(loc),
+                "precondition: the outer route names the locomotive itself, so this is not about a chain");
+
+            assertTrue(model.getRoute(inner).commandsDrive(loc),
+                "precondition: the inner route does not name the locomotive");
+
+            new Thread(() -> model.execRoute(outer)).start();
+
+            long armed = System.currentTimeMillis() + 5000;
+
+            while (!model.getRoute(outer).isExecuting() && System.currentTimeMillis() < armed)
+            {
+                Thread.sleep(20);
+            }
+
+            assertTrue(model.getRoute(outer).isExecuting(), "precondition: the outer route never started");
+
+            assertFalse(model.getRoute(inner).isExecuting(),
+                "precondition: the inner route has already started, so the window this is about is over");
+
+            assertNotNull(model.runningRouteDriving(loc),
+                "a route four seconds away from firing a function at this locomotive is not reported as"
+                + " driving it: the walk asks each executing route about its own commands and never"
+                + " follows the ROUTE command that does the driving.  Every door that refuses an edit or"
+                + " a delete while a route drives the locomotive stands open for as long as the chain is"
+                + " pending, which is what Adam got when he deleted ALCO UP");
+        }
+        finally
+        {
+            long giveUp = System.currentTimeMillis() + 15000;
+
+            while ((model.getRoute(outer) != null && model.getRoute(outer).isExecuting())
+                && System.currentTimeMillis() < giveUp)
+            {
+                Thread.sleep(50);
+            }
+
+            try { model.deleteRoute(outer); } catch (Exception ignored) { }
+            try { model.deleteRoute(inner); } catch (Exception ignored) { }
+            try { model.deleteLoc(loc); } catch (Exception ignored) { }
+        }
+    }
+
+    /**
      * A route whose name carries a leading or trailing space can still be found and deleted (CS3-C1).
      *
      * The two file parsers build a `MarklinRoute` with the name exactly as the file has it; `newRoute` then indexed

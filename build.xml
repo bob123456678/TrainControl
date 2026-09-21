@@ -506,6 +506,10 @@
         <test-one-class class="testPathTypeRedrawsTheTestInTheEditor"/>
         <test-one-class class="testTheWhyAnswerIsOnScreen"/>
         <test-one-class class="testTheMenusComeBackAtOneMoment"/>
+        <test-one-class class="testARunningTrainHasOneTail"/>
+        <test-one-class class="testACopiedCustomizationBringsTheIcons"/>
+        <test-one-class class="testTheRouteHighlightAsksWhatATileIs"/>
+        <test-one-class class="testTheRouteEditorAsksHowManyFunctionsALocomotiveHas"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
