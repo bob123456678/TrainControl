@@ -6745,14 +6745,129 @@ public class Layout
      */
     private void walkStandingTrains(Map<Edge, Locomotive> covered, Map<String, Locomotive> places)
     {
+        // ONE TAIL PER TRAIN, AND A RUNNING ONE IS ANCHORED WHERE IT IS (MT-438).
+        //
+        // Adam, 2026-09-21, on an orange line left along a road his train never drove: *"There is no
+        // ambiguity - the tail is certain at departure and shouldn't change.  You also know which way
+        // the train went when it started running.  Just unlock the rest of the diagram once the tail by
+        // length is far enough away."*
+        //
+        // **A locked path reserves every point on it** - `Point.reserve`, which deliberately does not
+        // sweep, because that reservation is what holds a junction behind the train against a second
+        // train reaching it another way.  So while a run is going the locomotive is the occupant of
+        // several Points at once, and this loop used to walk a tail from EVERY one of them: a tail
+        // anchored at the destination it has not reached, another at a junction it passed ten minutes
+        // ago, each choosing its road from whatever arrival side that Point happens to carry.  Measured
+        // on his railway: four roads leave `BottomMainAPre` on one side, and a phantom claim there took
+        // the first of them in iteration order and painted two switches the train never crosses.
+        //
+        // A train has one body in one place.  For a running locomotive that place is its last
+        // MILESTONE, and the road behind it is the part of its path it has already driven - both of
+        // which the run is keeping anyway.  The walk then spends the train's length back along that
+        // road and stops, which is his "unlock the rest once the tail is far enough away" and the same
+        // arithmetic `tailHasProvablyPassed` uses to hand an edge back.
+        Set<Locomotive> alreadyWalked = new LinkedHashSet<>();
+
         for (Point standing : this.points.values())
         {
             Locomotive loc = standing.getCurrentLocomotive();
 
             if (loc == null || loc.getTrainLength() == null || loc.getTrainLength() <= 0) continue;
 
-            walkOneTail(standing, loc, standing.getArrivedFrom(), standing.getArrivedAlong(), covered, places);
+            // ONCE EACH.  A train that is NOT running occupies exactly one Point - `setLocomotive`
+            // sweeps it off every other - so this changes nothing for a standing train; it is the
+            // reserved Points of a running one that this stops walking twice.
+            if (!alreadyWalked.add(loc)) continue;
+
+            Point anchor = standing;
+            String side = standing.getArrivedFrom();
+            List<Edge> road = standing.getArrivedAlong();
+
+            List<Edge> running = this.activeLocomotives.get(loc);
+
+            if (running != null && !running.isEmpty())
+            {
+                Point head = theHeadOfTheRun(loc, running);
+
+                if (head != null)
+                {
+                    // ANCHORED AT THE HEAD, and what that Point itself records is the starting point
+                    // for the road - not what some other reserved Point happens to carry, which is
+                    // what the first draft of this took when the driven road came back empty.
+                    anchor = head;
+                    side = head.getArrivedFrom();
+                    road = head.getArrivedAlong();
+
+                    List<Edge> driven = whatItHasDriven(running, head);
+
+                    if (!driven.isEmpty())
+                    {
+                        // The road it drove, and the side it came in by at the head taken from the leg
+                        // it drove to get there rather than from whatever an earlier arrival left.
+                        road = driven;
+                        side = entrySideOf(driven.get(driven.size() - 1), head);
+                    }
+                }
+            }
+
+            walkOneTail(anchor, loc, side, road, covered, places);
         }
+    }
+
+    /**
+     * Where a running train is now: its last milestone, by place (MT-438).
+     *
+     * The milestones are the Points its own run has reported reaching, so the last one is the head.
+     * Falls back to the Point of the path's first edge where nothing has been reported yet - a train
+     * that has been given a path and has not reached anything is still at the start of it.
+     *
+     * @param loc the locomotive
+     * @param path the path it is running
+     * @return the Point to anchor its tail at, or null when neither can be had
+     */
+    private Point theHeadOfTheRun(Locomotive loc, List<Edge> path)
+    {
+        List<Point> milestones = this.locomotiveMilestones.get(loc);
+
+        if (milestones != null && !milestones.isEmpty())
+        {
+            return milestones.get(milestones.size() - 1);
+        }
+
+        return path.get(0).getStart();
+    }
+
+    /**
+     * The part of a path a train has already driven, ending at the head (MT-438).
+     *
+     * **By PLACE, not by object.** A square is several Points and a run may report a milestone on a
+     * different copy of one than the path names - which is the same reason `cameFromAlong` compares
+     * this way.
+     *
+     * @param path the whole path
+     * @param head where the train is now
+     * @return the edges up to and including the one that ends at the head, or empty where the head is
+     *         the start of the path
+     */
+    private List<Edge> whatItHasDriven(List<Edge> path, Point head)
+    {
+        List<Edge> driven = new java.util.ArrayList<>();
+
+        if (head == null) return driven;
+
+        for (Edge leg : path)
+        {
+            if (leg.getStart() == null || leg.getEnd() == null) break;
+
+            driven.add(leg);
+
+            if (leg.getEnd().isSamePlaceAs(head)) return driven;
+        }
+
+        // The head is not on the path at all - a milestone from an earlier run, or a path replaced
+        // underneath this one.  Nothing can be said about which way it came, so nothing is returned
+        // and the caller keeps what the Point itself records.
+        return new java.util.ArrayList<>();
     }
 
     /**

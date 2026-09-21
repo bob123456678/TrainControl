@@ -1794,8 +1794,11 @@ back (or resize):
   and `walkStandingTrains` asks only `getCurrentLocomotive()`, so it cannot tell a reservation from a
   standing train.
 
-Cheap either way once the answer is known. The second would also mean `isPathClear` refuses that track
-while nothing is on it, which is the more serious half.
+**ANSWERED 2026-09-21, and it was neither: the mark was not stale.** It was being RECOMPUTED, correctly,
+from a reservation. A locked path reserves every point on it and `Point.reserve` does not sweep, so the
+locomotive was the occupant of several Points at once and the tail walk ran from each - which is why
+refreshing changed nothing: every refresh produced the same phantom. Fixed with OB-243: one tail per
+train, anchored at the head of its run. Nothing here needs a repaint change.
 
 ### OB-243 - 2026-09-21 - the tail walk picks one of several same-side roads by list order
 
@@ -1846,7 +1849,39 @@ wrong road from the start, and the staleness (OB-242) is a second, separate faul
   reasoning the fork rule already uses one hop later. Never paints a wrong road; gives up the five
   tiles that really are covered, which is the direction that lets another train onto occupied track.
 
-I lean to (a) and would build it behind the fork rule's own sentence. Nothing is changed until he says.
+**FIXED 2026-09-21, and neither (a) nor (b): Adam ruled the ambiguity away.** *"There is no ambiguity -
+the tail is certain at departure and shouldn't change.  You also know which way the train went
+(bottommainapre to bottommaina onwards) when it started running.  Just unlock the rest of the diagram
+once the tail by length is far enough away from bottommainapre."*
+
+So the question was never which of four roads to guess: a running train's road is known, because the run
+is holding it. `walkStandingTrains` now walks ONE tail per locomotive, and for a running one it anchors
+at the head - its last reported milestone - and follows the part of its path it has already driven,
+spending the train's length back along that road and stopping. Which is his sentence, and the same
+arithmetic `tailHasProvablyPassed` already uses to hand an edge back as the head pulls away.
+
+**Why there were several tails at all.** A locked path RESERVES every point on it (`Point.reserve`,
+which deliberately does not sweep, because that reservation is what holds a junction behind the train
+against a second train reaching it another way). So during a run the locomotive is the occupant of
+several Points at once, and the walk ran from every one of them - a tail at the destination it had not
+reached, another at a square it left ten minutes ago - each choosing its road from whatever arrival side
+that Point happened to carry. That is where the four-road guess got in.
+
+Held by `core.testARunningTrainHasOneTail`: a real run through a junction, sensors thrown by hand,
+asked while the path is locked. Three claims - the road it drove IS claimed, the other road into the
+junction is NOT, the leg two back is NOT (a one-unit train cannot reach it, so a claim there can only
+come from a second anchor), and the leg AHEAD is not claimed as a tail either, which was Adam's *"as if
+you are shifting the location of the train"*. The mutation - walk every holder again, drop the head
+anchor - reddens two of them.
+
+Run green afterwards: the tail suite (`testATailFollowsTheRouteItCameIn`, `testATailRouteIsKept`,
+`testATrainCoversTheTrackBehindIt`, `testTheTailCrossedQuestion`, `testACoveredSwitchClosesTheOtherRoad`,
+`testAShortTrainDoesNotBlockTheWholeRun`), the room rules (`testABerthAndAPlatformJudgeAnOverhang
+Differently`, `testAManualSendIsRefusedABerthTooShort`, `testAStationsSizeIsAnAllowance`,
+`testHomeStaging`, `testReturnHomeKeepsClearOfTheTailsItLeaves`), the diagram marks
+(`testBlockedTrackIsGreyWhileAutonomyRuns`, `testTheGreyAppearsAtIdleToo`, `testTheShadingIsRedrawnWhen
+ATrainMoves`, `testTheTrainIsShownAsALine`, `testTheWashIsNoLongerThanTheTrain`,
+`testTheGreyDoesNotRebuildTheDiagram`, `testTheShadingFollowsTheTrain`) and `testAutoLayout`.
 
 **What holds it either way**: a fixture where two roads leave one square on the same side and diverge
 after a known number of tiles. `single-switch` has the shape (Approach's two arms), so no new scenario
