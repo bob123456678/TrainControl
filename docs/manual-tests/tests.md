@@ -7,7 +7,7 @@ display, or both. Nothing here can be settled from a unit test; that is what put
 keep their tag for life, the ledger below lists everything not yet validated, and the disposition on
 each entry is set by Claude, never by the reader.
 
-Consolidated 2026-08-22 from `docs/reviews/2026-08-20-tests-to-run.md`, which held tests 1 to 59 and
+Consolidated 2026-08-22 from the `2026-08-20-tests-to-run.md` review, which held tests 1 to 59 and
 every comment on them. Nothing was dropped: each entry below carries its original wording, and Adam's
 replies are under **Comments** rather than mixed into the instruction.
 
@@ -38,7 +38,7 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-380](#mt-380) | 2026-09-13 | Autonomy can be set up by importing, from the menu, with nothing set up yet | fixed unvalidated | FR-007 |
 | [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
 | [MT-436](#mt-436) | 2026-09-15 | Control+N shows a station's name on the square under the pointer | fixed unvalidated | FR-086 |
-| [MT-437](#mt-437) | 2026-09-15 | 75 407 DB at length 3 may go to BottomMainA, and at length 4 may not | fixed unvalidated | FR-087 |
+| [MT-437](#mt-437) | 2026-09-15 | What the measured route in holds, and which tier is bound by it | fixed unvalidated | FR-087 |
 | [MT-438](#mt-438) | 2026-09-15 | The tail question: a sensor at exactly the length, roads a train can drive, and a default | fixed unvalidated | OB-226, OB-227, FR-088 |
 | [MT-439](#mt-439) | 2026-09-15 | Why Not Moving? and Test a Path both follow Path Type | fixed unvalidated | OB-225 |
 | [MT-440](#mt-440) | 2026-09-15 | Return Home does not route a train over the tail of one it has just parked | fixed unvalidated | OB-228 |
@@ -841,7 +841,7 @@ Idea: make station shapes semantic.  A triangle that points in the way it accept
 
 Bug: clicking on the arrows to cycle in the editor affects an unrelated tile.  Changing in menu works.
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-22 (triage).** Works, with notes.
 
@@ -869,7 +869,7 @@ Filed from this test: OB-002 (feature request - Appearance of stations and incom
 
 Works
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-22 (triage).** Works.
 
@@ -894,7 +894,7 @@ List itself seems OK.
 
 Works, but overlap with the labels makes it suboptimal.  station icon may fix this.  Side requirement: left clicking a station icon should propagate the click to the s88 and back.
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-22 (triage).** Works.
 
@@ -919,7 +919,7 @@ Works, but overlap with the labels makes it suboptimal.  station icon may fix th
 
 Looks right in the track diagram.  But not greyed out in the editor.  Also, move the "use this link" option out of the submenu into the top level.
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-22 (triage).** Works.
 
@@ -945,7 +945,7 @@ Looks right in the track diagram.  But not greyed out in the editor.  Also, move
 
 Works.  For the 3 type options (trains can stop, trains can pass through, neither, prefix with "Yes, No, No".  Out of service -> nothing can pass.
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-22 (triage).** Does not work.
 
@@ -996,7 +996,7 @@ still deciding, one step earlier. The block reads from the square now when there
 
 They do- but I didn't test running with autonomy.
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-22 (triage).** Works.
 
@@ -1019,7 +1019,7 @@ They do- but I didn't test running with autonomy.
 
 Works, but I noticed that some locomotives get a V > suffix, not just V or >.  Also, when moving a locomotive from one point to the other, it would be ideal if its natural direction could be preserved, compatible with the entrance direction to the station.
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-22 (triage).** Works.
 
@@ -1045,7 +1045,7 @@ Labels disappear, stations stay.  Bug!  Confirmed the labels stay gone after rel
 
 Also, the confirm dialog in the diagram editor says 'are you sure you want to exit without saving', but the autonomy is 'save before existing?'  make the latter consistent.
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-22 (triage).** Does not work.
 
@@ -1162,7 +1162,7 @@ Bug- caption says, but content changes from the name itself to [---].
 
 Also: still don't see a way to move labels in the layout editor.
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-22 (triage).** Works.
 
@@ -1185,7 +1185,7 @@ Also: still don't see a way to move labels in the layout editor.
 
 Seems fine.  Not sure what the block field is.
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-22 (triage).** Could not run this.
 
@@ -1243,7 +1243,7 @@ seen it and requires all three to arrive. Closed.
 
 I don't see the .bak, but check on your end.
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-22 (triage).** Could not run this.
 
@@ -1312,7 +1312,7 @@ is probably why they were easy to miss. Closed.
 
 Looks OK for now, couldn't test much.
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-22 (triage).** Works, with notes.
 
@@ -1362,7 +1362,7 @@ slipping in beside a fix. Say the word and I will file it as a feature request t
 
 No, see above.  The arrow is sometimes duplicated.
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-22 (triage).** Works, with notes.
 
@@ -1429,7 +1429,7 @@ that shows as the reopened marker rather than as a disposition I have taken back
 
 Honored.
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-22 (triage).** Does not work.
 
@@ -1547,7 +1547,7 @@ Fixed, with a test (UR-6).
 
 Correct. And reversible locomotives are enforced.
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-22 (triage).** Works, with notes.
 
@@ -1612,7 +1612,7 @@ Help me collect this programmatically.  You can add code and run 3.0.0 and 2.8.1
 
 Sample 5 locs, some reversing, and connect only stations to each other.  Activate all points except reversing points in the sim.
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-22 (triage).** Could not run this.
 
@@ -1648,7 +1648,7 @@ Help me collect this programmatically.  You can add code and run 3.0.0 and 2.8.1
 
 Sample 5 locs, some reversing, and connect only stations to each other.  Activate all points except reversing points in the sim.
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-22 (triage).** Could not run this.
 
@@ -1690,7 +1690,7 @@ to be remembered from.
 
 #### Comments
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-22 (triage).** Could not run this.
 
@@ -1748,7 +1748,7 @@ entry actually asks for - is a new journey physically possible - is the part it 
 
 #### Comments
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Claude, 2026-08-30.** The four to pick from, from the parity run - these are the journeys 3.0.0
 offers that 2.8.1 did not:
@@ -1788,7 +1788,7 @@ are ones the railway can actually make.
 
 #### Comments
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-30 (triage).** Works.
 
@@ -1814,7 +1814,7 @@ are ones the railway can actually make.
 
 #### Comments
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-30 (triage).** Works.
 
@@ -1835,7 +1835,7 @@ are ones the railway can actually make.
 
 #### Comments
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-22 (triage).** Works, with notes.
 
@@ -1885,7 +1885,7 @@ the only other caller of the removed code path was the placement item above it, 
 
 #### Comments
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-30 (triage).** Does not work.
 
@@ -1973,7 +1973,7 @@ drawn about address validation.
 
 ---
 
-**Claude, 2026-08-22.** Carried in from `docs/reviews/2026-08-18-manual-test-plan.md` when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
+**Claude, 2026-08-22.** Carried in from the `2026-08-18-manual-test-plan.md` review when the manual tests were consolidated. Adam's answer above is from 18 August; the disposition is **needs test** rather than anything stronger because four hundred and fifty commits have landed since, including most of the autonomy editor. A result from before that is not a result about this build.
 
 **Adam, 2026-08-22 (triage).** Could not run this.
 
@@ -7580,8 +7580,10 @@ place in the alphabet. The autonomy setup is keyed by page id, so anything that 
 names renumbered other pages and silently reattached their settings to whatever track had taken the
 number. An id is a page's identity now: read back from the index by name, kept for every page still
 there, retired when a page goes, and issued fresh only for a page that has never had one. Written
-explicitly for every page including the first, because an absent id is read as the page's POSITION and
-a retired id leaves a gap.
+explicitly for every page including the first, because a retired id leaves a gap and an absent one is
+read as ZERO - Adam's ruling of 2026-09-10, in `LayoutDiagram.pageIdOrPosition`, where an UNPARSEABLE
+id still falls back to the position. This paragraph said "read as the page's POSITION" until
+2026-09-21, which was the rule the ruling retired (FV3-C2).
 
 **OB-059 - deleting a page told the setup nothing.** `renamePage` got a caller under OB-049; its
 counterpart never had one. The file went, the index was rewritten, and everything the setup knew about
@@ -9056,7 +9058,7 @@ not on a launch pad. The occupancy test has been taken out of the impossibility 
 [MT-157](#mt-157) now asks for the behaviour that is actually correct. Nothing here needs running;
 running it would give a result about a rule that no longer exists.
 
-Kept rather than deleted, because its tag is cited from `docs/reviews/2026-08-24-fable-round-review.md`
+Kept rather than deleted, because its tag is cited from the 2026-08-24 fable-round review
 and from two commits.
 
 ---
@@ -12924,7 +12926,7 @@ sentence just never used it, and said "This station has..." where it could say w
 **From:** LE-A1, LE-A4, LE-A5, LE-A6, LE-A7, LE-B1, LE-B6, LE-C1, LE-C2
 **Written:** 2026-08-30
 
-Five fixes from [the layout editor review](../reviews/2026-08-30-layout-editor-review.md), all of the
+Five fixes from the layout editor review of 2026-08-30, all of the
 same shape: you change the track, and something has to carry - or drop - the autonomy setup that was
 keyed to it.
 
@@ -22322,7 +22324,7 @@ Expected results happen.  But didn't we say that BottomMainA should be allowed a
 
 **Claude, 2026-09-15.**
 
-**Step 4 is turned round by your note, as FR-087.**  Length 3 is now offered BottomMainA: at a station autonomy may choose, the measured route in holds the train.  Length 4 is refused.  MT-437 checks it.
+**Step 4 is turned round by your note, as FR-087.**  BottomMainA is now offered to a train the measured route in holds: at a station autonomy may choose, the room is the run in rather than the approach.  **The lengths that were written here - 3 offered, 4 refused - were true of the measurements MT-431 asked for and are not a property of the railway**; the total of the two legs in is the number, and on 2026-09-21 it was 4.  MT-437 carries the check and says how to read it.
 
 ---
 
@@ -22485,7 +22487,7 @@ Bug 2. If "Ramp down" is selected, rather than the path that takes the train the
 
 ### MT-436 - 2026-09-15 - Control+N shows a station's name on the square under the pointer
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-086
 
 **Written:** 2026-09-15
@@ -22509,37 +22511,87 @@ Your note on MT-397: *"Works, but let's add a hotkey for 'show station name here
 
 #### Comments
 
+**Adam, 2026-09-21 (triage).** Works, with notes.
+
+Works.  The tooltip here is an example of one I believe is too long, and similar ones you've written should be shortened, too.
+
+*Run against commit d8e2b3f7, build\classes, compiled 21 Sep 07:55 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-21.**
+
+Works, and the tooltip you pointed at is shorter. Fifteen of the longest tooltips are cut in all eight bundles, by dropping a whole sentence or the clause after a colon rather than rewriting: a sentence rewritten in a language nobody here reads is how a tooltip comes to say something the English does not. The one you hovered went from 115 characters to 48 - 'Shows what is happening at a station you choose.' - and the rest of its sentence, the em dash and the arrow, is what the square itself shows you. Biggest cuts: the route editor's capture target 205 to 58, 'Autonomy takes no notice of this page' 136 to 38, 'A station square always shows itself' 123 to 37, Combine 185 to 89, Path Type 190 to 117. Two things kept on purpose: Control+K stayed on the grid tooltip (the cut had taken the shortcut with it), and the path-integrity tooltip is left alone because shortening it once already made it describe a bounded check as an unbounded wait (FXV-C13). Average cut 52 percent. regression.testEveryMessageKeyIsAskedFor and testTheToolbarButtonsHonourTheirTooltips are green, and all eight bundles still carry the same 1,796 keys with the same placeholders.
+
 ---
 
 <a id="mt-437"></a>
 
-### MT-437 - 2026-09-15 - 75 407 DB at length 3 may go to BottomMainA, and at length 4 may not
+### MT-437 - 2026-09-15 - What the measured route in holds, and which tier is bound by it
 
-**Disposition:** fixed unvalidated
+**Disposition:** needs test
 **From:** FR-087
 
 **Written:** 2026-09-15
 
 Your note on MT-431: *"didn't we say that BottomMainA should be allowed at length 3, since it is not a parking spot, the station allows the length, and the length would be tracked?"*  And your answer when asked how far that reaches: **bounded by the route** in.
 
+**FIRST, THE NUMBER THIS TEST IS ABOUT.**  The rule is *the measured route in holds the train*, so
+what it does depends on what you have measured.  Before step 1, right-click along the run and read the
+two legs: **Tunnel to BottomMainAPre** and **BottomMainAPre to BottomMainA**.  Their total is the room.
+Measured on your layout as it stood on 2026-09-21 that total is **4** (1 + 3), which is why a four-unit
+train was offered and ran; when this entry was written it was **3**, from the measurements MT-431 asked
+for.  Write the total down and judge the steps against it rather than against the numbers below.
+
 **Steps**
 
-1. With your measurements from MT-431 (7,9 = 1, 10,10 = 2, 13,12 = 1, 19,12 = 1), give 75 407 DB length **3** and stand it at **Tunnel**.
+1. Stand 75 407 DB at **Tunnel** and give it a length **equal to the total** you just read.
 2. Right-click it and look for **BottomMainA**.  Send it there.
 3. When it has arrived, look at the diagram between Tunnel and BottomMainA.
-4. Give it length **4**, stand it at Tunnel again, and look for BottomMainA.
+4. Give it **one more unit than the total** and stand it at Tunnel again.  Look for BottomMainA in the
+   right-click list, then start autonomy and watch whether autonomy ever sends it there.
 5. Repeat step 4 with a parking berth whose approach is shorter than the train, if you have one to hand.
 
 **Expected**
 
-- Step 2: BottomMainA is offered, and the train runs and arrives.  Before this it was refused, naming BottomMainA's two-unit approach.
-- Step 3: orange back over the track it stands across, towards Tunnel - its tail is on the route it came in by, and other trains are kept off it.
-- Step 4: refused, naming BottomMainA - four units are longer than the measured route in, which is three.
+- Step 2: BottomMainA is offered, and the train runs and arrives.  Before FR-087 it was refused, naming
+  BottomMainA's two-unit approach.
+- Step 3: orange back over the track it stands across, towards Tunnel - its tail is on the route it came
+  in by, and other trains are kept off it.
+- Step 4, by hand: **offered.**  Your ruling of 2026-09-21 - *"in manual operation, A should be
+  selectable"* - and it is the tier rule rather than the length rule doing the work.
+- Step 4, autonomy: **never chosen.**  *"but in auto, not."*
 - Step 5: refused as before - a parking berth still has to hold the train past its last switch.
+
+**ONE QUESTION BEFORE THE AUTONOMY HALF CAN BE BUILT, and it is a question about two of your own
+rulings rather than about the code.**  On 2026-09-12 you ruled that a station autonomy may choose MAY
+take a train that comes to rest across the points - *"so we need a clear rule to govern that this is
+OK, or simply make a rule that parking berths cant block any other edges, but not make that check for
+active stations"* - and that is FR-087, which is what `Layout.whyTooLongForThisRoute` now implements for
+every tier alike.  On 2026-09-21 you wrote *"in manual operation, A should be selectable, but in auto,
+not"*, which narrows it: autonomy would then refuse a station where the train stands over the points
+even though the route in measures enough.
+
+Both cannot hold.  Which is it:
+
+- **(a) FR-087 stands.** A train the measured route in holds may be sent there by hand AND chosen by
+  autonomy; what you saw at length 4 was right in both tiers, and the only fix here is this entry.
+- **(b) The allowance is manual's alone.** Autonomy chooses a station only where the train fits without
+  standing across the points; the room rule gains a tier argument, and the refusal moves with it.
+
+Nothing is changed in the code until you say.  Reading (a) is what ships today.
 
 *What this is:* FR-087, which turns round step 4 of MT-431.  At a station autonomy may choose, a train fits if the measured track of the route it drives in on holds it, counted back without a gap and never back past a square it turns at; parking berths are unchanged.  `regression.testAPassingTrainMayStandAcrossThePoints.testTheRouteInHoldsAThreeUnitTrainAndNotAFourUnitOne`, seen red first; commit `9cc6a874`.
 
 #### Comments
+
+**Adam, 2026-09-21 (triage).** Does not work.
+
+Both 3 and 4 offered BottomMainA, and ran there.    But this is OK behavior- in manual operation, A should be selectable, but in auto, not.  When at length 4, it correctly protrudes past the end of the station.  When at length 3, it correctly ends before switch 1.
+
+*Run against commit d8e2b3f7, build\classes, compiled 21 Sep 07:55 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-21.**
+
+Your verdict splits into three things, and two of them are mine to fix. (1) The lengths this entry named were never a property of the railway: the rule is that the measured route in holds the train, and the route in is the two legs Tunnel-BottomMainAPre plus BottomMainAPre-BottomMainA. Measured on your layout today those are 1 and 3, so the room is FOUR and a four-unit train fits - which is exactly what you saw. When the entry was written it was three, from the measurements MT-431 asked for. The entry now tells you to read the total first and judge against it, and MT-431's note has been corrected the same way. (2) The manual half is right and is already what ships: the right-click door asks Layout.whyTooLongForThisRoute, the same rule isPathClear asks, so a send by hand is refused only when the room really is short. (3) The autonomy half cannot be built until you settle a contradiction between two of your own rulings, and it is written out in the entry: on 2026-09-12 you ruled that a station autonomy may choose MAY take a train that comes to rest across the points, which is FR-087 and is what the code does in every tier; on 2026-09-21 you wrote 'in manual operation, A should be selectable, but in auto, not', which takes that allowance away from autonomy. Reading (a) keeps FR-087 for both tiers and there is nothing to change; reading (b) gives the room rule a tier argument. Nothing has been changed in the code. Disposition left at needs test until you pick.
 
 ---
 
@@ -22571,6 +22623,16 @@ Your notes on MT-435: *"When 75 407 DB is set to length 3, only BottomMainAPre i
 *What this is:* OB-226, OB-227 and FR-088, replacing MT-435.  `core.testTheTailCrossedQuestion` - `testASensorExactlyTheTrainsLengthBackIsOffered`, `testOnlyARoadATrainCanDriveInOnIsOffered`, `testTheListStartsOnTheOneSensorNearestTheBack` - each seen red first; commits `9cc6a874`, `c0fe696e`.
 
 #### Comments
+
+**Adam, 2026-09-21 (triage).** Does not work.
+
+Routing itself works correctly, but switches 99 and 100 get highlighted in orange as if they were part of the path. See Screenshot 2026-09-21 090642.png
+
+*Run against commit d8e2b3f7, build\classes, compiled 21 Sep 07:55 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-21.**
+
+The routing half is what I could check, and it agrees with itself everywhere I could put it. I drove your own railway - the layout copied, your setup, your measurements, your placements and recorded roads - and asked the two questions side by side: which edges the railway refuses under a standing train, and which squares the diagram paints. In your recorded state the answer to both is NOTHING, because the tail walk stops at an unmeasured segment by your own ruling and almost nothing on that run is measured. Measuring every tile at one unit and stretching all four trains to forty units gives 16 refused edges and 100 painted squares, and every single painted square lies on an edge the railway itself refuses - the picture and the guard say the same thing. Switch 99 at 14,11 IS painted whenever a tail reaches the BottomSecondary-RampDown edge, which is correct: that switch is on that road. Switch 100 at 14,12 was never painted in any state I could build. So I cannot reproduce what the screenshot shows, and I will not guess at a fix. What would settle it in one line: which train, standing where, at what length, and which sensor you chose in the length window. With that I can put the railway in that state exactly. One hazard I did find by reading, unrelated to whether it caused this: the painting walk steps between covered endpoints by asking for ANY reduced edge joining two of them, rather than following the edges the railway says are covered - so where two sensors are joined by more than one road it can paint the road the train was not on. It has an Inbox entry of its own.
 
 ---
 
@@ -22637,7 +22699,7 @@ Your note on MT-335: *"The 335 park works, but I get: Could not run EN57-203 fro
 
 ### MT-441 - 2026-09-15 - 75 407 DB is offered RampDown and BottomSecondary from Tunnel, the long way round
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-229
 
 **Written:** 2026-09-15
@@ -22662,6 +22724,10 @@ From the agreement check in your MT-335 log: *"planner allows 75 407 DB -> Botto
 *What this is:* OB-229.  `core.testARouteIsFoundPastATerminus`, seen red first (`4b519e71`); fixed in `badb0a2c`.
 
 #### Comments
+
+**Adam, 2026-09-21 (triage).** Works.
+
+*Run against commit d8e2b3f7, build\classes, compiled 21 Sep 07:55 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -22868,7 +22934,7 @@ Found measuring what the terminus fix opened, and your ruling on it: *"We need t
 
 ### MT-449 - 2026-09-15 - Return Home does not turn a train that cannot reverse in the middle of a move
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** AMV-B1 (MT-445)
 
 **Written:** 2026-09-15
@@ -22889,6 +22955,10 @@ Found by the validation of MT-445's fix.  That fix governed where a move ENDS; a
 *What this is:* AMV-B1.  `core.testHomeStaging.testATrainThatCannotReverseIsNotTurnedMidMoveAndSentOn`.  Seen red first (c02f7000); fixed in c02f7000.
 
 #### Comments
+
+**Adam, 2026-09-21 (triage).** Works.
+
+*Run against commit d8e2b3f7, build\classes, compiled 21 Sep 07:55 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -23260,7 +23330,7 @@ From the 2026-09-19 review round (SET-B3), fixed the same day.  Mass Assign Leng
 
 ### MT-461 - 2026-09-19 - Closing the application asks about unsaved work in the route editor
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** UIX-B1
 
 **Written:** 2026-09-19
@@ -23313,6 +23383,10 @@ From the 2026-09-19 review round (UIX-B2), fixed the same day.  **Highlight on D
 5. Wait for the highlights to fade, and look again.
 6. Press **Highlight on Diagram** again and, while the tiles are yellow, CLICK one of the highlighted turnouts on the diagram.
 7. Press it once more and, while the tiles are yellow, let a train run over one of the highlighted sensors.
+8. **What lights at all** (your note of 2026-09-21).  Open a route that commands a turnout or two and
+   press **Highlight on Diagram**.  Look at the whole layout, not just the route's own tiles: at the
+   page links, at any route tile, and at the s88s.
+9. Look at the sensor named in the route's **S88** box.
 
 **Expected**
 
@@ -23321,6 +23395,14 @@ From the 2026-09-19 review round (UIX-B2), fixed the same day.  **Highlight on D
 - In step 6 the turnout you clicked ends up drawn in the position you put it in, not the one it was in when the highlight began.
 - In step 7 the sensor shows the train, and does not go back to showing clear track when the highlight ends.
 - Route highlights still light every tile of the route, and accessory changes still flash.
+- Step 8: **only** switches, signals and uncouplers light in yellow - no page link, no route tile that
+  the route does not itself command, no s88.  Before 2026-09-21 the match was on the tile's RAW
+  address, which for an accessory is twice the number a route records, so the only tiles that could
+  ever light were the kinds whose raw and logical addresses are the same: sensors, route tiles and
+  links.  Your words: *"Seems the highlighting doesn't care about item type."*
+- Step 9: the trigger sensor lights in the condition colour, along with any s88 a condition names.  It
+  was never highlighted at all before.
+- A route that commands ANOTHER route still lights that route's tile - that case is kept.
 
 *What this is:* review finding UIX-B2, fixed 2026-09-19 with a test seen failing first and a mutation for each half.
 
@@ -23333,6 +23415,10 @@ The highlighting animation itself works as described in this test.  BUT:
 (tested with route 7): links, unrelated routes (58), and S88s (10) are highlighted.  Should be switches and signals and the S88 that triggers the route or is involved in conditions only.  Seems the highlighting doesn't care about item type.
 
 *Run against commit d8e2b3f7, build\classes, compiled 21 Sep 07:55 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-21.**
+
+You were right, and it was two defects in one line. The match was tile.getRawAddress(), and for an accessory the raw address is TWICE the logical one - setLogicalAddress writes address*2, plus one for a green uncoupler - while for an s88, a route tile and a link the raw number IS the logical one. So a route commanding accessory 1 never matched the turnout numbered 1 at all; the only tiles the comparison could ever match were the kinds whose two addresses are the same, which is exactly the three kinds you saw light: sensors, route tiles and links. Then the second half, which is the one you named: nothing asked what the tile WAS. Both are fixed. highlightAddresses now takes what the address names - AddressedAs.ACCESSORY, FEEDBACK or ROUTE - and matches the logical address; a switch, signal or uncoupler answers to an accessory, an s88 to a feedback, a route tile to a route command (a route CAN command another route, so that case is kept rather than dropped). Lamps deliberately do not answer to an accessory command. The route editor now splits its rows by kind instead of pooling the numbers, and your other sentence is in too: the S88 that TRIGGERS the route is highlighted with the condition colour, which this button never showed before. Held by regression.testTheRouteHighlightAsksWhatATileIs on the single-switch scenario, where WestEnd is s88 10 and the turnout is accessory 1 - so accessory 10 is an address only a sensor answers to. Three claims with a control on each side, and both mutations go red one at a time: drop the kind test and the sensor lights for an accessory address; put getRawAddress back and the turnout stops lighting for its own. Thirteen classes around the route editor and the highlight are green.
 
 ---
 

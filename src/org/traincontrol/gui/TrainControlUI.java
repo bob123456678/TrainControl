@@ -8482,22 +8482,80 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @return
      */
     /**
-     * Lights every diagram square that carries one of these addresses.
+     * What an address NAMES, because every kind of tile carries a number (MT-462).
+     *
+     * Adam, 2026-09-21: *"links, unrelated routes (58), and S88s (10) are highlighted.  Should be
+     * switches and signals and the S88 that triggers the route or is involved in conditions only.
+     * Seems the highlighting doesn't care about item type."*  It did not: a page link's address is the
+     * page it points at, a route tile's is the route's id and an s88's is the sensor, so matching on
+     * the number alone lights three kinds of tile that have nothing to do with the route.
+     *
+     * Three values rather than two, and the third is not pedantry: a route CAN command another route
+     * (`RouteCommand.isRoute`), and that route's tile is a legitimate thing to light - it just must not
+     * be lit by an ACCESSORY of the same number, which is what Adam saw with route 58.
+     */
+    public enum AddressedAs
+    {
+        /** A switch, a signal or an uncoupler - anything the railway throws. */
+        ACCESSORY,
+
+        /** An s88 contact. */
+        FEEDBACK,
+
+        /** Another route, by its id. */
+        ROUTE
+    }
+
+    /**
+     * Whether a tile is the kind of thing an address of this kind names.
+     *
+     * A lamp is deliberately not an accessory here: it is thrown like one, but a route's accessory
+     * commands are about the road a train takes and lighting the layout's lamps for them was part of
+     * what made the highlight unreadable.
+     *
+     * @param tile the diagram tile
+     * @param kind what the address names
+     * @return whether this tile can answer to it
+     */
+    private static boolean answersTo(org.traincontrol.base.LayoutDiagramComponent tile, AddressedAs kind)
+    {
+        if (tile == null) return false;
+
+        switch (kind)
+        {
+            case FEEDBACK:
+                return tile.isFeedback();
+
+            case ROUTE:
+                return tile.isRoute();
+
+            default:
+                return tile.isSwitch() || tile.isSignal() || tile.isUncoupler();
+        }
+    }
+
+    /**
+     * Lights every diagram square of this KIND that carries one of these addresses.
      *
      * For the route editor's "Highlight on Diagram", which asks the same question twice in two colours:
      * what does this route COMMAND, and what does it merely CHECK.  A route names accessories by
      * address, and an address can be drawn on several squares and on several pages - the whole point of
      * the registry - so this lights all of them rather than the first one found.
      *
+     * **And only the squares that answer to that kind of address** (MT-462).  See `AddressedAs`: the
+     * number is not enough, because every kind of tile has one.
+     *
      * Squares that are not on screen are lit anyway.  The flash restores itself, the label is real
      * whether or not its page is showing, and a caller cannot know which page the reader is on.
      *
-     * @param addresses the accessory addresses to light, by logical address as a route records them
+     * @param addresses the addresses to light, by logical address as a route records them
+     * @param kind what those addresses name
      * @param wash the colour
      * @param holdMs how long to hold it
      * @return how many squares were lit, so the caller can say when the answer is none
      */
-    public int highlightAddresses(java.util.Set<Integer> addresses, java.awt.Color wash, int holdMs)
+    public int highlightAddresses(java.util.Set<Integer> addresses, AddressedAs kind,
+        java.awt.Color wash, int holdMs)
     {
         if (addresses == null || addresses.isEmpty()) return 0;
 
@@ -8511,7 +8569,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             for (org.traincontrol.base.LayoutDiagramComponent tile : diagram.getAll())
             {
-                if (tile == null || !addresses.contains(tile.getRawAddress())) continue;
+                // THE LOGICAL ADDRESS, WHICH IS WHAT A ROUTE RECORDS (MT-462, the second half).
+                //
+                // This asked `getRawAddress()`, and for an accessory the raw address is TWICE the
+                // logical one - `setLogicalAddress` writes `address * 2`, plus one for a green
+                // uncoupler.  So a route commanding accessory 1 never matched the turnout numbered 1
+                // at all; what it matched was whatever else happened to carry the number 1 as its raw
+                // value, which for an s88, a route tile and a link IS the logical number.  That is why
+                // every tile Adam saw light was of the wrong kind: the only tiles the comparison could
+                // ever match were the kinds whose two addresses are the same.
+                if (tile == null || !addresses.contains(tile.getLogicalAddress())) continue;
+
+                // AND IT HAS TO BE THE RIGHT KIND OF THING (MT-462, the first half).
+                if (!answersTo(tile, kind)) continue;
 
                 org.traincontrol.automationui.TileGraph.TileKey key =
                     new org.traincontrol.automationui.TileGraph.TileKey(page, tile.getX(), tile.getY());

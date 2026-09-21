@@ -1616,6 +1616,41 @@ the running diagram.
 settling at the same time: whether it applies while autonomy is stopped, where "manual-only" describes
 every square.
 
+### OB-239 - 2026-09-21 - the covered-track paint re-derives the tail's road instead of following it
+
+**Kind:** bug  
+**Raised from:** reading around MT-438, 2026-09-21  
+**Filed:** 2026-09-21  
+
+**Found by reading while trying to reproduce MT-438; NOT shown to have caused it.**
+
+`AutonomySession.routesCoveredByStandingTrains` takes the edges the railway says a standing train
+covers, throws away the edges and keeps only their endpoint SQUARES, and then `walkBackFrom` steps from
+square to square by asking `pathBetween(at, candidate)` for the first reduced edge that joins the pair
+in either direction.
+
+Two consequences, both on the misleading side:
+
+- **A step nothing covers.** The walk takes the first covered endpoint it can find a path to. Where a
+  train's covered chain is A to B to C, and the reduction also holds a direct A to C road, the walk can
+  step A to C and paint that road - track no covered edge names, and track the railway would let
+  another train onto.
+- **The wrong road of two.** `pathBetween` returns the FIRST matching reduced edge. Where two sensors
+  are joined by more than one road, which one gets painted is the order of `reducer.getEdges()`.
+
+**The railway's own walk does not have this problem**: `Layout.walkOneTail` follows `arrivedFrom` and
+the recorded road for the first hop and then refuses to guess at a fork. The paint re-derives what the
+walk already knew.
+
+**The fix is to stop re-deriving it.** Every covered `Edge` carries its own places -
+`Edge.getPlaceIds()`, written by `GraphReducer.placesAlong` - so the painted squares can come from the
+covered edges themselves, in order, and then the two answers cannot differ by construction.
+
+**What it needs to ship**: a fixture with two roads between one pair of sensors, which no scenario in
+`test/layouts` has today - a claim that goes red on the road it paints rather than on how many squares.
+Measured 2026-09-21 on a copy of your railway with every tile measured and four long tails: 16 refused
+edges, 100 painted squares, no divergence - so this shape does not fire on your current geometry.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

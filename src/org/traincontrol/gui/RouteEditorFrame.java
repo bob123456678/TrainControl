@@ -2794,8 +2794,14 @@ public class RouteEditorFrame extends JFrame
     {
         if (parent == null) return;
 
+        // BY KIND, NOT BY NUMBER (MT-462).  Adam: *"Seems the highlighting doesn't care about item
+        // type."*  A command names an accessory, another route, or a locomotive; a condition names an
+        // s88 or an accessory - and a tile of any kind carries a number, so the kind has to travel
+        // with the address or the wrong tiles light.
         java.util.Set<Integer> commanded = new java.util.LinkedHashSet<>();
+        java.util.Set<Integer> commandedRoutes = new java.util.LinkedHashSet<>();
         java.util.Set<Integer> checked = new java.util.LinkedHashSet<>();
+        java.util.Set<Integer> checkedSensors = new java.util.LinkedHashSet<>();
 
         for (Entry entry : commands.rows)
         {
@@ -2807,10 +2813,11 @@ public class RouteEditorFrame extends JFrame
             // its own javadoc says it throws for them - so a route holding a LOCOMOTIVE command threw
             // out of Highlight on Diagram, which is a button a person presses to see what a route
             // touches.  `hasAddress()` exists for exactly this and was not being asked.
-            if (command != null && command.hasAddress() && command.getAddress() > 0)
-            {
-                commanded.add(command.getAddress());
-            }
+            if (command == null || !command.hasAddress() || command.getAddress() <= 0) continue;
+
+            if (command.isAccessory()) commanded.add(command.getAddress());
+
+            if (command.isRoute()) commandedRoutes.add(command.getAddress());
         }
 
         for (ConditionOutline.Row row : conditions.rows)
@@ -2818,21 +2825,36 @@ public class RouteEditorFrame extends JFrame
             if (row.isJoiner() || row.getCommand() == null) continue;
 
             // The same question on the condition side (IPR-B1): a condition can name a locomotive.
-            if (row.getCommand().hasAddress() && row.getCommand().getAddress() > 0)
-            {
-                checked.add(row.getCommand().getAddress());
-            }
+            if (!row.getCommand().hasAddress() || row.getCommand().getAddress() <= 0) continue;
+
+            if (row.getCommand().isAccessory()) checked.add(row.getCommand().getAddress());
+
+            if (row.getCommand().isFeedback()) checkedSensors.add(row.getCommand().getAddress());
         }
+
+        // AND THE SENSOR THAT FIRES IT, which Adam asked for in the same sentence: *"the S88 that
+        // triggers the route or is involved in conditions"*.  It is a thing the route is ABOUT and it
+        // was the one part of the route this button never showed.
+        int trigger = numberOr(s88Field.getText(), 0);
+
+        if (trigger > 0) checkedSensors.add(trigger);
 
         // A square that is BOTH commanded and checked is drawn as commanded.  It is the stronger of the
         // two statements - the route does something to it - and two washes on one tile is a colour
-        // neither of them chose.
+        // neither of them chose.  Asked within a kind, because an accessory and a sensor numbered alike
+        // are two different squares and neither says anything about the other.
         checked.removeAll(commanded);
 
-        int lit = parent.highlightAddresses(commanded, org.traincontrol.util.ImageUtil.HIGHLIGHT,
-            HIGHLIGHT_HOLD_MS);
+        int lit = parent.highlightAddresses(commanded, TrainControlUI.AddressedAs.ACCESSORY,
+            org.traincontrol.util.ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);
 
-        lit += parent.highlightAddresses(checked,
+        lit += parent.highlightAddresses(commandedRoutes, TrainControlUI.AddressedAs.ROUTE,
+            org.traincontrol.util.ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);
+
+        lit += parent.highlightAddresses(checked, TrainControlUI.AddressedAs.ACCESSORY,
+            org.traincontrol.util.ImageUtil.HIGHLIGHT_CONDITION, HIGHLIGHT_HOLD_MS);
+
+        lit += parent.highlightAddresses(checkedSensors, TrainControlUI.AddressedAs.FEEDBACK,
             org.traincontrol.util.ImageUtil.HIGHLIGHT_CONDITION, HIGHLIGHT_HOLD_MS);
 
         // Nothing lit is an answer too, and a silent button is not.  It happens for a real reason: a
