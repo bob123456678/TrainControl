@@ -1729,10 +1729,19 @@ DIFFERENT metal (RampDown has BottomMainAPre on one side and TopMainPost on the 
 stops rather than guessing, so nothing is claimed - but the road would have said which one, and the
 tail would have been claimed correctly and further back.
 
-**The fix is to follow the road for every hop it covers**, and let the fork rule take over only past
-its start. `cameFromAlong` already looks the road up by place and is called only from
-`roadBackAtTheFirstHop`; the change is to ask it at every hop and to keep the fork rule as the
-fallback.
+**WITHDRAWN THE SAME DAY - THE PREMISE IS WRONG.**  `walkOneTail` already follows the road past a
+junction: MT-335, Adam's ruling of 2026-09-13, added exactly that - *"PAST A JUNCTION, THE ROAD IT CAME
+IN ON"* - and it is pinned by `core.testATailFollowsTheRouteItCameIn`, with the fork rule kept for a
+train that has no road.  The comment I read (*"Only the first hop can be chosen this way"*) is about the
+first-hop MECHANISM, not about the road being unused later.
+
+Found by writing the test first: three claims on a junction fixture all passed before any change, which
+is a green test disproving the hypothesis rather than a red one confirming it.  The duplicate test was
+deleted rather than committed - `testATailFollowsTheRouteItCameIn` already makes all three claims.
+
+What remains true is the observation, and it costs nothing: at RampDown the walk claimed the
+`northbound, reverse` copy where the road says `southbound`.  Two copies of one rail are one piece of
+metal and `getLockEdges` treats them alike, so the claim is the same track either way.
 
 **What it needs to ship**: a claim that goes red on the road CHOSEN rather than on how much is claimed -
 a fixture where the two ways back are different metal and the road names one of them. `single-switch`
