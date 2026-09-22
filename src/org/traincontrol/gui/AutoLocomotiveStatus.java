@@ -1151,7 +1151,12 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     // AND NOT NON-ATOMIC OVER TRACK THIS RUN COULD RELEASE UNDER THE TRAIN (GS-B1).
                     // A hand dispatch goes through `executePath` like any other, so it releases edges
                     // behind the train exactly as a timetable run does.
-                    if (this.parent != null) this.parent.keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
+                    //
+                    // UNCONDITIONAL (VD17-T2): the `!= null` this was written with could not be
+                    // false - the constructor dereferences `parent` - and a guard that cannot fail
+                    // around a safety question is a hole in the rule that holds it, because the rule
+                    // is a source-shape one and cannot see a condition.
+                    this.parent.keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
 
                     new Thread(() ->
                     {

@@ -250,6 +250,7 @@ AUT9-B1	AUT-autonomy-review.md	Closed	-	A battery test reads the operator's LIVE
 AUT9-B2	AUT-autonomy-review.md	Closed	-	The shared-metal covered-track refusal is a live anti-collision rule with no red-on-mutation test
 AUT9-C1	AUT-autonomy-review.md	Closed	-	`maxActiveTrains` (the concurrency cap) is enforced only under `isAutoRunning`, and is in no reference doc
 AUT9-C2	2026-09-22-GS-backlog.md	Closed	**not a defect**	(listed in a table, no section of its own)
+AUT9-C2	2026-09-22-VD17-records.md	Closed	**holds** (its own text says the split is correct and well tested)	not a defect
 AUT9-C2	AUT-autonomy-review.md	Closed	-	The full-autonomy vs timetable tier split is correct and well tested; `behaviour.md` §1 documents it, but the enforcement point is easy to regress
 AUT9-D1	AUT-autonomy-review.md	Closed	-	`firstClearRoute` and `isPathClear` agree on lock edges only "by coincidence"; the comment says so but no test guards the coincidence
 AUT9-D2	AUT-autonomy-review.md	Closed	-	`isOfferableToOperator` drops the terminus/reversibility question that `barredFromAutonomy` keeps; both are right, but the asymmetry is documented onl
@@ -465,6 +466,7 @@ DAY-C1	2026-08-31-day-of-commits-review.md	Open	**still open**, re-checked 2026-
 DAY-C1	2026-09-22-GS-backlog.md	Open	still true (residual; its remedy is superseded)	(listed in a table, no section of its own)
 DAY-C2	2026-08-31-day-of-commits-review.md	Closed	**still open**, re-checked 2026-09-04 - after `model.deleteLoc(value)` the handler runs `c	`deleteLoc` did not get the redraws both rename doors have
 DAY-C2	2026-09-22-GS-backlog.md	Closed	**already fixed** `e2afe88c`	(listed in a table, no section of its own)
+DAY-C2	2026-09-22-VD17-records.md	Closed	**holds**	fixed in `e2afe88c`
 DAY-C3	2026-08-31-day-of-commits-review.md	Closed	fixed - the message is chosen by whether a run was actually going, and `wasRunning` is cap	RC-A11's graceful stop fires from the two manual dispatch doors, where autonomy may never have been running
 DAY-C4	2026-08-31-day-of-commits-review.md	Closed	fixed, verified 2026-09-04 - both sites carry the correction and cite this finding: `Edge.	"setUnoccupied on an edge that is already clear does nothing" stopped being true when occupancy started counting
 DAY-C5	2026-08-31-day-of-commits-review.md	Closed	fixed by VD10-B2, verified 2026-09-04 - `nameEverything()` now ends at `setupChanged()` un	`nameEverything` does not rebuild the running layout; `promptName` does, and says why
@@ -834,6 +836,7 @@ FR3-B1	2026-09-04-final-release-review.md	Closed	fixed 2026-09-04 - `tidy()`'s f
 FR3-C1	2026-09-04-final-release-review.md	Closed	fixed - the precondition now also asserts `isPathClear` is NOT in the stack, which is what	The release blocker's precondition cannot tell the lock loop from the preview
 FR3-C2	2026-09-04-final-release-review.md	Closed	**accepted, not fixed** - the branch chooses a message key by `wasRunning`, and reaching i	DAY-C3's new message branch shipped untested, the same morning the pattern was named
 FR3-C2	2026-09-22-GS-backlog.md	Closed	**already fixed** `825e7d91`	(listed in a table, no section of its own)
+FR3-C2	2026-09-22-VD17-records.md	Closed	**holds**	fixed in `825e7d91`
 FR3-C3	2026-09-04-final-release-review.md	Closed	fixed, after two wrong attempts of its own - the rule scans every .java under src/ and ask	The new saveQuietly source rule is satisfied by any `!` in the statement, and only in four files
 FR3-C4	2026-09-04-final-release-review.md	Closed	fixed - the javadoc names `paint()`, and records that `paintChildren` was the first attemp	The gutter test's javadoc describes the fix that was reverted, not the one it pins
 FR3-C5	2026-09-04-final-release-review.md	Closed	fixed - when both lists are empty the escape adds its own separator and locomotive name, t	In the case ACC-C10 is about, the escape now appears - bare
@@ -1036,7 +1039,8 @@ GSR-C1	2026-09-22-GS-routes.md	Open	An autonomy ("train X at sensor Y") conditio
 GSR-C2	2026-09-22-GS-routes.md	Open	`protectsAnOccupiedSquare` reads reservation as occupancy, and the sentence it puts in fro	reservation read as occupancy, then described as standing
 GSR-C3	2026-09-22-GS-routes.md	Open	The ROUTE target dropdown offers the route being edited, which Save then refuses - the pag	the ROUTE dropdown offers the route being edited
 GSR-C4	2026-09-22-GS-routes.md	Open	A route re-triggered while it is still running is dropped in silence, one line after the l	a re-trigger while the route runs is dropped in silence
-GST-B1	2026-09-22-GS-threading.md	Closed	Nothing in `Layout` consults the power or the halt: the all-stop restarts a train, or latc	Nothing in `Layout` consults the power or the halt, so the all-stop either restarts a train or latches the session
+GST-B1	2026-09-22-GS-threading.md	Open - deferred until the MT retests	Nothing in `Layout` consults the power or the halt: the all-stop restarts a train, or latc	Nothing in `Layout` consults the power or the halt, so the all-stop either restarts a train or latches the session
+GST-B1	2026-09-22-VD17-records.md	Open - deferred until the MT retests	`Closed`	`Open - deferred until the MT retests`
 GST-B2	2026-09-22-GS-threading.md	Open	`GraphLocAssign.commitChanges` throws away `moveLocomotive`'s answer and writes five locom	`GraphLocAssign.commitChanges` discards `moveLocomotive`'s answer and writes five locomotive fields past its guard
 GST-C1	2026-09-22-GS-threading.md	Open	The volatile sweep did not reach `Layout.isValid`, `Locomotive.speed`/`direction`/`trainLe	The volatile sweep did not reach `Layout.isValid`, `Locomotive.speed`/`direction`/`trainLength`/`reversible`, or `Feedback.set`
 GST-C2	2026-09-22-GS-threading.md	Open	`forwardLoc`/`backwardLoc` touch Swing off the EDT and re-read `activeLoc` inside the work	`forwardLoc`/`backwardLoc` touch Swing off the EDT and re-read `activeLoc` inside the worker
@@ -1136,8 +1140,9 @@ IND9X-B4	IND-independent-review.md	Open - verified 2026-09-21	-	clicking the fin
 IND9X-B5	IND-independent-review.md	Closed	-	Escape does not put an armed editor tool down
 IND9X-B6	IND-independent-review.md	Closed	-	a highlight flash that outlives a switch actuation restores the OLD position's icon, and the diagram stays wrong
 IND9X-C1	IND-independent-review.md	Closed	-	GraphReducer.findPath's javadoc contradicts its own body about closed destinations
-IND9X-C2	2026-09-22-GS-backlog.md	Closed	**mostly fixed**; documentation residue	(listed in a table, no section of its own)
-IND9X-C2	IND-independent-review.md	Closed	-	the dispatch-choice layer is documented only at user-manual level
+IND9X-C2	2026-09-22-GS-backlog.md	Open	**mostly fixed**; documentation residue	(listed in a table, no section of its own)
+IND9X-C2	2026-09-22-VD17-records.md	Open	**VD17-R5**	documentation residue
+IND9X-C2	IND-independent-review.md	Open	-	the dispatch-choice layer is documented only at user-manual level
 IND9X-C3	2026-09-22-GS-backlog.md	Open - unverified	still true	(listed in a table, no section of its own)
 IND9X-C3	IND-independent-review.md	Open - unverified	-	a third accessory-reading door still creates on a miss
 IND9X-C4	2026-09-22-GS-backlog.md	Open - unverified	still true	(listed in a table, no section of its own)
@@ -1516,7 +1521,6 @@ NSV-D3	NSV-validation.md	Closed	clean, with the correction in adjudication 2	`S1
 NSV-D4	NSV-validation.md	Closed	measured	how many real files have the colliding shape
 NSV-D5	NSV-validation.md	Closed	recorded	one defect, two ids
 NSV-D6	NSV-validation.md	Closed	verified	the tree
-OB-248	2026-09-22-GS-backlog.md	Open	-	's numbers, re-run today
 OP2-B1	2026-09-19-OPV-opus-validation-of-the-rulings.md	Closed	fixed - refreshRunLeaders announces nothing	the diagram's autonomy menu now saves the setup on every right-click
 OP2-B2	2026-09-19-OPV-opus-validation-of-the-rulings.md	Closed	fixed - the warning skips a station autonomy chooses	the half-measured warning fires on stations the berth rule exempts
 OP2-B3	2026-09-19-OPV-opus-validation-of-the-rulings.md	Closed	fixed - one approach at a time	"half measured" is judged across every approach at once, and the rule judges one
@@ -1947,6 +1951,7 @@ RGN-C1	2026-08-31-regression-review.md	Open	**still open**, re-checked 2026-09-0
 RGN-C1	2026-09-22-GS-backlog.md	Open	**still true** (narrow: legacy path only)	(listed in a table, no section of its own)
 RGN-C2	2026-08-31-regression-review.md	Closed	**still open**, re-checked 2026-09-04 - every `sekunde` branch still multiplies by 1000, s	CS2 route delays now mean something different
 RGN-C2	2026-09-22-GS-backlog.md	Closed	**not a defect** (its own author: "It is a fix, and the right one")	(listed in a table, no section of its own)
+RGN-C2	2026-09-22-VD17-records.md	Closed	**holds**, both halves	not a defect
 RGN-C3	2026-08-31-regression-review.md	Closed	**needs Adam's ruling** - the comment claiming three doors is corrected to say which doors	a locomotive whose name contains a bracket can no longer be used in any route command
 RGN-C4	2026-08-31-regression-review.md	Open	**still open and not fixable here**, re-checked 2026-09-04 - the failing comparison is ins	a `UIState.data` written by 3.0.0 with a non-default page count loses its page names under 2.7.4c
 RGN-C4	2026-09-22-GS-backlog.md	Open	still true, **not fixable here** — a ruling	(listed in a table, no section of its own)
@@ -2648,6 +2653,7 @@ TR-D9	2026-08-21-review-findings.md	Closed	Raised as A, withdrawn 2026-08-21 aft
 TS-B1	2026-08-19-test-suite-review.md	Closed	Open	The parity the new editor rests on is narrower than it says
 TS-C1	2026-08-19-test-suite-review.md	Closed	Open	The runtime is tested at rest; the reversal is tested nowhere automated
 TS-C1	2026-09-22-GS-backlog.md	Closed	**not a defect** — its claim is false today	(listed in a table, no section of its own)
+TS-C1	2026-09-22-VD17-records.md	Closed	**holds**	not a defect
 TS-C2	2026-08-19-test-suite-review.md	Closed	Open	Three suites roll dice nobody can re-roll
 TS-C3	2026-08-19-test-suite-review.md	Closed	Open	Green that means "did not run"
 TS-D1	2026-08-19-test-suite-review.md	Closed	Recorded	Clean checks: where the suite is strong, verified rather than assumed
@@ -2850,6 +2856,7 @@ UH-B5	2026-08-17-unread-half-review.md	Closed	**Fixed 2026-08-17**	Double-click 
 UH-B6	2026-08-17-unread-half-review.md	Closed	**Fixed 2026-08-17**	Double-clicking below a short path list dispatches the last path
 UH-B7	2026-08-17-unread-half-review.md	Closed	Open - deferred with its class	`AutoJSONExport` realizes a file chooser on a raw thread beside a second modal dialog
 UH-B7	2026-09-22-GS-backlog.md	Closed	**already fixed** `59b2db48`	(listed in a table, no section of its own)
+UH-B7	2026-09-22-VD17-records.md	Closed	**holds**	fixed in `59b2db48`
 UIX-B1	2026-09-19-UIX-main-interface-review.md	Closed	fixed - MT-461	closing the application discards an open route editor's unsaved edits without asking
 UIX-B2	2026-09-19-UIX-main-interface-review.md	Closed	fixed - MT-462	a route-editor highlight that overlaps an accessory change leaves the tile drawn in the wrong position
 UIX-C1	2026-09-19-UIX-main-interface-review.md	Closed	fixed - behaviour.md section 3 corrected	behaviour.md says the turning copy of a may-reverse square is never asked about; the code asks, and is tested asking
@@ -3396,6 +3403,72 @@ VD16-T8	2026-09-22-VD16-round.md	Closed	Fixed 2026-09-22	a stated MUTATION that 
 VD16-T8	2026-09-22-VD16-tests-and-records.md	Closed	`testTheRecordsCountTheStore`'s stated MUTATION names the wrong assertion: "change `143` a	(B) - the stated MUTATION names an assertion that is not the one that fails
 VD16-T9	2026-09-22-VD16-round.md	Closed	Fixed 2026-09-22	the class says "the store" and reads a file
 VD16-T9	2026-09-22-VD16-tests-and-records.md	Closed	the test is named `...CountTheStore` and its javadoc says "the count the store holds", but	(C) - the guard never opens the store it is named for
+VD17-B1	2026-09-22-VD17-code.md	Closed	-	the gate's javadoc still says it is the file door's, with "exactly two" callers
+VD17-B1	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	the gate's javadoc still said "BOTH PARSE DOORS CALL THIS, because there are exactly two"; it has seven callers
+VD17-B2	2026-09-22-VD17-code.md	Closed	-	the new renumber warning gets the tidy-up backwards, and names no remedy
+VD17-B2	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	the renumber warning's new second half was backwards - while the renumber stands, SAVING is what refuses to tidy - and it named no remedy
+VD17-C1	2026-09-22-VD17-code.md	Closed	-	"ONE OF FOUR DISPATCH DOORS" - there are five
+VD17-C1	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	"ONE OF FOUR DISPATCH DOORS" over a paragraph naming four others: it is one of five
+VD17-C2	2026-09-22-VD17-code.md	Closed	-	`sync` opens the file store and never closes it, one call above the comment that forbids it
+VD17-C2	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	`sync` opened a second handle on the file store and never closed it, one function above the comment stating that rule
+VD17-C3	2026-09-22-VD17-code.md	Closed	-	the mirror's only protection is "n == 0", not "is this the store the mirror comes from"
+VD17-C3	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	the mirror's refusal fired only at zero findings, so a store holding one would still flatten 3,607 rows
+VD17-C4	2026-09-22-VD17-code.md	Open	-	the premise the new warning disavows still stands, as the javadoc of the guard it drives
+VD17-C4	2026-09-22-VD17-round.md	Open	Open	`isPageNumberingSuspect`'s javadoc still states the premise VD17-B2 disproved
+VD17-C5	2026-09-22-VD17-code.md	Closed	-	the Unpair comment says three siblings rebuild; one of them is a navigation item
+VD17-C5	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	the unpair comment called itself the only one of four that left the layout alone; Go To Link Partner does too, and rightly
+VD17-C6	2026-09-22-VD17-code.md	Open	-	the import refusal tells the operator a configuration exists that does not
+VD17-C6	2026-09-22-VD17-round.md	Open	Open	the import refusal says "a configuration called X already exists" in the one case it can reach, where it does not
+VD17-C7	2026-09-22-VD17-code.md	Closed	-	the bulk-clear confirmation still counts squares against a list of names
+VD17-C7	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	the bulk clear counted squares and named locomotives
+VD17-C8	2026-09-22-VD17-code.md	Closed	-	the Test button can be left dead for the life of the window, silently
+VD17-C8	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	the Test hand-off lost the message for an outline that cannot be built
+VD17-C9	2026-09-22-VD17-code.md	Open	-	two stale hard-coded finding counts in `triagedb.py`, disagreeing with each other
+VD17-C9	2026-09-22-VD17-round.md	Open	Open	two disagreeing stale counts in `triagedb.py`
+VD17-R1	2026-09-22-VD17-records.md	Closed	low	`docs/manual-tests/issues.md`, OB-252: `GS-B3` is listed twice
+VD17-R1	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	`GS-B3` listed twice in OB-252, the first copy cut off mid-sentence
+VD17-R10	2026-09-22-VD17-records.md	Open	low	`tests.md` MT-471 step 5: right answer, wrong rule
+VD17-R10	2026-09-22-VD17-round.md	Open	Open	MT-471 step 5 cites the wrong rule
+VD17-R11	2026-09-22-VD17-records.md	Open	low	`src/.../TrainControlUI.java:6111` and `:6130`: the gate method still says it has two doors
+VD17-R11	2026-09-22-VD17-round.md	Open	Open	a stale door count in a second javadoc
+VD17-R12	2026-09-22-VD17-records.md	Open	low	Adam's note is corrected inside the quotation marks in two javadocs
+VD17-R12	2026-09-22-VD17-round.md	Open	Open	a quotation of Adam's words silently corrected rather than quoted
+VD17-R2	2026-09-22-VD17-records.md	Closed	medium	`docs/manual-tests/issues.md`, OB-252 preamble: the arithmetic does not match the store
+VD17-R2	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	OB-252's preamble counted the deferrals and the orphans wrongly
+VD17-R3	2026-09-22-VD17-records.md	Closed	medium	the store holds a phantom finding whose ref is an Inbox entry id
+VD17-R3	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	a phantom `OB-248` finding row, made by the cataloguer out of the audit's own table, inflating every open count by one
+VD17-R4	2026-09-22-VD17-records.md	Closed	**high**	`docs/reference/behaviour.md`: the status section was not recomputed, and the new status is documented nowhere
+VD17-R4	2026-09-22-VD17-round.md	Closed	Answered 2026-09-22	the "10 unverified" it called stale is a record of the 2026-09-21 sweep, and the reviewer's own 7 missed the two VD15 findings added since - the live
+VD17-R5	2026-09-22-VD17-records.md	Closed	**high**	`IND9X-C2` is closed, and four fifths of it is still true
+VD17-R5	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	the week's subject was in no document
+VD17-R6	2026-09-22-VD17-records.md	Closed	medium	`docs/manual-tests/tests.md`, MT-470: "six claims" is seven, and "six of its own" was seven when written
+VD17-R6	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	MT-470 counted its own claims wrongly in both halves
+VD17-R7	2026-09-22-VD17-records.md	Closed	medium	`docs/manual-tests/tests.md`, MT-470: "Three validation rounds", and a correction that never landed
+VD17-R7	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	"Three validation rounds corrected the gate" - six have
+VD17-R8	2026-09-22-VD17-records.md	Closed	**high**	`docs/manual-tests/tests.md`, MT-471 is filed against `OB-240` and does not test it
+VD17-R8	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	MT-471 was filed against OB-240 and not one of its steps performed OB-240's gesture
+VD17-R9	2026-09-22-VD17-records.md	Closed	**high**	`GST-B1` is closed whole on a ruling that reaches only half of it
+VD17-R9	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	`GST-B1` closed whole on a ruling that reached half of it
+VD17-T1	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	the log claim measured the distance from each key to a `.size()`, so swapping the two `if` CONDITIONS left it green while the operator was told about
+VD17-T1	2026-09-22-VD17-tests.md	Closed	-	(high) - the file door's log claim pins key-to-argument adjacency, not branch-to-sentence
+VD17-T10	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	nothing held the alphabetical order VD15-C2 was fixed for: delete the sort and every claim stayed green
+VD17-T10	2026-09-22-VD17-tests.md	Closed	-	(low) - no claim reads the counter's output, only its size
+VD17-T2	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	both hand doors guarded the gate call with a `!= null` that cannot be false, hiding it from the rule that holds it
+VD17-T2	2026-09-22-VD17-tests.md	Closed	-	(high) - a text-position claim cannot see the condition that wraps the call
+VD17-T3	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	the precondition added the day before restated its own setup and could not fail
+VD17-T3	2026-09-22-VD17-tests.md	Closed	-	(high) - the VD16-T5 precondition restates the setup two lines above it
+VD17-T4	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	the walk's `isActive` test was dead in the fixture - the only inactive point had no rail out of it
+VD17-T4	2026-09-22-VD17-tests.md	Closed	-	(medium) - the seventh claim the counter needs: the walk's inactive-intermediate guard is never exercised
+VD17-T5	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	"walking to exhaustion" was satisfied by a walk bounded at two levels
+VD17-T5	2026-09-22-VD17-tests.md	Closed	-	(medium) - the sixth claim proves a two-deep walk, not "walking to exhaustion"
+VD17-T6	2026-09-22-VD17-round.md	Open	Open	the records guard's MUTATION overclaims: `README.md`'s "44 + 21 = 65" is read by nothing
+VD17-T6	2026-09-22-VD17-tests.md	Open	-	(medium) - the records class promises coverage it does not have, and the README's one unchecked piece of arithmetic sits in the paragraph it does chec
+VD17-T7	2026-09-22-VD17-round.md	Closed	Fixed 2026-09-22	the door list's MUTATION said "any one of the four" over five entries
+VD17-T7	2026-09-22-VD17-tests.md	Closed	-	(low) - the door-list javadoc miscounts its own list and claims a property it does not have
+VD17-T8	2026-09-22-VD17-round.md	Open	Open	`testStartAsksBeforeItDispatchesAnything` is subsumed by the list's first entry
+VD17-T8	2026-09-22-VD17-tests.md	Open	-	(low) - `testStartAsksBeforeItDispatchesAnything` is strictly subsumed and carries a refuted rationale
+VD17-T9	2026-09-22-VD17-round.md	Open	Open	the hand-door markers are the modal prompt, so hoisting the gate ABOVE it - strictly safer - would go red
+VD17-T9	2026-09-22-VD17-tests.md	Open	-	(low) - the hand-door triples pin the gate *between the modal prompt and the dispatch*, not "before the dispatch"
 VD9-B1	2026-09-03-validation-of-the-day.md	Closed	fixed - the whole sentence restored, and the two lines that were left dangling with it	`REL-C16` deleted two lines of a three-line sentence, and the retracted claim is now the last thing a reader sees before the code
 VD9-B2	2026-09-03-validation-of-the-day.md	Closed	fixed - `DONE` guard, re-measured with a throwaway script: one call, not two	both runners' `INT`/`TERM` trap runs `on_the_way_out` twice
 VD9-B3	2026-09-03-validation-of-the-day.md	Closed	fixed - the disposition now says the checkbox pushes no undo point, and MT-265 step 1 has 	`SVN-B8`'s "correct rather than lucky" is neither, and the half of the finding that actually holds is the half left unfixed
@@ -3488,6 +3561,7 @@ W7-A2	W7-seven-day-review.md	Closed	-	OB-189 fixed two of the three doors: a tim
 W7-B1	W7-seven-day-review.md	Closed	-	behaviour.md section 5c still describes the drawing MT-309 replaced
 W7-B2	W7-seven-day-review.md	Closed	-	MT-247 changed what an s88-fired route does, and no reference document knows it
 W7-C1	2026-09-22-GS-backlog.md	Closed	**already fixed** `74015c16`	(listed in a table, no section of its own)
+W7-C1	2026-09-22-VD17-records.md	Closed	**holds**	fixed in `74015c16`
 W7-C1	W7-seven-day-review.md	Closed	-	the MT-337 test's "OB-183 control" models a case real runs rarely produce, so the suite cannot see A1
 W7-C2	W7-seven-day-review.md	Closed	-	the OB-189 fix is the same seventeen lines pasted at two doors, and the third sibling is the one that was missed
 W7-D1	W7-seven-day-review.md	Closed	-	testEditorSurfaceRules' restated wash guard still titles itself by the removed mechanism

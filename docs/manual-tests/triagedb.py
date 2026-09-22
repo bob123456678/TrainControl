@@ -515,14 +515,19 @@ def render_findings(conn, path=FINDINGS_MIRROR, force=False):
     #
     # `catalog-findings.py` refuses the same way for the same reason.  The refusal is here as well
     # because it is this function that does the writing.
-    if n == 0 and os.path.exists(path):
+    if os.path.exists(path):
         held = 0
 
         for line in io.open(path, encoding="utf-8"):
             if line.strip() and not line.startswith("#"):
                 held += 1
 
-        if held > 0 and not force:
+        # NOT ONLY WHEN THE STORE IS EMPTY (VD17-C3).  The first version refused at `n == 0`, so a
+        # store holding ONE finding - a half-built one, a test fixture, a connection part-way through
+        # a rebuild - would still flatten every row in the file.  What is being guarded against is a
+        # render from the wrong store, and that looks like a collapse rather than a change: an
+        # ordinary round adds tens of rows to thousands, so an order of magnitude is the line.
+        if held > 0 and n * 10 < held and not force:
             raise IOError(
                 "REFUSING to write an empty %s over %d rows. This store holds no findings, so it is"
                 " not the store the mirror comes from - the CLI builds an in-memory one from the"
@@ -942,12 +947,20 @@ def sync(conn=None):
         # wrote a header over nothing and called it a repair.  The store is chosen once here.
         store = conn if holdsFindings(conn) else connect()
 
-        fresh, note = verify_findings_mirror(store)
+        try:
+            fresh, note = verify_findings_mirror(store)
 
-        if not fresh:
-            render_findings(store)
+            if not fresh:
+                render_findings(store)
 
-            print("findings.tsv was not the store's own rows and has been regenerated - " + note)
+                print("findings.tsv was not the store's own rows and has been regenerated - " + note)
+        finally:
+            # AND CLOSED, WHICH IS THE RULE THE FUNCTION BELOW STATES (VD17-C2).  This opens a second
+            # handle on the file store every time the CLI runs `sync`, because the CLI's own store is
+            # the in-memory one - and left it open, one function above the comment saying a caller's
+            # connection is the caller's to close.
+            if store is not conn:
+                store.close()
 
         return counts
 

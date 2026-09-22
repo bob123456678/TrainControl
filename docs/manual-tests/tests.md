@@ -23880,14 +23880,19 @@ So the Unmeasured Track display in the editor is NOT the list to work from here 
 question, about how far a tail reaches.  The refusal's own list is the one to measure.
 
 *What this is:* the finding was `VD12-R4` - the tooltip sentence cut on 2026-09-21 was load-bearing.
-Three validation rounds corrected the gate: VD13-B1 (the checkbox was blind where the file door had been
-hardened), VD13-B2/B3 (it counted squares, and counted one rail twice), VD14-B1 (it never asked about
-train lengths, which is the clause his own railway is most exposed to, since the default length is 0) and
-VD14-C6 (it refused rails that no path could ever release).  Held by
-`ui.testNonAtomicRoutesNeedTheirLengths` - six claims, each with the control that the door is OPEN when
-the railway is right - and `core.testAutoLayout.testARailwayCountsItsUnmeasuredDrivableTrack`, which has
-six of its own.  VD16-B2 then found the fourth door: Start, where a train length cleared on the live
-layout had nothing left to ask.
+**Six rounds have corrected this gate, and each found the one before it had stopped too early:**
+VD13-B1 (the checkbox was blind where the file door had been hardened), VD13-B2/B3 (it counted squares,
+and counted one rail twice), VD14-B1 (it never asked about train lengths, which is the clause his own
+railway is most exposed to, since the default length is 0), VD14-C6 (it refused rails no path could
+ever release), VD15-C3 (it told him one half at a time, so he would measure everything and only then
+hear about a train), VD16-B2 (Start, where a length cleared on the live layout had nothing left to
+ask), GS-B1 (Execute Timetable, Return Home and both hand dispatches, which reach the release without
+passing Start - the comment claiming Start was the choke point was wrong about where the release
+lives) and VD17-B1 (the method's own contract still said it had two callers; it has seven).
+
+Held by `ui.testNonAtomicRoutesNeedTheirLengths` - seven claims, each with the control
+that the door is OPEN when the railway is right - and
+`core.testAutoLayout.testARailwayCountsItsUnmeasuredDrivableTrack`, which has ten.
 
 ---
 
@@ -23915,6 +23920,9 @@ closing the editor and losing the edit.
    two in a group.  Save it, and re-open it to be sure it came back as you built it.
 2. Delete **B** - the first condition INSIDE the group.  Read what is left.
 3. Save.
+3a. **The gesture you actually reported** (`OB-240`): build `A or (B and C)` again, and this time
+    delete the **`and`** itself - the joining word, not either condition beside it.  Read what is
+    left, and save.
 4. Now delete the whole group's remaining condition, so only `A` is left, and save again.
 5. Build `A and B` with no group, delete **A**, and save.
 
@@ -23924,6 +23932,13 @@ closing the editor and losing the edit.
   `A`'s `or` is untouched.  No red word, no stranded joiner, nothing greyed.
 - Step 3: **it saves.**  That is the half that was broken: the route was unsavable and the only way out
   was to abandon the edit.
+- Step 3a: deleting a **word** takes the whole term that followed it, so the `and` goes and `C` goes
+  with it, leaving `A or B` - one condition in the group, nothing stranded, no word with nothing on
+  one side of it, and **it saves**.  (Whether the editor still draws brackets around a group of one
+  is cosmetic; what matters is that nothing is left red and Save is accepted.)  This is the gesture
+  `OB-240` is about - *"we can remove operators (like and) without deleting the conditions they are
+  linked to.  This permanently leaves an orphan entry"* - and until VD17-R8 no step of this test
+  performed it.
 - Step 4: what is left reads `A` alone, and it saves.
 - Step 5: what is left reads `B` alone, and it saves - a deleted word takes the whole following term, so
   there is no `and` in front of the first condition.

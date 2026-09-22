@@ -3003,10 +3003,28 @@ public class RouteEditorFrame extends JFrame
     {
         if (parent == null || parent.getModel() == null) return;
 
-        final NodeExpression conditions = conditionsEditable
-            ? ConditionOutline.toExpression(this.conditions.rows) : conditionsAsFound;
+        final NodeExpression conditions;
 
-        final String s88 = s88Field.getText().trim();
+        final String s88;
+
+        // READ ON THE EVENT THREAD, AND STILL INSIDE A TRY (VD17-C8).  The table's rows are the event
+        // thread's to read, so building the expression cannot move to the worker - but it is also the
+        // step that throws on an outline which cannot be turned into an expression, and moving the
+        // evaluation out from under the catch left that throw with nowhere to go but an action
+        // listener.  The answer is the same one the old single-threaded version gave.
+        try
+        {
+            conditions = conditionsEditable
+                ? ConditionOutline.toExpression(this.conditions.rows) : conditionsAsFound;
+
+            s88 = s88Field.getText().trim();
+        }
+        catch (RuntimeException e)
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("route.ui.errorConditionExpressionInvalid"));
+
+            return;
+        }
 
         if (testButton != null) testButton.setEnabled(false);
 

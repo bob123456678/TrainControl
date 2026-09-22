@@ -1370,7 +1370,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         javax.swing.SwingUtilities.getWindowAncestor(this), path, locomotive);
 
                 // AND THE GATE, as at the other hand door and the three that start a run (GS-B1).
-                if (ui != null) ui.keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
+                // Unconditional, for the reason the other hand door states (VD17-T2): the same `ui`
+                // is dereferenced at the dispatch below, so a null check here guards nothing and
+                // hides the call from the rule that holds it.
+                ui.keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
 
                 // TODO there is commonality with AutoLocomotiveStatus - reuse code
                 new Thread(() ->

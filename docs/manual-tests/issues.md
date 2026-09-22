@@ -2013,11 +2013,11 @@ tests only, which is true of everything except these.
 **What I would do:** read them out of the store and put each one either in this Inbox as an OB or in
 the closed roll with the reason it was declined, then say so in `behaviour.md`.  **The obvious query
 is wider than this list, and the numbers move as rounds land** - counted 2026-09-22:
-`WHERE status LIKE 'Open%'` returns **120 rows for 76 findings** (a finding written up in two documents
+`WHERE status LIKE 'Open%'` returns **142 rows for 86 findings** (a finding written up in two documents
 has a row for each, VD15-R3 - and the general sweep of 2026-09-22 gave every finding it audited a
-second row, which is why the two numbers are now so far apart), made up of 78 rows for 55 findings at
+second row, which is why the two numbers are now so far apart), made up of 98 rows for 64 findings at
 exactly `Open`, 18 rows for 9 `Open - unverified`, 10 for 5 `Open - verified 2026-09-21`, 8 for 4
-`Open - for Adam`, 4 for 2 `Open - deferred until the MT retests` and 2 for 1 deferred past 3.0.0.
+`Open - for Adam`, 6 for 3 `Open - deferred until the MT retests` and 2 for 1 deferred past 3.0.0.
 
 Thirteen are named above.  **Sixteen more are named nowhere but this paragraph**, and each is written
 out in full here because the first version of this line compressed six of them as
@@ -2103,15 +2103,15 @@ one reservation - so it is left alone and noted here so the next reader does not
 
 Six Opus reviewers read one area each - the run loop, the editor and its store, routes against
 autonomy, persistence and import, threading, and the 51 findings that were already open.  Six
-findings were fixed in the commit that filed this, three are deferred until the manual tests are
-done, and one is OB-251.  The rest are listed here rather than as an entry each, because
+findings were fixed in the commit that filed this, two are deferred until the manual
+tests are done, and the Instant Stop question became OB-251, which Adam has since declined.
+  The 33 that remain are listed here rather than as an entry each, because
 `behaviour.md` says open work belongs in a live document and OB-248 is the entry about findings
-that are in none - adding thirty orphans to it would be a poor way to answer it.
+that are in none - adding 33 orphans to it would be a poor way to answer it.
 
 The documents are not in the repository, by your ruling.  The store has each finding's evidence:
 `SELECT ref, title, status FROM finding WHERE ref LIKE 'GS%-%'`.
 
-- **`GS-B3`** *(deferred)* the tail bookkeeping is one edge behind its own definition, and on a path of three edges or fewer nothing is ever released. Never early, so nothing is
 - **`GS-B3`** *(deferred)* the tail bookkeeping is one edge behind its own definition, and on a short path it never releases anything
 - **`GS-C1`** the departure speed write is not fenced, and a comment above it says it is
 - **`GSB-C1`** route.ui.frameNameNotUsable is a second copy of VD12-R7's wrong rule, and VD12-R7 does not name it
@@ -2137,6 +2137,7 @@ The documents are not in the repository, by your ruling.  The store has each fin
 - **`GSR-C3`** the ROUTE dropdown offers the route being edited
 - **`GSR-C4`** a re-trigger while the route runs is dropped in silence
 - **`GST-C7`** quitting while autonomy is running skips the exit capture of the session's placements in silence, and `autosetup.log.placementsNotSaved` already exists to say so
+- **`GST-B1`** *(deferred)* nothing in `Layout` asks whether the track is live before it commands a speed - the halt half of this is declined by Adam's ruling in OB-251, the POWER half is a different control and stands
 - **`GST-B2`** `GraphLocAssign.commitChanges` discards `moveLocomotive`'s answer and writes five locomotive fields past its guard
 - **`GST-C1`** The volatile sweep did not reach `Layout.isValid`, `Locomotive.speed`/`direction`/`trainLength`/`reversible`, or `Feedback.set`
 - **`GST-C2`** `forwardLoc`/`backwardLoc` touch Swing off the EDT and re-read `activeLoc` inside the worker
@@ -2145,6 +2146,20 @@ The documents are not in the repository, by your ruling.  The store has each fin
 - **`GST-C5`** `createPoint`/`createEdge` are the unsynchronized, unguarded siblings of the delete doors
 - **`GST-C6`** `getInvalidReason()` has no callers, and its javadoc describes a surface nothing implements
 
+
+**And the round that validated all of this left nine of its own** (VD17, 2026-09-22 - three Opus
+reviewers over the four commits above).  Twenty-four of its thirty-three findings were fixed in the
+commit that files this; these are what is left, and none of them needs the railway:
+
+- **`VD17-C4`** the premise the new warning disavows still stands, as the javadoc of the guard it drives
+- **`VD17-C6`** the import refusal says "a configuration called X already exists" in the one case it can reach, where it does not
+- **`VD17-C9`** two stale hard-coded finding counts in `triagedb.py`, disagreeing with each other
+- **`VD17-R10`** `tests.md` MT-471 step 5: right answer, wrong rule
+- **`VD17-R11`** `src/.../TrainControlUI.java:6111` and `:6130`: the gate method still says it has two doors
+- **`VD17-R12`** Adam's note is corrected inside the quotation marks in two javadocs
+- **`VD17-T6`** (medium) - the records class promises coverage it does not have, and the README's one unchecked piece of arithmetic sits in the paragraph it does chec
+- **`VD17-T8`** (low) - `testStartAsksBeforeItDispatchesAnything` is strictly subsumed and carries a refuted rationale
+- **`VD17-T9`** (low) - the hand-door triples pin the gate *between the modal prompt and the dispatch*, not "before the dispatch"
 **The three I would take first**, and none of them needs the railway: `GSR-B2` (a locomotive's
 address is rewritten by the Central Station sync past the guard that refuses it while a route is
 driving that locomotive), `GSR-B3` (`editRoute` replaces the route object, so `isExecuting` -

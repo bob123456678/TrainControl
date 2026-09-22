@@ -1271,6 +1271,52 @@ they are what this section reasons from.
 
 ---
 
+### 5d. Atomic Routes, and the track a train is handed back
+
+**A path is held whole until the run ends - unless Atomic Routes is off, and then each edge is given
+back as the tail clears it.**  Adam runs with `"atomicRoutes": false`, so this is his railway's
+ordinary behaviour, not a corner of it.
+
+Giving an edge back early is what lets a second train follow a first down the same road instead of
+waiting for it to arrive.  The question is only ever *has the tail passed this edge*, and
+`Layout.tailHasProvablyPassed` answers it from two facts: how far the head has travelled since the end
+of the edge, and how long the train is.
+
+**It is wrongly true in exactly two states, and both of them are ordinary.**
+
+- **A path with no measured edge anywhere on it.**  With nothing measured the honest answer to "how
+  far has the head gone" is "no idea", and the rule reads that as clear.  A railway with lengths on
+  its platforms and nowhere else is in this state for most of its paths.
+- **A train whose length is 0**, which is what `Locomotive.trainLength` holds until somebody sets it.
+  `behind >= trainLength` is then true the first time every edge is asked about, so the whole railway
+  is handed back under the train however well the track is measured.
+
+In either state the edge behind a moving train is released while the train is still lying across it,
+and the next dispatch is routed onto occupied track.  **So the railway is not allowed to run
+non-atomic while either state holds**, and that rule is asked at every door that could start a train
+or load a setting:
+
+- the **Atomic Routes checkbox** refuses the gesture and says what is unmeasured - somebody is there,
+  and one gesture from fixing it;
+- the **two load doors** (Validate on the autonomy tab, and the editor's apply) force the setting back
+  ON and write the reason to the log, because a file has nobody at it and refusing the load would make
+  a configuration the operator already has unopenable;
+- the **five dispatch doors** - Start, Execute Timetable, Return Home, and the two hand dispatches -
+  do the same, because a TRAIN's length is written on the live layout long after any file was parsed.
+
+**What counts is whole paths and trains, not squares.**  An unmeasured switch square does not count,
+because an edge's length is the sum of its squares and one measured square gives the edge a length.  A
+rail with measured track between it and every destination does not count either, because a path ends
+at a destination and so can never be unmeasured end to end - which is enforced where paths are BUILT,
+in `Layout.bfs` and `HomeStaging.firstClearRoute`, not where they are checked.  And a rail is counted
+once, not once per direction.
+
+So the Unmeasured Track display in the editor is **not** the list to work from: it answers a different
+question, about how far a tail reaches.  The refusal's own list is the one to measure, and it comes
+back in alphabetical order because the message shows only the first three of it.
+
+*(`VD12-R4`, `VD13-B1/B2/B3`, `VD14-B1/C6`, `VD16-B2`, `GS-B1`.  `MT-470` is the hands-on test.)*
+
 ### The autonomy editor's keyboard doors
 
 Three shortcuts act on **the square the pointer is over**, and they ask one question to find it -
@@ -1823,7 +1869,7 @@ Comments in this codebase cite review findings constantly - `RGD-B2`, `MON-C6`, 
 locomotive but `DY3-C7` is a finding - because that is how a comment says *why* rather than *what*.
 The documents those ids came from are gone. **The findings are not.**
 
-All of them are in `docs/manual-tests/triage.db`, in the `finding` table - **3,608 rows for 3,315
+All of them are in `docs/manual-tests/triage.db`, in the `finding` table - **3,682 rows for 3,347
 findings**, because a finding written up in two documents has a row for each, and reading the row count
 as a finding count is a mistake three documents have made (VD15-T5) - with the document they
 came from, the line in it, the severity, what it was about, the file and line of the evidence, the
@@ -1878,10 +1924,23 @@ none:
 | checked by hand against the code that day | 49 |
 | **`Open - unverified`** - no evidence either way | 10 |
 
-The last ten are all C-severity and all but one from 2026-09-09. Saying so is the point: a status
-invented to tidy a row is worse than a row that admits nobody has looked. Five more are **open and
-verified still true** on the day their document was deleted, and each is in the Inbox as an OB, which
-is where open work belongs; one is Adam's ruling to make; two are deferred by his own word. The whole
+That table is what the 2026-09-21 sweep decided, not a live count, and the numbers in it do not move.
+The last ten were all C-severity and all but one from 2026-09-09. Saying so is the point: a status
+invented to tidy a row is worse than a row that admits nobody has looked.
+
+**Since then** (2026-09-22): the general sweep's audit settled three of those ten against the code, and
+two findings joined them for a different reason - the VD12 and VD15 documents were written in a
+scratchpad and never committed, so their own evidence is gone, and `git` cannot bring them back the way
+it brings back the deleted reviews. Nine rows read `Open - unverified` today.
+
+**And one status was added that day**, `Open - deferred until the MT retests`: work that is real, that
+is understood, and that must not land until Adam has re-run the manual tests it would change under.
+It is not a parking space - each one names the test it waits on. Nothing reads status except
+`LIKE 'Open%'` and `= 'Closed'`, so a new word costs nothing but has to be written down here.
+
+Of what is open now: five are **verified still true** on the day their document was
+deleted and each is in the Inbox as an OB, which is where open work belongs; four are Adam's ruling
+to make; three wait on the manual tests; one is deferred past 3.0.0 by his own word. The whole
 list, at any time:
 
 ```sql

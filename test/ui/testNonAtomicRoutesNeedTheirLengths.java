@@ -299,13 +299,14 @@ public class testNonAtomicRoutesNeedTheirLengths
     {
         putTheRailwayRight();
 
-        // THE OTHER HALF IS QUIET, or this claim is not about trains at all (VD16-T5).  The door
-        // forces the setting back on for either half, so without this the claim would pass just as
-        // well on a railway with an unmeasured rail and every train measured.
-        assertTrue(layout.unmeasuredTrackThatCouldBeReleased().isEmpty(),
-            "precondition: the railway still has track that could be released - "
-            + layout.unmeasuredTrackThatCouldBeReleased() + " - so the door would force atomic"
-            + " routes back on whatever the trains look like, and nothing below is about a train");
+        // WHICH HALF THIS IS ABOUT IS HELD BY `testTheFileDoorLogsTheHalfItFound`, NOT HERE (VD17-T3).
+        //
+        // There was a precondition on this line asserting that the track half was quiet.  It could not
+        // fail: `putTheRailwayRight()` above gives every zero-length edge a length by walking the same
+        // collection the counter reads, so "no track could be released" is true by construction two
+        // lines later, and no change to the production code could redden it.  The door forces the
+        // setting back on for either half and says which in the log, so the log is where the halves
+        // are told apart - and that rule is a claim of its own in this class.
 
         Locomotive train = null;
 
@@ -379,27 +380,44 @@ public class testNonAtomicRoutesNeedTheirLengths
         // to get wrong.
         String quote = String.valueOf((char) 34);
 
-        int track = body.indexOf("autolayout.warnAtomicRoutesKeptOn" + quote);
-        int trains = body.indexOf("autolayout.warnAtomicRoutesKeptOnTrains" + quote);
+        String trackKey = "autolayout.warnAtomicRoutesKeptOn" + quote;
+        String trainKey = "autolayout.warnAtomicRoutesKeptOnTrains" + quote;
 
-        assertTrue(track > 0 && trains > 0,
-            "the file door no longer names both log sentences, so one half of what it did is not"
-            + " reported at all.  Track key at " + track + ", train key at " + trains);
+        // THE BRANCHES, NOT THE GAPS (VD17-T1).
+        //
+        // The first version of this measured how far each key sat from the nearest matching `.size()`
+        // and called that the pairing.  It is not: swap the two `if` CONDITIONS and leave the two
+        // `logf` lines exactly where they are, and every distance is byte for byte what it was - while
+        // an operator with one unmeasured rail is told "0 locomotives have no train length" over an
+        // empty list, which is the fault this rule exists to prevent.  What says which half a sentence
+        // is about is the branch it sits in, so that is what is read.
+        int trackBranch = body.indexOf("if (!track.isEmpty())");
+        int trainBranch = body.indexOf("if (!trains.isEmpty())");
 
-        // THE ARGUMENT THAT FOLLOWS EACH KEY, which is what says which half the sentence is about.
-        // Reading the text BEFORE a key finds the enclosing `if`, which is the same either way round.
-        int trackArg = body.indexOf("track.size()", track) - track;
-        int trainsArg = body.indexOf("trains.size()", trains) - trains;
+        assertTrue(trackBranch > 0 && trainBranch > trackBranch,
+            "the file door's two branches are not where this rule can find them - the track branch is"
+            + " at " + trackBranch + " and the train branch at " + trainBranch + ".  If they have been"
+            + " reordered or rewritten, this rule has to be rewritten with them, because what it holds"
+            + " is that each sentence is logged from the branch that found the fault it describes");
 
-        assertTrue(trackArg > 0 && trackArg < 60,
-            "the track sentence is not being given the track to name - the nearest track.size() is "
-            + trackArg + " characters away, so the two keys have been swapped and an operator with an"
-            + " unmeasured rail is told to set a train length");
+        String inTrack = body.substring(trackBranch, trainBranch);
+        String inTrains = body.substring(trainBranch);
 
-        assertTrue(trainsArg > 0 && trainsArg < 60,
-            "the train sentence is not being given the trains to name - the nearest trains.size() is "
-            + trainsArg + " characters away, so an operator whose locomotive has no length is told to"
-            + " measure track he has already measured");
+        assertTrue(inTrack.contains(trackKey) && inTrack.contains("track.size()"),
+            "the branch that found unmeasured track does not log the track sentence with the track to"
+            + " name, so the operator is told about the wrong half of the gate: " + inTrack);
+
+        assertFalse(inTrack.contains(trainKey),
+            "the branch that found unmeasured track logs the TRAIN sentence: an operator with an"
+            + " unmeasured rail is told to set a train length, and the count beside it is zero");
+
+        assertTrue(inTrains.contains(trainKey) && inTrains.contains("trains.size()"),
+            "the branch that found a train with no length does not log the train sentence with the"
+            + " trains to name: " + inTrains);
+
+        assertFalse(inTrains.contains(trackKey),
+            "the branch that found a train with no length logs the TRACK sentence, so an operator is"
+            + " told to measure track he has already measured");
     }
 
     /**
@@ -460,7 +478,8 @@ public class testNonAtomicRoutesNeedTheirLengths
      * know the doors it names, so the failure message says to add the new door here as well.  What it
      * buys is that the next door cannot be added in silence, which is how this one came to exist.
      *
-     * MUTATION: delete the call from any one of the four and this names that one.
+     * MUTATION: delete the call from any one of the five and this names that one (VD17-T7: it said
+     * four, over a five-entry list).
      *
      * @throws Exception on a failure to read the source
      */

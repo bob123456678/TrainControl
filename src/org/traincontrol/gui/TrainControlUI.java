@@ -6097,20 +6097,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * A setup that has just been loaded does not get to run non-atomic over unmeasured track
-     * (Adam, 2026-09-21: *"yes, shut the file door too - just enable the setting and show a warning in
-     * the log"*).
+     * The railway does not get to run non-atomic while it could release track under a train.
+     *
+     * Written for the file doors (Adam, 2026-09-21: *"yes, shut the file door too - just enable the
+     * setting and show a warning in the log"*) and now asked at every door that can start a train.
      *
      * **ENABLED, NOT REFUSED.**  The checkbox refuses the gesture because there is somebody there to
      * read the refusal and one gesture away from fixing it; a FILE has nobody at it, and refusing the
      * load would make a configuration he already has unopenable - a fix worse than the defect.  So the
      * safe setting is written and the log says what happened and why, which is his ruling word for
      * word.  Atomic mode releases nothing until a run ends, so turning it on can never be the unsafe
-     * answer.
+     * answer.  The same is true at a dispatch, where there is nobody to answer either: the operator
+     * pressed Start, not "tell me about my train lengths".
      *
-     * **BOTH PARSE DOORS CALL THIS**, because there are exactly two - the Validate button on the
-     * autonomy JSON panel and the editor's own apply (`AutonomyViewerPanel`) - and a rule at one of
-     * them is the sweep-the-siblings miss this project files more often than any other.
+     * **SEVEN CALLERS, AND THE COUNT HERE HAS BEEN WRONG TWICE (VD17-B1).**  Two are the parse doors
+     * this was written for - the Validate button on the autonomy JSON panel, and the editor's own
+     * apply in `AutonomyViewerPanel`.  The other five are the dispatch doors: Start, Execute
+     * Timetable, Return Home, and the two hand dispatches in `AutoLocomotiveStatus` and
+     * `LayoutRightclickAutonomyMenu`.  A train length is written on the LIVE layout, long after a
+     * parse, so a door that dispatches without asking is a door that runs a zero-length train over
+     * track it will hand back underneath itself.
+     *
+     * `ui.testNonAtomicRoutesNeedTheirLengths.testEveryDispatchDoorAsksTheGate` holds the five; if you
+     * add a sixth, add it there and correct the number in this paragraph.
      *
      * The control is put back in step with the railway afterwards: leaving the tick showing OFF while
      * the layout runs atomic would be the two-controls-disagreeing fault OB-090 is named for.
@@ -25420,7 +25429,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // minute later puts `behind >= trainLength` back to `0 >= 0`: every edge handed back as that
         // train's head passes it, with the train still lying over it.
         //
-        // ONE OF FOUR DISPATCH DOORS, AND THIS COMMENT CLAIMED IT WAS THE ONLY ONE (GS-B1).  "Start
+        // ONE OF FIVE DISPATCH DOORS, AND THIS COMMENT CLAIMED IT WAS THE ONLY ONE (GS-B1, VD17-C1).
+        // "Start
         // is the choke point - no edge is released until autonomy runs" was wrong about where the
         // release lives: it is in `executePathInternal`, and Execute Timetable, Return Home and the
         // two hand dispatches all reach it without passing here.  Every one of them asks now, and

@@ -641,8 +641,9 @@ public class testAutoLayout
      * `tailHasProvablyPassed` returns true, and that happens immediately when `pathIsUnmeasured` - when
      * NO edge on the path has a length.
      *
-     * Six claims, because the first version of this counter got two of them wrong and the next two
-     * versions were held by nothing at all.
+     * Ten claims, because the first version of this counter got two of them wrong, the next two
+     * versions were held by nothing at all, and the round after that found three of its own rules
+     * dead in this very fixture (VD17-T4, T5, T10).
      *
      *  - **An unmeasured rail counts**, and a measured one does not.  (The control: a counter that
      *    answered "some" whatever the railway looked like would take the setting away from an operator
@@ -658,6 +659,13 @@ public class testAutoLayout
      *  - **The walk is a chain**, not one hop back from each destination: `UE_H -> UE_G -> UE_E ->
      *    UE_F` is unmeasured end to end, and the rail into `UE_G` counts as much as the one into the
      *    destination does.
+     *  - **And it runs out of track rather than out of patience**: `UE_I` is one rail further back
+     *    again, and a walk bounded at two levels stops before it (VD17-T5).
+     *  - **A point that is switched off is not a way through**: the rail INTO `UE_J` is not counted,
+     *    because no path may run through a point that is off - and until VD17-T4 that rule was dead
+     *    in this fixture, since the only inactive point had no rail out of it.
+     *  - **The answer is alphabetical**, which VD15-C2 fixed and nothing held until VD17-T10: the
+     *    message names only the first three, and three arbitrary ones are no list to work down.
      *
      * **ONE-WAY EDGES ARE THE POINT OF THE FOURTH CLAIM, and it said so nowhere (VD16-T1).**
      * `createEdge` makes ONE directed edge, so `UE_C -> UE_E` with no reverse is a rail a train can
@@ -670,7 +678,9 @@ public class testAutoLayout
      * MUTATION: drop the de-duplication and the first claim goes red; replace the reachability walk
      * with the rule it replaced (`if (!edge.getEnd().isActive()) continue;`) and the fourth does -
      * measured 2026-09-22, and it was the only claim that moved; mark only the direct predecessors of
-     * a destination instead of walking to exhaustion and the sixth does, at 3 against 4; return
+     * a destination instead of walking to exhaustion and the sixth does, at 3 against 4; bound the
+     * walk at two levels and the seventh does, at 4 against 5; drop `!back.isActive()` from the walk
+     * and the eighth does, at 7 against 6; delete `Collections.sort` and the last one does; return
      * nothing always and the first does.
      *
      * @throws Exception from the model
@@ -779,6 +789,54 @@ public class testAutoLayout
             + " would UE_C - UE_E.  Counted: " + layout.unmeasuredTrackThatCouldBeReleased()
             + " - a walk that marks only the direct predecessors of a destination finds three of"
             + " them, and one that asks whether a rail's far end IS a destination finds one");
+
+        // AND THE WALK RUNS OUT OF TRACK, NOT OUT OF PATIENCE (VD17-T5).  The claim above is satisfied
+        // by a walk bounded at two levels, because nothing lies behind UE_H: marking it or not changes
+        // no count.  One more rail behind it, and only a walk that goes on until there is nothing left
+        // to mark finds five.
+        layout.createPoint("UE_I", false, null);
+
+        layout.createEdge("UE_I", "UE_H");
+
+        assertEquals(layout.unmeasuredTrackThatCouldBeReleased().size(), 5,
+            "UE_I - UE_H is four unmeasured rails from the destination UE_F, and a train on it would"
+            + " be handed its own track back like any other.  Counted: "
+            + layout.unmeasuredTrackThatCouldBeReleased() + " - a walk that stops two marks deep"
+            + " finds four");
+
+        // AND A POINT THAT IS SWITCHED OFF IS NOT A WAY THROUGH (VD17-T4).  Until this claim the
+        // walk's `isActive` test was dead in the fixture: the only inactive point had no rail out of
+        // it, so the line could be deleted with every claim still green.  A path may not run through a
+        // point that is off, so a rail whose only route to a destination passes through one can never
+        // be part of an unmeasured path.
+        layout.createPoint("UE_J", false, null);
+        layout.createPoint("UE_K", false, null);
+
+        layout.getPoint("UE_J").setActive(false);
+
+        layout.createEdge("UE_J", "UE_E");
+        layout.createEdge("UE_K", "UE_J");
+
+        assertEquals(layout.unmeasuredTrackThatCouldBeReleased().size(), 6,
+            "UE_J - UE_E ends at a square the walk has marked, so it counts; UE_K - UE_J does not,"
+            + " because UE_J is switched off and no path may run through it - a train cannot be"
+            + " driven from UE_K to any destination over unmeasured track.  Counted: "
+            + layout.unmeasuredTrackThatCouldBeReleased() + " - seven means the walk marks squares"
+            + " that are off, and a railway is refused non-atomic mode over track nothing can reach");
+
+        // AND IN ALPHABETICAL ORDER (VD15-C2, held by nothing until VD17-T10).  `this.edges` is a
+        // HashMap, the message names only the first three, and three arbitrary names that move between
+        // runs of the same configuration are no list to work down.
+        java.util.List<String> named = layout.unmeasuredTrackThatCouldBeReleased();
+
+        java.util.List<String> sorted = new java.util.ArrayList<>(named);
+
+        java.util.Collections.sort(sorted);
+
+        assertEquals(named, sorted,
+            "the rails come back in the graph's own order, which is a HashMap's and therefore none -"
+            + " the refusal shows the first three of them, so on the same railway it would name a"
+            + " different three from one run to the next.  " + named);
     }
 
     /**

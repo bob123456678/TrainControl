@@ -1841,10 +1841,12 @@ public class AutonomyEditorPanel extends JPanel
                 // AND THE RAILWAY HAS TO BE TOLD, because this is the item that REMOVES an edge
                 // (GSE-B1).  `pairFromList` says "a portal pair is an edge in the running graph"
                 // and `setPortalDisabled` says a shut link is a missing one; unpair is the third
-                // way the same edge changes and was the only one of the four items on this submenu
-                // that left the running `Layout` alone.  `session.unpairPortal` rebuilds the
-                // editor's own graph and nothing else, so on the track-diagram door - which saves
-                // at once - the unpair reached disk while autonomy went on routing through it.
+                // way the same edge changes, and it was the only one of the three that CHANGE the
+                // edge which left the running `Layout` alone - the fourth item on this submenu,
+                // Go To Link Partner, is navigation and rightly tells the railway nothing
+                // (VD17-C5).  `session.unpairPortal` rebuilds the editor's own graph and nothing
+                // else, so on the track-diagram door - which saves at once - the unpair reached
+                // disk while autonomy went on routing through it.
                 menu.add(item(I18n.t("autosetup.ui.menuUnpairLink"),
                     () ->
                     {
@@ -9952,9 +9954,14 @@ public class AutonomyEditorPanel extends JPanel
         // Sorted, because a map's iteration order is not an order and this list is read (VD15-C2).
         java.util.Map<TileKey, String> clearing = session.placementsAutonomyWillWrite();
 
+        // ONE UNIT IN BOTH HALVES OF THE SENTENCE (VD17-C7).  The map is keyed by SQUARE and the
+        // sentence is about LOCOMOTIVES, so counting the map while naming its values counted one
+        // thing and listed another - and the sentence reads "N locomotives: a, b, c".
+        java.util.Set<String> locomotives = new java.util.TreeSet<>(clearing.values());
+
         StringBuilder names = new StringBuilder();
 
-        for (String name : new java.util.TreeSet<>(clearing.values()))
+        for (String name : locomotives)
         {
             if (names.length() > 0) names.append(", ");
 
@@ -9964,11 +9971,11 @@ public class AutonomyEditorPanel extends JPanel
         if (page == null)
         {
             return I18n.f("autolayout.ui.confirmClearLocomotivesAtOnce",
-                clearing.size(), names.toString());
+                locomotives.size(), names.toString());
         }
 
         return I18n.f("autolayout.ui.confirmClearLocomotives",
-            clearing.size(), names.toString());
+            locomotives.size(), names.toString());
     }
 
     /**
