@@ -3469,6 +3469,50 @@ VD17-T8	2026-09-22-VD17-round.md	Open	Open	`testStartAsksBeforeItDispatchesAnyth
 VD17-T8	2026-09-22-VD17-tests.md	Open	-	(low) - `testStartAsksBeforeItDispatchesAnything` is strictly subsumed and carries a refuted rationale
 VD17-T9	2026-09-22-VD17-round.md	Open	Open	the hand-door markers are the modal prompt, so hoisting the gate ABOVE it - strictly safer - would go red
 VD17-T9	2026-09-22-VD17-tests.md	Open	-	(low) - the hand-door triples pin the gate *between the modal prompt and the dispatch*, not "before the dispatch"
+VD18-B1	2026-09-22-VD18-code.md	Closed	On a permanent turnout the arm gesture that SHUTS a road now OPENS it. Autonomy routes tra	`narrowed` turns "shut this road" into "open it"
+VD18-B1	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	the narrowing inverted a shut road; the arrow was the real defect
+VD18-B2	2026-09-22-VD18-code.md	Closed	Left-click on a permanent turnout becomes a dead control after two clicks; six of its eigh	the click cycle on a permanent turnout reaches a fixed point
+VD18-B2	2026-09-22-VD18-round.md	Closed	Closed 2026-09-22	the arm-mask read-back it describes went with the revert
+VD18-B3	2026-09-22-VD18-code.md	Open - deferred until the MT retests	Mass Assign Lengths still cuts at `isSwitch()`. A leg over a permanent turnout now has par	Mass Assign Lengths was not swept with the room walk
+VD18-B3	2026-09-22-VD18-round.md	Open - deferred until the MT retests	Open - deferred until the MT retests	Mass Assign Lengths still cuts pieces at `isSwitch()`, so a piece straddles a permanent turnout while the room walk stops at one
+VD18-C1	2026-09-22-VD18-code.md	Closed	The added `while` loop cannot fire - no single-route tile carries a hardware restriction -	the click-cycle half of `b1f2fc8a` cannot fire
+VD18-C1	2026-09-22-VD18-round.md	Closed	Closed 2026-09-22	the dead `while` went with the revert
+VD18-C2	2026-09-22-VD18-code.md	Open	The arm checkboxes still read the raw stored direction, so an untouched permanent turnout 	the checkbox panel was not taught the rule the menu learned
+VD18-C2	2026-09-22-VD18-round.md	Open	Open	the arm checkboxes show both arms open where the menu offers one way
+VD18-C3	2026-09-22-VD18-code.md	Closed	The restored `try` catches nothing: `ConditionOutline.toExpression` contains no `throw` an	the Test button's restored `try` catches nothing
+VD18-C3	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	the restored `try` is a belt, and its comment called it the buckle
+VD18-C4	2026-09-22-VD18-code.md	Open	Six javadocs and one method name still say the walk stops at a switch. The rule changed; n	the rule changed; the places that state it did not
+VD18-C4	2026-09-22-VD18-round.md	Open	Open	`Edge.crossesASwitch` and five statements of the rule still say "switch" where a permanent turnout now bounds too
+VD18-C5	2026-09-22-VD18-code.md	Closed	The guard's condition changed and its message did not: it now says "this store holds no fi	`render_findings`' refusal message describes the old condition
+VD18-C5	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	the refusal's condition was widened to a collapse and its message still said "holds no findings"
+VD18-C6	2026-09-22-VD18-code.md	Closed	"Twenty call sites" is seventeen. The load-bearing half ("four of them offer an accessory 	"twenty call sites" is seventeen
+VD18-C6	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	"twenty call sites" is seventeen
+VD18-R1	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	"Nine rows read `Open - unverified`" - 18 rows for 9 findings, the rows-vs-findings collapse this very file warns about sixty lines above
+VD18-R1	2026-09-22-VD18-tests-and-records.md	Closed	high	(high) - `behaviour.md:1983`: "Nine rows" is nine findings; the store holds 18 rows
+VD18-R2	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	"five are verified still true" - four, since `IND9X-A2` closed when the berth walk was fixed
+VD18-R2	2026-09-22-VD18-tests-and-records.md	Closed	high	(high) - `behaviour.md:1990`: "five are verified still true"; the store holds four
+VD18-R3	2026-09-22-VD18-round.md	Open	Open	a bullet's line citations were wrong in the commit that wrote them
+VD18-R3	2026-09-22-VD18-tests-and-records.md	Open	low	(low) - the `VD17-R11` bullet was stale the moment it was written
+VD18-R4	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	`directionAllows` called "the walk's half" of `directionIsPossible`; they disagree about `NONE`
+VD18-R4	2026-09-22-VD18-tests-and-records.md	Closed	low	(low) - `directionAllows` is not the walk's half of `directionIsPossible`
+VD18-T1	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	the new claim's stated MUTATION was false: dropping the `NONE` case leaves it green, because `NONE` then falls through to the `TOWARD_B` arm which is
+VD18-T1	2026-09-22-VD18-tests-and-records.md	Closed	high	(high) - the stated MUTATION for the `NONE` claim cannot redden it
+VD18-T2	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	the toe was derived and never consulted - a ternary whose true branch is dead, over a `deriveToe` call the claim would not have noticed breaking
+VD18-T2	2026-09-22-VD18-tests-and-records.md	Closed	high	(high) - the toe is derived and then not consulted
+VD18-T3	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	neither loop asserted it ran, and one type of five was covered
+VD18-T3	2026-09-22-VD18-tests-and-records.md	Closed	medium	(medium) - the loops do not assert that they ran, and four types are uncovered
+VD18-T4	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	two rewritings that kept the log claim green and logged the wrong sentence: a line above both branches, and swapping only the lists
+VD18-T4	2026-09-22-VD18-tests-and-records.md	Closed	high	(high) - a rewriting that keeps the log-pairing rule green and logs the wrong sentence
+VD18-T5	2026-09-22-VD18-round.md	Open	Open	the menu will not offer `BOTH` on a permanent turnout while the arm mask will store it
+VD18-T5	2026-09-22-VD18-tests-and-records.md	Open	high	(high) - the click cycle: nothing was added for it, and what *was* added cannot run
+VD18-T6	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	"Ten claims" over nine bullets, and the bullets are the numbering the MUTATION uses
+VD18-T6	2026-09-22-VD18-tests-and-records.md	Closed	medium	(medium) - "Ten claims" over a list of nine
+VD18-T7	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	as VD18-C6, in the test's own javadoc
+VD18-T7	2026-09-22-VD18-tests-and-records.md	Closed	medium	(medium) - `isSwitch()` has 17 call sites, not twenty
+VD18-T8	2026-09-22-VD18-round.md	Closed	Fixed 2026-09-22	"at the checkbox and at both load doors" - it is asked at seven
+VD18-T8	2026-09-22-VD18-tests-and-records.md	Closed	low	(low) - a stale door count in the counter's own javadoc
+VD18-T9	2026-09-22-VD18-round.md	Open	Open	a failure message names a remedy its assertion will not accept
+VD18-T9	2026-09-22-VD18-tests-and-records.md	Open	low	(low) - a failure message whose remedy the assertion will not accept
 VD9-B1	2026-09-03-validation-of-the-day.md	Closed	fixed - the whole sentence restored, and the two lines that were left dangling with it	`REL-C16` deleted two lines of a three-line sentence, and the retracted claim is now the last thing a reader sees before the code
 VD9-B2	2026-09-03-validation-of-the-day.md	Closed	fixed - `DONE` guard, re-measured with a throwaway script: one call, not two	both runners' `INT`/`TERM` trap runs `on_the_way_out` twice
 VD9-B3	2026-09-03-validation-of-the-day.md	Closed	fixed - the disposition now says the checkbox pushes no undo point, and MT-265 step 1 has 	`SVN-B8`'s "correct rather than lucky" is neither, and the half of the finding that actually holds is the half left unfixed

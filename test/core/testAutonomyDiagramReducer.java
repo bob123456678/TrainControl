@@ -757,7 +757,7 @@ public class testAutonomyDiagramReducer
      * about.  A crossing is not a fork at all: nothing merges there, so a train standing across it
      * fouls the other route's track rather than its own road, and that is the 5c tail walk's business.
      *
-     * `isSwitch()` is shared with the drawing code and the editor - twenty call sites, four of them
+     * `isSwitch()` is shared with the drawing code and the editor - seventeen call sites, four of them
      * offering an accessory address a permanent turnout does not have - so it is NOT widened.  The two
      * walks ask `boundsTheRoom` instead, and this asserts the ROOM NUMBER rather than the predicate:
      * what breaks if the list changes is the stretch a train's length is judged against.

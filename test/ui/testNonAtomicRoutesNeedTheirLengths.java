@@ -403,21 +403,40 @@ public class testNonAtomicRoutesNeedTheirLengths
         String inTrack = body.substring(trackBranch, trainBranch);
         String inTrains = body.substring(trainBranch);
 
-        assertTrue(inTrack.contains(trackKey) && inTrack.contains("track.size()"),
+                // ONCE EACH, IN THE WHOLE METHOD (VD18-T4).  Reading only the two spans left a sentence logged
+        // ABOVE the first branch invisible to every assertion here - an unconditional line telling an
+        // operator with one unmeasured rail that 0 locomotives have no train length, which is the
+        // fault this rule exists to prevent, sitting in neither span and so in neither check.
+        assertEquals(occurrences(body, trackKey), 1,
+            "the track sentence is logged " + occurrences(body, trackKey) + " times in this method."
+            + "  Once, from the branch that found unmeasured track - a second one is either a"
+            + " duplicate or a line outside both branches, which reports a fault the door has not"
+            + " found");
+
+        assertEquals(occurrences(body, trainKey), 1,
+            "the train sentence is logged " + occurrences(body, trainKey) + " times in this method,"
+            + " and it belongs only to the branch that found a train with no length");
+
+        // AND EACH SENTENCE IS GIVEN ITS OWN HALF TO NAME, count AND list.  Swapping just the lists -
+        // someOf(trains) in the track branch - leaves every span check above green while each sentence
+        // names the other half's remedy.
+        assertTrue(inTrack.contains(trackKey) && inTrack.contains("track.size()")
+            && inTrack.contains("someOf(track)"),
             "the branch that found unmeasured track does not log the track sentence with the track to"
             + " name, so the operator is told about the wrong half of the gate: " + inTrack);
 
-        assertFalse(inTrack.contains(trainKey),
-            "the branch that found unmeasured track logs the TRAIN sentence: an operator with an"
-            + " unmeasured rail is told to set a train length, and the count beside it is zero");
+        assertFalse(inTrack.contains(trainKey) || inTrack.contains("someOf(trains)"),
+            "the branch that found unmeasured track names the TRAINS: an operator with an unmeasured"
+            + " rail is told to set a train length, over a list of locomotives that are all measured");
 
-        assertTrue(inTrains.contains(trainKey) && inTrains.contains("trains.size()"),
+        assertTrue(inTrains.contains(trainKey) && inTrains.contains("trains.size()")
+            && inTrains.contains("someOf(trains)"),
             "the branch that found a train with no length does not log the train sentence with the"
             + " trains to name: " + inTrains);
 
-        assertFalse(inTrains.contains(trackKey),
-            "the branch that found a train with no length logs the TRACK sentence, so an operator is"
-            + " told to measure track he has already measured");
+        assertFalse(inTrains.contains(trackKey) || inTrains.contains("someOf(track)"),
+            "the branch that found a train with no length names the TRACK, so an operator is told to"
+            + " measure track he has already measured");
     }
 
     /**
@@ -527,6 +546,22 @@ public class testNonAtomicRoutesNeedTheirLengths
                 + " is handed back as that train's head passes it.  Add the call - and if you are"
                 + " adding a new door, add it to the list in this method too");
         }
+    }
+
+    /**
+     * How many times one string occurs in another.
+     *
+     * @param text the whole
+     * @param needle what to count
+     * @return the count
+     */
+    private static int occurrences(String text, String needle)
+    {
+        int count = 0;
+
+        for (int at = text.indexOf(needle); at >= 0; at = text.indexOf(needle, at + 1)) count++;
+
+        return count;
     }
 
     // ---------------------------------------------------------------- the railway

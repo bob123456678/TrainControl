@@ -3007,11 +3007,16 @@ public class RouteEditorFrame extends JFrame
 
         final String s88;
 
-        // READ ON THE EVENT THREAD, AND STILL INSIDE A TRY (VD17-C8).  The table's rows are the event
-        // thread's to read, so building the expression cannot move to the worker - but it is also the
-        // step that throws on an outline which cannot be turned into an expression, and moving the
-        // evaluation out from under the catch left that throw with nowhere to go but an action
-        // listener.  The answer is the same one the old single-threaded version gave.
+        // READ ON THE EVENT THREAD, AND STILL INSIDE A TRY (VD17-C8, narrowed by VD18-C3).
+        //
+        // The table's rows are the event thread's to read, so building the expression cannot move to
+        // the worker.  Everything that is KNOWN to throw here - a sensor that names nothing, an
+        // address that is not a number - is read inside the worker's own try and answered there.
+        // What is left is a belt: `ConditionOutline.toExpression` walks the rows with index
+        // arithmetic and no explicit throw, so an outline the table can produce that the builder
+        // cannot read may not be reachable at all.  If it is, the operator gets the sentence the
+        // single-threaded version gave rather than a stack trace out of an action listener; if it is
+        // not, this costs one branch.
         try
         {
             conditions = conditionsEditable

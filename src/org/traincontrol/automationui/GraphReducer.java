@@ -1193,7 +1193,7 @@ public class GraphReducer
      * `behaviour.md` 5a's rule is about where the train comes to REST, not about what can be commanded.
      *
      * **It is `isSwitch()` plus the declared permanent types, and `isSwitch()` is left alone.**  That
-     * method has twenty call sites and four of them ask it in order to offer an accessory address
+     * method has seventeen call sites and four of them ask it in order to offer an accessory address
      * (`MarklinControlStation`, `LayoutEditorAddressPopup`); a permanent turnout has none by
      * definition, so widening it there would offer address dialogs for track nothing can throw.
      *

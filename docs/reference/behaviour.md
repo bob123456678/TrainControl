@@ -1356,8 +1356,10 @@ that is the tail walk's business in 5c, not the room walk's.
 **And the editor does not offer an arrow for the road that is not there.**  A direction the operator
 authors ANDs with the hardware's restriction, so on one of these tiles "toward the fork" and "both
 ways" restrict nothing - no train could take that road either way - and drawing a green arrow for it
-says something untrue about the railway.  The menu offers what `TileGraph.directionIsPossible` allows,
-which is the same question `directionAllows` asks when the walk uses it; where only one way is left,
+says something untrue about the railway.  The menu offers what `TileGraph.directionIsPossible` allows.
+  That is **not** the same question the walk asks - `directionAllows` and it disagree about `NONE`,
+which is always offerable and never passable, and whether a train MOVES is `isPassable` (VD18-R4).
+  Where only one way is left,
 that is the one ticked, because the stored answer for these tiles is `BOTH` by default and `BOTH` is
 not on offer.  Shutting a route is always offered: that is a real answer whichever way it could run.
 
@@ -1918,7 +1920,7 @@ Comments in this codebase cite review findings constantly - `RGD-B2`, `MON-C6`, 
 locomotive but `DY3-C7` is a finding - because that is how a comment says *why* rather than *what*.
 The documents those ids came from are gone. **The findings are not.**
 
-All of them are in `docs/manual-tests/triage.db`, in the `finding` table - **3,682 rows for 3,347
+All of them are in `docs/manual-tests/triage.db`, in the `finding` table - **3,726 rows for 3,369
 findings**, because a finding written up in two documents has a row for each, and reading the row count
 as a finding count is a mistake three documents have made (VD15-T5) - with the document they
 came from, the line in it, the severity, what it was about, the file and line of the evidence, the
@@ -1980,14 +1982,14 @@ invented to tidy a row is worse than a row that admits nobody has looked.
 **Since then** (2026-09-22): the general sweep's audit settled three of those ten against the code, and
 two findings joined them for a different reason - the VD12 and VD15 documents were written in a
 scratchpad and never committed, so their own evidence is gone, and `git` cannot bring them back the way
-it brings back the deleted reviews. Nine rows read `Open - unverified` today.
+it brings back the deleted reviews. 18 rows for nine findings read `Open - unverified` today - rows and findings, because a finding written up in two documents has a row for each, which is the distinction this file draws sixty lines above and then collapsed here (VD18-R1).
 
 **And one status was added that day**, `Open - deferred until the MT retests`: work that is real, that
 is understood, and that must not land until Adam has re-run the manual tests it would change under.
 It is not a parking space - each one names the test it waits on. Nothing reads status except
 `LIKE 'Open%'` and `= 'Closed'`, so a new word costs nothing but has to be written down here.
 
-Of what is open now: five are **verified still true** on the day their document was
+Of what is open now: four are **verified still true** on the day their document was
 deleted and each is in the Inbox as an OB, which is where open work belongs; four are Adam's ruling
 to make; three wait on the manual tests; one is deferred past 3.0.0 by his own word. The whole
 list, at any time:

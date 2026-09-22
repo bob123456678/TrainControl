@@ -529,10 +529,10 @@ def render_findings(conn, path=FINDINGS_MIRROR, force=False):
         # ordinary round adds tens of rows to thousands, so an order of magnitude is the line.
         if held > 0 and n * 10 < held and not force:
             raise IOError(
-                "REFUSING to write an empty %s over %d rows. This store holds no findings, so it is"
+                "REFUSING to write %d rows over %d. A collapse like that is not an edit, so this is"
                 " not the store the mirror comes from - the CLI builds an in-memory one from the"
                 " markdown for every command, and findings live only in the file database."
-                " Render from triagedb.connect(), or pass force=True if you mean it." % (path, held))
+                " Render from triagedb.connect(), or pass force=True if you mean it." % (n, held))
 
     out.append("# DEAD - cited, no finding behind them")
 

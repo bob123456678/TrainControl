@@ -1981,11 +1981,11 @@ tests only, which is true of everything except these.
 **What I would do:** read them out of the store and put each one either in this Inbox as an OB or in
 the closed roll with the reason it was declined, then say so in `behaviour.md`.  **The obvious query
 is wider than this list, and the numbers move as rounds land** - counted 2026-09-22:
-`WHERE status LIKE 'Open%'` returns **140 rows for 85 findings** (a finding written up in two documents
+`WHERE status LIKE 'Open%'` returns **152 rows for 91 findings** (a finding written up in two documents
 has a row for each, VD15-R3 - and the general sweep of 2026-09-22 gave every finding it audited a
-second row, which is why the two numbers are now so far apart), made up of 98 rows for 64 findings at
+second row, which is why the two numbers are now so far apart), made up of 108 rows for 69 findings at
 exactly `Open`, 18 rows for 9 `Open - unverified`, 8 for 4 `Open - verified 2026-09-21`, 8 for 4
-`Open - for Adam`, 6 for 3 `Open - deferred until the MT retests` and 2 for 1 deferred past 3.0.0.
+`Open - for Adam`, 8 for 4 `Open - deferred until the MT retests` and 2 for 1 deferred past 3.0.0.
 
 Thirteen are named above.  **Sixteen more are named nowhere but this paragraph**, and each is written
 out in full here because the first version of this line compressed six of them as
@@ -2128,6 +2128,18 @@ commit that files this; these are what is left, and none of them needs the railw
 - **`VD17-T6`** (medium) - the records class promises coverage it does not have, and the README's one unchecked piece of arithmetic sits in the paragraph it does chec
 - **`VD17-T8`** (low) - `testStartAsksBeforeItDispatchesAnything` is strictly subsumed and carries a refuted rationale
 - **`VD17-T9`** (low) - the hand-door triples pin the gate *between the modal prompt and the dispatch*, not "before the dispatch"
+
+**And the round that validated THOSE fixes left six** (VD18, 2026-09-22 - two Opus reviewers over
+the last three hours of commits).  Sixteen of its twenty-two were fixed in the commit that files
+this, and one of those was a commit of mine reverted whole: it had turned a road the operator had
+shut into an open one.  What is left:
+
+- **`VD18-B3`** Mass Assign Lengths still cuts pieces at `isSwitch()`, so a piece straddles a permanent turnout while the room walk stops at one
+- **`VD18-C2`** the arm checkboxes show both arms open where the menu offers one way
+- **`VD18-C4`** `Edge.crossesASwitch` and five statements of the rule still say "switch" where a permanent turnout now bounds too
+- **`VD18-R3`** a bullet's line citations were wrong in the commit that wrote them
+- **`VD18-T5`** the menu will not offer `BOTH` on a permanent turnout while the arm mask will store it
+- **`VD18-T9`** (low) - a failure message whose remedy the assertion will not accept
 **The three I would take first**, and none of them needs the railway: `GSR-B2` (a locomotive's
 address is rewritten by the Central Station sync past the guard that refuses it while a route is
 driving that locomotive), `GSR-B3` (`editRoute` replaces the route object, so `isExecuting` -

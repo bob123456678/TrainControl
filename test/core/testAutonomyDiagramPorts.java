@@ -656,47 +656,87 @@ public class testAutonomyDiagramPorts
      * road either way.  The editor drew a green arrow for it, which is a control offering what the
      * guard will not honour (OB-057, OB-090).
      *
-     * `TileGraph.directionIsPossible` is the question the menu asks, and `directionAllows` is the
-     * walk's half of the same one; this pins the first against the hardware the second obeys.
+     * `TileGraph.directionIsPossible` is the question the MENU asks.  `directionAllows` is not the
+     * other half of it, though an earlier draft said so: they disagree about `NONE`, which is always
+     * offerable and never passable.  The question about whether a train MOVES is `isPassable`, and
+     * `core.testAutonomyDiagramSession.testAShutRouteDrawsNoArrow` is what holds that one.
      *
-     * MUTATION: make `directionIsPossible` answer true for everything and the permanent-turnout half
-     * fails; drop the `NONE` case and the last claim does.
+     * **THE PORT MAP'S SHAPE IS ASSERTED, NOT ASSUMED (VD18-T2).**  An earlier draft derived the toe
+     * and then compared it with `getA()` in a ternary whose true branch is dead - `into(toward, from)`
+     * builds `Route(from, toward, toward)`, so the toe is always `getB()` and rotation preserves the
+     * roles.  It could not have noticed `deriveToe` breaking, because it never used the answer.  The
+     * shape is a claim of its own here, and the directions are named from it.
+     *
+     * MUTATION: make `directionIsPossible` answer true for everything and the fork and both-ways
+     * claims fail at every orientation of every type.  (Dropping its `NONE` case catches nothing, and
+     * an earlier draft of this paragraph said it would: `NONE` then falls through to the `TOWARD_B`
+     * arm, which is true for every one of these routes and for plain track - VD18-T1.)
      */
     @Test
     public void testOnlyThePossibleDirectionsAreOffered()
     {
-        for (int o = 0; o < 4; o++)
+        componentType[] permanent =
         {
-            Side toe = TilePorts.deriveToe(componentType.CUSTOM_PERM_LEFT, o);
+            componentType.CUSTOM_PERM_LEFT, componentType.CUSTOM_PERM_RIGHT,
+            componentType.CUSTOM_PERM_Y, componentType.CUSTOM_PERM_THREEWAY,
+        };
 
-            for (TilePorts.Route r : TilePorts.ports(componentType.CUSTOM_PERM_LEFT, o, 0))
+        int asked = 0;
+
+        for (componentType type : permanent)
+        {
+            for (int o = 0; o < 4; o++)
             {
-                Direction possible = r.getA() == toe ? Direction.TOWARD_A : Direction.TOWARD_B;
-                Direction refused = possible == Direction.TOWARD_A ? Direction.TOWARD_B
-                    : Direction.TOWARD_A;
+                Side toe = TilePorts.deriveToe(type, o);
 
-                assertTrue(TileGraph.directionIsPossible(possible, r),
-                    "orientation " + o + ": the road INTO the toe is the one road this turnout has,"
-                    + " and the menu would not offer it");
+                assertNotNull(toe, type + " at orientation " + o + " has no toe, so the rest of this"
+                    + " claim is about a tile that is not a turnout");
 
-                assertFalse(TileGraph.directionIsPossible(refused, r),
-                    "orientation " + o + ": the menu offers an arrow out of the toe and toward the"
-                    + " fork, which no train can take - the blades are stuck and nothing can choose"
-                    + " a leg, so the arrow restricts nothing and tells the operator a lie");
+                for (TilePorts.Route r : TilePorts.ports(type, o, 0))
+                {
+                    asked++;
 
-                assertFalse(TileGraph.directionIsPossible(Direction.BOTH, r),
-                    "orientation " + o + ": 'both ways' is offered on a route that has one way");
+                    assertEquals(r.getB(), toe,
+                        type + " at orientation " + o + ": the port map is supposed to put the toe at"
+                        + " B - `into(toward, from)` is `Route(from, toward, toward)` - and this route"
+                        + " does not, so the two claims below are naming the wrong sides");
 
-                assertTrue(TileGraph.directionIsPossible(Direction.NONE, r),
-                    "shutting a route is a real answer whichever way it could be travelled, and it"
-                    + " is no longer offered");
+                    assertTrue(TileGraph.directionIsPossible(Direction.TOWARD_B, r),
+                        type + " at orientation " + o + ": the road INTO the toe is the one road this"
+                        + " turnout has, and the menu would not offer it");
+
+                    assertFalse(TileGraph.directionIsPossible(Direction.TOWARD_A, r),
+                        type + " at orientation " + o + ": the menu offers an arrow out of the toe and"
+                        + " toward the fork, which no train can take - the blades are stuck and"
+                        + " nothing can choose a leg");
+
+                    assertFalse(TileGraph.directionIsPossible(Direction.BOTH, r),
+                        type + " at orientation " + o + ": 'both ways' is offered on a route that has"
+                        + " one way");
+
+                    assertTrue(TileGraph.directionIsPossible(Direction.NONE, r),
+                        "shutting a route is a real answer whichever way it could be travelled, and"
+                        + " it is no longer offered");
+                }
             }
         }
 
+        // THE LOOPS RAN (VD18-T3).  Four types at four orientations: two roads each, except the
+        // three-way, which trails in from three.  An empty port map would otherwise take every
+        // assertion above with it and still read green.
+        assertEquals(asked, 4 * (2 + 2 + 2 + 3),
+            "the permanent turnouts offered " + asked + " roads rather than the two per orientation"
+            + " the port map declares for a left, a right and a Y, and three for a three-way - so"
+            + " either the map has changed or this claim asked about nothing");
+
         // AND AN ORDINARY ROUTE KEEPS ALL FOUR.  A rule that hid answers everywhere would take the
         // arrows away from the track they were built for.
+        int plain = 0;
+
         for (TilePorts.Route r : TilePorts.ports(componentType.STRAIGHT, 0, 0))
         {
+            plain++;
+
             for (Direction d : Direction.values())
             {
                 assertTrue(TileGraph.directionIsPossible(d, r),
@@ -704,5 +744,7 @@ public class testAutonomyDiagramPorts
                     + " be given the direction it was drawn for");
             }
         }
+
+        assertEquals(plain, 1, "a straight is one road, and this asked about " + plain);
     }
 }
