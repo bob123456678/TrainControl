@@ -66,8 +66,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-467](#mt-467) | 2026-09-19 | Turning a local route's automatic execution on or off does not wait for the Central Station | fixed unvalidated | GUX-C5 |
 | [MT-468](#mt-468) | 2026-09-19 | Every screen still finds its text after 239 unused message keys were removed | fixed unvalidated | UIX-C4 |
 | [MT-470](#mt-470) | 2026-09-21 | Atomic Routes cannot be switched off while autonomy could release track under a train | fixed unvalidated | VD12-R4 |
+| [MT-471](#mt-471) | 2026-09-22 | Deleting one condition of a group leaves a route that still saves | fixed unvalidated | OB-240 |
 
-Everything else - 431 of 470 - needs nothing from you unless the area changes again:
+Everything else - 431 of 471 - needs nothing from you unless the area changes again:
 380 **fixed validated** and 51 **superseded**.
 
 ---
@@ -23467,7 +23468,11 @@ From the 2026-09-19 review round (UIX-B2), fixed the same day.  **Highlight on D
   ever light were the kinds whose raw and logical addresses are the same: sensors, route tiles and
   links.  Your words: *"Seems the highlighting doesn't care about item type."*
 - Step 9: the trigger sensor lights in the condition colour, along with any s88 a condition names.  It
-  was never highlighted at all before.
+  was never highlighted at all before.  **Unless the route also COMMANDS that sensor** - an older route
+  can hold an s88 among its commands - in which case it lights in the command colour, because commanded
+  is the stronger statement and is the way round the accessories already work.  Until 2026-09-22 that
+  came out right only by accident, and the rule the comment stated was not the rule the code ran
+  (VD14-C3, VD15-B1).
 - A route that commands ANOTHER route still lights that route's tile - that case is kept.
 
 *What this is:* review finding UIX-B2, fixed 2026-09-19 with a test seen failing first and a mutation for each half.
@@ -23808,7 +23813,8 @@ that does not depend on anybody reading it.
 
 1. On the main window, untick **Atomic Routes**.  Read the message.
 2. Do what the message names - measure the track it lists, and set a train length on any locomotive it
-   lists - until unticking is accepted.  It names up to three of each, and how many there are in all;
+   lists - until unticking is accepted.  The lists are alphabetical, so you can work down them.  It
+   names up to three of each, and how many there are in all;
    where both halves are wrong it says both at once, so this step is not a loop of one fix and one
    reload (VD15-R6: the first version of this step said "measure the track", which on a railway whose
    locomotives have no train lengths could never be completed).
@@ -23822,6 +23828,10 @@ that does not depend on anybody reading it.
    length off, re-load again, and read the log.
 7. **A legacy setup, if you have one to hand.**  Load an `autonomy.json` with no diagram behind it -
    the lengths on its edges and nothing else - with Atomic Routes off, and then untick the checkbox.
+8. **THE FOURTH DOOR, and the one that matters (added 2026-09-22).**  With the railway put right and
+   Atomic Routes accepted OFF, now clear one locomotive's train length - the Train Length box on the
+   locomotive, or leave the dropdown at 0 when placing a train on the diagram - and press **Start**.
+   Read the log.  Then put the length back and press Start again.
 
 **Expected**
 
@@ -23840,9 +23850,19 @@ that does not depend on anybody reading it.
 - Step 5: **accepted.**  An excluded page is not in the autonomy graph, so it contributes no track to
   the question.  This is your "active pages only", and it needed no code of its own.
 - Step 6, put right: the setting is **left off**, because you meant it.  One length short: it comes up
-  **on**, the log says how many and names up to three, and the tick agrees with the railway.
-- Step 7: **the same answers as steps 1 and 6.**  All three doors - the checkbox and both load paths -
-  ask one question of the railway itself, so a legacy setup is treated exactly as a diagram one is.
+  **on**, the log names up to three and says how many there are in all - and if a train has no length
+  too, the log says that in a second line, because a door that told you one reason at a time would have
+  you measure everything, reload, and only then hear the other (VD15-C3).  The tick agrees with the
+  railway.
+- Step 7: **the same answers as steps 1 and 6.**  The checkbox and both load paths ask one question of
+  the railway itself, so a legacy setup is treated exactly as a diagram one is.
+- Step 8: **Atomic Routes comes back ON by itself, and the log says why, naming the locomotive.**  Then
+  it starts.  This is the door the other three cannot cover: an edge's length is only written when a
+  setup is parsed, and both load paths re-ask afterwards - but a TRAIN's length is written on the live
+  layout, long after you unticked the box honestly over a railway that was fully measured.  Nothing
+  between that box and the first dispatch used to ask again, so every edge would have been handed back
+  as that train's head passed it.  With the length put back, Start leaves the setting alone: it is your
+  choice, and the railway no longer contradicts it.  (VD16-B2, found 2026-09-22.)
 
 **WHAT COUNTS, and why it is not what the editor highlights.**  Non-atomic mode releases an edge when
 `tailHasProvablyPassed` says the tail has cleared it, and that is wrongly true in exactly two states: a
@@ -23864,7 +23884,51 @@ Three validation rounds corrected the gate: VD13-B1 (the checkbox was blind wher
 hardened), VD13-B2/B3 (it counted squares, and counted one rail twice), VD14-B1 (it never asked about
 train lengths, which is the clause his own railway is most exposed to, since the default length is 0) and
 VD14-C6 (it refused rails that no path could ever release).  Held by
-`ui.testNonAtomicRoutesNeedTheirLengths` - three claims, each with the control that the door is OPEN when
-the railway is right - and `core.testAutoLayout.testARailwayCountsItsUnmeasuredDrivableTrack`.
+`ui.testNonAtomicRoutesNeedTheirLengths` - six claims, each with the control that the door is OPEN when
+the railway is right - and `core.testAutoLayout.testARailwayCountsItsUnmeasuredDrivableTrack`, which has
+six of its own.  VD16-B2 then found the fourth door: Start, where a train length cleared on the live
+layout had nothing left to ask.
+
+---
+
+<a id="mt-471"></a>
+
+### MT-471 - 2026-09-22 - Deleting one condition of a group leaves a route that still saves
+
+**Disposition:** fixed unvalidated
+**From:** OB-240
+
+**Written:** 2026-09-22
+
+Your question, 2026-09-21: *"Did you fix the deletion of the and/or followed by orphaning in route
+conditions?"*  Yes - and this is the gesture that proves it, because the fix is held by automated claims
+only and cannot reach `fixed validated` without you.  It is one minute in the same screen MT-462 opens.
+
+**What was wrong.**  Deleting a row took the joiner NEXT TO it rather than the one at its own depth, so
+removing the first condition of a group turned `1 or (2 and 3)` into `1 and 3` - a different rule, with a
+stranded word where the group had been - and the route then refused to save, with no way back except
+closing the editor and losing the edit.
+
+**Steps**
+
+1. In the route editor, build a condition of the shape `A or (B and C)` - three s88 conditions, the last
+   two in a group.  Save it, and re-open it to be sure it came back as you built it.
+2. Delete **B** - the first condition INSIDE the group.  Read what is left.
+3. Save.
+4. Now delete the whole group's remaining condition, so only `A` is left, and save again.
+5. Build `A and B` with no group, delete **A**, and save.
+
+**Expected**
+
+- Step 2: what is left reads `A or C` - the group's own joiner went with the row that was inside it, and
+  `A`'s `or` is untouched.  No red word, no stranded joiner, nothing greyed.
+- Step 3: **it saves.**  That is the half that was broken: the route was unsavable and the only way out
+  was to abandon the edit.
+- Step 4: what is left reads `A` alone, and it saves.
+- Step 5: what is left reads `B` alone, and it saves - a deleted word takes the whole following term, so
+  there is no `and` in front of the first condition.
+
+*What this is:* `OB-240`, which you raised on 2026-09-21 and I built the same day.  Held by two claims in
+`ui.testRouteEditorValidation`, each seen failing first against the old `removeAt`.
 
 ---
