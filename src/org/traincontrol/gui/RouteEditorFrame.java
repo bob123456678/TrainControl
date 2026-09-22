@@ -328,6 +328,20 @@ public class RouteEditorFrame extends JFrame
 
         captureBox.setToolTipText(I18n.t("route.ui.tooltipCapture"));
 
+        // NOT IN THE TAB ORDER (Adam, 2026-09-22, OB-271, filed from MT-446): *"make the test,
+        // capture, etc. buttons in the route editor non focusable"*.
+        //
+        // These are the controls somebody reaches for with the mouse in the middle of typing - the
+        // conditions test, the diagram highlight, the capture tick and where it writes to.  Clicking
+        // one took the keyboard with it, so the next thing typed went nowhere and the next Enter
+        // pressed whichever of them was last clicked.
+        //
+        // SAVE IS LEFT ALONE, deliberately: it is the one button in this window that Enter should
+        // still reach, and a dialog whose commit cannot be reached from the keyboard is a worse
+        // trade than the one this fixes.
+        captureBox.setFocusable(false);
+        captureTarget.setFocusable(false);
+
         captureTarget.addItem(I18n.t("route.ui.frameCaptureIntoCommands"));
         captureTarget.addItem(I18n.t("route.ui.frameCaptureIntoConditions"));
         captureTarget.setToolTipText(I18n.t("route.ui.tooltipCaptureTarget"));
@@ -357,6 +371,9 @@ public class RouteEditorFrame extends JFrame
 
         testButton.setToolTipText(I18n.t("route.ui.tooltipTestConditions"));
 
+        // Out of the tab order with the capture controls above - see the note there (OB-271).
+        testButton.setFocusable(false);
+
         buttonsOf(conditionSection).add(testButton);
 
         // Where the route IS, drawn on the railway rather than listed in a window.
@@ -366,6 +383,9 @@ public class RouteEditorFrame extends JFrame
         // colours because a route has two kinds of square and they answer different questions: yellow
         // for what it COMMANDS, orange for what it CHECKS before commanding anything.
         highlightButton = button(I18n.t("route.ui.highlightOnDiagram"), this::highlightOnDiagram);
+
+        // As the test button above (OB-271).
+        highlightButton.setFocusable(false);
 
         highlightButton.setToolTipText(
             AutonomyEditorPanel.wrapped(I18n.t("route.ui.tooltipHighlightOnDiagram")));

@@ -23061,6 +23061,16 @@ Filed from this test: OB-271 (bug - focusability in the route editor).  They are
 
 *Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-09-22.** *"impossible to time manually"* - agreed, and it always was: the entry's own
+step 2 said so when it was written. The race is held by
+`regression.testADeclinedSetupEditSaysSoAndSurvivesTheExit.testTheRefusedRebuildSaysSo`, with two
+controls beside it, so the sentence it logs is pinned without you.
+
+**What is left for your hands is step 1 only** - that editing the setup with autonomy running normally
+gives you the warning you already get and **no second message on top of it**. That is a negative and it
+takes a minute. Nothing else in this entry needs the race to be hit.
+
 ---
 
 <a id="mt-447"></a>
@@ -23217,6 +23227,29 @@ Found by the wide autonomy review.  Your MT-262 ruling is that a physical refusa
 message just says there is no path to there, not that the length is an issue (tested len4 75 407 DB from bottommaina, inspeciting tunnellongpark.
 
 *Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+
+**Claude, 2026-09-22, having run it.** Your note - *"message just says there is no path to there, not
+that the length is an issue"* - and the message you saw is **"Contains an intermediate terminus
+station"**, which the probe reproduces exactly for a four-unit 75 407 DB standing at BottomMainA
+looking at TunnelLongPark. That is MT-442's sentence, and it is true: every road to those parks runs
+through a terminus, which the search has not gone through since OB-229.
+
+**So the length is never asked, and there are TWO things in the way of it, one of them your own
+ruling.**
+
+1. No route exists at all, so nothing gets as far as measuring anything. What comes back is the
+   track's answer - a terminus in the way - rather than the berth's.
+2. Even where a route does exist, the length refusal is deliberately suppressed on **Manual**:
+   `explainDestinations` reads `byHand ? null : whyNoRouteFitsTo(...)`. That is your ruling of
+   2026-09-15, when I asked which of the two the operator should see and you answered **"The menu's
+   reason."**
+
+**Your call, and it is the second one that decides it.** If a station that is refused for several
+reasons should name the length as well as the terminus, that reverses the 2026-09-15 answer and both
+sentences get shown. If the menu's reason is still the right single answer, this entry is working as
+ruled and what is wrong is only that "terminus" reads like "no track" - which is `OB-239`'s
+neighbourhood rather than this one's.
 
 ---
 <a id="mt-452"></a>
@@ -23747,6 +23780,16 @@ make an automated test for this
 
 *Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+
+**Claude, 2026-09-22.** *"make an automated test for this"* - taken, and it is the right call: the
+gesture needs a route actually running, which means waiting on a sensor that a person has to throw.
+
+**What the automated claim has to cover**, so it is not narrower than the entry: the refusal fires at
+BOTH doors (delete and rename), it names the route that is driving the locomotive, and - the half a
+refusal test usually misses - the route **finishes**, running the list it began with rather than one
+that changed underneath it. The last of those is what `CS3-B1` was really about: three of eight
+turnouts thrown and the rest never sent.
+
 ---
 
 <a id="mt-465"></a>
@@ -23847,6 +23890,22 @@ They are correctly undone by cancel in the single function editor, but you must 
 And there is no cancel button if you go to manage locomotive -> customize function icons, only apply- and closing without clicking on apply still persists the functions here.  That's OK, but just make sure apply is greyed out if there is nothing to apply.
 
 *Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+
+**Claude, 2026-09-22, on your two halves.**
+
+**The repaint is done.** You were right about where it was: `undoCopiedCustomizations` puts the icons
+back on the LOCOMOTIVE, which is where Copy Customizations wrote them, and nothing in the window reads
+a locomotive again until the model sends it a message - so Cancel restored the data and left the
+button faces showing the other locomotive's icons. `RightClickFunctionMenu` now forces a repaint of
+that one locomotive after the undo. Forced, because the ordinary repaint does nothing when what
+changed is something the window does not watch.
+
+**The Apply button is the other half and is NOT done yet.** *"just make sure apply is greyed out if
+there is nothing to apply"* - that wants the dialog to know whether anything has been changed since it
+opened, which is a dirty flag it does not keep today. It is filed rather than rushed, because a
+greyed-out Apply that is wrong in the OTHER direction - greyed while there IS something to apply -
+loses work silently, and that is worse than the button being pressable when it need not be.
 
 ---
 
@@ -24083,6 +24142,19 @@ that the door is OPEN when the railway is right - and
 Works, but the popup message is too verbose.  Just say that every segment and locomotive must have a length, and to use the bulk editor to set that.  Also, sounds like we need a bulk tool for locomotive lengths.
 
 *Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+
+**Claude, 2026-09-22.** *"the popup message is too verbose"* - shortened, in all eight bundles. What
+went is the clause explaining that an edge is handed back as the head passes it with the train still
+on it; that is WHY the rule exists and it lives in `behaviour.md`, not in a line somebody reads while
+trying to get on with something. What stayed is the count and the three names, because those are what
+turn "measure your railway" into a place to start. It now reads: *"atomic routes stay ON - {0} pieces
+of track autonomy runs over have no length ({1}). Every segment needs a length: use Bulk Tools to set
+them."*
+
+**And the bulk tool you asked about is filed as `FR-094`.** Until it exists the locomotive half of the
+message has nowhere to send you, which is the one thing the shortened wording promises and cannot yet
+keep.
 
 ---
 

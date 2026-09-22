@@ -308,6 +308,20 @@ public class RightClickFunctionMenu extends MouseAdapter
                 // other locomotive's functions the moment it is pressed - and it was the one the
                 // comment above was wrong about.
                 edit.undoCopiedCustomizations();
+
+                // AND THE WINDOW IS TOLD (Adam, 2026-09-22, on MT-466): *"they are correctly undone
+                // by cancel in the single function editor, but you must trigger a repaint on the
+                // target locomotive.  Add this."*
+                //
+                // The undo above puts the icons back on the LOCOMOTIVE, which is where Copy
+                // Customizations wrote them - and nothing in this window reads a locomotive again
+                // until the model sends it a message.  So Cancel restored the data and left the
+                // button faces showing the other locomotive's icons until something unrelated
+                // happened to repaint them, which reads as Cancel not having worked.
+                //
+                // FORCED, because the ordinary repaint is a no-op when nothing the window watches
+                // has changed - and what changed here is exactly what it does not watch.
+                tcui.repaintLoc(true, java.util.Arrays.asList(activeLoc));
             }
         }
     }

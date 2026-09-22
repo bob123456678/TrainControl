@@ -2379,6 +2379,40 @@ its message still says *"re-measure before assuming either way"*.
 
 when running auto layout, more edges (tracks) may get locked than necessary.  For example, a path to tunnel from bottomsecondary should not block the path from buttominner to bottominnerotherside (and vice-versa), but I see that they do.  significant bug.
 
+
+**Checked against your railway, 2026-09-22, by deriving the graph from the frozen snapshot and asking
+each lock what it is FOR.** Every lock on a BottomInner edge is backed by tiles the two edges really
+do share - not one came back with nothing in common - so the relation is sound and the pair you named
+is not a phantom:
+
+- `Tunnel (northbound) -> BottomInnerOtherside` runs over eleven tiles, `1 - Main:7,6` round to
+  `1 - Main:14,3`.
+- `TunnelPre (northbound) -> Tunnel (southbound)` shares **eight** of them with it: `7,6`, `7,5`,
+  `7,4`, `7,3`, `8,3`, `9,3`, `10,3`, `11,3`.
+- `1 - Main 12,7 -> BottomInnerOtherside` shares `12,6` and `12,5` with `1 - Main 12,7 -> Tunnel
+  (southbound)`, and `12,3`, `13,3`, `14,3` with the Tunnel edge above.
+
+**So what is too much is not WHICH edges lock, but HOW MUCH of them.** A lock is whole-edge: one
+shared tile locks the whole of the other rail. A train on `7,3`-`11,3` therefore locks
+`12,3`-`14,3` as well, which it is nowhere near - and that is exactly *"more edges may get locked than
+necessary"*.
+
+**This is the half of OB-207 that was never carried over.** That one made the COVERED-track answer
+per-place - *"only over the part of it the train is actually lying on"* - and the lock relation
+between two paths stayed all-or-nothing. The places are already written on every edge, so the
+information the finer answer needs is there.
+
+**Not changed, and deliberately.** Loosening a lock is the direction that permits a collision, and it
+is the core of the anti-collision guarantee rather than a display rule - `behaviour.md` section 5c
+names the edge locks and the length rules as what every tier obeys. It also wants a red-first claim on
+your own geometry, which means a fixture built from the snapshot. It is not something to slip in
+between manual-test rounds, so it waits on your word.
+
+**One thing for you to confirm first**, because it decides whether this is one defect or two: is
+`Tunnel -> BottomInnerOtherside` a road that really runs the length of row 3 on your railway? If the
+reduction is walking a road that is not there, the granularity above is the second problem rather than
+the only one.
+
 ### OB-270 - 2026-09-22 - loc facing
 
 **Kind:** bug  
@@ -2388,6 +2422,29 @@ when running auto layout, more edges (tracks) may get locked than necessary.  Fo
 
 I am able to paste 75 407 DB on BttomMainA facing west.
 
+
+**Checked against your railway, 2026-09-22.** BottomMainA is emitted as two copies and the paste menu
+offers the facing of each: `{BottomMainA (westbound) = W, BottomMainA (eastbound) = E}`. So West is
+not being invented - there is a westbound copy with track leaving it, to TunnelLongPark and to
+BottomMainAPre (westbound).
+
+**But only the eastbound copy is a station.** `BottomMainA (eastbound)` answers true to
+`isDestination`; the westbound one answers false. So a train pasted facing west is standing on the
+copy of the square that no route can END at.
+
+**Which makes this one of two different defects, and only you can say which.**
+
+(a) **The menu is wrong.** The westbound copy exists as track but is not somewhere a train is meant to
+be put, so the paste should not offer that facing - the control offering what the guard will not
+honour, which is the OB-057 / OB-090 shape this codebase has paid for repeatedly.
+
+(b) **The geometry is wrong.** If no train can physically stand at BottomMainA facing west, the
+westbound copy should not be there at all, and what needs fixing is the diagram or the reduction that
+built it.
+
+Say which and it is a small change either way. Guessing is not safe here: (a) takes a placement away
+from you that may be legitimate, and (b) removes a road.
+
 ### OB-271 - 2026-09-22 - focusability in the route editor
 
 **Kind:** bug  
@@ -2396,6 +2453,29 @@ I am able to paste 75 407 DB on BttomMainA facing west.
 **Build:** commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
 
 make the test, capture, etc. buttons in the route editor non focusable.
+
+### FR-094 - 2026-09-22 - a bulk tool for locomotive train lengths, beside the one for track
+
+**Kind:** feature request  
+**Raised from:** MT-470 (Atomic Routes cannot be switched off while autonomy could release track)  
+**Filed:** 2026-09-22  
+
+Adam, 2026-09-22, on MT-470: *"sounds like we need a bulk tool for locomotive lengths."*
+
+**Why it came up there.** Atomic Routes cannot be switched off while any locomotive autonomy runs has
+no train length - that is the second half of the gate (VD14-B1), because a train with no length is
+treated as clear of the track the moment its head passes. The notice names the locomotives, and then
+there is nowhere to go: Bulk Tools walks the TRACK (Mass Assign Lengths, FR-089) and the STATIONS
+(Mass Assign Max Train Lengths, FR-091), and a locomotive's own length is set one at a time in the
+locomotive dialog.
+
+**What it would be.** The same walk the other two use - the locomotives autonomy would run that have
+no length, one prompt each, in a stable order, with the prompt opening where the last one was left.
+Skipping one leaves it unset rather than setting it to zero, because zero is the value that makes the
+gate fire.
+
+**Where it belongs:** Bulk Tools, under the two that are there.  With this built, the atomic-routes
+notice has somewhere to send you, which is what its shortened wording now promises.
 
 ## What has been picked up
 
