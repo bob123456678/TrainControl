@@ -2013,11 +2013,11 @@ tests only, which is true of everything except these.
 **What I would do:** read them out of the store and put each one either in this Inbox as an OB or in
 the closed roll with the reason it was declined, then say so in `behaviour.md`.  **The obvious query
 is wider than this list, and the numbers move as rounds land** - counted 2026-09-22:
-`WHERE status LIKE 'Open%'` returns **121 rows for 77 findings** (a finding written up in two documents
+`WHERE status LIKE 'Open%'` returns **120 rows for 76 findings** (a finding written up in two documents
 has a row for each, VD15-R3 - and the general sweep of 2026-09-22 gave every finding it audited a
-second row, which is why the two numbers are now so far apart), made up of 77 rows for 54 findings at
-exactly `Open`, 18 rows for 9 `Open - unverified`, 10 for 5 `Open - verified 2026-09-21`, 9 for 5
-`Open - for Adam`, 5 for 3 `Open - deferred until the MT retests` and 2 for 1 deferred past 3.0.0.
+second row, which is why the two numbers are now so far apart), made up of 78 rows for 55 findings at
+exactly `Open`, 18 rows for 9 `Open - unverified`, 10 for 5 `Open - verified 2026-09-21`, 8 for 4
+`Open - for Adam`, 4 for 2 `Open - deferred until the MT retests` and 2 for 1 deferred past 3.0.0.
 
 Thirteen are named above.  **Sixteen more are named nowhere but this paragraph**, and each is written
 out in full here because the first version of this line compressed six of them as
@@ -2095,38 +2095,6 @@ raw question.  A tooltip about a standing train is right either way - a train th
 one reservation - so it is left alone and noted here so the next reader does not have to work it out.
 
 
-### OB-251 - 2026-09-22 - does Instant Stop end an autonomy run, or only halt the trains?
-
-**Kind:** question
-**Raised from:** GS-B2 and GST-B1, the general sweep of 2026-09-22
-**Filed:** 2026-09-22
-
-Two reviewers found this from opposite ends on the same day.  `AltEmergencyStopActionPerformed`
-calls `stopAllLocs()`, which sends the halt and zeroes every locomotive's speed - and touches
-neither `powerState` nor `Layout.running`.  So autonomy is still running: a train BETWEEN paths
-(in `pickPath`, in `loc.delay`, in the yield) comes round its loop, locks a fresh path, throws its
-ironwork and sets off again, seconds after you pressed the button.  Nothing is logged.
-
-And the train that was mid-path is the other half: stopped where it stood, path still locked, its
-thread parked on a sensor it will never reach, so `isRunning()` is latched true for the rest of
-the session - Start greyed, settings refused, editors refused, and `saveState`'s `wouldCapture`
-requires `!isRunning()`, so the session's placements are silently not written.  Graceful Stop
-cannot help: it clears a flag the parked thread never looks at.
-
-**The question, and why it is not mine to answer.**  Should Instant Stop - and Escape, which
-cuts the power - end the autonomy run outright, or should the trains resume when power comes
-back?  Either is defensible: you may want to hit the button, clear an obstruction and have
-autonomy carry on, and you may want the button to mean stop.  The round that found it cited
-`behaviour.md`'s *"an emergency stop is obeyed whatever else is true"*, but that sentence is
-about a route CARRYING a stop never being refused, so it does not settle this.  Nothing was
-changed on my own judgement (`fix-for-a-defect-can-be-worse`: refusing whole once discarded an
-emergency stop).
-
-**What I would do either way:** the driving loop should ask whether the track is live before it
-commands a speed.  `grep getPowerState src/org/traincontrol/automation/` returns nothing at all,
-so the same shape follows from Escape and from the station going away - and that half wants the
-railway to validate, so it is deferred until the manual tests are done.
-
 ### OB-252 - 2026-09-22 - the general sweep's open findings, so they are named somewhere live
 
 **Kind:** bug
@@ -2143,7 +2111,6 @@ that are in none - adding thirty orphans to it would be a poor way to answer it.
 The documents are not in the repository, by your ruling.  The store has each finding's evidence:
 `SELECT ref, title, status FROM finding WHERE ref LIKE 'GS%-%'`.
 
-- **`GS-B2`** *(for Adam)* Instant Stop stops every train and autonomy starts them again
 - **`GS-B3`** *(deferred)* the tail bookkeeping is one edge behind its own definition, and on a path of three edges or fewer nothing is ever released. Never early, so nothing is
 - **`GS-B3`** *(deferred)* the tail bookkeeping is one edge behind its own definition, and on a short path it never releases anything
 - **`GS-C1`** the departure speed write is not fenced, and a comment above it says it is
@@ -2169,7 +2136,7 @@ The documents are not in the repository, by your ruling.  The store has each fin
 - **`GSR-C2`** reservation read as occupancy, then described as standing
 - **`GSR-C3`** the ROUTE dropdown offers the route being edited
 - **`GSR-C4`** a re-trigger while the route runs is dropped in silence
-- **`GST-B1`** *(deferred)* Nothing in `Layout` consults the power or the halt, so the all-stop either restarts a train or latches the session
+- **`GST-C7`** quitting while autonomy is running skips the exit capture of the session's placements in silence, and `autosetup.log.placementsNotSaved` already exists to say so
 - **`GST-B2`** `GraphLocAssign.commitChanges` discards `moveLocomotive`'s answer and writes five locomotive fields past its guard
 - **`GST-C1`** The volatile sweep did not reach `Layout.isValid`, `Locomotive.speed`/`direction`/`trainLength`/`reversible`, or `Feedback.set`
 - **`GST-C2`** `forwardLoc`/`backwardLoc` touch Swing off the EDT and re-read `activeLoc` inside the worker
@@ -2200,6 +2167,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-22 | OB-251 | question | Two reviewers found that Instant Stop halts the trains and leaves autonomy running - a train between paths sets off again, and a train mid-path leaves its thread waiting on a sensor it will not reach.  Adam, 2026-09-22: *"Instant stop is unrelated to autonomy"*, and *"So it's OK to keep autonomy running"*.  So the button is a Central Station halt and nothing else, and the exit capture's `!isRunning()` is right rather than a consequence - placements taken mid-run would record trains half-way along a path. | declined | - |
 | 2026-09-17 | FR-092 | feature request | Adam: *"Add a right click menu open to clear all max station train lengths (grouped with the other clear options)"*.  Clear All Max Train Lengths, after Clear All Track Lengths in Bulk Tools; every page, after a confirmation. | - | `MT-457` |
 | 2026-09-17 | FR-091 | feature request | Adam: *"add a similar feature to walk stations that don't have a min length set up"* (*"max length"*).  Mass Assign Max Train Lengths in Bulk Tools walks the stations with no maximum, through the Mass Assign Lengths prompt. | - | `MT-456` |
 | 2026-09-16 | OB-232 | bug | Adam, on MT-454: *"make sure the entry field is focused"*.  OK was the prompt's initial value and took the focus; both walk prompts now have none, so the field has it, and Enter submits as before. | - | `MT-454` |

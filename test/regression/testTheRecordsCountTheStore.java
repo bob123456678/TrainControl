@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
  * and compared with the thing it describes, and the failure message says what to write instead.
  *
  * **ROWS ARE NOT FINDINGS (VD15-T5).**  A finding written up in two documents has a row for each, so
- * the `finding` table holds more rows than findings - 3,607 against 3,314 when this was written - and
+ * the `finding` table holds more rows than findings - 3,608 against 3,315 when this was written - and
  * three documents had quoted the row count as a finding count.  Both are checked here, against the
  * mirror's rows and its distinct refs, so the distinction cannot quietly collapse again.
  *
