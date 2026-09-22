@@ -23832,9 +23832,20 @@ atomic mode releases nothing until a run ends.
    a switch, re-load again, and read the log.
 
 - Step 6, everything measured: the setting is **left off**, because you meant it.
-- Step 6, one square short: it comes up **on**, and the log says how many squares have no length and
-  that measuring them lets you switch it off again.  The tick on the main window agrees with what the
-  railway is doing, rather than showing off while it runs atomic.
+- Step 6, one square short: it comes up **on**, and the log says how many pieces of track have no
+  length and that measuring them lets you switch it off again.  The tick on the main window agrees
+  with what the railway is doing, rather than showing off while it runs atomic.
+
+7. **A legacy setup, if you have one to hand.**  Load an `autonomy.json` with no diagram behind it -
+   the lengths on its edges and nothing else - with Atomic Routes off.  Then take the length off one
+   edge and load it again.
+
+- Step 7: the same two answers, asked of the EDGES rather than the squares, because that is all a
+  legacy setup has: measured end to end it keeps the setting; one edge short and it comes up atomic
+  with the count in the log.  Your instruction was to *"just force the checkbox checked as well"* in
+  that case; it asks first, because a legacy railway that is fully measured would otherwise lose
+  non-atomic mode at every load, which is the failure your standing rule is about.  Say if you would
+  rather it forced unconditionally - it is one line.
 
 *What this is:* the finding was `VD12-R4` - the tooltip sentence cut on 2026-09-21 was load-bearing - and
 this is your answer to it.  `ui.testNonAtomicRoutesNeedTheirLengths`, which measures every square,

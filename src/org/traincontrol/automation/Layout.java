@@ -8844,6 +8844,32 @@ public class Layout
     }
     
     /**
+     * How many edges have no length - the legacy railway's own version of the question (Adam, 2026-09-21).
+     *
+     * A setup built in the autonomy editor is measured square by square and `AutonomySession` answers
+     * for it; a setup that came from `autonomy.json` with no diagram behind it has lengths on its EDGES
+     * and nothing else, so this is where the same question has to be asked.  It is also the more direct
+     * form of it: what makes non-atomic mode unsafe is `tailHasProvablyPassed` returning true because
+     * `pathIsUnmeasured`, and that is computed from exactly these lengths.
+     *
+     * Zero counts as no length, which is the convention every length rule here uses - `getTileLength`
+     * answers 0 for unmeasured, and only positive lengths are determinate.
+     *
+     * @return the number of edges with no length, 0 when every edge has one
+     */
+    public int edgesWithNoLength()
+    {
+        int out = 0;
+
+        for (Edge edge : this.edges.values())
+        {
+            if (edge != null && edge.getLength() <= 0) out++;
+        }
+
+        return out;
+    }
+
+    /**
      * Returns all edges in the graph
      *
      * NOT synchronized, and NOT a copy - which is what it was for a few hours on 2026-08-24, and the

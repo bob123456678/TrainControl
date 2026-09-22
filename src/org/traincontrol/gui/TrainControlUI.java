@@ -6057,6 +6057,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         int unmeasured = unmeasuredTrackAutonomyRunsOver();
 
+        // NO DIAGRAM, SO ASK THE RAILWAY ITSELF (Adam, 2026-09-21: *"in that legacy case, just force the
+        // checkbox checked as well"*).
+        //
+        // A setup loaded from `autonomy.json` with no diagram behind it has no session to ask, and the
+        // first version of this then did nothing at all - the door stood open in exactly the case he
+        // was asking about.  Its lengths are on its EDGES, which is both askable and the more direct
+        // form of the question: non-atomic mode is unsafe because `tailHasProvablyPassed` returns true
+        // on `pathIsUnmeasured`, and that is computed from these lengths.
+        //
+        // So a legacy setup with an unmeasured edge comes up atomic, and one measured end to end keeps
+        // the setting it was saved with.  Forcing it unconditionally was the letter of his instruction
+        // and would take non-atomic mode away from a legacy railway that IS fully measured, which is
+        // the failure his standing rule is about - said in the record so he can overrule it in a line.
+        if (getAutonomySession() == null) unmeasured = layout.edgesWithNoLength();
+
         if (unmeasured <= 0) return;
 
         layout.setAtomicRoutes(true);

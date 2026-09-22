@@ -634,6 +634,55 @@ public class testAutoLayout
     }
 
     /**
+     * A railway can say how many of its edges have no length (Adam, 2026-09-21).
+     *
+     * This is the question the FILE door asks where there is no diagram behind the setup - the legacy
+     * `autonomy.json` case, whose lengths are on its edges and nowhere else.  Adam: *"in that legacy
+     * case, just force the checkbox checked as well."*  Asking rather than forcing unconditionally is
+     * what keeps non-atomic mode available to a legacy railway that IS measured end to end.
+     *
+     * It is also the most direct form of the hazard: non-atomic mode releases an edge as soon as
+     * `tailHasProvablyPassed` returns true, and it returns true immediately when `pathIsUnmeasured` -
+     * which is computed from exactly these lengths.
+     *
+     * **THE CONTROL IS THE SECOND HALF.**  A counter that answered "some" whatever the railway looked
+     * like would pass a test that only measured the unmeasured case, and would take the setting away
+     * from an operator who has measured everything.
+     *
+     * MUTATION: count every edge rather than the ones with no length and the second claim goes red;
+     * return 0 always and the first does.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testARailwayCountsItsUnmeasuredEdges() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.createPoint("UE_A", false, null);
+        layout.createPoint("UE_B", true, "1");
+        layout.createPoint("UE_C", true, "2");
+
+        Edge ab = layout.createEdge("UE_A", "UE_B");
+        Edge bc = layout.createEdge("UE_B", "UE_C");
+
+        ab.setLength(3);
+
+        assertEquals(layout.edgesWithNoLength(), 1,
+            "one of this railway's two edges has a length and the other has none, and it counts "
+            + layout.edgesWithNoLength() + ".  Zero is no length here, the way every length rule in "
+            + "this class reads it - only a positive length is determinate");
+
+        // THE CONTROL: measured end to end, so nothing is in the way of running non-atomic.
+        bc.setLength(1);
+
+        assertEquals(layout.edgesWithNoLength(), 0,
+            "every edge has a length and the railway still reports " + layout.edgesWithNoLength()
+            + " without one - so a legacy setup that is measured end to end would have non-atomic mode"
+            + " taken away from it at every load");
+    }
+
+    /**
      * Locking a path reserves every point along it, not only its destination.
      *
      * The reservation is what holds a junction the train has passed against a second train that could
