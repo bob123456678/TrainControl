@@ -1894,58 +1894,6 @@ the citations.
 (b) is the honest one and it is an afternoon's reading; (a) takes ten minutes and records the loss.
 Your call which is worth it.
 
-### OB-248 - 2026-09-21 - twenty-nine open findings are in no live document but this one
-
-**Kind:** bug
-**Raised from:** VD12-R14, a validation of 2026-09-20 and 2026-09-21
-**Filed:** 2026-09-21
-
-`behaviour.md` says open work belongs in the Inbox as an OB, and the 2026-09-21 round was routed that
-way - OB-233 to OB-238.  Of the older findings whose status is still `Open`, thirteen are in neither
-this Inbox nor `open-questions.md`, and their documents were deleted with the rest:
-
-`FP-B3` (*a route import that parses can still destroy routes*), `UH-B7`, `RGN-C1`, `RGN-C2`, `RGN-C4`,
-`IPR-C1`, `IPR-C2`, `IPR-C3`, `IPR-C4`, `DAY-C1`, `DAY-C2`, `FP-C6`, `FR3-C2`.
-
-The first two are B severity.  `open-questions.md` tells you the remaining backlog is codebase and
-tests only, which is true of everything except these.
-
-**What I would do:** read them out of the store and put each one either in this Inbox as an OB or in
-the closed roll with the reason it was declined, then say so in `behaviour.md`.  **The obvious query
-is wider than this list, and the numbers move as rounds land** - counted 2026-09-22:
-`WHERE status LIKE 'Open%'` returns **152 rows for 91 findings** (a finding written up in two documents
-has a row for each, VD15-R3 - and the general sweep of 2026-09-22 gave every finding it audited a
-second row, which is why the two numbers are now so far apart), made up of 108 rows for 69 findings at
-exactly `Open`, 18 rows for 9 `Open - unverified`, 8 for 4 `Open - verified 2026-09-21`, 8 for 4
-`Open - for Adam`, 8 for 4 `Open - deferred until the MT retests` and 2 for 1 deferred past 3.0.0.
-
-Thirteen are named above.  **Sixteen more are named nowhere but this paragraph**, and each is written
-out in full here because the first version of this line compressed six of them as
-`IND9X-C2/C3/C4/C5/C7/C8` - a form no `grep` for `IND9X-C5` will ever find, which is the failure the
-whole entry is about (VD15-R10):
-
-`AUT9-C2`, `D3-C2`, `IND9X-C2`, `IND9X-C3`, `IND9X-C4`, `IND9X-C5`, `IND9X-C7`, `IND9X-C8`, `MON-C12`,
-`REV9-C2`, `W7-C1`, `VD12-R7`, `VD12-T9`, `VD12-T10`, `VD15-R8`, `VD15-R11`.
-
-`VD12-R7`, `VD12-T9` and `VD12-T10` were marked Open by the 2026-09-22 status sweep without being
-filed.  The last two are the VD15 findings whose content was lost with the message that reported them,
-entered unverified rather than guessed at.  `VD14-R12` was one of these too and is closed by the commit
-that corrects this paragraph.  So this entry is about **twenty-nine findings, not thirteen**, and the count will drift again: run the query rather
-than trusting the number (VD13-R6, VD14-R4, VD15-R4).  It is a morning's work and it is bookkeeping
-rather than railway behaviour, so it is filed rather than done.
-
-**The audit of 2026-09-22 did a fifth of it.**  Six Opus reviewers read the codebase by area, and one
-of them took every finding on this query and asked whether it is still true: **four were already
-fixed** and are named with their commits (`DAY-C2` in `e2afe88c`, `FR3-C2` in `825e7d91`, `UH-B7` in
-`59b2db48`, `W7-C1` in `74015c16`), **three are not defects** (`AUT9-C2`, `RGN-C2`, `TS-C1`), one was
-documentation residue (`IND9X-C2`), and all eight are closed.  Of what is left, **exactly one needs the
-railway** (`AMH-C1`, by your own earlier ruling, and now deferred until the manual tests are done) and
-`RGN-C4` must NOT be settled by running, because that means a second JVM against the shared preference
-store.  The audit also found the deleted review documents are **recoverable from git** - `77649f88^`
-and `4020a899^` - which is how it settled ten of the twelve that had been unverified for want of their
-own document.  What remains wants your ruling rather than more reading: file the rest as OBs, or put
-them on the closed roll.
-
 ### OB-249 - 2026-09-21 - the catalogue reads one column two ways
 
 **Kind:** bug
@@ -2078,6 +2026,350 @@ driving that locomotive), `GSR-B3` (`editRoute` replaces the route object, so `i
 and the guard that reads it - forgets a route that is still running), and `GSP-B2` (every reason
 a setup will not load is reported as "it needs a local layout folder", which `isUsable()` has
 already ruled out two lines earlier).
+
+### OB-253 - 2026-09-22 - a route import that parses can still destroy routes
+
+**Kind:** bug  
+**Raised from:** review finding FP-B3, 2026-07-27, recovered from git and re-checked 2026-09-22  
+**Filed:** 2026-09-22  
+
+`importRoutes` deletes every existing route and then adds the parsed ones.  Parsing first is what
+makes an UNREADABLE file safe, and a test pins that.  It does not make a READABLE file safe: `newRoute`
+refuses a route whose id or name is already taken, logs `route.alreadyImportedSkipping` and returns
+false, and `importRoutes` logs `route.notAdded` and carries on.
+
+So a file holding two routes that share an id or a name imports as: **everything the operator had is
+deleted, and one of the two is dropped**, with nothing but a log line to say so.
+
+**Checked against today's code, 2026-09-22.**  `MarklinControlStation.importRoutes` still deletes in a
+loop over `routeDB.getItems()` before it adds, and both refusal paths in `newRoute` still return false
+after a `logf`.
+
+**What would settle it:** either refuse the whole file when it holds a duplicate - the parse already
+walks it, so this costs one pass - or keep the existing routes until every add has succeeded.  The
+first is the one that matches the parse-first rule already in place.
+
+### OB-254 - 2026-09-22 - auto-save on exit is forced on and its checkbox hidden, so autonomy.json is rewritten for somebody who turned it off
+
+**Kind:** bug  
+**Raised from:** review finding RGN-C1, 2026-08-31, recovered from git and re-checked 2026-09-22  
+**Filed:** 2026-09-22  
+
+`TrainControlUI` sets `autosave.setSelected(true)` and `autosave.setVisible(false)` on start-up, and
+the comment says the stored preference is *"deliberately ignored rather than read"* on the reasoning that
+turning it off only ever meant losing work.
+
+**That reasoning covers what the flag SAVES; it does not cover what it PREVENTS.**  On the legacy path
+the same flag gates rewriting `autonomy.json` from the in-memory graph, so somebody who had turned
+auto-save off - and whose file is therefore something they are keeping - has it rewritten anyway.
+
+**Checked against today's code, 2026-09-22.**  Both lines are still there, and the checkbox is still
+built and then hidden.
+
+**Your call rather than a defect:** either the preference is read again, or the two things the one flag
+does are separated so the graph rewrite has a gate of its own.
+
+### OB-255 - 2026-09-22 - a UIState.data written by 3.0.0 with a non-default page count loses its page names under 2.7.4c
+
+**Kind:** bug  
+**Raised from:** review finding RGN-C4, 2026-08-31, recovered from git and re-checked 2026-09-22  
+**Filed:** 2026-09-22  
+
+2.7.4c restores the trailing page-names map only when `saveStates.size() > NUM_LOC_MAPPINGS`, and
+that constant is fixed at 10.  This version's page count is a preference between 2 and 50 and the file
+still carries exactly one trailing entry, so a user who deletes a page writes nine pages plus names -
+ten entries - and 2.7.4c evaluates `10 > 10` as false: no page names, no active page, no active button,
+and the empty map serialised back over them on exit.
+
+**Downgrade only, and clean in both directions at the default ten pages** - which is the only count a
+2.7.4c installation can have.  This version reading a 2.7.4c file is fine: `!saveStates.isEmpty()` is
+what it asks, and that replaced the count comparison precisely because it was fragile.
+
+**Not fixable here**, which is why it is a question.  The failing comparison is inside 2.7.4c.  The
+choices are to write a file shape the old version reads, or to say in the release notes that a downgrade
+loses page names.  The second is a sentence; the first is a format decision.
+
+### OB-256 - 2026-09-22 - the caption migration is a fourth door past one station, one caption
+
+**Kind:** bug  
+**Raised from:** review finding IPR-C1, 2026-08-31, recovered from git and re-checked 2026-09-22  
+**Filed:** 2026-09-22  
+
+`AutonomySession.setCaption` carries the rule and its own comment names the three doors it was
+written for: place a station automatically, choose the square in the autonomy editor, drag the square in
+the track diagram editor.  Only the first knew to remove the old caption, so the rule was moved into one
+place.
+
+**There is a fourth.**  `migrateStationLabels` - the one-time bring-across of captions that used to live
+in the layout file - writes `store.setCaption(where, station)` directly, past the rule.
+
+**Checked against today's code, 2026-09-22.**  The migration still runs from `AutonomySession`'s
+constructor path and still writes to the store directly.
+
+**What that costs:** a station captioned in the old file and again in the setup comes through captioned
+twice, with nothing saying which is current - the state the rule exists to prevent, arriving by the one
+door that does not ask it.
+
+### OB-257 - 2026-09-22 - the locomotive icon crop dialog: a saved view restores to a different rectangle, and the clamp's guarantee is in the wrong units
+
+**Kind:** bug  
+**Raised from:** review findings IPR-C2 and IPR-C4, 2026-08-31, recovered from git and re-checked 2026-09-22  
+**Filed:** 2026-09-22  
+
+Two findings about the same dialog, filed together because they are one afternoon's work.
+
+**A saved crop view restores to a different rectangle when the dialog has been resized (IPR-C2).**  The
+five numbers saved are `centerX, centerY, zoomFraction, frameAspect, frameSize`.  The centre is
+panel-independent; the crop SIZE is not - `sourceRect().width` is `cropWindow().width / getScale()`, and
+both `largestWindow` and `fitScale` take their own `min` over the panel.  So the same saved view
+reopened in a differently-sized dialog crops a different part of the photograph.
+
+**The clamp's overlap guarantee is in panel pixels (IPR-C4).**  `clampCenter` keeps
+`min(24, min(w,h)/3) / scale` source pixels of the photograph under the frame; the numerator is in PANEL
+pixels, so the guarantee falls below one source pixel once the scale passes 24 - any source under about
+682 x 442 at full zoom.  **This half is a pointer**: the reviewer verified the units and did NOT
+re-derive the rounding-to-zero its scenario depends on, and said so.  It needs a source smaller than the
+icon and a drag to the exact bound, so it is narrow either way.
+
+**Checked against today's code, 2026-09-22.**  `copyViewInto` still saves those five numbers and none of
+them is the panel size; `clampCenter` still divides a panel-pixel number by the scale.
+
+### OB-258 - 2026-09-22 - the copy mark is filled white whatever ink it is given, so it disappears on a selected row
+
+**Kind:** bug  
+**Raised from:** review finding IPR-C3, 2026-08-31, recovered from git and re-checked 2026-09-22  
+**Filed:** 2026-09-22  
+
+`RowIcons.copy(int, Color)` draws its outline in the ink it is handed and then fills the inner
+rectangle with `Color.WHITE` unconditionally.  On a selected row the mark is drawn in the selection's
+own ink - which the arrows and the trash already do, deliberately, so they stay visible against the
+look-and-feel's selection blue - and the white fill then covers most of it.
+
+**Checked against today's code, 2026-09-22.**  `RowIcons.java` still fills with `Color.WHITE` two lines
+after setting the given colour.
+
+**It is one line:** fill with the row's background rather than with white, or leave the inner rectangle
+unfilled.  Cosmetic, and it is the mark on the row somebody has just clicked - the one they are most
+likely to be reaching for.
+
+### OB-259 - 2026-09-22 - liftAboveLabels was made unnecessary by OB-159 and left in doing only its harm
+
+**Kind:** bug  
+**Raised from:** review finding DAY-C1, 2026-08-31, recovered from git and re-checked 2026-09-22  
+**Filed:** 2026-09-22  
+
+`liftAboveLabels` exists for one reason, given in its own javadoc - your *"make sure it renders on
+top of the S88's"* - and answers it by pushing a tile to component index 0 while a train is moving on it,
+then handing the front back to the station captions.
+
+OB-159 replaced that mechanism: `newDiagramContainer` paints its children and then asks every
+`LayoutLabel` for `paintTrainOverCaptions`, so the locomotive lands over every sibling whatever the
+z-order is.  The lift buys the train icon nothing.
+
+**What it still costs** is stated by the code's own comment: address labels are plain JLabels, so
+`keepCaptionsInFront` does not rescue them, and a lifted tile paints over their text for as long as a
+train sits on the square.
+
+**Checked against today's code, 2026-09-22.**  `LayoutLabel` still calls `liftAboveLabels` and still
+defines it, and the comment describing the residual harm is still there.
+
+### OB-260 - 2026-09-22 - deleting a timetable row removes against a stale index, behind a modal dialog
+
+**Kind:** bug  
+**Raised from:** review finding D3-C2, 2026-09-09, recovered from git and re-checked 2026-09-22  
+**Filed:** 2026-09-22  
+
+The handler checks `isAutonomyBusy()`, holds a modal confirmation open for as long as the operator
+leaves it, and then calls `getTimetable().remove(index)` - a structural mutation of a plain `LinkedList`
+with no lock, while `addTimetableEntry` (which IS synchronized) appends from locomotive threads whenever
+capture is on.
+
+`repaintTimetable`'s own comment already names this window as real - *"three of those callers hold a
+modal dialog open between the check and the snapshot, so the window is as wide as the operator leaves
+it"* - and that fix moved the SNAPSHOT off the event thread and left the REMOVE unguarded.
+
+**Scenario:** the operator right-clicks a row to delete it; while the confirmation sits open a route
+trigger dispatches a locomotive with capture on and entries append; Yes then removes against a stale
+index, and in the worst interleaving corrupts the list a running timetable is reading.
+
+**Checked against today's code, 2026-09-22.**  The remove is still inside the dialog's branch and still
+unsynchronized.
+
+### OB-261 - 2026-09-22 - a third accessory-reading door still creates the accessory on a miss
+
+**Kind:** bug  
+**Raised from:** review finding IND9X-C3, 2026-09-09, recovered from git and re-checked 2026-09-22  
+**Filed:** 2026-09-22  
+
+The rule is *"reading one must still not create it"*, written after a paint loop put 2048 phantom
+switches into the live database.  Two of the three lookers were converted; `Locomotive.waitForAccessoryState`
+- a public API door used by automation scripts - still polls `getAccessoryState` in its wait loop, and
+that registers on a miss.
+
+One phantom row is harmless by your own counter doctrine.  **The finding is the rule enforced at two
+doors of three**, which is this codebase's commonest defect shape.
+
+**Scenario:** a user script waits on a mistyped address; a phantom accessory appears, and the wait never
+returns with nothing logged.
+
+**Checked against today's code, 2026-09-22.**  `waitForAccessoryState` still calls `getAccessoryState`
+inside its `while`.
+
+### OB-262 - 2026-09-22 - two dialogs open unowned, and can fall behind the main window
+
+**Kind:** bug  
+**Raised from:** review findings IND9X-C4 and IND9X-C5, 2026-09-09, recovered from git and re-checked 2026-09-22  
+**Filed:** 2026-09-22  
+
+Two findings with one cause, filed together.
+
+**The save-reconciliation warning (IND9X-C4).**  `AutonomyViewerPanel.save()` parents `AutonomyReport.show`
+on `this` - a panel that is built but never shown.  The panel's own field comment says every dialog in
+the file must parent on the main window for exactly this reason, and every other dialog in it does.  It
+is reached from page exclusion, import, initialize, duplicate, rename and delete, and it is the one
+notice that says a page's settings are at risk.
+
+**The right-click menu's refusals (IND9X-C5).**  Menu actions fire after the popup is torn down, so
+`this` has no window ancestor and the dialogs centre on the screen, unowned.  The same dialogs in
+`AutoLocomotiveStatus` parent correctly.
+
+**Scenario:** send a train from the diagram with track power off; "power on to start" appears mid-monitor,
+is covered by a stray click, and the refusal reads as the command having silently failed.
+
+**Checked against today's code, 2026-09-22.**  `AutonomyViewerPanel` still passes `this`, and
+`LayoutRightclickAutonomyMenu` still has seven `showMessageDialog(this, ...)` calls.
+
+### OB-263 - 2026-09-22 - a station caption's rotation depends on what was standing on the sensor when the layout was saved
+
+**Kind:** bug  
+**Raised from:** review finding IND9X-C8, 2026-09-09, recovered from git and re-checked 2026-09-22  
+**Filed:** 2026-09-22  
+
+`LayoutGrid.runsNorthSouth` asks `TilePorts.ports(type, orientation, STATE)`, and a FEEDBACK tile's
+state is the `zustand` the Central Station saved - 1 if the s88 happened to be occupied at export.  A
+feedback tile has one state, so `ports` returns EMPTY for state 1 rather than throwing: a vertical sensor
+square then reads as not-north-south and its caption is drawn unrotated, as though the track ran
+east-west.  Persistently, per file, and differently for two identical vertical stations.
+
+The `catch` fallback's comment blames *"a tile type the port table does not describe"*; the real failure
+returns empty and never reaches the catch.
+
+`AutonomySession.labelSides` documents this exact trap and asks `graph.getRoutes(tile)` instead -
+`runsNorthSouth` is the surviving sibling of that fix.
+
+**No fixture can see it**, which is why nothing caught it: every hand-built fixture is orientation 0,
+horizontal, state 0.
+
+**Checked against today's code, 2026-09-22.**  `runsNorthSouth` still passes `c.getState()`, and
+`TilePorts.ports` still returns `Collections.emptyList()` when the state is past the end of the table.
+
+### OB-264 - 2026-09-22 - three coverage gaps against rules behaviour.md states
+
+**Kind:** bug  
+**Raised from:** review finding IND9X-C7, 2026-09-09, recovered from git and re-checked 2026-09-22  
+**Filed:** 2026-09-22  
+
+Three absences, each confirmed by search rather than by reading a test.
+
+- **The `isRunning()` half of the section 6a guard has no test.**  All three refusals - rename point,
+  delete point, delete edge - are exercised against `isStagingInProgress` and none against a live run,
+  which is the other half of the OR the guard is written as.  Re-checked 2026-09-22: the claim in
+  `testHomeStaging` still asserts `!isRunning() && !isStagingInProgress()` as a precondition and never
+  sets a run going.
+- **Nothing asserts the covered mark survives an accessory highlight flash.**  behaviour.md section 5c
+  states the rule - both marks are applied on every paint so a highlight cannot take either away - and
+  the test that covered it went with the wash it was written against.
+- **One section 4 limit is code-only.**  A recorded `arrivedFrom` naming a side no track leaves by - a
+  stale value after an edit - stops the tail walk entirely, blocking nothing even where the geometry is
+  unambiguous.  The code says so at the break; no document does.  Re-checked 2026-09-22: the comment is
+  still there and behaviour.md still does not carry the limit.
+
+### OB-265 - 2026-09-22 - the rest of the dispatch-choice layer is documented only in user prose
+
+**Kind:** bug  
+**Raised from:** review finding IND9X-C2, 2026-09-09, recovered from git and re-checked 2026-09-22  
+**Filed:** 2026-09-22  
+
+**Half of this is now done, and the half that is done was the load-bearing one.**  The finding was
+that the concurrency cap, station priority, the longest-idle preference, the minimum and maximum delay
+and atomic routes all decide which train goes where and when, and that behaviour.md - whose head claims
+*"the features that decide where trains may go"* - said nothing about any of them.  It named one
+consequence that was stated nowhere: the cap is fenced on `isAutoRunning()`, and Return Home runs under
+that flag, so the cap binds Return Home moves.
+
+Since then behaviour.md section 1 has gained the cap, the 0-means-no-cap rule, the hand-dispatch
+exemption, and exactly that Return Home consequence with the note that the fence is wider than "full
+autonomy"; section 5d has gained atomic routes.
+
+**What is left** is station priority, the longest-idle preference and the minimum and maximum delay -
+still described only in `Automation.md`, in user prose that is not written to be read against the code.
+They decide which train is chosen and where it is sent, which is what section 1 is about.
+
+### OB-266 - 2026-09-22 - the invalidation message shown is the last one, not the first
+
+**Kind:** bug  
+**Raised from:** review finding FP-C6, 2026-07-27, recovered from git and re-checked 2026-09-22  
+**Filed:** 2026-09-22  
+
+`Layout.invalidate(String)` overwrites `invalidReason` and `lastError` on every call, and the point
+loop keeps parsing after invalidating rather than returning.  So a configuration with three mistakes
+calls it three times and the operator is shown the THIRD - usually the one furthest from the cause.
+
+**A related confusion has since been fixed and this one has not.**  `invalidReason` was split out of
+`lastError` because `lastError` is written by every path that fails for any reason, so the invalidation
+message was being replaced by whatever path failed most recently.  That fixed which FIELD is read; it
+did not change that the field holds the last of several invalidations rather than the first.
+
+**Checked against today's code, 2026-09-22.**  `invalidate` still assigns both fields unconditionally.
+
+**What would settle it:** keep the first message rather than the last, or collect them and show all of
+them - the loop already visits every point, so nothing has to be read twice.
+
+### OB-267 - 2026-09-22 - two test-harness leaks: a tab left selected on a failure, and a restore that does not restore one thing
+
+**Kind:** bug  
+**Raised from:** review findings VD12-T9 and VD12-T10, 2026-09-21, re-checked 2026-09-22  
+**Filed:** 2026-09-22  
+
+Two small findings about test hygiene, filed together because they are the same afternoon.
+
+**A tab left selected on a failure (VD12-T9).**  `findSomewhereToType` changes the selected tab and the
+restore is the last statement rather than a `finally`, so a failure leaves a different tab showing for
+whatever runs next in the same JVM - where the same keystroke means something else.
+
+**A restore that does not restore one thing (VD12-T10).**  The `finally` re-parses the setup's JSON and
+`parseAuto` deliberately carries the visit history forward, so the arrival the test noted survives into
+the restored layout.  Nothing reads it today; the class's own comment claims the setup is put back, and
+for this one piece of state it is not.
+
+Both are cross-class leaks of the kind that make a suite's result depend on its order, which is what
+`DEBUG_SIMULATE_PACKETS` did in the same round.
+
+### OB-268 - 2026-09-22 - the turning-copy invariant is measured with two different rulers
+
+**Kind:** bug  
+**Raised from:** review finding REV9-C2, 2026-09-09, recovered from git and re-checked 2026-09-22  
+**Filed:** 2026-09-22  
+
+Section 3 states, as the reason a compulsory turn is not a question, that *"a turning copy's only
+outgoing edges leave by the side the train arrived from"*.  The builder guarantees it in the metal
+vocabulary.
+
+The only test that examines reversing copies on the wired railway,
+`testTheTurnRuleDoesNotChangeTheRealRailway.testAReversingCopyCanBeLeftByAnotherSide`, computes the
+in-side from the STORED entry side and the out-side from `entrySideOf(leaving, copy)` - which, for an
+edge whose START is the copy, always falls through to the geometric `sideTowards` fallback.  So its
+counter-examples measure the curve between the build's side and the neighbour's compass position, not a
+turning copy with a genuine onward edge.
+
+The test is right to block the geometric narrowing, which is what it was written for.  **What is wrong
+is what it reads as**: its name and its assertion read as a refutation of the section 3 sentence, and its
+closing message invites a future author to re-measure with the same mixed ruler.  Meanwhile the metal
+invariant is pinned only on a small fixture.
+
+**Checked against today's code, 2026-09-22.**  The test still takes both sides from `entrySideOf` and
+its message still says *"re-measure before assuming either way"*.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -2094,6 +2386,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-21 | OB-248 | bug | Twenty-nine findings were open and named in no document a reader opens - only in this entry's own paragraph, which is the failure it was about.  Adam, 2026-09-22: *"no idea what 'the twenty-nine' are"*, and then *"re-file the others if they are found and still relevant"*.  All twenty-nine were found: the deleted reviews are recoverable from `77649f88^` and `4020a899^`, and each finding was read out of its own document and then checked against the code as it stands, by reading - nothing was run.  **Six were already closed** by the 2026-09-22 audit (four fixed with their commits, two not defects).  **Three are closed now**: `MON-C12` is the decomposition question `open-questions.md` already defers past 3.0.0, and `VD15-R8` and `VD15-R11` were lost with the message that reported them and name only their own absence.  **Twenty are still true and are now OB-253 to OB-268**, each with what was checked and when - `FP-B3` is the B, a route import that deletes every route and then drops one of two sharing an id.  No open finding is now absent from a live document, which is the claim `testTheRecordsCountTheStore` makes. | fixed unvalidated | - |
 | 2026-09-21 | OB-246 | bug | The target column offered every locomotive in the database, including one whose name holds a COMMA - which `RouteCommand.isNameUsable` refuses, because a command line is comma-separated - so the operator picked it and learnt at Save that the only way out was to rename the locomotive.  Adam, 2026-09-22: *"yes"*.  Marked rather than hidden, because hiding it would refuse a legal selection with nothing shown: the row is drawn in the refusal ink with the gate's own reason on its tooltip, as it is typed.  A row nobody has filled in yet is not marked - a mark that is always there is a mark nobody reads.  Held by `testARowSaveWouldRefuseIsMarkedAsItIsTyped`, whose two mutations were each measured. | fixed unvalidated | - |
 | 2026-09-21 | OB-238 | bug | The collision block that stops two trains standing on one square was keyed by the TILE, so a train on one arc of a double curve made the other arc read occupied and `isPathClear` refused track that is physically free.  Adam, 2026-09-22: *"it is two pieces of metal.  imagine two parallel tracks simple appearing on one tile for visual convenience.  two distinct, not connected paths."*  `AutonomyBuilder.blockFor` keys DOUBLE_CURVE, FEEDBACK_DOUBLE_CURVE and OVERPASS per ROAD - the grain the reduction has used since AUR-B1 - and every other split square still groups by the tile.  Held by `testEachArcOfADoubleCurveIsItsOwnPieceOfMetal`, seen failing first.  No hands-on test: it is what the build emits, and the claim reads it back out of the emitted configuration. | fixed unvalidated | - |
 | 2026-09-21 | OB-244 | bug | A station's allowance - *"the station size is an allowance, not a length"* - was being spent at a running train's last MILESTONE, so a train whose milestone is a long block claimed a square behind it as well and `isPathClear` refused track no train is on.  Adam, 2026-09-22, asked where the maximum train length should be checked: *"it's the arrival station only"* - answer (a).  `walkStandingTrains` now passes `atRest`, false for exactly the trains part-way along a run, and both halves of the rule honour it; a train standing at the end of a road keeps the allowance unchanged.  Held by `testAMidRunMilestoneIsNotAnAllowance`, whose two mutations were each measured.  No hands-on test: it is a calculation. | fixed unvalidated | - |

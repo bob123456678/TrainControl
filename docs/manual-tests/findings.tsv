@@ -418,8 +418,8 @@ D3-A1	D3-three-day-review.md	Closed	-	The diagram's right-click menu still takes
 D3-B1	D3-three-day-review.md	Closed	-	Caption visibility asks the railway per station, on the event thread, at three doors
 D3-B2	D3-three-day-review.md	Closed	-	`isReturnHomeOffered` readers aside, the whole EDT/monitor rule has no general guard
 D3-C1	D3-three-day-review.md	Closed	-	The editor's "why is it not moving" tool walks the whole graph on the EDT
-D3-C2	2026-09-22-GS-backlog.md	Open - unverified	still true	(listed in a table, no section of its own)
-D3-C2	D3-three-day-review.md	Open - unverified	-	Deleting a timetable row: guard, then modal dialog, then an unsynchronized remove
+D3-C2	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	still true	(listed in a table, no section of its own)
+D3-C2	D3-three-day-review.md	Open - verified 2026-09-22	-	Deleting a timetable row: guard, then modal dialog, then an unsynchronized remove
 D3-C3	2026-09-22-GS-backlog.md	Open - verified 2026-09-21	still true (OB-237)	(listed in a table, no section of its own)
 D3-C3	D3-three-day-review.md	Open - verified 2026-09-21	-	`refreshReturnHomeButton` materialises the Layout its sibling swore not to bring into being
 D3-C4	D3-three-day-review.md	Closed	-	`moveLocomotive` and friends on the EDT at the placement doors
@@ -462,8 +462,8 @@ DAY-B1	2026-08-31-day-of-commits-review.md	Closed	fixed, verified 2026-09-04 - `
 DAY-B2	2026-08-31-day-of-commits-review.md	Closed	fixed, verified 2026-09-04 - both launch-pad comparisons use it now: `HomeStaging:202` com	`atHome` was taught to five comparisons and not to the two launch-pad ones
 DAY-B2	2026-08-31-fanout-index.md	Closed	`atHome` reached five comparisons and not the two launch-pad ones, so a train on the far c	day-of-commits
 DAY-B3	2026-08-31-day-of-commits-review.md	Closed	**fixed by MT-165 without this document saying so**, verified 2026-09-04 at HEAD. The mism	the diagram editor offers a home the loader silently drops, and the ruling behind that rests on a measurement the same day contradicts
-DAY-C1	2026-08-31-day-of-commits-review.md	Open	**still open**, re-checked 2026-09-04 - `LayoutLabel:1135` still calls it and `:1198` stil	OB-159 made `liftAboveLabels` unnecessary, and it was left in doing only its harm
-DAY-C1	2026-09-22-GS-backlog.md	Open	still true (residual; its remedy is superseded)	(listed in a table, no section of its own)
+DAY-C1	2026-08-31-day-of-commits-review.md	Open - verified 2026-09-22	**still open**, re-checked 2026-09-04 - `LayoutLabel:1135` still calls it and `:1198` stil	OB-159 made `liftAboveLabels` unnecessary, and it was left in doing only its harm
+DAY-C1	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	still true (residual; its remedy is superseded)	(listed in a table, no section of its own)
 DAY-C2	2026-08-31-day-of-commits-review.md	Closed	**still open**, re-checked 2026-09-04 - after `model.deleteLoc(value)` the handler runs `c	`deleteLoc` did not get the redraws both rename doors have
 DAY-C2	2026-09-22-GS-backlog.md	Closed	**already fixed** `e2afe88c`	(listed in a table, no section of its own)
 DAY-C2	2026-09-22-VD17-records.md	Closed	**holds**	fixed in `e2afe88c`
@@ -813,15 +813,15 @@ FNL-D8	2026-09-20-FNL-final-validation.md	Closed	-	the rename branch: `nameToSav
 FNL-D9	2026-09-20-FNL-final-validation.md	Closed	-	`buildArrivedFromMenu`'s gate matches its two siblings and `bulkClearWarning` is what its four call sites use
 FP-B1	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)	Rename-on-import can delete a locomotive the user did not choose to delete
 FP-B2	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)	A failure in path selection was reported as "no free paths"
-FP-B3	2026-07-27-fresh-perspective-review.md	Open	**Open - deferred by author 2026-07-27**, judged unlikely in practice	A route import that parses can still destroy routes
-FP-B3	2026-09-22-GS-backlog.md	Open	still true (B)	(listed in a table, no section of its own)
+FP-B3	2026-07-27-fresh-perspective-review.md	Open - verified 2026-09-22	**Open - deferred by author 2026-07-27**, judged unlikely in practice	A route import that parses can still destroy routes
+FP-B3	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	still true (B)	(listed in a table, no section of its own)
 FP-C1	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)	`parseFile` leaked its reader on the error path
 FP-C2	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)	A full list copy per parsed locomotive
 FP-C3	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)	`new Thread(...)` used as a `Runnable`
 FP-C4	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)	Accessory creation that fails silently - and a finding that was wrong about why
 FP-C5	2026-07-27-fresh-perspective-review.md	Closed	Fixed (stated in the body)	Silent catches in the editor UI
-FP-C6	2026-07-27-fresh-perspective-review.md	Open	**Open - deferred by author 2026-07-27**	The error the user is shown is the last one, not the first
-FP-C6	2026-09-22-GS-backlog.md	Open	still true	(listed in a table, no section of its own)
+FP-C6	2026-07-27-fresh-perspective-review.md	Open - verified 2026-09-22	**Open - deferred by author 2026-07-27**	The error the user is shown is the last one, not the first
+FP-C6	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	still true	(listed in a table, no section of its own)
 FP-D1	2026-07-27-fresh-perspective-review.md	Closed	Recorded	Checks that came back clean
 FR-A1	2026-08-22-f2-review.md	Closed	Fixed	the same wiring gap, twice
 FR-A2	2026-08-22-f2-review.md	Closed	Fixed, and turned into a better question	switching asks a better question than closing
@@ -1140,21 +1140,21 @@ IND9X-B4	IND-independent-review.md	Open - verified 2026-09-21	-	clicking the fin
 IND9X-B5	IND-independent-review.md	Closed	-	Escape does not put an armed editor tool down
 IND9X-B6	IND-independent-review.md	Closed	-	a highlight flash that outlives a switch actuation restores the OLD position's icon, and the diagram stays wrong
 IND9X-C1	IND-independent-review.md	Closed	-	GraphReducer.findPath's javadoc contradicts its own body about closed destinations
-IND9X-C2	2026-09-22-GS-backlog.md	Open	**mostly fixed**; documentation residue	(listed in a table, no section of its own)
-IND9X-C2	2026-09-22-VD17-records.md	Open	**VD17-R5**	documentation residue
-IND9X-C2	IND-independent-review.md	Open	-	the dispatch-choice layer is documented only at user-manual level
-IND9X-C3	2026-09-22-GS-backlog.md	Open - unverified	still true	(listed in a table, no section of its own)
-IND9X-C3	IND-independent-review.md	Open - unverified	-	a third accessory-reading door still creates on a miss
-IND9X-C4	2026-09-22-GS-backlog.md	Open - unverified	still true	(listed in a table, no section of its own)
-IND9X-C4	IND-independent-review.md	Open - unverified	-	the save-reconciliation warning can open unowned, behind the main window
-IND9X-C5	2026-09-22-GS-backlog.md	Open - unverified	still true	(listed in a table, no section of its own)
-IND9X-C5	IND-independent-review.md	Open - unverified	-	right-click refusal dialogs parent on the already-dismissed popup
+IND9X-C2	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	**mostly fixed**; documentation residue	(listed in a table, no section of its own)
+IND9X-C2	2026-09-22-VD17-records.md	Open - verified 2026-09-22	**VD17-R5**	documentation residue
+IND9X-C2	IND-independent-review.md	Open - verified 2026-09-22	-	the dispatch-choice layer is documented only at user-manual level
+IND9X-C3	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	still true	(listed in a table, no section of its own)
+IND9X-C3	IND-independent-review.md	Open - verified 2026-09-22	-	a third accessory-reading door still creates on a miss
+IND9X-C4	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	still true	(listed in a table, no section of its own)
+IND9X-C4	IND-independent-review.md	Open - verified 2026-09-22	-	the save-reconciliation warning can open unowned, behind the main window
+IND9X-C5	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	still true	(listed in a table, no section of its own)
+IND9X-C5	IND-independent-review.md	Open - verified 2026-09-22	-	right-click refusal dialogs parent on the already-dismissed popup
 IND9X-C6	2026-09-22-GS-backlog.md	Open - verified 2026-09-21	still true (OB-235)	(listed in a table, no section of its own)
 IND9X-C6	IND-independent-review.md	Open - verified 2026-09-21	-	the One-way tool is not greyed on an excluded page, unlike its two siblings
-IND9X-C7	2026-09-22-GS-backlog.md	Open - unverified	still true (3 parts)	(listed in a table, no section of its own)
-IND9X-C7	IND-independent-review.md	Open - unverified	-	coverage gaps against documented behaviour
-IND9X-C8	2026-09-22-GS-backlog.md	Open - unverified	still true	(listed in a table, no section of its own)
-IND9X-C8	IND-independent-review.md	Open - unverified	-	a station caption's rotation depends on what was standing on the sensor when the layout was saved
+IND9X-C7	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	still true (3 parts)	(listed in a table, no section of its own)
+IND9X-C7	IND-independent-review.md	Open - verified 2026-09-22	-	coverage gaps against documented behaviour
+IND9X-C8	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	still true	(listed in a table, no section of its own)
+IND9X-C8	IND-independent-review.md	Open - verified 2026-09-22	-	a station caption's rotation depends on what was standing on the sensor when the layout was saved
 IND9X-C9	2026-09-22-GS-backlog.md	Closed	**for Adam** (OB-238)	(listed in a table, no section of its own)
 IND9X-C9	IND-independent-review.md	Closed	-	the two independent arms of a double-curve tile are locked as one piece of metal
 IND9X-D1	IND-independent-review.md	Closed	-	test/README.md's class counts are stale again
@@ -1191,14 +1191,14 @@ IPR-B1	2026-08-31-independent-review.md	Closed	fixed, verified 2026-09-04 - `Rou
 IPR-B2	2026-08-31-independent-review.md	Closed	fixed - one token in `read`, and the finding's own trace is the test	a condition written with a bracket in a non-leading position is re-read with the wrong operator
 IPR-B3	2026-08-31-independent-review.md	Closed	fixed 2026-09-04 - a joiner closes every run deeper than itself, so two groups at one inde	two bracketed groups at the same indent are flagged red and the save is refused, for an outline the reader parses correctly
 IPR-B4	2026-08-31-independent-review.md	Closed	fixed - reproduced at the finding's own numbers, 502 MB for a 296 x 114 icon	pressing OK in the crop dialog at full zoom-out allocates an image proportional to the SQUARE of the source
-IPR-C1	2026-08-31-independent-review.md	Open	**still open**, re-checked 2026-09-04 - `migrateStationLabels` writes `store.setCaption(..	the label migration is a fourth door past "one station, one caption", and the sample railway has walked through it
-IPR-C1	2026-09-22-GS-backlog.md	Open	still true	(listed in a table, no section of its own)
-IPR-C2	2026-08-31-independent-review.md	Open	**still open**, re-checked 2026-09-04 - `copyViewInto:844-853` still saves the same five n	a saved crop view restores to a different rectangle when the dialog has been resized
-IPR-C2	2026-09-22-GS-backlog.md	Open	still true	(listed in a table, no section of its own)
-IPR-C3	2026-08-31-independent-review.md	Open	**still open**, re-checked 2026-09-04 - `RowIcons:117` still fills with `Color.WHITE` unco	the copy mark is filled white regardless of the ink it is given, so it disappears on a selected row
-IPR-C3	2026-09-22-GS-backlog.md	Open	still true	(listed in a table, no section of its own)
-IPR-C4	2026-08-31-independent-review.md	Open	**still open**, re-checked 2026-09-04 - `LocIconCropDialog:1141` still computes `keep = mi	the crop clamp's overlap guarantee is in panel pixels, and falls below one source pixel on a small photograph
-IPR-C4	2026-09-22-GS-backlog.md	Open	still true	(listed in a table, no section of its own)
+IPR-C1	2026-08-31-independent-review.md	Open - verified 2026-09-22	**still open**, re-checked 2026-09-04 - `migrateStationLabels` writes `store.setCaption(..	the label migration is a fourth door past "one station, one caption", and the sample railway has walked through it
+IPR-C1	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	still true	(listed in a table, no section of its own)
+IPR-C2	2026-08-31-independent-review.md	Open - verified 2026-09-22	**still open**, re-checked 2026-09-04 - `copyViewInto:844-853` still saves the same five n	a saved crop view restores to a different rectangle when the dialog has been resized
+IPR-C2	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	still true	(listed in a table, no section of its own)
+IPR-C3	2026-08-31-independent-review.md	Open - verified 2026-09-22	**still open**, re-checked 2026-09-04 - `RowIcons:117` still fills with `Color.WHITE` unco	the copy mark is filled white regardless of the ink it is given, so it disappears on a selected row
+IPR-C3	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	still true	(listed in a table, no section of its own)
+IPR-C4	2026-08-31-independent-review.md	Open - verified 2026-09-22	**still open**, re-checked 2026-09-04 - `LocIconCropDialog:1141` still computes `keep = mi	the crop clamp's overlap guarantee is in panel pixels, and falls below one source pixel on a small photograph
+IPR-C4	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	still true	(listed in a table, no section of its own)
 IPR-C5	2026-08-31-independent-review.md	Closed	fixed - the comment names what actually stops the recursion (startAtCover's own guard) rat	`getScale`'s "safe against recursion" comment names a reason that is no longer true
 IPR-D1	2026-08-31-independent-review.md	Closed	-	the caption drag handler builds its key from grid indices, not diagram coordinates, and that is safe
 IPR-D2	2026-08-31-independent-review.md	Closed	-	the legacy import does NOT lose the per-point operational settings
@@ -1434,8 +1434,8 @@ MON-B5	MON-month-2026-09-07.md	Closed	Open - and being answered the only way it 
 MON-C1	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - the narrowed set is trusted once, from the parameter, where the decisio	The checker's second, stricter copy of the clause it already applied
 MON-C10	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - REG8's table checked against HEAD, IND9's summary says where the truth 	The newest review tables went stale in under a day, again
 MON-C11	MON-month-2026-09-07.md	Closed	Open - the consolidation decision, and the one item here that is Adam's rather than mine: 	The review folder stopped meaning anything
-MON-C12	2026-09-22-GS-backlog.md	Open - deferred past 3.0.0 by ruling	still true, **deferred past 3.0.0** by ruling	(listed in a table, no section of its own)
-MON-C12	MON-month-2026-09-07.md	Open - deferred past 3.0.0 by ruling	Deferred by its own finding - no work before 3.0.0; belongs with the decomposition roadmap	Three files absorbed most of a 35k-line feature
+MON-C12	2026-09-22-GS-backlog.md	Closed	still true, **deferred past 3.0.0** by ruling	(listed in a table, no section of its own)
+MON-C12	MON-month-2026-09-07.md	Closed	Deferred by its own finding - no work before 3.0.0; belongs with the decomposition roadmap	Three files absorbed most of a 35k-line feature
 MON-C13	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - both limits stated in behaviour.md section 5, with which of the two to 	Two known limits live only in a code comment
 MON-C14	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - CONFIRMED reachable by a new test, and behaviour.md was the wrong half:	A mustReverse station becomes a terminus
 MON-C15	MON-month-2026-09-07.md	Closed	Fixed 2026-09-08 - five citations now name methods rather than line numbers, and the mid-r	Comment drift left by the month's reversals
@@ -1873,8 +1873,8 @@ REV9-B1	REV-reversal-mechanics-review.md	Closed	-	The reconcile move destroys `a
 REV9-B2	REV-reversal-mechanics-review.md	Closed	-	§4's hand-placement rule is enforced at one door of three
 REV9-B3	REV-reversal-mechanics-review.md	Closed	-	The "opposite of the facing" assumption answers in compass, but everything else now speaks the build's sides
 REV9-C1	REV-reversal-mechanics-review.md	Closed	-	"In full autonomy a train is only ever reversed at a terminus" is enforced, load-bearing, and stated nowhere in behaviour.md
-REV9-C2	2026-09-22-GS-backlog.md	Open - unverified	still true	(listed in a table, no section of its own)
-REV9-C2	REV-reversal-mechanics-review.md	Open - unverified	-	The turning-copy invariant is asserted only on a fixture, and the one real-railway measurement of it mixes two vocabularies
+REV9-C2	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	still true	(listed in a table, no section of its own)
+REV9-C2	REV-reversal-mechanics-review.md	Open - verified 2026-09-22	-	The turning-copy invariant is asserted only on a fixture, and the one real-railway measurement of it mixes two vocabularies
 REV9-C3	REV-reversal-mechanics-review.md	Closed	-	§3's no-backlog and write-before-level rules are pinned only by source-text greps
 REV9-D1	REV-reversal-mechanics-review.md	Closed	-	§3 states the dissolved stranding refusal in the present tense before revoking it
 REV9-D2	REV-reversal-mechanics-review.md	Closed	-	`restoreReversalsOnArrival` is not parity-correct across a concurrent toggle
@@ -1947,14 +1947,14 @@ RGN-A2	2026-09-03-release-review.md	Closed	reproduces; **Adam**, and he asked fo
 RGN-B1	2026-08-31-regression-review.md	Closed	fixed - it is announced now, in the changelog and in the log	`Point:` captions are deleted out of the user's own `.cs2` files, and it has already happened
 RGN-B2	2026-08-31-regression-review.md	Closed	closed - descriptions fixed; behaviour ruled unchanged by Adam, 2026-09-03	an s88-fired route with a conflict does not stop; it drops its accessories and runs the rest
 RGN-B3	2026-08-31-regression-review.md	Closed	fixed - moved to v2.8.0, not v3.0.0; see below	the v2.7.4 changelog section was rewritten, so two 3.0.0 changes read as things the user already has
-RGN-C1	2026-08-31-regression-review.md	Open	**still open**, re-checked 2026-09-04 - `TrainControlUI:916-917` is still `autosave.setSel	auto-save on exit is forced on, and its checkbox hidden, so `autonomy.json` is rewritten for somebody who turned it off
-RGN-C1	2026-09-22-GS-backlog.md	Open	**still true** (narrow: legacy path only)	(listed in a table, no section of its own)
+RGN-C1	2026-08-31-regression-review.md	Open - verified 2026-09-22	**still open**, re-checked 2026-09-04 - `TrainControlUI:916-917` is still `autosave.setSel	auto-save on exit is forced on, and its checkbox hidden, so `autonomy.json` is rewritten for somebody who turned it off
+RGN-C1	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	**still true** (narrow: legacy path only)	(listed in a table, no section of its own)
 RGN-C2	2026-08-31-regression-review.md	Closed	**still open**, re-checked 2026-09-04 - every `sekunde` branch still multiplies by 1000, s	CS2 route delays now mean something different
 RGN-C2	2026-09-22-GS-backlog.md	Closed	**not a defect** (its own author: "It is a fix, and the right one")	(listed in a table, no section of its own)
 RGN-C2	2026-09-22-VD17-records.md	Closed	**holds**, both halves	not a defect
 RGN-C3	2026-08-31-regression-review.md	Closed	**needs Adam's ruling** - the comment claiming three doors is corrected to say which doors	a locomotive whose name contains a bracket can no longer be used in any route command
-RGN-C4	2026-08-31-regression-review.md	Open	**still open and not fixable here**, re-checked 2026-09-04 - the failing comparison is ins	a `UIState.data` written by 3.0.0 with a non-default page count loses its page names under 2.7.4c
-RGN-C4	2026-09-22-GS-backlog.md	Open	still true, **not fixable here** — a ruling	(listed in a table, no section of its own)
+RGN-C4	2026-08-31-regression-review.md	Open - verified 2026-09-22	**still open and not fixable here**, re-checked 2026-09-04 - the failing comparison is ins	a `UIState.data` written by 3.0.0 with a non-default page count loses its page names under 2.7.4c
+RGN-C4	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	still true, **not fixable here** — a ruling	(listed in a table, no section of its own)
 RGN-D1	2026-08-31-regression-review.md	Closed	-	the same-address accessory conflict error, removed on purpose
 RGN-D2	2026-08-31-regression-review.md	Closed	-	the fifty-page cap does not truncate an existing installation
 RGN-D3	2026-08-31-regression-review.md	Closed	-	the locomotive database round-trips both ways
@@ -3253,8 +3253,8 @@ VD12-R10	2026-09-22-GS-backlog.md	Open	still true (OB-247)	(listed in a table, n
 VD12-R11	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	the roll does not carry what two documents promise
 VD12-R12	2026-09-21-VD12-validation-of-two-days.md	Closed	Open	the document counts
 VD12-R13	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	the Inbox count, twice wrong
-VD12-R14	2026-09-21-VD12-validation-of-two-days.md	Open - for Adam	Open - for Adam	open findings in neither live document
-VD12-R14	2026-09-22-GS-backlog.md	Open - for Adam	**for Adam** (OB-248)	(listed in a table, no section of its own)
+VD12-R14	2026-09-21-VD12-validation-of-two-days.md	Closed	Open - for Adam	open findings in neither live document
+VD12-R14	2026-09-22-GS-backlog.md	Closed	**for Adam** (OB-248)	(listed in a table, no section of its own)
 VD12-R15	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	a pointer to a file deleted the same day
 VD12-R16	2026-09-21-VD12-validation-of-two-days.md	Open	Open	one column, two readings
 VD12-R16	2026-09-22-GS-backlog.md	Open	still true (OB-249), **with two corrections**	(listed in a table, no section of its own)
@@ -3269,8 +3269,8 @@ VD12-R7	2026-09-22-GS-backlog.md	Open	still true, **and wider than filed**	(list
 VD12-R8	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	a recovery grep that missed its own ids
 VD12-R9	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	a pointer to twelve of twenty-nine
 VD12-T1	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	a source-shape rule that had stopped asking anything
-VD12-T10	2026-09-21-VD12-validation-of-two-days.md	Open	Open	a restore that does not restore one thing
-VD12-T10	2026-09-22-GS-backlog.md	Open	still true	(listed in a table, no section of its own)
+VD12-T10	2026-09-21-VD12-validation-of-two-days.md	Open - verified 2026-09-22	Open	a restore that does not restore one thing
+VD12-T10	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	still true	(listed in a table, no section of its own)
 VD12-T11	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	a global left on
 VD12-T2	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	the negative claims could not fail
 VD12-T3	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	the affordance claim went round the affordance
@@ -3279,8 +3279,8 @@ VD12-T5	2026-09-21-VD12-validation-of-two-days.md	Closed	Answered 2026-09-21	the
 VD12-T6	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	a comment that contradicted the discriminator
 VD12-T7	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	a train left running
 VD12-T8	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	the staged claim judged against a home it created
-VD12-T9	2026-09-21-VD12-validation-of-two-days.md	Open	Open	a tab left selected on a failure
-VD12-T9	2026-09-22-GS-backlog.md	Open	still true (site identified, moderate confidence)	(listed in a table, no section of its own)
+VD12-T9	2026-09-21-VD12-validation-of-two-days.md	Open - verified 2026-09-22	Open	a tab left selected on a failure
+VD12-T9	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	still true (site identified, moderate confidence)	(listed in a table, no section of its own)
 VD13-B1	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	the checkbox was blind where the file door was hardened
 VD13-B2	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	squares are not the hazard
 VD13-B3	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	two edges are one rail
@@ -3348,16 +3348,16 @@ VD15-C3	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	
 VD15-C4	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Answered 2026-09-22	the premise, and where it is enforced
 VD15-R1	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	OB-250 names `Route.conditionsSatisfied` too
 VD15-R10	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	`IND9X-C2/C3/C4/C5/C7/C8` is a form no grep for `IND9X-C5` can find, in the entry about findings nobody can find
-VD15-R11	2026-09-22-GS-backlog.md	Open - unverified	**cannot be settled**	(listed in a table, no section of its own)
-VD15-R11	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Open - unverified	Open - unverified	not recoverable: as R8, and noted at the time as low, arguable and predating this work
+VD15-R11	2026-09-22-GS-backlog.md	Closed	**cannot be settled**	(listed in a table, no section of its own)
+VD15-R11	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Open - unverified	not recoverable: as R8, and noted at the time as low, arguable and predating this work
 VD15-R2	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	a total counted two ways
 VD15-R3	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	OB-248's query returns 51 rows for 50 findings, and 30 rows for 29 at exactly `Open`
 VD15-R4	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	fifteen orphans, not fourteen: `VD14-R12` was in no live document
 VD15-R5	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	Spanish "locomotivas" is not a Spanish word; the bundle says "locomotora" everywhere else
 VD15-R6	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	MT-470 step 2 could not be completed - no step set a train length - and the title said only track
 VD15-R7	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	both new keys were inserted in the `warn` block, reproducing VD14-R12
-VD15-R8	2026-09-22-GS-backlog.md	Open - unverified	**cannot be settled**	(listed in a table, no section of its own)
-VD15-R8	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Open - unverified	Open - unverified	not recoverable: reported in a message that was lost to a compaction before cataloguing
+VD15-R8	2026-09-22-GS-backlog.md	Closed	**cannot be settled**	(listed in a table, no section of its own)
+VD15-R8	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Open - unverified	not recoverable: reported in a message that was lost to a compaction before cataloguing
 VD15-R9	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	the commonest case read worst
 VD15-T1	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	the narrowing nothing held
 VD15-T2	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	the review total the guard checked was its own constant, `208`

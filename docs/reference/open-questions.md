@@ -39,8 +39,9 @@ is not one.
 
 The railway defects live in the Inbox of `docs/manual-tests/issues.md`. **It is not empty**, and this
 paragraph said it was for twelve days (IND9X-B3, 2026-09-09).
-Today it holds 115 entries - 76 OB and 39 FR, recounted from the file on 2026-09-22, when OB-238,
-OB-244 and OB-246 were receipted out of it.  Every
+Today it holds 130 entries - 91 OB and 39 FR, recounted from the file on 2026-09-22: OB-238,
+OB-244, OB-246 and OB-248 were receipted out of it, and OB-248 put sixteen entries in - the
+twenty findings it was about, which had been open and named in no document a reader opens.  Every
 earlier figure here was wrong in the same way, by being written rather than recounted: 99, then 111
 counted before six entries that had already been appended, then 118 (IND9X-B3, VD12-R13, VD13-R3).
 Most of them carry a receipt row that says the work was done - the protocol is that an entry is
