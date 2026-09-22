@@ -2413,6 +2413,77 @@ between manual-test rounds, so it waits on your word.
 reduction is walking a road that is not there, the granularity above is the second problem rather than
 the only one.
 
+
+**Reproduced, 2026-09-22, and the obvious fix is wrong**
+
+**Adam confirmed the row-3 road is real**, and gave the rule: *"nothing should disturb the ability to
+go from bottominner to bottominnerotherside unless trains are crossing down, or passing through either
+of those stations."*
+
+**It reproduces on the frozen snapshot, with every train taken off the railway first.**  That last
+part matters: the snapshot parks `75 407 DB` on `BottomInnerOtherside`, and a train standing there
+refuses the hop whatever the locking does - the first attempt at this measurement had no such step and
+was reading the parked train, which is a false reproduction that happened to agree with the
+conclusion.
+
+With the railway empty:
+
+- `BottomInner (northbound) -> 1 - Main 12,7 -> BottomInnerOtherside` is **clear**.
+- Occupy `BottomSecondary -> TunnelPre (northbound) -> Tunnel (southbound)`, the way a locked path
+  does.
+- The hop is now **refused**, and the reason names `1 - Main 12,7 -> Tunnel`.
+
+**The run and the hop share NOT ONE TILE.**  The run covers `12,11`, `11,11`, `11,10`-`11,3`,
+`10,3`-`7,3`, `7,4`-`7,7`; the hop covers `12,9`-`12,3`, `13,3`, `14,3`.  The edge named in the
+refusal, `12,7 -> Tunnel`, shares eight tiles with the run and three with the hop - so it is the
+go-between.
+
+**The mechanism: the write and the read each reach one hop, and together they reach two.**
+`Edge.setOccupied` marks every edge in each locked edge's `lockEdges`; `Layout.isPathClear` then reads
+the flag off every edge in each CANDIDATE edge's `lockEdges`.  Both are deliberate and
+`Edge.isLockHeld` explains why - the same list walked both ways is what makes a ONE-DIRECTIONAL
+relation refuse either ordering.  The side effect is that two edges sharing no rail conflict whenever
+some third edge shares rail with each of them separately.
+
+**What was tried, and why it is not the fix**
+
+Skipping a lock edge that names the candidate back - on the reasoning that a MUTUAL relation is
+already covered by the write side - **was written, tested, and refuted by its own control.**
+
+With it in place, a path over `Tunnel (northbound) -> TunnelPre (southbound)` was allowed while a
+train ran over `TunnelPre (northbound) -> Tunnel (southbound)`.  **Those are the two directions of one
+piece of rail**, and `GraphReducer.deriveLocks` deliberately does not lock them against each other -
+*"the two directions of one run are not rivals for the track; they are the same track"*.
+
+So the reasoning was wrong in a way worth writing down: a lock edge can be HELD without being on the
+running path, which is the whole two-hop phenomenon - and in that state the write side has covered
+nothing.  **The second hop is currently doing real work**: it is what stops a train being routed over
+the reverse direction of rail another train is running on.  Narrowing the reach without replacing that
+protection trades an over-refusal for a collision.
+
+**What a correct fix needs**
+
+The occupancy flag is a COUNTER and it loses the identity of the occupier, so nothing downstream can
+ask the question that actually settles this: *does this candidate share rail with what is running?*
+
+Two pieces, in this order:
+
+1. **The same rail in the other direction has to be refused on its own account**, rather than by
+   accident through a third edge.  That is a gap `deriveLocks` leaves open and the two-hop reach is
+   masking - and it is the same shape as `VAL8-A1` / `REG7-B3`, which found the covered-track set
+   naming one direction of a rail and not the other.
+2. **Then the reach can be narrowed to rail actually shared with a running path** - which is
+   `OB-207`'s per-place answer applied to locking instead of to covering.  The places are already
+   written on every edge, so the information is there.
+
+**The reproduction is written and kept** at `docs/manual-tests/files` scratch - a claim on his own
+geometry with the precondition that the two paths share no tile, the refusal as the failing claim, and
+the control that a path which DOES share rail is still refused.  It is the control that refuted the
+first attempt, so it goes in with whatever fix comes next.
+
+**Not attempted further without a ruling**, because both pieces change what refuses a train while
+another is running, and that is the anti-collision core rather than a display rule.
+
 ### OB-270 - 2026-09-22 - loc facing
 
 **Kind:** bug  
@@ -2444,6 +2515,26 @@ built it.
 
 Say which and it is a small change either way. Guessing is not safe here: (a) takes a placement away
 from you that may be legitimate, and (b) removes a road.
+
+
+**Adam's ruling, 2026-09-22:** *"we had a test for this before.  Trains should not inadvertently
+change direction when pasted, so a loc going west from bottomsecondary should always face east when
+pasted on bottommaina."*
+
+**So it is reading (a): the walk is right, and something else let West in.**  Measured on the
+snapshot, twenty times over because this used to be a coin toss: `facingByPath` answers **E, twenty
+times out of twenty**, for a train standing at BottomSecondary being put on BottomMainA.  That is the
+answer he wants, and `core.testAPasteDoesNotTurnTheTrainRound` is the test he remembers - it pins
+exactly this walk, on this railway, against the shuffle that used to make it a coin toss.
+
+**What is still open is which door gave him West.**  The paste takes the walk's answer; the facing
+submenu and the *"... Is Facing"* menu offer both copies, because `facingsFor` reports both and
+BottomMainA genuinely has a westbound copy with track leaving it - to TunnelLongPark and to
+BottomMainAPre (westbound).  Only the eastbound copy is a destination.
+
+**Next step:** find the door he used and make it take the walk's answer, rather than offering a
+heading that turns the train round without his having asked for it.  His rule settles what the answer
+must be; what is left is which control is not asking for it.
 
 ### OB-271 - 2026-09-22 - focusability in the route editor
 

@@ -23251,6 +23251,12 @@ sentences get shown. If the menu's reason is still the right single answer, this
 ruled and what is wrong is only that "terminus" reads like "no track" - which is `OB-239`'s
 neighbourhood rather than this one's.
 
+
+**Adam, 2026-09-22, asked which way to take it:** *"keep for now."*
+
+So the 2026-09-15 ruling stands - on Manual the operator gets the menu's reason and one reason only -
+and this entry is working as ruled. The length is not shown beside the terminus, deliberately.
+
 ---
 <a id="mt-452"></a>
 
