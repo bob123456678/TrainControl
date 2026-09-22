@@ -701,6 +701,41 @@ public class testAutoLayout
             + " whose destination or intermediate point is inactive, so no train can ever be driven"
             + " over it and it must not hold the setting back.  Counted: "
             + layout.unmeasuredTrackThatCouldBeReleased());
+
+        // AND AN UNMEASURED RAIL WITH MEASURED TRACK BETWEEN IT AND EVERY DESTINATION (VD15-T1).
+        //
+        // THIS IS THE CLAIM THE NARROWING HAS, and until it was written the narrowing had none: the
+        // three above are all about rails whose far end IS an active destination, so replacing the
+        // whole reachability walk with "every unmeasured edge" left them green.  A path ends at a
+        // destination, and `tailHasProvablyPassed` hands an edge back only when NO edge on the path
+        // has a length - so a rail that cannot be joined to a destination by unmeasured track alone
+        // can never be part of an unmeasured path, and refusing the setting for it takes non-atomic
+        // mode away from a railway where it is provably safe.
+        layout.createPoint("UE_E", false, null);
+        layout.createPoint("UE_F", true, "4");
+
+        Edge ce = layout.createEdge("UE_C", "UE_E");
+        Edge ef = layout.createEdge("UE_E", "UE_F");
+
+        ef.setLength(4);
+
+        assertEquals(layout.unmeasuredTrackThatCouldBeReleased().size(), 0,
+            "UE_C - UE_E has no length, but UE_E is not a destination and the only way on from it is"
+            + " measured, so no path over that rail can be an unmeasured one and no train can be"
+            + " released onto it.  Counted: " + layout.unmeasuredTrackThatCouldBeReleased());
+
+        // AND THE WALK IS A CHAIN, not a look at the far end.  Take the length off the onward rail and
+        // UE_C -> UE_E -> UE_F becomes a path with no measurement anywhere on it: both rails count.
+        ef.setLength(0);
+
+        assertEquals(layout.unmeasuredTrackThatCouldBeReleased().size(), 2,
+            "with UE_E - UE_F unmeasured too, a path from UE_C to the destination UE_F has no"
+            + " measurement anywhere on it and BOTH its rails would be handed back under the train."
+            + "  Counted: " + layout.unmeasuredTrackThatCouldBeReleased()
+            + " - a walk that only asks whether a rail's far end is a destination finds one of them");
+
+        assertTrue(ce.getLength() <= 0 && ef.getLength() <= 0,
+            "the fixture stopped being the one these two claims are about");
     }
 
     /**

@@ -2937,6 +2937,19 @@ public class RouteEditorFrame extends JFrame
         // are two different squares and neither says anything about the other.
         checked.removeAll(commanded);
 
+        // AND THE SAME FOR THE SENSORS, HERE, BEFORE EITHER IS PAINTED (VD13-C6, VD15-B1).
+        //
+        // `canBeACommand` will not make a new FEEDBACK row, but an older route can hold one, and the
+        // first fix for that put its address in with the CHECKED sensors - so the legend said "what it
+        // checks in orange" over a square the route writes to.  Commanded is the stronger statement,
+        // the same way round as the accessories' rule above.
+        //
+        // The first version of this sat BELOW the paint calls, where it changed nothing at all: the
+        // checked sensors had already been washed, and the tile ended up the right colour only because
+        // `LayoutLabel.flashHighlight` cancels a running wash and starts again from the tile's own
+        // icon.  A statement whose only effect is to be read as a rule is worse than no statement.
+        checkedSensors.removeAll(commandedSensors);
+
         int lit = parent.highlightAddresses(commanded, TrainControlUI.AddressedAs.ACCESSORY,
             org.traincontrol.util.ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);
 
@@ -2948,19 +2961,6 @@ public class RouteEditorFrame extends JFrame
 
         lit += parent.highlightAddresses(checkedSensors, TrainControlUI.AddressedAs.FEEDBACK,
             org.traincontrol.util.ImageUtil.HIGHLIGHT_CONDITION, HIGHLIGHT_HOLD_MS);
-
-        // A SENSOR THE ROUTE SETS, in the colour of the things it sets (VD13-C6).
-        //
-        // `canBeACommand` will not make a new FEEDBACK row, but an older route can hold one, and the
-        // first fix for that put its address in with the CHECKED sensors - so the legend said "what it
-        // checks in orange" over a square the route writes to.
-        //
-        // COMMANDED WINS, the same way round as the accessories' rule above (VD14-C3).  The first
-        // version of this line pointed the other way, so a sensor that is both commanded and checked -
-        // or commanded and the route's own trigger, which is always in `checkedSensors` - went back to
-        // the colour this bucket exists to take it out of.  "It is the stronger of the two statements"
-        // is the doctrine this method already states for accessories.
-        checkedSensors.removeAll(commandedSensors);
 
         lit += parent.highlightAddresses(commandedSensors, TrainControlUI.AddressedAs.FEEDBACK,
             org.traincontrol.util.ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);

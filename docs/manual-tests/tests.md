@@ -65,7 +65,7 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-466](#mt-466) | 2026-09-19 | Cancel on the function editor undoes a Copy Customizations | fixed unvalidated | GUX-C3 |
 | [MT-467](#mt-467) | 2026-09-19 | Turning a local route's automatic execution on or off does not wait for the Central Station | fixed unvalidated | GUX-C5 |
 | [MT-468](#mt-468) | 2026-09-19 | Every screen still finds its text after 239 unused message keys were removed | fixed unvalidated | UIX-C4 |
-| [MT-470](#mt-470) | 2026-09-21 | Atomic Routes cannot be switched off while autonomy's track is unmeasured | fixed unvalidated | VD12-R4 |
+| [MT-470](#mt-470) | 2026-09-21 | Atomic Routes cannot be switched off while autonomy could release track under a train | fixed unvalidated | VD12-R4 |
 
 Everything else - 431 of 470 - needs nothing from you unless the area changes again:
 380 **fixed validated** and 51 **superseded**.
@@ -23784,7 +23784,7 @@ Your orphan is fixed (OB-240), the way your note asked: deleting a joining word 
 
 <a id="mt-470"></a>
 
-### MT-470 - 2026-09-21 - Atomic Routes cannot be switched off while autonomy's track is unmeasured
+### MT-470 - 2026-09-21 - Atomic Routes cannot be switched off while autonomy could release track under a train
 
 **Disposition:** fixed unvalidated
 **From:** VD12-R4
@@ -23807,8 +23807,11 @@ that does not depend on anybody reading it.
 **Steps**
 
 1. On the main window, untick **Atomic Routes**.  Read the message.
-2. Measure what the message names - it lists up to three pieces of track, and how many there are in
-   total - until unticking is accepted.
+2. Do what the message names - measure the track it lists, and set a train length on any locomotive it
+   lists - until unticking is accepted.  It names up to three of each, and how many there are in all;
+   where both halves are wrong it says both at once, so this step is not a loop of one fix and one
+   reload (VD15-R6: the first version of this step said "measure the track", which on a railway whose
+   locomotives have no train lengths could never be completed).
 3. Tick **Atomic Routes** back on.
 4. Give one locomotive autonomy runs a train length of **0** (or clear it) and untick again.
 5. If you have a page autonomy takes no notice of, leave some track on it unmeasured and untick again.
@@ -23820,11 +23823,12 @@ that does not depend on anybody reading it.
 
 **Expected**
 
-- Step 1: **refused** while the railway could release track under a train, with a message that says how
-  many pieces of track and names up to three of them.  The tick goes back on by itself and the setting
-  is not changed.
-- Step 2: **accepted** once none is left.  This is the half worth checking hardest: a refusal that fires
-  whatever the railway looks like would take the setting away from you for good.
+- Step 1: **refused** while the railway could release track under a train, with a message that names up
+  to three pieces of unmeasured track and how many there are in all - and, below it, the same for any
+  locomotive with no train length, both halves in one message.  The tick goes back on by itself and the
+  setting is not changed.
+- Step 2: **accepted** once neither half is left.  This is the half worth checking hardest: a refusal
+  that fires whatever the railway looks like would take the setting away from you for good.
 - Step 3: **always accepted.**  Going back to atomic is never refused - it releases nothing until a run
   ends, so it is safe whatever is measured.
 - Step 4: **refused, naming the locomotive.**  A train with no length is treated as clear of the track

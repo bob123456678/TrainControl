@@ -4470,14 +4470,22 @@ public class Layout
      *
      * One method now, so the next door asks instead of working it out again.
      *
-     * **MORE READERS ASK THE SAME QUESTION AND ARE NOT ON THIS RULE (VD13-C2, corrected by VD14-C4)**,
-     * and an earlier draft of this paragraph claimed there were none - twice, and then named the wrong
-     * method.  `Route.conditionsSatisfied` asks `getLatestMilestoneS88` (which is on THIS class and has
-     * no fallback of its own) and then falls back to `getLocomotiveLocation`, so an s88 condition can
-     * read a train at a sensor it has not reached: that is a change to when a route FIRES and is filed
-     * as OB-250 rather than made here.  `AutoLocomotiveStatus.whyNotReport`, `explainCannotStart` and
-     * the diagram's own placement report ask the raw question too; each is about a train that is
-     * standing, where the two answers agree, which is why they are noted rather than changed.
+     * **NO CENSUS HERE, AND THE THREE ATTEMPTS AT ONE ARE THE REASON (VD13-C2, VD14-C4, VD15-B2/B3).**
+     * This paragraph first said no other reader wanted this answer, then named a method on the wrong
+     * class, then named one that exists nowhere, and each time it claimed to be complete.  A dozen
+     * callers ask `getLocomotiveLocation` directly (`grep` finds them), and enumerating them in a
+     * comment has now failed three times - so the rule is stated instead of the list:
+     *
+     * ASK THIS METHOD WHEN YOU MEAN "WHERE IS THE TRAIN", and ask `getLocomotiveLocation` only when
+     * you mean "which Point holds it".  For a train that is standing the two agree, which is why most
+     * of those callers are right as they are - they report, decide or check about a train that is not
+     * running.
+     *
+     * The one that is NOT about a standing train is the s88 arm of the static `Route.evaluate`, which
+     * asks `getLatestMilestoneS88` (on this class, and it has no fallback of its own) and then falls
+     * back to `getLocomotiveLocation` itself - so an autoloc condition can be told a train is at a
+     * sensor it has not reached.  That decides when a route FIRES, so it is filed as OB-250 rather than
+     * changed in passing.
      *
      * NOT asked by `AutoLocomotiveStatus`'s @-station line, which shows NOTHING rather than a
      * reservation where a run has reported no milestone yet: that is a decision about a line of text,
@@ -8895,10 +8903,20 @@ public class Layout
      * far end and contributed the same rail anyway.  A path may not run through or finish on a point
      * that is switched off, so the reachability walk below simply never reaches one.
      *
+     * **WHERE THE PREMISE IS ENFORCED, since it is what makes the narrowing safe (VD15-C4).**  Not in
+     * `isPathClear`, which never asks - one step earlier, where a path is BUILT.  `Layout.bfs` returns
+     * null unless `end.isDestination()`, and every path autonomy runs, probes or enumerates comes from
+     * that one method.  If a path is ever allowed to finish anywhere else, this has to go back to
+     * counting every unmeasured edge.
+     *
      * Zero counts as no length, which is the convention every length rule here uses - `getTileLength`
      * answers 0 for unmeasured, and only positive lengths are determinate.
      *
-     * @return the rails, named by the two places each joins, in the graph's own order
+     * SORTED, because `this.edges` is a `HashMap` and "the graph's own order" is no order at all
+     * (VD15-C2): the message names only the first three, and three arbitrary ones that change between
+     * runs of the same configuration are no remedy.  Alphabetical means he can work down the list.
+     *
+     * @return the rails, named by the two places each joins, in alphabetical order
      */
     public java.util.List<String> unmeasuredTrackThatCouldBeReleased()
     {
@@ -8957,7 +8975,11 @@ public class Layout
             rails.add(from.compareTo(to) <= 0 ? from + " - " + to : to + " - " + from);
         }
 
-        return new java.util.ArrayList<>(rails);
+        java.util.List<String> out = new java.util.ArrayList<>(rails);
+
+        java.util.Collections.sort(out);
+
+        return out;
     }
 
     /**
@@ -8970,7 +8992,10 @@ public class Layout
      * the track prevents that; the tooltip has always said *"edge AND train lengths need to be set"*,
      * and the gate was only asking about the edges.
      *
-     * @return their names, in the order the run list holds them
+     * Sorted, for the reason the rails are (VD15-C2): the run list is a concurrent SET and has no
+     * order, and the message names only the first three.
+     *
+     * @return their names, alphabetically
      */
     public java.util.List<String> trainsWithNoLength()
     {
@@ -8982,6 +9007,8 @@ public class Layout
 
             if (loc.getTrainLength() == null || loc.getTrainLength() <= 0) out.add(loc.getName());
         }
+
+        java.util.Collections.sort(out);
 
         return out;
     }

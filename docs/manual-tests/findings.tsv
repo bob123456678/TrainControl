@@ -3223,7 +3223,7 @@ VD14-C7	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	
 VD14-R1	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	, R2, R5, R6 - counts kept by hand
 VD14-R10	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	a procedure that could not tell success from failure
 VD14-R11	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	the code comment at the guard OB-246 describes still stated the rule the correction removed
-VD14-R12	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Open	Open	two trivia on the new bundle key: an Italian modality, and the key sits in the wrong block
+VD14-R12	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Open	two trivia on the new bundle key: an Italian modality, and the key sits in the wrong block
 VD14-R2	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	the finding count was stale by 32 in two documents, and the note explaining it named the wrong round
 VD14-R3	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	the refusal called a count of rails "squares" in all eight languages
 VD14-R4	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	OB-248's parenthetical was wrong in all three of its numbers
@@ -3237,6 +3237,32 @@ VD14-T2	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	
 VD14-T3	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	it compared Point identity where place was meant
 VD14-T4	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	a branch nothing can enter
 VD14-T5	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	two preconditions re-asserted what the test itself had just written
+VD15-B1	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	a statement whose only effect was to be read
+VD15-B2	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	and B3 - the census that failed three times
+VD15-B3	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	that census claimed completeness and dropped a caller
+VD15-C1	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	two citations of `unmeasuredDrivableTrack`, a name that no longer exists, and an `@return` describing an int
+VD15-C2	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	three arbitrary names are no remedy
+VD15-C3	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	one half at a time
+VD15-C4	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Answered 2026-09-22	the premise, and where it is enforced
+VD15-R1	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	OB-250 names `Route.conditionsSatisfied` too
+VD15-R10	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	`IND9X-C2/C3/C4/C5/C7/C8` is a form no grep for `IND9X-C5` can find, in the entry about findings nobody can find
+VD15-R11	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Open - unverified	Open - unverified	not recoverable: as R8, and noted at the time as low, arguable and predating this work
+VD15-R2	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	a total counted two ways
+VD15-R3	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	OB-248's query returns 51 rows for 50 findings, and 30 rows for 29 at exactly `Open`
+VD15-R4	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	fifteen orphans, not fourteen: `VD14-R12` was in no live document
+VD15-R5	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	Spanish "locomotivas" is not a Spanish word; the bundle says "locomotora" everywhere else
+VD15-R6	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	MT-470 step 2 could not be completed - no step set a train length - and the title said only track
+VD15-R7	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	both new keys were inserted in the `warn` block, reproducing VD14-R12
+VD15-R8	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Open - unverified	Open - unverified	not recoverable: reported in a message that was lost to a compaction before cataloguing
+VD15-R9	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	the commonest case read worst
+VD15-T1	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	the narrowing nothing held
+VD15-T2	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	the review total the guard checked was its own constant, `208`
+VD15-T3	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	the guard reads the mirror and nothing proved the mirror matches the store
+VD15-T4	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	one door, one half
+VD15-T5	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	3,448 is rows; there are 3,230 findings
+VD15-T6	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	`numberBefore` scanned backwards without a bound, so a sentence that lost its count was checked against a number elsewhere
+VD15-T7	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	the wash claim's own failure messages would throw while being built
+VD15-T8	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	a stated MUTATION that does not compile
 VD9-B1	2026-09-03-validation-of-the-day.md	Closed	fixed - the whole sentence restored, and the two lines that were left dangling with it	`REL-C16` deleted two lines of a three-line sentence, and the retracted claim is now the last thing a reader sees before the code
 VD9-B2	2026-09-03-validation-of-the-day.md	Closed	fixed - `DONE` guard, re-measured with a throwaway script: one call, not two	both runners' `INT`/`TERM` trap runs `on_the_way_out` twice
 VD9-B3	2026-09-03-validation-of-the-day.md	Closed	fixed - the disposition now says the checkbox pushes no undo point, and MT-265 step 1 has 	`SVN-B8`'s "correct rather than lucky" is neither, and the half of the finding that actually holds is the half left unfixed

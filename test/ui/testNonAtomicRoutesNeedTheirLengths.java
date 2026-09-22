@@ -45,9 +45,11 @@ import org.testng.annotations.Test;
  * with the railway put right first, and the door must be OPEN.
  *
  * MUTATION: make `whyNonAtomicRoutesAreRefused` return a sentence unconditionally and the two controls
- * go red; return null unconditionally and the two refusals do; drop the `trainsWithNoLength` term and
- * the train claim does; count every unmeasured edge rather than the reachable ones and the control in
- * `core.testAutoLayout.testARailwayCountsItsUnmeasuredDrivableTrack` does.
+ * go red; return null unconditionally and the two refusals do; drop the `trainsWithNoLength` term from
+ * the checkbox's question and the train claim goes red, and from `keepAtomicRoutesOnWhileTrackIsUnmeasured`
+ * (its `&& trains.isEmpty()`) and the file door's train claim does - which was reached by no claim at
+ * all until VD15-T4; count every unmeasured edge rather than the reachable ones and the claims in
+ * `core.testAutoLayout.testARailwayCountsItsUnmeasuredDrivableTrack` do.
  *
  * @author Adam
  */
@@ -270,6 +272,63 @@ public class testNonAtomicRoutesNeedTheirLengths
         finally
         {
             restore(rail);
+
+            layout.setAtomicRoutes(atomicWas);
+        }
+    }
+
+    /**
+     * AND A SETUP THAT LOADS NON-ATOMIC WITH A TRAIN THAT HAS NO LENGTH COMES UP ATOMIC (VD15-T4).
+     *
+     * The file door has the same two halves as the checkbox, and only the track one was asked about -
+     * so deleting `&& trains.isEmpty()` from `keepAtomicRoutesOnWhileTrackIsUnmeasured` left every
+     * claim in this class green, and `autolayout.warnAtomicRoutesKeptOnTrains` was a string no test
+     * ever reached.  A train of no length releases the whole railway under itself however well the
+     * track is measured, so this is the half that does not depend on the operator's rails at all.
+     *
+     * The door-open control is in the track claim above, which watches a deliberate OFF survive a
+     * load on a railway that is put right; it is not repeated here.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test(dependsOnMethods = "testTheTrackHalfRefusesAndNamesTheRail")
+    public void testALoadedSetupCannotRunNonAtomicWithATrainThatHasNoLength() throws Exception
+    {
+        putTheRailwayRight();
+
+        Locomotive train = null;
+
+        for (Locomotive candidate : layout.getLocomotivesToRun())
+        {
+            if (candidate != null)
+            {
+                train = candidate;
+
+                break;
+            }
+        }
+
+        assertNotNull(train, "precondition: this configuration places no locomotive, so there is no"
+            + " train to take a length off");
+
+        remember(train);
+
+        try
+        {
+            train.setTrainLength(0);
+
+            layout.setAtomicRoutes(false);
+
+            SwingUtilities.invokeAndWait(() -> ui.keepAtomicRoutesOnWhileTrackIsUnmeasured());
+
+            assertTrue(layout.isAtomicRoutes(),
+                "a setup that turns atomic routes off has been loaded while " + train.getName()
+                + " has no train length, and the railway is running non-atomic: every edge will be"
+                + " handed back as that train's head passes it, and nobody was at the door to be told");
+        }
+        finally
+        {
+            train.setTrainLength(trainsWere.get(train) == null ? 1 : trainsWere.get(train));
 
             layout.setAtomicRoutes(atomicWas);
         }

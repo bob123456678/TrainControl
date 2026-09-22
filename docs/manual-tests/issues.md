@@ -1994,7 +1994,7 @@ the citations.
 (b) is the honest one and it is an afternoon's reading; (a) takes ten minutes and records the loss.
 Your call which is worth it.
 
-### OB-248 - 2026-09-21 - thirteen open findings are in neither live document
+### OB-248 - 2026-09-21 - twenty-nine open findings are in no live document but this one
 
 **Kind:** bug
 **Raised from:** VD12-R14, a validation of 2026-09-20 and 2026-09-21
@@ -2013,12 +2013,23 @@ tests only, which is true of everything except these.
 **What I would do:** read them out of the store and put each one either in this Inbox as an OB or in
 the closed roll with the reason it was declined, then say so in `behaviour.md`.  **The obvious query
 is wider than this list, and the numbers move as rounds land** - counted 2026-09-22:
-`WHERE status LIKE 'Open%'` returns **50** rows (29 `Open`, 10 `Open - unverified`, 5
-`Open - verified 2026-09-21`, 4 `Open - for Adam`, 2 deferred by ruling).  Thirteen are named above;
-**fourteen more appear in no live document at all** - `AUT9-C2`, `D3-C2`, `IND9X-C2/C3/C4/C5/C7/C8`,
-`MON-C12`, `REV9-C2`, `W7-C1`, and `VD12-R7`, `VD12-T9`, `VD12-T10`, which the 2026-09-22 status sweep
-marked Open without filing.  So this entry is about 27 findings, not 13, and the count will drift again:
-run the query rather than trusting the number (VD13-R6, VD14-R4).  It is a morning's work and it is bookkeeping
+`WHERE status LIKE 'Open%'` returns **52 rows for 51 findings** (a finding written up in two documents
+has a row for each, VD15-R3), made up of 29 rows for 28 findings at exactly `Open`, 12
+`Open - unverified`, 5 `Open - verified 2026-09-21`, 4 `Open - for Adam` and 2 deferred by ruling.
+
+Thirteen are named above.  **Sixteen more are named nowhere but this paragraph**, and each is written
+out in full here because the first version of this line compressed six of them as
+`IND9X-C2/C3/C4/C5/C7/C8` - a form no `grep` for `IND9X-C5` will ever find, which is the failure the
+whole entry is about (VD15-R10):
+
+`AUT9-C2`, `D3-C2`, `IND9X-C2`, `IND9X-C3`, `IND9X-C4`, `IND9X-C5`, `IND9X-C7`, `IND9X-C8`, `MON-C12`,
+`REV9-C2`, `W7-C1`, `VD12-R7`, `VD12-T9`, `VD12-T10`, `VD15-R8`, `VD15-R11`.
+
+`VD12-R7`, `VD12-T9` and `VD12-T10` were marked Open by the 2026-09-22 status sweep without being
+filed.  The last two are the VD15 findings whose content was lost with the message that reported them,
+entered unverified rather than guessed at.  `VD14-R12` was one of these too and is closed by the commit
+that corrects this paragraph.  So this entry is about **twenty-nine findings, not thirteen**, and the count will drift again: run the query rather
+than trusting the number (VD13-R6, VD14-R4, VD15-R4).  It is a morning's work and it is bookkeeping
 rather than railway behaviour, so it is filed rather than done.
 
 ### OB-249 - 2026-09-21 - the catalogue reads one column two ways
@@ -2053,7 +2064,8 @@ said.
 three of them had worked the answer out separately: the last MILESTONE, falling back to whichever Point
 holds the locomotive.  The fourth was the diagram's tail overlay, and it is fixed.
 
-**There is a fifth, and it decides when a route FIRES.**  `Route.conditionsSatisfied` asks the
+**There is a fifth, and it decides when a route FIRES.**  The s88 arm of the static `Route.evaluate`
+(`Route.java:364-372`) asks the
 layout's `getLatestMilestoneS88` for the sensor a train has most recently reached - that method has no fallback of its own, and returns null - and then falls back itself to
 `getLocomotiveLocation`'s s88 - and that fallback is the arbitrary answer: while a path is locked the
 locomotive is the occupant of every Point on it, so an s88 condition can be told the train is at a

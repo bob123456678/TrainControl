@@ -189,12 +189,13 @@ public class testErrorsStopTheSetupRunning
      * This reads the affordances instead, and asks whether they still consult the guard's own number
      * rather than the narrower graph-only question OB-090 was about.
      *
-     * MUTATION this catches: revert `canStartAutonomy()` to
-     * `return this.startAutonomy != null && this.startAutonomy.isEnabled() && !session.hasBlockingProblems();`
-     * (its shape before OB-090's third occurrence). Nothing above this test notices - the fixture's own
-     * javadoc says there is no way to make `hasBlockingProblems()` disagree with the graph on this
-     * layout - and OB-090 is back: four unnamed stations are four errors, no blocking problem, and the
-     * Start button stays live over a setup that refuses every press.
+     * MUTATION this catches: change `canStartAutonomy()`'s last term from `!autonomyHasErrors()` to
+     * `autonomyErrorCount() == 0` - the shape it had before OB-090's third occurrence.  **The sentence
+     * here used to name a mutation that does not compile** (`session` is not a name in that class, and
+     * `hasBlockingProblems` is not one of its methods), and a mutation nobody can run is no evidence at
+     * all (VD15-T8).  This one is one edit in one line, and the assertion below goes red on it, because
+     * the count is the narrower question: a graph that will not build at all is not an error it sees,
+     * so the Start button stays live over a setup that refuses every press.
      */
     @Test
     public void testTheAffordancesAskTheGuardsOwnQuestion() throws Exception

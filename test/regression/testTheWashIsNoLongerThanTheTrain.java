@@ -426,7 +426,16 @@ public class testTheWashIsNoLongerThanTheTrain
             //
             // And inside the `try`, because the first draft of this line sat above it: a throw there
             // left the path locked and the train's record swept, for every claim after it.
-            assertFalse(layout.getLocomotiveLocation(train).isSamePlaceAs(standing),
+            // NULL-SAFE, BECAUSE EVERYTHING BELOW IS READ WHEN SOMETHING HAS GONE WRONG (VD15-T7).
+            // The anchor is exactly what a defect here makes null, and a NullPointerException thrown
+            // while building the sentence would replace the diagnosis with a stack trace.
+            Point held = layout.getLocomotiveLocation(train);
+
+            assertNotNull(held, "the lock left no Point holding the train at all, which is a worse"
+                + " failure than the one this claim is about: the record the wash is computed from"
+                + " has been swept by a path being reserved");
+
+            assertFalse(held.isSamePlaceAs(standing),
                 "the lock reserved no Point on another square, so the anchor this claim is about did"
                 + " not move and the claim would pass without asking anything.  The prediction above"
                 + " and `getLocomotiveLocation` have stopped agreeing about the graph's order");
@@ -435,17 +444,21 @@ public class testTheWashIsNoLongerThanTheTrain
 
             Set<TileKey> washed = washedBehindTheTrain();
 
+            Point anchoredAt = layout.whereTheTrainIs(train);
+
+            String anchor = anchoredAt == null ? "nothing at all" : anchoredAt.getName();
+
             assertFalse(washed.isEmpty(),
                 "with a path locked ahead of it the train has no wash at all: the walk anchored"
                 + " somewhere the covered track cannot be reached from, so the operator loses the one"
                 + " mark that says which track is blocked.  covered=" + layout.edgesCoveredByStandingTrains().keySet() + " side=" + standing.getArrivedFrom() + " road=" + standing.getArrivedAlong() + " milestones=" + layout.getReachedMilestones(train) + "  Anchor: "
-                + layout.whereTheTrainIs(train).getName() + ", standing at " + standing.getName());
+                + anchor + ", standing at " + standing.getName());
 
             assertTrue(everyTileOfTheCoveredEdges().containsAll(washed),
                 "with a path locked ahead of it, the diagram shades track the railway does not hold"
                 + " covered: " + washed + " against " + everyTileOfTheCoveredEdges()
                 + ".  The train has not moved - the lock only reserved the road - so the wash cannot"
-                + " have moved either.  Anchor: " + layout.whereTheTrainIs(train).getName()
+                + " have moved either.  Anchor: " + anchor
                 + ", standing at " + standing.getName() + " (VD12-B1)");
 
             assertEquals(washed, before,

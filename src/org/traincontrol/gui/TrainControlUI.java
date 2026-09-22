@@ -6005,19 +6005,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         java.util.List<String> track = unmeasuredTrackAutonomyRunsOver();
 
-        if (!track.isEmpty())
-        {
-            return I18n.f("autolayout.errorNonAtomicNeedsLengths", track.size(), someOf(track));
-        }
-
         java.util.List<String> trains = trainsWithoutALength();
 
-        if (!trains.isEmpty())
+        String why = null;
+
+        if (!track.isEmpty())
         {
-            return I18n.f("autolayout.errorNonAtomicNeedsTrainLengths", trains.size(), someOf(trains));
+            why = I18n.f("autolayout.errorNonAtomicNeedsLengths", track.size(), someOf(track));
         }
 
-        return null;
+        // BOTH HALVES AT ONCE (VD15-C3).  Told one at a time, he measures every rail, reloads, and only
+        // then hears that it was forced back on for a different reason - and the javadoc's promise that
+        // the remedy is named "rail by rail and train by train" was the one thing it was not.
+        if (!trains.isEmpty())
+        {
+            String andTrains =
+                I18n.f("autolayout.errorNonAtomicNeedsTrainLengths", trains.size(), someOf(trains));
+
+            why = why == null ? andTrains : why + "\n\n" + andTrains;
+        }
+
+        return why;
     }
 
     /**
@@ -6057,12 +6065,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * checkbox stood open on exactly the setup that most needed it, and the two controls then
      * disagreed on every load, which is the OB-090 fault this was meant to avoid.
      *
-     * `Layout.unmeasuredDrivableTrack` is the question in the form the hazard takes, and one answer
-     * for the checkbox and both load doors.  The editor's square count keeps its own job - the
+     * `Layout.unmeasuredTrackThatCouldBeReleased` is the question in the form the hazard takes, and one
+     * answer for the checkbox and both load doors.  The editor's square count keeps its own job - the
      * Unmeasured Track display and Mass Assign Lengths - which is about how far a tail reaches, not
      * about whether an edge may be released.
      *
-     * @return the count, 0 when every drivable rail has a length or there is no railway to ask
+     * @return the rails, empty when none could be released or there is no railway to ask
      */
     public java.util.List<String> unmeasuredTrackAutonomyRunsOver()
     {
@@ -6120,7 +6128,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // This door used to ask the editor and fall back to the railway's edges only when there was no
         // session, which put the discriminator on "is there a diagram" rather than on the hazard - and
         // left the checkbox blind on the legacy railway this fallback was added for.  One question,
-        // three doors: `Layout.unmeasuredDrivableTrack`.
+        // three doors: `Layout.unmeasuredTrackThatCouldBeReleased`, and `Layout.trainsWithNoLength`
+        // beside it (VD14-B1).
         //
         // Adam's instruction for this case was *"just force the checkbox checked as well"*.  It asks
         // first, because a railway that IS measured end to end would otherwise lose non-atomic mode at
@@ -6133,11 +6142,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         layout.setAtomicRoutes(true);
 
+        // BOTH, WHERE BOTH HOLD (VD15-C3): two lines in the log rather than one reason at a time.
         if (!track.isEmpty())
         {
             this.model.logf("autolayout.warnAtomicRoutesKeptOn", track.size(), someOf(track));
         }
-        else
+
+        if (!trains.isEmpty())
         {
             this.model.logf("autolayout.warnAtomicRoutesKeptOnTrains", trains.size(), someOf(trains));
         }

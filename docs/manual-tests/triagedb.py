@@ -463,7 +463,7 @@ def close_findings(conn, note, severity=None, only_open=True):
 FINDINGS_MIRROR = os.path.join(HERE, "findings.tsv")
 
 
-def render_findings(conn, path=FINDINGS_MIRROR):
+def render_findings(conn, path=FINDINGS_MIRROR, force=False):
     """Writes the plain-text mirror of the catalogue, from the store.
 
     Two readers need this and neither can open a database. `testEveryCitationResolves` resolves every
@@ -505,6 +505,30 @@ def render_findings(conn, path=FINDINGS_MIRROR):
 
         n += 1
 
+    # IT WILL NOT EMPTY A FULL MIRROR (VD15-T3, second attempt).
+    #
+    # This file and the `finding` table are the only record of what 3,474 findings were about, and
+    # this function will write a header and nothing else from a store that holds none - which is
+    # exactly the store the CLI hands every command: `connect(":memory:")`, built from the markdown,
+    # which has the tests and the issues and no findings at all.  The first version of the mirror
+    # check called this from `sync` with that connection and emptied the file.
+    #
+    # `catalog-findings.py` refuses the same way for the same reason.  The refusal is here as well
+    # because it is this function that does the writing.
+    if n == 0 and os.path.exists(path):
+        held = 0
+
+        for line in io.open(path, encoding="utf-8"):
+            if line.strip() and not line.startswith("#"):
+                held += 1
+
+        if held > 0 and not force:
+            raise IOError(
+                "REFUSING to write an empty %s over %d rows. This store holds no findings, so it is"
+                " not the store the mirror comes from - the CLI builds an in-memory one from the"
+                " markdown for every command, and findings live only in the file database."
+                " Render from triagedb.connect(), or pass force=True if you mean it." % (path, held))
+
     out.append("# DEAD - cited, no finding behind them")
 
     for r in conn.execute("SELECT ref FROM dead_citation ORDER BY ref"):
@@ -516,6 +540,59 @@ def render_findings(conn, path=FINDINGS_MIRROR):
 
     return n
 
+
+def holdsFindings(conn):
+    """Whether this connection is a store the catalogue lives in, rather than a command's copy.
+
+    :param conn: an open connection
+    :return: true when it has findings in it
+    """
+    return conn.execute("SELECT COUNT(*) FROM finding").fetchone()[0] > 0
+
+
+def verify_findings_mirror(conn=None, path=FINDINGS_MIRROR):
+    """Whether the plain-text mirror on disk is what the store would render right now (VD15-T3).
+
+    `findings.tsv` is the only form of the catalogue Java can read - there is no SQLite driver on
+    this project's classpath - so `testEveryCitationResolves` and `testTheRecordsCountTheStore`
+    both read it and neither can tell a current mirror from a stale one.  A store written without
+    a render leaves every one of their claims about rows that are no longer there.
+
+    :param conn: an open connection
+    :param path: the mirror
+    :return: (ok, message)
+    """
+    import tempfile
+
+    # THE STORE THE MIRROR COMES FROM, not whichever one the caller happens to hold.  A connection
+    # with no findings is the in-memory copy the CLI builds from the markdown, and the mirror is
+    # none of its business - answering "they disagree" for that store is what led to it being
+    # overwritten with nothing.
+    if conn is None:
+        conn = connect()
+
+    if conn.execute("SELECT COUNT(*) FROM finding").fetchone()[0] == 0:
+        return True, "this store holds no findings, so the mirror is not rendered from it"
+
+    handle, temp = tempfile.mkstemp(suffix=".tsv", prefix="mirror-")
+
+    os.close(handle)
+
+    try:
+        render_findings(conn, temp)
+
+        fresh = io.open(temp, "rb").read()
+    finally:
+        os.remove(temp)
+
+    if not os.path.exists(path):
+        return False, path + " is not there at all, and it is what Java reads the catalogue from"
+
+    if io.open(path, "rb").read() == fresh:
+        return True, "the mirror is the store's own rows"
+
+    return False, ("%s is not what the store renders - regenerate it with"
+                   " triagedb.render_findings(triagedb.connect())" % path)
 
 def findings(conn, ref=None, disposition=None, severity=None, cited=None):
     """The catalogue, filtered.
@@ -844,6 +921,16 @@ def sync(conn=None):
 
         if not ok:
             raise IOError("the store does not render back to what it was built from: " + message)
+
+        # AND THE MIRROR JAVA READS IS THE STORE'S OWN ROWS (VD15-T3).  It is derived, so a
+        # disagreement is repaired rather than refused - but never silently: a sync that rewrites
+        # the file every time means something is writing the store without rendering it.
+        fresh, note = verify_findings_mirror(conn if holdsFindings(conn) else None)
+
+        if not fresh:
+            render_findings(conn)
+
+            print("findings.tsv was not the store's own rows and has been regenerated - " + note)
 
         return counts
 

@@ -7,7 +7,17 @@ How a review round is run and recorded. Every rule below exists because it was b
 hundred and eight review documents were written between 26 July and 20 September 2026 and every one of
 them has been deleted - 143 on 2026-09-08 and 65 on 2026-09-21, alongside two for-Adam notes that were
 never reviews - once the catalogue was carrying
-what they found. What survives a round:
+what they found.
+
+**Where those numbers come from**, because a validation round re-derived them and got a different total
+(VD15-R2): `git log --diff-filter=D` counts **210 files** deleted from the review folders, 145 on
+2026-09-08 and 65 on 2026-09-21 (44 in `docs/reviews/` itself and 21 in three dated folders beside it).
+The two for-Adam notes - `2026-08-19-for-adam.md` and `2026-09-03-questions-for-adam.md` - are the
+difference between 145 files and 143 reviews. Which of the rest counted as a review is a judgement no
+test can make, and `regression.testTheRecordsCountTheStore` checks only that the halves quoted here add
+up to the total quoted here, which is where the arithmetic went wrong before.
+
+What survives a round:
 
 | | |
 |---|---|
