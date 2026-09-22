@@ -4,7 +4,7 @@ The companion to [`behaviour.md`](behaviour.md). That document says what the rai
 this one says what is **known to be wrong with it**, what was **ruled on and closed**, and where the
 rules **deliberately under-claim**.
 
-It replaces reading 206 review documents (VD12-R12: the 208 quoted here and in two other documents counted the two for-Adam notes that went with them on 2026-09-21). Those are gone from the tree and live in git history
+It replaces reading 208 review documents.  (VD12-R12 said 206 and was wrong: counted from the deletion commit, 67 files went - 44 review documents in `docs/reviews/`, 21 in the three dated folders, and two for-Adam notes that were never reviews.  143 + 65 = 208.  VD13-R1.) Those are gone from the tree and live in git history
 afterwards; nothing below needs them to be understood.
 
 ---
@@ -38,7 +38,7 @@ or the tests. Worth stating plainly, because an unread backlog reads like a rail
 is not one.
 
 The railway defects live in the Inbox of `docs/manual-tests/issues.md`. **It is not empty**, and this
-paragraph said it was for twelve days (IND9X-B3, 2026-09-09): it holds 111 entries - 72 OB and 39 FR, counted 2026-09-21; the 99 written here on that date was itself wrong, which is twice now for one number (VD12-R13) - most of them carrying
+paragraph said it was for twelve days (IND9X-B3, 2026-09-09): it holds 117 entries - 78 OB and 39 FR, counted after the six entries that round filed; 99 was wrong, and so was the 111 that replaced it, which was counted before those six were appended (VD12-R13, VD13-R3) - most of them carrying
 a receipt row that says the work was done - the protocol is that an entry is cleared out when its fix
 has a test, and clearing has lagged. Read the receipts, not the presence of an entry.
 
@@ -338,10 +338,10 @@ this document exactly the thing it replaces.
 *Written 2026-09-07. If this document and the code disagree, the code wins and this is stale — say so.*
 
 **2026-09-08: `docs/reviews/` was deleted**, down to its README, once its 2,226 findings were in
-`docs/manual-tests/triage.db`. **2026-09-21: the same for the 63 documents written since** - 42 of them in
+`docs/manual-tests/triage.db`. **2026-09-21: the same for the 65 documents written since** - 44 of them in
 `docs/reviews/` itself and 21 in three dated folders beside it, on Adam's *"I don't want more
 reviews living in the repo"* - 3,390 findings in the store now, every one of them with a status.
-(The figures in this paragraph were 208, 65 and 3,353 until VD12-R12 counted them.) Everything still open above is open in that store too,
+(3,353 was the finding count before this round; the 208 and 65 in this paragraph were right all along and a correction to 206 and 63 was reverted - VD13-R1.) Everything still open above is open in that store too,
 so it can be queried rather than re-read:*
 
 ```sql

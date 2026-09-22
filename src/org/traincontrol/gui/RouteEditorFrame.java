@@ -2883,6 +2883,9 @@ public class RouteEditorFrame extends JFrame
         java.util.Set<Integer> checked = new java.util.LinkedHashSet<>();
         java.util.Set<Integer> checkedSensors = new java.util.LinkedHashSet<>();
 
+        // A sensor a COMMAND names, which only a route saved by an older version can hold (VD13-C6).
+        java.util.Set<Integer> commandedSensors = new java.util.LinkedHashSet<>();
+
         for (Entry entry : commands.rows)
         {
             org.traincontrol.base.RouteCommand command = entry.toCommand();
@@ -2904,7 +2907,7 @@ public class RouteEditorFrame extends JFrame
             // as many words that such a row "still opens and still shows" - so splitting these rows by
             // kind dropped it from the highlight altogether, and a route naming a sensor reported
             // nothing to show.  It goes with the checked sensors, because that is what it is about.
-            if (command.isFeedback()) checkedSensors.add(command.getAddress());
+            if (command.isFeedback()) commandedSensors.add(command.getAddress());
         }
 
         for (ConditionOutline.Row row : conditions.rows)
@@ -2943,6 +2946,17 @@ public class RouteEditorFrame extends JFrame
 
         lit += parent.highlightAddresses(checkedSensors, TrainControlUI.AddressedAs.FEEDBACK,
             org.traincontrol.util.ImageUtil.HIGHLIGHT_CONDITION, HIGHLIGHT_HOLD_MS);
+
+        // A SENSOR THE ROUTE SETS, in the colour of the things it sets (VD13-C6).
+        //
+        // `canBeACommand` will not make a new FEEDBACK row, but an older route can hold one, and the
+        // first fix for that put its address in with the CHECKED sensors - so the legend said "what it
+        // checks in orange" over a square the route writes to.  Its own colour, and the overlap rule is
+        // applied within the kind for the same reason the accessories' is.
+        commandedSensors.removeAll(checkedSensors);
+
+        lit += parent.highlightAddresses(commandedSensors, TrainControlUI.AddressedAs.FEEDBACK,
+            org.traincontrol.util.ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);
 
         // Nothing lit is an answer too, and a silent button is not.  It happens for a real reason: a
         // route can name accessories that are not drawn anywhere on the diagram.
@@ -4393,9 +4407,26 @@ public class RouteEditorFrame extends JFrame
 
             if (!joiner)
             {
-                // The word before it by preference, since "1 and 2" without 2 is "1"
-                if (line - 1 >= 0 && rows.get(line - 1).isJoiner()) rows.remove(line - 1);
-                else if (line < rows.size() && rows.get(line).isJoiner()) rows.remove(line);
+                // THE WORD AT THIS ROW'S OWN DEPTH, and that is not always the one before it (VD13-B4).
+                //
+                // "1 and 2" without the 2 is "1", so the word before is the usual answer - but the
+                // FIRST row of a group has the OUTER word before it, one level shallower.  Deleting the
+                // 2 of `1 or (2 and 3)` took the `or` and left `[1(0), and(1), 3(1)]`: the reading
+                // changed from "1 or 3" to "1 and 3", the surviving word went red as JOINS_NOTHING, and
+                // Save then refused the route with no way out but Discard.  One keystroke changed when
+                // the route fires AND made it unsavable.
+                //
+                // The word that belongs to this row is the adjacent joiner at the SAME depth; the other
+                // side is tried next, and a word at another depth is left for `tidy()`, which is what
+                // deletes a word with nothing on one side.
+                boolean before = line - 1 >= 0 && rows.get(line - 1).isJoiner()
+                    && rows.get(line - 1).getDepth() == depth;
+
+                boolean after = line < rows.size() && rows.get(line).isJoiner()
+                    && rows.get(line).getDepth() == depth;
+
+                if (before) rows.remove(line - 1);
+                else if (after) rows.remove(line);
             }
             else if (line < rows.size())
             {

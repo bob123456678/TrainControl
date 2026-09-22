@@ -3142,43 +3142,75 @@ VD11-D6	2026-09-03-validation-round-three.md	Closed	closed	`setupChangePending` 
 VD11-D7	2026-09-03-validation-round-three.md	Closed	closed	the parity work is as dispositioned
 VD11-D8	2026-09-03-validation-round-three.md	Closed	closed	round two's remaining dispositions are true at HEAD
 VD11-D9	2026-09-03-validation-round-three.md	Closed	closed	`VD10-A1`'s fix is present and asserted
-VD12-B1	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	the tail overlay anchored at an arbitrary reservation
-VD12-B2	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	the lamp sentence was false
-VD12-B3	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	the tail walk was blind to a path still being locked
-VD12-C1	2026-09-21-VD12-validation-of-two-days.md	-	Open - for Adam	the allowance exemption reaches a mid-run milestone
-VD12-C2	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	the driven road was truncated at the wrong copy
-VD12-C3	2026-09-21-VD12-validation-of-two-days.md	-	Open - needs a test	the derived flag survives a Cancel
-VD12-C4	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	a commanded sensor stopped being highlighted
-VD12-C5	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	the export's finally could swallow the reason
-VD12-C6	2026-09-21-VD12-validation-of-two-days.md	-	Open - for Adam	the column offers names that Save refuses
-VD12-R1	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	MT-437's step 4 was corrected wrongly
-VD12-R10	2026-09-21-VD12-validation-of-two-days.md	-	Open	thirteen ids in the records that lead nowhere
-VD12-R11	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	the roll does not carry what two documents promise
-VD12-R12	2026-09-21-VD12-validation-of-two-days.md	-	Open	the document counts
-VD12-R13	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	the Inbox count, twice wrong
-VD12-R14	2026-09-21-VD12-validation-of-two-days.md	-	Open - for Adam	open findings in neither live document
-VD12-R15	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	a pointer to a file deleted the same day
-VD12-R16	2026-09-21-VD12-validation-of-two-days.md	-	Open	one column, two readings
-VD12-R17	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	a guard that reads as two rules and is one
-VD12-R2	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	a disposition promoted on my own reading
-VD12-R3	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	an Expected block prescribing a withdrawn state
-VD12-R4	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	a safety precondition cut from a tooltip
-VD12-R5	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	a reference citing a sentence that was cut
-VD12-R6	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	four of five
-VD12-R7	2026-09-21-VD12-validation-of-two-days.md	-	Open	the wrong rule named in a user-facing message
-VD12-R8	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	a recovery grep that missed its own ids
-VD12-R9	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	a pointer to twelve of twenty-nine
-VD12-T1	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	a source-shape rule that had stopped asking anything
-VD12-T10	2026-09-21-VD12-validation-of-two-days.md	-	Open	a restore that does not restore one thing
-VD12-T11	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	a global left on
-VD12-T2	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	the negative claims could not fail
-VD12-T3	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	the affordance claim went round the affordance
-VD12-T4	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	the snapshot claim could not fail
-VD12-T5	2026-09-21-VD12-validation-of-two-days.md	-	Answered 2026-09-21	the sub-lettered rule is dormant
-VD12-T6	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	a comment that contradicted the discriminator
-VD12-T7	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	a train left running
-VD12-T8	2026-09-21-VD12-validation-of-two-days.md	-	Fixed 2026-09-21	the staged claim judged against a home it created
-VD12-T9	2026-09-21-VD12-validation-of-two-days.md	-	Open	a tab left selected on a failure
+VD12-B1	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	the tail overlay anchored at an arbitrary reservation
+VD12-B2	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	the lamp sentence was false
+VD12-B3	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	the tail walk was blind to a path still being locked
+VD12-C1	2026-09-21-VD12-validation-of-two-days.md	Open - for Adam	Open - for Adam	the allowance exemption reaches a mid-run milestone
+VD12-C2	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	the driven road was truncated at the wrong copy
+VD12-C3	2026-09-21-VD12-validation-of-two-days.md	Open	Open - needs a test	the derived flag survives a Cancel
+VD12-C4	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	a commanded sensor stopped being highlighted
+VD12-C5	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	the export's finally could swallow the reason
+VD12-C6	2026-09-21-VD12-validation-of-two-days.md	Open - for Adam	Open - for Adam	the column offers names that Save refuses
+VD12-R1	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	MT-437's step 4 was corrected wrongly
+VD12-R10	2026-09-21-VD12-validation-of-two-days.md	Open	Open	thirteen ids in the records that lead nowhere
+VD12-R11	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	the roll does not carry what two documents promise
+VD12-R12	2026-09-21-VD12-validation-of-two-days.md	Closed	Open	the document counts
+VD12-R13	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	the Inbox count, twice wrong
+VD12-R14	2026-09-21-VD12-validation-of-two-days.md	Open - for Adam	Open - for Adam	open findings in neither live document
+VD12-R15	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	a pointer to a file deleted the same day
+VD12-R16	2026-09-21-VD12-validation-of-two-days.md	Open	Open	one column, two readings
+VD12-R17	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	a guard that reads as two rules and is one
+VD12-R2	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	a disposition promoted on my own reading
+VD12-R3	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	an Expected block prescribing a withdrawn state
+VD12-R4	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	a safety precondition cut from a tooltip
+VD12-R5	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	a reference citing a sentence that was cut
+VD12-R6	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	four of five
+VD12-R7	2026-09-21-VD12-validation-of-two-days.md	Open	Open	the wrong rule named in a user-facing message
+VD12-R8	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	a recovery grep that missed its own ids
+VD12-R9	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	a pointer to twelve of twenty-nine
+VD12-T1	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	a source-shape rule that had stopped asking anything
+VD12-T10	2026-09-21-VD12-validation-of-two-days.md	Open	Open	a restore that does not restore one thing
+VD12-T11	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	a global left on
+VD12-T2	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	the negative claims could not fail
+VD12-T3	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	the affordance claim went round the affordance
+VD12-T4	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	the snapshot claim could not fail
+VD12-T5	2026-09-21-VD12-validation-of-two-days.md	Closed	Answered 2026-09-21	the sub-lettered rule is dormant
+VD12-T6	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	a comment that contradicted the discriminator
+VD12-T7	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	a train left running
+VD12-T8	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	the staged claim judged against a home it created
+VD12-T9	2026-09-21-VD12-validation-of-two-days.md	Open	Open	a tab left selected on a failure
+VD13-B1	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	the checkbox was blind where the file door was hardened
+VD13-B2	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	squares are not the hazard
+VD13-B3	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	two edges are one rail
+VD13-B4	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	deleting a condition took the wrong word
+VD13-C1	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	a promise with nothing behind it
+VD13-C2	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	a census that was wrong
+VD13-C3	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	an activeness filter that was not there
+VD13-C4	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	the wrong discriminator
+VD13-C5	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	one untranslated line
+VD13-C6	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	the colour said the opposite of the truth
+VD13-C7	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	eight spaces
+VD13-R1	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	a correction that broke a right answer
+VD13-R10	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	a name the message never gives
+VD13-R11	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	pronouns left behind
+VD13-R2	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	arithmetic inside one sentence
+VD13-R3	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	counted too early
+VD13-R4	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	a step that promised what the code did not do
+VD13-R5	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	the wrong rule named
+VD13-R6	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	a remedy that does not return the list it names
+VD13-R7	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	a ratchet that asserts equality
+VD13-R8	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	rows with no status
+VD13-R9	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	an absolute over an open finding
+VD13-T1	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	a vacuous repair of a vacuous rule
+VD13-T10	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	no claim on the subject of the commit
+VD13-T2	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	a claim about a train at its own home
+VD13-T3	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	an assertion in a finally
+VD13-T4	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	a note about a guard nothing reaches
+VD13-T5	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	a global restored third
+VD13-T6	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	a digit is not a count
+VD13-T7	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	a denominator nobody counted
+VD13-T8	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	derived, not measured
+VD13-T9	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	skips with no floor
 VD9-B1	2026-09-03-validation-of-the-day.md	Closed	fixed - the whole sentence restored, and the two lines that were left dangling with it	`REL-C16` deleted two lines of a three-line sentence, and the retracted claim is now the last thing a reader sees before the code
 VD9-B2	2026-09-03-validation-of-the-day.md	Closed	fixed - `DONE` guard, re-measured with a throwaway script: one call, not two	both runners' `INT`/`TERM` trap runs `on_the_way_out` twice
 VD9-B3	2026-09-03-validation-of-the-day.md	Closed	fixed - the disposition now says the checkbox pushes no undo point, and MT-265 step 1 has 	`SVN-B8`'s "correct rather than lucky" is neither, and the half of the finding that actually holds is the half left unfixed

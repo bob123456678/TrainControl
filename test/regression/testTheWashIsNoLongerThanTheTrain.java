@@ -196,13 +196,16 @@ public class testTheWashIsNoLongerThanTheTrain
     {
         try
         {
+            // THE GLOBAL FIRST (VD13-T5).  It was restored third, after two statements that can throw -
+            // and a throw there leaves mock packets echoing for every later class in the JVM, which is
+            // the leak this restore exists to prevent.
+            MarklinControlStation.DEBUG_SIMULATE_PACKETS = simulatingWas;
+
             if (layout != null) layout.stopLocomotives();
 
             // PUT BACK: init() opens Adam's own locomotive database, and a length this test chose is
             // not a measurement of his train.
             if (train != null) train.setTrainLength(trainLengthWas == null ? 0 : trainLengthWas);
-
-            MarklinControlStation.DEBUG_SIMULATE_PACKETS = simulatingWas;
         }
         finally
         {
@@ -389,11 +392,25 @@ public class testTheWashIsNoLongerThanTheTrain
 
             if (!wouldMoveIt) continue;
 
-            if (!layout.configureAndLockPath(candidate, train)) continue;
+                if (!layout.configureAndLockPath(candidate, train)) continue;
 
             locked = candidate;
 
             break;
+        }
+
+        // MEASURED, NOT DERIVED (VD13-T8).  The loop above predicts which path moves the old anchor by
+        // comparing positions in the graph's own point order, and that prediction is sound only while
+        // `getPoints()` and `getLocomotiveLocation` walk the same collection in the same order - which
+        // was not true for a few hours on 2026-08-24, when `getPoints()` returned a copy.  One line
+        // turns the prediction into an observation, and makes a silent skip impossible.
+        if (locked != null)
+        {
+            assertNotSame(layout.getLocomotiveLocation(train), standing,
+                "the lock reserved no Point that comes before " + standing.getName() + " in the graph's"
+                + " own order, so the anchor this claim is about did not move and the claim would pass"
+                + " without asking anything.  The prediction above and `getLocomotiveLocation` have"
+                + " stopped agreeing about that order");
         }
 
         if (locked == null)
@@ -402,6 +419,8 @@ public class testTheWashIsNoLongerThanTheTrain
                 + " before it in the graph's own iteration order, so the anchor this is about cannot be"
                 + " made to move on this railway - the claim would pass without asking anything");
         }
+
+        boolean putBack = false;
 
         try
         {
@@ -434,17 +453,32 @@ public class testTheWashIsNoLongerThanTheTrain
             // BACK WHERE IT WAS, and with the record the wash is computed from.  `unlockPath` keeps the
             // path's arrival, and `setLocomotive` clears the arrival side on a change of occupant, so
             // both halves have to be written back in this order.
-            layout.moveLocomotive(train.getName(), standing.getName(), false);
+            //
+            // NOTHING IS ASSERTED IN HERE (VD13-T3).  An assertion in a `finally` replaces the body's
+            // own failure with its own, so a real defect arrives as "this claim left no wash" instead
+            // of the diagnosis.  What the restore achieved is recorded and judged after the block.
+            boolean back = layout.moveLocomotive(train.getName(), standing.getName(), false);
 
             standing.setArrivedFrom(sideWas);
             standing.setArrivedAlong(roadWas);
 
             washWith(2);
 
-            assertFalse(washedBehindTheTrain().isEmpty(),
-                "this claim has left the railway with no wash, so every claim after it in this class is"
-                + " measuring the leftovers of this one rather than the railway");
+            putBack = back && before.equals(washedBehindTheTrain());
         }
+
+        assertTrue(putBack,
+            "this claim has not put the railway back: the train is at " + describeLocation() + " and the"
+            + " wash is " + washedBehindTheTrain() + " against " + before + " before the lock.  Every"
+            + " claim after it in this class would be measuring the leftovers of this one");
+    }
+
+    /** Where the train stands, for the restore's own failure message. */
+    private static String describeLocation()
+    {
+        Point at = layout.getLocomotiveLocation(train);
+
+        return at == null ? "(nowhere)" : at.getName();
     }
 
     // ---------------------------------------------------------------- the railway

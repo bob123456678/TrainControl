@@ -1954,9 +1954,12 @@ be to stop storing a derived value at all rather than to patch the Cancel.
 
 The function-number column was taught to offer only what the locomotive has (MT-464), which is the rule
 this repository has paid for six times: the control that OFFERS a value asks the question the guard
-asks.  Column 4 - the target - still offers every locomotive in the database, including the ones
-`problemsWith` refuses because a comma or a bracket breaks the formats a route is written in.  Your own
-example of a real name is in the code: `SBB 460 (2)`.
+asks.  Column 4 - the target - still offers every locomotive in the database, including one whose
+name holds a COMMA, which `RouteCommand.isNameUsable` refuses because the command line is
+comma-separated.  **Brackets are not refused** - your ruling of 2026-09-04, *"bracketed loc names
+should just be allowed"*, and `SBB 460 (2)` is asserted usable by two tests; an earlier draft of this
+entry said otherwise (VD13-R5).  The code's own comment says a comma "is not something anybody types
+by accident", so this is a narrow hole rather than an everyday one.
 
 So the dropdown offers it, you pick it, and Save refuses with "that name cannot be used in a route" -
 and the only way out is to rename the locomotive.
@@ -1981,8 +1984,10 @@ which are the documents a reader actually follows.
 The rule the review deletion was made under is *"no reference will ever be stale or lost"*, and it is
 already false inside `tests.md` and `issues.md`.
 
-**Two ways.** (a) Widen the guard to `docs/` and put these thirteen on the dead-citation ratchet, which
-is currently EXACT at 45 - so the number becomes 58 and the roll carries them. (b) Resolve them: find
+**Two ways.** (a) Widen the guard to `docs/` and put them on the dead-citation ratchet, which is
+currently EXACT at 45 and asserts EQUALITY - so it lands red until the new number is MEASURED rather
+than guessed.  It is not 58: `AR-19` is already on the roll, and a docs-wide scan with the guard's own
+pattern finds more than these thirteen - `REV-B2`, `FCR-B1` and `WP-C19f` among them (VD13-R7). (b) Resolve them: find
 what `AR-17..23` and `LR-1..6` were (both rounds are in git history) and either add the rows or correct
 the citations.
 
@@ -2005,9 +2010,11 @@ this Inbox nor `open-questions.md`, and their documents were deleted with the re
 The first two are B severity.  `open-questions.md` tells you the remaining backlog is codebase and
 tests only, which is true of everything except these.
 
-**What I would do:** read the thirteen out of the store (`SELECT ref, title, disposition FROM finding
-WHERE status LIKE 'Open%'`), put each one either in this Inbox as an OB or in the closed roll with the
-reason it was declined, and say so in `behaviour.md`.  It is a morning's work and it is bookkeeping
+**What I would do:** read them out of the store and put each one either in this Inbox as an OB or in
+the closed roll with the reason it was declined, then say so in `behaviour.md`.  **Note that the obvious
+query is wider than this list:** `WHERE status LIKE 'Open%'` returns 41 rows, of which 24 are in neither
+live document - the thirteen above are the ones whose status is exactly `Open`, and the other eleven are
+`Open - unverified` or `Open - verified`, read on 2026-09-21 and left (VD13-R6).  It is a morning's work and it is bookkeeping
 rather than railway behaviour, so it is filed rather than done.
 
 ### OB-249 - 2026-09-21 - the catalogue reads one column two ways
@@ -2031,6 +2038,31 @@ Worth knowing beside it: `--add` calls `prune_findings`, which deletes the delib
 and `status_note` of any ref the re-scanned document no longer makes.  Re-running `--add` over an
 edited folder therefore discards answers `behaviour.md` advertises as set deliberately, with nothing
 said.
+
+### OB-250 - 2026-09-21 - an s88 route condition can read a train at a sensor it has not reached
+
+**Kind:** bug
+**Raised from:** VD13-C2, a validation of the 2026-09-21 fixes
+**Filed:** 2026-09-21
+
+`Layout.whereTheTrainIs` was written on 2026-09-21 because four readers wanted "where is the train" and
+three of them had worked the answer out separately: the last MILESTONE, falling back to whichever Point
+holds the locomotive.  The fourth was the diagram's tail overlay, and it is fixed.
+
+**There is a fifth, and it decides when a route FIRES.**  `Route.getLatestMilestoneS88` asks the
+milestones for the sensor a train has most recently reached and falls back to
+`getLocomotiveLocation`'s s88 - and that fallback is the arbitrary answer: while a path is locked the
+locomotive is the occupant of every Point on it, so an s88 condition can be told the train is at a
+sensor it has not reached yet, or has long left.
+
+**What it costs.** A route with an autoloc condition fires, or fails to fire, on a place the train is
+not.  This is the shape of MT-438 moved from the picture to the railway's behaviour, which is why it is
+filed rather than changed in passing: it alters when ironwork moves, and it wants a test with a real
+locked path before and after.
+
+**Also not on the shared rule**, and harmless: `AutonomyEditorPanel`'s standing-train tooltip asks the
+raw question.  A tooltip about a standing train is right either way - a train that is not running has
+one reservation - so it is left alone and noted here so the next reader does not have to work it out.
 
 ## What has been picked up
 

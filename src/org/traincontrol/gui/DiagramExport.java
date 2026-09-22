@@ -235,7 +235,8 @@ public final class DiagramExport
                 // Logged rather than thrown: a grid that could not be retired leaves a stale
                 // registration, which is a leak; losing the reason an export failed leaves nobody
                 // anywhere to start.
-                if (ui != null) ui.log("Could not retire the export's grid: " + fromTheRetirement.getCause());
+                if (ui != null) ui.log(I18n.f("layout.errorExportGridNotRetired",
+                    String.valueOf(fromTheRetirement.getCause())));
             }
         }
 

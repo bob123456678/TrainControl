@@ -394,7 +394,7 @@ public class testEveryCitationResolves
             "the catalogue now holds " + seen + " sub-lettered findings (" + resolvable + " of its "
             + "rows name a document still in the tree) and held " + SUBLETTERED
             + " when the last review documents were deleted.  Sub-letters are rare by design - of "
-            + "3,398 rows - 3,353 findings and 45 dead citations - exactly two carry one, and a fresh crop of them is the signature of a "
+            + rowsInTheMirror(mirror) + " rows exactly two carry one, and a fresh crop of them is the signature of a "
             + "Method or mutation table being read as findings (NSV-B1), which is what this guard is "
             + "for.  No document survives to check the new ones against, so the count is all there "
             + "is: re-run `python docs/tools/catalog-findings.py --add <folder>` and look at what it "
@@ -444,6 +444,31 @@ public class testEveryCitationResolves
             "docs/manual-tests/triage.db is gone. Since the review folder was deleted on 2026-09-08 it"
             + " and the mirror beside it are the only record of what 2,265 findings were about, and the"
             + " mirror is rendered FROM it - losing it means the next regeneration writes an empty file");
+    }
+
+    /**
+     * How many rows the mirror holds, counted rather than quoted (VD13-T7).
+     *
+     * The figure in the ratchet's message was typed in twice and was wrong both times: 3,353 was the
+     * finding count BEFORE the dead citations were rolled in, and 3,398 was that stale number plus
+     * the 45.  A denominator the sentence argues from has to be counted from the file it has already
+     * read.
+     *
+     * @param mirror the whole file
+     * @return its data rows
+     */
+    private static int rowsInTheMirror(String mirror)
+    {
+        int rows = 0;
+
+        for (String line : mirror.split("\n"))
+        {
+            if (line.trim().isEmpty() || line.startsWith("#")) continue;
+
+            rows++;
+        }
+
+        return rows;
     }
 
     /**

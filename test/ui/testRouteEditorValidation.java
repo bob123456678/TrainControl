@@ -353,6 +353,66 @@ public class testRouteEditorValidation
     }
 
     /**
+     * Deleting the FIRST condition of a group takes the group's own word, not the outer one (VD13-B4).
+     *
+     * **Found by a validation of the fix beside this one.**  `removeAt` was given a depth comparison
+     * for a deleted WORD on 2026-09-21 and its other half - a deleted CONDITION - kept preferring
+     * `rows.get(line - 1)` unconditionally.  For the first row of a group that is the OUTER word, one
+     * level shallower.
+     *
+     * So deleting the `2` of `1 or (2 and 3)` removed the `or`: the outline became `[1(0), and(1),
+     * 3(1)]`, which reads `1 and 3` - a different condition from the one anybody typed - and the
+     * surviving word went red as JOINS_NOTHING, so Save refused the route with no way out but Discard.
+     * One keystroke changed when the route fires AND made it unsavable.
+     *
+     * The word that belongs to a row is the adjacent joiner at the SAME depth.  A word at another depth
+     * is left alone, and `tidy()` sweeps one that ends up with nothing on one side, which is what it is
+     * for.
+     *
+     * MUTATION: put `if (line - 1 >= 0 && rows.get(line - 1).isJoiner()) rows.remove(line - 1);` back
+     * without the depth test and the second claim goes red, reading `And(x,x)`.
+     */
+    @Test
+    public void testDeletingTheFirstConditionOfAGroupKeepsTheOuterWord() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            final java.util.List<org.traincontrol.base.ConditionOutline.Row> outline =
+                new java.util.ArrayList<>();
+
+            outline.add(org.traincontrol.base.ConditionOutline.Row.condition(0, feedback(1)));
+            outline.add(org.traincontrol.base.ConditionOutline.Row.joining(0,
+                org.traincontrol.base.ConditionOutline.Joiner.OR));
+            outline.add(org.traincontrol.base.ConditionOutline.Row.condition(1, feedback(2)));
+            outline.add(org.traincontrol.base.ConditionOutline.Row.joining(1,
+                org.traincontrol.base.ConditionOutline.Joiner.AND));
+            outline.add(org.traincontrol.base.ConditionOutline.Row.condition(1, feedback(3)));
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(outline));
+
+            assertTrue(reads(frame).startsWith("Or("),
+                "the fixture is not an OR in front of a group, so nothing below is about one: "
+                + reads(frame));
+
+            // THE FIRST CONDITION OF THE GROUP, which is row 2.
+            javax.swing.SwingUtilities.invokeAndWait(() -> frame.deleteConditionForTest(2));
+
+            assertFalse(reads(frame).startsWith("And("),
+                "deleting the first condition of the group took the OUTER word with it, so `1 or (2 and"
+                + " 3)` now reads as an AND - a different condition from the one anybody typed, and the"
+                + " word left behind joins nothing, which Save refuses.  Now: " + reads(frame));
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
      * Deleting a joining word takes the term it joins with it, leaving no orphan (OB-240).
      *
      * Adam's note on MT-469, 2026-09-21: *"in the layout view, we can remove operators (like and)

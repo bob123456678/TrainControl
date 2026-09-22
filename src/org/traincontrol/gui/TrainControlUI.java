@@ -6007,25 +6007,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * How many squares autonomy runs over have no length - the editor's own count (Adam, 2026-09-21).
+     * How much drivable track has no length - THE question, asked by all three doors (VD13-B1, B2, B3).
      *
-     * `squaresNeedingALength` is what the Unmeasured Track display highlights and what Mass Assign
-     * Lengths offers to fill in, so the two doors below and the editor cannot disagree about which
-     * squares count.  Zero where there is no setup to ask about, which is the honest answer: with no
-     * graph there is nothing "walkable via the autonomy editor".
+     * **This asked the EDITOR first, and that was wrong twice over.**  `squaresNeedingALength` is
+     * non-empty whenever one switch square is unmeasured on a railway whose every edge is measured -
+     * where the unsafe escape provably cannot fire, because it needs a path with no measured edge at
+     * all - so the checkbox refused an operator who had finished the work.  And it answered 0 whenever
+     * there is no session, which is the legacy railway the file door had to be hardened for: the
+     * checkbox stood open on exactly the setup that most needed it, and the two controls then
+     * disagreed on every load, which is the OB-090 fault this was meant to avoid.
      *
-     * @return the count, 0 when nothing is unmeasured or there is no session
+     * `Layout.unmeasuredDrivableTrack` is the question in the form the hazard takes, and one answer
+     * for the checkbox and both load doors.  The editor's square count keeps its own job - the
+     * Unmeasured Track display and Mass Assign Lengths - which is about how far a tail reaches, not
+     * about whether an edge may be released.
+     *
+     * @return the count, 0 when every drivable rail has a length or there is no railway to ask
      */
     public int unmeasuredTrackAutonomyRunsOver()
     {
-        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+        if (this.model == null || !this.model.hasAutoLayout()) return 0;
 
-        if (session == null) return 0;
+        org.traincontrol.automation.Layout layout = this.model.getAutoLayout();
 
-        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> unmeasured =
-            session.squaresNeedingALength();
-
-        return unmeasured == null ? 0 : unmeasured.size();
+        return layout == null ? 0 : layout.unmeasuredDrivableTrack();
     }
 
     /**
@@ -6055,22 +6060,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (layout == null || layout.isAtomicRoutes()) return;
 
+        // THE SAME QUESTION THE CHECKBOX ASKS, and there is only one now (VD13-B1).
+        //
+        // This door used to ask the editor and fall back to the railway's edges only when there was no
+        // session, which put the discriminator on "is there a diagram" rather than on the hazard - and
+        // left the checkbox blind on the legacy railway this fallback was added for.  One question,
+        // three doors: `Layout.unmeasuredDrivableTrack`.
+        //
+        // Adam's instruction for this case was *"just force the checkbox checked as well"*.  It asks
+        // first, because a railway that IS measured end to end would otherwise lose non-atomic mode at
+        // every load - said in MT-470 so he can overrule it in a line.
         int unmeasured = unmeasuredTrackAutonomyRunsOver();
-
-        // NO DIAGRAM, SO ASK THE RAILWAY ITSELF (Adam, 2026-09-21: *"in that legacy case, just force the
-        // checkbox checked as well"*).
-        //
-        // A setup loaded from `autonomy.json` with no diagram behind it has no session to ask, and the
-        // first version of this then did nothing at all - the door stood open in exactly the case he
-        // was asking about.  Its lengths are on its EDGES, which is both askable and the more direct
-        // form of the question: non-atomic mode is unsafe because `tailHasProvablyPassed` returns true
-        // on `pathIsUnmeasured`, and that is computed from these lengths.
-        //
-        // So a legacy setup with an unmeasured edge comes up atomic, and one measured end to end keeps
-        // the setting it was saved with.  Forcing it unconditionally was the letter of his instruction
-        // and would take non-atomic mode away from a legacy railway that IS fully measured, which is
-        // the failure his standing rule is about - said in the record so he can overrule it in a line.
-        if (getAutonomySession() == null) unmeasured = layout.edgesWithNoLength();
 
         if (unmeasured <= 0) return;
 

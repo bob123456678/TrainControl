@@ -466,6 +466,19 @@ public class testReturnHomeOnRealLayout
             Point home = layout.getHomeStation(l);
             Point was = standingAt(layout, l);
 
+            // A TRAIN WITH NO HOME IS A DIFFERENT CASE, AND STAGING ONE CREATES THE HOME (VD13-T2).
+            //
+            // `moveLocomotive` calls `claimHome`, which claims an unclaimed square for a locomotive
+            // that has none - so putting such a train on a turning square makes that square ITS HOME,
+            // and the plan is then asked about a train standing where it belongs, which this claim's
+            // own guard excludes.  It also counted towards the floor, so the claim could be carried
+            // entirely by trains it was not about, and the invented home outlived the loop.
+            //
+            // MT-463's step 4 is the homeless case and
+            // `core.testHomeStaging.testATrainWithNoHomeTheRailwayHadOnATerminusCanBeMovedOffIt` holds
+            // it on a fixture built for it.
+            if (home == null) continue;
+
             for (Point onto : turning)
             {
                 // AT HOME IS A DIFFERENT CASE and the rule does not reach it: a train resting at its own
@@ -499,11 +512,14 @@ public class testReturnHomeOnRealLayout
 
                     asked++;
 
-                    // RE-READ AFTER THE STAGING, because the staging can CREATE a home: a hand
-                    // placement claims the square for a locomotive that has none (`Layout.claimHome`),
-                    // so the home read before the move is not the home the plan is computed against,
-                    // and a failure message naming it would name the wrong square.
-                    home = layout.getHomeStation(l);
+                    // AND THE STAGING DID NOT MOVE IT (VD13-T2).  Only a locomotive with no home is
+                    // re-homed by a hand placement, and those are skipped above - this is the claim
+                    // that keeps that true, because it is the thing that would make the assertion
+                    // below about a different arrangement than the one it names.
+                    assertTrue(home.isSamePlaceAs(layout.getHomeStation(l)),
+                        "staging " + l.getName() + " on " + onto.getName() + " moved its home from "
+                        + home.getName() + " to " + layout.getHomeStation(l)
+                        + ", so the plan below is judged against a home this test created");
 
                     HomeStaging.Plan plan = layout.planReturnToHome();
 

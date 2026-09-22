@@ -1812,7 +1812,7 @@ edges. Nothing has been built on that one.
 
 The review documents were the working record of how these rules were arrived at. This is the answer
 they were working towards, and they were deleted in its favour: 143 on 2026-09-08 - documents that
-could no longer say who needed to do what, against one that says what is true - and the last 63 on
+could no longer say who needed to do what, against one that says what is true - and the last 65 on
 2026-09-21, on Adam's *"I don't want more reviews living in the repo."*
 
 ---

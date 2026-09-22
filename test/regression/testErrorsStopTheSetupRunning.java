@@ -702,16 +702,25 @@ public class testErrorsStopTheSetupRunning
 
             asked++;
 
-            assertTrue(body.contains("autonomyHasErrors()") || body.contains("hasErrors()")
-                || throughTheRule,
-                where + " chooses its wording on the error COUNT alone.  The count is zero when the "
-                + "graph will not build, which is a state the guard refuses and no amount of waiting "
-                + "clears - so this tells the operator to wait for trains that are not running.  "
-                + "Body: " + body);
+            // ONE OR THE OTHER, NOT EITHER-OR INSIDE THE ASSERTION (VD13-T1).
+            //
+            // The first repair of this loop wrote both claims as `X || throughTheRule`, and since all
+            // three sites delegate, both were satisfied by the disjunct alone - the loop went on
+            // asserting nothing, in a new way.  A site that words the refusal ITSELF has to carry both
+            // arms; a site that delegates has to carry nothing, because the arms are then the ONE
+            // RULE's business and are asserted of it below.
+            if (wordsItHere)
+            {
+                assertTrue(body.contains("autonomyHasErrors()") || body.contains("hasErrors()"),
+                    where + " chooses its wording on the error COUNT alone.  The count is zero when "
+                    + "the graph will not build, which is a state the guard refuses and no amount of "
+                    + "waiting clears - so this tells the operator to wait for trains that are not "
+                    + "running.  Body: " + body);
 
-            assertTrue(body.contains("errorCannotBuildDetailOne") || throughTheRule,
-                where + " has no wording for the reason a count cannot see, and does not go through "
-                + "the one rule that has it.  Body: " + body);
+                assertTrue(body.contains("errorCannotBuildDetailOne"),
+                    where + " words the refusal itself and has no wording for the reason a count "
+                    + "cannot see.  Body: " + body);
+            }
         }
 
         assertTrue(asked == sites.length,
@@ -719,8 +728,31 @@ public class testErrorsStopTheSetupRunning
             + " rule for it, so the rest are saying something this check cannot see.  That is how this"
             + " loop came to assert nothing: the wording moved and every site fell through the gate");
 
-        // AND THE ONE RULE CARRIES BOTH ARMS, which is what the three sites now delegate to.  Without
-        // this, every site could pass by delegating to a rule that had lost the build-failure wording.
+        // AND THE ONE RULE ASKS ALL THREE THINGS, which is where the arms went when the sites stopped
+        // wording the refusal themselves (VD13-T1).
+        //
+        // The no-arg wrapper is the door every site actually calls, and it is what chooses between the
+        // three answers: the error count, the blocking count, and whether the setup is broken at all.
+        // Nothing asserted that, so the third arm could be deleted - which is OB-090 for the third
+        // time - with this class green.
+        String wrapper = withoutComments(bodyOf(ui, "public String whyAutonomyWillNotStart()"));
+
+        assertFalse(wrapper.isEmpty(), "whyAutonomyWillNotStart() has moved or been renamed");
+
+        assertTrue(wrapper.contains("autonomyErrorCount()"),
+            "the rule every refusal delegates to no longer counts the errors, so all three report a "
+            + "count of nothing.  Body: " + wrapper);
+
+        assertTrue(wrapper.contains("blockingProblemCount()"),
+            "the rule no longer asks how many problems would stop the setup being built, which is the "
+            + "arm that distinguishes 'fix these' from 'wait for trains'.  Body: " + wrapper);
+
+        assertTrue(wrapper.contains("autonomyHasErrors()") || wrapper.contains("hasErrors()"),
+            "the rule no longer asks the guard's own question, so a setup that will not build at all - "
+            + "where the count is zero - is described to the operator as waiting for trains that will "
+            + "never run.  That is OB-090 at the one site all three refusals now share.  Body: "
+            + wrapper);
+
         String rule = withoutComments(bodyOf(ui,
             "static String whyAutonomyWillNotStart(int errors, int blocking, boolean broken)"));
 

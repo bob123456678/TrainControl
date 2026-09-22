@@ -4437,7 +4437,7 @@ public class Layout
      * @param loc
      * @return 
      */
-        public Point getLocomotiveLocation(Locomotive loc)
+    public Point getLocomotiveLocation(Locomotive loc)
     {
         for (Point start : this.points.values())
         {
@@ -4469,6 +4469,12 @@ public class Layout
      * 2026-09-21: *"it's almost as if you are shifting the location of the train."*
      *
      * One method now, so the next door asks instead of working it out again.
+     *
+     * **TWO MORE READERS ASK THE SAME QUESTION AND ARE NOT ON THIS RULE (VD13-C2)**, and an earlier
+     * draft of this paragraph claimed there were none: `Route.getLatestMilestoneS88` falls back to
+     * `getLocomotiveLocation` for an s88 condition, which can read a train at a sensor it has not
+     * reached, and `AutonomyEditorPanel`'s standing-train tooltip asks the raw question.  The first is
+     * a change to when a route FIRES and is filed as OB-250 rather than made here.
      *
      * NOT asked by `AutoLocomotiveStatus`'s @-station line, which shows NOTHING rather than a
      * reservation where a run has reported no milestone yet: that is a decision about a line of text,
@@ -6942,6 +6948,16 @@ public class Layout
 
         if (head == null) return driven;
 
+        // THE HEAD IS THE START OF THE PATH, so nothing has been driven yet (VD13-C1).  The javadoc
+        // has always promised this and nothing implemented it: without it the by-place fallback below
+        // can match a LATER copy of the start square and hand back the whole run as "driven", with an
+        // entry side computed between two points that are not neighbours.
+        if (path.get(0) != null && path.get(0).getStart() != null
+            && (path.get(0).getStart() == head || path.get(0).getStart().isSamePlaceAs(head)))
+        {
+            return driven;
+        }
+
         for (Edge leg : path)
         {
             if (leg.getStart() == null || leg.getEnd() == null) break;
@@ -8844,29 +8860,51 @@ public class Layout
     }
     
     /**
-     * How many edges have no length - the legacy railway's own version of the question (Adam, 2026-09-21).
+     * HOW MUCH DRIVABLE TRACK HAS NO LENGTH - the one question the atomic-routes gate asks
+     * (Adam, 2026-09-21; corrected the same day by VD13-B1, B2 and B3).
      *
-     * A setup built in the autonomy editor is measured square by square and `AutonomySession` answers
-     * for it; a setup that came from `autonomy.json` with no diagram behind it has lengths on its EDGES
-     * and nothing else, so this is where the same question has to be asked.  It is also the more direct
-     * form of it: what makes non-atomic mode unsafe is `tailHasProvablyPassed` returning true because
-     * `pathIsUnmeasured`, and that is computed from exactly these lengths.
+     * **Why this is the question and the editor's square count is not.**  Non-atomic mode is unsafe
+     * only through one escape: `tailHasProvablyPassed` returns true the moment `pathIsUnmeasured`, and
+     * that means NO EDGE ANYWHERE ON THE PATH has a length.  An edge's length is the sum of its
+     * squares, so a railway with one unmeasured switch square still has a length on every edge - the
+     * escape can never fire on it, and the only cost of the missing square is that `behind`
+     * under-counts and edges are held LONGER, which is the conservative direction.  Asking the
+     * editor's `squaresNeedingALength` therefore refused a railway that is provably safe, and refusing
+     * something legal is the one thing Adam has asked not to happen.  It was also silent on a railway
+     * with no diagram, which is where the danger actually lives.
+     *
+     * **BY RAIL, NOT BY EDGE.**  A rail is two `Edge` objects, one per direction, so counting edges
+     * told him "2 pieces of track" about one piece.  Counted by the pair of places it joins.
+     *
+     * **AND NOT TRACK A TRAIN CANNOT BE DRIVEN OVER.**  `isPathClear` refuses a path whose
+     * intermediate or destination point is switched off, so a rail INTO an inactive point can never be
+     * part of a run and must not hold the setting back.  The far end only: a train standing on an
+     * inactive point may still drive out of it, so the near end says nothing.
      *
      * Zero counts as no length, which is the convention every length rule here uses - `getTileLength`
      * answers 0 for unmeasured, and only positive lengths are determinate.
      *
-     * @return the number of edges with no length, 0 when every edge has one
+     * @return how many rails a train could be driven over have no length, 0 when every one has a length
      */
-    public int edgesWithNoLength()
+    public int unmeasuredDrivableTrack()
     {
-        int out = 0;
+        Set<String> rails = new LinkedHashSet<>();
 
         for (Edge edge : this.edges.values())
         {
-            if (edge != null && edge.getLength() <= 0) out++;
+            if (edge == null || edge.getStart() == null || edge.getEnd() == null) continue;
+
+            if (edge.getLength() > 0) continue;
+
+            if (!edge.getEnd().isActive()) continue;
+
+            String from = placeNameOf(edge.getStart());
+            String to = placeNameOf(edge.getEnd());
+
+            rails.add(from.compareTo(to) <= 0 ? from + " | " + to : to + " | " + from);
         }
 
-        return out;
+        return rails.size();
     }
 
     /**
