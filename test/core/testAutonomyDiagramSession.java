@@ -10,6 +10,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import static org.testng.Assert.*;
+import org.traincontrol.automationui.TileAnnotation;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -1592,6 +1593,101 @@ public class testAutonomyDiagramSession
     /**
      * Two sensors with two plain tiles between them.
      */
+    /**
+     * A ROAD THE OPERATOR HAS SHUT DRAWS NO ARROW, EVEN WHERE THE BLADES WOULD HAVE ONE (VD18-B1).
+     *
+     * `directionMarks` is what the diagram draws.  It used to override the authored answer whenever
+     * it was not `NONE`, on the reasoning that a route the hardware restricts is one-way whatever the
+     * user chose - true for the DEFAULT, which is `BOTH`, and false for the case that matters.
+     *
+     * On a permanent turnout every route is directed at the toe, so `TOWARD_A` - toward the fork -
+     * permits only an entry the blades refuse: nothing passes, which is exactly what an operator who
+     * shuts that arm means.  The override turned that into an arrow pointing at the toe, so the
+     * drawing showed trains running along a road that had been closed.  Nothing covered
+     * `directionMarks` at all before this claim, which is how it survived.
+     *
+     * MUTATION: drop the `isPassable` branch from `directionMarks` and the shut route draws an arrow
+     * again; make `isPassable` answer true for everything and the same claim fails.
+     *
+     * @throws IOException from the fixture
+     */
+    @Test
+    public void testAShutRouteDrawsNoArrow() throws IOException
+    {
+        session.open(Arrays.asList(permanentTurnout()));
+
+        TileKey toe = new TileKey("main", 3, 1);
+
+        java.util.Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes =
+            session.getRoutes(toe);
+
+        assertFalse(routes.isEmpty(), "the fixture gave the permanent turnout no routes at all");
+
+        for (java.util.Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> entry
+            : routes.entrySet())
+        {
+            org.traincontrol.automationui.TilePorts.Route route = entry.getValue();
+
+            assertNotNull(route.getDirectedToward(),
+                "precondition: this tile's routes should be directed at the toe, and nothing below is"
+                + " about a permanent turnout if they are not");
+
+            // THE ANSWER THAT PERMITS ONLY THE ENTRY THE BLADES REFUSE: a closure, not a direction.
+            //
+            // Travel TOWARD A means entering at B, which `isTraversableFrom` allows only when the
+            // route is directed at A.  So the shut answer is the one naming the side the route is NOT
+            // directed at - the first draft of this line named the allowed one and asserted the arrow
+            // was absent, which failed against correct code.
+            Direction shut = route.getDirectedToward() == route.getA() ? Direction.TOWARD_B
+                : Direction.TOWARD_A;
+
+            session.setDirection(toe, entry.getKey(), shut);
+        }
+
+        for (TileAnnotation.Mark mark : session.directionMarks(toe))
+        {
+            assertEquals(mark.getDirection(), Direction.NONE,
+                "the diagram draws an arrow along a road the operator has shut: the answer stored"
+                + " permits only an entry the blades refuse, so no train can pass either way, and the"
+                + " arrow says trains run toward the toe");
+        }
+
+        // AND THE DEFAULT STILL DRAWS THE ONE ROAD THERE IS.  A rule that drew nothing for these tiles
+        // would take away the arrow that says which way the turnout can be used at all.
+        for (java.util.Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> entry
+            : routes.entrySet())
+        {
+            session.setDirection(toe, entry.getKey(), Direction.BOTH);
+        }
+
+        for (TileAnnotation.Mark mark : session.directionMarks(toe))
+        {
+            assertNotEquals(mark.getDirection(), Direction.NONE,
+                "the turnout is open in the direction the blades allow, and the diagram draws nothing");
+        }
+    }
+
+    /**
+     * A run of track with a permanently-set turnout at its far end: no address, trailing moves only.
+     *
+     * @return the page
+     * @throws IOException from the diagram
+     */
+    private LayoutDiagram permanentTurnout() throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 8, 4, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.CUSTOM_PERM_LEFT, 3, 1, 1, 0, 0, 0,
+            accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        return page;
+    }
+
     private LayoutDiagram runOfTrack() throws IOException
     {
         LayoutDiagram page = new LayoutDiagram("main", 8, 4, null, null);

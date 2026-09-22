@@ -1453,6 +1453,35 @@ public class TileGraph
         return direction == Direction.TOWARD_A ? towardA : towardB;
     }
 
+    /**
+     * Whether any train can use this route at all, given the authored direction AND the hardware.
+     *
+     * **AN ANSWER THE HARDWARE REFUSES IS A CLOSURE, NOT A NOTHING (VD18-B1).**  On a permanent
+     * turnout every route is directed at the toe, so `TOWARD_A` - toward the fork - permits only an
+     * entry the blades refuse: nothing can pass, which is precisely what an operator who shuts that
+     * arm means.  A first attempt at this read "the hardware refuses it, so it restricts nothing" and
+     * rewrote such an answer into the one way that IS open, turning a shut road into an open one.
+     *
+     * `directionIsPossible` above answers a different question - what the editor should OFFER - and
+     * the two must not be confused: `NONE` and `TOWARD_A` are both offerable-or-not questions, but
+     * only this one says whether a train moves.
+     *
+     * @param direction what is authored, or the default
+     * @param route the route
+     * @return true when some entry side is both traversable and allowed
+     */
+    public static boolean isPassable(Direction direction, Route route)
+    {
+        if (direction == Direction.NONE) return false;
+
+        for (Side entry : new Side[] { route.getA(), route.getB() })
+        {
+            if (route.isTraversableFrom(entry) && directionAllows(direction, route, entry)) return true;
+        }
+
+        return false;
+    }
+
     private static boolean directionAllows(Direction direction, Route route, Side entrySide)
     {
         if (direction == Direction.NONE) return false;

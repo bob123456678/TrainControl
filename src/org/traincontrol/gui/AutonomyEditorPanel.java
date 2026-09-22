@@ -8615,11 +8615,15 @@ public class AutonomyEditorPanel extends JPanel
 
         Direction current = session.getGraph().getDirection(tile, routeId);
 
+        // WHAT IS IN FORCE HAS TWO CASES, NOT ONE (VD18-B1).  A stored answer this menu no longer
+        // offers is either the default `BOTH` - which the blades narrow to the one open road - or an
+        // answer that permits only an entry the blades refuse, which is a CLOSURE.  Ticking "the
+        // possible one" for both of those would show a shut road as open.
         if (!TileGraph.directionIsPossible(current, route))
         {
-            current = TileGraph.directionIsPossible(Direction.TOWARD_A, route) ? Direction.TOWARD_A
-                : TileGraph.directionIsPossible(Direction.TOWARD_B, route) ? Direction.TOWARD_B
-                : Direction.NONE;
+            current = !TileGraph.isPassable(current, route) ? Direction.NONE
+                : TileGraph.directionIsPossible(Direction.TOWARD_A, route) ? Direction.TOWARD_A
+                : Direction.TOWARD_B;
         }
 
         if (TileGraph.directionIsPossible(Direction.BOTH, route))

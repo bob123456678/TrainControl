@@ -7692,7 +7692,17 @@ public class AutonomySession
             // A route the hardware restricts is one-way whatever the user chose: the graph leaves the
             // authored direction BOTH there (see defaultDirection), but a train still cannot pass
             // against the blades, and the drawing has to say what a train can actually do.
-            if (route.getDirectedToward() != null && direction != TileGraph.Direction.NONE)
+            //
+            // **AND A SHUT ROUTE DRAWS NOTHING (VD18-B1).**  This overrode the authored answer
+            // whenever it was not `NONE`, and on a permanent turnout `TOWARD_A` - toward the fork - is
+            // a closure rather than a direction: it permits only an entry the blades refuse.  So a
+            // road the operator had shut was drawn with a green arrow showing trains running along
+            // it, which is the one thing the arrows exist to say and it was saying it backwards.
+            if (!TileGraph.isPassable(direction, route))
+            {
+                direction = TileGraph.Direction.NONE;
+            }
+            else if (route.getDirectedToward() != null)
             {
                 direction = route.getDirectedToward() == route.getA()
                     ? TileGraph.Direction.TOWARD_A : TileGraph.Direction.TOWARD_B;
