@@ -174,6 +174,95 @@ public class testNonAtomicRoutesNeedTheirLengths
         }
     }
 
+    /**
+     * A SETUP THAT LOADS NON-ATOMIC OVER UNMEASURED TRACK COMES UP ATOMIC (Adam, 2026-09-21).
+     *
+     * *"Yes, shut the file door too - just enable the setting and show a warning in the log."*
+     *
+     * The checkbox refuses the gesture, because somebody is there to read the refusal and is one
+     * gesture from fixing it.  A file has nobody at it, and refusing the load would make a
+     * configuration he already has unopenable - so the safe setting is written instead and the log
+     * says why.  Turning atomic routes ON can never be the unsafe answer: atomic mode releases nothing
+     * until a run ends.
+     *
+     * **THE CONTROL IS THE SECOND HALF.**  A rule that forced the setting on whatever the railway looks
+     * like would take non-atomic mode away from an operator who has measured everything, and a test
+     * that only checked the forcing would pass.  So this asks twice: once with a square short, where it
+     * must be turned back on, and once with everything measured, where a deliberate OFF must be left
+     * exactly as it is.
+     *
+     * MUTATION: drop the `layout.isAtomicRoutes()` early return and the second claim goes red (a setting
+     * already on is "changed" every load, harmlessly, but the count then reads as a reason to log);
+     * drop the `unmeasured <= 0` return and the second claim goes red properly - a measured railway has
+     * its setting forced.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test(dependsOnMethods = "testTheDoorIsOpenWhenEverythingIsMeasuredAndShutWhenItIsNot")
+    public void testALoadedSetupCannotRunNonAtomicOverUnmeasuredTrack() throws Exception
+    {
+        org.traincontrol.automation.Layout layout = model.getAutoLayout();
+
+        assertNotNull(layout, "precondition: there is no layout, so there is nothing to load a setting into");
+
+        boolean atomicWas = layout.isAtomicRoutes();
+
+        TileKey switchSquare = null;
+
+        for (TileKey tile : session.switchesALengthRuleReads())
+        {
+            switchSquare = tile;
+
+            break;
+        }
+
+        if (switchSquare == null)
+        {
+            throw new SkipException("this configuration has no switch a length rule reads, so no square"
+                + " can be left unmeasured for the claim below");
+        }
+
+        final TileKey short0 = switchSquare;
+
+        try
+        {
+            // ONE SQUARE SHORT, and the setting as a loaded file would have left it.
+            SwingUtilities.invokeAndWait(() -> session.setTileLength(short0, 0));
+
+            layout.setAtomicRoutes(false);
+
+            SwingUtilities.invokeAndWait(() -> ui.keepAtomicRoutesOnWhileTrackIsUnmeasured());
+
+            assertTrue(layout.isAtomicRoutes(),
+                "a setup that turns atomic routes off has been loaded with " + short0 + " unmeasured,"
+                + " and the railway is running non-atomic: every edge will be handed back as the head"
+                + " passes it, with the train still standing on it, and nobody was at the door to be"
+                + " told");
+
+            // THE CONTROL: measured everywhere, a deliberate OFF is left alone.
+            SwingUtilities.invokeAndWait(() -> session.setTileLength(short0, 1));
+
+            assertTrue(session.squaresNeedingALength().isEmpty(),
+                "precondition: putting the length back left " + session.squaresNeedingALength().size()
+                + " squares still wanting one, so the control below is not about a measured railway");
+
+            layout.setAtomicRoutes(false);
+
+            SwingUtilities.invokeAndWait(() -> ui.keepAtomicRoutesOnWhileTrackIsUnmeasured());
+
+            assertFalse(layout.isAtomicRoutes(),
+                "every square autonomy runs over has a length and the load turned atomic routes back on"
+                + " anyway, which takes the setting away from an operator who has done the work - the"
+                + " same failure the refusal at the checkbox is guarded against");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> session.setTileLength(short0, 1));
+
+            layout.setAtomicRoutes(atomicWas);
+        }
+    }
+
     /** Every square of the autonomy graph - its points and every square of every reduced edge. */
     private static Set<TileKey> everySquareOfTheGraph()
     {

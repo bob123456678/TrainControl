@@ -814,6 +814,13 @@ public class AutonomyViewerPanel extends JPanel
         {
             ui.getModel().parseAuto(session().buildConfiguration());
 
+            // AND THE SAME RULE AS THE OTHER PARSE DOOR (Adam, 2026-09-21): a setup that turns
+            // atomic routes off while track autonomy runs over has no length comes up atomic,
+            // with the reason in the log.  Written here as well as at the Validate button because
+            // these are the only two doors into `parseAuto`, and one of them having the rule is
+            // how this project's defects usually happen.
+            ui.keepAtomicRoutesOnWhileTrackIsUnmeasured();
+
             // remembered for next start, the way loading has always doubled as choosing
             save();
 

@@ -23820,11 +23820,21 @@ that does not depend on anybody reading it.
   track and the question never reaches it.  This is your "active pages only", and it needed no code of
   its own.
 
-**One door is deliberately NOT gated.**  A saved configuration can still set atomic routes off:
-`parseAuto` reads the flag, and refusing there would make a setup you already have unloadable, which
-would be a worse fault than the one being fixed.  So a file that says false still loads and still says
-so in the log.  If you want that door shut too, say and it becomes a refusal at load with the same
-sentence.
+**AND THE FILE DOOR, your way** (2026-09-21: *"yes, shut the file door too - just enable the setting
+and show a warning in the log"*).  A saved configuration that turns atomic routes off while track
+autonomy runs over has no length now **comes up atomic**, with the reason in the log - the setting is
+written rather than the load refused, because a file has nobody at it and refusing it would make a
+configuration you already have unopenable.  Turning atomic routes ON can never be the unsafe answer:
+atomic mode releases nothing until a run ends.
+
+6. **The file door.** Save a setup with Atomic Routes off, measure everything, and re-load it (Validate
+   on the autonomy tab, or apply from the editor - both doors have the rule).  Then take one length off
+   a switch, re-load again, and read the log.
+
+- Step 6, everything measured: the setting is **left off**, because you meant it.
+- Step 6, one square short: it comes up **on**, and the log says how many squares have no length and
+  that measuring them lets you switch it off again.  The tick on the main window agrees with what the
+  railway is doing, rather than showing off while it runs atomic.
 
 *What this is:* the finding was `VD12-R4` - the tooltip sentence cut on 2026-09-21 was load-bearing - and
 this is your answer to it.  `ui.testNonAtomicRoutesNeedTheirLengths`, which measures every square,

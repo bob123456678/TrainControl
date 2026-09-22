@@ -5999,16 +5999,71 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public String whyNonAtomicRoutesAreRefused()
     {
+        int unmeasured = unmeasuredTrackAutonomyRunsOver();
+
+        if (unmeasured <= 0) return null;
+
+        return I18n.f("autolayout.errorNonAtomicNeedsLengths", unmeasured);
+    }
+
+    /**
+     * How many squares autonomy runs over have no length - the editor's own count (Adam, 2026-09-21).
+     *
+     * `squaresNeedingALength` is what the Unmeasured Track display highlights and what Mass Assign
+     * Lengths offers to fill in, so the two doors below and the editor cannot disagree about which
+     * squares count.  Zero where there is no setup to ask about, which is the honest answer: with no
+     * graph there is nothing "walkable via the autonomy editor".
+     *
+     * @return the count, 0 when nothing is unmeasured or there is no session
+     */
+    public int unmeasuredTrackAutonomyRunsOver()
+    {
         org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
-        if (session == null) return null;
+        if (session == null) return 0;
 
         java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> unmeasured =
             session.squaresNeedingALength();
 
-        if (unmeasured == null || unmeasured.isEmpty()) return null;
+        return unmeasured == null ? 0 : unmeasured.size();
+    }
 
-        return I18n.f("autolayout.errorNonAtomicNeedsLengths", unmeasured.size());
+    /**
+     * A setup that has just been loaded does not get to run non-atomic over unmeasured track
+     * (Adam, 2026-09-21: *"yes, shut the file door too - just enable the setting and show a warning in
+     * the log"*).
+     *
+     * **ENABLED, NOT REFUSED.**  The checkbox refuses the gesture because there is somebody there to
+     * read the refusal and one gesture away from fixing it; a FILE has nobody at it, and refusing the
+     * load would make a configuration he already has unopenable - a fix worse than the defect.  So the
+     * safe setting is written and the log says what happened and why, which is his ruling word for
+     * word.  Atomic mode releases nothing until a run ends, so turning it on can never be the unsafe
+     * answer.
+     *
+     * **BOTH PARSE DOORS CALL THIS**, because there are exactly two - the Validate button on the
+     * autonomy JSON panel and the editor's own apply (`AutonomyViewerPanel`) - and a rule at one of
+     * them is the sweep-the-siblings miss this project files more often than any other.
+     *
+     * The control is put back in step with the railway afterwards: leaving the tick showing OFF while
+     * the layout runs atomic would be the two-controls-disagreeing fault OB-090 is named for.
+     */
+    public void keepAtomicRoutesOnWhileTrackIsUnmeasured()
+    {
+        if (this.model == null || !this.model.hasAutoLayout()) return;
+
+        org.traincontrol.automation.Layout layout = this.model.getAutoLayout();
+
+        if (layout == null || layout.isAtomicRoutes()) return;
+
+        int unmeasured = unmeasuredTrackAutonomyRunsOver();
+
+        if (unmeasured <= 0) return;
+
+        layout.setAtomicRoutes(true);
+
+        this.model.logf("autolayout.warnAtomicRoutesKeptOn", unmeasured);
+
+        loadAutoLayoutSettings();
     }
 
     /**
@@ -24014,6 +24069,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
 
             this.model.parseAuto(this.autonomyJSON.getText());
+
+            // NOT NON-ATOMIC OVER UNMEASURED TRACK, whatever the file says (Adam, 2026-09-21).
+            keepAtomicRoutesOnWhileTrackIsUnmeasured();
 
             // The other way a Layout comes into being, and callbacks live on the object.
             attachAutonomyRefresh(this.model.hasAutoLayout() ? this.model.getAutoLayout() : null);
