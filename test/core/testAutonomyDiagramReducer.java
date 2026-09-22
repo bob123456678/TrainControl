@@ -737,27 +737,36 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * The room walk stops at a switch that can be thrown, and at nothing else - not at a crossing, and
-     * not at a permanent turnout (AMG-C3, and Adam's ruling on AMG-B2).
+     * The room walk stops at a switch that can be thrown AND at a permanent turnout - but not at a
+     * crossing (AMG-C3, Adam's ruling on AMG-B2, and his ruling of 2026-09-22 which changed half of it).
      *
-     * `roomAfterTheLastSwitch` walks back from the far sensor and stops at `isSwitch()`, which is the
-     * addressable switches and the double slip.  A diamond crossing and a `CUSTOM_PERM_*` turnout are
-     * not in that list, so the walk counts straight through them.  Asked whether either should stop it -
-     * a permanent turnout is a fork a train could in principle be standing across, and a crossing is
-     * track another route uses - **Adam answered "Neither" (2026-09-15)**, so this is the behaviour and
-     * it is pinned here rather than left to be rediscovered by whoever next edits `isSwitch()`.
+     * `roomAfterTheLastSwitch` walks back from the far sensor and stops where the room ends.  Asked on
+     * **2026-09-15** whether a crossing or a permanent turnout should stop it - a permanent turnout is a
+     * fork a train could be standing across, a crossing is track another route uses - Adam answered
+     * *"Neither"*, and that was pinned here.
      *
-     * `isSwitch()` is shared with the drawing code and the editor, so this asserts the ROOM NUMBER and
-     * not the predicate: what breaks if the list changes is the stretch a train's length is judged
-     * against, and that is the thing worth a red test.
+     * **He changed the permanent-turnout half on 2026-09-22**, shown what it costs: `OB-233` /
+     * `IND9X-A2`.  A berth BEYOND a permanent turnout had the track on the far side of the points
+     * counted as room, so a four-unit train was admitted to a two-unit berth and came to rest fouling
+     * the merge - the over-admission direction `behaviour.md` 5a exists to prevent.  His words:
+     * *"treat them the same as regular switches for the purposes of the check"*.
      *
-     * The discriminating number is the point: stopping at the crossing would answer 5 instead of 10.
+     * **The crossing half stands**, and the two halves are not the same question.  A train passing a
+     * permanent turnout chooses nothing - fork to base only, and the blades are trailable - so it is
+     * not a switch for ROUTING; what changed is where a train may come to REST, which is what 5a is
+     * about.  A crossing is not a fork at all: nothing merges there, so a train standing across it
+     * fouls the other route's track rather than its own road, and that is the 5c tail walk's business.
      *
-     * MUTATION: add `componentType.CROSSING` or the `CUSTOM_PERM_*` types to the stopping test in
-     * `roomAfterTheLastSwitch` and each half fails with 5 against 10.
+     * `isSwitch()` is shared with the drawing code and the editor - twenty call sites, four of them
+     * offering an accessory address a permanent turnout does not have - so it is NOT widened.  The two
+     * walks ask `boundsTheRoom` instead, and this asserts the ROOM NUMBER rather than the predicate:
+     * what breaks if the list changes is the stretch a train's length is judged against.
+     *
+     * MUTATION: add `componentType.CROSSING` to `boundsTheRoom` and the first half fails with 5
+     * against 10; take the permanent types back out of it and the second fails with 10 against 5.
      */
     @Test
-    public void testTheRoomWalkStopsOnlyAtASwitchThatCanBeThrown() throws IOException
+    public void testTheRoomWalkStopsAtASwitchAndAPermanentTurnoutButNotACrossing() throws IOException
     {
         // A - track - SWITCH - track - CROSSING - track - B, the switch's branch going to a sensor so
         // that it is a real fork rather than a dead end.
@@ -820,9 +829,13 @@ public class testAutonomyDiagramReducer
         assertEquals(eastbound.size(), 1, "the fixture did not produce the eastbound edge through the "
             + "permanent turnout:\n" + describe(permReducer));
 
-        assertEquals(eastbound.get(0).getRoomAtTheEnd(), 10,
-            "the walk stopped at the permanent turnout.  Adam was asked whether it should and said "
-            + "neither it nor a crossing stops it (2026-09-15), so the stretch is 3 + 2 + 4 + 1");
+        assertEquals(eastbound.get(0).getRoomAtTheEnd(), 5,
+            "the walk counted straight across the permanent turnout, so the room is the whole run"
+            + " rather than the 4 + 1 between the turnout and the station - and a train twice as long"
+            + " as the berth is admitted and comes to rest fouling the merge behind it (OB-233).  Adam"
+            + " said on 2026-09-15 that it should not stop the walk, and on 2026-09-22, shown the"
+            + " berth it admits: 'treat them the same as regular switches for the purposes of the"
+            + " check'");
     }
 
     /**

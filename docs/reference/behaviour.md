@@ -1317,6 +1317,46 @@ back in alphabetical order because the message shows only the first three of it.
 
 *(`VD12-R4`, `VD13-B1/B2/B3`, `VD14-B1/C6`, `VD16-B2`, `GS-B1`.  `MT-470` is the hands-on test.)*
 
+### 5e. Permanently-set turnouts: fork to base only, and they still bound a berth
+
+> *"They are trailable, so it's about intent and documentation.  They just can't go from the base to
+> the fork since we don't know which way they will end up.  Fork to base is OK."* - Adam, 2026-09-22
+
+A `CUSTOM_PERM_*` tile is the operator's declaration that a turnout has no address and cannot be
+thrown.  It is a supported thing to draw, not an error: the setup loads with a warning, and `TilePorts`
+gives each of the four a port map of its own.
+
+**Autonomy never makes a facing move over one.**  With the blades stuck in a position nobody has
+recorded, a move from the base out to the fork cannot choose a leg - so that move does not exist in the
+port map at all.  A move the other way does: the turnouts are trailable, so a train running fork to
+base merges safely whichever way the blades lie, and both legs may trail in.  That restriction is a
+property of the hardware and lives in `TilePorts`; a direction the operator authors on the tile ANDs
+with it and can only narrow it further.
+
+**A scissors crossing is different and is refused outright** - `CUSTOM_SCISSORS` and
+`CUSTOM_PERM_SCISSORS` both - because it is a drawing convention, two tiles depicting one double slip,
+whose topology cannot be expressed per tile.  And an **undeclared** address-less switch is refused too:
+routing over one would mean trusting it to be lying the right way, which is exactly what
+`CUSTOM_PERM_*` exists to declare and what nobody declared there.
+
+**It bounds a berth like any other switch** (Adam, 2026-09-22: *"treat them the same as regular
+switches for the purposes of the check"*, reversing half of his answer of 2026-09-15).  The room walk
+of 5a stops at a permanent turnout, so a berth beyond one is measured from the points rather than from
+wherever the run began.  The two questions are not the same question, which is why the answers differ:
+
+- **routing** asks which road a train takes, and over a permanent turnout it takes the only one there
+  is - so it is not a switch for that purpose, and never was;
+- **the berth check** asks where a train comes to REST.  A train too long for the berth hangs back
+  across the toe and blocks the other leg's merge, and it does that whichever way the blades lie.
+
+**A crossing still does not stop the walk** (his 2026-09-15 answer, unchanged).  Nothing merges at a
+crossing, so a train standing across one fouls another route's track rather than its own road - and
+that is the tail walk's business in 5c, not the room walk's.
+
+*(`IND9X-A2` / `OB-233`.  Held by
+`core.testAutonomyDiagramReducer.testTheRoomWalkStopsAtASwitchAndAPermanentTurnoutButNotACrossing`,
+which pins both halves against one fixture.)*
+
 ### The autonomy editor's keyboard doors
 
 Three shortcuts act on **the square the pointer is over**, and they ask one question to find it -

@@ -1392,7 +1392,17 @@ public class TileGraph
         return new RouteId(0, 100 + route.getA().ordinal() * 4 + route.getB().ordinal());
     }
 
-    private static boolean isPermanentTurnout(componentType type)
+    /**
+     * A turnout the operator has declared permanently set: no address, so it cannot be thrown.
+     *
+     * Package-visible because `GraphReducer`'s berth-room walks have to ask the same question (OB-233).
+     * A second copy of this list is how that defect happened - `LayoutDiagramComponent.isSwitch()` names
+     * the six throwable types and none of these five, and both walks stopped on it.
+     *
+     * @param type the tile's type
+     * @return true for the five CUSTOM_PERM_* types
+     */
+    static boolean isPermanentTurnout(componentType type)
     {
         return type == componentType.CUSTOM_PERM_LEFT
             || type == componentType.CUSTOM_PERM_RIGHT

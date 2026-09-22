@@ -38,7 +38,7 @@ or the tests. Worth stating plainly, because an unread backlog reads like a rail
 is not one.
 
 The railway defects live in the Inbox of `docs/manual-tests/issues.md`. **It is not empty**, and this
-paragraph said it was for twelve days (IND9X-B3, 2026-09-09): it holds 119 entries - 80 OB and 39 FR, counted after the six entries that round filed; 99 was wrong, and so was the 111 that replaced it, which was counted before those six were appended (VD12-R13, VD13-R3) - most of them carrying
+paragraph said it was for twelve days (IND9X-B3, 2026-09-09): it holds 118 entries - 79 OB and 39 FR, counted after the six entries that round filed; 99 was wrong, and so was the 111 that replaced it, which was counted before those six were appended (VD12-R13, VD13-R3) - most of them carrying
 a receipt row that says the work was done - the protocol is that an entry is cleared out when its fix
 has a test, and clearing has lagged. Read the receipts, not the presence of an entry.
 

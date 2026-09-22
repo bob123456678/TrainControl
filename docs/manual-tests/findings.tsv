@@ -1130,8 +1130,8 @@ IND9-C3	IND9-independent-2026-09-07.md	Closed	Open	the C19b comment claims the s
 IND9-C4	IND9-independent-2026-09-07.md	Closed	Open	the drag tests overwrite the runner's clipboard while explaining why they must not
 IND9-C5	IND9-independent-2026-09-07.md	Closed	Open	two of the new source-shape assertions prove less than their failure messages claim
 IND9X-A1	IND-independent-review.md	Closed	-	behaviour.md §5c describes a covered-track indicator that no longer ships
-IND9X-A2	2026-09-22-GS-backlog.md	Open - verified 2026-09-21	still true (A) — **your ruling first** (OB-233)	(listed in a table, no section of its own)
-IND9X-A2	IND-independent-review.md	Open - verified 2026-09-21	-	the room-after-the-last-switch walk does not stop at a permanently-set turnout, admitting a train whose tail fouls it
+IND9X-A2	2026-09-22-GS-backlog.md	Closed	still true (A) — **your ruling first** (OB-233)	(listed in a table, no section of its own)
+IND9X-A2	IND-independent-review.md	Closed	-	the room-after-the-last-switch walk does not stop at a permanently-set turnout, admitting a train whose tail fouls it
 IND9X-B1	IND-independent-review.md	Closed	-	FR-001 "Unavailable While Occupied" is not in behaviour.md at all, and its tier split is written nowhere
 IND9X-B2	IND-independent-review.md	Closed	-	the MT-247 route-conflict rule is enforced and tested, and behaviour.md does not state it
 IND9X-B3	IND-independent-review.md	Closed	-	the reference pair claims a clean slate the inbox does not show

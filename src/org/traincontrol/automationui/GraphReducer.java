@@ -1184,6 +1184,29 @@ public class GraphReducer
     }
 
     /**
+     * Whether the berth-room walk stops at this tile: a switch, or a turnout declared permanently set.
+     *
+     * **A PERMANENT TURNOUT IS STILL THE LAST SWITCH** (OB-233 / IND9X-A2, and Adam's ruling of
+     * 2026-09-22: *"Leave them as declared and warned - fix the berth walk"*).  Topologically it is not
+     * a choice - nothing can throw it, and every train over it takes the same road - but it is shared
+     * metal, and a train standing across it fouls the merge exactly as it would foul a throwable one.
+     * `behaviour.md` 5a's rule is about where the train comes to REST, not about what can be commanded.
+     *
+     * **It is `isSwitch()` plus the declared permanent types, and `isSwitch()` is left alone.**  That
+     * method has twenty call sites and four of them ask it in order to offer an accessory address
+     * (`MarklinControlStation`, `LayoutEditorAddressPopup`); a permanent turnout has none by
+     * definition, so widening it there would offer address dialogs for track nothing can throw.
+     *
+     * @param component the tile, or null where the diagram has none
+     * @return true when the room ends here
+     */
+    private static boolean boundsTheRoom(LayoutDiagramComponent component)
+    {
+        return component != null
+            && (component.isSwitch() || TileGraph.isPermanentTurnout(component.getType()));
+    }
+
+    /**
      * The track between the last switch on this edge and the square it ends at, endpoint included.
      *
      * Adam's ruling of 2026-09-02: the room a train needs is measured "between the switch and the
@@ -1236,7 +1259,7 @@ public class GraphReducer
 
             LayoutDiagramComponent component = graph.getTiles().get(tile);
 
-            if (component != null && component.isSwitch())
+            if (boundsTheRoom(component))
             {
                 return room > 0 ? room : -1;
             }
@@ -1306,7 +1329,7 @@ public class GraphReducer
 
             LayoutDiagramComponent component = graph.getTiles().get(tile);
 
-            if (component != null && component.isSwitch()) break;
+            if (boundsTheRoom(component)) break;
 
             int here = authored.getTileLength(tile);
 

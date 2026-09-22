@@ -1465,38 +1465,6 @@ Adam, 2026-09-17: *"Add a right click menu open to clear all max station train l
 
 `core.testMassAssignLengths.testClearAllMaxTrainLengthsClearsEveryPage` and `testTheClearMaxTrainLengthsItemCountsAndGreys`, on a two-page railway built in memory.  Five mutations each caught: clearing one page only, counting a 0, not clearing, never greying, and the item moved away from the other clears.
 
-### OB-233 - 2026-09-21 - the berth-room walk does not stop at a permanently-set turnout
-
-**Kind:** bug  
-**Raised from:** review finding IND9X-A2, 2026-09-09  
-**Filed:** 2026-09-21  
-
-**Needs your ruling first, and it is A-severity.**
-
-`LayoutDiagramComponent.isSwitch()` names SWITCH_LEFT/RIGHT/CROSSING/THREE/Y and CUSTOM_SCISSORS, and
-not CUSTOM_PERM_LEFT/RIGHT/Y/THREEWAY/SCISSORS - the five permanently-set turnouts. Both berth-room walks in
-`GraphReducer` (`roomAfterTheLastSwitch` and `unmeasuredAfterTheLastSwitch`) walk the run-in backwards
-and stop at the first tile where `isSwitch()` answers true, so for a berth approached over a
-permanently-set turnout the walk counts the track on the far side of it as room. An edge whose only
-turnout is a CUSTOM_PERM also reports `crossesASwitch() == false`, so the caller keeps accumulating
-straight across the points, and the editor's measure-these-tiles prompt asks you to measure tiles on
-the wrong side of it.
-
-**What it costs.** A four-unit train sent to a two-unit berth reached over a CUSTOM_PERM_LEFT is
-admitted and comes to rest fouling the merge of a junction no command can clear. behaviour.md 5a's
-last-switch rule exists to prevent exactly that, and this is the over-admission direction the document
-itself says to rule on first. Once the train is standing, the 5c tail walk does cover the edge over the
-turnout, so conflicting routes are then refused - the admission is the wrong part, not what follows it.
-
-**The question.** Is a permanently-set turnout "the last switch"? Physically it is shared metal;
-topologically it is not a choice. If yes, the fix is adding all FIVE CUSTOM_PERM types to the stop test - and `isSwitch()` itself lists `CUSTOM_SCISSORS` and none of the five, so the permanent scissors is in the same hole as the other four and a fix written from an earlier draft of this paragraph, which said four and named only LEFT/RIGHT/Y/THREEWAY, would have closed four doors of five (VD12)
-in both walks, and then deciding whether `isSwitch()` itself should answer true for them - which has
-other callers and needs the sibling sweep.
-
-**Verified still true on 2026-09-21**, when the review that found it was deleted. No fixture contains
-any switch of any kind, so no test in the suite can tell "switch" from "permanently-set switch" here;
-one would have to be built with the fix.
-
 ### OB-234 - 2026-09-21 - clicking the findings list kills the autonomy editor keyboard shortcuts for the session
 
 **Kind:** bug  
@@ -2013,10 +1981,10 @@ tests only, which is true of everything except these.
 **What I would do:** read them out of the store and put each one either in this Inbox as an OB or in
 the closed roll with the reason it was declined, then say so in `behaviour.md`.  **The obvious query
 is wider than this list, and the numbers move as rounds land** - counted 2026-09-22:
-`WHERE status LIKE 'Open%'` returns **142 rows for 86 findings** (a finding written up in two documents
+`WHERE status LIKE 'Open%'` returns **140 rows for 85 findings** (a finding written up in two documents
 has a row for each, VD15-R3 - and the general sweep of 2026-09-22 gave every finding it audited a
 second row, which is why the two numbers are now so far apart), made up of 98 rows for 64 findings at
-exactly `Open`, 18 rows for 9 `Open - unverified`, 10 for 5 `Open - verified 2026-09-21`, 8 for 4
+exactly `Open`, 18 rows for 9 `Open - unverified`, 8 for 4 `Open - verified 2026-09-21`, 8 for 4
 `Open - for Adam`, 6 for 3 `Open - deferred until the MT retests` and 2 for 1 deferred past 3.0.0.
 
 Thirteen are named above.  **Sixteen more are named nowhere but this paragraph**, and each is written
@@ -2182,6 +2150,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-21 | OB-233 | bug | The berth-room walk counted straight across a permanently-set turnout, so a berth beyond one was measured from wherever the run began and a train too long for it was admitted, coming to rest fouling the merge.  Adam, 2026-09-22, having ruled the other way on 2026-09-15: *"(c) - treat them the same as regular switches for the purposes of the check"*.  Both walks ask `GraphReducer.boundsTheRoom` now; `isSwitch()` is untouched, and a crossing still does not stop the walk.  Held by `testTheRoomWalkStopsAtASwitchAndAPermanentTurnoutButNotACrossing`, seen failing first.  No hands-on test: it is a calculation, and the claim's mutation was measured. | fixed unvalidated | - |
 | 2026-09-22 | OB-251 | question | Two reviewers found that Instant Stop halts the trains and leaves autonomy running - a train between paths sets off again, and a train mid-path leaves its thread waiting on a sensor it will not reach.  Adam, 2026-09-22: *"Instant stop is unrelated to autonomy"*, and *"So it's OK to keep autonomy running"*.  So the button is a Central Station halt and nothing else, and the exit capture's `!isRunning()` is right rather than a consequence - placements taken mid-run would record trains half-way along a path. | declined | - |
 | 2026-09-17 | FR-092 | feature request | Adam: *"Add a right click menu open to clear all max station train lengths (grouped with the other clear options)"*.  Clear All Max Train Lengths, after Clear All Track Lengths in Bulk Tools; every page, after a confirmation. | - | `MT-457` |
 | 2026-09-17 | FR-091 | feature request | Adam: *"add a similar feature to walk stations that don't have a min length set up"* (*"max length"*).  Mass Assign Max Train Lengths in Bulk Tools walks the stations with no maximum, through the Mass Assign Lengths prompt. | - | `MT-456` |
