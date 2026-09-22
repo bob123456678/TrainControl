@@ -5964,46 +5964,86 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Why Atomic Routes may not be switched off, or null when it may be (Adam, 2026-09-21).
      *
+     * **TWO HALVES, because the escape has two clauses (VD14-B1).**  `tailHasProvablyPassed` hands an
+     * edge back either when the path has no measured edge at all OR when `behind >= trainLength` - and
+     * a locomotive's length is 0 until somebody sets it, so an unmeasured TRAIN releases every edge as
+     * the head passes it however well the track is measured.  The tooltip has always said "edge and
+     * train lengths"; the first version of this gate asked only about the track.
+     *
      * Adam, having been shown that the tooltip's *"edge and train lengths need to be set for best
      * results"* was the only thing standing between an unmeasured railway and track handed back under a
      * moving train: *"can we simply refuse it now if there are unmeasured segments in what's walkable
      * via the autonomy editor?  Limit it to logical edges that it prompts for, and on active pages
      * only."*
      *
-     * **WHAT MAKES IT UNSAFE.**  `Layout.tailHasProvablyPassed` returns true the moment the path it is
-     * asked about has no measured leg at all - "nothing measured ANYWHERE on this path", which is the
-     * honest answer for a railway with lengths on its platforms and nowhere else - and non-atomic mode
-     * hands an edge back as soon as that returns true.  So with nothing measured, every edge is released
-     * as the head passes it, with the train still lying over it, and another train is routed onto track
-     * that is occupied.  Atomic mode does not care, because it releases nothing until the run ends.
+     * **WHAT MAKES IT UNSAFE.**  Non-atomic mode hands an edge back as soon as
+     * `Layout.tailHasProvablyPassed` says the tail has cleared it, and that is true - wrongly - in two
+     * states: a path with no measured edge anywhere, and a train whose length is 0.  In either, an edge
+     * is released with the train still lying over it and another train can be routed onto occupied
+     * track.  Atomic mode does not care, because it releases nothing until the run ends.
      *
-     * **THE SAME QUESTION THE EDITOR ASKS, and only that question.**  `squaresNeedingALength` is what
-     * the Unmeasured Track display highlights and what Mass Assign Lengths offers to fill in - the
-     * pieces a length rule reads, the switches it reads, and the squares two roads share.  A square
-     * nothing walks over is not in it, so a siding nobody automates cannot block this; and the pages
-     * autonomy takes no notice of are not in the graph those legs come from, which is the "active pages
-     * only" half - it needs no code of its own and would be wrong to add, because there would then be
-     * two answers to one question.
+     * **THE QUESTION IS THE RAILWAY'S, NOT THE EDITOR'S** (VD13-B1, VD13-B2).  It asks
+     * `Layout.unmeasuredTrackThatCouldBeReleased` and `Layout.trainsWithNoLength`, so the checkbox and
+     * both load doors give one answer, and a railway with no diagram behind it is asked the same
+     * question as one built in the editor.  Asking the editor's `squaresNeedingALength` instead refused
+     * a railway whose every edge is measured - where the escape provably cannot fire - and answered
+     * "nothing unmeasured" for a legacy setup, which is where the danger actually lives.
      *
      * **A WAY PAST, which this deliberately does not have.**  Adam's standing rule is that he would
      * rather have no check than one that refuses something legal, and the usual shape here is a
      * confirmation rather than a refusal.  He asked for a refusal in as many words, and the reason it is
-     * the right shape this time is that the remedy is one gesture away and named in the message: the
-     * editor will fill every length in from one dialog.
+     * the right shape this time is that the remedy is named in the message, rail by rail and train by
+     * train.
      *
-     * NOT asked of the file door.  `parseAuto` can set atomic routes off from a saved configuration, and
-     * refusing there would make a setup somebody already has unloadable - a fix worse than the defect.
-     * That door is written up in the record instead (VD12-R4).
+     * The FILE doors do not refuse - they write the safe setting and log it, which is his ruling of
+     * 2026-09-21: *"just enable the setting and show a warning in the log."*  See
+     * `keepAtomicRoutesOnWhileTrackIsUnmeasured`.
      *
      * @return the sentence to show, or null when switching it off is safe
      */
     public String whyNonAtomicRoutesAreRefused()
     {
-        int unmeasured = unmeasuredTrackAutonomyRunsOver();
+        java.util.List<String> track = unmeasuredTrackAutonomyRunsOver();
 
-        if (unmeasured <= 0) return null;
+        if (!track.isEmpty())
+        {
+            return I18n.f("autolayout.errorNonAtomicNeedsLengths", track.size(), someOf(track));
+        }
 
-        return I18n.f("autolayout.errorNonAtomicNeedsLengths", unmeasured);
+        java.util.List<String> trains = trainsWithoutALength();
+
+        if (!trains.isEmpty())
+        {
+            return I18n.f("autolayout.errorNonAtomicNeedsTrainLengths", trains.size(), someOf(trains));
+        }
+
+        return null;
+    }
+
+    /**
+     * A few of a list, for a message that has to fit on a dialog (VD14-C1, VD14-R10).
+     *
+     * The count alone was no remedy: it told him how much was unmeasured and nothing about WHERE, and
+     * the sentence that used to point at the Unmeasured Track display was removed because that display
+     * answers a different question now.  Three names and an ellipsis is what a refusal can carry.
+     *
+     * @param names what was found
+     * @return up to three of them, comma-separated, with an ellipsis when there are more
+     */
+    private static String someOf(java.util.List<String> names)
+    {
+        StringBuilder out = new StringBuilder();
+
+        for (int at = 0; at < names.size() && at < 3; at++)
+        {
+            if (at > 0) out.append(", ");
+
+            out.append(names.get(at));
+        }
+
+        if (names.size() > 3) out.append(", ...");
+
+        return out.toString();
     }
 
     /**
@@ -6024,13 +6064,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * @return the count, 0 when every drivable rail has a length or there is no railway to ask
      */
-    public int unmeasuredTrackAutonomyRunsOver()
+    public java.util.List<String> unmeasuredTrackAutonomyRunsOver()
     {
-        if (this.model == null || !this.model.hasAutoLayout()) return 0;
+        if (this.model == null || !this.model.hasAutoLayout()) return new java.util.ArrayList<>();
 
         org.traincontrol.automation.Layout layout = this.model.getAutoLayout();
 
-        return layout == null ? 0 : layout.unmeasuredDrivableTrack();
+        return layout == null ? new java.util.ArrayList<>()
+            : layout.unmeasuredTrackThatCouldBeReleased();
+    }
+
+    /**
+     * The locomotives autonomy would run that have no train length - the gate's second half (VD14-B1).
+     *
+     * @return their names, empty when every one has a length or there is no railway to ask
+     */
+    public java.util.List<String> trainsWithoutALength()
+    {
+        if (this.model == null || !this.model.hasAutoLayout()) return new java.util.ArrayList<>();
+
+        org.traincontrol.automation.Layout layout = this.model.getAutoLayout();
+
+        return layout == null ? new java.util.ArrayList<>() : layout.trainsWithNoLength();
     }
 
     /**
@@ -6070,13 +6125,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Adam's instruction for this case was *"just force the checkbox checked as well"*.  It asks
         // first, because a railway that IS measured end to end would otherwise lose non-atomic mode at
         // every load - said in MT-470 so he can overrule it in a line.
-        int unmeasured = unmeasuredTrackAutonomyRunsOver();
+        java.util.List<String> track = unmeasuredTrackAutonomyRunsOver();
 
-        if (unmeasured <= 0) return;
+        java.util.List<String> trains = trainsWithoutALength();
+
+        if (track.isEmpty() && trains.isEmpty()) return;
 
         layout.setAtomicRoutes(true);
 
-        this.model.logf("autolayout.warnAtomicRoutesKeptOn", unmeasured);
+        if (!track.isEmpty())
+        {
+            this.model.logf("autolayout.warnAtomicRoutesKeptOn", track.size(), someOf(track));
+        }
+        else
+        {
+            this.model.logf("autolayout.warnAtomicRoutesKeptOnTrains", trains.size(), someOf(trains));
+        }
 
         loadAutoLayoutSettings();
     }

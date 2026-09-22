@@ -23806,56 +23806,59 @@ that does not depend on anybody reading it.
 
 **Steps**
 
-1. Open the autonomy editor and turn on **Unmeasured Track**.  Note whether anything is highlighted,
-   and on which pages.
-2. On the main window, untick **Atomic Routes**.
-3. Measure what the display highlights - **Mass Assign Lengths** on each page that has any - until
-   nothing is highlighted.  Untick **Atomic Routes** again.
-4. Tick **Atomic Routes** back on.
+1. On the main window, untick **Atomic Routes**.  Read the message.
+2. Measure what the message names - it lists up to three pieces of track, and how many there are in
+   total - until unticking is accepted.
+3. Tick **Atomic Routes** back on.
+4. Give one locomotive autonomy runs a train length of **0** (or clear it) and untick again.
 5. If you have a page autonomy takes no notice of, leave some track on it unmeasured and untick again.
-6. **The file door.** Save a setup with Atomic Routes off, measure everything, and re-load it (Validate
-   on the autonomy tab, or apply from the editor - both doors have the rule).  Then take one length off
-   a piece of track, re-load again, and read the log.
+6. **The file door.** Save a setup with Atomic Routes off, put the railway right, and re-load it
+   (Validate on the autonomy tab, or apply from the editor - both doors have the rule).  Then take one
+   length off, re-load again, and read the log.
 7. **A legacy setup, if you have one to hand.**  Load an `autonomy.json` with no diagram behind it -
    the lengths on its edges and nothing else - with Atomic Routes off, and then untick the checkbox.
 
 **Expected**
 
-- Step 2: **refused** while any piece of track a train can be driven over has no length, with a message
-  saying how many, and the tick goes back on by itself.  The setting is not changed.
-- Step 3: **accepted** once every such piece has a length.  This is the half worth checking hardest: a
-  refusal that fires whatever the railway looks like would take the setting away from you for good.
-- Step 4: **always accepted.**  Going back to atomic is never refused - it releases nothing until a run
+- Step 1: **refused** while the railway could release track under a train, with a message that says how
+  many pieces of track and names up to three of them.  The tick goes back on by itself and the setting
+  is not changed.
+- Step 2: **accepted** once none is left.  This is the half worth checking hardest: a refusal that fires
+  whatever the railway looks like would take the setting away from you for good.
+- Step 3: **always accepted.**  Going back to atomic is never refused - it releases nothing until a run
   ends, so it is safe whatever is measured.
+- Step 4: **refused, naming the locomotive.**  A train with no length is treated as clear of the track
+  the moment its head passes, so every edge is handed back with the train still on it - the tooltip has
+  always said *"edge and train lengths"*, and the first two versions of this gate only asked about the
+  edges.
 - Step 5: **accepted.**  An excluded page is not in the autonomy graph, so it contributes no track to
-  the question and cannot hold the setting back.  This is your "active pages only", and it needed no
-  code of its own.
-- Step 6, everything measured: the setting is **left off**, because you meant it.
-- Step 6, one piece short: it comes up **on**, and the log says how many pieces of track have no length
-  and that measuring them lets you switch it off again.  The tick on the main window agrees with what
-  the railway is doing.
-- Step 7: **the same answers as steps 2 and 6.**  All three doors - the checkbox and both load paths -
-  ask one question of the railway itself, so a legacy setup is refused and forced on exactly as a
-  diagram one is.  The first version of this asked the EDITOR at the checkbox, which answered "nothing
-  unmeasured" whenever there was no diagram: the checkbox stood open on the very railway the file door
-  had been hardened for (VD13-B1).
+  the question.  This is your "active pages only", and it needed no code of its own.
+- Step 6, put right: the setting is **left off**, because you meant it.  One length short: it comes up
+  **on**, the log says how many and names up to three, and the tick agrees with the railway.
+- Step 7: **the same answers as steps 1 and 6.**  All three doors - the checkbox and both load paths -
+  ask one question of the railway itself, so a legacy setup is treated exactly as a diagram one is.
 
-**WHAT COUNTS AS UNMEASURED, and why it is not the number in the editor** (VD13-B2).  The question is
-about RAILS, not squares: non-atomic mode is unsafe only through one escape - `tailHasProvablyPassed`
-returns true the moment a path has no measured edge at all - and an edge's length is the sum of its
-squares.  So a railway with one unmeasured switch square still has a length on every edge, the escape
-cannot fire, and the setting is allowed; the only cost of that missing square is that the tail walk
-under-counts and track is held LONGER, which is the safe direction.  A rail is also counted once rather
-than once per direction, and a rail whose far end is switched off is not counted at all, because no
-train can be driven onto it.
+**WHAT COUNTS, and why it is not what the editor highlights.**  Non-atomic mode releases an edge when
+`tailHasProvablyPassed` says the tail has cleared it, and that is wrongly true in exactly two states: a
+path with **no measured edge anywhere** on it, and a train whose **length is 0**.  So the question is
+about whole paths and about trains - not about squares.  Three consequences, each of which cost a
+validation round to find:
 
-*What this is:* the finding was `VD12-R4` - the tooltip sentence cut on 2026-09-21 was load-bearing - and
-this is your answer to it, corrected the same day after a second validation round found the gate asking
-the wrong question in two of three doors (VD13-B1, B2, B3).  `ui.testNonAtomicRoutesNeedTheirLengths`
-measures every rail, requires the door to be OPEN, then takes the length off one rail and requires the
-refusal to name **how much** - not which square: the message carries a count, and an earlier draft of
-this entry promised a name it never gave (VD13-R10).
-`core.testAutoLayout.testARailwayCountsItsUnmeasuredDrivableTrack` holds the question itself, including
-that one rail counts once and that track nothing can be driven onto counts not at all.
+- an unmeasured switch square does **not** count, because an edge's length is the sum of its squares and
+  one measured square gives the edge a length (VD13-B2);
+- an unmeasured rail with measured track between it and every destination does **not** count either,
+  because a path ends at a destination and so can never be unmeasured end to end (VD14-C6);
+- a rail is counted **once**, not once per direction (VD13-B3).
+
+So the Unmeasured Track display in the editor is NOT the list to work from here - it answers a different
+question, about how far a tail reaches.  The refusal's own list is the one to measure.
+
+*What this is:* the finding was `VD12-R4` - the tooltip sentence cut on 2026-09-21 was load-bearing.
+Three validation rounds corrected the gate: VD13-B1 (the checkbox was blind where the file door had been
+hardened), VD13-B2/B3 (it counted squares, and counted one rail twice), VD14-B1 (it never asked about
+train lengths, which is the clause his own railway is most exposed to, since the default length is 0) and
+VD14-C6 (it refused rails that no path could ever release).  Held by
+`ui.testNonAtomicRoutesNeedTheirLengths` - three claims, each with the control that the door is OPEN when
+the railway is right - and `core.testAutoLayout.testARailwayCountsItsUnmeasuredDrivableTrack`.
 
 ---

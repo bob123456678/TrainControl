@@ -4470,11 +4470,14 @@ public class Layout
      *
      * One method now, so the next door asks instead of working it out again.
      *
-     * **TWO MORE READERS ASK THE SAME QUESTION AND ARE NOT ON THIS RULE (VD13-C2)**, and an earlier
-     * draft of this paragraph claimed there were none: `Route.getLatestMilestoneS88` falls back to
-     * `getLocomotiveLocation` for an s88 condition, which can read a train at a sensor it has not
-     * reached, and `AutonomyEditorPanel`'s standing-train tooltip asks the raw question.  The first is
-     * a change to when a route FIRES and is filed as OB-250 rather than made here.
+     * **MORE READERS ASK THE SAME QUESTION AND ARE NOT ON THIS RULE (VD13-C2, corrected by VD14-C4)**,
+     * and an earlier draft of this paragraph claimed there were none - twice, and then named the wrong
+     * method.  `Route.conditionsSatisfied` asks `getLatestMilestoneS88` (which is on THIS class and has
+     * no fallback of its own) and then falls back to `getLocomotiveLocation`, so an s88 condition can
+     * read a train at a sensor it has not reached: that is a change to when a route FIRES and is filed
+     * as OB-250 rather than made here.  `AutoLocomotiveStatus.whyNotReport`, `explainCannotStart` and
+     * the diagram's own placement report ask the raw question too; each is about a train that is
+     * standing, where the two answers agree, which is why they are noted rather than changed.
      *
      * NOT asked by `AutoLocomotiveStatus`'s @-station line, which shows NOTHING rather than a
      * reservation where a run has reported no milestone yet: that is a decision about a line of text,
@@ -6948,12 +6951,16 @@ public class Layout
 
         if (head == null) return driven;
 
-        // THE HEAD IS THE START OF THE PATH, so nothing has been driven yet (VD13-C1).  The javadoc
-        // has always promised this and nothing implemented it: without it the by-place fallback below
-        // can match a LATER copy of the start square and hand back the whole run as "driven", with an
-        // entry side computed between two points that are not neighbours.
-        if (path.get(0) != null && path.get(0).getStart() != null
-            && (path.get(0).getStart() == head || path.get(0).getStart().isSamePlaceAs(head)))
+        // THE HEAD IS THE START OF THE PATH, so nothing has been driven yet (VD13-C1) - AND BY
+        // IDENTITY ONLY (VD14-B2).
+        //
+        // The javadoc has always promised this and nothing implemented it.  The first version asked by
+        // PLACE as well, which broke the case it was meant to help: a first leg that REVERSES IN PLACE
+        // ends at another copy of the start square, so the head is a different Point on the same piece
+        // of track - the train HAS driven that leg, and the walk below would have matched it by
+        // identity.  Answering "nothing driven" there sends the caller back to whatever the Point
+        // recorded on an earlier run, which is the stale road MT-438 was about.
+        if (path.get(0) != null && path.get(0).getStart() == head)
         {
             return driven;
         }
@@ -8860,8 +8867,8 @@ public class Layout
     }
     
     /**
-     * HOW MUCH DRIVABLE TRACK HAS NO LENGTH - the one question the atomic-routes gate asks
-     * (Adam, 2026-09-21; corrected the same day by VD13-B1, B2 and B3).
+     * THE TRACK NON-ATOMIC MODE COULD RELEASE UNDER A TRAIN - the atomic-routes gate's question
+     * (Adam, 2026-09-21; corrected by VD13-B1/B2/B3 and again by VD14-C5/C6).
      *
      * **Why this is the question and the editor's square count is not.**  Non-atomic mode is unsafe
      * only through one escape: `tailHasProvablyPassed` returns true the moment `pathIsUnmeasured`, and
@@ -8876,19 +8883,26 @@ public class Layout
      * **BY RAIL, NOT BY EDGE.**  A rail is two `Edge` objects, one per direction, so counting edges
      * told him "2 pieces of track" about one piece.  Counted by the pair of places it joins.
      *
-     * **AND NOT TRACK A TRAIN CANNOT BE DRIVEN OVER.**  `isPathClear` refuses a path whose
-     * intermediate or destination point is switched off, so a rail INTO an inactive point can never be
-     * part of a run and must not hold the setting back.  The far end only: a train standing on an
-     * inactive point may still drive out of it, so the near end says nothing.
+     * **AND ONLY WHERE A WHOLE PATH COULD BE UNMEASURED** (VD14-C6).  Counting every unmeasured rail
+     * refused a railway that is provably safe: the escape needs a path with NO measured edge, and a
+     * path always ENDS at a destination, so an unmeasured rail with measured track between it and every
+     * destination can never be part of one.  What this returns is the rails from whose far end an
+     * ACTIVE destination can be reached over unmeasured track alone - the rails that could really be
+     * handed back under a train.
+     *
+     * That also settles what an earlier draft tried to say with an `isActive()` test on the far end
+     * (VD14-C5): the test was inert for an ordinary rail, because the opposite direction has an active
+     * far end and contributed the same rail anyway.  A path may not run through or finish on a point
+     * that is switched off, so the reachability walk below simply never reaches one.
      *
      * Zero counts as no length, which is the convention every length rule here uses - `getTileLength`
      * answers 0 for unmeasured, and only positive lengths are determinate.
      *
-     * @return how many rails a train could be driven over have no length, 0 when every one has a length
+     * @return the rails, named by the two places each joins, in the graph's own order
      */
-    public int unmeasuredDrivableTrack()
+    public java.util.List<String> unmeasuredTrackThatCouldBeReleased()
     {
-        Set<String> rails = new LinkedHashSet<>();
+        java.util.List<Edge> unmeasured = new java.util.ArrayList<>();
 
         for (Edge edge : this.edges.values())
         {
@@ -8896,15 +8910,80 @@ public class Layout
 
             if (edge.getLength() > 0) continue;
 
-            if (!edge.getEnd().isActive()) continue;
+            unmeasured.add(edge);
+        }
+
+        // FROM WHICH POINTS AN ACTIVE DESTINATION IS REACHABLE OVER UNMEASURED TRACK.  Walked
+        // backwards from every destination a path could end at, over unmeasured edges only.
+        Set<String> reaches = new LinkedHashSet<>();
+
+        java.util.List<Point> frontier = new java.util.ArrayList<>();
+
+        for (Point p : this.points.values())
+        {
+            if (p != null && p.isDestination() && p.isActive() && reaches.add(p.getName()))
+            {
+                frontier.add(p);
+            }
+        }
+
+        while (!frontier.isEmpty())
+        {
+            Point here = frontier.remove(frontier.size() - 1);
+
+            for (Edge edge : unmeasured)
+            {
+                if (edge.getEnd() != here) continue;
+
+                Point back = edge.getStart();
+
+                // Not through a point a path may not run through.
+                if (back == null || !back.isActive()) continue;
+
+                if (reaches.add(back.getName())) frontier.add(back);
+            }
+        }
+
+        Set<String> rails = new LinkedHashSet<>();
+
+        for (Edge edge : unmeasured)
+        {
+            // The rail can be released only if the rest of the way to a destination is unmeasured too.
+            if (!reaches.contains(edge.getEnd().getName())) continue;
 
             String from = placeNameOf(edge.getStart());
             String to = placeNameOf(edge.getEnd());
 
-            rails.add(from.compareTo(to) <= 0 ? from + " | " + to : to + " | " + from);
+            rails.add(from.compareTo(to) <= 0 ? from + " - " + to : to + " - " + from);
         }
 
-        return rails.size();
+        return new java.util.ArrayList<>(rails);
+    }
+
+    /**
+     * The locomotives autonomy would run that have no train length (VD14-B1).
+     *
+     * **The second half of what makes non-atomic mode unsafe, and the gate missed it.**
+     * `tailHasProvablyPassed`'s other clause is `behind >= trainLength`, and a locomotive's length is
+     * **0** until somebody sets it - so the first time an edge is asked about, with `behind` still 0,
+     * `0 >= 0` is true and the edge is handed back with the whole train on it.  No amount of measuring
+     * the track prevents that; the tooltip has always said *"edge AND train lengths need to be set"*,
+     * and the gate was only asking about the edges.
+     *
+     * @return their names, in the order the run list holds them
+     */
+    public java.util.List<String> trainsWithNoLength()
+    {
+        java.util.List<String> out = new java.util.ArrayList<>();
+
+        for (Locomotive loc : this.getLocomotivesToRun())
+        {
+            if (loc == null) continue;
+
+            if (loc.getTrainLength() == null || loc.getTrainLength() <= 0) out.add(loc.getName());
+        }
+
+        return out;
     }
 
     /**

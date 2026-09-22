@@ -634,7 +634,7 @@ public class testAutoLayout
     }
 
     /**
-     * A railway can say how much DRIVABLE track has no length (Adam, 2026-09-21; VD13-B2, B3).
+     * A railway can say which track non-atomic mode could release under a train (VD13-B2/B3, VD14-C6).
      *
      * This is the one question the atomic-routes gate asks, at the checkbox and at both load doors.  It
      * is the hazard in the form the hazard takes: non-atomic mode releases an edge as soon as
@@ -648,12 +648,13 @@ public class testAutoLayout
      *    who has measured everything, which is the failure Adam's standing rule is about.)
      *  - **A rail is counted ONCE, not once per direction.**  A rail is two `Edge` objects, so counting
      *    edges told him "2 pieces of track" about one piece.
-     *  - **Track a train cannot be driven onto is not counted.**  `isPathClear` refuses a path whose
-     *    intermediate or destination point is switched off, so a rail into one can never be part of a
-     *    run and must not hold the setting back.
+     *  - **Track that cannot be part of an unmeasured path is not counted.**  A path ends at a
+     *    destination, so a rail with measured track between it and every destination can never be in
+     *    an unmeasured path - and a point switched off is one no path may reach.
      *
-     * MUTATION: count `this.edges.values()` without the de-duplication and the second claim goes red;
-     * drop the `isActive()` test and the third does; return 0 always and the first does.
+     * MUTATION: drop the de-duplication and the first claim goes red; count every unmeasured edge
+     * rather than the ones from which a destination can be reached over unmeasured track and the third
+     * does; return nothing always and the first does.
      *
      * @throws Exception from the model
      */
@@ -676,18 +677,18 @@ public class testAutoLayout
         cd.setLength(2);
 
         // BOTH DIRECTIONS OF ONE RAIL, neither measured: one piece of track, not two.
-        assertEquals(layout.unmeasuredDrivableTrack(), 1,
+        assertEquals(layout.unmeasuredTrackThatCouldBeReleased().size(), 1,
             "UE_B and UE_C are joined by one rail written as two edges, and neither has a length, so"
             + " this railway has ONE unmeasured piece of track - it counts "
-            + layout.unmeasuredDrivableTrack() + ".  Telling the operator 2 about one piece is a number"
+            + layout.unmeasuredTrackThatCouldBeReleased() + ".  Telling the operator 2 about one piece is a number"
             + " that means nothing to him");
 
         // THE CONTROL: measured end to end, so nothing is in the way of running non-atomic.
         bc.setLength(1);
         cb.setLength(1);
 
-        assertEquals(layout.unmeasuredDrivableTrack(), 0,
-            "every rail has a length and the railway still reports " + layout.unmeasuredDrivableTrack()
+        assertEquals(layout.unmeasuredTrackThatCouldBeReleased().size(), 0,
+            "every rail has a length and the railway still reports " + layout.unmeasuredTrackThatCouldBeReleased()
             + " without one - so a setup that is measured end to end would have non-atomic mode taken"
             + " away from it at every load");
 
@@ -695,11 +696,11 @@ public class testAutoLayout
         cd.setLength(0);
         layout.getPoint("UE_D").setActive(false);
 
-        assertEquals(layout.unmeasuredDrivableTrack(), 0,
+        assertEquals(layout.unmeasuredTrackThatCouldBeReleased().size(), 0,
             "the rail into UE_D has no length, but UE_D is switched off - `isPathClear` refuses a path"
             + " whose destination or intermediate point is inactive, so no train can ever be driven"
             + " over it and it must not hold the setting back.  Counted: "
-            + layout.unmeasuredDrivableTrack());
+            + layout.unmeasuredTrackThatCouldBeReleased());
     }
 
     /**

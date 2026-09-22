@@ -399,19 +399,7 @@ public class testTheWashIsNoLongerThanTheTrain
             break;
         }
 
-        // MEASURED, NOT DERIVED (VD13-T8).  The loop above predicts which path moves the old anchor by
-        // comparing positions in the graph's own point order, and that prediction is sound only while
-        // `getPoints()` and `getLocomotiveLocation` walk the same collection in the same order - which
-        // was not true for a few hours on 2026-08-24, when `getPoints()` returned a copy.  One line
-        // turns the prediction into an observation, and makes a silent skip impossible.
-        if (locked != null)
-        {
-            assertNotSame(layout.getLocomotiveLocation(train), standing,
-                "the lock reserved no Point that comes before " + standing.getName() + " in the graph's"
-                + " own order, so the anchor this claim is about did not move and the claim would pass"
-                + " without asking anything.  The prediction above and `getLocomotiveLocation` have"
-                + " stopped agreeing about that order");
-        }
+        
 
         if (locked == null)
         {
@@ -424,6 +412,25 @@ public class testTheWashIsNoLongerThanTheTrain
 
         try
         {
+            // MEASURED, NOT DERIVED, AND INSIDE THE BLOCK THAT PUTS THE RAILWAY BACK (VD13-T8,
+            // VD14-T2, VD14-T3).
+            //
+            // The loop above predicts which path moves the old anchor by comparing positions in the
+            // graph's own point order, and that prediction is sound only while `getPoints()` and
+            // `getLocomotiveLocation` walk the same collection the same way - which was not true for a
+            // few hours on 2026-08-24, when `getPoints()` returned a copy.  So it is observed.
+            //
+            // BY PLACE, not by object: a square is several Points here, and a path whose first leg
+            // turns onto the other copy of the square the train stands on would reserve a DIFFERENT
+            // Point on the SAME piece of track - which is not the anchor moving at all.
+            //
+            // And inside the `try`, because the first draft of this line sat above it: a throw there
+            // left the path locked and the train's record swept, for every claim after it.
+            assertFalse(layout.getLocomotiveLocation(train).isSamePlaceAs(standing),
+                "the lock reserved no Point on another square, so the anchor this claim is about did"
+                + " not move and the claim would pass without asking anything.  The prediction above"
+                + " and `getLocomotiveLocation` have stopped agreeing about the graph's order");
+
             washWith(2);
 
             Set<TileKey> washed = washedBehindTheTrain();

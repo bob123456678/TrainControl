@@ -1,9 +1,11 @@
 package ui;
 
 import java.util.ArrayList;
+import java.util.List;
 import javax.swing.SwingUtilities;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
+import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
@@ -19,35 +21,33 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 /**
- * Atomic Routes cannot be switched off while drivable track has no length (Adam, 2026-09-21).
+ * Atomic Routes cannot be switched off while the railway could release track under a train.
  *
- * Adam, shown that the only thing standing between an unmeasured railway and track handed back under a
- * moving train was a sentence in a tooltip: *"can we simply refuse it now if there are unmeasured
- * segments in what's walkable via the autonomy editor?  Limit it to logical edges that it prompts for,
- * and on active pages only."*  Then, of a setup loaded from a file: *"yes, shut the file door too - just
- * enable the setting and show a warning in the log."*
+ * Adam, 2026-09-21: *"can we simply refuse it now if there are unmeasured segments in what's walkable
+ * via the autonomy editor?  Limit it to logical edges that it prompts for, and on active pages only."*
+ * Then, of a setup loaded from a file: *"yes, shut the file door too - just enable the setting and show
+ * a warning in the log."*
  *
- * **WHY IT IS UNSAFE, AND EXACTLY WHEN.**  Non-atomic mode releases an edge as soon as
- * `Layout.tailHasProvablyPassed` returns true, and that returns true immediately when the path it is
- * asked about has NO MEASURED EDGE AT ALL.  So the hazard is a rail with no length: a path over it can
- * be released with the train still lying on it.
+ * **THE ESCAPE HAS TWO CLAUSES, and the first two versions of this gate only knew one** (VD14-B1).
+ * `Layout.tailHasProvablyPassed` hands an edge back when `pathIsUnmeasured` - no measured edge anywhere
+ * on the path - OR when `behind >= trainLength`, and a locomotive's length is **0** until somebody sets
+ * it, so `0 >= 0` is true the first time every edge is asked about.  An unmeasured TRAIN releases the
+ * whole railway under itself however well the track is measured.
  *
- * **WHICH IS NOT THE EDITOR'S SQUARE COUNT, and the first version of this gate asked that** (VD13-B2).
- * An edge's length is the sum of its squares, so a railway with one unmeasured switch square still has a
- * length on every edge - the escape provably cannot fire, and the only cost of the missing square is
- * that the tail walk under-counts and edges are held LONGER, which is the safe direction.  Asking the
- * editor therefore refused an operator who had finished measuring; and it answered "nothing unmeasured"
- * for a railway with no diagram at all, which is where the danger actually lives.
- * `Layout.unmeasuredDrivableTrack` is the question in the form the hazard takes, and all three doors -
- * the checkbox and both load paths - now ask it.
+ * **AND THE TRACK HALF IS NARROWER THAN "ANY UNMEASURED EDGE"** (VD14-C6).  A path always ends at a
+ * destination, so an unmeasured rail with measured track between it and every destination can never be
+ * part of an unmeasured path.  `Layout.unmeasuredTrackThatCouldBeReleased` walks back from the active
+ * destinations over unmeasured edges and returns only the rails that could really be handed back.
  *
- * **THE CONTROL IS THE FIRST CLAIM, and it is the one that could go wrong.**  A refusal that fires
- * whatever the railway looks like would pass a test that only measures the refusal, and would take the
- * setting away from somebody who has done the work - which is the failure Adam's standing rule is about.
+ * **THE CONTROLS ARE THE CLAIMS THAT COULD GO WRONG.**  A gate that fires whatever the railway looks
+ * like would pass a test that only measures the refusal, and would take the setting away from an
+ * operator who has done the work - the failure Adam's standing rule is about.  So each half is asked
+ * with the railway put right first, and the door must be OPEN.
  *
- * MUTATION: make `whyNonAtomicRoutesAreRefused` return the message unconditionally and the first claim
- * goes red; make it return null unconditionally and the second does; drop the `unmeasured <= 0` return
- * from `keepAtomicRoutesOnWhileTrackIsUnmeasured` and the control in the second method goes red.
+ * MUTATION: make `whyNonAtomicRoutesAreRefused` return a sentence unconditionally and the two controls
+ * go red; return null unconditionally and the two refusals do; drop the `trainsWithNoLength` term and
+ * the train claim does; count every unmeasured edge rather than the reachable ones and the control in
+ * `core.testAutoLayout.testARailwayCountsItsUnmeasuredDrivableTrack` does.
  *
  * @author Adam
  */
@@ -61,8 +61,11 @@ public class testNonAtomicRoutesNeedTheirLengths
 
     private static Layout layout;
 
-    /** Every edge this class shortened, and what it held, put back in teardown. */
+    /** Every edge this class shortened, and what it held. */
     private static final java.util.Map<Edge, Integer> lengthsWere = new java.util.LinkedHashMap<>();
+
+    /** Every locomotive whose length this class set, and what it held. */
+    private static final java.util.Map<Locomotive, Integer> trainsWere = new java.util.LinkedHashMap<>();
 
     private static boolean atomicWas;
 
@@ -102,7 +105,13 @@ public class testNonAtomicRoutesNeedTheirLengths
     {
         try
         {
-            // EVERY LENGTH BACK FIRST, before anything that can throw (VD13-T5).
+            // EVERYTHING BACK FIRST, before anything that can throw (VD13-T5).  The train lengths are
+            // Adam's own database, so they matter more than the rest of this teardown.
+            for (java.util.Map.Entry<Locomotive, Integer> was : trainsWere.entrySet())
+            {
+                was.getKey().setTrainLength(was.getValue() == null ? 0 : was.getValue());
+            }
+
             for (java.util.Map.Entry<Edge, Integer> was : lengthsWere.entrySet())
             {
                 was.getKey().setLength(was.getValue());
@@ -119,52 +128,41 @@ public class testNonAtomicRoutesNeedTheirLengths
     }
 
     /**
-     * Measured everywhere, the door is open; one rail short, it is refused and says how much.
+     * Measured everywhere, the door is open; one rail short, it is refused and names the rail.
      *
      * @throws Exception from the event thread
      */
     @Test
-    public void testTheDoorIsOpenWhenEverythingIsMeasuredAndShutWhenItIsNot() throws Exception
+    public void testTheTrackHalfRefusesAndNamesTheRail() throws Exception
     {
-        measureEveryRail();
-
-        assertEquals(layout.unmeasuredDrivableTrack(), 0,
-            "precondition: measuring every rail left " + layout.unmeasuredDrivableTrack()
-            + " still without a length, so the control below cannot show an open door");
+        putTheRailwayRight();
 
         // THE CONTROL.  Everything measured, so nothing is in the way of switching atomic routes off.
         assertNull(ui.whyNonAtomicRoutesAreRefused(),
-            "every rail a train can be driven over has a length and the door still refuses, which takes"
-            + " the setting away from an operator who has done the work: "
+            "every rail has a length and every train has a length, and the door still refuses - which"
+            + " takes the setting away from an operator who has done the work: "
             + ui.whyNonAtomicRoutesAreRefused());
 
-        Edge rail = aDrivableRail();
+        Edge rail = aRailThatCouldBeReleased();
 
-        assertNotNull(rail, "precondition: this railway has no rail whose far end is switched on");
+        assertNotNull(rail, "precondition: no rail of this railway can reach a destination at all");
 
         shorten(rail);
 
         try
         {
-            assertEquals(layout.unmeasuredDrivableTrack(), 1,
-                "taking the length off " + rail.getName() + " should leave exactly one rail unmeasured,"
-                + " and the railway counts " + layout.unmeasuredDrivableTrack()
+            List<String> named = layout.unmeasuredTrackThatCouldBeReleased();
+
+            assertEquals(named.size(), 1,
+                "taking the length off " + rail.getName() + " should leave exactly one rail that could"
+                + " be released, and the railway names " + named
                 + " - a rail is two Edge objects and this is counted by the pair of places it joins");
 
             String why = ui.whyNonAtomicRoutesAreRefused();
 
-            assertNotNull(why,
-                "one rail a train can be driven over has no length and Atomic Routes can still be"
-                + " switched off - so a path over it will be handed back as the head passes, with the"
-                + " train still standing on it, which is what the tooltip used to warn about and"
-                + " nothing enforced");
-
-            // THE WHOLE MESSAGE, not just a digit in it (VD13-T6).  `contains("1")` was satisfied by
-            // 13, 21 and 118, so a door that passed the wrong quantity - the whole-railway count, say -
-            // would have read as correct.
-            assertEquals(why, I18n.f("autolayout.errorNonAtomicNeedsLengths", 1),
-                "the refusal does not say how much track is unmeasured, so the operator cannot tell"
-                + " whether it is one rail or the whole railway: " + why);
+            assertEquals(why, I18n.f("autolayout.errorNonAtomicNeedsLengths", 1, named.get(0)),
+                "the refusal does not name the rail it is about, so the operator is told how much is"
+                + " unmeasured and nothing about where: " + why);
         }
         finally
         {
@@ -173,29 +171,77 @@ public class testNonAtomicRoutesNeedTheirLengths
     }
 
     /**
-     * A SETUP THAT LOADS NON-ATOMIC OVER UNMEASURED TRACK COMES UP ATOMIC (Adam, 2026-09-21).
+     * A train with no length is refused too, and named - the second clause of the escape (VD14-B1).
+     *
+     * @throws Exception from the event thread
+     */
+    @Test(dependsOnMethods = "testTheTrackHalfRefusesAndNamesTheRail")
+    public void testATrainWithNoLengthIsRefusedToo() throws Exception
+    {
+        putTheRailwayRight();
+
+        assertNull(ui.whyNonAtomicRoutesAreRefused(),
+            "precondition: the railway is not in a state where the door is open, so nothing below is"
+            + " about the train half: " + ui.whyNonAtomicRoutesAreRefused());
+
+        Locomotive train = null;
+
+        for (Locomotive candidate : layout.getLocomotivesToRun())
+        {
+            if (candidate != null)
+            {
+                train = candidate;
+
+                break;
+            }
+        }
+
+        assertNotNull(train, "precondition: this configuration places no locomotive, so there is no"
+            + " train to take a length off");
+
+        remember(train);
+
+        try
+        {
+            train.setTrainLength(0);
+
+            assertEquals(layout.trainsWithNoLength(), java.util.Arrays.asList(train.getName()),
+                "the railway does not report " + train.getName() + " as having no train length: "
+                + layout.trainsWithNoLength());
+
+            String why = ui.whyNonAtomicRoutesAreRefused();
+
+            assertEquals(why,
+                I18n.f("autolayout.errorNonAtomicNeedsTrainLengths", 1, train.getName()),
+                "a train with no length releases every edge as its head passes - `behind >= 0` is true"
+                + " the first time each one is asked about - and Atomic Routes can still be switched"
+                + " off, or the refusal does not name the train: " + why);
+        }
+        finally
+        {
+            train.setTrainLength(trainsWere.get(train) == null ? 1 : trainsWere.get(train));
+        }
+    }
+
+    /**
+     * A SETUP THAT LOADS NON-ATOMIC OVER TRACK IT COULD RELEASE COMES UP ATOMIC (Adam, 2026-09-21).
      *
      * *"Yes, shut the file door too - just enable the setting and show a warning in the log."*
      *
      * The checkbox refuses the gesture, because somebody is there to read the refusal and is one gesture
      * from fixing it.  A file has nobody at it, and refusing the load would make a configuration he
-     * already has unopenable - so the safe setting is written instead and the log says why.  Turning
-     * atomic routes ON can never be the unsafe answer: atomic mode releases nothing until a run ends.
-     *
-     * **THE CONTROL IS THE SECOND HALF.**  A rule that forced the setting on whatever the railway looked
-     * like would take non-atomic mode away from an operator who has measured everything, and a test that
-     * only checked the forcing would pass.
+     * already has unopenable - so the safe setting is written instead and the log says why.
      *
      * @throws Exception from the event thread
      */
-    @Test(dependsOnMethods = "testTheDoorIsOpenWhenEverythingIsMeasuredAndShutWhenItIsNot")
-    public void testALoadedSetupCannotRunNonAtomicOverUnmeasuredTrack() throws Exception
+    @Test(dependsOnMethods = "testTheTrackHalfRefusesAndNamesTheRail")
+    public void testALoadedSetupCannotRunNonAtomicOverTrackItCouldRelease() throws Exception
     {
-        measureEveryRail();
+        putTheRailwayRight();
 
-        Edge rail = aDrivableRail();
+        Edge rail = aRailThatCouldBeReleased();
 
-        assertNotNull(rail, "precondition: this railway has no rail whose far end is switched on");
+        assertNotNull(rail, "precondition: no rail of this railway can reach a destination at all");
 
         shorten(rail);
 
@@ -210,21 +256,16 @@ public class testNonAtomicRoutesNeedTheirLengths
                 + " unmeasured, and the railway is running non-atomic: a path over that rail will be"
                 + " handed back as the head passes it, and nobody was at the door to be told");
 
-            // THE CONTROL: measured everywhere, a deliberate OFF is left alone.
+            // THE CONTROL: put right, a deliberate OFF is left alone.
             restore(rail);
-
-            assertEquals(layout.unmeasuredDrivableTrack(), 0,
-                "precondition: putting the length back left " + layout.unmeasuredDrivableTrack()
-                + " rails still unmeasured, so the control below is not about a measured railway");
 
             layout.setAtomicRoutes(false);
 
             SwingUtilities.invokeAndWait(() -> ui.keepAtomicRoutesOnWhileTrackIsUnmeasured());
 
             assertFalse(layout.isAtomicRoutes(),
-                "every rail has a length and the load turned atomic routes back on anyway, which takes"
-                + " the setting away from an operator who has done the work - the same failure the"
-                + " refusal at the checkbox is guarded against");
+                "the railway can release nothing under a train and the load turned atomic routes back"
+                + " on anyway, which takes the setting away from an operator who has done the work");
         }
         finally
         {
@@ -234,8 +275,10 @@ public class testNonAtomicRoutesNeedTheirLengths
         }
     }
 
-    /** Gives every edge with no length a length, remembering what it held. */
-    private static void measureEveryRail()
+    // ---------------------------------------------------------------- the railway
+
+    /** Gives every rail and every train a length, remembering what they held. */
+    private static void putTheRailwayRight()
     {
         for (Edge edge : new ArrayList<>(layout.getEdges()))
         {
@@ -245,20 +288,32 @@ public class testNonAtomicRoutesNeedTheirLengths
 
             edge.setLength(1);
         }
+
+        for (Locomotive loc : new ArrayList<>(layout.getLocomotivesToRun()))
+        {
+            if (loc == null) continue;
+
+            if (loc.getTrainLength() != null && loc.getTrainLength() > 0) continue;
+
+            remember(loc);
+
+            loc.setTrainLength(1);
+        }
     }
 
     /**
-     * A rail a train could be driven over - its far end switched on, so `isPathClear` does not refuse it.
+     * A rail whose far end can reach a destination, so taking its length away is something the gate
+     * should notice.
      *
      * @return the edge, or null where this railway has none
      */
-    private static Edge aDrivableRail()
+    private static Edge aRailThatCouldBeReleased()
     {
         for (Edge edge : new ArrayList<>(layout.getEdges()))
         {
             if (edge == null || edge.getStart() == null || edge.getEnd() == null) continue;
 
-            if (!edge.getEnd().isActive()) continue;
+            if (!edge.getEnd().isDestination() || !edge.getEnd().isActive()) continue;
 
             return edge;
         }
@@ -280,6 +335,12 @@ public class testNonAtomicRoutesNeedTheirLengths
         Integer was = lengthsWere.get(rail);
 
         rail.setLength(was == null || was <= 0 ? 1 : was);
+    }
+
+    /** Remembers a locomotive's own train length, once. */
+    private static void remember(Locomotive loc)
+    {
+        if (!trainsWere.containsKey(loc)) trainsWere.put(loc, loc.getTrainLength());
     }
 
     /** Lets the event thread catch up, twice being what the window needs after init (OB-192). */

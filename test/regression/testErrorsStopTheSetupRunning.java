@@ -702,25 +702,18 @@ public class testErrorsStopTheSetupRunning
 
             asked++;
 
-            // ONE OR THE OTHER, NOT EITHER-OR INSIDE THE ASSERTION (VD13-T1).
+            // WHAT IS LEFT FOR THE LOOP TO SAY, once no door words the refusal itself (VD13-T1,
+            // VD14-T4).
             //
-            // The first repair of this loop wrote both claims as `X || throughTheRule`, and since all
-            // three sites delegate, both were satisfied by the disjunct alone - the loop went on
-            // asserting nothing, in a new way.  A site that words the refusal ITSELF has to carry both
-            // arms; a site that delegates has to carry nothing, because the arms are then the ONE
-            // RULE's business and are asserted of it below.
-            if (wordsItHere)
-            {
-                assertTrue(body.contains("autonomyHasErrors()") || body.contains("hasErrors()"),
-                    where + " chooses its wording on the error COUNT alone.  The count is zero when "
-                    + "the graph will not build, which is a state the guard refuses and no amount of "
-                    + "waiting clears - so this tells the operator to wait for trains that are not "
-                    + "running.  Body: " + body);
-
-                assertTrue(body.contains("errorCannotBuildDetailOne"),
-                    where + " words the refusal itself and has no wording for the reason a count "
-                    + "cannot see.  Body: " + body);
-            }
+            // The first repair wrote both arm-checks as `X || throughTheRule` and every site delegates,
+            // so they were satisfied by the disjunct alone.  The second put them behind
+            // `if (wordsItHere)` - which no site can enter: the wording lives in one place, and
+            // `regression.testTheRefusalToStartSaysWhichThing.testNoDoorWordsItItself` asserts that it
+            // stays there.  A branch that another test forbids anything from entering is not a guard,
+            // it is a sentence that reads like one.
+            //
+            // So the loop's job is what it can still hold: every refusal reaches the one rule.  The
+            // arms are asserted OF THAT RULE below, which is where they went.
         }
 
         assertTrue(asked == sites.length,

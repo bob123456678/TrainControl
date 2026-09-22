@@ -4,7 +4,7 @@ The companion to [`behaviour.md`](behaviour.md). That document says what the rai
 this one says what is **known to be wrong with it**, what was **ruled on and closed**, and where the
 rules **deliberately under-claim**.
 
-It replaces reading 208 review documents.  (VD12-R12 said 206 and was wrong: counted from the deletion commit, 67 files went - 44 review documents in `docs/reviews/`, 21 in the three dated folders, and two for-Adam notes that were never reviews.  143 + 65 = 208.  VD13-R1.) Those are gone from the tree and live in git history
+It replaces reading 208 review documents.  (The 2026-09-21 half is counted: 67 files went - 44 review documents in `docs/reviews/`, 21 in the three dated folders, and two for-Adam notes that were never reviews, so 65 reviews.  **The 2026-09-08 half, 143, is not reproducible from its commit**: that one deleted 145 `.md` files of which at least three were not reviews - a consolidation plan, an archive README and the catalogue itself - so the honest total is 207 or 208 depending on whether an archived route-inventory dump counts.  Left at 208, the figure three documents have always used, with the derivation written here so the next reader need not guess.  VD12-R12 said 206 and was wrong; VD14-R6 found this.) Those are gone from the tree and live in git history
 afterwards; nothing below needs them to be understood.
 
 ---
@@ -38,7 +38,7 @@ or the tests. Worth stating plainly, because an unread backlog reads like a rail
 is not one.
 
 The railway defects live in the Inbox of `docs/manual-tests/issues.md`. **It is not empty**, and this
-paragraph said it was for twelve days (IND9X-B3, 2026-09-09): it holds 117 entries - 78 OB and 39 FR, counted after the six entries that round filed; 99 was wrong, and so was the 111 that replaced it, which was counted before those six were appended (VD12-R13, VD13-R3) - most of them carrying
+paragraph said it was for twelve days (IND9X-B3, 2026-09-09): it holds 118 entries - 79 OB and 39 FR, counted after the six entries that round filed; 99 was wrong, and so was the 111 that replaced it, which was counted before those six were appended (VD12-R13, VD13-R3) - most of them carrying
 a receipt row that says the work was done - the protocol is that an entry is cleared out when its fix
 has a test, and clearing has lagged. Read the receipts, not the presence of an entry.
 
@@ -340,8 +340,8 @@ this document exactly the thing it replaces.
 **2026-09-08: `docs/reviews/` was deleted**, down to its README, once its 2,226 findings were in
 `docs/manual-tests/triage.db`. **2026-09-21: the same for the 65 documents written since** - 44 of them in
 `docs/reviews/` itself and 21 in three dated folders beside it, on Adam's *"I don't want more
-reviews living in the repo"* - 3,390 findings in the store now, every one of them with a status.
-(3,353 was the finding count before this round; the 208 and 65 in this paragraph were right all along and a correction to 206 and 63 was reverted - VD13-R1.) Everything still open above is open in that store too,
+reviews living in the repo"* - 3,448 findings in the store now, every one of them with a status.
+(This paragraph's figures - 65 documents, 44 of them in `docs/reviews/`, and the finding count - are quoted from the deletion commit and the store.  A correction to 63 and 206 was itself wrong and was reverted; the 208 it was about is in the first paragraph of this file, not here.  `regression.testTheRecordsCountTheStore` now compares the finding and Inbox counts with the store rather than trusting a reader to keep them - VD13-R1, VD14-R2, VD14-R5.) Everything still open above is open in that store too,
 so it can be queried rather than re-read:*
 
 ```sql

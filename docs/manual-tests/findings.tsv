@@ -3211,6 +3211,32 @@ VD13-T6	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	a dig
 VD13-T7	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	a denominator nobody counted
 VD13-T8	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	derived, not measured
 VD13-T9	2026-09-21-VD13-validation-of-the-fixes.md	Closed	Fixed 2026-09-21	skips with no floor
+VD14-B1	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	the gate knew one clause of two
+VD14-B2	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	place where identity was meant
+VD14-C1	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	a count with no referent
+VD14-C2	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	the doorway javadoc still described the editor's question and said the file door was not asked
+VD14-C3	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	the overlap rule, backwards
+VD14-C4	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	the census paragraph named a method that does not exist and missed three readers
+VD14-C5	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	the inactive-end filter was inert for a two-direction rail, so its paragraph over-stated it
+VD14-C6	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	refusing what cannot happen
+VD14-C7	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	stray indentation on a public declaration
+VD14-R1	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	, R2, R5, R6 - counts kept by hand
+VD14-R10	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	a procedure that could not tell success from failure
+VD14-R11	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	the code comment at the guard OB-246 describes still stated the rule the correction removed
+VD14-R12	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Open	Open	two trivia on the new bundle key: an Italian modality, and the key sits in the wrong block
+VD14-R2	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	the finding count was stale by 32 in two documents, and the note explaining it named the wrong round
+VD14-R3	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	the refusal called a count of rails "squares" in all eight languages
+VD14-R4	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	OB-248's parenthetical was wrong in all three of its numbers
+VD14-R5	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	a correction note named a figure that is not in its own paragraph
+VD14-R6	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	208 was re-asserted as counted when only its 2026-09-21 half had been counted
+VD14-R7	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	OB-250 named a method that does not exist and the wrong site to change
+VD14-R8	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	the Italian pronoun fix was applied to the line with the other antecedent
+VD14-R9	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	the Spanish pronoun fix was half-done in the same value
+VD14-T1	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	one wrong answer ruled out
+VD14-T2	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	the anchor assertion sat outside the block that unlocks the path
+VD14-T3	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	it compared Point identity where place was meant
+VD14-T4	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	a branch nothing can enter
+VD14-T5	2026-09-22-VD14-validation-of-the-vd13-fixes.md	Closed	Fixed 2026-09-22	two preconditions re-asserted what the test itself had just written
 VD9-B1	2026-09-03-validation-of-the-day.md	Closed	fixed - the whole sentence restored, and the two lines that were left dangling with it	`REL-C16` deleted two lines of a three-line sentence, and the retracted claim is now the last thing a reader sees before the code
 VD9-B2	2026-09-03-validation-of-the-day.md	Closed	fixed - `DONE` guard, re-measured with a throwaway script: one call, not two	both runners' `INT`/`TERM` trap runs `on_the_way_out` twice
 VD9-B3	2026-09-03-validation-of-the-day.md	Closed	fixed - the disposition now says the checkbox pushes no undo point, and MT-265 step 1 has 	`SVN-B8`'s "correct rather than lucky" is neither, and the half of the finding that actually holds is the half left unfixed

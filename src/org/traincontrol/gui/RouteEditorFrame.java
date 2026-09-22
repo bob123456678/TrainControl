@@ -2706,9 +2706,11 @@ public class RouteEditorFrame extends JFrame
                 }
                 else if (!RouteCommand.isNameUsable(target))
                 {
-                    // A comma or a bracket in the name breaks the formats a route is written in: the
-                    // command line is comma-separated, and the condition parser rewrites brackets
-                    // into line breaks.  The old editor refused such a name at both doors; this one
+                    // A COMMA in the name breaks the format a route is written in - the command line is
+                    // comma-separated.  BRACKETS ARE ALLOWED (Adam, 2026-09-04: *"bracketed loc names
+                    // should just be allowed"*), and this comment said otherwise until VD14-R11; the
+                    // condition parser's bracket handling was the reason for the old rule and is no
+                    // longer a reason to refuse a name.  The old editor refused such a name at both doors; this one
                     // offered it in a dropdown and saved it, which produces a route file that reads
                     // back as something else.  Real names look like this - "SBB 460 (2)".
                     wrong.add(I18n.f("route.ui.frameNameNotUsable", target));
@@ -2951,9 +2953,14 @@ public class RouteEditorFrame extends JFrame
         //
         // `canBeACommand` will not make a new FEEDBACK row, but an older route can hold one, and the
         // first fix for that put its address in with the CHECKED sensors - so the legend said "what it
-        // checks in orange" over a square the route writes to.  Its own colour, and the overlap rule is
-        // applied within the kind for the same reason the accessories' is.
-        commandedSensors.removeAll(checkedSensors);
+        // checks in orange" over a square the route writes to.
+        //
+        // COMMANDED WINS, the same way round as the accessories' rule above (VD14-C3).  The first
+        // version of this line pointed the other way, so a sensor that is both commanded and checked -
+        // or commanded and the route's own trigger, which is always in `checkedSensors` - went back to
+        // the colour this bucket exists to take it out of.  "It is the stronger of the two statements"
+        // is the doctrine this method already states for accessories.
+        checkedSensors.removeAll(commandedSensors);
 
         lit += parent.highlightAddresses(commandedSensors, TrainControlUI.AddressedAs.FEEDBACK,
             org.traincontrol.util.ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);

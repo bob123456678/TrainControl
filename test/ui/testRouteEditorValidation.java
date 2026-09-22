@@ -3,6 +3,7 @@ package ui;
 import java.awt.GraphicsEnvironment;
 import static org.testng.Assert.*;
 import org.testng.SkipException;
+import org.traincontrol.util.I18n;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.CommandRow;
@@ -394,17 +395,38 @@ public class testRouteEditorValidation
 
             javax.swing.SwingUtilities.invokeAndWait(() -> frame.setConditionRowsForTest(outline));
 
-            assertTrue(reads(frame).startsWith("Or("),
-                "the fixture is not an OR in front of a group, so nothing below is about one: "
+            // THE EXACT SHAPE, because `startsWith("Or(")` is satisfied by a FLAT outline and the whole
+            // claim below is about depth (VD14-T1).
+            assertEquals(reads(frame), "Or(x,Group(And(x,x)))",
+                "the fixture is not an OR in front of a bracketed group, so nothing below is about one: "
                 + reads(frame));
 
             // THE FIRST CONDITION OF THE GROUP, which is row 2.
             javax.swing.SwingUtilities.invokeAndWait(() -> frame.deleteConditionForTest(2));
 
-            assertFalse(reads(frame).startsWith("And("),
-                "deleting the first condition of the group took the OUTER word with it, so `1 or (2 and"
-                + " 3)` now reads as an AND - a different condition from the one anybody typed, and the"
-                + " word left behind joins nothing, which Save refuses.  Now: " + reads(frame));
+            // AND THE EXACT SHAPE AFTER IT, for the same reason (VD14-T1).  `assertFalse(startsWith
+            // ("And("))` ruled out ONE wrong answer: it passed just as happily for an outline swept down
+            // to a single condition - one keystroke silently deleting two - or emptied altogether.
+            assertEquals(reads(frame), "Or(x,Group(x))",
+                "deleting the first condition of the group did not leave `1 or (3)`.  The word that"
+                + " belongs to a row is the joiner at its own depth; taking the OUTER one turns this"
+                + " into an AND, and taking the whole following term deletes a condition nobody asked"
+                + " to lose.  Now: " + reads(frame));
+
+            assertEquals(frame.conditionRowsForTest().size(), 3,
+                "the outline should hold three lines - the two conditions and the word between them -"
+                + " and holds " + frame.conditionRowsForTest().size() + ": "
+                + frame.conditionRowsForTest());
+
+            // AND THE CONDITIONS ARE STILL SAVEABLE, which is the half of the defect the shape does
+            // not show: the word left behind by the old branch joined nothing, `whatIsWrong` flagged
+            // it, and Save refused the route with no way out but Discard.
+            //
+            // The CONDITION complaint only, not the whole gate: this fixture is conditions and nothing
+            // else, so `everythingWrong` rightly also wants a name and a command.
+            assertFalse(frame.problemsForTest().contains(I18n.t("route.ui.frameLogicDisagrees")),
+                "the outline left by deleting one condition disagrees with itself, so Save refuses the"
+                + " route and the only way out is Discard: " + frame.problemsForTest());
         }
         finally
         {

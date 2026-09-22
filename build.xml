@@ -511,6 +511,7 @@
         <test-one-class class="testTheRouteHighlightAsksWhatATileIs"/>
         <test-one-class class="testTheRouteEditorAsksHowManyFunctionsALocomotiveHas"/>
         <test-one-class class="testNonAtomicRoutesNeedTheirLengths"/>
+        <test-one-class class="testTheRecordsCountTheStore"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
