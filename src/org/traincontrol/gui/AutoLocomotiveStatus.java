@@ -1148,6 +1148,11 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                             this.parent == null ? null : this.parent.getAutonomySession(),
                             this, chosen, locomotive);
 
+                    // AND NOT NON-ATOMIC OVER TRACK THIS RUN COULD RELEASE UNDER THE TRAIN (GS-B1).
+                    // A hand dispatch goes through `executePath` like any other, so it releases edges
+                    // behind the train exactly as a timetable run does.
+                    if (this.parent != null) this.parent.keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
+
                     new Thread(() ->
                     {
                         boolean success = this.layout.executePath(chosen, locomotive,

@@ -2984,35 +2984,66 @@ public class RouteEditorFrame extends JFrame
 
     private JButton highlightButton;
 
+    /**
+     * Answers "would this route fire right now", off the event thread (GSR-B1).
+     *
+     * **THE EVALUATION CANNOT RUN ON THE EVENT THREAD.**  An autoloc condition - "train X at sensor
+     * Y" - is evaluated by the static `Route.evaluate`, which begins by waiting for the autonomy
+     * resolution to finish: `Layout.waitForS88Reached`, an untimed wait that holds until the train
+     * reaches the sensor it has been dispatched to.  Pressed while that train is running, this froze
+     * the whole window - Stop with it - until the train arrived, and for good where an emergency stop
+     * had left the run parked in its own feedback wait with nothing to clear the pending sensor.
+     *
+     * The wait is right and is untouched: it is there so that a monitor does not read a sensor the
+     * resolution has not finished with.  What moves is who does the waiting.  The button is disabled
+     * while the answer is being worked out, because a second press would start a second wait and the
+     * first thing this method does is ask the railway a question about right now.
+     */
     private void testAgainstTheRailway()
     {
         if (parent == null || parent.getModel() == null) return;
 
-        try
+        final NodeExpression conditions = conditionsEditable
+            ? ConditionOutline.toExpression(this.conditions.rows) : conditionsAsFound;
+
+        final String s88 = s88Field.getText().trim();
+
+        if (testButton != null) testButton.setEnabled(false);
+
+        new Thread(() ->
         {
-            boolean sensor = parent.getModel().getFeedbackState(s88Field.getText().trim());
+            String answer;
 
-            NodeExpression conditions = conditionsEditable
-                ? ConditionOutline.toExpression(this.conditions.rows) : conditionsAsFound;
+            try
+            {
+                boolean sensor = parent.getModel().getFeedbackState(s88);
 
-            // No conditions is a route held up by nothing but its sensor, which is true rather than
-            // unknown - a route with an empty condition list fires whenever it is triggered.
-            boolean held = conditions == null || conditions.evaluate(parent.getModel());
+                // No conditions is a route held up by nothing but its sensor, which is true rather
+                // than unknown - a route with an empty condition list fires whenever it is triggered.
+                boolean held = conditions == null || conditions.evaluate(parent.getModel());
 
-            JOptionPane.showMessageDialog(this,
-                I18n.f("route.ui.messageTriggeringConditionSummary",
+                answer = I18n.f("route.ui.messageTriggeringConditionSummary",
                     I18n.t(sensor ? "route.ui.valueTrue" : "route.ui.valueFalse"),
                     I18n.t(held ? "route.ui.valueTrue" : "route.ui.valueFalse"),
-                    I18n.t(sensor && held ? "route.ui.valueWould" : "route.ui.valueWouldNot")));
-        }
-        catch (Exception e)
-        {
-            // A sensor that names nothing, or an address that is not a number: the same message the
-            // old editor gave, because the answer is the same - there is something in here that
-            // cannot be evaluated, and the route would not fire on it either.
-            JOptionPane.showMessageDialog(this,
-                I18n.t("route.ui.errorConditionExpressionInvalid"));
-        }
+                    I18n.t(sensor && held ? "route.ui.valueWould" : "route.ui.valueWouldNot"));
+            }
+            catch (Exception e)
+            {
+                // A sensor that names nothing, or an address that is not a number: the same message
+                // the old editor gave, because the answer is the same - there is something in here
+                // that cannot be evaluated, and the route would not fire on it either.
+                answer = I18n.t("route.ui.errorConditionExpressionInvalid");
+            }
+
+            final String said = answer;
+
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                if (testButton != null) testButton.setEnabled(true);
+
+                JOptionPane.showMessageDialog(this, said);
+            });
+        }, "route-condition-test").start();
     }
 
     /**

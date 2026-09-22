@@ -1953,7 +1953,7 @@ public class AutonomyCompanionStore
      * @param file the parsed export
      * @return how many shared entries were filled in
      */
-    public int importBundle(String name, JSONObject file)
+    public int importBundle(String name, JSONObject file) throws IOException
     {
         pagesLeftOutOfLastImport.clear();
 
@@ -2413,11 +2413,23 @@ public class AutonomyCompanionStore
      * rather than the file, so importing does not silently overwrite whatever happened to share the
      * exporter's name.
      *
+     * **AND IT ASKS WHAT THE OTHER THREE DOORS ASK (GSP-B1).**  A configuration is stored as
+     * `configuration-<sanitised name>.json` and sanitising is many-to-one, so `Night: Yard` and
+     * `Night_ Yard` are two names for one file.  `createConfiguration` and `renameConfiguration`
+     * both refuse that pair, and `testTwoNamesCannotShareOneFile` pins both - this door asked
+     * nothing, so an import could take a name that collided with a configuration already here, and
+     * the next `load()`, which rebuilds the list by scanning the folder, came back with only one of
+     * them: the other's placements, homes, exclusions, run list and timetable were gone, with
+     * nothing said at any point.
+     *
      * @param name what to call it here
      * @param configuration the exported object
+     * @throws IOException when the name would share a file with a configuration already here
      */
-    public void importConfiguration(String name, JSONObject configuration)
+    public void importConfiguration(String name, JSONObject configuration) throws IOException
     {
+        if (fileNameTaken(name, null)) throw new IOException(ERROR_NAME_IN_USE);
+
         JSONObject imported = new JSONObject(configuration.toString());
 
         imported.put("name", name);

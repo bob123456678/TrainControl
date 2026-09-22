@@ -1215,7 +1215,7 @@ public class AutonomySession
      * @param file the parsed export
      * @return how many shared entries were filled in
      */
-    public int importBundle(String name, org.json.JSONObject file)
+    public int importBundle(String name, org.json.JSONObject file) throws java.io.IOException
     {
         int filled = store.importBundle(name, file);
 

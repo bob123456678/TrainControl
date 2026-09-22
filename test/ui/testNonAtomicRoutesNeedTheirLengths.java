@@ -446,6 +446,70 @@ public class testNonAtomicRoutesNeedTheirLengths
             + " and then every edge is handed back as that train's head passes it");
     }
 
+    /**
+     * EVERY DOOR THAT DISPATCHES A TRAIN ASKS THE GATE, AND THIS IS THE LIST (GS-B1).
+     *
+     * The claim above it pinned Start, on the reasoning that Start was the choke point because no
+     * edge is released until autonomy runs.  That was wrong about WHERE the release lives: it is in
+     * `Layout.executePathInternal`, and Execute Timetable, Return Home and the two hand dispatches
+     * all reach it without passing Start.  Return Home is the worst of them, because several trains
+     * move at once and the one with no train length hands back the track under itself while the
+     * others are being routed around it.
+     *
+     * **A LIST IS A WEAK GUARD and it is written as one deliberately.**  A source-shape rule can only
+     * know the doors it names, so the failure message says to add the new door here as well.  What it
+     * buys is that the next door cannot be added in silence, which is how this one came to exist.
+     *
+     * MUTATION: delete the call from any one of the four and this names that one.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testEveryDispatchDoorAsksTheGate() throws Exception
+    {
+        String gate = "keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack()";
+
+        String[][] doors =
+        {
+            {"src/org/traincontrol/gui/TrainControlUI.java",
+                "private void startAutonomyActionPerformed(", "runLocomotives();"},
+            {"src/org/traincontrol/gui/TrainControlUI.java",
+                "private void executeTimetableActionPerformed(", "executeTimetable();"},
+            {"src/org/traincontrol/gui/TrainControlUI.java",
+                "public void requestReturnToHome()", "executeTimetable();"},
+            {"src/org/traincontrol/gui/AutoLocomotiveStatus.java",
+                "ManualReversalPrompt.forJourney(", "executePath("},
+            {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java",
+                "ManualReversalPrompt.forJourney(", "executePath("},
+        };
+
+        for (String[] door : doors)
+        {
+            String source = new String(java.nio.file.Files.readAllBytes(
+                new java.io.File(door[0]).toPath()), java.nio.charset.StandardCharsets.UTF_8);
+
+            int from = source.indexOf(door[1]);
+
+            assertTrue(from > 0, door[0] + " no longer has " + door[1]
+                + ", so this rule is about nothing.  Point it at wherever that door went");
+
+            int dispatch = source.indexOf(door[2], from);
+
+            assertTrue(dispatch > from, door[0] + " reaches " + door[1]
+                + " and no longer dispatches with " + door[2]
+                + " - if the dispatch moved, this rule has to move with it");
+
+            int asks = source.indexOf(gate, from);
+
+            assertTrue(asks > from && asks < dispatch,
+                door[0] + ": the door at " + door[1] + " dispatches a train without asking whether"
+                + " the railway could release track under one.  A train length can be cleared on the"
+                + " live layout long after Atomic Routes was unticked honestly, and then every edge"
+                + " is handed back as that train's head passes it.  Add the call - and if you are"
+                + " adding a new door, add it to the list in this method too");
+        }
+    }
+
     // ---------------------------------------------------------------- the railway
 
     /** Gives every rail and every train a length, remembering what they held. */

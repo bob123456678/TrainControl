@@ -1086,8 +1086,15 @@ public class AutonomyViewerPanel extends JPanel
         }
         catch (IOException | RuntimeException e)
         {
+            // A COLLISION IS NOT AN UNREADABLE FILE (GSP-B1).  The store reports its refusals as
+            // message keys - `createConfiguration` and `renameConfiguration` both translate them
+            // here, with a comment saying a user should not be told "autosetup.ui.errorNameInUse" -
+            // and this door wrapped every one of them in "the file could not be read", which named
+            // neither the fault nor a remedy for the one refusal an import can actually hit.
             JOptionPane.showMessageDialog(ui,
-                I18n.f("autosetup.ui.errorImportUnreadable", String.valueOf(e.getMessage())));
+                AutonomyCompanionStore.ERROR_NAME_IN_USE.equals(e.getMessage())
+                    ? I18n.f("autosetup.ui.errorNameInUse", name == null ? "" : name.trim())
+                    : I18n.f("autosetup.ui.errorImportUnreadable", String.valueOf(e.getMessage())));
         }
 
         refresh();

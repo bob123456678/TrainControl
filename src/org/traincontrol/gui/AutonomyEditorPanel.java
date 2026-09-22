@@ -1838,8 +1838,20 @@ public class AutonomyEditorPanel extends JPanel
                 menu.add(item(I18n.f("autosetup.ui.menuGoToLinkPartner", linkLabel(partner)),
                     () -> goToLink(partner)));
 
+                // AND THE RAILWAY HAS TO BE TOLD, because this is the item that REMOVES an edge
+                // (GSE-B1).  `pairFromList` says "a portal pair is an edge in the running graph"
+                // and `setPortalDisabled` says a shut link is a missing one; unpair is the third
+                // way the same edge changes and was the only one of the four items on this submenu
+                // that left the running `Layout` alone.  `session.unpairPortal` rebuilds the
+                // editor's own graph and nothing else, so on the track-diagram door - which saves
+                // at once - the unpair reached disk while autonomy went on routing through it.
                 menu.add(item(I18n.t("autosetup.ui.menuUnpairLink"),
-                    () -> session.unpairPortal(target)));
+                    () ->
+                    {
+                        session.unpairPortal(target);
+
+                        setupChanged();
+                    }));
             }
 
             // And a rule under the group.
@@ -9927,9 +9939,22 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (session == null) return I18n.t("autosetup.ui.infoNoLocomotivesToClear");
 
+        // THE SET THE CLEAR ACTUALLY WALKS, COUNTED AND NAMED FROM ONE PLACE (GSE-B2).
+        //
+        // This sentence held three populations: the names came from the panel's own
+        // `placedLocomotives()`, the count from `session.tilesWithALocomotive()` - every page,
+        // excluded ones included - and the clear itself walks `placementsAutonomyWillWrite()`, which
+        // skips them.  With one page excluded the menu offered "Clear All Locomotives (9)" and its
+        // confirmation said "12 locomotives" over a list of nine names.  The label and the guard were
+        // swept onto the right question by `SEV-C3`; this one was not, and the comment above it says
+        // in the past tense that it was.
+        //
+        // Sorted, because a map's iteration order is not an order and this list is read (VD15-C2).
+        java.util.Map<TileKey, String> clearing = session.placementsAutonomyWillWrite();
+
         StringBuilder names = new StringBuilder();
 
-        for (String name : placedLocomotives())
+        for (String name : new java.util.TreeSet<>(clearing.values()))
         {
             if (names.length() > 0) names.append(", ");
 
@@ -9939,11 +9964,11 @@ public class AutonomyEditorPanel extends JPanel
         if (page == null)
         {
             return I18n.f("autolayout.ui.confirmClearLocomotivesAtOnce",
-                session.tilesWithALocomotive().size(), names.toString());
+                clearing.size(), names.toString());
         }
 
         return I18n.f("autolayout.ui.confirmClearLocomotives",
-            session.tilesWithALocomotive().size(), names.toString());
+            clearing.size(), names.toString());
     }
 
     /**

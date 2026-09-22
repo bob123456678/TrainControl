@@ -2013,9 +2013,11 @@ tests only, which is true of everything except these.
 **What I would do:** read them out of the store and put each one either in this Inbox as an OB or in
 the closed roll with the reason it was declined, then say so in `behaviour.md`.  **The obvious query
 is wider than this list, and the numbers move as rounds land** - counted 2026-09-22:
-`WHERE status LIKE 'Open%'` returns **52 rows for 51 findings** (a finding written up in two documents
-has a row for each, VD15-R3), made up of 29 rows for 28 findings at exactly `Open`, 12
-`Open - unverified`, 5 `Open - verified 2026-09-21`, 4 `Open - for Adam` and 2 deferred by ruling.
+`WHERE status LIKE 'Open%'` returns **121 rows for 77 findings** (a finding written up in two documents
+has a row for each, VD15-R3 - and the general sweep of 2026-09-22 gave every finding it audited a
+second row, which is why the two numbers are now so far apart), made up of 77 rows for 54 findings at
+exactly `Open`, 18 rows for 9 `Open - unverified`, 10 for 5 `Open - verified 2026-09-21`, 9 for 5
+`Open - for Adam`, 5 for 3 `Open - deferred until the MT retests` and 2 for 1 deferred past 3.0.0.
 
 Thirteen are named above.  **Sixteen more are named nowhere but this paragraph**, and each is written
 out in full here because the first version of this line compressed six of them as
@@ -2031,6 +2033,18 @@ entered unverified rather than guessed at.  `VD14-R12` was one of these too and 
 that corrects this paragraph.  So this entry is about **twenty-nine findings, not thirteen**, and the count will drift again: run the query rather
 than trusting the number (VD13-R6, VD14-R4, VD15-R4).  It is a morning's work and it is bookkeeping
 rather than railway behaviour, so it is filed rather than done.
+
+**The audit of 2026-09-22 did a fifth of it.**  Six Opus reviewers read the codebase by area, and one
+of them took every finding on this query and asked whether it is still true: **four were already
+fixed** and are named with their commits (`DAY-C2` in `e2afe88c`, `FR3-C2` in `825e7d91`, `UH-B7` in
+`59b2db48`, `W7-C1` in `74015c16`), **three are not defects** (`AUT9-C2`, `RGN-C2`, `TS-C1`), one was
+documentation residue (`IND9X-C2`), and all eight are closed.  Of what is left, **exactly one needs the
+railway** (`AMH-C1`, by your own earlier ruling, and now deferred until the manual tests are done) and
+`RGN-C4` must NOT be settled by running, because that means a second JVM against the shared preference
+store.  The audit also found the deleted review documents are **recoverable from git** - `77649f88^`
+and `4020a899^` - which is how it settled ten of the twelve that had been unverified for want of their
+own document.  What remains wants your ruling rather than more reading: file the rest as OBs, or put
+them on the closed roll.
 
 ### OB-249 - 2026-09-21 - the catalogue reads one column two ways
 
@@ -2080,6 +2094,96 @@ locked path before and after.
 raw question.  A tooltip about a standing train is right either way - a train that is not running has
 one reservation - so it is left alone and noted here so the next reader does not have to work it out.
 
+
+### OB-251 - 2026-09-22 - does Instant Stop end an autonomy run, or only halt the trains?
+
+**Kind:** question
+**Raised from:** GS-B2 and GST-B1, the general sweep of 2026-09-22
+**Filed:** 2026-09-22
+
+Two reviewers found this from opposite ends on the same day.  `AltEmergencyStopActionPerformed`
+calls `stopAllLocs()`, which sends the halt and zeroes every locomotive's speed - and touches
+neither `powerState` nor `Layout.running`.  So autonomy is still running: a train BETWEEN paths
+(in `pickPath`, in `loc.delay`, in the yield) comes round its loop, locks a fresh path, throws its
+ironwork and sets off again, seconds after you pressed the button.  Nothing is logged.
+
+And the train that was mid-path is the other half: stopped where it stood, path still locked, its
+thread parked on a sensor it will never reach, so `isRunning()` is latched true for the rest of
+the session - Start greyed, settings refused, editors refused, and `saveState`'s `wouldCapture`
+requires `!isRunning()`, so the session's placements are silently not written.  Graceful Stop
+cannot help: it clears a flag the parked thread never looks at.
+
+**The question, and why it is not mine to answer.**  Should Instant Stop - and Escape, which
+cuts the power - end the autonomy run outright, or should the trains resume when power comes
+back?  Either is defensible: you may want to hit the button, clear an obstruction and have
+autonomy carry on, and you may want the button to mean stop.  The round that found it cited
+`behaviour.md`'s *"an emergency stop is obeyed whatever else is true"*, but that sentence is
+about a route CARRYING a stop never being refused, so it does not settle this.  Nothing was
+changed on my own judgement (`fix-for-a-defect-can-be-worse`: refusing whole once discarded an
+emergency stop).
+
+**What I would do either way:** the driving loop should ask whether the track is live before it
+commands a speed.  `grep getPowerState src/org/traincontrol/automation/` returns nothing at all,
+so the same shape follows from Escape and from the station going away - and that half wants the
+railway to validate, so it is deferred until the manual tests are done.
+
+### OB-252 - 2026-09-22 - the general sweep's open findings, so they are named somewhere live
+
+**Kind:** bug
+**Raised from:** the general sweep of 2026-09-22 (GS)
+**Filed:** 2026-09-22
+
+Six Opus reviewers read one area each - the run loop, the editor and its store, routes against
+autonomy, persistence and import, threading, and the 51 findings that were already open.  Six
+findings were fixed in the commit that filed this, three are deferred until the manual tests are
+done, and one is OB-251.  The rest are listed here rather than as an entry each, because
+`behaviour.md` says open work belongs in a live document and OB-248 is the entry about findings
+that are in none - adding thirty orphans to it would be a poor way to answer it.
+
+The documents are not in the repository, by your ruling.  The store has each finding's evidence:
+`SELECT ref, title, status FROM finding WHERE ref LIKE 'GS%-%'`.
+
+- **`GS-B2`** *(for Adam)* Instant Stop stops every train and autonomy starts them again
+- **`GS-B3`** *(deferred)* the tail bookkeeping is one edge behind its own definition, and on a path of three edges or fewer nothing is ever released. Never early, so nothing is
+- **`GS-B3`** *(deferred)* the tail bookkeeping is one edge behind its own definition, and on a short path it never releases anything
+- **`GS-C1`** the departure speed write is not fenced, and a comment above it says it is
+- **`GSB-C1`** route.ui.frameNameNotUsable is a second copy of VD12-R7's wrong rule, and VD12-R7 does not name it
+- **`GSB-C2`** RouteEditorFrame imports ConditionRows and does not use it
+- **`GSB-C3`** nothing verifies the status_note claims that an OB exists - second instance
+- **`GSE-C1`** the `setupChanged` guard reads the enclosing 820-line method, so `buildTileMenu`'s inline writers exempt each other
+- **`GSE-C2`** an externally renamed page is reported as one that failed to load, and nothing reconciles for the rest of the session
+- **`GSE-C3`** the "why is it not moving" worker iterates the live store collections off the event thread
+- **`GSE-C4`** demoting a station destroys five settings with no warning, and `viewer-editability.md` says the gesture changes two things
+- **`GSE-C5`** the menu door replaces a caption the drag door refuses to replace
+- **`GSP-B2`** A setup that will not read is reported as a layout folder that cannot be written
+- **`GSP-C1`** A locomotive database that reads as something other than a List loads as "loaded", and the exit save writes emptiness over it
+- **`GSP-C2`** The page shifts move the tiles and leave the unmodelled elements behind
+- **`GSP-C3`** `fileNameTaken` names two doors and there are three
+- **`GSP-C4`** `readShared` has two callers and one rollback, and the pre-edit note is the caller without it
+- **`GSR-B2`** the fourth writer past `runningRouteDriving`
+- **`GSR-B3`** the running flag belongs to an object the edit throws away
+- **`GSR-B4`** a deleted route's name is still a live target
+- **`GSR-B5`** a dropdown that cannot show the value in the cell rewrites it
+- **`GSR-B6`** the guard is asked before the dialog, and the thing it guards against starts on its own
+- **`GSR-C1`** the one target the editor does not range-check
+- **`GSR-C2`** reservation read as occupancy, then described as standing
+- **`GSR-C3`** the ROUTE dropdown offers the route being edited
+- **`GSR-C4`** a re-trigger while the route runs is dropped in silence
+- **`GST-B1`** *(deferred)* Nothing in `Layout` consults the power or the halt, so the all-stop either restarts a train or latches the session
+- **`GST-B2`** `GraphLocAssign.commitChanges` discards `moveLocomotive`'s answer and writes five locomotive fields past its guard
+- **`GST-C1`** The volatile sweep did not reach `Layout.isValid`, `Locomotive.speed`/`direction`/`trainLength`/`reversible`, or `Feedback.set`
+- **`GST-C2`** `forwardLoc`/`backwardLoc` touch Swing off the EDT and re-read `activeLoc` inside the worker
+- **`GST-C3`** `Layout.getTimetable()` is the live list, beside a synchronized snapshot door
+- **`GST-C4`** `repaintTimetable`'s comment justifies itself with a mechanism `executePath` closed
+- **`GST-C5`** `createPoint`/`createEdge` are the unsynchronized, unguarded siblings of the delete doors
+- **`GST-C6`** `getInvalidReason()` has no callers, and its javadoc describes a surface nothing implements
+
+**The three I would take first**, and none of them needs the railway: `GSR-B2` (a locomotive's
+address is rewritten by the Central Station sync past the guard that refuses it while a route is
+driving that locomotive), `GSR-B3` (`editRoute` replaces the route object, so `isExecuting` -
+and the guard that reads it - forgets a route that is still running), and `GSP-B2` (every reason
+a setup will not load is reported as "it needs a local layout folder", which `isUsable()` has
+already ruled out two lines earlier).
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

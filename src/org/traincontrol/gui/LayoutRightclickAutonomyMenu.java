@@ -1369,6 +1369,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     org.traincontrol.gui.ManualReversalPrompt.forJourney(session,
                         javax.swing.SwingUtilities.getWindowAncestor(this), path, locomotive);
 
+                // AND THE GATE, as at the other hand door and the three that start a run (GS-B1).
+                if (ui != null) ui.keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
+
                 // TODO there is commonality with AutoLocomotiveStatus - reuse code
                 new Thread(() ->
                 {

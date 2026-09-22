@@ -22966,6 +22966,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Refused BEFORE the button is greyed, so a refusal cannot leave it dead.
         if (refuseWhileEditorOpen()) return;
 
+        // AND NOT NON-ATOMIC OVER A RAILWAY THAT COULD RELEASE TRACK UNDER A TRAIN (GS-B1).  This
+        // door dispatches without going near Start, and a train length cleared on the live layout
+        // since the checkbox was unticked is not something anything here would otherwise notice.
+        keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
+
         this.executeTimetable.setEnabled(false);
 
         javax.swing.SwingUtilities.invokeLater(() ->
@@ -24479,6 +24484,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // editor means the diagram it is driving over is being changed underneath it.
         if (refuseWhileEditorOpen()) return;
 
+        // AND THE SAME QUESTION THOSE TWO ASK (GS-B1).  This is the run where it costs most: several
+        // trains move at once, so one of them with no train length hands back the track under itself
+        // while the others are being routed around it.
+        keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
+
         final Layout layout = this.model.getAutoLayout();
 
         if (this.isAutonomyBusy())
@@ -25410,10 +25420,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // minute later puts `behind >= trainLength` back to `0 >= 0`: every edge handed back as that
         // train's head passes it, with the train still lying over it.
         //
-        // Start is the choke point - no edge is released until autonomy runs - so asking here covers
-        // both writers and any third one added later.  The remedy is the file door's rather than the
-        // checkbox's, because it is the file door's situation: the setting was chosen deliberately and
-        // the railway has changed under it since, and there is nothing for the operator to answer.
+        // ONE OF FOUR DISPATCH DOORS, AND THIS COMMENT CLAIMED IT WAS THE ONLY ONE (GS-B1).  "Start
+        // is the choke point - no edge is released until autonomy runs" was wrong about where the
+        // release lives: it is in `executePathInternal`, and Execute Timetable, Return Home and the
+        // two hand dispatches all reach it without passing here.  Every one of them asks now, and
+        // `ui.testNonAtomicRoutesNeedTheirLengths.testEveryDispatchDoorAsksTheGate` is the list.
+        //
+        // The remedy is the file door's rather than the checkbox's, because it is the file door's
+        // situation: the setting was chosen deliberately and the railway has changed under it since,
+        // and there is nothing for the operator to answer.
         keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
 
         // Greyed here, on the EDT, before anything is dispatched.  The button used to stay live until
