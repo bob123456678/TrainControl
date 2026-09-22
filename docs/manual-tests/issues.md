@@ -2370,6 +2370,33 @@ invariant is pinned only on a small fixture.
 **Checked against today's code, 2026-09-22.**  The test still takes both sides from `entrySideOf` and
 its message still says *"re-measure before assuming either way"*.
 
+### OB-269 - 2026-09-22 - excessive lock edges
+
+**Kind:** bug  
+**Raised from:** MT-463 (Return Home moves a train the railway had standing on a terminus)  
+**Filed:** 2026-09-22 12:22  
+**Build:** commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when running auto layout, more edges (tracks) may get locked than necessary.  For example, a path to tunnel from bottomsecondary should not block the path from buttominner to bottominnerotherside (and vice-versa), but I see that they do.  significant bug.
+
+### OB-270 - 2026-09-22 - loc facing
+
+**Kind:** bug  
+**Raised from:** MT-460 (Segment Length shows and writes what the whole run measures)  
+**Filed:** 2026-09-22 12:27  
+**Build:** commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+I am able to paste 75 407 DB on BttomMainA facing west.
+
+### OB-271 - 2026-09-22 - focusability in the route editor
+
+**Kind:** bug  
+**Raised from:** MT-446 (After an edit declined at the start of a run, where the trains are is saved again)  
+**Filed:** 2026-09-22 12:36  
+**Build:** commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+make the test, capture, etc. buttons in the route editor non focusable.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

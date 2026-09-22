@@ -165,17 +165,32 @@ The guard itself got a third arm when it was widened. Its two twins - the script
 the greyed Start item's tooltip on the diagram's right-click menu - did not, and stood like that for a
 week. A test now holds all three in one rule.
 
-**What to do.** You need a setup that will not BUILD, which is not the same as one with errors: a
-scissors crossing, or two included pages sharing an s88, is the usual way in.
+**What you need.** A setup that will not BUILD, which is not the same as one with errors: two
+included pages sharing an s88 is the easiest way in, and a scissors crossing is the other.
 
-1. **Make the graph unbuildable** - switch on a page that repeats another page's sensors is the easiest.
-2. **Right-click a station on the track diagram and hover the greyed Start item.** The tooltip should say
-   one thing has to be dealt with first and point you at the count along the top of the diagram - NOT
-   "wait for the trains to stop".
-3. **Press Start from the menu.** Same wording.
-4. **Now break it the other way** - an unnamed station, say, which is a finding rather than a build
-   failure. All three should name the count instead.
-5. **And with three blocking problems**, the start door should say three, not "one thing".
+**Steps**
+
+1. **Make the graph unbuildable**: switch on a page that repeats another page's sensors.
+2. **Right-click a station on the track diagram** and hover the greyed **Start** item.  Read the
+   tooltip.
+3. **Press Start from the autonomy menu.**  Read what it says.
+4. **Put that right and break it the other way** - leave a station unnamed, say, which is a finding
+   rather than a build failure - and repeat steps 2 and 3.
+5. **Now arrange three blocking problems at once** and press Start again.
+
+**Expected**
+
+- Step 2: the tooltip says **one thing has to be dealt with first** and points you at the count along
+  the top of the diagram.  **NOT "wait for the trains to stop"** - that is an instruction to wait for
+  trains that are not running and never will be, and it is what two of the three doors used to say.
+- Step 3: the same wording.  The menu item and the tooltip are one sentence in one place now.
+- Step 4: all three doors name the **count** instead.
+- Step 5: the start door says **three**, not "one thing".
+
+**What is already pinned:** the wording and the counting, at all three doors, by
+`regression.testTheRefusalToStartSaysWhichThing` - which found two of them still wrong when it was
+written, so step 5 was red at two doors of three.  **What is left for your hands is steps 2 and 3 as
+gestures:** that the greyed item really is greyed, and that pressing Start really shows that sentence.
 
 *Run against v3_0_0_rc8 or later.*
 
@@ -344,18 +359,33 @@ knows where the trains are because that is captured when the editor opens; once 
 regenerating from the setup undoes the run. That was a real defect here once and is not worth
 reintroducing to save a message.
 
-**What to do.**
+**Steps**
 
-1. **Open the autonomy setup editor with nothing running.** Make any small edit - a station flag, a
-   home, a length.
-2. **Start autonomy in the same instant.** This is deliberately hard to hit and you may not manage it;
-   if you cannot, say so and this step is done, because the message costs nothing when it never fires.
-3. **If you do hit it, the log should carry one sentence** saying the edit could not be applied, that
-   it IS saved, and that stopping autonomy and making it again will apply it now. Check that following
-   that instruction actually works.
-4. **The ordinary case must not have changed.** Edit the setup with autonomy running normally - you
-   are already warned about that when you start - and confirm you do **not** get a second message on
-   top of the warning.
+1. **Edit the setup with autonomy running normally.**  Start autonomy, open the autonomy setup editor,
+   make any small edit - a station flag, a home, a length - and apply it.  Read the warning you get,
+   and then read the log.
+2. **Now try to hit the race, if you like.**  With nothing running, open the editor, make an edit, and
+   start autonomy in the same instant.  This is deliberately hard to hit and **you may well not manage
+   it**; if you cannot, say so and the step is done - the message costs nothing when it never fires.
+3. **If you do hit it**, read the log line, then stop autonomy, make the edit again, and check it
+   takes effect.
+
+**Expected**
+
+- Step 1 is the one that matters and it is a NEGATIVE: you get the warning you already get when you
+  start autonomy, and **no second message on top of it**.  That is the ordinary case, and the change
+  this entry is about must not have touched it.
+- Step 3: one sentence in the log saying the edit could not be applied, that it **IS saved**, and that
+  stopping autonomy and making it again will apply it now - and following that instruction works.
+
+**Why the edit is not simply applied later:** it would put every train back where it started.  The
+setup only knows where the trains are because that is captured when the editor opens; once a run has
+moved them, regenerating from the setup undoes the run.  That was a real defect here once.
+
+**What is already pinned:** the sentence itself, by
+`regression.testADeclinedSetupEditSaysSoAndSurvivesTheExit.testTheRefusedRebuildSaysSo`, with two
+controls - the courtesy door says nothing, and an ordinary rebuild says nothing.  **What is left for
+your hands is step 1.**
 
 *Run against v3_0_0_rc12 or later.*
 
@@ -14223,18 +14253,39 @@ Home item lights up, close the application, reopen it and check the home is stil
 **This is a question for you as much as a test.** When you decline the conflict dialog, the code has to
 decide what you meant, and today the answer differs depending on which door the route came through.
 
-1. **Make a route** that does two things: switches an accessory, and carries an emergency stop.
-2. **Get that accessory onto a locked path** - start autonomy and let a train take a route over it, or
-   park a train at a protected platform.
-3. **Fire the route from the route list**, and again by clicking its tile on the track diagram. Each
-   should ask "...would switch X, which is on track a train is running over. Run it anyway?"
-4. **Click Cancel.** Today the whole route is discarded, so **the power stays on**. The same route fired
-   by an s88 trigger skips only the switch and still cuts the power.
+**THE QUESTION IS ANSWERED and the work is done** - your ruling of 2026-09-06, built in `c22c9d90`
+and written into `behaviour.md` section 7a: *"cancel should cancel everything.  OK should fire
+everything.  If the route is auto triggered: popup, just a notification in the log.  don't run the
+conflicting switch commands, but do run the power off and others."*
 
-**The question: does Cancel mean "don't throw that switch" or "don't run this route at all"?** If the
-first, I will make both doors skip the accessories and run the rest, matching the s88 door and the model
-layer, and reword the dialog to say so. If the second, the s88 door is the odd one out and I will say so
-in its comment instead.
+So this is now a re-test of that, and the half worth your hands is the one the automated claims cannot
+reach: that **only the held switch is skipped**.  The first attempt read your ruling as being about
+the whole accessory GROUP - it asked once, before the loop, and then skipped every accessory in the
+route - so one turnout under a train silently dropped every other turnout.
+
+**Steps**
+
+1. **Make a route** with three things in it: a switch you can get a train onto, **another switch
+   somewhere else entirely**, and an emergency stop (power off).
+2. **Get the first switch onto a locked path** - start autonomy and let a train take a route over it,
+   or park a train at a protected platform.
+3. **Fire the route from the route list.**  Read the question, then press **Cancel**.
+4. **Fire it again from its tile on the track diagram**, and press **Cancel** there too.
+5. **Fire it a third time and press OK.**
+6. **Now fire the same route from an s88 trigger** - set its sensor, with the train still standing on
+   the first switch - and read the log.
+
+**Expected**
+
+- Steps 3 and 4: each door asks *"...would switch X, which is on track a train is running over.  Run
+  it anyway?"*, and **Cancel cancels everything** - no switch is thrown, the power stays on, nothing
+  in the route runs.  Both doors give the same answer; that they differed is what this entry was
+  filed about.
+- Step 5: **OK fires everything**, the held switch included.
+- Step 6: **no dialog** - an automatically triggered route does not stop and ask.  The log says which
+  switch was held back.  **The switch under the train is not thrown; the OTHER switch IS, and the
+  power still goes off.**  That last sentence is the whole of what needs your eyes: a route that
+  dropped every accessory because one of them was held would look almost right.
 
 **Adam, 2026-09-06 (triage).** Does not work.
 
@@ -14770,13 +14821,33 @@ It is on `Layout` now and both doors ask it.  What needs your hands is that it a
 direction: turning protection ON is doing what the protection would do anyway, and an earlier review
 removed exactly that over-strictness from the route door.
 
+**Steps**
+
 1. **With autonomy running**, stand a train at a platform that has a protecting signal paired to it.
-2. **Click that signal to RED.**  Nothing should ask you anything - that is the protective direction.
-3. **Click it to GREEN.**  You should be asked whether to switch it anyway, and Cancel should leave it
-   alone.
-4. **Do the same with a three-way turnout** if you have one paired, and with the train moved away - no
-   question should be asked in either case with the platform empty.
-5. **And check a route** that sets the same signal green is still refused as before.
+2. **Click that signal to RED** on the track diagram.
+3. **Click it to GREEN.**  If you are asked, press **Cancel**, then look at the signal.
+4. **Move the train away** from that platform and click the same signal green again.
+5. **If you have a three-way turnout paired to a platform**, repeat steps 1 to 4 with it.  If you have
+   none, say so and the step is done - the rule is one method and the signal above already reached it.
+6. **Fire a route** that sets the same signal green, with a train standing at the platform again.
+
+**Expected**
+
+- Step 2: **nothing is asked.**  Turning protection ON is doing what the protection would do anyway,
+  and being asked about it is the over-strictness an earlier review took off the route door.
+- Step 3: **you are asked** whether to switch it anyway, and **Cancel leaves the signal where it
+  was** - still red.
+- Step 4: **nothing is asked**, and the signal goes green.  With the platform empty there is nothing
+  to protect.
+- Step 5: the same three answers.
+- Step 6: **still refused**, as it was before this changed - the route door and the diagram tile ask
+  one rule now (`clearsProtection`), so they cannot give different answers.
+
+**What is already pinned**, so a difference here is worth reporting rather than shrugging at: steps 2,
+3 and 4 are held by `core.testAutoLayout.testSwitchingAProtectingSignalByHandAsksOnlyOneWay` and step 6
+by `regression.testARouteDoesNotThrowSwitchesUnderATrain`, both mutation-confirmed.  What your hands
+add is that the gesture really reaches the rule - the tile toggles, the keyboard sets, and each has to
+supply the direction itself.
 
 *Run against a build after commit e6791631.*
 
@@ -20569,14 +20640,33 @@ FR-006, built 2026-08-22. Reconstructed from the receipt: this entry is written 
 
 FR-007, built 2026-08-22. Reconstructed from the receipt.
 
+**What you need, and it is shipped.**  `docs/manual-tests/files/MT-380-one-page-layout` is a layout with
+ONE page and no autonomy setup - trimmed from the five-page layout shipped for MT-244, with the other
+four pages and the arrows that pointed at them removed.  The five-page EXPORT is yours: take it from
+your own railway with **Autonomy > Export**, because what this test is about is an export's page names
+being matched against the layout's.
+
 **Steps**
 
-1. Start with a layout that has NO autonomy setup at all.
-2. Open the Autonomy menu.
+1. Export your current five-page setup (**Autonomy > Export**).  Put it somewhere you can find it.
+2. Open `MT-380-one-page-layout`, which has no autonomy setup at all, and open the **Autonomy** menu.
+3. Import the export from step 1 into it.  Read what you are told.
+4. Open the autonomy editor.
+5. Close it and open it again.
 
 **Expected**
 
-- The import is offered there, and reachable - the menu does not require an existing setup before it will let you make one. That is the state a new or upgrading user is in.
+- Step 2: **the import is offered, and reachable.**  The menu does not require an existing setup before
+  it will let you make one - that is the state a new or upgrading user is in, and it is the whole of
+  what this entry was first written for.
+- Step 3: **one warning naming the pages it left out** - the four your export has and this layout has
+  not.  An import brings in only the pages this layout has; pages the setup already knew, loaded or
+  not, are never dropped, which is what protects a page still downloading from OneDrive.  Pages are
+  matched by **name**, whatever number either side gave them.
+- Steps 4 and 5: **no "the setup was left alone" popup**, at the import or on either open.  That is the
+  half you reported on 2026-09-13: it showed twice at import and then after every open.  It is said once
+  per set of missing pages in a session now, and again only if that set changes - and this layout knew
+  no pages before the import, so none of them is its own and there is nothing for it to say.
 
 **Adam, 2026-09-13 (triage).** Works, with notes.
 
@@ -22544,7 +22634,9 @@ for.  Write the total down and judge the steps against it rather than against th
 3. When it has arrived, look at the diagram between Tunnel and BottomMainA.
 4. Give it **one more unit than the total** and stand it at Tunnel again.  Look for BottomMainA in the
    right-click list, then start autonomy and watch whether autonomy ever sends it there.
-5. Repeat step 4 with a parking berth whose approach is shorter than the train, if you have one to hand.
+5. Repeat step 4 with a parking berth whose approach is shorter than the train, if you have one to
+   hand.  If you have none, say so and the step is done: it is a control on a refusal step 4 has
+   already shown, not a case of its own.
 
 **Expected**
 
@@ -22650,6 +22742,19 @@ Your notes on MT-435: *"When 75 407 DB is set to length 3, only BottomMainAPre i
   the road ahead and nothing at a junction it passed minutes ago.  Locking a path does not move it: the
   road is reserved before the train sets off, and a reservation is not a train.  This is the half your
   screenshot showed and the entry did not ask for.
+
+  **AND ITS LENGTH CHANGED ON 2026-09-22** (OB-244, your ruling that the maximum train length is
+  checked at *"the arrival station only"*).  A square a train has come to REST on measures how much
+  train it may HOLD, so the walk does not charge the train for standing there and spends the whole body
+  further back.  A train part-way through a run is anchored at its last MILESTONE instead, and a
+  milestone is ordinary block - the body really does lie over it - so it IS charged now.
+
+  **What that looks like:** the orange behind a running train ends where its body ends, and it can be
+  shorter than the orange behind the same train standing at a station.  A train whose milestone is a
+  long block used to claim a square BEHIND that block as well, and `isPathClear` refused another train
+  track that is free.  If you see orange behind a running train reaching further back than the train is
+  long, that is this rule going wrong; if you see track freed that used to be blocked while a train ran
+  past it, that is this rule working.
 
   **One thing this cannot promise flatly**, and it is open as `OB-239`: the walk that draws the picture
   steps between covered squares through the first reduced edge that joins them, so where two roads join
@@ -22760,6 +22865,10 @@ Your note on MT-335: *"The 335 park works, but I get: Could not run EN57-203 fro
 
 #### Comments
 
+**Adam, 2026-09-22 (triage).** Works.
+
+*Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-441"></a>
@@ -22813,7 +22922,9 @@ Found by the review of the OB-229 fix.  Since the route search stopped going thr
 
 1. In the autonomy editor, set **Path Type** to **Manual**, choose **Why Not Moving?** and click a train standing at **BottomInner**.
 2. Find **TunnelLongPark**, **TunnelLeftPark**, **TunnelCenterPark**, **TunnelRightPark** or **ParkingTrack11** in the answer.
-3. If you have a station joined to nothing, find it too.
+3. If you have a station joined to nothing, find it too.  If you have none, say so and the step is
+   done - it is the control that stops step 2 passing for a rule that refuses everything, and
+   `core.testARouteIsFoundPastATerminus` holds that half already.
 
 **Expected**
 
@@ -22909,6 +23020,10 @@ Found by the wide autonomy review, and your ruling on it: *"this should only be 
 
 #### Comments
 
+**Adam, 2026-09-22 (triage).** Works.
+
+*Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-446"></a>
@@ -22937,6 +23052,14 @@ Found by the wide autonomy review.  When a setup edit lands just as autonomy sta
 *What this is:* AMS-B1.  `regression.testCancelUndoesAutonomyEdits.testTheDeclinedEditGuardEndsWhenARebuildCarriesTheEdit`.  Seen red first (8818d8cd); fixed in 64169b0b.
 
 #### Comments
+
+**Adam, 2026-09-22 (triage).** Could not run this.
+
+impossible to time manually
+
+Filed from this test: OB-271 (bug - focusability in the route editor).  They are in `issues.md` until they are picked up.
+
+*Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -22994,6 +23117,10 @@ Found measuring what the terminus fix opened, and your ruling on it: *"We need t
 *What this is:* AMR-B1.  `core.testARouteIsFoundPastATerminus.testNoRoutePassesAnotherCopyOfTheTrainsOwnSquare` and `testNoRoutePassesAnotherCopyOfItsDestination`.  Seen red first (c02f7000); fixed in c02f7000.
 
 #### Comments
+
+**Adam, 2026-09-22 (triage).** Works.
+
+*Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -23084,6 +23211,12 @@ Found by the wide autonomy review.  Your MT-262 ruling is that a physical refusa
 *What this is:* AMR-C2.  `core.testAManualSendIsRefusedABerthTooShort.testTheWhyNotMovingViewNamesTheBerthRuleTooForAManualOnlyBerth`.  Seen red first - the window answered *"Set not to be chosen automatically."* while `whyABerthCannotHoldIt` refused the same berth.
 
 #### Comments
+
+**Adam, 2026-09-22 (triage).** Works, with notes.
+
+message just says there is no path to there, not that the length is an issue (tested len4 75 407 DB from bottommaina, inspeciting tunnellongpark.
+
+*Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 <a id="mt-452"></a>
@@ -23223,6 +23356,10 @@ Rewritten the same day after review MAL.  Your request: *"a display option to st
 
 #### Comments
 
+**Adam, 2026-09-22 (triage).** Works.
+
+*Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-456"></a>
@@ -23328,6 +23465,10 @@ From the 2026-09-19 review round (SET-B1), fixed the same day.  Typing a negativ
 
 #### Comments
 
+**Adam, 2026-09-22 (triage).** Works.
+
+*Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-459"></a>
@@ -23390,6 +23531,12 @@ From the 2026-09-19 review round (SET-B3), fixed the same day.  Mass Assign Leng
 *What this is:* review finding SET-B3, fixed 2026-09-19 with a test seen failing first and a mutation for each half.
 
 #### Comments
+
+**Adam, 2026-09-22 (triage).** Works.
+
+Filed from this test: OB-270 (bug - loc facing).  They are in `issues.md` until they are picked up.
+
+*Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -23491,6 +23638,10 @@ The highlighting animation itself works as described in this test.  BUT:
 
 You were right, and it was two defects in one line. The match was tile.getRawAddress(), and for an accessory the raw address is TWICE the logical one - setLogicalAddress writes address*2, plus one for a green uncoupler - while for an s88, a route tile and a link the raw number IS the logical one. So a route commanding accessory 1 never matched the turnout numbered 1 at all; the only tiles the comparison could ever match were the kinds whose two addresses are the same, which is exactly the three kinds you saw light: sensors, route tiles and links. Then the second half, which is the one you named: nothing asked what the tile WAS. Both are fixed. highlightAddresses now takes what the address names - AddressedAs.ACCESSORY, FEEDBACK or ROUTE - and matches the logical address; a switch, signal or uncoupler answers to an accessory, an s88 to a feedback, a route tile to a route command (a route CAN command another route, so that case is kept rather than dropped). Lamps deliberately do not answer to an accessory command. The route editor now splits its rows by kind instead of pooling the numbers, and your other sentence is in too: the S88 that TRIGGERS the route is highlighted with the condition colour, which this button never showed before. Held by regression.testTheRouteHighlightAsksWhatATileIs on the single-switch scenario, where WestEnd is s88 10 and the turnout is accessory 1 - so accessory 10 is an address only a sensor answers to. Three claims with a control on each side, and both mutations go red one at a time: drop the kind test and the sensor lights for an accessory address; put getRawAddress back and the turnout stops lighting for its own. Thirteen classes around the route editor and the highlight are green.
 
+**Adam, 2026-09-22 (triage).** Works.
+
+*Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-463"></a>
@@ -23530,6 +23681,12 @@ make an automated test for this with appropriate placements.
 **Claude, 2026-09-21.**
 
 Built, and it runs on your own railway rather than on a four-station ring. core.testReturnHomeOnRealLayout.testATrainOnATurningSquareCanStillBeBroughtHome stages the placements itself: for each train it finds a terminus or reversing square that is not that train's home and is standing empty, puts the train there through the same moveLocomotive door you use, asks for a plan as the train is (the control), then asks again with the train unable to reverse - which must still plan - and puts it back. A hand placement does not re-home an already-homed locomotive, which is what makes the arrangement stageable at all. Two things worth knowing. The first version ran autonomy and took whatever came to rest on a turning square, and over three runs on your layout nothing did: the test SKIPPED, which is no better than the 'could not run this' it was written for, so the placements are staged now and there is a floor that fails if no train could be staged. And the mutation was measured, not assumed: taking the RTX-B1 fix back out (turnedByThePlan asking the square instead of the journey) turns this red on your railway as well as the two hand-built claims in core.testHomeStaging - so the arrangement genuinely arises there. Those two hand-built claims, which were written with the fix and seen red first, cover step 4's homeless train; this one covers step 3 on real track.
+
+**Adam, 2026-09-22 (triage).** Works.
+
+Filed from this test: OB-269 (bug - excessive lock edges).  They are in `issues.md` until they are picked up.
+
+*Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -23583,6 +23740,12 @@ I made Route 1, that fires a loc a route that fires a loc function after 10000ms
 **Claude, 2026-09-21.**
 
 Both halves are real and both are fixed; each was a different defect from the one this entry was written for, so the entry has gained a step for each. (1) THE DELETE. runningRouteDriving - the question every door asks before it edits or deletes a locomotive - asked each executing route about its OWN command list. Your Route 1 fires a route, and the route it fires is what drives ALCO UP: that happens seconds later on a thread nobody has started yet, so Route 1 answered no and every door stood open for the whole ten-second delay. It now follows the ROUTE command one hop, which is all execRoute permits (it starts at a recursion limit of 1 and hands limit-1 down). commandsDrive is unchanged, because it answers a different question - which commands a delete will take out of THIS route - and following chains there would overcount your warning. core.testAdvancedRoutes.testARunningRouteIsDrivingWhatTheRouteItChainsToDrives, seen red first: the guard returned null four seconds before the function was due. (2) F32. The Save gate has always checked this - number >= loco.getNumF(), and an MM2 reports five - but nothing said so as you typed, because the command table has no live mark and column 5 was a plain digits-only cell. Two things follow. The gate itself had never been exercised anywhere: testRouteEditorValidation builds its editors with no parent window, so problemsWith returns before any per-row rule, and a behavioural test for it needed a real window and a real locomotive database. That test exists now and passes, so what you met was the affordance, not a missing check. And the cell now offers that locomotive's own functions - F0 to F4 on an MM2 - which is what the old editor did by building its list from the locomotive, and what this one gave up when it started taking a typed number. A number already in the row is offered too, out of range or not: a combo box handed a value it has not got keeps its own selection, so a route already carrying F32 would have had that cell rewritten to F0 - the lights - by a click and a click away. Where the target is not a locomotive this database has, a typed number is still taken. ui.testTheRouteEditorAsksHowManyFunctionsALocomotiveHas, two claims with a control each.
+
+**Adam, 2026-09-22 (triage).** Could not run this.
+
+make an automated test for this
+
+*Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -23677,6 +23840,14 @@ Does not work- all icons are cleared (source locomotive only had f0 with an icon
 
 Both halves of what you saw come from one omission, and it is fixed. The copy wrote the source's function TYPES, triggers and custom flag and never read the local image URLs - so the one thing you wanted carried was not, while writing the types changed which standard icon every other button draws, which is the 'all icons are cleared' half. There is one statement of what a customization IS now: Locomotive.Customizations, captured and applied as a value, so the copy and the Cancel that undoes it cannot disagree about it again - they were three parallel fields and three assignments, and the icons were in neither list. Copy Customizations is applyCustomizations(source.capture()); Cancel is applyCustomizations of what was captured first. Two details worth knowing: the map is copied rather than shared, because setLocalFunctionImageURLs keeps the reference it is handed and two locomotives sharing one map would follow each other's edits; and the custom flag is only written back when the answer would otherwise be wrong, because isCustomFunctions is DERIVED - any custom icon makes it true whatever the flag says - so writing it unconditionally would mark a locomotive customized that was only ever customized by its icons. core.testACopiedCustomizationBringsTheIcons holds three claims: the copy brings the icon and drops the target's own, Cancel puts the target's own back and takes the copied one away, and the two never share a map. The mutation - drop the icon line from applyCustomizations - reddens two of the three. core.testLocomotive and regression.testCancelUndoesACustomizationCopy are green. One fixture lesson recorded in the test: the first draft put the target's icon on F8, which setLocalFunctionImageURL silently refuses above numF, so the claim failed against code that was right.
 
+**Adam, 2026-09-22 (triage).** Does not work.
+
+They are correctly undone by cancel in the single function editor, but you must trigger a repaint on the target locomotive.  Add this. 
+
+And there is no cancel button if you go to manage locomotive -> customize function icons, only apply- and closing without clicking on apply still persists the functions here.  That's OK, but just make sure apply is greyed out if there is nothing to apply.
+
+*Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-467"></a>
@@ -23696,7 +23867,9 @@ From the 2026-09-19 review round, fixed the same day.  OB-155 took the post-chan
 2. Right-click a route you created in TrainControl and choose **Enable Automatic Execution**, then **Disable** it again.
 3. Note whether a spinner appears and how long the window is busy.
 4. Use the bulk enable/disable on a search that matches several of your own routes.
-5. Now do the same for a route that came FROM the Central Station, if you have one.
+5. Now do the same for a route that came FROM the Central Station, if you have one.  If you have none,
+   say so and the step is done - it needs the station, not the layout, so nothing here can stand in
+   for it.
 6. Switch the station back on and repeat the first two steps.
 
 **Expected**
@@ -23826,8 +23999,14 @@ that does not depend on anybody reading it.
 6. **The file door.** Save a setup with Atomic Routes off, put the railway right, and re-load it
    (Validate on the autonomy tab, or apply from the editor - both doors have the rule).  Then take one
    length off, re-load again, and read the log.
-7. **A legacy setup, if you have one to hand.**  Load an `autonomy.json` with no diagram behind it -
-   the lengths on its edges and nothing else - with Atomic Routes off, and then untick the checkbox.
+7. **The legacy path, and both files are supplied.**  In `docs/manual-tests/files` there are two
+   `autonomy.json` setups with no diagram behind them - the lengths on their edges and nothing else -
+   both with Atomic Routes already off:
+   - `MT-470-legacy-unmeasured.json`, which leaves 60 of its 90 rails unmeasured;
+   - `MT-470-legacy-measured.json`, the same setup with every rail measured.
+
+   Load each into a layout with no autonomy diagram, read the log, then tick **Atomic Routes** on and
+   untick it again.
 8. **THE FOURTH DOOR, and the one that matters (added 2026-09-22).**  With the railway put right and
    Atomic Routes accepted OFF, now clear one locomotive's train length - the Train Length box on the
    locomotive, or leave the dropdown at 0 when placing a train on the diagram - and press **Start**.
@@ -23854,7 +24033,12 @@ that does not depend on anybody reading it.
   too, the log says that in a second line, because a door that told you one reason at a time would have
   you measure everything, reload, and only then hear the other (VD15-C3).  The tick agrees with the
   railway.
-- Step 7: **the same answers as steps 1 and 6.**  The checkbox and both load paths ask one question of
+- Step 7: **the unmeasured file is refused at the load and at the checkbox; the measured one is
+  accepted at both.**  That pair is the point - a refusal that fired for both would be one that fires
+  whatever the railway looks like, and it would take the setting away from you for good.  The two
+  files differ in exactly one thing, which each says in its own `_note`: they are built from the
+  2.7.4c export already shipped for MT-298, so the shape is a real one off your railway rather than
+  something invented.  **The same answers as steps 1 and 6.**  The checkbox and both load paths ask one question of
   the railway itself, so a legacy setup is treated exactly as a diagram one is.
 - Step 8: **Atomic Routes comes back ON by itself, and the log says why, naming the locomotive.**  Then
   it starts.  This is the door the other three cannot cover: an edge's length is only written when a
@@ -23893,6 +24077,12 @@ lives) and VD17-B1 (the method's own contract still said it had two callers; it 
 Held by `ui.testNonAtomicRoutesNeedTheirLengths` - seven claims, each with the control
 that the door is OPEN when the railway is right - and
 `core.testAutoLayout.testARailwayCountsItsUnmeasuredDrivableTrack`, which has ten.
+
+**Adam, 2026-09-22 (triage).** Works, with notes.
+
+Works, but the popup message is too verbose.  Just say that every segment and locomotive must have a length, and to use the bulk editor to set that.  Also, sounds like we need a bulk tool for locomotive lengths.
+
+*Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -23945,5 +24135,113 @@ closing the editor and losing the edit.
 
 *What this is:* `OB-240`, which you raised on 2026-09-21 and I built the same day.  Held by two claims in
 `ui.testRouteEditorValidation`, each seen failing first against the old `removeAt`.
+
+**Adam, 2026-09-22 (triage).** Works.
+
+*Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-472"></a>
+
+### MT-472 - 2026-09-22 - The route editor marks a row it is going to refuse, while you are looking at it
+
+**Disposition:** fixed unvalidated
+**From:** OB-246
+
+**Written:** 2026-09-22
+
+Your ruling, 2026-09-22, asked whether the target column should stop offering names Save refuses:
+*"yes"*.
+
+**What was wrong.**  The target column offers every locomotive in the database, and a route cannot store
+a name with a COMMA in it - the command line is comma-separated.  So the dropdown offered it, you picked
+it, and Save refused with *"that name cannot be used in a route"*; the only way out was to rename the
+locomotive.  Brackets are fine and always were - your ruling of 2026-09-04 - so a name like
+`SBB 460 (2)` is not what this is about.
+
+**Why it is marked rather than hidden.**  Leaving the name out of the list would refuse a legal
+selection with nothing shown, which is the thing you have ruled against before.  The row goes red with
+the reason on its tooltip, and the choice stays where it was.
+
+**Steps**
+
+1. You need a locomotive whose name holds a comma.  If you have none, rename one temporarily - the
+   locomotive dialog asks the same question the route editor does, so **it may refuse the rename**; if
+   it does, that half is working and there is nothing to test here.  Put the name back afterwards.
+2. Open a route in the editor and add a **Locomotive Speed** command.  Pick that locomotive in the
+   target column.
+3. Hover the row.  Then press Save.
+4. Now pick an ordinary locomotive in the same row, and look at it again.
+5. Press **+** to add a new, empty row, and look at that.
+
+**Expected**
+
+- Step 3: the row is drawn in **red** as soon as the name is in it - before you press anything - and
+  its tooltip says what Save will say.  Save still refuses, with the same sentence.  The red is the
+  gate's own answer, not a second opinion.
+- Step 4: the row goes back to ordinary black, and the tooltip goes away.  A row that is fine must not
+  wear the last row's warning - the table reuses one component down the column, which is how that sort
+  of thing happens.
+- Step 5: the new row is **not** red.  It cannot be saved yet - it has no address - and Save still says
+  so by row number, but a mark that is on every row from the moment it is added is a mark nobody reads.
+- Anything else in the table still looks as it did: a kept command still greyed, the cells you cannot
+  type into still greyed, the **+** row still white.
+
+*What this is:* the control that offers an action asking the same question the guard asks - OB-057 and
+OB-090, one table over.  Held by
+`ui.testTheRouteEditorAsksHowManyFunctionsALocomotiveHas.testARowSaveWouldRefuseIsMarkedAsItIsTyped`,
+seen failing first, with a control that a row Save accepts is not marked.
+
+**Adam, 2026-09-22 (triage).** Works.
+
+*Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-473"></a>
+
+### MT-473 - 2026-09-22 - Two trains on one double-curve tile
+
+**Disposition:** fixed unvalidated
+**From:** OB-238
+
+**Written:** 2026-09-22
+
+Your ruling, 2026-09-22: *"it is two pieces of metal.  imagine two parallel tracks simple appearing on
+one tile for visual convenience.  two distinct, not connected paths."*
+
+**What was wrong.**  A square is emitted as one Point per side a train can arrive by, and those copies
+are grouped so that two trains cannot stand on one square - which is right for a square that really is
+one rail.  It was grouped by the TILE, so a train on one arc of a double curve made the **other arc**
+read occupied, and a path over it was refused although the metal is free.  An overpass is the same
+case: two tracks at different heights.
+
+**You need** a double curve (or an overpass) with track on **both** of its roads, and two trains.  If
+your railway has none, say so and this entry is closed as not applicable rather than left open.
+
+**Steps**
+
+1. Find a double-curve or overpass tile that autonomy can route over on both roads.
+2. Stand a train on one of the two roads - on the tile itself, or on the sensor that covers it.
+3. Send a second train over the **other** road, by hand from the right-click menu.
+4. Then send the second train over the **same** road as the first.
+5. Repeat step 3 with the two roads the other way round.
+
+**Expected**
+
+- Step 3: **allowed.**  The two arcs never touch, so a train on one is not standing on the other.
+- Step 4: **refused**, as it always was - that is the same piece of metal.
+- Step 5: the same answers, whichever arc is occupied.
+- Everything else that shares a square is unchanged: a crossing still locks both roads (your ruling of
+  2026-09-20), and a square split for two directions of one rail still holds one train.
+
+*What this is:* the occupancy grouping keyed per ROAD for the three tile types whose roads do not
+touch, which is the grain the reduction has used for them since AUR-B1.  Held by
+`core.testAutonomyDiagramSession.testEachArcOfADoubleCurveIsItsOwnPieceOfMetal`, seen failing first.
+
+**Adam, 2026-09-22 (triage).** Works.
+
+*Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
