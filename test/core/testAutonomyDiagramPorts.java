@@ -10,6 +10,8 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory.accessorySetting;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import org.traincontrol.automationui.TileGraph;
+import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.automationui.TilePorts.AccessorySlot;
 import org.traincontrol.automationui.TilePorts.Route;
@@ -643,5 +645,64 @@ public class testAutonomyDiagramPorts
         assertEquals(routes.get(0).getA(), routes.get(0).getB(), type + " should be a stub");
 
         return routes.get(0).getA();
+    }
+
+    /**
+     * A DIRECTION THE HARDWARE REFUSES IS NOT OFFERED AS AN ANSWER (Adam, 2026-09-22).
+     *
+     * *"Green arrows in the direction that can't be chosen shouldn't be offered."*  An authored
+     * direction ANDs with the tile's own restriction, so on a permanent turnout - every route directed
+     * at the toe - "toward the fork" and "both ways" restrict nothing at all: no train could take that
+     * road either way.  The editor drew a green arrow for it, which is a control offering what the
+     * guard will not honour (OB-057, OB-090).
+     *
+     * `TileGraph.directionIsPossible` is the question the menu asks, and `directionAllows` is the
+     * walk's half of the same one; this pins the first against the hardware the second obeys.
+     *
+     * MUTATION: make `directionIsPossible` answer true for everything and the permanent-turnout half
+     * fails; drop the `NONE` case and the last claim does.
+     */
+    @Test
+    public void testOnlyThePossibleDirectionsAreOffered()
+    {
+        for (int o = 0; o < 4; o++)
+        {
+            Side toe = TilePorts.deriveToe(componentType.CUSTOM_PERM_LEFT, o);
+
+            for (TilePorts.Route r : TilePorts.ports(componentType.CUSTOM_PERM_LEFT, o, 0))
+            {
+                Direction possible = r.getA() == toe ? Direction.TOWARD_A : Direction.TOWARD_B;
+                Direction refused = possible == Direction.TOWARD_A ? Direction.TOWARD_B
+                    : Direction.TOWARD_A;
+
+                assertTrue(TileGraph.directionIsPossible(possible, r),
+                    "orientation " + o + ": the road INTO the toe is the one road this turnout has,"
+                    + " and the menu would not offer it");
+
+                assertFalse(TileGraph.directionIsPossible(refused, r),
+                    "orientation " + o + ": the menu offers an arrow out of the toe and toward the"
+                    + " fork, which no train can take - the blades are stuck and nothing can choose"
+                    + " a leg, so the arrow restricts nothing and tells the operator a lie");
+
+                assertFalse(TileGraph.directionIsPossible(Direction.BOTH, r),
+                    "orientation " + o + ": 'both ways' is offered on a route that has one way");
+
+                assertTrue(TileGraph.directionIsPossible(Direction.NONE, r),
+                    "shutting a route is a real answer whichever way it could be travelled, and it"
+                    + " is no longer offered");
+            }
+        }
+
+        // AND AN ORDINARY ROUTE KEEPS ALL FOUR.  A rule that hid answers everywhere would take the
+        // arrows away from the track they were built for.
+        for (TilePorts.Route r : TilePorts.ports(componentType.STRAIGHT, 0, 0))
+        {
+            for (Direction d : Direction.values())
+            {
+                assertTrue(TileGraph.directionIsPossible(d, r),
+                    "a plain straight has lost the answer " + d + ", so ordinary track can no longer"
+                    + " be given the direction it was drawn for");
+            }
+        }
     }
 }

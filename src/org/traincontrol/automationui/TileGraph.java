@@ -1424,6 +1424,35 @@ public class TileGraph
         return routes.get(routeId.getIndex());
     }
 
+    /**
+     * Whether a direction can be CHOSEN for this route at all, given what the hardware allows.
+     *
+     * The walk's half of this question is `directionAllows` below: an authored direction ANDs with the
+     * hardware's own restriction, so a direction the hardware refuses restricts nothing - choosing it
+     * changes no train's road.  Offering it anyway is a control that offers an action the guard will
+     * not honour, which is the shape OB-057 and OB-090 are about.
+     *
+     * A permanent turnout is the case that matters: its routes are all directed at the toe, so "toward
+     * the fork" and "both ways" are not answers, and the menu should not draw a green arrow for a road
+     * no train can take (Adam, 2026-09-22).  `NONE` is always a real answer - shutting a route is
+     * meaningful whichever way it could be travelled.
+     *
+     * @param direction the answer being considered
+     * @param route the route it would be set on
+     * @return true when the hardware leaves that answer any meaning
+     */
+    public static boolean directionIsPossible(Direction direction, Route route)
+    {
+        if (direction == Direction.NONE) return true;
+
+        boolean towardA = route.isTraversableFrom(route.getB());
+        boolean towardB = route.isTraversableFrom(route.getA());
+
+        if (direction == Direction.BOTH) return towardA && towardB;
+
+        return direction == Direction.TOWARD_A ? towardA : towardB;
+    }
+
     private static boolean directionAllows(Direction direction, Route route, Side entrySide)
     {
         if (direction == Direction.NONE) return false;

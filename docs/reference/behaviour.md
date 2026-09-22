@@ -1353,9 +1353,18 @@ wherever the run began.  The two questions are not the same question, which is w
 crossing, so a train standing across one fouls another route's track rather than its own road - and
 that is the tail walk's business in 5c, not the room walk's.
 
-*(`IND9X-A2` / `OB-233`.  Held by
-`core.testAutonomyDiagramReducer.testTheRoomWalkStopsAtASwitchAndAPermanentTurnoutButNotACrossing`,
-which pins both halves against one fixture.)*
+**And the editor does not offer an arrow for the road that is not there.**  A direction the operator
+authors ANDs with the hardware's restriction, so on one of these tiles "toward the fork" and "both
+ways" restrict nothing - no train could take that road either way - and drawing a green arrow for it
+says something untrue about the railway.  The menu offers what `TileGraph.directionIsPossible` allows,
+which is the same question `directionAllows` asks when the walk uses it; where only one way is left,
+that is the one ticked, because the stored answer for these tiles is `BOTH` by default and `BOTH` is
+not on offer.  Shutting a route is always offered: that is a real answer whichever way it could run.
+
+*(`IND9X-A2` / `OB-233`, and Adam's instruction of 2026-09-22 that *"green arrows in the direction that
+can't be chosen shouldn't be offered"*.  Held by
+`core.testAutonomyDiagramReducer.testTheRoomWalkStopsAtASwitchAndAPermanentTurnoutButNotACrossing` and
+`core.testAutonomyDiagramPorts.testOnlyThePossibleDirectionsAreOffered`.)*
 
 ### The autonomy editor's keyboard doors
 

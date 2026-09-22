@@ -24,6 +24,7 @@ import org.traincontrol.automationui.AutonomyChecks;
 import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagramComponent;
+import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
@@ -8591,8 +8592,21 @@ public class AutonomyEditorPanel extends JPanel
      * a signal can be restricted like any other tile, and a restriction on one still draws.
      */
     /**
-     * The three answers for one route, with the two one-way options named by where they lead rather
-     * than by an A and a B nobody can see.
+     * The answers for one route, with the one-way options named by where they lead rather than by an A
+     * and a B nobody can see.
+     *
+     * **ONLY THE ONES THE HARDWARE LEAVES ANY MEANING** (Adam, 2026-09-22: *"green arrows in the
+     * direction that can't be chosen shouldn't be offered"*).  An authored direction ANDs with the
+     * tile's own restriction, so on a permanent turnout - whose routes are all directed at the toe -
+     * "toward the fork" and "both ways" change no train's road.  Offering them drew a green arrow for a
+     * road no train can take, and is the control-that-offers-what-the-guard-refuses shape of OB-057 and
+     * OB-090.  `TileGraph.directionIsPossible` is the question, and `directionAllows` beside it is the
+     * walk's half of the same one.
+     *
+     * **The tick follows what is IN FORCE, not what is stored.**  `getDirection` answers `BOTH` for
+     * these tiles by default - deliberately, because a default of "out of the toe" would AND with the
+     * blades to leave the tile impassable - and `BOTH` is not an option here, so the radio group would
+     * have shown nothing selected.  Where only one way is possible, that one is ticked.
      */
     private List<javax.swing.JMenuItem> directionItems(final TileKey tile, final RouteId routeId,
         org.traincontrol.automationui.TilePorts.Route route)
@@ -8601,12 +8615,31 @@ public class AutonomyEditorPanel extends JPanel
 
         Direction current = session.getGraph().getDirection(tile, routeId);
 
-        items.add(directionItem(tile, routeId, Direction.BOTH,
-            I18n.t("autosetup.ui.menuRouteBoth"), current));
-        items.add(directionItem(tile, routeId, Direction.TOWARD_A,
-            I18n.f("autosetup.ui.menuRouteToward", String.valueOf(route.getA())), current));
-        items.add(directionItem(tile, routeId, Direction.TOWARD_B,
-            I18n.f("autosetup.ui.menuRouteToward", String.valueOf(route.getB())), current));
+        if (!TileGraph.directionIsPossible(current, route))
+        {
+            current = TileGraph.directionIsPossible(Direction.TOWARD_A, route) ? Direction.TOWARD_A
+                : TileGraph.directionIsPossible(Direction.TOWARD_B, route) ? Direction.TOWARD_B
+                : Direction.NONE;
+        }
+
+        if (TileGraph.directionIsPossible(Direction.BOTH, route))
+        {
+            items.add(directionItem(tile, routeId, Direction.BOTH,
+                I18n.t("autosetup.ui.menuRouteBoth"), current));
+        }
+
+        if (TileGraph.directionIsPossible(Direction.TOWARD_A, route))
+        {
+            items.add(directionItem(tile, routeId, Direction.TOWARD_A,
+                I18n.f("autosetup.ui.menuRouteToward", String.valueOf(route.getA())), current));
+        }
+
+        if (TileGraph.directionIsPossible(Direction.TOWARD_B, route))
+        {
+            items.add(directionItem(tile, routeId, Direction.TOWARD_B,
+                I18n.f("autosetup.ui.menuRouteToward", String.valueOf(route.getB())), current));
+        }
+
         items.add(directionItem(tile, routeId, Direction.NONE,
             I18n.t("autosetup.ui.menuRouteNone"), current));
 
