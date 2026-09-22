@@ -7057,13 +7057,7 @@ public class AutonomyEditorPanel extends JPanel
 
         org.traincontrol.automationui.TilePorts.Route route = only.getValue();
 
-        // PAST THE ONES THE HARDWARE REFUSES (VD17-era sweep of the menu's sibling).  The menu no
-        // longer draws an arrow for a road no train can take; this is the other door onto the same
-        // answer, and it cycled through all four regardless.  `NONE` is always possible, so this
-        // always lands somewhere.
         Direction next = after(session.getGraph().getDirection(target, only.getKey()));
-
-        while (!TileGraph.directionIsPossible(next, route)) next = after(next);
 
         int changed = session.setRunDirection(target, only.getKey(), next);
 
@@ -7167,16 +7161,9 @@ public class AutonomyEditorPanel extends JPanel
             boolean openA = (mask & (1 << sides.indexOf(route.getA()))) != 0;
             boolean openB = (mask & (1 << sides.indexOf(route.getB()))) != 0;
 
-            Direction asked = openA && openB ? Direction.BOTH
+            wanted.put(entry.getKey(), openA && openB ? Direction.BOTH
                 : openA ? Direction.TOWARD_A
-                : openB ? Direction.TOWARD_B : Direction.NONE;
-
-            // WHAT THE ARMS ASK FOR, NARROWED TO WHAT THE TILE CAN DO.  Opening both arms of a
-            // permanent turnout reads as "both ways", which is not one of its answers - the blades
-            // are stuck, so the only road is the one into the toe.  Storing the asked-for value would
-            // put a direction in the record that the walk then ignores, and the arrow drawn from it
-            // would say something untrue about the railway.
-            wanted.put(entry.getKey(), narrowed(asked, route));
+                : openB ? Direction.TOWARD_B : Direction.NONE);
         }
 
         // One re-derivation for the tile, not one per branch
@@ -7331,31 +7318,6 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         return I18n.f("autosetup.ui.dirOpenArms", String.join(", ", open));
-    }
-
-    /**
-     * The answer a route can actually carry, when the one asked for is not one of its own.
-     *
-     * A direction ANDs with the tile's own restriction, so asking for one the hardware refuses stores
-     * a value the walk ignores and draws an arrow that says something untrue.  Where one way is
-     * possible that is the answer; where none is, the route is shut.
-     *
-     * @param asked what the gesture meant
-     * @param route the route it lands on
-     * @return the same answer, or the nearest one the tile can carry
-     */
-    private static Direction narrowed(Direction asked,
-        org.traincontrol.automationui.TilePorts.Route route)
-    {
-        if (TileGraph.directionIsPossible(asked, route)) return asked;
-
-        if (asked != Direction.NONE
-            && TileGraph.directionIsPossible(Direction.TOWARD_A, route)) return Direction.TOWARD_A;
-
-        if (asked != Direction.NONE
-            && TileGraph.directionIsPossible(Direction.TOWARD_B, route)) return Direction.TOWARD_B;
-
-        return Direction.NONE;
     }
 
     /**
