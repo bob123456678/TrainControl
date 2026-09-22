@@ -1537,25 +1537,6 @@ the method does with a null layout anyway.
 
 **Verified still true on 2026-09-21**, when the review that found it was deleted.
 
-### OB-238 - 2026-09-21 - the two arms of a double-curve tile are locked as one piece of metal
-
-**Kind:** bug  
-**Raised from:** review finding IND9X-C9, 2026-09-09  
-**Filed:** 2026-09-21  
-
-**Your call rather than a defect, and of a piece with the crossing ruling.**
-
-`TilePorts` declares DOUBLE_CURVE (and FEEDBACK_DOUBLE_CURVE) as two independent routes -
-`route(N, W)` and `route(E, S)` - two arcs in opposite corners of the square that do not touch. The
-lock treats the square as one piece of metal, so a train on one arc blocks the other.
-
-That is conservative: it refuses more than the metal requires, which is safe and can be annoying, and
-it is the opposite direction from the over-admission above. You ruled on 2026-09-20 that a crossing
-locks both roads and an overpass does not, on exactly this question of whether the metal is shared. A
-double curve is the third case: two arcs that share a square and no metal.
-
-Nothing to fix until you say which way it goes.
-
 ### FR-093 - 2026-09-21 - manual-only destinations shown by the transparent treatment, as you ruled
 
 **Kind:** feature request  
@@ -1868,31 +1849,6 @@ ATrainMoves`, `testTheTrainIsShownAsALine`, `testTheWashIsNoLongerThanTheTrain`,
 after a known number of tiles. `single-switch` has the shape (Approach's two arms), so no new scenario
 is needed.
 
-### OB-244 - 2026-09-21 - a station's allowance is now spent at a mid-run milestone
-
-**Kind:** bug
-**Raised from:** VD12-C1, a validation of 2026-09-20 and 2026-09-21
-**Filed:** 2026-09-21
-
-`walkOneTail`'s `onTheAllowance` rule and `spendableAllowance` exempt the square the train STANDS on
-from the length it spends - your *"the station size is an allowance, not a length"*, which is about a
-station berth.  MT-438's one-tail fix anchors a running train at its last MILESTONE, and a milestone
-part-way through a run is ordinary block: the train's body really does lie over it.
-
-**Which way the error goes.** Refusal.  A three-unit train whose last milestone is a ten-unit block
-claims a square BEHIND that block as well, because the block itself cost nothing - so `isPathClear`
-refuses another train track that is free, and the diagram greys it.  Your standing rule is that you
-would rather have no check than one that refuses something legal, which is why this is filed rather
-than guessed at.
-
-**The two answers.** (a) The exemption belongs to a square a train has come to REST on, so a mid-run
-anchor spends its length like any other - the tail then shrinks to what the train occupies. (b) It
-belongs to the anchor whatever kind of square it is, on the argument that a train reported at a block
-may be anywhere along it, so the whole block is uncertain and claiming behind it is the safe reading.
-
-I lean to (a): it is what the ruling said, and (b) buys safety by refusing track no train is on.  Your
-call, and it is one line either way.
-
 ### OB-245 - 2026-09-21 - a cancelled customization copy can leave the custom flag set
 
 **Kind:** bug
@@ -2162,6 +2118,8 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-21 | OB-238 | bug | The collision block that stops two trains standing on one square was keyed by the TILE, so a train on one arc of a double curve made the other arc read occupied and `isPathClear` refused track that is physically free.  Adam, 2026-09-22: *"it is two pieces of metal.  imagine two parallel tracks simple appearing on one tile for visual convenience.  two distinct, not connected paths."*  `AutonomyBuilder.blockFor` keys DOUBLE_CURVE, FEEDBACK_DOUBLE_CURVE and OVERPASS per ROAD - the grain the reduction has used since AUR-B1 - and every other split square still groups by the tile.  Held by `testEachArcOfADoubleCurveIsItsOwnPieceOfMetal`, seen failing first.  No hands-on test: it is what the build emits, and the claim reads it back out of the emitted configuration. | fixed unvalidated | - |
+| 2026-09-21 | OB-244 | bug | A station's allowance - *"the station size is an allowance, not a length"* - was being spent at a running train's last MILESTONE, so a train whose milestone is a long block claimed a square behind it as well and `isPathClear` refused track no train is on.  Adam, 2026-09-22, asked where the maximum train length should be checked: *"it's the arrival station only"* - answer (a).  `walkStandingTrains` now passes `atRest`, false for exactly the trains part-way along a run, and both halves of the rule honour it; a train standing at the end of a road keeps the allowance unchanged.  Held by `testAMidRunMilestoneIsNotAnAllowance`, whose two mutations were each measured.  No hands-on test: it is a calculation. | fixed unvalidated | - |
 | 2026-09-21 | OB-233 | bug | The berth-room walk counted straight across a permanently-set turnout, so a berth beyond one was measured from wherever the run began and a train too long for it was admitted, coming to rest fouling the merge.  Adam, 2026-09-22, having ruled the other way on 2026-09-15: *"(c) - treat them the same as regular switches for the purposes of the check"*.  Both walks ask `GraphReducer.boundsTheRoom` now; `isSwitch()` is untouched, and a crossing still does not stop the walk.  Held by `testTheRoomWalkStopsAtASwitchAndAPermanentTurnoutButNotACrossing`, seen failing first.  No hands-on test: it is a calculation, and the claim's mutation was measured. | fixed unvalidated | - |
 | 2026-09-22 | OB-251 | question | Two reviewers found that Instant Stop halts the trains and leaves autonomy running - a train between paths sets off again, and a train mid-path leaves its thread waiting on a sensor it will not reach.  Adam, 2026-09-22: *"Instant stop is unrelated to autonomy"*, and *"So it's OK to keep autonomy running"*.  So the button is a Central Station halt and nothing else, and the exit capture's `!isRunning()` is right rather than a consequence - placements taken mid-run would record trains half-way along a path. | declined | - |
 | 2026-09-17 | FR-092 | feature request | Adam: *"Add a right click menu open to clear all max station train lengths (grouped with the other clear options)"*.  Clear All Max Train Lengths, after Clear All Track Lengths in Bulk Tools; every page, after a confirmation. | - | `MT-457` |

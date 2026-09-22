@@ -1688,6 +1688,91 @@ public class testAutonomyDiagramSession
         return page;
     }
 
+    /**
+     * THE TWO ARCS OF A DOUBLE CURVE ARE TWO PIECES OF METAL (Adam, 2026-09-22, on OB-238 / IND9X-C9).
+     *
+     * *"It is two pieces of metal.  Imagine two parallel tracks simple appearing on one tile for visual
+     * convenience.  Two distinct, not connected paths."*
+     *
+     * Occupancy is per Point, and a square is emitted as one Point per side a train can arrive by, so
+     * the builder groups those copies under a `block` - two trains cannot stand on one square.  That
+     * grouping was keyed by the TILE alone, so a train on one arc of a double curve made the other arc
+     * read occupied and `isPathClear` refused track that is physically free.  The reduction has keyed
+     * these tiles per ROAD since AUR-B1; this is the same rule at the occupancy door.
+     *
+     * MUTATION: key `blockFor` by the tile alone and this finds one name where it wants two.
+     *
+     * @throws IOException from the fixture
+     */
+    @Test
+    public void testEachArcOfADoubleCurveIsItsOwnPieceOfMetal() throws IOException
+    {
+        session.open(Arrays.asList(doubleCurveCrossroads()));
+
+        TileKey curve = new TileKey("main", 2, 2);
+
+        session.rebuild();
+
+        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+        java.util.Map<String, Integer> blocks = new java.util.LinkedHashMap<>();
+
+        int copies = 0;
+
+        for (Object o : built.getJSONArray("points"))
+        {
+            org.json.JSONObject point = (org.json.JSONObject) o;
+
+            // FOUND BY THE BLOCK ITSELF, which is the only thing in the emitted point that names the
+            // square: the bare tile before this fix, and the tile plus its road after it.
+            String block = point.optString("block", null);
+
+            if (block == null || !block.startsWith(curve.toString())) continue;
+
+            copies++;
+
+            blocks.put(block, blocks.containsKey(block) ? blocks.get(block) + 1 : 1);
+        }
+
+        assertTrue(copies > 1,
+            "precondition: the double curve must be emitted as several copies carrying a block, or"
+            + " there is nothing here to group - found " + copies);
+
+        assertEquals(blocks.size(), 2,
+            "the two arcs of a double curve came back as " + blocks.size() + " piece(s) of metal: "
+            + blocks + ".  They are two arcs in opposite corners that never touch, so a train on one"
+            + " does not stand on the other - grouping them refuses a second train track that is"
+            + " physically free");
+
+        for (java.util.Map.Entry<String, Integer> entry : blocks.entrySet())
+        {
+            assertNotEquals(entry.getKey(), curve.toString(),
+                "an arc is still grouped under the bare tile, which is the grouping this is about");
+        }
+    }
+
+    /**
+     * A double-curve sensor with track on both of its arcs: north, west, east and south all reachable.
+     *
+     * @return the page
+     * @throws IOException from the diagram
+     */
+    private LayoutDiagram doubleCurveCrossroads() throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 6, 6, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 2, 1, 1, 0, 21, 21, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 22, 22, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK_DOUBLE_CURVE, 2, 2, 0, 0, 25, 25,
+            accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 2, 0, 0, 23, 23, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 2, 3, 1, 0, 24, 24, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        return page;
+    }
+
     private LayoutDiagram runOfTrack() throws IOException
     {
         LayoutDiagram page = new LayoutDiagram("main", 8, 4, null, null);

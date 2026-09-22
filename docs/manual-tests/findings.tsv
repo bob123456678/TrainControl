@@ -1155,8 +1155,8 @@ IND9X-C7	2026-09-22-GS-backlog.md	Open - unverified	still true (3 parts)	(listed
 IND9X-C7	IND-independent-review.md	Open - unverified	-	coverage gaps against documented behaviour
 IND9X-C8	2026-09-22-GS-backlog.md	Open - unverified	still true	(listed in a table, no section of its own)
 IND9X-C8	IND-independent-review.md	Open - unverified	-	a station caption's rotation depends on what was standing on the sensor when the layout was saved
-IND9X-C9	2026-09-22-GS-backlog.md	Open - for Adam	**for Adam** (OB-238)	(listed in a table, no section of its own)
-IND9X-C9	IND-independent-review.md	Open - for Adam	-	the two independent arms of a double-curve tile are locked as one piece of metal
+IND9X-C9	2026-09-22-GS-backlog.md	Closed	**for Adam** (OB-238)	(listed in a table, no section of its own)
+IND9X-C9	IND-independent-review.md	Closed	-	the two independent arms of a double-curve tile are locked as one piece of metal
 IND9X-D1	IND-independent-review.md	Closed	-	test/README.md's class counts are stale again
 IND9X-D2	IND-independent-review.md	Closed	-	the "two known unsoundnesses" are pointed at from two places and stated in neither
 IND9X-D3	IND-independent-review.md	Closed	-	the One-way direction dialog centres over the tools strip
@@ -3238,8 +3238,8 @@ VD11-D9	2026-09-03-validation-round-three.md	Closed	closed	`VD10-A1`'s fix is pr
 VD12-B1	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	the tail overlay anchored at an arbitrary reservation
 VD12-B2	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	the lamp sentence was false
 VD12-B3	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	the tail walk was blind to a path still being locked
-VD12-C1	2026-09-21-VD12-validation-of-two-days.md	Open - for Adam	Open - for Adam	the allowance exemption reaches a mid-run milestone
-VD12-C1	2026-09-22-GS-backlog.md	Open - for Adam	**for Adam** (OB-244)	(listed in a table, no section of its own)
+VD12-C1	2026-09-21-VD12-validation-of-two-days.md	Closed	Open - for Adam	the allowance exemption reaches a mid-run milestone
+VD12-C1	2026-09-22-GS-backlog.md	Closed	**for Adam** (OB-244)	(listed in a table, no section of its own)
 VD12-C2	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	the driven road was truncated at the wrong copy
 VD12-C3	2026-09-21-VD12-validation-of-two-days.md	Open	Open - needs a test	the derived flag survives a Cancel
 VD12-C3	2026-09-22-GS-backlog.md	Open	still true (OB-245)	(listed in a table, no section of its own)

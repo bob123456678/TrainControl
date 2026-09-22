@@ -449,6 +449,56 @@ public class AutonomyBuilder
     }
 
     /**
+     * Which copies of a square are the same piece of metal, and so cannot hold two trains at once.
+     *
+     * Occupancy is recorded per Point, and a square is emitted as one Point per side a train can arrive
+     * by, so without this a sibling copy reads free while a train stands on its twin.  The TILE says
+     * which copies those are, not the s88: genuinely different places share a sensor on a real layout.
+     *
+     * **EXCEPT WHERE THE SQUARE IS TWO PIECES OF METAL** (Adam, 2026-09-22, on OB-238 / IND9X-C9):
+     * *"it is two pieces of metal.  imagine two parallel tracks simple appearing on one tile for visual
+     * convenience.  two distinct, not connected paths."*  A double curve is two arcs in opposite corners
+     * that never touch, and an overpass is two tracks at different heights - so a train on one road does
+     * not stand on the other, and grouping all the copies of such a square refused a second train track
+     * that is physically free.  The reduction has keyed these three types per ROAD since AUR-B1; this is
+     * the same rule at the occupancy door, which had been left on the tile alone.
+     *
+     * The road is named by its lowest side, so both copies of one arc - a train arriving by either end -
+     * land on the same name while the other arc gets its own.
+     *
+     * @param tile the square
+     * @param node the copy being emitted
+     * @param nodes every copy of that square
+     * @return the block name, or null where there is nothing to group
+     */
+    private String blockFor(TileKey tile, Node node, List<Node> nodes)
+    {
+        org.traincontrol.base.LayoutDiagramComponent component = reducer.getGraph() == null
+            ? null : reducer.getGraph().getTiles().get(tile);
+
+        boolean neverMeet = node.getArrival() != null && component != null
+            && (component.getType() == org.traincontrol.base.LayoutDiagramComponent.componentType.DOUBLE_CURVE
+            || component.getType() == org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK_DOUBLE_CURVE
+            || component.getType() == org.traincontrol.base.LayoutDiagramComponent.componentType.OVERPASS);
+
+        if (!neverMeet) return nodes.size() > 1 ? tile.toString() : null;
+
+        java.util.SortedSet<TilePorts.Side> road = new java.util.TreeSet<>();
+
+        road.add(node.getArrival());
+        road.addAll(onwardFrom(tile, node.getArrival()));
+
+        int copies = 0;
+
+        for (Node other : nodes)
+        {
+            if (other.getArrival() != null && road.contains(other.getArrival())) copies++;
+        }
+
+        return copies > 1 ? tile.toString() + "/" + road.first() : null;
+    }
+
+    /**
      * The sides a train that arrived at this square by the given side can carry on out of.
      *
      * Asked of the tile graph rather than worked out from the edges, because only the graph knows which
@@ -843,7 +893,9 @@ public class AutonomyBuilder
                 // The TILE, not the s88.  Genuinely different places share a sensor on a real layout -
                 // a station, its approach guard and a reversing point can be three Points on one
                 // feedback - so the sensor cannot say which Points are one square.  The tile can.
-                if (nodes.size() > 1) json.put("block", point.getTile().toString());
+                                String block = blockFor(point.getTile(), node, nodes);
+
+                if (block != null) json.put("block", block);
 
                 // The points this station is held back by, by NAME (FR-001).
                 //

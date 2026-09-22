@@ -6876,6 +6876,12 @@ public class Layout
             String side = standing.getArrivedFrom();
             List<Edge> road = standing.getArrivedAlong();
 
+            // WHETHER THIS TRAIN HAS COME TO REST (OB-244).  True until a run is found below, and a
+            // run that has ENDED leaves nothing here to find - `executePathInternal` removes the
+            // locomotive from `activeLocomotives` and unlocks the path before the train stands - so
+            // this is false for exactly the trains that are part-way along one.
+            boolean atRest = true;
+
             // THE PATH IT IS TAKING, WHICHEVER MAP HOLDS IT YET (VD12-B3).
             //
             // `configureAndLockPath` claims `takingPath` and reserves every Point on the road before
@@ -6892,6 +6898,8 @@ public class Layout
 
             if (running != null && !running.isEmpty())
             {
+                atRest = false;
+
                 Point head = theHeadOfTheRun(loc, running);
 
                 if (head != null)
@@ -6915,7 +6923,18 @@ public class Layout
                 }
             }
 
-            walkOneTail(anchor, loc, side, road, covered, places);
+            // THE ALLOWANCE IS THE ARRIVAL STATION'S (Adam, 2026-09-22, on OB-244 / VD12-C1, asked
+            // where the maximum train length should be checked: *"it's the arrival station only"*).
+            //
+            // A square a train has come to REST on measures how much train it may HOLD, which is why
+            // the walk does not charge it.  A milestone part-way along a run is ordinary block - the
+            // body really does lie over it - so charging it nothing let the tail reach on PAST the
+            // square behind it, and `isPathClear` then refused another train track that is free.
+            //
+            // Asked of the run rather than of the anchor: `anchor == standing` is also true of a
+            // running train whose head happens to be the first reserved Point this loop meets, which
+            // is iteration order rather than a fact about the railway.
+            walkOneTail(anchor, loc, side, road, covered, places, atRest);
         }
     }
 
@@ -7025,9 +7044,11 @@ public class Layout
      * @param arrivedAlong the road it came along, or null
      * @param covered filled with every covered edge and this train
      * @param places filled with every claimed place and this train
+     * @param atRest whether the anchor is a square the train has come to REST on, which is the only
+     *  case where its own measurement is an allowance rather than track the body lies over
      */
     private void walkOneTail(Point standing, Locomotive loc, String arrivedFrom, List<Edge> arrivedAlong,
-        Map<Edge, Locomotive> covered, Map<String, Locomotive> places)
+        Map<Edge, Locomotive> covered, Map<String, Locomotive> places, boolean atRest)
     {
         int remaining = loc.getTrainLength();
 
@@ -7220,7 +7241,7 @@ public class Layout
             // not, which left the pair worse than before either had it: the berth rule ACCEPTED
             // the train and this guard then blocked the roads behind it.  That configuration is
             // the one `Automation.md` produces first, because it tells him to measure the berth.
-            if (segment.getLength() - spendableAllowance(segment, here, standingHere) <= 0) break;
+            if (segment.getLength() - spendableAllowance(segment, here, standingHere, atRest) <= 0) break;
 
             // BOTH DIRECTIONS OF THE SAME RAIL (VAL8-A1, REG7-B3).
             //
@@ -7303,7 +7324,9 @@ public class Layout
                     // 2026-09-12 and reverted the same day, because it left a train shorter than
                     // its own square with nothing drawn behind it - failing two claims Adam had
                     // already validated.  The picture was right and this was not.
-                    boolean onTheAllowance = fromTheEnd && step == 0 && here == standingHere;
+                    // AND ONLY WHERE THE TRAIN HAS COME TO REST (OB-244).  A milestone part-way
+                    // along a run is ordinary block, and the body does lie over it.
+                    boolean onTheAllowance = atRest && fromTheEnd && step == 0 && here == standingHere;
 
                     // AND NOT TWICE (PRW-C3).  The square the walk turned at is the end of the
                     // last edge and a place on this one; charging it again shortens the tail by
@@ -7400,7 +7423,10 @@ public class Layout
 
         if (road == null || road.isEmpty()) return;
 
-        walkOneTail(standing, loc, entrySideOf(road.get(road.size() - 1), standing), road, covered, places);
+        // A TAIL ASKED ABOUT DIRECTLY IS ONE THAT HAS COME TO REST: this is the question
+        // `placesATailWouldCover` answers for a train standing somewhere, not a run in progress.
+        walkOneTail(standing, loc, entrySideOf(road.get(road.size() - 1), standing), road, covered,
+            places, true);
     }
 
     /**
@@ -7419,13 +7445,23 @@ public class Layout
      * @param standingHere the point the train is actually standing on
      * @return the allowance to leave out of this segment's length
      */
-    private static int spendableAllowance(Edge segment, Point here, Point standingHere)
+    private static int spendableAllowance(Edge segment, Point here, Point standingHere, boolean atRest)
     {
         // ONLY THE FIRST HOP.  The places loop's own test is `fromTheEnd && step == 0 && here ==
         // standingHere`, and the third clause is the one that matters here: on a later hop `here` is
         // an intermediate square, and ITS measurement is ordinary track the body lies over. Without
         // this the two would disagree the moment a tail reached a second edge, which is the defect
         // SEV-B3 was about, pointing the other way.
+        // AND NOTHING AT ALL FOR A RUNNING TRAIN (Adam, 2026-09-22, on OB-244 / VD12-C1).
+        //
+        // The allowance is the ARRIVAL STATION's - "the station size is an allowance, not a
+        // length" - so it belongs to a square a train has come to rest on.  MT-438's fix
+        // anchors a running train at its last MILESTONE, and a milestone part-way along a run is
+        // ordinary block whose measurement is track the body lies over.  Exempting it claimed a
+        // square BEHIND that block as well, so `isPathClear` refused another train track that is
+        // free - the refusing direction his standing rule is about.
+        if (!atRest) return 0;
+
         if (segment == null || here != standingHere || segment.getEnd() != here) return 0;
 
         List<Integer> spans = segment.getPlaceLengths();

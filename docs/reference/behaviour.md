@@ -950,6 +950,16 @@ The editor notice about turn-round squares with no length is a different questio
   behind it, however long the train was. The berth rule reads the same square the same way, and the
   two are written to agree rather than being one piece of code - which is where SEV-B1 and SVX-B1 both
   came from, in opposite directions.
+- **And it is the ARRIVAL station's allowance, so a running train does not get one.** Adam,
+  2026-09-22, asked where the maximum train length should be checked (OB-244): *"it's the arrival
+  station only"*. MT-438 anchors a train part-way through a run at its last MILESTONE, and a milestone
+  is ordinary block - the body really does lie over it - so it is charged like any other square. Left
+  exempt, a train whose milestone is a long block claimed a square BEHIND that block as well, and
+  `isPathClear` then refused track no train is on. `walkStandingTrains` decides this from the RUN
+  rather than from the anchor, because a running train's head can also be the first reserved Point
+  that loop meets, which is iteration order rather than a fact about the railway; a run that has ENDED
+  leaves nothing to find, so a train standing at the end of one keeps the allowance unchanged.
+  `core.testARunningTrainHasOneTail.testAMidRunMilestoneIsNotAnAllowance`.
 - **The first hop takes the copy of the rail the train ARRIVED along** (SVZ-B1). A piece of rail is two
   edges, one per direction, and at a berth both can report the same way in. An edge's places are the
   path plus the square it arrives at, so only the arriving copy carries the square the train is on -
@@ -969,6 +979,18 @@ The editor notice about turn-round squares with no length is a different questio
   `core.testACoveredSwitchClosesTheOtherRoad` is the test that goes red when the rule is removed —
   it needs a turnout to express, so it runs on `test/layouts/single-switch`; the two older
   covered-track classes stayed fully green with the rule disabled (AUT9-B2).
+- **The copies of one square are one piece of metal, except where the square is two.** Occupancy is
+  recorded per Point and a square is emitted as one Point per side a train can arrive by, so the build
+  groups those copies under a `block`: a train on the northbound copy makes the southbound copy read
+  occupied, which is right, because they are the same rail. The TILE says which copies those are, not
+  the s88 - genuinely different places share a sensor on a real layout. Adam, 2026-09-22 (OB-238), on
+  the three types where that is wrong: *"it is two pieces of metal. imagine two parallel tracks simple
+  appearing on one tile for visual convenience. two distinct, not connected paths."* A double curve is
+  two arcs in opposite corners that never touch and an overpass is two tracks at different heights, so
+  DOUBLE_CURVE, FEEDBACK_DOUBLE_CURVE and OVERPASS are grouped per ROAD instead - the grain the
+  reduction has used for them since AUR-B1 - and a train on one road leaves the other free. Grouping
+  them by the tile refused a second train track that is physically free, which is the refusing
+  direction. `core.testAutonomyDiagramSession.testEachArcOfADoubleCurveIsItsOwnPieceOfMetal`.
 - **But only over the part of it the train is actually lying on** (Adam, OB-207, 2026-09-12: *"75 407
   DB cannot go from Tunnel to BottomMainA even though it should be able to"*, at a train length of
   one). An edge was covered whole or not at all, so a one-unit train parked at the end of a

@@ -162,17 +162,7 @@ public class testARunningTrainHasOneTail
             // anchor: the Point it departed from, still holding the locomotive because the lock
             // reserved it.  With three units the same claim would be honest, which is why the first
             // draft of this test could not tell the two apart.
-            Map<Edge, Locomotive> covered = layout.edgesCoveredByStandingTrains();
-
-            Set<String> mine = new LinkedHashSet<>();
-
-            for (Map.Entry<Edge, Locomotive> claim : covered.entrySet())
-            {
-                if (loc.equals(claim.getValue()))
-                {
-                    mine.add(claim.getKey().getStart().getName() + ">" + claim.getKey().getEnd().getName());
-                }
-            }
+            Set<String> mine = claimedBy(layout.edgesCoveredByStandingTrains());
 
             // ONE TAIL, and it is the road it drove in on.  Adam: "the tail is certain at departure and
             // shouldn't change."
@@ -210,6 +200,143 @@ public class testARunningTrainHasOneTail
 
             model.setFeedbackState(junction.getS88(), false);
         }
+    }
+
+    /**
+     * A milestone part-way along a run is ordinary block, and its measurement is not an allowance.
+     *
+     * **Adam, 2026-09-22, asked where the maximum train length should be checked** (OB-244 / VD12-C1):
+     * *"it is the arrival station only"*.  A square a train has come to REST on measures how much train
+     * it may HOLD - his ruling of 2026-09-13, *"the station size is an allowance, not a length"* - so
+     * the tail walk does not charge the train for standing there, and spends its whole body further
+     * back instead.
+     *
+     * MT-438 then re-anchored a RUNNING train at its last milestone, and that exemption came with it.
+     * A milestone part-way along a run is ordinary block: the body really does lie over it, and
+     * charging it nothing let the tail reach on past the square behind, so `isPathClear` refused
+     * another train track that is free - the refusing direction Adam's standing rule is about.
+     *
+     * **Two units, and the milestone measures two.**  So the train's whole body is the milestone and
+     * there is nothing left to reach `MR_B>MR_A` with.  The first claim is what makes the second one
+     * about the rule: a walk that produced nothing at all would satisfy a negative claim on its own.
+     *
+     * **And the allowance is still there for a train at rest**, which is the third claim - asked of the
+     * same railway, the same train and the same road, so the only thing that differs between the second
+     * claim and the third is whether the train is part-way through a run.
+     *
+     * MUTATION: drop the `atRest` clause from `onTheAllowance` in `Layout.walkOneTail` and the second
+     * claim fails, naming `MR_B>MR_A` - the milestone is exempted again, one unit survives it and the
+     * walk carries on to the leg behind the departure square.  Pass `false` from `tailAlong` instead
+     * and the third fails at the same edge, which is the rule taken away from the train it belongs to.
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testAMidRunMilestoneIsNotAnAllowance() throws Exception
+    {
+        layout = aRunIntoAMeasuredStation(2730);
+
+        final Point start = layout.getPoint("MR_A");
+        final Point milestone = layout.getPoint("MR_J");
+
+        assertTrue(layout.moveLocomotive(loc.getName(), start.getName(), false),
+            "could not stand the train at the start of its route");
+
+        // TWO UNITS, AND MR_J MEASURES TWO.  That is the whole discriminator: exempted, the train has
+        // one unit left over and reaches the leg behind its departure square; charged, it has none.
+        loc.setTrainLength(2);
+
+        // THE DEPARTURE SQUARE KEEPS A ROAD, as in the claim above and for the same reason (VD12-T2):
+        // a hand-placed train records none, and the walk this is about would break at the fork rule
+        // rather than at the arithmetic being claimed.
+        start.setArrivedFrom("W");
+        start.setArrivedAlong(java.util.Arrays.asList(layout.getEdge("MR_B", "MR_A")));
+
+        List<Edge> path = new ArrayList<>();
+
+        path.add(layout.getEdge("MR_A", "MR_J"));
+        path.add(layout.getEdge("MR_J", "MR_S"));
+
+        model.setFeedbackState(start.getS88(), true);
+
+        final Layout running = layout;
+
+        Thread run = new Thread(() -> running.executePath(path, loc, 20, null));
+
+        run.setDaemon(true);
+        run.start();
+
+        try
+        {
+            assertTrue(waitFor(() -> running.isRunning() && loc.getSpeed() > 0, 15000),
+                "the train never set off, so there is no run for this claim to be about");
+
+            // THE TRAIN IS AT THE MILESTONE NOW: its own sensor on, the one it came from off.
+            model.setFeedbackState(milestone.getS88(), true);
+            model.setFeedbackState(start.getS88(), false);
+
+            // REACHED, NOT RESERVED - see the note beside the claim above.
+            assertTrue(waitFor(() -> reached(milestone), 15000),
+                "the train never reached the milestone, so this is not about a run in progress."
+                + "  Milestones: " + names(running.getReachedMilestones(loc)));
+
+            Set<String> mine = claimedBy(layout.edgesCoveredByStandingTrains());
+
+            assertTrue(mine.contains("MR_A>MR_J"),
+                "the running train claims no tail at all on the road it drove in along, so the"
+                + " negative claim below would be satisfied by a walk that did nothing.  Claimed: "
+                + mine);
+
+            assertFalse(mine.contains("MR_B>MR_A"),
+                "a two-unit train whose milestone measures two is claimed on MR_B>MR_A as well, which"
+                + " it can only reach if MR_J was treated as an ALLOWANCE rather than as block it is"
+                + " lying over.  The allowance belongs to the arrival station, not to a milestone"
+                + " part-way along a run (OB-244).  Claimed: " + mine);
+
+            // AND THE SAME TRAIN AT REST ON THE SAME SQUARE STILL HAS THE ALLOWANCE.  That is the
+            // question `edgesATailWouldCover` answers - a train standing at the end of a road it has
+            // driven - and it is the train the exemption was written for.
+            Set<String> resting = claimedBy(layout.edgesATailWouldCover(milestone, loc,
+                java.util.Arrays.asList(layout.getEdge("MR_A", "MR_J"))));
+
+            assertTrue(resting.contains("MR_B>MR_A"),
+                "a train STANDING at MR_J no longer spends its body past the square it stands on, so"
+                + " narrowing the exemption to a train at rest has taken it away from the train it"
+                + " belongs to - Adam, 2026-09-13: the station size is an allowance, not a length."
+                + "  Claimed: " + resting);
+        }
+        finally
+        {
+            // STOPPED, NOT JUST TOLD TO STOP (VD12-T6) - see the note beside the claim above.
+            layout.stopLocomotives();
+
+            loc.setSpeed(0);
+
+            run.interrupt();
+
+            model.setFeedbackState(milestone.getS88(), false);
+        }
+    }
+
+    /**
+     * The edges this test's locomotive is claimed on, named start>end.
+     *
+     * @param covered what the layout answered
+     * @return their names
+     */
+    private static Set<String> claimedBy(Map<Edge, Locomotive> covered)
+    {
+        Set<String> mine = new LinkedHashSet<>();
+
+        for (Map.Entry<Edge, Locomotive> claim : covered.entrySet())
+        {
+            if (loc.equals(claim.getValue()))
+            {
+                mine.add(claim.getKey().getStart().getName() + ">" + claim.getKey().getEnd().getName());
+            }
+        }
+
+        return mine;
     }
 
     /**
@@ -276,6 +403,51 @@ public class testARunningTrainHasOneTail
         built.getEdge("TR_C", "TR_J").setEntrySide("W");
         built.getEdge("TR_J", "TR_S").setEntrySide("W");
         built.getEdge("TR_B", "TR_A").setEntrySide("W");
+
+        return built;
+    }
+
+    /**
+     * A run into a station whose approach carries its places, with a leg behind the start.
+     *
+     * `MR_B -> MR_A -> MR_J -> MR_S`.  The approach `MR_A>MR_J` is written as two places - one unit of
+     * plain track, and the two-unit square `MR_J` at the end of it - which is the shape `GraphReducer`
+     * emits and the shape the allowance rule is written against.  The leg behind the start is what a
+     * tail that over-reaches lands on.
+     *
+     * @param s88 the first of four feedback addresses
+     * @return the railway
+     * @throws Exception from the model
+     */
+    private static Layout aRunIntoAMeasuredStation(int s88) throws Exception
+    {
+        Layout built = new Layout(model);
+
+        built.createPoint("MR_B", true, model.newFeedback(s88, null).getName());
+        built.createPoint("MR_A", true, model.newFeedback(s88 + 1, null).getName());
+        built.createPoint("MR_J", true, model.newFeedback(s88 + 2, null).getName());
+        built.createPoint("MR_S", true, model.newFeedback(s88 + 3, null).getName());
+
+        built.createEdge("MR_B", "MR_A");
+        built.createEdge("MR_A", "MR_J");
+        built.createEdge("MR_J", "MR_S");
+
+        built.getEdge("MR_B", "MR_A").setLength(1);
+        built.getEdge("MR_A", "MR_J").setLength(3);
+
+        // ROOM AT THE FAR END, because the room rule judges the destination before the run is allowed
+        // and this train is two units long.
+        built.getEdge("MR_J", "MR_S").setLength(4);
+
+        built.getEdge("MR_B", "MR_A").setEntrySide("W");
+        built.getEdge("MR_A", "MR_J").setEntrySide("W");
+        built.getEdge("MR_J", "MR_S").setEntrySide("W");
+
+        // THE APPROACH, PLACE BY PLACE.  The lengths sum to the edge's own, the arriving square counts
+        // and the departing one does not - the convention `Edge.setPlaces` documents.
+        built.getEdge("MR_A", "MR_J").setPlaces(
+            java.util.Arrays.asList("MR_APPROACH", "MR_J_SQUARE"),
+            java.util.Arrays.asList(1, 2));
 
         return built;
     }
