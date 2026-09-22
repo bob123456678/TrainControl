@@ -1870,30 +1870,6 @@ which is the second half of the same confusion.
 **Not changed**, because the fix wants a test with an icon set first, and because the right answer may
 be to stop storing a derived value at all rather than to patch the Cancel.
 
-### OB-246 - 2026-09-21 - the route editor offers locomotive names its own Save refuses
-
-**Kind:** bug
-**Raised from:** VD12-C6, a validation of 2026-09-20 and 2026-09-21
-**Filed:** 2026-09-21
-
-The function-number column was taught to offer only what the locomotive has (MT-464), which is the rule
-this repository has paid for six times: the control that OFFERS a value asks the question the guard
-asks.  Column 4 - the target - still offers every locomotive in the database, including one whose
-name holds a COMMA, which `RouteCommand.isNameUsable` refuses because the command line is
-comma-separated.  **Brackets are not refused** - your ruling of 2026-09-04, *"bracketed loc names
-should just be allowed"*, and `SBB 460 (2)` is asserted usable by two tests; an earlier draft of this
-entry said otherwise (VD13-R5).  The code's own comment says a comma "is not something anybody types
-by accident", so this is a narrow hole rather than an everyday one.
-
-So the dropdown offers it, you pick it, and Save refuses with "that name cannot be used in a route" -
-and the only way out is to rename the locomotive.
-
-**The remedy is the question.** Hiding the name refuses a legal selection with nothing shown, which is
-the failure mode you have ruled against before; marking the row red as it is typed says the same thing
-without taking the choice away, but the command table has no live marking at all today (the red
-lettering belongs to the conditions outline).  That is a bigger change than this finding, so it wants
-your ruling on whether it is worth it.
-
 ### OB-247 - 2026-09-21 - thirteen finding ids in the records lead nowhere, and nothing will notice
 
 **Kind:** bug
@@ -2118,6 +2094,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-21 | OB-246 | bug | The target column offered every locomotive in the database, including one whose name holds a COMMA - which `RouteCommand.isNameUsable` refuses, because a command line is comma-separated - so the operator picked it and learnt at Save that the only way out was to rename the locomotive.  Adam, 2026-09-22: *"yes"*.  Marked rather than hidden, because hiding it would refuse a legal selection with nothing shown: the row is drawn in the refusal ink with the gate's own reason on its tooltip, as it is typed.  A row nobody has filled in yet is not marked - a mark that is always there is a mark nobody reads.  Held by `testARowSaveWouldRefuseIsMarkedAsItIsTyped`, whose two mutations were each measured. | fixed unvalidated | - |
 | 2026-09-21 | OB-238 | bug | The collision block that stops two trains standing on one square was keyed by the TILE, so a train on one arc of a double curve made the other arc read occupied and `isPathClear` refused track that is physically free.  Adam, 2026-09-22: *"it is two pieces of metal.  imagine two parallel tracks simple appearing on one tile for visual convenience.  two distinct, not connected paths."*  `AutonomyBuilder.blockFor` keys DOUBLE_CURVE, FEEDBACK_DOUBLE_CURVE and OVERPASS per ROAD - the grain the reduction has used since AUR-B1 - and every other split square still groups by the tile.  Held by `testEachArcOfADoubleCurveIsItsOwnPieceOfMetal`, seen failing first.  No hands-on test: it is what the build emits, and the claim reads it back out of the emitted configuration. | fixed unvalidated | - |
 | 2026-09-21 | OB-244 | bug | A station's allowance - *"the station size is an allowance, not a length"* - was being spent at a running train's last MILESTONE, so a train whose milestone is a long block claimed a square behind it as well and `isPathClear` refused track no train is on.  Adam, 2026-09-22, asked where the maximum train length should be checked: *"it's the arrival station only"* - answer (a).  `walkStandingTrains` now passes `atRest`, false for exactly the trains part-way along a run, and both halves of the rule honour it; a train standing at the end of a road keeps the allowance unchanged.  Held by `testAMidRunMilestoneIsNotAnAllowance`, whose two mutations were each measured.  No hands-on test: it is a calculation. | fixed unvalidated | - |
 | 2026-09-21 | OB-233 | bug | The berth-room walk counted straight across a permanently-set turnout, so a berth beyond one was measured from wherever the run began and a train too long for it was admitted, coming to rest fouling the merge.  Adam, 2026-09-22, having ruled the other way on 2026-09-15: *"(c) - treat them the same as regular switches for the purposes of the check"*.  Both walks ask `GraphReducer.boundsTheRoom` now; `isSwitch()` is untouched, and a crossing still does not stop the walk.  Held by `testTheRoomWalkStopsAtASwitchAndAPermanentTurnoutButNotACrossing`, seen failing first.  No hands-on test: it is a calculation, and the claim's mutation was measured. | fixed unvalidated | - |

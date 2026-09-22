@@ -1718,6 +1718,47 @@ public class RouteEditorFrame extends JFrame
     }
 
     /**
+     * For tests: adds an empty command row, the way the plus at the bottom of the table does.
+     */
+    public void addCommandRowForTest()
+    {
+        commands.addRow();
+    }
+
+    /**
+     * For tests: leaves no row selected, so a rendered cell is painted in the table's own ink.
+     *
+     * A selected row wears the look-and-feel's selection colours and the renderer leaves its
+     * foreground alone, so a claim about what colour a row is drawn in has to ask an unselected one.
+     */
+    public void clearCommandSelectionForTest()
+    {
+        commands.clearSelection();
+    }
+
+    /**
+     * For tests: a command row's cell as the table paints it, colour and tooltip included (OB-246).
+     *
+     * Through the table's own renderer rather than by asking what is wrong, because what is being
+     * claimed is what the user SEES - a test that asked `problemsWith` would pass with the mark not
+     * drawn at all.
+     *
+     * @param row which row
+     * @param column which column
+     * @return the rendered component
+     */
+    public java.awt.Component commandCellForTest(int row, int column)
+    {
+        return commands.prepareRenderer(commands.getCellRenderer(row, column), row, column);
+    }
+
+    /** @return the ink a row Save would refuse is drawn in */
+    public static java.awt.Color refusedInkForTest()
+    {
+        return WRONG;
+    }
+
+    /**
      * For tests: a condition line's word-or-kind cell as the table paints it, icon and tooltip included.
      *
      * @param line which line
@@ -2154,9 +2195,30 @@ public class RouteEditorFrame extends JFrame
                 // the table a new user is looking for.
                 if (row >= which.getRowCount() - 1) return unshaded(out, which, selected);
 
+                // WHY SAVE WOULD REFUSE THIS ROW, said as it is typed (OB-246).
+                //
+                // Adam, 2026-09-22, on the target column offering locomotive names its own Save
+                // refuses: *"yes"*.  Hiding such a name would refuse a legal selection with nothing
+                // shown, which is the failure mode he has ruled against before - so the row is marked
+                // and the choice stays.  It is `everythingWrong`'s own answer, through
+                // `problemsWith`, shown while the user is still looking at the cell.
+                //
+                // SET ON EVERY CELL, never skipped: this renderer hands back one recycled component
+                // for the whole table, so a row that is fine would otherwise wear the tooltip of the
+                // marked row drawn a moment earlier - which is the defect the note above is about,
+                // in the other direction.
+                String refused = which instanceof CommandTable
+                    ? ((CommandTable) which).whyWrong(row) : null;
+
+                if (out instanceof javax.swing.JComponent)
+                {
+                    ((javax.swing.JComponent) out).setToolTipText(refused);
+                }
+
                 if (!selected)
                 {
-                    out.setForeground(editable ? which.getForeground() : java.awt.Color.GRAY);
+                    out.setForeground(refused != null && editable ? WRONG
+                        : editable ? which.getForeground() : java.awt.Color.GRAY);
 
                     // And a background, not only grey text.
                     //
@@ -3449,6 +3511,15 @@ public class RouteEditorFrame extends JFrame
     {
         private final List<Entry> rows = new ArrayList<>();
 
+        /**
+         * Why each row cannot be saved, for the mark beside it (OB-246).
+         *
+         * Held rather than asked per paint: `problemsWith` builds the commands and asks the layout
+         * about every name in them, and a renderer runs once per CELL - eleven times a row, on every
+         * repaint.  The conditions outline keeps its answer the same way and for the same reason.
+         */
+        private final java.util.Map<Integer, String> wrongRows = new java.util.LinkedHashMap<>();
+
         private final AbstractTableModel model = new AbstractTableModel()
         {
             @Override
@@ -3695,7 +3766,17 @@ public class RouteEditorFrame extends JFrame
 
                 rows.set(row, Entry.of(new CommandRow(kind, target, setting, protocol, delay)));
 
+                // JUDGED AS IT IS TYPED (OB-246), which is the whole point of the mark: the editor
+                // says what Save will say while the choice is still in front of the user.  Every
+                // row, not this one - a locomotive command's target can make a LATER row wrong,
+                // because `problemsWith` asks the layout rather than the cell.
+                settle();
+
                 fireTableRowsUpdated(row, row);
+
+                // THE WHOLE TABLE REPAINTS, because `settle` may have marked or unmarked another row
+                // and `fireTableRowsUpdated` above repaints only this one.
+                CommandTable.this.repaint();
             }
         };
 
@@ -3807,6 +3888,12 @@ public class RouteEditorFrame extends JFrame
 
                     c.setEnabled(editable);
 
+                    // THE REFUSAL MARK IS NOT SET HERE, and the first draft of OB-246 set it here.
+                    //
+                    // `greyWhatCannotBeEdited` WRAPS this renderer and is installed after it, so it
+                    // is the last thing to touch a cell's foreground - it set the ink again on the
+                    // way out and nothing was ever marked.  The mark lives there, beside the greying
+                    // it would otherwise fight with.
                     if (!selected)
                     {
                         c.setForeground(editable
@@ -3926,7 +4013,7 @@ public class RouteEditorFrame extends JFrame
                     was.getRow().getSetting(), was.getRow().getProtocol(), was.getRow().getDelay()))
                 : Entry.of(was.toCommand()));
 
-            model.fireTableDataChanged();
+            fireTableDataChanged();
 
             setRowSelectionInterval(at + 1, at + 1);
         }
@@ -3934,7 +4021,7 @@ public class RouteEditorFrame extends JFrame
         void addRow()
         {
             rows.add(Entry.of(new CommandRow(CommandRow.Kind.ACCESSORY, "", "straight")));
-            model.fireTableDataChanged();
+            fireTableDataChanged();
         }
 
         void removeSelected()
@@ -3947,7 +4034,7 @@ public class RouteEditorFrame extends JFrame
             if (at < 0 || at >= rows.size()) return;
 
             rows.remove(at);
-            model.fireTableDataChanged();
+            fireTableDataChanged();
         }
 
         void move(int by)
@@ -3966,12 +4053,57 @@ public class RouteEditorFrame extends JFrame
             if (at < 0 || at >= rows.size() || to < 0 || to >= rows.size()) return;
 
             rows.add(to, rows.remove(at));
-            model.fireTableDataChanged();
+            fireTableDataChanged();
             setRowSelectionInterval(to, to);
+        }
+
+        /**
+         * Works out which rows Save would refuse, and why (OB-246).
+         *
+         * **A ROW NOBODY HAS FILLED IN YET IS NOT MARKED.**  A command is added empty - an accessory
+         * with no address - and `problemsWith` refuses that at once, so marking on the answer alone
+         * painted every new row red before the user had typed a character.  A mark that is always
+         * there is a mark nobody reads.  So the row has to name something: the target is what every
+         * complaint this is about is about, and a kind that takes none is judged as it stands.
+         *
+         * Save is unchanged and still refuses the blank row, naming its number - an unmarked row is
+         * not a saveable one.
+         */
+        private void settle()
+        {
+            wrongRows.clear();
+
+            for (int at = 0; at < rows.size(); at++)
+            {
+                Entry entry = rows.get(at);
+
+                if (!entry.isEditable()) continue;
+
+                CommandRow row = entry.getRow();
+
+                boolean named = !CommandRow.hasTarget(row.getKind())
+                    || (row.getTarget() != null && !row.getTarget().trim().isEmpty());
+
+                if (!named) continue;
+
+                List<String> problems = problemsWith(row);
+
+                if (!problems.isEmpty()) wrongRows.put(at, problems.get(0));
+            }
+        }
+
+        /**
+         * @param row which row
+         * @return why Save would refuse it, or null
+         */
+        String whyWrong(int row)
+        {
+            return wrongRows.get(row);
         }
 
         void fireTableDataChanged()
         {
+            settle();
             model.fireTableDataChanged();
         }
     }

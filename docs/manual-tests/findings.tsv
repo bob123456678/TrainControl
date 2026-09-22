@@ -3245,8 +3245,8 @@ VD12-C3	2026-09-21-VD12-validation-of-two-days.md	Open	Open - needs a test	the d
 VD12-C3	2026-09-22-GS-backlog.md	Open	still true (OB-245)	(listed in a table, no section of its own)
 VD12-C4	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	a commanded sensor stopped being highlighted
 VD12-C5	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	the export's finally could swallow the reason
-VD12-C6	2026-09-21-VD12-validation-of-two-days.md	Open - for Adam	Open - for Adam	the column offers names that Save refuses
-VD12-C6	2026-09-22-GS-backlog.md	Open - for Adam	**for Adam** (OB-246)	(listed in a table, no section of its own)
+VD12-C6	2026-09-21-VD12-validation-of-two-days.md	Closed	Open - for Adam	the column offers names that Save refuses
+VD12-C6	2026-09-22-GS-backlog.md	Closed	**for Adam** (OB-246)	(listed in a table, no section of its own)
 VD12-R1	2026-09-21-VD12-validation-of-two-days.md	Closed	Fixed 2026-09-21	MT-437's step 4 was corrected wrongly
 VD12-R10	2026-09-21-VD12-validation-of-two-days.md	Open	Open	thirteen ids in the records that lead nowhere
 VD12-R10	2026-09-22-GS-backlog.md	Open	still true (OB-247)	(listed in a table, no section of its own)

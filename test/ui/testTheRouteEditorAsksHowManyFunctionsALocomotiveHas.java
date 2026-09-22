@@ -11,6 +11,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
@@ -38,11 +39,9 @@ import org.testng.annotations.Test;
  * setting as `number + ":" + state`, and a row assembled directly would be testing this test's
  * arithmetic instead of the editor's.
  *
- * **What this does NOT claim.** The command table has no live mark: `problemsWith` is consulted by
- * `everythingWrong`, which runs at Save, and nothing shades a command row as it is typed (the red
- * lettering at `WRONG` belongs to the conditions outline).  So a number out of range IS accepted by the
- * cell, and stays on screen looking ordinary until Save.  That is the half of his complaint this cannot
- * fix by checking, and it is filed separately.
+ * **The command table DOES mark now** (OB-246, Adam 2026-09-22: *"yes"*), and the third claim below is
+ * about that.  It did not when this class was written, and this paragraph said so; the mark is the same
+ * answer `everythingWrong` gives at Save, said while the choice is still in front of the user.
  *
  * MUTATION: drop `|| number >= loco.getNumF()` from the FUNCTION rule in `problemsWith` and the first
  * claim goes red; drop the whole rule and the control below still passes, which is what makes the pair
@@ -62,6 +61,17 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     private static final String LOC = "ProbeF32";
 
     private static final int ADDRESS = 63;
+
+    /**
+     * A locomotive whose name holds a COMMA, which is the one name a route cannot store.
+     *
+     * `RouteCommand.isNameUsable` refuses it because a command line is comma-separated - brackets are
+     * allowed (Adam, 2026-09-04: *"bracketed loc names should just be allowed"*), and only the comma
+     * is left.  A real database can hold one: nothing on the locomotive doors asks.
+     */
+    private static final String LOC_COMMA = "Probe, Comma";
+
+    private static final int COMMA_ADDRESS = 64;
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -87,6 +97,18 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
 
         assertNotNull(model.getLocByName(LOC), "the probe locomotive is not in the database");
 
+        assertNotNull(model.newMM2Locomotive(LOC_COMMA, COMMA_ADDRESS),
+            "the comma-named probe locomotive could not be added, so the third claim has no"
+            + " unstorable name to be about");
+
+        assertFalse(RouteCommand.isNameUsable(LOC_COMMA),
+            "precondition: a route can store " + LOC_COMMA + " after all, so there is nothing for the"
+            + " mark to say about it");
+
+        assertTrue(RouteCommand.isNameUsable(LOC),
+            "precondition: the ordinary probe's own name is unstorable, so the control below would"
+            + " be marked too and the claim would not discriminate");
+
         assertTrue(model.getLocByName(LOC).getNumF() < 32,
             "precondition: this locomotive reports " + model.getLocByName(LOC).getNumF()
             + " functions, so F32 is not out of range for it and this test asks nothing");
@@ -100,6 +122,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
             if (model != null)
             {
                 try { model.deleteLoc(LOC); } catch (Exception ignored) { }
+                try { model.deleteLoc(LOC_COMMA); } catch (Exception ignored) { }
 
                 model.stop();
             }
@@ -156,6 +179,145 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
         {
             SwingUtilities.invokeAndWait(() -> frame[0].dispose());
         }
+    }
+
+    /**
+     * A row Save would refuse is marked as it is typed, and a row Save accepts is not.
+     *
+     * **Adam, 2026-09-22, ruling on OB-246:** *"yes"*.  The target column offers every locomotive in
+     * the database, and one of them may hold a COMMA - which `RouteCommand.isNameUsable` refuses,
+     * because a command line is comma-separated.  So the dropdown offered it, the operator picked it,
+     * and Save refused with *"that name cannot be used in a route"*; the only way out was to rename
+     * the locomotive.
+     *
+     * **Marked rather than hidden.**  Dropping the name from the list would refuse a legal selection
+     * with nothing shown, which is the failure mode Adam has ruled against before.  The row is drawn
+     * in the refusal ink with the reason on its tooltip: the choice stays, and the editor says what
+     * Save will say.  That is the OB-057 / OB-090 rule - the control that offers an action asks the
+     * question the guard asks - met by making the offer honest rather than by removing it.
+     *
+     * **Asserted through the table's own renderer**, because what is claimed is what the user SEES.
+     * A claim that asked `problemsWith` would pass with the mark not drawn at all, which is exactly
+     * how this editor came to have a Save gate and no marking for a month.
+     *
+     * **And the mark is the SAME answer as the gate**, which the third assertion pins by name: a mark
+     * that said something of its own would be a second rule to keep in step with this one.
+     *
+     * MUTATION: have `settle` record nothing and the first claim fails, the row drawn in ordinary ink
+     * while Save still refuses it.  Mark on the answer alone - drop the `named` clause - and the
+     * fourth claim fails: a row nobody has filled in yet is red the moment it is added, and a mark
+     * that is always there is a mark nobody reads.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testARowSaveWouldRefuseIsMarkedAsItIsTyped() throws Exception
+    {
+        final RouteEditorFrame[] frame = new RouteEditorFrame[1];
+
+        SwingUtilities.invokeAndWait(() -> frame[0] = new RouteEditorFrame(ui, null, null));
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                frame[0].appendCommand(
+                    RouteCommand.RouteCommandFunction(LOC, 1, true).toLine(null).trim());
+
+                // NOTHING SELECTED.  A selected row is painted in the look-and-feel's selection ink
+                // and the renderer leaves the foreground alone there, so a test that rendered the
+                // selected row would read the same colour whatever the rule said.
+                frame[0].clearCommandSelectionForTest();
+            });
+
+            assertTrue(frame[0].commandRowCountForTest() > 0,
+                "the function command was not added, so there is no row to mark");
+
+            // THE CONTROL FIRST: a row naming a locomotive a route can store is not marked.
+            assertNull(tooltipOf(frame[0], 0),
+                "a row Save accepts carries a reason it would be refused: " + tooltipOf(frame[0], 0));
+
+            assertNotEquals(inkOf(frame[0], 0), RouteEditorFrame.refusedInkForTest(),
+                "a row Save accepts is already drawn in the refusal ink, so the mark says nothing");
+
+            // AND NOW THE NAME A ROUTE CANNOT STORE, chosen exactly as the dropdown offers it.
+            SwingUtilities.invokeAndWait(() ->
+            {
+                frame[0].setCommandTargetForTest(0, LOC_COMMA);
+                frame[0].clearCommandSelectionForTest();
+            });
+
+            assertEquals(inkOf(frame[0], 0), RouteEditorFrame.refusedInkForTest(),
+                "picking " + LOC_COMMA + " from the dropdown leaves the row drawn in ordinary ink,"
+                + " so the operator learns at Save that the only way out is to rename the locomotive"
+                + " (OB-246).  What Save would say: " + frame[0].problemsForTest());
+
+            String unusable = I18n.f("route.ui.frameNameNotUsable", LOC_COMMA);
+
+            assertEquals(tooltipOf(frame[0], 0), unusable,
+                "the mark gives no reason, or a different one from the gate's - which would be a"
+                + " second rule to keep in step with the first.  Tooltip: " + tooltipOf(frame[0], 0));
+
+            assertTrue(complains(frame[0], unusable),
+                "the row is marked for something Save does not refuse, so the mark and the gate"
+                + " disagree.  What Save said: " + frame[0].problemsForTest());
+
+            // A ROW NOBODY HAS FILLED IN YET IS NOT MARKED.  It is added empty, Save refuses it, and
+            // marking on that answer alone painted every new row red before a character was typed.
+            SwingUtilities.invokeAndWait(() ->
+            {
+                frame[0].addCommandRowForTest();
+                frame[0].clearCommandSelectionForTest();
+            });
+
+            int added = frame[0].commandRowCountForTest() - 1;
+
+            assertNotEquals(inkOf(frame[0], added), RouteEditorFrame.refusedInkForTest(),
+                "a command row is red the moment it is added, before anybody has typed into it - a"
+                + " mark that is always there is a mark nobody reads");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> frame[0].dispose());
+        }
+    }
+
+    /**
+     * The ink the table draws a command row's target cell in.
+     *
+     * @param frame the editor
+     * @param row which row
+     * @return its foreground
+     */
+    private static java.awt.Color inkOf(RouteEditorFrame frame, int row) throws Exception
+    {
+        final java.awt.Color[] ink = new java.awt.Color[1];
+
+        SwingUtilities.invokeAndWait(() -> ink[0] = frame.commandCellForTest(row, 4).getForeground());
+
+        return ink[0];
+    }
+
+    /**
+     * The reason the table hangs on a command row's target cell, if any.
+     *
+     * @param frame the editor
+     * @param row which row
+     * @return its tooltip, or null
+     */
+    private static String tooltipOf(RouteEditorFrame frame, int row) throws Exception
+    {
+        final String[] why = new String[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            java.awt.Component cell = frame.commandCellForTest(row, 4);
+
+            why[0] = cell instanceof javax.swing.JComponent
+                ? ((javax.swing.JComponent) cell).getToolTipText() : null;
+        });
+
+        return why[0];
     }
 
     /**
