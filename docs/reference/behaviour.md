@@ -1812,7 +1812,7 @@ edges. Nothing has been built on that one.
 
 The review documents were the working record of how these rules were arrived at. This is the answer
 they were working towards, and they were deleted in its favour: 143 on 2026-09-08 - documents that
-could no longer say who needed to do what, against one that says what is true - and the last 65 on
+could no longer say who needed to do what, against one that says what is true - and the last 63 on
 2026-09-21, on Adam's *"I don't want more reviews living in the repo."*
 
 ---
@@ -1823,7 +1823,7 @@ Comments in this codebase cite review findings constantly - `RGD-B2`, `MON-C6`, 
 locomotive but `DY3-C7` is a finding - because that is how a comment says *why* rather than *what*.
 The documents those ids came from are gone. **The findings are not.**
 
-All 3,353 of them are in `docs/manual-tests/triage.db`, in the `finding` table, with the document they
+All 3,390 of them are in `docs/manual-tests/triage.db`, in the `finding` table, with the document they
 came from, the line in it, the severity, what it was about, the file and line of the evidence, the
 commit that fixed it where one is named, and the source files that cite it. `docs/manual-tests/findings.tsv` is a plain-text
 mirror of the same rows, rendered from the database, for the two readers that cannot open one: a person
@@ -1887,7 +1887,7 @@ SELECT ref, severity, status, status_note FROM finding WHERE status LIKE 'Open%'
 ```
 
 Forty-five citations resolve to no finding at all; they are rolled in the `dead_citation` table and at
-the foot of the mirror, with the files that cite each one. They cluster into whole prefixes whose
+the foot of the mirror.  The CITING FILES are in the table, not in the mirror - the mirror's roll is `ref` and four dashes, and `SELECT * FROM dead_citation` is where to read who cites what (VD12-R11).  They cluster into whole prefixes whose
 declaring document never existed - `RC` above A5, all of `LE2` and `LD` - so they were dead ends before
 the deletion, not because of it.
 

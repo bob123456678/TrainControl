@@ -499,6 +499,12 @@ public class testReturnHomeOnRealLayout
 
                     asked++;
 
+                    // RE-READ AFTER THE STAGING, because the staging can CREATE a home: a hand
+                    // placement claims the square for a locomotive that has none (`Layout.claimHome`),
+                    // so the home read before the move is not the home the plan is computed against,
+                    // and a failure message naming it would name the wrong square.
+                    home = layout.getHomeStation(l);
+
                     HomeStaging.Plan plan = layout.planReturnToHome();
 
                     assertTrue(plan.isPossible(),
@@ -516,8 +522,13 @@ public class testReturnHomeOnRealLayout
                     l.setReversible(reversible);
 
                     // BACK WHERE IT WAS, so the next locomotive is staged against his arrangement rather
-                    // than against this loop's leftovers.
+                    // than against this loop's leftovers.  A train the configuration had NOWHERE is taken
+                    // off the square instead of being left on it - otherwise the one case with no `was`
+                    // leaves a train standing on a turning berth for every iteration after it, which is
+                    // this loop arranging the railway rather than staging one train (VD12-T8).
                     if (moved && was != null) layout.moveLocomotive(l.getName(), was.getName(), false);
+
+                    if (moved && was == null) onto.setLocomotive(null);
                 }
 
                 break;

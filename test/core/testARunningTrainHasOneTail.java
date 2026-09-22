@@ -110,9 +110,21 @@ public class testARunningTrainHasOneTail
 
         // ONE UNIT TO DEPART WITH, because the room rule judges the destination before the run is
         // allowed: three units into a one-unit approach is refused, and the first draft of this test
-        // never set off at all.  The length is raised once the train is at the junction, which is
-        // where the claim below is asked.
+        // never set off at all.  It stays at one unit for the whole run, which is what makes the
+        // claims below discriminate - see the note beside them.
         loc.setTrainLength(1);
+
+        // AND THE DEPARTURE SQUARE KEEPS A ROAD, or two of the claims below cannot fail (VD12-T2).
+        //
+        // `moveLocomotive` clears `arrivedFrom` and `arrivedAlong` on a change of occupant, and only a
+        // completed run ever writes them - so a hand-placed train's square records no road, a tail
+        // walked from there meets the fork rule at a square with two neighbours and breaks, and the
+        // phantom claim this test exists to refuse could not have been made from it either way.  A
+        // train that had DRIVEN in would carry the record, which is the state Adam's railway was in;
+        // written here so the negative claims are about the rule rather than about the fixture.  The
+        // lock's `reserve` does not clear it, because the occupant does not change.
+        start.setArrivedFrom("W");
+        start.setArrivedAlong(java.util.Arrays.asList(layout.getEdge("TR_B", "TR_A")));
 
         List<Edge> path = new ArrayList<>();
 
@@ -186,7 +198,13 @@ public class testARunningTrainHasOneTail
         }
         finally
         {
+            // STOPPED, NOT JUST TOLD TO STOP (VD12-T6).  `stopLocomotives` clears the autonomy flag and
+            // commands nothing, and the run thread is parked waiting for a sensor this test never
+            // throws - so without this the operator's own first locomotive is left at speed for the
+            // rest of the JVM, and `model.stop()` credits the elapsed minutes to its operating time.
             layout.stopLocomotives();
+
+            loc.setSpeed(0);
 
             run.interrupt();
 

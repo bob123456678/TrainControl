@@ -299,14 +299,17 @@ public class DiagramMonitor
 
             // and the locomotive itself, at the point it has most recently reached.
             //
-            // getLocomotiveLocation returns an ARBITRARY one of the several points a running train
-            // reserves at once (the reservation legitimately holds them all), so the marker could jump
-            // to a point the train has not reached yet.  The milestones are in the order they were
-            // reached, so the last is where the train actually is; getLocomotiveLocation is the
-            // fallback for a stationary train, which reserves only one point.
-            Point at = milestones != null && !milestones.isEmpty()
-                ? milestones.get(milestones.size() - 1)
-                : layout.getLocomotiveLocation(entry.getKey());
+            // THROUGH THE ONE RULE (VD12-B1).  `getLocomotiveLocation` returns an ARBITRARY one of
+            // the several points a running train reserves at once - the reservation legitimately
+            // holds them all - so the marker could jump to a point the train had not reached yet.
+            // The milestones are in the order they were reached, so the last is where the train
+            // actually is, and a stationary train reserves only one point, which is the fallback.
+            //
+            // That paragraph was written here, then again in `AutoLocomotiveStatus`, and a third
+            // time in the covered-track walk; the fourth reader - the diagram's tail overlay - did
+            // not write it and drew the orange in the wrong place.  `Layout.whereTheTrainIs` is
+            // those two lines with the reasoning attached.
+            Point at = layout.whereTheTrainIs(entry.getKey());
 
             // Whether it is actually running, which is what decides the icon (FR-027).
             //

@@ -5962,6 +5962,56 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Why Atomic Routes may not be switched off, or null when it may be (Adam, 2026-09-21).
+     *
+     * Adam, having been shown that the tooltip's *"edge and train lengths need to be set for best
+     * results"* was the only thing standing between an unmeasured railway and track handed back under a
+     * moving train: *"can we simply refuse it now if there are unmeasured segments in what's walkable
+     * via the autonomy editor?  Limit it to logical edges that it prompts for, and on active pages
+     * only."*
+     *
+     * **WHAT MAKES IT UNSAFE.**  `Layout.tailHasProvablyPassed` returns true the moment the path it is
+     * asked about has no measured leg at all - "nothing measured ANYWHERE on this path", which is the
+     * honest answer for a railway with lengths on its platforms and nowhere else - and non-atomic mode
+     * hands an edge back as soon as that returns true.  So with nothing measured, every edge is released
+     * as the head passes it, with the train still lying over it, and another train is routed onto track
+     * that is occupied.  Atomic mode does not care, because it releases nothing until the run ends.
+     *
+     * **THE SAME QUESTION THE EDITOR ASKS, and only that question.**  `squaresNeedingALength` is what
+     * the Unmeasured Track display highlights and what Mass Assign Lengths offers to fill in - the
+     * pieces a length rule reads, the switches it reads, and the squares two roads share.  A square
+     * nothing walks over is not in it, so a siding nobody automates cannot block this; and the pages
+     * autonomy takes no notice of are not in the graph those legs come from, which is the "active pages
+     * only" half - it needs no code of its own and would be wrong to add, because there would then be
+     * two answers to one question.
+     *
+     * **A WAY PAST, which this deliberately does not have.**  Adam's standing rule is that he would
+     * rather have no check than one that refuses something legal, and the usual shape here is a
+     * confirmation rather than a refusal.  He asked for a refusal in as many words, and the reason it is
+     * the right shape this time is that the remedy is one gesture away and named in the message: the
+     * editor will fill every length in from one dialog.
+     *
+     * NOT asked of the file door.  `parseAuto` can set atomic routes off from a saved configuration, and
+     * refusing there would make a setup somebody already has unloadable - a fix worse than the defect.
+     * That door is written up in the record instead (VD12-R4).
+     *
+     * @return the sentence to show, or null when switching it off is safe
+     */
+    public String whyNonAtomicRoutesAreRefused()
+    {
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        if (session == null) return null;
+
+        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> unmeasured =
+            session.squaresNeedingALength();
+
+        if (unmeasured == null || unmeasured.isEmpty()) return null;
+
+        return I18n.f("autolayout.errorNonAtomicNeedsLengths", unmeasured.size());
+    }
+
+    /**
      * Refuses to edit or delete a locomotive while a route that drives it is running, and says which route (CS3-B1).
      *
      * The autonomy refusal beside this one does not cover it: a route runs by hand, from its own button or from an
@@ -8509,9 +8559,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Whether a tile is the kind of thing an address of this kind names.
      *
-     * A lamp is deliberately not an accessory here: it is thrown like one, but a route's accessory
-     * commands are about the road a train takes and lighting the layout's lamps for them was part of
-     * what made the highlight unreadable.
+     * A LAMP ANSWERS TO AN ACCESSORY ADDRESS, and it should (VD12-B2).  `isSignal()` covers
+     * `componentType.LAMP`, so a lamp at the commanded logical address lights with the switches - and
+     * that is the truth about the railway: a lamp is one output of an accessory decoder, so a route
+     * commanding that address really does throw it.  An earlier draft of this sentence claimed the
+     * opposite ("a lamp is deliberately not an accessory here") while the code included it, which is
+     * the worse of the two faults: what Adam reported were tiles that CANNOT answer to an accessory
+     * address at all - a page link, another route's tile, an s88 - and he never mentioned lamps.
      *
      * @param tile the diagram tile
      * @param kind what the address names
@@ -22635,6 +22689,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             try
             {
+                // NOT WITHOUT LENGTHS (Adam, 2026-09-21).  Asked only when it is being switched OFF:
+                // going back to atomic is always safe, and a refusal there would trap somebody.
+                if (!this.atomicRoutes.isSelected())
+                {
+                    String why = whyNonAtomicRoutesAreRefused();
+
+                    if (why != null)
+                    {
+                        JOptionPane.showMessageDialog(this, why);
+
+                        // The tick goes back, the same way every other refusal on this panel puts it
+                        // back - the setting itself is never touched.
+                        loadAutoLayoutSettings();
+
+                        return;
+                    }
+                }
+
                 this.model.getAutoLayout().setAtomicRoutes(this.atomicRoutes.isSelected());
             }
             catch (Exception e)

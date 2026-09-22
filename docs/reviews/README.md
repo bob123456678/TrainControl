@@ -5,7 +5,8 @@ How a review round is run and recorded. Every rule below exists because it was b
 
 **This folder holds no reviews, and that is deliberate.** It is the convention, not the home. Two
 hundred and eight review documents were written between 26 July and 20 September 2026 and every one of
-them has been deleted - 143 on 2026-09-08, the last 65 on 2026-09-21 - once the catalogue was carrying
+them has been deleted - 143 on 2026-09-08, and 63 more on 2026-09-21, with two for-Adam notes that were
+never reviews (VD12-R12) - once the catalogue was carrying
 what they found. What survives a round:
 
 | | |

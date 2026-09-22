@@ -14,6 +14,7 @@ import javax.swing.Icon;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
+import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -90,6 +91,9 @@ public class testTheWashIsNoLongerThanTheTrain
 
     private static Locomotive train;
     private static Integer trainLengthWas;
+
+    /** Put back in teardown: a static this class turns ON leaks into every later class in the JVM. */
+    private static boolean simulatingWas;
     private static Point home;
 
     /** Where the train came to rest after the run, and the squares the OLD rule washed behind it. */
@@ -118,6 +122,8 @@ public class testTheWashIsNoLongerThanTheTrain
         // echoes the accessory commands a path configuration waits for.
         model = init(null, true, true, false, true);
         model.setNetworkCommState(false);
+        simulatingWas = MarklinControlStation.DEBUG_SIMULATE_PACKETS;
+
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
 
         ui = (TrainControlUI) model.getGUI();
@@ -195,6 +201,8 @@ public class testTheWashIsNoLongerThanTheTrain
             // PUT BACK: init() opens Adam's own locomotive database, and a length this test chose is
             // not a measurement of his train.
             if (train != null) train.setTrainLength(trainLengthWas == null ? 0 : trainLengthWas);
+
+            MarklinControlStation.DEBUG_SIMULATE_PACKETS = simulatingWas;
         }
         finally
         {
@@ -274,6 +282,169 @@ public class testTheWashIsNoLongerThanTheTrain
         assertTrue(everyTileOfTheCoveredEdges().containsAll(washed),
             "the diagram is shading track the railway does not hold covered: " + washed
             + " against " + everyTileOfTheCoveredEdges());
+    }
+
+    /**
+     * A PATH LOCKED AHEAD OF THE TRAIN DOES NOT MOVE THE WASH (VD12-B1).
+     *
+     * **The half of MT-438 that the guard's fix did not reach.**  `Layout.walkStandingTrains` now walks
+     * one tail per train, anchored at the last milestone of a run.  This picture is computed separately,
+     * by `AutonomySession.walkBackFrom`, and it anchored at `Layout.getLocomotiveLocation` - the FIRST
+     * Point in `HashMap` iteration order that holds the locomotive.  A locked path reserves every Point
+     * on it (`Point.reserve` deliberately does not sweep, because that reservation is what holds a
+     * junction behind the train), so during a run the locomotive holds several Points and that anchor is
+     * an arbitrary one of them: it can be the destination the train has not reached.  The walk then
+     * spends the train's length from there - which is Adam's *"why is the tail from bottommainapre to
+     * bottommaina not orange.  it's almost as if you are shifting the location of the train"*, said of a
+     * picture, about a walk that had indeed shifted the train.
+     *
+     * **Two other doors already knew this** and say so in the same words: `DiagramMonitor` places the
+     * train marker at the last milestone *"because getLocomotiveLocation returns an ARBITRARY one of the
+     * several points a running train reserves at once"*, and `AutoLocomotiveStatus` reads the same
+     * milestone for its @-station line.  This walk was the third site of one rule, and
+     * `Layout.whereTheTrainIs` is now that rule, asked by all three.
+     *
+     * **THE ARRANGEMENT IS SOUGHT, NOT HOPED FOR.**  Whether the old anchor picked a wrong Point
+     * depended on `HashMap` order, so this tries candidate destinations until the anchor actually moves
+     * off the square the train stands on, and only then makes its claim; if no path can move it, it says
+     * so and skips rather than passing on a fixture that cannot show it.  A LOCK rather than a run,
+     * because a lock reserves the whole road and returns with the train still standing - the state under
+     * test, and deterministic.
+     *
+     * **WHAT IT PUTS BACK.**  Lock-then-unlock is not a gesture a person can make: `unlockPath` keeps
+     * the ARRIVAL of the path it is given, so calling it without ever running leaves the model thinking
+     * the train is at the far end.  The first draft of this test did exactly that and the next claim in
+     * this class found nothing shaded at all - so the placement AND the arrival record are captured
+     * before the lock and written back afterwards, and the last thing this does is prove the wash is
+     * back.
+     *
+     * MUTATION: anchor `walkBackFrom` at `getLocomotiveLocation` again and this goes red - the wash
+     * moves onto the locked path ahead, which `edgesCoveredByStandingTrains` does not hold covered.
+     *
+     * @throws Exception from the lock or the event thread
+     */
+    @Test(dependsOnMethods = "testALongerTrainCoversMoreOfIt")
+    public void testAPathLockedAheadDoesNotMoveTheWash() throws Exception
+    {
+        washWith(2);
+
+        Point standing = layout.getLocomotiveLocation(train);
+
+        assertNotNull(standing, "precondition: nothing holds the train, so there is no anchor to move");
+
+        Set<TileKey> before = washedBehindTheTrain();
+
+        assertFalse(before.isEmpty(),
+            "precondition: nothing is shaded before the lock, so this claim could not see it move");
+
+        // WHAT THE LOCK MUST NOT COST, captured first.
+        String sideWas = standing.getArrivedFrom();
+        List<Edge> roadWas = standing.getArrivedAlong();
+
+        // WHICH PATH WOULD HAVE MOVED THE OLD ANCHOR, WORKED OUT RATHER THAN TRIED.
+        //
+        // The second draft of this test locked a candidate, asked where the anchor had landed, and
+        // unlocked again if it had not moved - and that is what made it fail for a reason of its own:
+        // `unlockPath` sweeps the locomotive off every Point but the path's arrival, so the retry took
+        // the train off the square it was standing on, `setLocomotive` cleared the arrival record with
+        // it, and the covered set went empty.  Measured, not guessed: `covered=[] side=null road=null`.
+        //
+        // Nothing needs locking to know the answer.  The old anchor was the first Point in the graph's
+        // own iteration order that holds the locomotive, so a path moves it exactly when one of its
+        // edges ends at a Point earlier in that order than the square the train stands on.  That is a
+        // question about the graph, asked without touching it, and the lock below happens once.
+        List<Point> inOrder = new ArrayList<>(layout.getPoints());
+
+        int standingAt = inOrder.indexOf(standing);
+
+        assertTrue(standingAt >= 0, "the square the train stands on is not in the graph's own point list");
+
+        List<Edge> locked = null;
+
+        for (Point to : inOrder)
+        {
+            if (to.isSamePlaceAs(standing)) continue;
+
+            List<Edge> candidate;
+
+            try
+            {
+                candidate = layout.bfs(standing, to, null);
+            }
+            catch (Exception noRoad)
+            {
+                continue;
+            }
+
+            if (candidate == null || candidate.isEmpty()) continue;
+
+            boolean wouldMoveIt = false;
+
+            for (Edge leg : candidate)
+            {
+                int reserved = inOrder.indexOf(leg.getEnd());
+
+                if (reserved >= 0 && reserved < standingAt) wouldMoveIt = true;
+            }
+
+            if (!wouldMoveIt) continue;
+
+            if (!layout.configureAndLockPath(candidate, train)) continue;
+
+            locked = candidate;
+
+            break;
+        }
+
+        if (locked == null)
+        {
+            throw new SkipException("no path from " + standing.getName() + " reserves a Point that comes"
+                + " before it in the graph's own iteration order, so the anchor this is about cannot be"
+                + " made to move on this railway - the claim would pass without asking anything");
+        }
+
+        try
+        {
+            washWith(2);
+
+            Set<TileKey> washed = washedBehindTheTrain();
+
+            assertFalse(washed.isEmpty(),
+                "with a path locked ahead of it the train has no wash at all: the walk anchored"
+                + " somewhere the covered track cannot be reached from, so the operator loses the one"
+                + " mark that says which track is blocked.  covered=" + layout.edgesCoveredByStandingTrains().keySet() + " side=" + standing.getArrivedFrom() + " road=" + standing.getArrivedAlong() + " milestones=" + layout.getReachedMilestones(train) + "  Anchor: "
+                + layout.whereTheTrainIs(train).getName() + ", standing at " + standing.getName());
+
+            assertTrue(everyTileOfTheCoveredEdges().containsAll(washed),
+                "with a path locked ahead of it, the diagram shades track the railway does not hold"
+                + " covered: " + washed + " against " + everyTileOfTheCoveredEdges()
+                + ".  The train has not moved - the lock only reserved the road - so the wash cannot"
+                + " have moved either.  Anchor: " + layout.whereTheTrainIs(train).getName()
+                + ", standing at " + standing.getName() + " (VD12-B1)");
+
+            assertEquals(washed, before,
+                "the wash moved when a path was locked ahead of the train.  Before: " + before
+                + ", after: " + washed + ".  The lock reserves the road; it does not move the train,"
+                + " and the picture has to follow the train");
+        }
+        finally
+        {
+            if (locked != null) layout.unlockPath(locked, train);
+
+            // BACK WHERE IT WAS, and with the record the wash is computed from.  `unlockPath` keeps the
+            // path's arrival, and `setLocomotive` clears the arrival side on a change of occupant, so
+            // both halves have to be written back in this order.
+            layout.moveLocomotive(train.getName(), standing.getName(), false);
+
+            standing.setArrivedFrom(sideWas);
+            standing.setArrivedAlong(roadWas);
+
+            washWith(2);
+
+            assertFalse(washedBehindTheTrain().isEmpty(),
+                "this claim has left the railway with no wash, so every claim after it in this class is"
+                + " measuring the leftovers of this one rather than the railway");
+        }
     }
 
     // ---------------------------------------------------------------- the railway

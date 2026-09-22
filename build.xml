@@ -510,6 +510,7 @@
         <test-one-class class="testACopiedCustomizationBringsTheIcons"/>
         <test-one-class class="testTheRouteHighlightAsksWhatATileIs"/>
         <test-one-class class="testTheRouteEditorAsksHowManyFunctionsALocomotiveHas"/>
+        <test-one-class class="testNonAtomicRoutesNeedTheirLengths"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

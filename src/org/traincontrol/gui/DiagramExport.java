@@ -222,6 +222,21 @@ public final class DiagramExport
             {
                 Thread.currentThread().interrupt();
             }
+            catch (java.lang.reflect.InvocationTargetException fromTheRetirement)
+            {
+                // THE RETIREMENT'S OWN FAILURE MUST NOT REPLACE THE RENDER'S (VD12-C5).
+                //
+                // This `finally` runs while a render failure may already be on its way out, and
+                // `invokeAndWait` wraps anything the task throws - `forgetLayoutStations`, say -
+                // in an InvocationTargetException.  `render` declares `throws Exception`, so that
+                // one would propagate from here and discard the cause the caller needs, which is
+                // the wrong-cause reporting FXV-C8 was filed for and fixed only for the interrupt.
+                //
+                // Logged rather than thrown: a grid that could not be retired leaves a stale
+                // registration, which is a leak; losing the reason an export failed leaves nobody
+                // anywhere to start.
+                if (ui != null) ui.log("Could not retire the export's grid: " + fromTheRetirement.getCause());
+            }
         }
 
         return wanted == NATIVE_TILE_SIZE ? image[0] : scaled(image[0], wanted);

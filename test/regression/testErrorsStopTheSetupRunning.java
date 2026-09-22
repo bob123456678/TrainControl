@@ -679,6 +679,15 @@ public class testErrorsStopTheSetupRunning
             {"the greyed Start item's tooltip", withoutComments(menu)},
         };
 
+        // ASKED, AND COUNTED (VD12-T1).
+        //
+        // The gate below used to be `body.contains("errorCannotStartWithErrors")`, and MT-263 moved
+        // that wording into `whyAutonomyWillNotStart` - so every site fell through the `continue`, the
+        // loop asserted nothing at all, and the mutation this class names would have passed.  A site is
+        // in scope now if it words the refusal ITSELF or if it delegates to the one rule, and the floor
+        // below fails if none of them does either.
+        int asked = 0;
+
         for (String[] site : sites)
         {
             String where = site[0];
@@ -686,18 +695,44 @@ public class testErrorsStopTheSetupRunning
 
             assertFalse(body.isEmpty(), where + " has moved or been renamed");
 
-            // Only the ones that split on the count are in scope: a site that says one thing whatever
-            // the reason is not lying about which reason it is.
-            if (!body.contains("errorCannotStartWithErrors")) continue;
+            boolean wordsItHere = body.contains("errorCannotStartWithErrors");
+            boolean throughTheRule = body.contains("whyAutonomyWillNotStart()");
 
-            assertTrue(body.contains("autonomyHasErrors()") || body.contains("hasErrors()"),
+            if (!wordsItHere && !throughTheRule) continue;
+
+            asked++;
+
+            assertTrue(body.contains("autonomyHasErrors()") || body.contains("hasErrors()")
+                || throughTheRule,
                 where + " chooses its wording on the error COUNT alone.  The count is zero when the "
                 + "graph will not build, which is a state the guard refuses and no amount of waiting "
                 + "clears - so this tells the operator to wait for trains that are not running.  "
                 + "Body: " + body);
 
-            assertTrue(body.contains("errorCannotBuildDetailOne"),
-                where + " has no wording for the reason a count cannot see.  Body: " + body);
+            assertTrue(body.contains("errorCannotBuildDetailOne") || throughTheRule,
+                where + " has no wording for the reason a count cannot see, and does not go through "
+                + "the one rule that has it.  Body: " + body);
         }
+
+        assertTrue(asked == sites.length,
+            "only " + asked + " of the " + sites.length + " refusals words the refusal or asks the one"
+            + " rule for it, so the rest are saying something this check cannot see.  That is how this"
+            + " loop came to assert nothing: the wording moved and every site fell through the gate");
+
+        // AND THE ONE RULE CARRIES BOTH ARMS, which is what the three sites now delegate to.  Without
+        // this, every site could pass by delegating to a rule that had lost the build-failure wording.
+        String rule = withoutComments(bodyOf(ui,
+            "static String whyAutonomyWillNotStart(int errors, int blocking, boolean broken)"));
+
+        assertFalse(rule.isEmpty(), "whyAutonomyWillNotStart(int, int, boolean) has moved or been renamed");
+
+        assertTrue(rule.contains("errorCannotStartWithErrors"),
+            "the one rule no longer words the error-count refusal, so the three doors that delegate to"
+            + " it say nothing about how many problems there are.  Body: " + rule);
+
+        assertTrue(rule.contains("errorCannotBuildDetailOne"),
+            "the one rule has no wording for the reason a count cannot see - a graph that will not build"
+            + " at all, where the count is zero - so every door that delegates to it tells the operator"
+            + " to wait for trains that will never run.  Body: " + rule);
     }
 }

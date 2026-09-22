@@ -28,7 +28,8 @@ import org.testng.annotations.Test;
  * `RC-A6` upward is a dead end; `LE2` and `LD` have no declaring document in `docs/` at all. Those
  * three are two thirds of the list.
  *
- * They are rolled at the foot of `docs/manual-tests/findings.tsv`, with the files that cite each one,
+ * They are rolled at the foot of `docs/manual-tests/findings.tsv` - `ref` and four dashes, the citing
+ * files being in the `dead_citation` table rather than in the mirror (VD12-R11) -
  * so the citation leads somewhere even though the finding does not - and this holds the count at
  * forty-five.
  *
@@ -303,7 +304,14 @@ public class testEveryCitationResolves
      * This reads the mirror rather than the database, for the reason the test above does: the mirror is
      * what is committed and greppable, and a Java test cannot run the generator.
      *
-     * MUTATION: put any of the fifteen refs back in the mirror and this names it.
+     * **WHAT THIS STILL HOLDS, AND WHAT IT NO LONGER CAN (VD12-R17).**  With every review document
+     * deleted, `resolvable` is zero by design and the `document == null` skip below fires for every
+     * row - so the `unwritten` assertion at the foot cannot fail, and the count ratchet is the live
+     * half.  Both are kept: the ratchet catches the fault (a fresh crop of sub-lettered rows), and
+     * the document arm revives the moment a review folder is added back through `--add`.
+     *
+     * MUTATION: add a sub-lettered row to the mirror and the RATCHET names the count; the document
+     * arm names the row itself only while some review document is present to be read.
      */
     @Test
     public void testNoCataloguedFindingHasASubLetterItsDocumentDoesNotWrite() throws Exception
@@ -386,7 +394,7 @@ public class testEveryCitationResolves
             "the catalogue now holds " + seen + " sub-lettered findings (" + resolvable + " of its "
             + "rows name a document still in the tree) and held " + SUBLETTERED
             + " when the last review documents were deleted.  Sub-letters are rare by design - of "
-            + "3,353 rows exactly two carry one - and a fresh crop of them is the signature of a "
+            + "3,398 rows - 3,353 findings and 45 dead citations - exactly two carry one, and a fresh crop of them is the signature of a "
             + "Method or mutation table being read as findings (NSV-B1), which is what this guard is "
             + "for.  No document survives to check the new ones against, so the count is all there "
             + "is: re-run `python docs/tools/catalog-findings.py --add <folder>` and look at what it "

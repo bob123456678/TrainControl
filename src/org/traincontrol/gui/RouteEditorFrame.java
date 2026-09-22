@@ -2635,9 +2635,27 @@ public class RouteEditorFrame extends JFrame
      */
     public java.util.List<String> functionChoicesForTest(int row)
     {
-        String[] offered = functionsOffered(commands.rows.get(row).getRow());
+        // THROUGH THE CELL EDITOR THE TABLE WOULD ACTUALLY USE (VD12-T3).
+        //
+        // This asked `functionsOffered` directly, which is the list but not the affordance: folding
+        // column 5 back onto the `digitsOnly()` line - the one mutation that matters here, because it
+        // is what the operator meets - left the helper untouched and the test green.  What decides
+        // whether a number can be typed is the editor this column is given, so that is what is asked.
+        javax.swing.table.TableCellEditor editor = commands.getCellEditor(row, 5);
 
-        return offered == null ? null : java.util.Arrays.asList(offered);
+        if (!(editor instanceof DefaultCellEditor)) return null;
+
+        java.awt.Component control = ((DefaultCellEditor) editor).getComponent();
+
+        if (!(control instanceof JComboBox)) return null;
+
+        JComboBox<?> box = (JComboBox<?>) control;
+
+        java.util.List<String> out = new ArrayList<>();
+
+        for (int at = 0; at < box.getItemCount(); at++) out.add(String.valueOf(box.getItemAt(at)));
+
+        return out;
     }
 
     /**
@@ -2880,6 +2898,13 @@ public class RouteEditorFrame extends JFrame
             if (command.isAccessory()) commanded.add(command.getAddress());
 
             if (command.isRoute()) commandedRoutes.add(command.getAddress());
+
+            // AND A SENSOR THIS ROUTE COMMANDS (VD12-C4).  `canBeACommand` will not let a new FEEDBACK
+            // row be made, but a route saved by an older version can hold one and `CommandRow` says in
+            // as many words that such a row "still opens and still shows" - so splitting these rows by
+            // kind dropped it from the highlight altogether, and a route naming a sensor reported
+            // nothing to show.  It goes with the checked sensors, because that is what it is about.
+            if (command.isFeedback()) checkedSensors.add(command.getAddress());
         }
 
         for (ConditionOutline.Row row : conditions.rows)

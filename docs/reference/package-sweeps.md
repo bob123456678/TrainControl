@@ -1,7 +1,11 @@
 # The four package sweeps, closed
 
 `C1-C29` from the whole-project review of 2026-08-17, deleted with the review folder; its findings are
-in the catalogue (`grep "^WP-" ../manual-tests/findings.tsv`).
+in the catalogue (`grep "^WP-" ../manual-tests/findings.tsv`), which holds the twelve that were
+catalogued as findings - `WP-A1..A3` and `WP-B1..B9`.  **The `C` rows are not there**: the sweep's
+C items were dispositioned in this document rather than in the finding table, so `WP-C19` and
+`WP-C19d` appear only in the dead-citation roll at the foot of the mirror and `WP-C19f` in neither.
+This document is their record; the paragraphs below are the disposition (VD12-R9).
 They were filed as four bundle rows - `automation/`, `marklin/`, `base/`, `gui/` - and never triaged,
 so "four open items" was really twenty-nine - and the count was wrong three ways, which is recorded
 here rather than quietly corrected (MON-C9).  The prose said twenty-nine three times, the adjudicating

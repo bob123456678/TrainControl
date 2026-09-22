@@ -1474,7 +1474,7 @@ Adam, 2026-09-17: *"Add a right click menu open to clear all max station train l
 **Needs your ruling first, and it is A-severity.**
 
 `LayoutDiagramComponent.isSwitch()` names SWITCH_LEFT/RIGHT/CROSSING/THREE/Y and CUSTOM_SCISSORS, and
-not CUSTOM_PERM_LEFT/RIGHT/Y/THREEWAY - the permanently-set turnouts. Both berth-room walks in
+not CUSTOM_PERM_LEFT/RIGHT/Y/THREEWAY/SCISSORS - the five permanently-set turnouts. Both berth-room walks in
 `GraphReducer` (`roomAfterTheLastSwitch` and `unmeasuredAfterTheLastSwitch`) walk the run-in backwards
 and stop at the first tile where `isSwitch()` answers true, so for a berth approached over a
 permanently-set turnout the walk counts the track on the far side of it as room. An edge whose only
@@ -1489,7 +1489,7 @@ itself says to rule on first. Once the train is standing, the 5c tail walk does 
 turnout, so conflicting routes are then refused - the admission is the wrong part, not what follows it.
 
 **The question.** Is a permanently-set turnout "the last switch"? Physically it is shared metal;
-topologically it is not a choice. If yes, the fix is adding the four CUSTOM_PERM types to the stop test
+topologically it is not a choice. If yes, the fix is adding all FIVE CUSTOM_PERM types to the stop test - and `isSwitch()` itself lists `CUSTOM_SCISSORS` and none of the five, so the permanent scissors is in the same hole as the other four and a fix written from an earlier draft of this paragraph, which said four and named only LEFT/RIGHT/Y/THREEWAY, would have closed four doors of five (VD12)
 in both walks, and then deciding whether `isSwitch()` itself should answer true for them - which has
 other callers and needs the sibling sweep.
 
@@ -1899,6 +1899,138 @@ ATrainMoves`, `testTheTrainIsShownAsALine`, `testTheWashIsNoLongerThanTheTrain`,
 **What holds it either way**: a fixture where two roads leave one square on the same side and diverge
 after a known number of tiles. `single-switch` has the shape (Approach's two arms), so no new scenario
 is needed.
+
+### OB-244 - 2026-09-21 - a station's allowance is now spent at a mid-run milestone
+
+**Kind:** bug
+**Raised from:** VD12-C1, a validation of 2026-09-20 and 2026-09-21
+**Filed:** 2026-09-21
+
+`walkOneTail`'s `onTheAllowance` rule and `spendableAllowance` exempt the square the train STANDS on
+from the length it spends - your *"the station size is an allowance, not a length"*, which is about a
+station berth.  MT-438's one-tail fix anchors a running train at its last MILESTONE, and a milestone
+part-way through a run is ordinary block: the train's body really does lie over it.
+
+**Which way the error goes.** Refusal.  A three-unit train whose last milestone is a ten-unit block
+claims a square BEHIND that block as well, because the block itself cost nothing - so `isPathClear`
+refuses another train track that is free, and the diagram greys it.  Your standing rule is that you
+would rather have no check than one that refuses something legal, which is why this is filed rather
+than guessed at.
+
+**The two answers.** (a) The exemption belongs to a square a train has come to REST on, so a mid-run
+anchor spends its length like any other - the tail then shrinks to what the train occupies. (b) It
+belongs to the anchor whatever kind of square it is, on the argument that a train reported at a block
+may be anywhere along it, so the whole block is uncertain and claiming behind it is the safe reading.
+
+I lean to (a): it is what the ruling said, and (b) buys safety by refusing track no train is on.  Your
+call, and it is one line either way.
+
+### OB-245 - 2026-09-21 - a cancelled customization copy can leave the custom flag set
+
+**Kind:** bug
+**Raised from:** VD12-C3, a validation of 2026-09-20 and 2026-09-21
+**Filed:** 2026-09-21
+
+`isCustomFunctions()` is DERIVED - any custom icon makes it true whatever the stored flag says - so
+`applyCustomizations` deliberately writes the flag back only when the answer would otherwise be wrong.
+Take a locomotive whose stored flag is false and which has one custom icon: the capture records
+`custom == true` (the derived answer), Copy Customizations sets the flag true, and Cancel then sees
+`isCustomFunctions()` already true and writes nothing.  Delete that icon later and the locomotive reads
+as customized for ever.
+
+**What that costs:** `syncWithCS2` never adopts the Central Station's function types for a locomotive
+whose flag is set (`loc.functionTypesMismatchIgnoredUI`), so it silently stops tracking the station.
+`MarklinSimpleComponent` stores the derived answer and the loader writes it back as the raw field,
+which is the second half of the same confusion.
+
+**Not changed**, because the fix wants a test with an icon set first, and because the right answer may
+be to stop storing a derived value at all rather than to patch the Cancel.
+
+### OB-246 - 2026-09-21 - the route editor offers locomotive names its own Save refuses
+
+**Kind:** bug
+**Raised from:** VD12-C6, a validation of 2026-09-20 and 2026-09-21
+**Filed:** 2026-09-21
+
+The function-number column was taught to offer only what the locomotive has (MT-464), which is the rule
+this repository has paid for six times: the control that OFFERS a value asks the question the guard
+asks.  Column 4 - the target - still offers every locomotive in the database, including the ones
+`problemsWith` refuses because a comma or a bracket breaks the formats a route is written in.  Your own
+example of a real name is in the code: `SBB 460 (2)`.
+
+So the dropdown offers it, you pick it, and Save refuses with "that name cannot be used in a route" -
+and the only way out is to rename the locomotive.
+
+**The remedy is the question.** Hiding the name refuses a legal selection with nothing shown, which is
+the failure mode you have ruled against before; marking the row red as it is typed says the same thing
+without taking the choice away, but the command table has no live marking at all today (the red
+lettering belongs to the conditions outline).  That is a bigger change than this finding, so it wants
+your ruling on whether it is worth it.
+
+### OB-247 - 2026-09-21 - thirteen finding ids in the records lead nowhere, and nothing will notice
+
+**Kind:** bug
+**Raised from:** VD12-R10, a validation of 2026-09-20 and 2026-09-21
+**Filed:** 2026-09-21
+
+`AR-17` to `AR-23` are cited as the **From:** of seven MT entries and `LR-1` to `LR-6` in `issues.md`;
+the catalogue holds `AR-1..AR-16` and no `LR-` row at all.  `testEveryCitationResolves` walks `src/`
+and `test/` only, so the guard that exists to keep every citation resolvable cannot see the records -
+which are the documents a reader actually follows.
+
+The rule the review deletion was made under is *"no reference will ever be stale or lost"*, and it is
+already false inside `tests.md` and `issues.md`.
+
+**Two ways.** (a) Widen the guard to `docs/` and put these thirteen on the dead-citation ratchet, which
+is currently EXACT at 45 - so the number becomes 58 and the roll carries them. (b) Resolve them: find
+what `AR-17..23` and `LR-1..6` were (both rounds are in git history) and either add the rows or correct
+the citations.
+
+(b) is the honest one and it is an afternoon's reading; (a) takes ten minutes and records the loss.
+Your call which is worth it.
+
+### OB-248 - 2026-09-21 - thirteen open findings are in neither live document
+
+**Kind:** bug
+**Raised from:** VD12-R14, a validation of 2026-09-20 and 2026-09-21
+**Filed:** 2026-09-21
+
+`behaviour.md` says open work belongs in the Inbox as an OB, and the 2026-09-21 round was routed that
+way - OB-233 to OB-238.  Of the older findings whose status is still `Open`, thirteen are in neither
+this Inbox nor `open-questions.md`, and their documents were deleted with the rest:
+
+`FP-B3` (*a route import that parses can still destroy routes*), `UH-B7`, `RGN-C1`, `RGN-C2`, `RGN-C4`,
+`IPR-C1`, `IPR-C2`, `IPR-C3`, `IPR-C4`, `DAY-C1`, `DAY-C2`, `FP-C6`, `FR3-C2`.
+
+The first two are B severity.  `open-questions.md` tells you the remaining backlog is codebase and
+tests only, which is true of everything except these.
+
+**What I would do:** read the thirteen out of the store (`SELECT ref, title, disposition FROM finding
+WHERE status LIKE 'Open%'`), put each one either in this Inbox as an OB or in the closed roll with the
+reason it was declined, and say so in `behaviour.md`.  It is a morning's work and it is bookkeeping
+rather than railway behaviour, so it is filed rather than done.
+
+### OB-249 - 2026-09-21 - the catalogue reads one column two ways
+
+**Kind:** bug
+**Raised from:** VD12-R16, a validation of 2026-09-20 and 2026-09-21
+**Filed:** 2026-09-21
+
+`catalog-findings.py` has two paths into a finding's description.  `fromTheTable` excludes `where` and
+`note` from the disposition vocabulary (`DISPOSES[:-2]`); the table-only path includes them.  So in a
+document whose findings have sections, a `| id | where |` cell is evidence; in one whose findings are
+only table rows, the same cell becomes the DISPOSITION - and `described == disposed` then blanks the
+description, which is exactly the fault that lost 200 D findings their text and that the column-aware
+parser was written to fix.
+
+**It is not firing today**: all 21 table-only rows have dispositions that really do read as verdicts.
+It fires on the next round whose review uses a two-column `| id | where |` or `| id | note |` table,
+and it fires at the moment the documents are deleted - which is the only moment it matters.
+
+Worth knowing beside it: `--add` calls `prune_findings`, which deletes the deliberately-set `status`
+and `status_note` of any ref the re-scanned document no longer makes.  Re-running `--add` over an
+edited folder therefore discards answers `behaviour.md` advertises as set deliberately, with nothing
+said.
 
 ## What has been picked up
 

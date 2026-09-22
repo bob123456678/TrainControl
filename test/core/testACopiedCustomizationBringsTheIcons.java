@@ -197,22 +197,29 @@ public class testACopiedCustomizationBringsTheIcons
 
         Locomotive.Customizations was = target.captureCustomizations();
 
-        target.copyCustomizationsFrom(source);
-
-        assertTrue(source.setLocalFunctionImageURL(1, "file:///C:/icons/added-after-the-copy.png"),
-            "precondition: F1 is beyond this locomotive's functions");
-
-        assertNull(target.getLocalFunctionImageURL(1),
-            "an icon added to the SOURCE after the copy turned up on the target, so the two share one"
-            + " map: `setLocalFunctionImageURLs` keeps the reference it is handed");
-
+        // THE SNAPSHOT'S CLAIM IS MADE FIRST, BEFORE ANYTHING REPLACES THE MAP (VD12-T4).
+        //
+        // `copyCustomizationsFrom` gives the target a fresh map, so an icon written to the target after
+        // the copy lands somewhere the snapshot could never have held whatever `captureCustomizations`
+        // does - the assertion below used to sit there and could not fail.  Written into the map the
+        // snapshot was taken FROM, it fails exactly when the capture hands back a live reference.
         assertTrue(target.setLocalFunctionImageURL(2, "file:///C:/icons/added-to-the-target.png"),
-            "precondition: F2 is beyond this locomotive's functions");
+            "precondition: F2 is within this locomotive's functions, so the write below really happens");
 
         Map<Integer, String> snapshot = new HashMap<>(was.getIcons());
 
         assertFalse(snapshot.containsKey(2),
-            "an icon added to the target after the snapshot was taken is in the snapshot, so Cancel"
-            + " would restore the state it is meant to undo");
+            "an icon added to the target after the snapshot was taken is in the snapshot, so the"
+            + " snapshot is the locomotive's own live map and Cancel would restore the state it is"
+            + " meant to undo");
+
+        target.copyCustomizationsFrom(source);
+
+        assertTrue(source.setLocalFunctionImageURL(1, "file:///C:/icons/added-after-the-copy.png"),
+            "precondition: F1 is within this locomotive's functions");
+
+        assertNull(target.getLocalFunctionImageURL(1),
+            "an icon added to the SOURCE after the copy turned up on the target, so the two share one"
+            + " map: `setLocalFunctionImageURLs` keeps the reference it is handed");
     }
 }

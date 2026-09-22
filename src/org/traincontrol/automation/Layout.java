@@ -4437,7 +4437,7 @@ public class Layout
      * @param loc
      * @return 
      */
-    public Point getLocomotiveLocation(Locomotive loc)
+        public Point getLocomotiveLocation(Locomotive loc)
     {
         for (Point start : this.points.values())
         {
@@ -4446,8 +4446,84 @@ public class Layout
                 return start;
             }
         }
-        
+
         return null;
+    }
+
+    /**
+     * WHERE A TRAIN'S BODY IS - the one statement of it (MT-438, VD12-B1).
+     *
+     * `getLocomotiveLocation` above answers "which Point holds this locomotive", and while a path is
+     * locked that is SEVERAL Points: `Point.reserve` deliberately does not sweep, because the
+     * reservation is what holds a junction behind the train against a second train reaching it another
+     * way.  It returns the first in `HashMap` iteration order, which can be the destination the train
+     * has not reached - so every reader that means "where is the train" and asks that question gets an
+     * arbitrary answer for the whole of a run.
+     *
+     * The MILESTONES are the Points the run has reported reaching, in order, so the last is where the
+     * train actually is.  Two doors worked that out separately and wrote the same paragraph -
+     * `DiagramMonitor`, whose train marker was jumping to points the train had not reached, and
+     * `AutoLocomotiveStatus` - and the covered-track walk made it a third.  The diagram's TAIL OVERLAY,
+     * `AutonomySession.walkBackFrom`, was the one that did not: it anchored on the arbitrary answer and
+     * spent the train's length from there, which draws the orange somewhere the train is not.  Adam,
+     * 2026-09-21: *"it's almost as if you are shifting the location of the train."*
+     *
+     * One method now, so the next door asks instead of working it out again.
+     *
+     * NOT asked by `AutoLocomotiveStatus`'s @-station line, which shows NOTHING rather than a
+     * reservation where a run has reported no milestone yet: that is a decision about a line of text,
+     * and this rule's fallback would change it.
+     *
+     * @param loc the locomotive
+     * @return where its body is, or null when nothing holds it
+     */
+    public Point whereTheTrainIs(Locomotive loc)
+    {
+        Point reached = this.lastMilestone(loc);
+
+        if (reached != null) return reached;
+
+        // THEN THE START OF THE ROAD IT HAS BEEN GIVEN, which is the case a milestone cannot cover:
+        // a path is locked before the train moves, and the milestones of the run BEFORE it are cleared
+        // when that run ends - so between the lock and the first sensor a train has reserved half the
+        // railway and reported nothing.  Asking which Point holds it then is the arbitrary answer this
+        // method exists to avoid: measured on Adam's railway, it returned `BottomMainPost (northbound)`
+        // for a train standing at `RampDown (southbound)`, and the tail overlay drew nothing at all.
+        //
+        // `takingPath` as well as `activeLocomotives`, for the window `configureAndLockPath` opens
+        // before its caller records the run (RC-A10, VD12-B3).
+        List<Edge> given = this.activeLocomotives.get(loc);
+
+        if (given == null || given.isEmpty()) given = this.takingPath.get(loc);
+
+        if (given != null && !given.isEmpty() && given.get(0).getStart() != null)
+        {
+            return given.get(0).getStart();
+        }
+
+        return this.getLocomotiveLocation(loc);
+    }
+
+    /**
+     * The last Point a run has reported reaching, or null (MT-438).
+     *
+     * @param loc the locomotive
+     * @return its latest milestone
+     */
+    private Point lastMilestone(Locomotive loc)
+    {
+        if (loc == null) return null;
+
+        // THROUGH THE ACCESSOR, not the field (VD12-B1, second draft).  `DiagramMonitor`'s test
+        // double overrides `getReachedMilestones` and `getLocomotiveLocation` and nothing else - it
+        // says so in as many words - so a rule that reads the map directly is a rule that door can
+        // no longer be tested through.  Measured: reading the field left the train mark behind at
+        // the end of a run in `core.testAutonomyDiagramMonitor`.
+        List<Point> milestones = this.getReachedMilestones(loc);
+
+        if (milestones == null || milestones.isEmpty()) return null;
+
+        return milestones.get(milestones.size() - 1);
     }
        
     /**
@@ -6783,7 +6859,19 @@ public class Layout
             String side = standing.getArrivedFrom();
             List<Edge> road = standing.getArrivedAlong();
 
+            // THE PATH IT IS TAKING, WHICHEVER MAP HOLDS IT YET (VD12-B3).
+            //
+            // `configureAndLockPath` claims `takingPath` and reserves every Point on the road before
+            // it returns; `activeLocomotives` is only written afterwards, by the caller.  So there is
+            // a window in which the locomotive holds several Points and has no path here - and the
+            // one-tail-per-train rule then walks ONE arbitrary reservation, which is usually not
+            // the square the train is standing on, so its real tail is claimed by nobody and another
+            // train can be routed onto track this one's body is lying over.
+            //
+            // `getActiveAccs` was given this same union for this same window (RC-A10), and says so.
             List<Edge> running = this.activeLocomotives.get(loc);
+
+            if (running == null || running.isEmpty()) running = this.takingPath.get(loc);
 
             if (running != null && !running.isEmpty())
             {
@@ -6827,14 +6915,13 @@ public class Layout
      */
     private Point theHeadOfTheRun(Locomotive loc, List<Edge> path)
     {
-        List<Point> milestones = this.locomotiveMilestones.get(loc);
+        Point reached = this.lastMilestone(loc);
 
-        if (milestones != null && !milestones.isEmpty())
-        {
-            return milestones.get(milestones.size() - 1);
-        }
-
-        return path.get(0).getStart();
+        // ITS OWN FALLBACK, and not `whereTheTrainIs`'s.  A train that has been given a path and has
+        // reported nothing is at the start of that path; asking which Point holds it would hand back
+        // one of the reservations that path has just taken, which is the answer this method exists to
+        // avoid.
+        return reached != null ? reached : path.get(0).getStart();
     }
 
     /**
@@ -6861,8 +6948,30 @@ public class Layout
 
             driven.add(leg);
 
-            if (leg.getEnd().isSamePlaceAs(head)) return driven;
+            // IDENTITY FIRST, PLACE SECOND (VD12-C2).  `isSamePlaceAs` matches every copy of a
+            // square, so a path that passes one twice was truncated at the EARLIER copy and the
+            // side was then read off the wrong leg.  `theHeadOfTheRun` hands back a Point, so the
+            // copy is not in doubt; the place test stays as the fallback, because a milestone can
+            // be reported on a different copy than the path names - which is the same reason
+            // `cameFromAlong` compares this way, and its javadoc says the LATER arrival wins.
+            if (leg.getEnd() == head) return driven;
         }
+
+        // NO COPY OF IT MATCHED BY IDENTITY, so ask by place - the later match, which is what
+        // `cameFromAlong` does for the same reason: a run may report a milestone on a different copy
+        // of a square than the path names.
+        List<Edge> byPlace = new java.util.ArrayList<>();
+
+        for (int at = 0; at < path.size(); at++)
+        {
+            Edge leg = path.get(at);
+
+            if (leg.getStart() == null || leg.getEnd() == null) break;
+
+            if (leg.getEnd().isSamePlaceAs(head)) byPlace = new java.util.ArrayList<>(path.subList(0, at + 1));
+        }
+
+        if (!byPlace.isEmpty()) return byPlace;
 
         // The head is not on the path at all - a milestone from an earlier run, or a path replaced
         // underneath this one.  Nothing can be said about which way it came, so nothing is returned

@@ -215,4 +215,4 @@ five findings**, where removing options is a change against none of them.
 *Written 2026-09-09 against `autonomy-diagram-r0`. Sources: `LayoutRightclickAutonomyMenu`,
 `AutonomyEditorPanel.buildTileMenu`, `TrainControlUI.buildAutonomyTileMenu` /
 `locomotiveGestureOnDiagram` / `rebuildRunningLayoutFromSetup`, `GraphLocAssign.commitAndRecord`, and
-the findings named above - `grep -E "^(D2|D3|REV9)-" docs/manual-tests/findings.tsv`, the review documents themselves having been deleted on 2026-09-21 - and `docs/manual-tests/issues.md`.*
+the findings named above - `grep -E "^(D2|D3|REV9|W7|REG8)-" docs/manual-tests/findings.tsv`, the review documents themselves having been deleted on 2026-09-21; note that `REV-B2` above is the catalogue's `REV9-B2`, the shorter spelling being the deleted document's filename rather than the finding id (VD12-R8) - and `docs/manual-tests/issues.md`.*

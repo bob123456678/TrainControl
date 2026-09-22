@@ -37,6 +37,7 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-326](#mt-326) | 2026-09-07 | A declined setup edit survives quitting (a race, not a mode) | fixed unvalidated | ACC-B3 (split from MT-269) |
 | [MT-380](#mt-380) | 2026-09-13 | Autonomy can be set up by importing, from the menu, with nothing set up yet | fixed unvalidated | FR-007 |
 | [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
+| [MT-437](#mt-437) | 2026-09-15 | What the measured route in holds, and which tier is bound by it | needs test | FR-087 |
 | [MT-438](#mt-438) | 2026-09-15 | The tail question: a sensor at exactly the length, roads a train can drive, and a default | fixed unvalidated | OB-226, OB-227, FR-088 |
 | [MT-439](#mt-439) | 2026-09-15 | Why Not Moving? and Test a Path both follow Path Type | fixed unvalidated | OB-225 |
 | [MT-440](#mt-440) | 2026-09-15 | Return Home does not route a train over the tail of one it has just parked | fixed unvalidated | OB-228 |
@@ -64,9 +65,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-466](#mt-466) | 2026-09-19 | Cancel on the function editor undoes a Copy Customizations | fixed unvalidated | GUX-C3 |
 | [MT-467](#mt-467) | 2026-09-19 | Turning a local route's automatic execution on or off does not wait for the Central Station | fixed unvalidated | GUX-C5 |
 | [MT-468](#mt-468) | 2026-09-19 | Every screen still finds its text after 239 unused message keys were removed | fixed unvalidated | UIX-C4 |
+| [MT-470](#mt-470) | 2026-09-21 | Atomic Routes cannot be switched off while autonomy's track is unmeasured | fixed unvalidated | VD12-R4 |
 
-Everything else - 432 of 469 - needs nothing from you unless the area changes again:
-381 **fixed validated** and 51 **superseded**.
+Everything else - 431 of 470 - needs nothing from you unless the area changes again:
+380 **fixed validated** and 51 **superseded**.
 
 ---
 
@@ -122,7 +124,7 @@ also, that path is not shown in the "why not moving" view.  We should draw arrow
 
 **Claude, 2026-09-08.**
 
-The room rule existed but was fenced behind terminus-or-reversing, so a plain through platform was never judged on the track leading into it. Measured on your railway: `75 407 DB` at BottomMainPost was offered `BottomMainA (eastbound)` with ONE measured unit behind it. Both length rules are one predicate now, `whyTooLongForTheBerth`, which returns the berth, the room found and the train's length, and it reaches the why-not-moving view. Commit `716cf3f5`. **Two things to know.** The fence removal means the rule binds on AUTONOMY too - a census over your railway says 880 journeys of 1,848 routable are newly refused, all arriving at the four berths you named, each at one unit. And part (c), the orange arrows to manual-only destinations, is NOT done: orange already means two things on the running diagram and there is no drawing whose subject is arrows to destinations, so it needs your ruling - see `docs/for-adam-2026-09-09.md`.
+The room rule existed but was fenced behind terminus-or-reversing, so a plain through platform was never judged on the track leading into it. Measured on your railway: `75 407 DB` at BottomMainPost was offered `BottomMainA (eastbound)` with ONE measured unit behind it. Both length rules are one predicate now, `whyTooLongForThisRoute`, which returns the berth, the room found and the train's length, and it reaches the why-not-moving view. Commit `716cf3f5`. **Two things to know.** The fence removal means the rule binds on AUTONOMY too - a census over your railway says 880 journeys of 1,848 routable are newly refused, all arriving at the four berths you named, each at one unit. And part (c), the orange arrows to manual-only destinations, is NOT done: orange already means two things on the running diagram and there is no drawing whose subject is arrows to destinations, so it needs your ruling - which you then gave, and it is **FR-093** in [issues.md](issues.md): the manual-only destinations are shown by the transparent treatment rather than by arrows.  (The note this used to point at, `docs/for-adam-2026-09-09.md`, went with the reviews on 2026-09-21.)
 
 **Claude, 2026-09-10.**
 
@@ -22520,7 +22522,7 @@ Works, and the tooltip you pointed at is shorter. Fifteen of the longest tooltip
 
 ### MT-437 - 2026-09-15 - What the measured route in holds, and which tier is bound by it
 
-**Disposition:** fixed validated
+**Disposition:** needs test
 **From:** FR-087
 
 **Written:** 2026-09-15
@@ -22549,13 +22551,16 @@ for.  Write the total down and judge the steps against it rather than against th
   BottomMainA's two-unit approach.
 - Step 3: orange back over the track it stands across, towards Tunnel - its tail is on the route it came
   in by, and other trains are kept off it.
-- Step 4, by hand: **offered.**  Your ruling of 2026-09-21 - *"in manual operation, A should be
-  selectable"* - and it is the room rule doing the work, not a tier rule.
-- Step 4, autonomy: **also chosen, unless the station's own maximum refuses it.**  Your ruling of
-  2026-09-21: *"let's go for the 9-12 ruling, since the max train length at the station should be the
-  main auto gate."*  So what keeps a long train out of a station in autonomy is that station's **Max
-  Train Length** - `Point.validateTrainLength`, asked at every tier and untouched by FR-087 - and not
-  the geometry of its approach.  BottomMainA has no maximum set, so it is chosen.
+- Step 4, by hand: **refused**, naming BottomMainA.  One unit more than the total is one unit the
+  measured road in cannot hold, so the tail would come to rest on track nothing has measured - and that
+  is the same refusal at every tier, by the same predicate (`Layout.theApproachItselfHoldsIt` is
+  `length <= measuredRouteIn`).  Your *"in manual operation, A should be selectable"* is satisfied at
+  and below the total, which is what you saw at 3 and 4 when the total was 4.
+- Step 4, autonomy: **refused as well, for the same reason** - there is no separate autonomy rule about
+  standing across the points, and that is what your ruling settled.  What keeps a long train out of a
+  station autonomy would otherwise take is that station's own **Max Train Length**
+  (`Point.validateTrainLength`): *"the max train length at the station should be the main auto gate."*
+  BottomMainA has no maximum set, so up to the measured total it is chosen.
 - Step 5: refused as before - a parking berth still has to hold the train past its last switch.
 
 **SETTLED, 2026-09-21: FR-087 STANDS AT BOTH TIERS.**  Your verdict on this entry asked for a station
@@ -22566,10 +22571,19 @@ first: *"Let's go for the 9-12 ruling, since the max train length at the station
 gate."*
 
 So there is one room rule and every tier asks it, which is what `Layout.whyTooLongForThisRoute` already
-does; **the gate that keeps a long train out of a station in autonomy is that station's own Max Train
-Length**, which is a number you set per square and is asked of every arrival
-(`Point.validateTrainLength`, `core.testATrainTooLongIsRefusedTheBerth`).  Nothing in the code changed
-for this ruling; what was wrong was step 4 of this entry, and it now reads the way your run behaved.
+does.  **Two gates, and they are not the same gate.**  The MEASURED ROUTE IN is the room: a train longer
+than the total of the legs it drives in on is refused wherever it would come to rest, by hand and in
+autonomy alike, because its tail would lie on track nothing has measured
+(`regression.testAPassingTrainMayStandAcrossThePoints` pins a route in of 3 admitting three units and
+refusing four).  A station's own **Max Train Length** is the gate you set when you want autonomy kept
+out of a station the room rule would otherwise allow - *"the max train length at the station should be
+the main auto gate"* - and it is asked of every arrival at every tier (`Point.validateTrainLength`,
+`core.testATrainTooLongIsRefusedTheBerth`).
+
+Nothing in the code changed for this ruling.  What was wrong was step 4 of this entry - twice: first it
+expected the pre-FR-087 refusal, and then a correction written on 2026-09-21 read your run as though one
+unit PAST the total had been offered.  It had not: the total was 4 and you ran 3 and 4, which are one
+under it and exactly it.
 
 *What this is:* FR-087, which turns round step 4 of MT-431.  At a station autonomy may choose, a train fits if the measured track of the route it drives in on holds it, counted back without a gap and never back past a square it turns at; parking berths are unchanged.  `regression.testAPassingTrainMayStandAcrossThePoints.testTheRouteInHoldsAThreeUnitTrainAndNotAFourUnitOne`, seen red first; commit `9cc6a874`.
 
@@ -22588,6 +22602,10 @@ Your verdict splits into three things, and two of them are mine to fix. (1) The 
 **Claude, 2026-09-21.**
 
 Your ruling, 2026-09-21: reading (a) - 'let's go for the 9-12 ruling, since the max train length at the station should be the main auto gate.' So FR-087 stands at both tiers, there is one room rule and every tier asks it, and what keeps a long train out of a station in autonomy is that station's own Max Train Length (Point.validateTrainLength, asked of every arrival). Nothing in the code changed: the behaviour you saw at lengths 3 and 4 was right at both doors. Step 4 of this entry is rewritten to say so, the contradiction block is replaced by the ruling, and the entry is closed on your run - both offered, both ran, and the tails were where you say they were.
+
+**Claude, 2026-09-21.**
+
+CORRECTION, and two of them are mine. (1) The step 4 I wrote this morning was wrong: I read your run as though a train ONE UNIT PAST the measured total had been offered and chosen. It had not - the total was 4 and you ran 3 and 4, one under it and exactly it. A train longer than the measured route in is refused at every tier, by one predicate (theApproachItselfHoldsIt is length <= measuredRouteIn), and regression.testAPassingTrainMayStandAcrossThePoints pins it: a route in of 3 admits three units and refuses four, naming the station. Step 4 now expects that refusal, and the entry names the two gates separately - the measured route in is the room, and a station's Max Train Length is the gate you set when you want autonomy kept out of a station the room rule would otherwise allow. The sentence saying the approach geometry no longer gates autonomy is gone; it does. (2) I moved this entry to fixed validated on my own reading of your ruling, which the README forbids in as many words - validated is your word and only yours, and your only verdict here is Does not work. It is back to needs test, so it stays on the ledger until you have run the corrected step 4. Found by an Opus validation of the last two days (VD12).
 
 ---
 
@@ -22616,12 +22634,21 @@ Your notes on MT-435: *"When 75 407 DB is set to length 3, only BottomMainAPre i
 - **How far the orange reaches is your measurements, not the train's length** (answered 2026-09-21).
   The claim is the whole edge a train arrived on - your MT-309 ruling, *"all of bottommaina stayed
   shaded ... as I set the length of EN57-203 to 1"* - and the walk only narrows it by spending the
-  train's length tile by tile, which an unmeasured tile does not.  So a three-unit train at RampDown
-  claims all 18 tiles of `BottomMainAPre -> RampDown`, because exactly one of them (13,12) has a
-  length.  Reproduced: 17 squares, 10,12 along row 12, up at switch 100 to switch 99, along row 11 and
-  up the 21 column.  `isPathClear` refuses the same 17.  **Judge this step against what you have
-  measured**: the orange is right when it ends where the measured track ends, and measuring the rest of
-  that run is what shrinks it.
+  train's length tile by tile, which an unmeasured tile does not.  So a three-unit train whose road in
+  has one measured tile in it claims that whole road, and `isPathClear` refuses the same track.
+  **Judge this step against what you have measured**: the orange is right when it ends where the
+  measured track ends, and measuring the rest of that run is what shrinks it.
+
+  The tile-by-tile reproduction that stood here - 17 or 18 squares up at switch 100 to switch 99 - is
+  **withdrawn**, and not because the count was wrong: it was a state I reasoned backwards from your
+  screenshot and then wrote down as though it had been measured.  The road it named is one no train on
+  your railway drives.  The comments below say so and the cause turned out to be different.
+- **A TRAIN PART-WAY THROUGH A RUN, which is what your screenshot caught** (added 2026-09-21).  Start
+  autonomy, or send a train by hand, and while it is running look at the track around it.  There must be
+  **exactly one orange stretch per train, behind it, along the road it drove in on** - and nothing on
+  the road ahead, nothing at a junction it passed minutes ago, and nothing on a road it has never been
+  on.  Locking a path does not move it: the road is reserved before the train sets off, and a
+  reservation is not a train.  This is the half your screenshot showed and the entry did not ask for.
 - Step 4: with one sensor nearest the back the list starts on it, so OK is enough; with two, nothing is chosen.
 - Everything MT-435 checked still holds: the road is kept after a rebuild and a restart, and Pick on the diagram outlines the same sensors.
 
@@ -23746,5 +23773,63 @@ Works as tested.  However, in the layout view, we can review operators (like and
 **Claude, 2026-09-21.**
 
 Your orphan is fixed (OB-240), the way your note asked: deleting a joining word now takes the term it joins on, so '1 and 2' without the 'and' is '1' - the mirror of deleting a condition, which has always taken the word beside it. It matters more than tidiness: the orphan left the two conditions with nothing between them, tidy() is happy with a wordless run, and toExpression folds one with AND - so deleting an OR silently turned it into an AND and nothing went red. The term is not always one line: a group's rows sit a level in, so 'A or (B and C)' loses the whole bracket rather than its first line, and both shapes are asserted. No confirmation dialog: one keystroke now removes exactly what the mirror-image keystroke already removed. ui.testRouteEditorValidation.testDeletingAJoiningWordTakesTheTermItJoinsWithIt, seen red first.
+
+---
+
+<a id="mt-470"></a>
+
+### MT-470 - 2026-09-21 - Atomic Routes cannot be switched off while autonomy's track is unmeasured
+
+**Disposition:** fixed unvalidated
+**From:** VD12-R4
+
+**Written:** 2026-09-21
+
+Your instruction, 2026-09-21, after the tooltip's warning turned out to be the only thing standing
+between an unmeasured railway and track handed back under a moving train: *"can we simply refuse it now
+if there are unmeasured segments in what's walkable via the autonomy editor?  Limit it to logical edges
+that it prompts for, and on active pages only."*
+
+**What was at stake.**  `tailHasProvablyPassed` returns true the moment the path it is asked about has
+no measured leg at all - which is the honest answer for a railway with lengths on its platforms and
+nowhere else - and non-atomic mode releases an edge as soon as that is true.  So with nothing measured,
+every edge is handed back as the head passes it with the train still lying over it, and the next
+dispatch is routed onto occupied track.  The sentence *"Edge and train lengths need to be set for best
+results"* had been cut from the tooltip on 2026-09-21 and was restored the same day; this is the half
+that does not depend on anybody reading it.
+
+**Steps**
+
+1. Open the autonomy editor and turn on **Unmeasured Track**.  Note whether anything is highlighted,
+   and on which pages.
+2. On the main window, untick **Atomic Routes**.
+3. Measure what the display highlights - **Mass Assign Lengths** on each page that has any - until
+   nothing is highlighted.  Untick **Atomic Routes** again.
+4. Tick **Atomic Routes** back on.
+5. If you have a page autonomy takes no notice of, leave some track on it unmeasured and untick again.
+
+**Expected**
+
+- Step 2: **refused**, with a message saying how many squares have no length and where to find them, and
+  the tick goes back on by itself.  The setting is not changed.
+- Step 3: **accepted** once the display highlights nothing.  This is the half worth checking hardest: a
+  refusal that fires whatever the railway looks like would take the setting away from you for good.
+- Step 4: **always accepted.**  Going back to atomic is never refused - it releases nothing until a run
+  ends, so it is safe whatever is measured.
+- Step 5: **accepted.**  An excluded page is not in the autonomy graph, so no length rule reads its
+  track and the question never reaches it.  This is your "active pages only", and it needed no code of
+  its own.
+
+**One door is deliberately NOT gated.**  A saved configuration can still set atomic routes off:
+`parseAuto` reads the flag, and refusing there would make a setup you already have unloadable, which
+would be a worse fault than the one being fixed.  So a file that says false still loads and still says
+so in the log.  If you want that door shut too, say and it becomes a refusal at load with the same
+sentence.
+
+*What this is:* the finding was `VD12-R4` - the tooltip sentence cut on 2026-09-21 was load-bearing - and
+this is your answer to it.  `ui.testNonAtomicRoutesNeedTheirLengths`, which measures every square,
+requires the door to be open, then takes one length off a switch the length rule reads and requires the
+refusal to name it.  The question asked is the editor's own `squaresNeedingALength`, so the highlight,
+Mass Assign Lengths and this refusal cannot disagree about which squares count.
 
 ---

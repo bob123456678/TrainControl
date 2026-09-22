@@ -6047,7 +6047,11 @@ public class AutonomySession
 
         if (remaining <= 0) return;
 
-        org.traincontrol.automation.Point standing = running.getLocomotiveLocation(train);
+        // WHERE THE TRAIN IS, not which Point holds it (VD12-B1).  A locked path reserves every
+        // on it and `getLocomotiveLocation` returns the first of them in iteration order - so this walk
+        // used to spend the train's length from a square the train had not reached, and drew the orange
+        // there.  `whereTheTrainIs` is the rule `DiagramMonitor`'s marker already followed.
+        org.traincontrol.automation.Point standing = running.whereTheTrainIs(train);
 
         if (standing == null) return;
 
