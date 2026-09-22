@@ -8903,11 +8903,13 @@ public class Layout
      * far end and contributed the same rail anyway.  A path may not run through or finish on a point
      * that is switched off, so the reachability walk below simply never reaches one.
      *
-     * **WHERE THE PREMISE IS ENFORCED, since it is what makes the narrowing safe (VD15-C4).**  Not in
-     * `isPathClear`, which never asks - one step earlier, where a path is BUILT.  `Layout.bfs` returns
-     * null unless `end.isDestination()`, and every path autonomy runs, probes or enumerates comes from
-     * that one method.  If a path is ever allowed to finish anywhere else, this has to go back to
-     * counting every unmeasured edge.
+     * **WHERE THE PREMISE IS ENFORCED, since it is what makes the narrowing safe (VD15-C4, VD16-C1).**
+     * Not in `isPathClear`, which never asks - one step earlier, where a path is BUILT, and there are
+     * two builders rather than the one an earlier draft named.  `Layout.bfs` returns null unless
+     * `end.isDestination()`, which covers every path autonomy runs, probes or enumerates; and
+     * `HomeStaging.firstClearRoute`, which does not use `bfs` at all, gates on `canRest` - which
+     * requires `isDestination() && isActive()` of its own.  If a path is ever allowed to finish
+     * anywhere else, this has to go back to counting every unmeasured edge.
      *
      * Zero counts as no length, which is the convention every length rule here uses - `getTileLength`
      * answers 0 for unmeasured, and only positive lengths are determinate.

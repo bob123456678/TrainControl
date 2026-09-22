@@ -46,7 +46,7 @@ import org.testng.annotations.Test;
  *
  * MUTATION: make `whyNonAtomicRoutesAreRefused` return a sentence unconditionally and the two controls
  * go red; return null unconditionally and the two refusals do; drop the `trainsWithNoLength` term from
- * the checkbox's question and the train claim goes red, and from `keepAtomicRoutesOnWhileTrackIsUnmeasured`
+ * the checkbox's question and the train claim goes red, and from `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack`
  * (its `&& trains.isEmpty()`) and the file door's train claim does - which was reached by no claim at
  * all until VD15-T4; count every unmeasured edge rather than the reachable ones and the claims in
  * `core.testAutoLayout.testARailwayCountsItsUnmeasuredDrivableTrack` do.
@@ -251,7 +251,7 @@ public class testNonAtomicRoutesNeedTheirLengths
         {
             layout.setAtomicRoutes(false);
 
-            SwingUtilities.invokeAndWait(() -> ui.keepAtomicRoutesOnWhileTrackIsUnmeasured());
+            SwingUtilities.invokeAndWait(() -> ui.keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack());
 
             assertTrue(layout.isAtomicRoutes(),
                 "a setup that turns atomic routes off has been loaded with " + rail.getName()
@@ -263,7 +263,7 @@ public class testNonAtomicRoutesNeedTheirLengths
 
             layout.setAtomicRoutes(false);
 
-            SwingUtilities.invokeAndWait(() -> ui.keepAtomicRoutesOnWhileTrackIsUnmeasured());
+            SwingUtilities.invokeAndWait(() -> ui.keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack());
 
             assertFalse(layout.isAtomicRoutes(),
                 "the railway can release nothing under a train and the load turned atomic routes back"
@@ -281,20 +281,31 @@ public class testNonAtomicRoutesNeedTheirLengths
      * AND A SETUP THAT LOADS NON-ATOMIC WITH A TRAIN THAT HAS NO LENGTH COMES UP ATOMIC (VD15-T4).
      *
      * The file door has the same two halves as the checkbox, and only the track one was asked about -
-     * so deleting `&& trains.isEmpty()` from `keepAtomicRoutesOnWhileTrackIsUnmeasured` left every
+     * so deleting `&& trains.isEmpty()` from `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack` left every
      * claim in this class green, and `autolayout.warnAtomicRoutesKeptOnTrains` was a string no test
      * ever reached.  A train of no length releases the whole railway under itself however well the
      * track is measured, so this is the half that does not depend on the operator's rails at all.
      *
-     * The door-open control is in the track claim above, which watches a deliberate OFF survive a
-     * load on a railway that is put right; it is not repeated here.
+     * The door-open control is the one in
+     * `testALoadedSetupCannotRunNonAtomicOverTrackItCouldRelease`, which watches a deliberate OFF
+     * survive a load on a railway that is put right - the same door, asked when nothing is wrong.
+     * This depends on that method so that the control is known to have run (VD16-T6); it is not
+     * repeated here.
      *
      * @throws Exception from the event thread
      */
-    @Test(dependsOnMethods = "testTheTrackHalfRefusesAndNamesTheRail")
+    @Test(dependsOnMethods = "testALoadedSetupCannotRunNonAtomicOverTrackItCouldRelease")
     public void testALoadedSetupCannotRunNonAtomicWithATrainThatHasNoLength() throws Exception
     {
         putTheRailwayRight();
+
+        // THE OTHER HALF IS QUIET, or this claim is not about trains at all (VD16-T5).  The door
+        // forces the setting back on for either half, so without this the claim would pass just as
+        // well on a railway with an unmeasured rail and every train measured.
+        assertTrue(layout.unmeasuredTrackThatCouldBeReleased().isEmpty(),
+            "precondition: the railway still has track that could be released - "
+            + layout.unmeasuredTrackThatCouldBeReleased() + " - so the door would force atomic"
+            + " routes back on whatever the trains look like, and nothing below is about a train");
 
         Locomotive train = null;
 
@@ -319,7 +330,7 @@ public class testNonAtomicRoutesNeedTheirLengths
 
             layout.setAtomicRoutes(false);
 
-            SwingUtilities.invokeAndWait(() -> ui.keepAtomicRoutesOnWhileTrackIsUnmeasured());
+            SwingUtilities.invokeAndWait(() -> ui.keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack());
 
             assertTrue(layout.isAtomicRoutes(),
                 "a setup that turns atomic routes off has been loaded while " + train.getName()
@@ -332,6 +343,107 @@ public class testNonAtomicRoutesNeedTheirLengths
 
             layout.setAtomicRoutes(atomicWas);
         }
+    }
+
+    /**
+     * THE FILE DOOR LOGS THE HALF IT FOUND, and each half has its own sentence (VD16-T7).
+     *
+     * Swapping `autolayout.warnAtomicRoutesKeptOn` and `autolayout.warnAtomicRoutesKeptOnTrains` in
+     * `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack` leaves every behavioural claim in this
+     * class green - the setting comes back on either way - and the operator is told to measure track
+     * when what is wrong is a train's length, which is a remedy for a fault he does not have.
+     *
+     * **A TEXT CLAIM, because the log has no reader.**  `MarklinControlStation.log` hands the line to
+     * the window, which inserts it into a private `JTextArea` with no accessor; reaching it would mean
+     * reflection on a field the GUI builder owns, or a getter added to production for this test alone.
+     * What is pinned instead is the pairing: the track branch names the track key and the train branch
+     * names the train key, in a method short enough to read whole.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheFileDoorLogsTheHalfItFound() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(
+            new java.io.File("src/org/traincontrol/gui/TrainControlUI.java").toPath()),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        int at = source.indexOf("public void keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack()");
+
+        assertTrue(at > 0, "the file door has been renamed or moved, so this rule is about nothing");
+
+        String body = source.substring(at, source.indexOf("loadAutoLayoutSettings();", at));
+
+        // THE CLOSING QUOTE IS PART OF THE NEEDLE, so the track key is not found inside the train
+        // one - built rather than written, because an escaped quote in a patch is one more thing
+        // to get wrong.
+        String quote = String.valueOf((char) 34);
+
+        int track = body.indexOf("autolayout.warnAtomicRoutesKeptOn" + quote);
+        int trains = body.indexOf("autolayout.warnAtomicRoutesKeptOnTrains" + quote);
+
+        assertTrue(track > 0 && trains > 0,
+            "the file door no longer names both log sentences, so one half of what it did is not"
+            + " reported at all.  Track key at " + track + ", train key at " + trains);
+
+        // THE ARGUMENT THAT FOLLOWS EACH KEY, which is what says which half the sentence is about.
+        // Reading the text BEFORE a key finds the enclosing `if`, which is the same either way round.
+        int trackArg = body.indexOf("track.size()", track) - track;
+        int trainsArg = body.indexOf("trains.size()", trains) - trains;
+
+        assertTrue(trackArg > 0 && trackArg < 60,
+            "the track sentence is not being given the track to name - the nearest track.size() is "
+            + trackArg + " characters away, so the two keys have been swapped and an operator with an"
+            + " unmeasured rail is told to set a train length");
+
+        assertTrue(trainsArg > 0 && trainsArg < 60,
+            "the train sentence is not being given the trains to name - the nearest trains.size() is "
+            + trainsArg + " characters away, so an operator whose locomotive has no length is told to"
+            + " measure track he has already measured");
+    }
+
+    /**
+     * AND THE START BUTTON ASKS THE SAME QUESTION, WHICH IS THE DOOR THAT MATTERS (VD16-B2).
+     *
+     * The other three doors cannot cover it.  An edge length is only ever written by `parseAuto`, and
+     * both file doors re-ask afterwards - but a TRAIN length is written on the live layout by
+     * `applyTrainLength` (whose zero means "not set") and by `GraphLocAssign.commitChanges`, neither
+     * of which rebuilds anything.  So the checkbox can be unticked honestly over a measured railway
+     * and a length cleared a minute later puts `behind >= trainLength` back to `0 >= 0`.
+     *
+     * **A TEXT CLAIM, because pressing Start on this fixture would dispatch Adam's trains.**  What it
+     * pins is that the handler asks before it hands anything to `runLocomotives` - the behaviour the
+     * call produces is the file door's, and the claims above are what hold that.
+     *
+     * MUTATION: delete the call from `startAutonomyActionPerformed` and this goes red; move it below
+     * the `runLocomotives` call and it goes red too, which is the half a `contains` would miss.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testStartAsksBeforeItDispatchesAnything() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(
+            new java.io.File("src/org/traincontrol/gui/TrainControlUI.java").toPath()),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+        int at = source.indexOf("private void startAutonomyActionPerformed(");
+
+        assertTrue(at > 0, "the Start handler has been renamed, so this rule is about nothing");
+
+        int dispatch = source.indexOf("runLocomotives();", at);
+
+        assertTrue(dispatch > at,
+            "the Start handler no longer calls runLocomotives, so what this rule is about has moved"
+            + " and the question has to move with it");
+
+        int asks = source.indexOf("keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack()", at);
+
+        assertTrue(asks > at && asks < dispatch,
+            "Start does not ask whether the railway could release track under a train before it"
+            + " dispatches.  A train length can be cleared on the live layout long after the checkbox"
+            + " was unticked honestly - applyTrainLength takes 0, and GraphLocAssign defaults to it -"
+            + " and then every edge is handed back as that train's head passes it");
     }
 
     // ---------------------------------------------------------------- the railway

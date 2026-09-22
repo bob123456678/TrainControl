@@ -279,8 +279,11 @@ it, the comment has outsourced its job.
 
 **A finding id is provenance, not the explanation.** Citing `(DR-B10)` after a rule that is already
 stated in full is useful - it says where the argument was had, and lets somebody dig. Citing it
-*instead of* the rule is what makes the comment depend on a document. There are 871 such citations
-across `src/` and `test/`; they should all be the first kind.
+*instead of* the rule is what makes the comment depend on a document. There are a few thousand such
+citations across `src/` and `test/` - `regression.testEveryCitationResolves` walks every one of them,
+and the exact number moves with every commit, so it is not written down here (VD16-R2: the figure that
+was here, 871, had roughly doubled, and no stated command reproduced it). They should all be the first
+kind.
 
 **And the behaviour document is the intended functionality, not the code.** A comment says why THIS
 code is the way it is. `behaviour.md` says what the railway is supposed to do. When the two disagree,

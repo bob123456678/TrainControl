@@ -23814,7 +23814,9 @@ that does not depend on anybody reading it.
    locomotives have no train lengths could never be completed).
 3. Tick **Atomic Routes** back on.
 4. Give one locomotive autonomy runs a train length of **0** (or clear it) and untick again.
-5. If you have a page autonomy takes no notice of, leave some track on it unmeasured and untick again.
+5. **Put that train length back first** - the gate refuses on either half, so leaving it at 0 makes
+   this step refuse for step 4's reason (VD16-R1).  Then: if you have a page autonomy takes no notice
+   of, leave some track on it unmeasured and untick again.
 6. **The file door.** Save a setup with Atomic Routes off, put the railway right, and re-load it
    (Validate on the autonomy tab, or apply from the editor - both doors have the rule).  Then take one
    length off, re-load again, and read the log.

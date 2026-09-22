@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
  * and compared with the thing it describes, and the failure message says what to write instead.
  *
  * **ROWS ARE NOT FINDINGS (VD15-T5).**  A finding written up in two documents has a row for each, so
- * the `finding` table holds more rows than findings - 3,474 against 3,256 when this was written - and
+ * the `finding` table holds more rows than findings - 3,510 against 3,274 when this was written - and
  * three documents had quoted the row count as a finding count.  Both are checked here, against the
  * mirror's rows and its distinct refs, so the distinction cannot quietly collapse again.
  *
@@ -35,14 +35,26 @@ import org.testng.annotations.Test;
  * judgement no test can make; how the stated numbers relate is arithmetic, and that is where it went
  * wrong, twice.
  *
- * MUTATION: change any number in any of the three documents by one and the matching claim names it;
- * change `143` and `65` in the README together and the spelled-out total is what fails.
+ * MUTATION: change any number in any of the three documents by one and the matching claim names it.
+ * For the spelled-out total, the edit is the WORDS - "Two hundred and eight" to "Two hundred and
+ * nine" - because every edit to the digits is caught by an earlier claim first: change `143` and `65`
+ * together and the file total fails at 211 against 210; change `143` alone and the for-Adam
+ * difference fails at 1 against the two notes it names.  The first version of this sentence named
+ * exactly that unreachable mutation, which is VD15-T8 two files from where it was closed (VD16-T8).
  *
  * @author Adam
  */
 public class testTheRecordsCountTheStore
 {
-    /** The mirror is the store's Java-readable projection - the same file the citation guard reads. */
+    /**
+     * The mirror is the store's Java-readable projection - the same file the citation guard reads.
+     *
+     * **THIS CLASS NEVER OPENS `triage.db`, and cannot (VD16-T9):** there is no SQLite driver on this
+     * project's classpath, which is the reason the mirror exists at all.  What makes reading it the
+     * same as reading the store is `triagedb.verify_findings_mirror`, which every `sync` now runs -
+     * before that, a store written without a render left this counting rows that were no longer
+     * there, and it could not have known.
+     */
     private static final String MIRROR = "docs/manual-tests/findings.tsv";
 
     /**

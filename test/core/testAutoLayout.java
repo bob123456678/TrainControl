@@ -641,20 +641,37 @@ public class testAutoLayout
      * `tailHasProvablyPassed` returns true, and that happens immediately when `pathIsUnmeasured` - when
      * NO edge on the path has a length.
      *
-     * Three claims, because the first version of this counter got two of them wrong.
+     * Six claims, because the first version of this counter got two of them wrong and the next two
+     * versions were held by nothing at all.
      *
      *  - **An unmeasured rail counts**, and a measured one does not.  (The control: a counter that
      *    answered "some" whatever the railway looked like would take the setting away from an operator
      *    who has measured everything, which is the failure Adam's standing rule is about.)
      *  - **A rail is counted ONCE, not once per direction.**  A rail is two `Edge` objects, so counting
      *    edges told him "2 pieces of track" about one piece.
-     *  - **Track that cannot be part of an unmeasured path is not counted.**  A path ends at a
-     *    destination, so a rail with measured track between it and every destination can never be in
-     *    an unmeasured path - and a point switched off is one no path may reach.
+     *  - **A rail into a point that is switched off is not counted**, because no path may reach it.
+     *  - **Nor is a rail whose far end cannot reach a destination over unmeasured track**, because a
+     *    path ends at a destination and so can never be unmeasured end to end.
+     *  - **And the same rail DOES count once it can**, which is the half that says the narrowing is
+     *    about paths rather than about rails: `UE_C -> UE_E` is counted the moment there is any
+     *    unmeasured way on from `UE_E` to a destination, including the reverse direction of itself.
+     *  - **The walk is a chain**, not one hop back from each destination: `UE_H -> UE_G -> UE_E ->
+     *    UE_F` is unmeasured end to end, and the rail into `UE_G` counts as much as the one into the
+     *    destination does.
      *
-     * MUTATION: drop the de-duplication and the first claim goes red; count every unmeasured edge
-     * rather than the ones from which a destination can be reached over unmeasured track and the third
-     * does; return nothing always and the first does.
+     * **ONE-WAY EDGES ARE THE POINT OF THE FOURTH CLAIM, and it said so nowhere (VD16-T1).**
+     * `createEdge` makes ONE directed edge, so `UE_C -> UE_E` with no reverse is a rail a train can
+     * only be sent along, never back down - which is how facing is encoded on this railway and is why
+     * nothing can be released onto it.  Adding the reverse makes `UE_E -> UE_C` a complete unmeasured
+     * path to a destination, and the counter is RIGHT to count the rail then.  The fifth claim adds
+     * that edge and asserts exactly that, so the property the fourth claim depends on is now written
+     * down and checked rather than assumed.
+     *
+     * MUTATION: drop the de-duplication and the first claim goes red; replace the reachability walk
+     * with the rule it replaced (`if (!edge.getEnd().isActive()) continue;`) and the fourth does -
+     * measured 2026-09-22, and it was the only claim that moved; mark only the direct predecessors of
+     * a destination instead of walking to exhaustion and the sixth does, at 3 against 4; return
+     * nothing always and the first does.
      *
      * @throws Exception from the model
      */
@@ -714,28 +731,54 @@ public class testAutoLayout
         layout.createPoint("UE_E", false, null);
         layout.createPoint("UE_F", true, "4");
 
+        // ONE-WAY, AND THAT IS THE WHOLE POINT (VD16-T1).  `createEdge` makes one directed edge, so
+        // a train can be sent UE_C -> UE_E and can never come back: there is no unmeasured way from
+        // UE_E to any destination, and the fifth claim below adds the reverse to show the difference.
         Edge ce = layout.createEdge("UE_C", "UE_E");
         Edge ef = layout.createEdge("UE_E", "UE_F");
 
         ef.setLength(4);
 
         assertEquals(layout.unmeasuredTrackThatCouldBeReleased().size(), 0,
-            "UE_C - UE_E has no length, but UE_E is not a destination and the only way on from it is"
-            + " measured, so no path over that rail can be an unmeasured one and no train can be"
-            + " released onto it.  Counted: " + layout.unmeasuredTrackThatCouldBeReleased());
+            "UE_C - UE_E has no length, but UE_E is not a destination, the rail is one-way, and the"
+            + " only way on from UE_E is measured - so no path over that rail can be an unmeasured"
+            + " one and no train can be released onto it.  Counted: "
+            + layout.unmeasuredTrackThatCouldBeReleased());
 
-        // AND THE WALK IS A CHAIN, not a look at the far end.  Take the length off the onward rail and
-        // UE_C -> UE_E -> UE_F becomes a path with no measurement anywhere on it: both rails count.
+        // AND IT COUNTS THE MOMENT THERE IS AN UNMEASURED WAY ON, including the reverse of itself.
+        // UE_E -> UE_C is a complete unmeasured path to the destination UE_C, so the rail really
+        // could be handed back and the counter is right to say so.
+        Edge ec = layout.createEdge("UE_E", "UE_C");
+
+        assertEquals(layout.unmeasuredTrackThatCouldBeReleased().size(), 1,
+            "with the reverse direction added and unmeasured, UE_E -> UE_C is itself a path with no"
+            + " measurement anywhere on it, ending at the destination UE_C - so the rail CAN be"
+            + " released under a train and has to be counted.  Counted: "
+            + layout.unmeasuredTrackThatCouldBeReleased());
+
+        ec.setLength(5);
+
+        assertEquals(layout.unmeasuredTrackThatCouldBeReleased().size(), 0,
+            "the way back from UE_E is measured again, so the rail is once more one a train can only"
+            + " be sent along.  Counted: " + layout.unmeasuredTrackThatCouldBeReleased());
+
+        // AND THE WALK IS A CHAIN, not one hop back from each destination.  UE_H reaches a
+        // destination only through UE_G, which reaches one only through UE_E: three marks deep, and
+        // the rail into UE_G is counted only if the walk got that far.
+        layout.createPoint("UE_G", false, null);
+        layout.createPoint("UE_H", false, null);
+
+        Edge ge = layout.createEdge("UE_G", "UE_E");
+        Edge hg = layout.createEdge("UE_H", "UE_G");
+
         ef.setLength(0);
 
-        assertEquals(layout.unmeasuredTrackThatCouldBeReleased().size(), 2,
-            "with UE_E - UE_F unmeasured too, a path from UE_C to the destination UE_F has no"
-            + " measurement anywhere on it and BOTH its rails would be handed back under the train."
-            + "  Counted: " + layout.unmeasuredTrackThatCouldBeReleased()
-            + " - a walk that only asks whether a rail's far end is a destination finds one of them");
-
-        assertTrue(ce.getLength() <= 0 && ef.getLength() <= 0,
-            "the fixture stopped being the one these two claims are about");
+        assertEquals(layout.unmeasuredTrackThatCouldBeReleased().size(), 4,
+            "UE_H -> UE_G -> UE_E -> UE_F has no measurement anywhere on it and ends at a"
+            + " destination, so every one of its rails would be handed back under the train, and so"
+            + " would UE_C - UE_E.  Counted: " + layout.unmeasuredTrackThatCouldBeReleased()
+            + " - a walk that marks only the direct predecessors of a destination finds three of"
+            + " them, and one that asks whether a rail's far end IS a destination finds one");
     }
 
     /**

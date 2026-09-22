@@ -340,7 +340,7 @@ this document exactly the thing it replaces.
 **2026-09-08: `docs/reviews/` was deleted**, down to its README, once its 2,226 findings were in
 `docs/manual-tests/triage.db`. **2026-09-21: the same for the 65 documents written since** - 44 of them in
 `docs/reviews/` itself and 21 in three dated folders beside it, on Adam's *"I don't want more
-reviews living in the repo"* - 3,474 finding rows in the store now, every one of them with a status.
+reviews living in the repo"* - 3,510 finding rows in the store now, every one of them with a status.
 (This paragraph's figures - 65 documents, 44 of them in `docs/reviews/`, and the finding count - are quoted from the deletion commit and the store.  A correction to 63 and 206 was itself wrong and was reverted; the 208 it was about is in the first paragraph of this file, not here.  `regression.testTheRecordsCountTheStore` now compares the finding and Inbox counts with the store rather than trusting a reader to keep them - VD13-R1, VD14-R2, VD14-R5.) Everything still open above is open in that store too,
 so it can be queried rather than re-read:*
 

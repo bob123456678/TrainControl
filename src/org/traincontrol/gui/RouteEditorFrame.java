@@ -2937,12 +2937,18 @@ public class RouteEditorFrame extends JFrame
         // are two different squares and neither says anything about the other.
         checked.removeAll(commanded);
 
-        // AND THE SAME FOR THE SENSORS, HERE, BEFORE EITHER IS PAINTED (VD13-C6, VD15-B1).
+        // AND THE SAME FOR THE SENSORS, HERE, BEFORE EITHER IS PAINTED (VD13-C6, VD14-C3, VD15-B1).
         //
         // `canBeACommand` will not make a new FEEDBACK row, but an older route can hold one, and the
         // first fix for that put its address in with the CHECKED sensors - so the legend said "what it
         // checks in orange" over a square the route writes to.  Commanded is the stronger statement,
         // the same way round as the accessories' rule above.
+        //
+        // **THE CASE THIS IS ACTUALLY FOR, on any route made since `canBeACommand`, is the route's own
+        // TRIGGER** (VD14-C3, restored by VD16-C2): a trigger is always in `checkedSensors`, so a
+        // route triggered by a sensor it also commands had that square painted as a condition.  The
+        // first version of this line pointed the other way and sent it back to the colour this bucket
+        // exists to take it out of.
         //
         // The first version of this sat BELOW the paint calls, where it changed nothing at all: the
         // checked sensors had already been washed, and the tile ended up the right colour only because

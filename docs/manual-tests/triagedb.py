@@ -568,31 +568,39 @@ def verify_findings_mirror(conn=None, path=FINDINGS_MIRROR):
     # with no findings is the in-memory copy the CLI builds from the markdown, and the mirror is
     # none of its business - answering "they disagree" for that store is what led to it being
     # overwritten with nothing.
-    if conn is None:
+    ours = conn is None
+
+    if ours:
         conn = connect()
 
-    if conn.execute("SELECT COUNT(*) FROM finding").fetchone()[0] == 0:
-        return True, "this store holds no findings, so the mirror is not rendered from it"
-
-    handle, temp = tempfile.mkstemp(suffix=".tsv", prefix="mirror-")
-
-    os.close(handle)
-
     try:
-        render_findings(conn, temp)
+        if conn.execute("SELECT COUNT(*) FROM finding").fetchone()[0] == 0:
+            return True, "this store holds no findings, so the mirror is not rendered from it"
 
-        fresh = io.open(temp, "rb").read()
+        handle, temp = tempfile.mkstemp(suffix=".tsv", prefix="mirror-")
+
+        os.close(handle)
+
+        try:
+            render_findings(conn, temp)
+
+            fresh = io.open(temp, "rb").read()
+        finally:
+            os.remove(temp)
+
+        if not os.path.exists(path):
+            return False, path + " is not there at all, and it is what Java reads the catalogue from"
+
+        if io.open(path, "rb").read() == fresh:
+            return True, "the mirror is the store's own rows"
+
+        return False, ("%s is not what the store renders - regenerate it with"
+                       " triagedb.render_findings(triagedb.connect())" % path)
     finally:
-        os.remove(temp)
-
-    if not os.path.exists(path):
-        return False, path + " is not there at all, and it is what Java reads the catalogue from"
-
-    if io.open(path, "rb").read() == fresh:
-        return True, "the mirror is the store's own rows"
-
-    return False, ("%s is not what the store renders - regenerate it with"
-                   " triagedb.render_findings(triagedb.connect())" % path)
+        # ONLY WHAT WE OPENED, AND ALWAYS (VD16-C3).  A caller's connection is the caller's to
+        # close; this one's own is a second handle on the same file and was left open.
+        if ours:
+            conn.close()
 
 def findings(conn, ref=None, disposition=None, severity=None, cited=None):
     """The catalogue, filtered.
@@ -925,10 +933,19 @@ def sync(conn=None):
         # AND THE MIRROR JAVA READS IS THE STORE'S OWN ROWS (VD15-T3).  It is derived, so a
         # disagreement is repaired rather than refused - but never silently: a sync that rewrites
         # the file every time means something is writing the store without rendering it.
-        fresh, note = verify_findings_mirror(conn if holdsFindings(conn) else None)
+        #
+        # **ONE STORE, ASKED AND THEN WRITTEN FROM (VD16-B1).**  The first version asked the file
+        # store when this connection had no findings - which from the CLI is always, since `main`
+        # builds `connect(":memory:")` - and then repaired from `conn` regardless.  So the repair
+        # either raised out of `sync` (the writer's refusal, doing its job on a store that should
+        # never have been handed to it) or, with no mirror on disk for that refusal to protect,
+        # wrote a header over nothing and called it a repair.  The store is chosen once here.
+        store = conn if holdsFindings(conn) else connect()
+
+        fresh, note = verify_findings_mirror(store)
 
         if not fresh:
-            render_findings(conn)
+            render_findings(store)
 
             print("findings.tsv was not the store's own rows and has been regenerated - " + note)
 

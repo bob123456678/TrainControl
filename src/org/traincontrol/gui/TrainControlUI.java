@@ -5997,7 +5997,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * The FILE doors do not refuse - they write the safe setting and log it, which is his ruling of
      * 2026-09-21: *"just enable the setting and show a warning in the log."*  See
-     * `keepAtomicRoutesOnWhileTrackIsUnmeasured`.
+     * `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack`.
      *
      * @return the sentence to show, or null when switching it off is safe
      */
@@ -6115,7 +6115,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * The control is put back in step with the railway afterwards: leaving the tick showing OFF while
      * the layout runs atomic would be the two-controls-disagreeing fault OB-090 is named for.
      */
-    public void keepAtomicRoutesOnWhileTrackIsUnmeasured()
+    public void keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack()
     {
         if (this.model == null || !this.model.hasAutoLayout()) return;
 
@@ -24161,7 +24161,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.model.parseAuto(this.autonomyJSON.getText());
 
             // NOT NON-ATOMIC OVER UNMEASURED TRACK, whatever the file says (Adam, 2026-09-21).
-            keepAtomicRoutesOnWhileTrackIsUnmeasured();
+            keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
 
             // The other way a Layout comes into being, and callbacks live on the object.
             attachAutonomyRefresh(this.model.hasAutoLayout() ? this.model.getAutoLayout() : null);
@@ -25399,6 +25399,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (refuseWhileEditorOpen()) return;
 
         if (refuseAutonomyStartWhileBroken()) return;
+
+        // AND NOT NON-ATOMIC OVER A RAILWAY THAT COULD RELEASE TRACK UNDER A TRAIN (VD16-B2).
+        //
+        // THE FOURTH DOOR, and the one the other three cannot cover.  An edge's length is only ever
+        // written by `parseAuto`, and both file doors re-ask this afterwards - but a TRAIN's length is
+        // written on the live layout by `applyTrainLength` (whose zero means "not set") and by
+        // `GraphLocAssign.commitChanges`, neither of which rebuilds anything.  So the checkbox can be
+        // unticked honestly over a measured railway with every train measured, and a length cleared a
+        // minute later puts `behind >= trainLength` back to `0 >= 0`: every edge handed back as that
+        // train's head passes it, with the train still lying over it.
+        //
+        // Start is the choke point - no edge is released until autonomy runs - so asking here covers
+        // both writers and any third one added later.  The remedy is the file door's rather than the
+        // checkbox's, because it is the file door's situation: the setting was chosen deliberately and
+        // the railway has changed under it since, and there is nothing for the operator to answer.
+        keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
 
         // Greyed here, on the EDT, before anything is dispatched.  The button used to stay live until
         // a worker thread several checks later got round to disabling it, and there are three ways to

@@ -3263,6 +3263,42 @@ VD15-T5	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	
 VD15-T6	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	`numberBefore` scanned backwards without a bound, so a sentence that lost its count was checked against a number elsewhere
 VD15-T7	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	the wash claim's own failure messages would throw while being built
 VD15-T8	2026-09-22-VD15-validation-of-the-vd14-fixes.md	Closed	Fixed 2026-09-22	a stated MUTATION that does not compile
+VD16-B1	2026-09-22-VD16-code.md	Closed	`triagedb.sync` repairs the mirror from the connection that cannot render it: the CLI `syn	the mirror repair renders from the store that holds no findings
+VD16-B1	2026-09-22-VD16-round.md	Closed	Fixed 2026-09-22	asked the file store, wrote from the command's copy
+VD16-B2	2026-09-22-VD16-code.md	Closed	the gate's TRAIN half has a fourth door that does not ask - a train length can be set to 0	the train half of the gate has a door that does not ask
+VD16-B2	2026-09-22-VD16-round.md	Closed	Fixed 2026-09-22	the door the other three cannot cover
+VD16-C1	2026-09-22-VD16-code.md	Closed	the "where the premise is enforced" paragraph names `Layout.bfs` as the only path builder;	the premise is enforced in two places and the comment names one
+VD16-C1	2026-09-22-VD16-round.md	Closed	Fixed 2026-09-22	the premise names one path builder; `HomeStaging.firstClearRoute` is a second
+VD16-C2	2026-09-22-VD16-code.md	Closed	the moved sensor `removeAll` comment dropped the case it was written for (commanded AND th	the moved comment lost the case it was written for
+VD16-C2	2026-09-22-VD16-round.md	Closed	Fixed 2026-09-22	the moved sensor comment dropped the case it was written for and its `VD14-C3` ref
+VD16-C3	2026-09-22-VD16-code.md	Closed	`verify_findings_mirror` opens a second connection to `triage.db` and never closes it - no	`verify_findings_mirror` leaks the connection it opens, on every sync
+VD16-C3	2026-09-22-VD16-round.md	Closed	Fixed 2026-09-22	`verify_findings_mirror` left a second handle on the store open
+VD16-C4	2026-09-22-VD16-code.md	Closed	`render_findings` is not the only writer of `findings.tsv`; `catalog-findings.py:write_the	two writers of `findings.tsv`, and only one of them was hardened
+VD16-C4	2026-09-22-VD16-round.md	Closed	Fixed 2026-09-22	`catalog-findings.py` is a second writer of the mirror, still three columns
+VD16-C5	2026-09-22-VD16-code.md	Closed	Spanish alone keeps a bare plural subject where Italian and French gained a quantifier in 	Spanish keeps a bare plural where Italian and French gained a quantifier
+VD16-C5	2026-09-22-VD16-round.md	Closed	Fixed 2026-09-22	Spanish alone kept a bare plural where Italian and French gained a quantifier
+VD16-R1	2026-09-22-VD16-round.md	Closed	Fixed 2026-09-22	MT-470 step 5 could not be reached - step 4 leaves a train with no length
+VD16-R1	2026-09-22-VD16-tests-and-records.md	Closed	MT-470 step 5 cannot produce its Expected result: step 4 leaves a locomotive with no train	(B) - MT-470 step 5 cannot yield its Expected result
+VD16-R2	2026-09-22-VD16-round.md	Closed	Fixed 2026-09-22	"871 such citations" was unreproducible and had roughly doubled
+VD16-R2	2026-09-22-VD16-tests-and-records.md	Closed	`docs/reviews/README.md` still says "There are 871 such citations across `src/` and `test/	(C) - an unverifiable citation count in the file the guard was pointed at
+VD16-T1	2026-09-22-VD16-round.md	Closed	Fixed 2026-09-22	a claim resting on its fixture
+VD16-T1	2026-09-22-VD16-tests-and-records.md	Closed	`testARailwayCountsItsUnmeasuredDrivableTrack`'s fourth claim holds only because the new r	(B) - the fourth claim is true only of a one-way rail
+VD16-T2	2026-09-22-VD16-round.md	Closed	Fixed 2026-09-22	the javadoc still said three claims, three bullets, three mutations
+VD16-T2	2026-09-22-VD16-tests-and-records.md	Closed	the same method's javadoc still says "Three claims" and lists three bullets and three muta	(C) - the javadoc still describes the method before this commit
+VD16-T3	2026-09-22-VD16-round.md	Closed	Fixed 2026-09-22	a closing assertion that restated the setup and could not fail
+VD16-T3	2026-09-22-VD16-tests-and-records.md	Closed	the fifth claim's closing `assertTrue(ce.getLength() <= 0 && ef.getLength() <= 0, "the fix	(C) - the fixture guard at the end cannot fail
+VD16-T4	2026-09-22-VD16-round.md	Closed	Fixed 2026-09-22	one hop is not a chain
+VD16-T4	2026-09-22-VD16-tests-and-records.md	Closed	"the walk is a CHAIN" is pinned at depth 1: replacing the `while (!frontier.isEmpty())` lo	(C) - "the walk is a chain" is pinned at one hop
+VD16-T5	2026-09-22-VD16-round.md	Closed	Fixed 2026-09-22	the file door's train claim never checked the track half was quiet
+VD16-T5	2026-09-22-VD16-tests-and-records.md	Closed	`testALoadedSetupCannotRunNonAtomicWithATrainThatHasNoLength` never asserts that the track	(B) - the new file-door claim does not assert that the track half is quiet
+VD16-T6	2026-09-22-VD16-round.md	Closed	Fixed 2026-09-22	it borrowed a control from a method its `dependsOnMethods` did not name
+VD16-T6	2026-09-22-VD16-tests-and-records.md	Closed	that test borrows its door-open control from a method it is not ordered against: the javad	(C) - the borrowed control is not ordered against the borrower
+VD16-T7	2026-09-22-VD16-round.md	Closed	Fixed 2026-09-22	swapping the two log keys left every claim green
+VD16-T7	2026-09-22-VD16-tests-and-records.md	Closed	nothing asserts WHICH log key the file door writes; swap `warnAtomicRoutesKeptOn` and `war	(C) - nothing says which of the two log keys the file door writes
+VD16-T8	2026-09-22-VD16-round.md	Closed	Fixed 2026-09-22	a stated MUTATION that an earlier assertion always catches first
+VD16-T8	2026-09-22-VD16-tests-and-records.md	Closed	`testTheRecordsCountTheStore`'s stated MUTATION names the wrong assertion: "change `143` a	(B) - the stated MUTATION names an assertion that is not the one that fails
+VD16-T9	2026-09-22-VD16-round.md	Closed	Fixed 2026-09-22	the class says "the store" and reads a file
+VD16-T9	2026-09-22-VD16-tests-and-records.md	Closed	the test is named `...CountTheStore` and its javadoc says "the count the store holds", but	(C) - the guard never opens the store it is named for
 VD9-B1	2026-09-03-validation-of-the-day.md	Closed	fixed - the whole sentence restored, and the two lines that were left dangling with it	`REL-C16` deleted two lines of a three-line sentence, and the retracted claim is now the last thing a reader sees before the code
 VD9-B2	2026-09-03-validation-of-the-day.md	Closed	fixed - `DONE` guard, re-measured with a throwaway script: one call, not two	both runners' `INT`/`TERM` trap runs `on_the_way_out` twice
 VD9-B3	2026-09-03-validation-of-the-day.md	Closed	fixed - the disposition now says the checkbox pushes no undo point, and MT-265 step 1 has 	`SVN-B8`'s "correct rather than lucky" is neither, and the half of the finding that actually holds is the half left unfixed
