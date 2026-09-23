@@ -174,15 +174,20 @@ public class AutonomySession
     /**
      * Moves any length a route tile holds onto the track beside it, keeping the total (Adam, 2026-09-23).
      *
-     * A route tile takes no length (OB-273) - *"it just implicitly connects things as if it were a crossing"* - and
-     * no rule reads one.  Five of Adam's held a length of 1 from before that ruling, most likely written by a Mass
-     * Assign Lengths run that shared a piece's length over them.  Asked whether to drop them or move them: *"Fold
-     * them, they were likely auto set during the mass assignment run."*  So each goes to the square beside the route
-     * tile along the road it carries - plain track in preference to a switch, whose length is the page's one turnout
-     * length - and the piece measures what it measured before.
+     * A route tile takes no length (OB-273) - *"it just implicitly connects things as if it were a crossing"* - so
+     * nothing asks for one: Mass Assign Lengths passes over it and the notices skip it.  But the room and tail sums still
+     * add whatever it holds (`GraphReducer.sumLength` and `lengthOf` read every step, AUT-C4), so a unit left there is
+     * counted without being anywhere the editor shows or asks about.  Five of Adam's held a length of 1 from before that
+     * ruling, most likely written by a Mass Assign Lengths run that shared a piece's length over them.  Asked whether to
+     * drop them or move them: *"Fold them, they were likely auto set during the mass assignment run."*  So each goes to
+     * the square beside the route tile along the road it carries - plain track in preference to a switch, whose length is
+     * the page's one turnout length - and the sums come out as they were.
+     *
+     * **Never onto a sensor square** (AUT-C4).  A sensor's length is the last place of every rail arriving at it and the
+     * first thing a train standing there spends, so a unit put there lengthens every other approach to that sensor too.
      *
      * Run as the setup is opened, so it applies to any layout carrying one, and to one written again by hand.  A route
-     * tile with no track beside it keeps its length, which nothing reads.
+     * tile with no plain track or switch beside it keeps its length, which the sums still count.
      *
      * @return route tile to the square that took its length
      */
@@ -207,7 +212,8 @@ public class AutonomySession
             {
                 org.traincontrol.base.LayoutDiagramComponent track = graph.getTiles().get(beside);
 
-                if (track == null) continue;
+                // NEVER A SENSOR (AUT-C4): its length is every approach's last place, not a share of this piece.
+                if (track == null || track.isFeedback()) continue;
 
                 if (into == null) into = beside;
 
