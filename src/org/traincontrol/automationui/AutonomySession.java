@@ -6651,6 +6651,23 @@ public class AutonomySession
 
         if (from == null) return null;
 
+        return walkFrom(running, from, copies);
+    }
+
+    /**
+     * The walk itself, from a Point named by the caller (OB-270).
+     *
+     * Split from `walkTo` so that a train that is not on the railway - one Control+X has taken off - can be walked
+     * from the square it was cut from.  `walkTo` finds the train and hands its square here; nothing else differs.
+     *
+     * @param running the layout
+     * @param from where the walk starts
+     * @param copies the target's copies, by name, in the order the build made them
+     * @return the side of the nearest copy that can be driven to, or null when none can be
+     */
+    private Side walkFrom(org.traincontrol.automation.Layout running, org.traincontrol.automation.Point from,
+        Map<String, Side> copies)
+    {
         // THE WHOLE WALK, AND THEN THE CHOICE - not the first thing touched.  Breadth-first fills
         // these in as true shortest distances whatever order the shuffle hands the edges back in, so
         // everything decided below is decided by the railway.
@@ -6730,6 +6747,39 @@ public class AutonomySession
         }
 
         return turning;
+    }
+
+    /**
+     * Which way a train cut from one square would face on another, if it DROVE there (Adam, 2026-09-23, OB-270).
+     *
+     * *"Trains should not inadvertently change direction when pasted, so a loc going west from bottomsecondary should
+     * always face east when pasted on bottommaina"*, and, asked whether a cut train keeps the heading it was cut with
+     * or takes the one it would have after driving there: *"it should be east.  no train should inadvertently change
+     * direction when pasted."*  The heading a train is cut with is a compass heading; the route from BottomSecondary
+     * to BottomMainA loops round, so a train setting off west arrives facing east.
+     *
+     * `facingByPath` walks from where the train is standing, and a cut train is standing nowhere.  This walks from
+     * the square it was cut from instead, and answers only where the walk found a way: null means no path, and the
+     * caller keeps the heading it was cut with (MT-368) rather than an answer that pretends to be derived.
+     *
+     * @param running the layout
+     * @param fromPoint the Point the train was standing on when it was cut
+     * @param target the square it is being pasted onto
+     * @return the heading it would arrive with, or null when no route reaches the square
+     */
+    public Side facingByPathFrom(org.traincontrol.automation.Layout running, String fromPoint, TileKey target)
+    {
+        if (running == null || fromPoint == null || target == null) return null;
+
+        Map<String, Side> copies = facingsFor(target);
+
+        if (copies.isEmpty()) return null;
+
+        org.traincontrol.automation.Point from = running.getPoint(fromPoint);
+
+        if (from == null) return null;
+
+        return walkFrom(running, from, copies);
     }
 
     /**

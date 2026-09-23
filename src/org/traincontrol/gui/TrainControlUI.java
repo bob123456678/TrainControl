@@ -7128,7 +7128,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             boolean stillLifted = this.model == null || this.model.getAutoLayout() == null
                 || this.model.getAutoLayout().getLocomotiveLocation(placing) == null;
 
-            if (this.cutFacing != null && placing == this.cutLocomotive && stillLifted
+            // WALKED FROM THE SQUARE IT WAS CUT FROM, FIRST (Adam, 2026-09-23, OB-270: *"no train should
+            // inadvertently change direction when pasted"*).  The heading it was cut with is a compass heading, and
+            // a route that loops round - BottomSecondary to BottomMainA - arrives the other way; the walk says how
+            // it would ARRIVE.  The cut heading stands only where no route reaches the landing, which is the case
+            // MT-368 was about.
+            org.traincontrol.automationui.TilePorts.Side walkedFromTheCut =
+                placing == this.cutLocomotive && stillLifted && this.cutFrom != null
+                    && getAutonomySession() != null && this.model != null
+                ? getAutonomySession().facingByPathFrom(this.model.getAutoLayout(), this.cutFrom, aimed) : null;
+
+            if (walkedFromTheCut != null)
+            {
+                facingAtTheLanding = walkedFromTheCut;
+            }
+            else if (this.cutFacing != null && placing == this.cutLocomotive && stillLifted
                 && getAutonomySession() != null
                 && getAutonomySession().facingsFor(aimed).containsValue(this.cutFacing))
             {
@@ -7233,6 +7247,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (facingThatWay != null) point = facingThatWay;
             }
+            else
+            {
+                // AND WHERE NOBODY WAS ASKED, THE HEADING THE RULE ARRIVES AT (OB-270).  `point` was chosen by
+                // `getAutonomyPointForTile` - "any copy will do" - so on a square with two copies a train may stand
+                // on, facing opposite ways, the train went onto whichever came first while the setup recorded the
+                // walk's heading: the record said east and the train stood westbound.  The same rule the record is
+                // written with, over the same copies, so the two cannot disagree.
+                org.traincontrol.automationui.TilePorts.Side intended =
+                    org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
+                        placeableFacings(aimed), facingAtTheLanding, point.getName());
+
+                org.traincontrol.automation.Point facingThatWay = copyFacing(aimed, intended);
+
+                if (facingThatWay != null) point = facingThatWay;
+            }
 
             // THE RAILWAY'S ANSWER DECIDES, HERE TOO (TWV-B4, after W21-B3).
             //
@@ -7269,6 +7298,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.cutLocomotive = null;
 
             this.cutFacing = null;
+
+            this.cutFrom = null;
         }
         else
         {
@@ -7287,6 +7318,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // This is the last moment anybody knows the answer, so it is taken here.  Read from the
             // running layout rather than the setup, because a run moves trains and only the railway
             // knows where they ended up (behaviour.md 6a).
+            // AND WHERE IT WAS STANDING, so the paste can walk from there (OB-270).
+            this.cutFrom = cut ? point.getName() : null;
+
             this.cutFacing = !cut || getAutonomySession() == null ? null
                 : getAutonomySession().facingOf(
                     point.getCurrentLocomotive() == null ? null
@@ -8160,9 +8194,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // isnt flipped"* otherwise.  At a may-reverse square the question was put, so the answer
             // is the heading - it needs no filtering, because the choices offered were the square's
             // own.
+            // OVER THE COPIES A TRAIN MAY STAND ON (OB-270; Adam, 2026-09-23: *"we shouldn't allow an impossible
+            // facing to be saved"*) - the copies the paste itself chose among, so the record and the copy agree.
             session.setFacing(tile, facingChosenAtTheLanding != null ? facingChosenAtTheLanding
                 : org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
-                    session.facingsFor(tile), facingAtTheLanding, point.getName()));
+                    placeableFacings(tile), facingAtTheLanding, point.getName()));
         }
 
         try
@@ -8184,6 +8220,46 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * would put one back on the keyboard rather than on the railway.
      */
     private Locomotive cutLocomotive;
+
+    /**
+     * The Point the cut locomotive was standing on when it was taken off the railway (OB-270).
+     *
+     * The paste walks from here: a train off the railway has nowhere else to be walked from, and the heading it would
+     * arrive with is what Adam asked for - *"no train should inadvertently change direction when pasted."*
+     */
+    private String cutFrom;
+
+    /**
+     * Each copy of a square a train may be put down on, with the way it faces (OB-270).
+     *
+     * `facingsFor` names every copy, and a square's copies are not all destinations: a copy trains may not arrive at
+     * cannot be placed on (`copyFacing` refuses it), so a heading only such a copy holds is one no placement can give.
+     * Choosing and recording over these alone is what keeps the paste from saving a facing the train is not standing
+     * in - Adam: *"we shouldn't allow an impossible facing to be saved."*
+     *
+     * @param square the square
+     * @return the placeable copies by name, in the build's order
+     */
+    private java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> placeableFacings(
+        org.traincontrol.automationui.TileGraph.TileKey square)
+    {
+        java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> out = new java.util.LinkedHashMap<>();
+
+        if (square == null || getAutonomySession() == null || this.model == null || !this.model.hasAutoLayout())
+        {
+            return out;
+        }
+
+        for (java.util.Map.Entry<String, org.traincontrol.automationui.TilePorts.Side> copy
+            : getAutonomySession().facingsFor(square).entrySet())
+        {
+            org.traincontrol.automation.Point point = this.model.getAutoLayout().getPoint(copy.getKey());
+
+            if (point != null && point.isDestination()) out.put(copy.getKey(), copy.getValue());
+        }
+
+        return out;
+    }
 
     /**
      * Which way the cut locomotive was pointing when it was taken off the railway (MT-368).
@@ -21346,8 +21422,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     this.cutLocomotive = null;
 
                     // The heading goes with it, or a later cut of a DIFFERENT train would inherit it
-                    // where that train has none of its own.
+                    // where that train has none of its own - and the square it was cut from.
                     this.cutFacing = null;
+
+                    this.cutFrom = null;
                 }
 
                 // Every PAGE of mappings, not only the one on screen.
