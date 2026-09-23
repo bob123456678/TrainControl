@@ -763,6 +763,19 @@ public class testAutonomyPathValidation
         cleared.put(first, java.util.concurrent.ConcurrentHashMap.<Edge>newKeySet());
         cleared.get(first).add(shared);
 
+        // AND THE RECORD OF WHAT WAS GIVEN BACK, which is the one `unlockPath` reads since GUI-A1: the cleared set is
+        // kept in atomic mode too, where nothing in it has been released, so it cannot say what a run still holds.
+        // `executePath` writes both on an early release; this writes both.
+        java.lang.reflect.Field releasedField = Layout.class.getDeclaredField("releasedEarly");
+        releasedField.setAccessible(true);
+
+        java.util.Map<org.traincontrol.base.Locomotive, java.util.Set<Edge>> released =
+            (java.util.Map<org.traincontrol.base.Locomotive, java.util.Set<Edge>>)
+                releasedField.get(layout);
+
+        released.put(first, java.util.concurrent.ConcurrentHashMap.<Edge>newKeySet());
+        released.get(first).add(shared);
+
         shared.setLockedEdgeUnoccupied();
 
         assertFalse(shared.isLockHeld(third),
