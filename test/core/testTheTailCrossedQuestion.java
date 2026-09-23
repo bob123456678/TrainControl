@@ -227,13 +227,15 @@ public class testTheTailCrossedQuestion
         Layout layout = aPlatformBehindAJunction(2410, true);
         Point s = layout.getPoint("TQ_S");
 
-        List<String> offered = farthestOf(TailCrossedPrompt.choicesFor(layout, s, "W", 4, null));
+        List<String> offered = crossedOf(TailCrossedPrompt.choicesFor(layout, s, "W", 4, null));
 
         assertTrue(offered.contains("TQ_A") && offered.contains("TQ_C"),
-            "a four-unit train at TQ_S reaches exactly four units back, to TQ_A and TQ_C, and they are not offered: " + offered);
+            "a four-unit train at TQ_S reaches exactly four units back, to TQ_A and TQ_C, and they are not offered as"
+            + " crossed: " + offered);
 
-        assertFalse(farthestOf(TailCrossedPrompt.choicesFor(layout, s, "W", 3, null)).contains("TQ_A"),
-            "a three-unit train is offered TQ_A, four units back");
+        // Offered as the way the tail lies since MT-477, and not as crossed.
+        assertFalse(crossedOf(TailCrossedPrompt.choicesFor(layout, s, "W", 3, null)).contains("TQ_A"),
+            "a three-unit train is offered TQ_A, four units back, as a sensor it has crossed");
     }
 
     /**
@@ -729,6 +731,19 @@ public class testTheTailCrossedQuestion
         model.parseAuto(session.buildConfiguration());
 
         return model.getAutoLayout();
+    }
+
+    /** The sensors offered as crossed - leaving out the ways towards one the tail has not reached (MT-477). */
+    private static List<String> crossedOf(List<TailCrossedPrompt.Choice> choices)
+    {
+        List<String> names = new ArrayList<>();
+
+        for (TailCrossedPrompt.Choice choice : choices)
+        {
+            if (choice.isReached()) names.add(choice.getFarthest().getName());
+        }
+
+        return names;
     }
 
     private static List<Boolean> reachedOf(List<TailCrossedPrompt.Choice> choices)

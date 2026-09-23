@@ -37,9 +37,11 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * the turned one.  At 4 it reached RampDown only, and the list offered RampDown alone, which is the one choice he saw;
  * the tail could as well be 4 units up the turned rail.
  *
- * **Where the tail has not passed the switch, it is still not asked**: the two rails share the squares up to it, and
- * every answer covers the same track.  That boundary is worked out from the rails' own places rather than written down,
- * so a re-measured switch moves it with the railway.
+ * **Three units is exactly the switch.**  The two rails share every square up to and including switch 51 at 18,11, three
+ * units in all, so a three-unit tail covers the same squares on either - and ends on the points, on one leg of them or
+ * the other, which is what he saw drawn turned.  A tail that reaches into the square where the rails part has passed the
+ * switch.  One that ends before it is still not asked: every answer covers the same track.  That boundary is worked out
+ * from the rails' own places rather than written down, so a re-measured switch moves it with the railway.
  *
  * ON THE FROZEN RAILWAY (OB-111).
  *
@@ -109,13 +111,14 @@ public class testATailPastASwitchIsAskedAbout
     {
         Point platform = platform();
 
-        int shared = unitsBeforeTheRailsPart(platform);
+        int before = unitsBeforeTheSwitch(platform);
 
-        assertTrue(shared >= 1 && shared < 4, "precondition: the two rails into " + PLATFORM + " part " + shared
-            + " units back, so no length both passes the switch and reaches neither sensor");
+        assertTrue(before >= 1 && before < 3, "precondition: switch 51 is " + before + " units behind " + PLATFORM
+            + ", so three units does not reach into it, or a shorter train than three already does");
 
-        assertFalse(TailCrossedPrompt.wouldAsk(layout, platform, "E", shared), "a " + shared + "-unit train at " + PLATFORM
-            + " lies on the squares both rails share, and is asked which one - every answer covers the same track");
+        assertFalse(TailCrossedPrompt.wouldAsk(layout, platform, "E", before), "a " + before + "-unit train at " + PLATFORM
+            + " ends before switch 51, on squares both rails share, and is asked which rail - every answer covers the same"
+            + " track");
 
         List<TailCrossedPrompt.Choice> choices = TailCrossedPrompt.choicesFor(layout, platform, "E", 3, null);
 
@@ -162,8 +165,11 @@ public class testATailPastASwitchIsAskedAbout
     }
 
     /**
-     * Told the tail lies towards RampDown, the three-unit train covers the straight rail past switch 51 and none of the
-     * turned one's own squares.
+     * Told the tail lies towards RampDown, a three-unit train is laid on the straight rail - the leg of switch 51 its end
+     * is on - and a four-unit one covers the straight rail's own squares past the switch and none of the turned one's.
+     *
+     * At three units the squares are the same either way, so what the answer changes there is the rail the tail is
+     * recorded on, which is the leg the orange line is drawn along and the one Adam saw drawn turned.
      */
     @Test
     public void testTheAnswerPutsTheTailOnTheStraightRail()
@@ -182,65 +188,94 @@ public class testATailPastASwitchIsAskedAbout
         assertNotNull(straight, "precondition: no rail from RampDown comes into " + PLATFORM);
         assertNotNull(turned, "precondition: no rail from BottomCrossover comes into " + PLATFORM);
 
+        // THREE UNITS: the rail.
+        Map<Edge, Locomotive> rails = standAnswered(platform, 3);
+
+        boolean onStraight = false;
+
+        for (Edge rail : rails.keySet())
+        {
+            if (rails.get(rail) == train && rail.getEnd() == platform && rail.getStart().getName().startsWith("RampDown"))
+            {
+                onStraight = true;
+            }
+        }
+
+        assertTrue(onStraight, "told the three-unit tail lies towards RampDown, the train is not laid on the straight rail"
+            + " into " + PLATFORM + ".  Adam, MT-477: \"the tail always follows switch 51 turned, rather than facing"
+            + " straight toward rampdown\"");
+
+        assertFalse(rails.containsKey(turned) && rails.get(turned) == train, "told the three-unit tail lies towards"
+            + " RampDown, the train is laid on the turned rail from BottomCrossover");
+
+        platform.setLocomotive(null);
+        platform.setArrivedAlong(null);
+
+        // FOUR UNITS: the squares.
+        standAnswered(platform, 4);
+
+        List<String> covered = new ArrayList<>();
+
+        for (Map.Entry<String, Locomotive> at : layout.placesCoveredByStandingTrains().entrySet())
+        {
+            if (at.getValue() == train) covered.add(at.getKey());
+        }
+
+        platform.setLocomotive(null);
+        platform.setArrivedAlong(null);
+
         Set<String> turnedOnly = new LinkedHashSet<>(turned.getPlaceIds());
 
         turnedOnly.removeAll(straight.getPlaceIds());
 
-        train.setTrainLength(3);
+        Set<String> wrong = new LinkedHashSet<>(covered);
+
+        wrong.retainAll(turnedOnly);
+
+        assertTrue(wrong.isEmpty(), "told the four-unit tail crossed RampDown, the train is claimed on " + wrong + ","
+            + " squares only the turned rail from BottomCrossover runs over.  Covered: " + covered);
+
+        Set<String> straightOnly = new LinkedHashSet<>(straight.getPlaceIds());
+
+        straightOnly.removeAll(turned.getPlaceIds());
+        straightOnly.retainAll(covered);
+
+        assertFalse(straightOnly.isEmpty(), "told the four-unit tail crossed RampDown, the train covers no square of the"
+            + " straight rail past switch 51: " + covered);
+    }
+
+    /**
+     * Stands the train at the platform at this length, answers the question with the way towards RampDown, and hands back
+     * the rails it then covers.  The train is left standing, for the caller to read and then clear.
+     */
+    private static Map<Edge, Locomotive> standAnswered(Point platform, int length)
+    {
+        train.setTrainLength(length);
 
         platform.setLocomotive(train);
+        platform.setArrivedFrom("E");
+        platform.setArrivedAlong(null);
 
-        try
+        // BY THE NAME THE LIST OFFERS: RampDown has two copies leaving by this rail, and the list keeps one (OB-276).
+        String towardsRampDown = null;
+
+        for (TailCrossedPrompt.Choice choice : TailCrossedPrompt.choicesFor(layout, platform, "E", length, null))
         {
-            platform.setArrivedFrom("E");
-
-            // BY THE NAME THE LIST OFFERS: RampDown has two copies leaving by this rail, and the list keeps one (OB-276).
-            String towardsRampDown = null;
-
-            for (TailCrossedPrompt.Choice choice : TailCrossedPrompt.choicesFor(layout, platform, "E", 3, null))
-            {
-                if (choice.getFarthest().getName().startsWith("RampDown")) towardsRampDown = choice.getFarthest().getName();
-            }
-
-            assertNotNull(towardsRampDown, "the way towards RampDown is not offered to a three-unit train");
-
-            TailCrossedPrompt.answerForTests(towardsRampDown);
-
-            List<Edge> road = TailCrossedPrompt.askAfterPlacement(layout, platform, "E", 3, train.getName(), null, null)
-                .getRoad();
-
-            assertNotNull(road, "the question was not put, or the answer towards RampDown gave no road");
-
-            platform.setArrivedAlong(road);
-
-            List<String> covered = new ArrayList<>();
-
-            for (Map.Entry<String, Locomotive> at : layout.placesCoveredByStandingTrains().entrySet())
-            {
-                if (at.getValue() == train) covered.add(at.getKey());
-            }
-
-            Set<String> wrong = new LinkedHashSet<>(covered);
-
-            wrong.retainAll(turnedOnly);
-
-            assertTrue(wrong.isEmpty(), "told the tail lies towards RampDown, the train is claimed on " + wrong + ", squares"
-                + " only the turned rail from BottomCrossover runs over.  Adam, MT-477: \"the tail always follows switch 51"
-                + " turned, rather than facing straight toward rampdown\".  Covered: " + covered);
-
-            Set<String> straightOnly = new LinkedHashSet<>(straight.getPlaceIds());
-
-            straightOnly.removeAll(turned.getPlaceIds());
-            straightOnly.retainAll(covered);
-
-            assertFalse(straightOnly.isEmpty(), "told the tail lies towards RampDown, the train covers no square of the"
-                + " straight rail past switch 51: " + covered);
+            if (choice.getFarthest().getName().startsWith("RampDown")) towardsRampDown = choice.getFarthest().getName();
         }
-        finally
-        {
-            platform.setLocomotive(null);
-            platform.setArrivedAlong(null);
-        }
+
+        assertNotNull(towardsRampDown, "the way towards RampDown is not offered to a " + length + "-unit train");
+
+        TailCrossedPrompt.answerForTests(towardsRampDown);
+
+        List<Edge> road = TailCrossedPrompt.askAfterPlacement(layout, platform, "E", length, train.getName(), null, null)
+            .getRoad();
+
+        assertNotNull(road, "the question was not put to a " + length + "-unit train, or the answer gave no road");
+
+        platform.setArrivedAlong(road);
+
+        return new java.util.HashMap<>(layout.edgesCoveredByStandingTrains());
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -271,10 +306,10 @@ public class testATailPastASwitchIsAskedAbout
     }
 
     /**
-     * How many units of train the two rails in carry over the same squares, counted from the platform - the length a
-     * tail can have without passing switch 51.
+     * How many units of train the two rails in carry over the same squares before the last of them, which holds switch
+     * 51 - the longest tail that does not reach the points.
      */
-    private static int unitsBeforeTheRailsPart(Point platform)
+    private static int unitsBeforeTheSwitch(Point platform)
     {
         Edge straight = null;
         Edge turned = null;
@@ -293,15 +328,19 @@ public class testATailPastASwitchIsAskedAbout
         List<Integer> spans = straight.getPlaceLengths();
 
         int units = 0;
+        int last = 0;
 
         for (int i = 1; i <= Math.min(a.size(), b.size()); i++)
         {
             if (!a.get(a.size() - i).equals(b.get(b.size() - i))) break;
 
-            units += Math.max(0, spans.get(spans.size() - i));
+            last = Math.max(0, spans.get(spans.size() - i));
+
+            units += last;
         }
 
-        return units;
+        // The switch square is the last they share; what is before it is everything else.
+        return units - last;
     }
 
     /** Which of the two ways each choice names, by the sensor it leads to. */

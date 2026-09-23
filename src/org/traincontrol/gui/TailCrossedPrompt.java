@@ -29,11 +29,16 @@ import org.traincontrol.util.I18n;
  *
  * **Asked only when the answer changes something.**  The side it came in by (`ArrivalSidePrompt`) already picks the
  * first road back; past that the walk follows the only road there is until it reaches a junction.  So the question
- * is put only where a junction behind the train has two roads back and its tail has crossed a sensor on at least one
- * of them (TLR-B1) - that sensor and Not Known then describe different track; elsewhere every answer describes the
- * same track.  A junction the tail reaches but crosses no sensor beyond is not asked about: the answer would be the
- * junction itself on every road, and could not say which one the tail lies on, so the walk stops there as it always
- * has.  Two copies of one square are one road (TLR-B2).
+ * is put only where the tail lies past a junction with two roads back and the roads put it on different track: it has
+ * crossed a sensor on one of them (TLR-B1), or it has passed the switch they part at without reaching a sensor on
+ * either (MT-477).  A tail that ends before the rails part covers the same squares whichever road it is on, and is not
+ * asked about.  Two copies of one square are one road (TLR-B2).
+ *
+ * **A road the tail lies on short of its sensor is offered too, as the way towards that sensor** (Adam, 2026-09-23,
+ * MT-477: *"when set to lenth 3, the tail always follows switch 51 turned, rather than facing straight toward rampdown
+ * ... technically that length should qualify for the prompt"*).  Until then only crossed sensors were offered, so a
+ * three-unit train at BottomSecondary, past switch 51 and four units short of both sensors, was not asked at all, and a
+ * four-unit one was offered RampDown alone - the one entry he saw - though it could as well lie up the turned rail.
  *
  * **How far back a sensor may be offered is a suggestion, not the blocking rule.**  Each road back is spent against
  * the train's length using the measured lengths of its edges, and a sensor is offered once the train reaches it,
@@ -78,15 +83,17 @@ public class TailCrossedPrompt
     {
         private final Point farthest;
         private final List<Edge> road;
+        private final boolean reached;
         private String label;
 
-        private Choice(Point farthest, List<Edge> road)
+        private Choice(Point farthest, List<Edge> road, boolean reached)
         {
             this.farthest = farthest;
             this.road = java.util.Collections.unmodifiableList(new ArrayList<>(road));
+            this.reached = reached;
         }
 
-        /** @return the sensor */
+        /** @return the sensor - crossed, or on a road the tail lies on without reaching it (see `isReached`) */
         public Point getFarthest()
         {
             return farthest;
@@ -103,7 +110,7 @@ public class TailCrossedPrompt
          */
         public boolean isReached()
         {
-            return true;
+            return reached;
         }
 
         /** @return what the operator reads */
@@ -138,8 +145,8 @@ public class TailCrossedPrompt
     /**
      * Whether the answer would change which track is blocked, so a placement should ask.
      *
-     * The same walk as `choicesFor`, one place: true exactly where it finds a junction with two roads back and a sensor
-     * the tail has crossed on at least one of them.
+     * The same walk as `choicesFor`, one place: true exactly where the tail lies past a junction with two roads back and
+     * the roads put it on different track - see the class comment.
      *
      * @param layout the running layout
      * @param at the point the train stands on
@@ -236,11 +243,16 @@ public class TailCrossedPrompt
 
         for (int i = 0; i < choices.size(); i++)
         {
+            // A WAY THE TAIL LIES IS NO SENSOR IT CROSSED (MT-477): never the default, and nothing a sensor lies behind.
+            if (!choices.get(i).isReached()) continue;
+
             List<String> mine = pairsOf(choices.get(i).getRoad());
             boolean somethingBeyond = false;
 
             for (Choice other : choices)
             {
+                if (!other.isReached()) continue;
+
                 List<String> theirs = pairsOf(other.getRoad());
 
                 if (theirs.size() > mine.size() && theirs.subList(theirs.size() - mine.size(), theirs.size()).equals(mine))
@@ -510,46 +522,66 @@ public class TailCrossedPrompt
 
         int crossedHere = 0;
 
+        // WHETHER THE ROADS HERE PUT THE TAIL ON DIFFERENT TRACK (MT-477) - worked out before any is walked, because it
+        // decides whether a road the tail lies on short of its sensor is offered.
+        boolean parts = firstHops.size() > 1 && tailsPart(firstHops.values(), trainLength);
+
         for (Edge hop : firstHops.values())
         {
-            if (back(layout, hop, hop.getStart(), at, trainLength, road, walked, into, forks, 1)) crossedHere++;
+            if (back(layout, hop, hop.getStart(), at, trainLength, road, walked, into, forks, 1, parts)) crossedHere++;
         }
 
-        // A JUNCTION IS A QUESTION when it has two roads back and the tail crossed a sensor on at least one of them
-        // (TLR-B1): that sensor and Not Known then describe different track.  Crossed on none, every answer is the
-        // junction itself and the walk stops there anyway.
-        if (firstHops.size() > 1 && crossedHere > 0) forks[0]++;
+        // A JUNCTION IS A QUESTION when it has two roads back and the tail lies on different track depending on which:
+        // it crossed a sensor on one of them (TLR-B1), or it passed the switch they part at (MT-477).  A tail that ends
+        // before the rails part covers the same squares on every road, and nothing is asked.
+        if (firstHops.size() > 1 && (crossedHere > 0 || parts)) forks[0]++;
     }
 
     /**
      * One road back: over `hop` to `behind`, and on from there.
      *
+     * @param offerShort whether the roads at the junction ahead put the tail on different track, so that this one is
+     *                   offered even where the tail lies on it short of `behind` (MT-477)
      * @return whether the tail crossed `behind`
      */
     private static boolean back(Layout layout, Edge hop, Point behind, Point ahead, int left, List<Edge> road,
-        Set<String> walked, List<Choice> into, int[] forks, int depth)
+        Set<String> walked, List<Choice> into, int[] forks, int depth, boolean offerShort)
     {
         if (behind == null || walked.contains(placeOf(behind)) || depth > MOST_SENSORS_BACK) return false;
 
         // An unmeasured stretch ends the road: nothing can be said about how much train is left after it.
-        if (hop.getLength() <= 0) return false;
-
-        int beyond = left - hop.getLength();
-
+        //
         // CROSSED WHEN THE TRAIN REACHES IT (OB-226).  Adam, MT-435, 2026-09-15: *"When 75 407 DB is set to length 3, only
         // BottomMainAPre is offered (2 away from the station), but Tunnel should also be offered since it is 3 away."*
         // A train exactly as long as the track to a sensor has its tail at that sensor, and it is offered.
-        if (beyond < 0) return false;
+        int beyond = hop.getLength() <= 0 ? -1 : left - hop.getLength();
+
+        if (beyond < 0)
+        {
+            // SHORT OF THE SENSOR, ON A ROAD THAT IS DIFFERENT TRACK FROM ITS NEIGHBOUR'S (MT-477): offered as the way
+            // the tail lies, so answering it puts the tail on this rail rather than on whichever the walk meets first.
+            // Nothing is walked beyond: the tail ends on this rail.
+            if (offerShort && left > 0)
+            {
+                road.add(0, hop);
+
+                into.add(new Choice(behind, road, false));
+
+                road.remove(0);
+            }
+
+            return false;
+        }
 
         // The rail as the train drove it: it arrives at the square ahead (OB-227).
         road.add(0, hop);
         walked.add(placeOf(behind));
 
-        into.add(new Choice(behind, road));
+        into.add(new Choice(behind, road, true));
 
-        int crossedBeyond = 0;
-
-        Set<String> seen = new LinkedHashSet<>();
+        // THE ROADS ON FROM HERE, one per piece of metal, gathered before any is walked so that whether they part is
+        // known first (MT-477).
+        Map<String, Edge> onward = new LinkedHashMap<>();
 
         for (Edge candidate : layout.getIncomingEdges(behind))
         {
@@ -560,17 +592,131 @@ public class TailCrossedPrompt
 
             // BY PLACE (TLR-B2): a square a train may turn at is a lane copy and a turning copy, the same metal under
             // two names, and counted by name it was a second road back.
-            if (further == null || walked.contains(placeOf(further)) || !seen.add(roadKeyOf(candidate))) continue;
+            if (further == null || walked.contains(placeOf(further))) continue;
 
-            if (back(layout, candidate, further, behind, beyond, road, walked, into, forks, depth + 1)) crossedBeyond++;
+            onward.putIfAbsent(roadKeyOf(candidate), candidate);
         }
 
-        if (seen.size() > 1 && crossedBeyond > 0) forks[0]++;
+        boolean parts = onward.size() > 1 && tailsPart(onward.values(), beyond);
+
+        int crossedBeyond = 0;
+
+        for (Edge candidate : onward.values())
+        {
+            if (back(layout, candidate, candidate.getStart(), behind, beyond, road, walked, into, forks, depth + 1, parts))
+            {
+                crossedBeyond++;
+            }
+        }
+
+        if (onward.size() > 1 && (crossedBeyond > 0 || parts)) forks[0]++;
 
         walked.remove(placeOf(behind));
         road.remove(0);
 
         return true;
+    }
+
+    /**
+     * Whether the tail, with this much train left, lies on different track depending on which of these rails it came in
+     * on (MT-477) - which is when the answer changes what is blocked.
+     *
+     * Each rail is spent from the end nearest the train, place by place, as the tail walk spends it: a place is covered
+     * once the train reaches into it, and a place measuring nothing is covered for nothing.  Where the rails share
+     * squares - the run up to the switch they part at - a tail that ends before the switch covers the same squares
+     * whichever rail it is on.  An unmeasured rail covers nothing, as the walk stops at one.  A rail with no places, from
+     * a hand-written configuration, cannot say which squares, and is its own track once any train is left for it.
+     *
+     * **A tail that reaches into the switch has passed it**, though the squares are the same: the last square the rails
+     * share is the one holding the points, and the train lies on one leg of them or the other.  Measured at
+     * BottomSecondary, where Adam met it: the rails from RampDown and BottomCrossover share every square up to switch 51
+     * at 18,11, three units in all, so a three-unit tail ends on the points - *"the tail always follows switch 51 turned,
+     * rather than facing straight toward rampdown ... technically that length should qualify for the prompt"*.
+     *
+     * @param rails the roads back from one junction, one per piece of metal
+     * @param left how much train is left at the junction
+     * @return whether two of them put the tail on different track
+     */
+    private static boolean tailsPart(java.util.Collection<Edge> rails, int left)
+    {
+        if (left <= 0) return false;
+
+        Set<Set<String>> reaches = new LinkedHashSet<>();
+
+        for (Edge rail : rails) reaches.add(reachOf(rail, left));
+
+        if (reaches.size() != 1) return reaches.size() > 1;
+
+        // THE SAME SQUARES - but the tail may still be on the points.
+        String points = lastSharedPlace(rails);
+
+        return points != null && reaches.iterator().next().contains(points);
+    }
+
+    /**
+     * The last square every one of these rails runs over, counted from the train - where they part - or null where they
+     * share none, run over the same squares all the way, or carry no places to say.
+     */
+    private static String lastSharedPlace(java.util.Collection<Edge> rails)
+    {
+        List<List<String>> all = new ArrayList<>();
+
+        for (Edge rail : rails)
+        {
+            List<String> ids = rail.getPlaceIds();
+
+            if (ids == null || ids.isEmpty()) return null;
+
+            all.add(ids);
+        }
+
+        String last = null;
+
+        for (int i = 1; ; i++)
+        {
+            String here = null;
+
+            for (List<String> ids : all)
+            {
+                if (ids.size() < i) return null;
+
+                String id = ids.get(ids.size() - i);
+
+                if (here == null) here = id;
+                else if (!here.equals(id)) return last;
+            }
+
+            last = here;
+        }
+    }
+
+    /**
+     * The places a tail with this much train left covers on one rail - see `tailsPart`.
+     */
+    private static Set<String> reachOf(Edge rail, int left)
+    {
+        Set<String> covered = new LinkedHashSet<>();
+
+        if (rail.getLength() <= 0) return covered;
+
+        List<String> ids = rail.getPlaceIds();
+        List<Integer> spans = rail.getPlaceLengths();
+
+        if (ids == null || spans == null || ids.isEmpty() || ids.size() != spans.size())
+        {
+            covered.add("rail " + roadKeyOf(rail));
+
+            return covered;
+        }
+
+        for (int at = ids.size() - 1; at >= 0 && left > 0; at--)
+        {
+            covered.add(ids.get(at));
+
+            left -= Math.max(0, spans.get(at));
+        }
+
+        return covered;
     }
 
     // ---------------------------------------------------------------- the words
@@ -584,14 +730,14 @@ public class TailCrossedPrompt
 
         for (Choice choice : choices)
         {
-            String name = shownName(shown, choice.getFarthest());
+            String name = baseName(shown, choice);
 
             count.put(name, count.getOrDefault(name, 0) + 1);
         }
 
         for (Choice choice : choices)
         {
-            String name = shownName(shown, choice.getFarthest());
+            String name = baseName(shown, choice);
 
             // The next sensor towards the train says which road it is, usually (TLR-C3).
             choice.label = count.get(name) > 1 && choice.getRoad().size() > 1
@@ -608,10 +754,21 @@ public class TailCrossedPrompt
         {
             if (again.get(choice.label) > 1 && choice.getRoad().size() > 1)
             {
-                choice.label = I18n.f("autolayout.ui.tailCrossedVia", shownName(shown, choice.getFarthest()),
+                choice.label = I18n.f("autolayout.ui.tailCrossedVia", baseName(shown, choice),
                     viaNames(choice, shown, Integer.MAX_VALUE));
             }
         }
+    }
+
+    /**
+     * A choice's name before anything tells it apart: the sensor, or the way towards it where the tail has not reached it
+     * (MT-477).
+     */
+    private static String baseName(Function<String, String> shown, Choice choice)
+    {
+        String name = shownName(shown, choice.getFarthest());
+
+        return choice.isReached() ? name : I18n.f("autolayout.ui.tailCrossedToward", name);
     }
 
     /**
