@@ -1192,6 +1192,9 @@ The editor notice about turn-round squares with no length is a different questio
   reaches is drawn along the road facing the track just walked, which names one arc even on a double
   curve. `regression.testTheWashIsNoLongerThanTheTrain.testTheSquareTheTrainStandsOnIsOrange` and
   `testASensorTheTailLiesAcrossIsOrange`, the second with the train one unit too short as its control.
+  **A route tile is drawn too** (OB-279): it carries whatever the track beside it carries, and its road is
+  named by the sides it joins rather than by the port map, so the orange and the grey were skipped there
+  until 2026-09-23. `core.testRouteTilePlacement.testARouteTilesRoadCanBeDrawn`.
 - **The line is as long as the train; the grey is as long as the edge.** That difference is what
   separates the two marks. The line walks square by square from where the train stands, each square
   paying its own length, and stops when the train is used up - drawing the whole edge instead washed

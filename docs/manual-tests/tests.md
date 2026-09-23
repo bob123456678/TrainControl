@@ -64,8 +64,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-478](#mt-478) | 2026-09-23 | Captions and your own writing are two settings; Control+L steps through five | fixed unvalidated | OB-272 |
 | [MT-479](#mt-479) | 2026-09-23 | An entry guard throws its signals red when a train arrives, and not when one passes | fixed unvalidated | FR-096 |
 | [MT-480](#mt-480) | 2026-09-23 | A train fits on the square it stands on, and TunnelLongPark takes three units | fixed unvalidated | OB-278 |
+| [MT-481](#mt-481) | 2026-09-23 | The orange line and the grey carry on across a route tile | fixed unvalidated | OB-279 |
 
-Everything else - 443 of 480 - needs nothing from you unless the area changes again:
+Everything else - 443 of 481 - needs nothing from you unless the area changes again:
 392 **fixed validated** and 51 **superseded**.
 
 ---
@@ -24632,5 +24633,37 @@ TopR1ParkShort took no train at all.
 *What this is:* `core.testAStationsSizeIsAnAllowance` (your journey at 1 to 4 units, the berth rule, the track
 blocked behind a standing train, and the orange line, all on your measured TunnelLongPark) - each seen red on the old
 code and again under its own mutation.
+
+---
+
+<a id="mt-481"></a>
+
+### MT-481 - 2026-09-23 - The orange line and the grey carry on across a route tile
+
+**Disposition:** fixed unvalidated
+**From:** OB-279
+
+**Written:** 2026-09-23
+
+Found while re-running the tests on your measured railway: a train whose tail lay across the route tile at
+1 - Main:15,10 had its orange line stop at that square and start again after it.  A route tile has no road of its own -
+it carries whatever the track beside it carries - and the diagram was looking its road up as if it were ordinary track,
+finding nothing, and drawing nothing there.  The grey was skipped the same way.
+
+**Steps**
+
+1. Stand a train at BottomInner (northbound), long enough for its tail to reach back across the route tile at
+   1 - Main:15,10.
+2. Look at the orange line along the train.
+3. With autonomy running, look at the grey behind it.
+
+**Expected**
+
+- Step 2: the orange line runs straight through the route tile, unbroken.
+- Step 3: the grey covers the route tile too, like the track either side of it.
+
+*What this is:* `core.testRouteTilePlacement.testARouteTilesRoadCanBeDrawn` (a route tile's road turns back into the
+sides it joins) and `core.testTheShadingFollowsTheTrain` (a real tile, painted, with a train lying across that route
+tile on your railway) - each red under its own mutation.
 
 ---
