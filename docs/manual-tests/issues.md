@@ -2574,6 +2574,105 @@ gate fire.
 **Where it belongs:** Bulk Tools, under the two that are there.  With this built, the atomic-routes
 notice has somewhere to send you, which is what its shortened wording now promises.
 
+### OB-272 - 2026-09-23 - text labels follow the autonomy editor's caption setting instead of having one of their own
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-09-23  
+**Filed:** 2026-09-23  
+
+Adam, 2026-09-23: *"when the text labels setting is anything but None in the autonomy editor, text
+labels in the layout are also shown.  make text labels be a dedicated setting, and hide the text labels
+unless it is selected.  Also, make control+L cycle the options."*
+
+**It is wired that way on purpose today, and this reverses that decision.**  `AutonomyEditorPanel`'s
+caption dropdown has four options - Stations, Parked Locs, Homes, None - and `applyCaptionMode` ends:
+
+    if (mode == CAPTIONS_NONE) turnTextLabelsOff();
+    else turnTextLabelsOn();
+
+So anything but None turns the track diagram's TEXT tiles on.  That is FR-061's doing, on the reading
+that *"None IS that switch turned off"*, and the Text Labels checkbox is then HIDDEN while a setup is
+open (`LayoutEditor:1614`, `showTextCheckbox.setVisible(session == null)`) because the dropdown is
+supposed to be the one control.  Worth naming because this entry undoes it - his call, and his to
+reverse, but a future reader should not have to rediscover which decision was changed.
+
+**What is being asked for, in three parts.**
+
+1. **Text labels get a setting of their own**, not a consequence of which captions are shown.  The
+   checkbox exists and is merely hidden in autonomy mode, so the smallest version of this is to stop
+   hiding it and stop `applyCaptionMode` touching it.
+2. **They are off unless that setting says otherwise** - so choosing Stations, Parked Locs or Homes
+   shows those captions and nothing else.
+3. **Control+L cycles the options.**  Today it is a flip: `LayoutEditor:7190` calls `toggleText()`, and
+   `AutonomyEditorPanel.textLabelsChanged` exists only to keep the dropdown in step when it does.
+
+**One thing to settle before building it (ONE LINE FROM HIM).**  *"cycle the options"* - which options?
+
+- the CAPTION dropdown's four (Stations, Parked Locs, Homes, None), which is what "the options" most
+  naturally refers to in the sentence before it; or
+- the text-labels setting's own, which after part 1 is on and off - and cycling two states is what
+  Control+L already does.
+
+The first reading gives the key a new job and leaves text labels to the mouse; the second keeps its job
+and makes the rename cosmetic.  Guessing costs a shortcut he has to unlearn either way.
+
+**What falls out once it is decoupled**, and it is worth doing in the same pass rather than leaving
+machinery that no longer has a reason: `lastNamedCaptionMode` and `textLabelsChanged` exist only
+because the two settings were one.  `RGD-C3` is the defect that pairing produced - Control+L with
+Parked Locs selected made every caption vanish under a control still saying Parked - and it goes away
+with the coupling rather than needing its own fix.
+
+**Minor**, by his own word, and it is display only: nothing here reaches the railway.
+
+### OB-273 - 2026-09-23 - Mass Assign Lengths puts a share on a tile that cannot show it, so a stretch reads shorter than it measures
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-09-23  
+**Filed:** 2026-09-23  
+
+Adam, 2026-09-23: *"in mass assign lengths, if part of the stretch is a route, the length isn't shown on
+it.  for example 3 regular tiles, 1 route, length 4 = 3 tiles have length 1.  i'd prefer one to have
+length 2, and two others length 1, or just 1 of length 4."*
+
+**What the code does.**  `AutonomySession.assignStretchLength` shares the answer evenly over EVERY tile
+in the stretch, with the remainder going one unit at a time to the front of the order - stations and
+turn-arounds first, which is MAL-B2's rule:
+
+    int each = wholeLength / order.size();
+    int over  = wholeLength % order.size();
+
+and `AutonomyCompanionStore.setTileLength` has **no type guard at all** - it writes the length onto
+whatever tile it is handed, a route tile included.  So his four-tile stretch really is given 1, 1, 1, 1
+and the fourth unit lands on the route tile, where nothing draws it.
+
+**So the share is not lost - it is INVISIBLE, and that is the worse of the two.**  `measuredIn` sums
+`getTileLength` over the stretch's tiles, so the stretch reads as measured 4 while the diagram shows 3.
+A railway he cannot verify by looking at it is the state every one of these length tools exists to get
+him out of.
+
+**THE THING TO ESTABLISH BEFORE BUILDING IT**, because it decides whether this is cosmetic or an
+under-measurement: do the room and tail walks COUNT a route tile's length?
+
+- If they do, the measurement is correct and only the display is wrong - but the display is what he
+  works from, so it still has to change.
+- If they skip route tiles, a unit is genuinely lost and the stretch under-measures, which is the
+  refusing direction and therefore safe, but wrong.
+
+Either way his preference settles the design, and it is the right one: **do not put a share on a tile
+that cannot show it.**  Excluding such tiles from `order` shrinks the divisor and the arithmetic still
+sums to the answer he gave - his 2, 1, 1.  Putting the whole length on one tile is the other option he
+offered and is simpler, but it loses the "each square carries its share" property the rest of section
+5a's arithmetic reads.
+
+**What is not yet known** is which types cannot hold or show one.  A route tile (`fahrstrasse`) is the
+case he hit; the same question applies to text, labels and anything else drawn on the grid that is not
+track.  That list belongs in ONE place and asked once, the way `GraphReducer.boundsTheRoom` was made
+one question for OB-233 - two lists that must agree is how that defect happened.
+
+**Minor**, by his own word, and it never admits a train: an under-measured stretch refuses more.
+
+Related: MT-454 and MT-459 are the hands-on tests for this walk, and both are in his retest queue.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
