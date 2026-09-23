@@ -176,7 +176,7 @@ public class testATrainComesHomeFacingTheWayItWasHomed
 
         assertNotNull(now, "the train is nowhere after Return Home");
 
-        assertEquals(arrival(now.getName()), arrival(westbound.getName()),
+        assertEquals(now.getCopyFacing(), westbound.getCopyFacing(),
             "a train homed facing west on BottomMainA came home on " + now.getName() + ".  Adam, 2026-09-23: \"it should"
             + " accomplish the facing\" - a copy is a facing, and the other copy of the home square is the train turned"
             + " round");
@@ -235,6 +235,72 @@ public class testATrainComesHomeFacingTheWayItWasHomed
         }
         finally
         {
+            layout.clearHomeLocomotives();
+
+            for (Point p : new ArrayList<>(layout.getPoints()))
+            {
+                if (p.getCurrentLocomotive() != null && OUR_TRAIN.equals(p.getCurrentLocomotive().getName()))
+                {
+                    layout.moveLocomotive(null, p.getName(), true);
+                }
+            }
+        }
+    }
+
+    /**
+     * A home held to a facing the train cannot stand in there is IMPOSSIBLE, with the reason - not a search that
+     * exhausts and says "maybe" (TDY-C1).
+     *
+     * The pre-check that turns an unreachable home into a proof asked whether the train could reach and stand on ANY
+     * copy of the home square.  Once a home is held to a facing, only the copies facing that way will do: here the train
+     * is excluded from the westbound copy it was homed on, the eastbound copy would still take it, and the pre-check
+     * passed on the eastbound copy's word - leaving the search to spend its budget and answer NO_PLAN_FOUND.
+     *
+     * MUTATION: have the pre-check look at every copy again and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAHomeHeldToAFacingItCannotStandInIsImpossible() throws Exception
+    {
+        Point westbound = layout.getPoint("BottomMainA (westbound)");
+        Point eastbound = layout.getPoint("BottomMainA (eastbound)");
+
+        assertTrue(westbound != null && westbound.isDestination() && eastbound != null && eastbound.isDestination(),
+            "precondition: BottomMainA does not have two copies a train may stand on here");
+
+        Locomotive train = model.getLocByName(OUR_TRAIN);
+
+        try
+        {
+            assertTrue(layout.moveLocomotive(OUR_TRAIN, westbound.getName(), false), "could not stand the train westbound");
+
+            layout.setHomeLocomotive(westbound.getName(), OUR_TRAIN);
+
+            Point away = null;
+
+            for (Point p : layout.getPoints())
+            {
+                if (p.getName().startsWith("RampDown") && p.isDestination() && p.getCurrentLocomotive() == null) away = p;
+            }
+
+            assertNotNull(away, "no copy of RampDown a train may stand on");
+
+            assertTrue(layout.moveLocomotive(OUR_TRAIN, away.getName(), false), "could not move the train away");
+
+            // THE HOME'S OWN COPY WILL NOT TAKE IT; the other arrival's would.
+            westbound.getExcludedLocs().add(train);
+
+            HomeStaging.Plan plan = layout.planReturnToHome();
+
+            assertEquals(plan.getOutcome(), HomeStaging.Outcome.IMPOSSIBLE, "a train homed facing west on BottomMainA and"
+                + " excluded from the westbound copy can never come home facing west, and Return Home answered "
+                + plan.getOutcome() + " - the pre-check asked about the eastbound copy, which would take it");
+        }
+        finally
+        {
+            westbound.getExcludedLocs().remove(train);
+
             layout.clearHomeLocomotives();
 
             for (Point p : new ArrayList<>(layout.getPoints()))
