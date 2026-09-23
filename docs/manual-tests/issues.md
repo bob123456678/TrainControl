@@ -140,41 +140,6 @@ with no rails on it; and track running into a button from three sides, where the
 the third arm is dropped in silence.  Four sides is a fixed crossing and is left alone, which is his
 "static crossing under the hood".
 
-### OB-161 - 2026-08-30 - a phantom row stays highlighted below the diagram
-
-**Kind:** bug
-**Raised from:** MT-228
-**Filed:** 2026-08-30
-
-Adam: "the flicker is gone, but when dragging the selected tiles to the bottom of the diagram, a
-phantom row gets permanently highlighted in blue.  the rest seems to work OK."
-
-The grid is built one row taller and one column wider than the diagram, and that extra row and column
-are blank labels holding the GridBagLayout together (OB-055).  Every outline goes on through one
-method, which was happy to put one on them - and the routine that takes outlines off deliberately
-leaves them alone, being the grid's own furniture rather than squares.  So a group dragged onto the
-last row painted its landing outline onto the padding underneath, and nothing ever removed it.
-
-Reachable in red as well, by releasing a selection box on that row.  Refused now at the one door, asked
-of what the label IS, which is how the clearing side already asks it.
-
-### OB-162 - 2026-08-30 - the timetable shows the form designer's headings when it is empty
-
-**Kind:** bug
-**Raised from:** asked for directly - Adam, 2026-08-30
-**Filed:** 2026-08-30
-
-Adam: "also, the timetable entry has default table heading when blank.  make sure these are always
-set."
-
-The form designer starts every table off with four columns called "Title 1" through "Title 4" and four
-blank rows.  The real headings were installed only when the timetable was redrawn, and that cannot
-happen before there is an autonomy configuration to redraw it from - so on a fresh installation the
-Timetable tab showed the placeholder for exactly as long as it took to set autonomy up.
-
-They are set when the window is built now.  Separately, because redrawing the timetable begins by
-asking the running graph for a snapshot and at that point there is no graph to ask.
-
 ### OB-163 - 2026-08-30 - the routing rules explain themselves to nobody
 
 **Kind:** bug
@@ -194,39 +159,6 @@ would have been obvious the moment the text was on screen.
 The tooltip for "At Random, Respecting Priority" is stale as well: it says "whatever free route is
 found first", which was true when the rule was called "At Random" and is only half the story now that
 its name promises priority.
-
-### OB-164 - 2026-08-31 - the diagram right-click menu offers no destinations in non-atomic mode
-
-**Kind:** bug
-**Raised from:** MT-087
-**Filed:** 2026-08-31
-**Build:** commit c386be96, build\classes, compiled 31 Aug 00:07 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-Adam, closing MT-087: "Works, with notes.  Works from the autonomy commands panel, but right-clicking
-on the track diagram does not show available options in non-atomic mode."
-
-**Not the same question on the two surfaces.**  `AutoLocomotiveStatus.findPaths` gates on
-`layout.isAutoRunning()`, which is about the whole layout; `LayoutRightclickAutonomyMenu` gates on
-`getActiveLocomotives().containsKey(locomotive)`, which is about that one train.  Both then call
-`getPossiblePaths(loc, true)` and the same distinct-destinations filter.
-
-Neither `getPossiblePaths` nor `isPathClear` branches on `atomicRoutes` anywhere, so the difference has
-to be in state a non-atomic run leaves behind rather than in the question.  Three readings did not
-survive: a stale `activeLocomotives` entry (the removal at completion is unconditional), a point
-cleared behind the train (the last edge's endpoints are deliberately left alone), and the menu picking
-the wrong copy of a split square (`getAutonomyPointForTile` prefers the occupied copy).
-
-**Closed as a known limitation, on Adam's ruling, 2026-08-31:** "The user can rely on full autonomy or
-the panels to send trains more clearly."
-
-Both of those surfaces work in non-atomic mode - the commands panel offers the destinations and full
-autonomy chooses them - so what is lost is one of three ways to reach the same thing, on the surface
-where it is least clear anyway.  Weighed against changing what the diagram menu asks, which is a gate
-on a per-locomotive question that is right for the case it was written for, that is not a trade worth
-making without a reproduction, and the reproduction is the expensive part.
-
-Recorded rather than dropped: the next person to read `LayoutRightclickAutonomyMenu` and notice the two
-surfaces disagree should find this rather than re-open it.
 
 ### OB-165 - 2026-08-31 - Return Home stays dark after a train is driven off its claimed home
 
@@ -491,15 +423,6 @@ when clicking edit, the autonomy editor appears below other windows, so I might 
 
 add the paused autonomy locomotive indicator (and the ability to toggle whether it's paused) to the right-click menu on the track diagram. maintain parity with the autonomous locomotive commands panel. likely for 3.1.0
 
-### OB-174 - 2026-09-04 - checkbox in autonomy editor
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-09-04 19:27  
-**Build:** commit 409d4ce8, build\classes, compiled 04 Sep 19:13 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-If checked, "Show parked trains" should auto check "text labels" if "text labels" is unchecked.
-
 ### OB-175 - 2026-09-04 - curved sensor tiles with incoming arrows
 
 **Kind:** bug  
@@ -743,41 +666,6 @@ accelerator hints elsewhere in the menus are there for. Worth checking at the sa
 other diagram chords (Control+L, Control+K, Control+G, Control+X/V/Delete) have anywhere at all that
 names them.
 
-### OB-194 - 2026-09-09 - Clearing every locomotive in the autonomy editor cannot be undone by Cancel
-
-**Kind:** bug  
-**Raised from:** MT-311  
-**Filed:** 2026-09-09  
-
-Adam, on MT-311 (2026-09-08), in the same breath as passing it:
-
-> *"It works, but bug: clearning locomotives in the autonomy editor cannot be undone by a cancel.
-> Make this clear in the popup."*
-
-MT-311 is **Bulk Tools clears placements and keeps the homes** (from MT-257 item 1), and the counts
-and the greying it asks about are right.
-
-**IT CONTRADICTS THAT ENTRY'S OWN EXPECTATION**, which reads *"neither writes to disk - Cancel puts
-everything back"*. What changed in between is OB-183: Adam, 2026-09-08, *"Where a train IS is a fact,
-and where the file thinks it is is a record."*  Placements are now carried ACROSS a rebuild
-(`TrainControlUI.putTheTrainsBack`) rather than regenerated from the setup, which is very likely why
-Cancel no longer puts the cleared locomotives back - Cancel restores the SETUP, and the running
-railway is what the placements now come from.
-
-**Whether the answer is the warning he asked for or a real undo is a decision, not a defect report.**
-The warning is the smaller of the two and is what he asked for: `AutonomyEditorPanel.clearAllPlacements`
-already confirms first, and the confirmation can say that Cancel will not bring them back. A real undo
-means the bulk clear capturing what it removed and the editor's Cancel replaying it, which is a
-different and larger thing.
-
-**Claude, 2026-09-14 - what Cancel does has changed since (WK7-C2, WKV-B1).**  OB-223 made Cancel restore
-the setup as the editor opened it, placements included, and the rebuild when the editor closes puts the
-cleared locomotives back - so the warning now says Cancel puts them back and Save keeps the change.  On the
-track diagram's own right-click menu, which has no Cancel and saves as it goes, it says the clear is saved
-at once.  `regression.testTheBulkClearWarnsThatCancelWillNotUndoIt` is now
-`regression.testTheBulkClearSaysWhatCancelDoes`, and `regression.testCancelUndoesAutonomyEdits` runs the undo.
-MT-415, which Adam passed on the old wording, expects the opposite sentence.
-
 ### FR-068 - 2026-09-09 - Whether a route condition with a bracket that is not at the start can be represented at all
 
 **Kind:** feature request  
@@ -861,185 +749,6 @@ clicking an issue in the autonomy view should allow the user to triage the issue
 
 add a text box so users can type a station or train name (string match against the list) to filter it.  careful about refreshing it when issues are added.
 
-### OB-207 - 2026-09-12 - en57-203 blocks too much
-
-**Kind:** bug  
-**Raised from:** noticed while testing - not from a particular test  
-**Filed:** 2026-09-12 02:10  
-**Build:** commit ac960047, build\classes, compiled 12 Sep 01:57 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-when at tunnellongpark, en57-203 blocks most of the track leading up to bottommaina, even though it is of length 1, and the track next to it is of length 2.  too much blocked for such a short train.
-
-**Claude, 2026-09-12 - diagnosed, not fixed, and the reason is worth reading before anybody patches it.**
-
-`Layout.edgesCoveredByStandingTrains` walks back from the square a train stands on and blocks whole EDGES
-until it has covered the train's length:
-
-    covered.put(segment, loc);
-    remaining -= segment.getLength();
-
-**Blocking a whole edge is right, and that is the part not to change.** An edge is a run between two
-Points with nowhere to stop in between, so any route using it passes end to end - a train sent over that
-edge meets the standing train however far into it the tail actually reaches. What looks like "most of the
-track leading up to BottomMainA" is ONE logical edge that happens to be physically long.
-
-**The only real over-blocking is a train that never reaches the edge at all**, which is exactly this
-case: EN57-203 is one unit long and is standing on its own square, so nothing behind it is fouled. The
-walk starts `remaining = trainLength` and blocks the first edge before crediting the square the train is
-standing on, so a one-unit train always fouls one whole edge.
-
-**Why crediting the square is not a one-line fix.** Nothing at runtime knows how long a square is: a
-`Point` carries `maxTrainLength` and no length of its own, and lengths live on edges - where
-`GraphReducer` already folds the far tile in (`sumLength(path) + lengthOf(tile)`). So the fix is
-
-  1. emit a per-point length from `AutonomyBuilder`, read it in `parseAuto`, hold it on `Point`; and
-  2. credit it once, carefully: the first edge's length ALREADY includes that tile, so subtracting the
-     full edge length after crediting the square double-counts it.
-
-**And on this railway it would change nothing yet.** `setup.json` carries three measured tiles -
-`5:19,12`, `5:13,12` and `5:10,10` - and TunnelLongPark is not one of them. With the square unmeasured
-the walk cannot know the train fits on it, and "unmeasured is unknown, not zero" says block. So measuring
-the berth squares is what turns this off today, and the change above is what makes the measurement pay.
-
-Left open deliberately: this is the guard that stops one train being routed into another, and the change
-is a model change plus an arithmetic trap. It wants its own pass rather than the end of a long one.
-
-**Claude, 2026-09-12, re-measured against Adam's screenshot - and the paragraph above is WRONG where it
-says blocking a whole edge is right.**
-
-He said it plainly: *"we have a train of length 1 standing on a track of length 2, so it does not protrude
-past the switches."*  Measured on his own layout, the edge the walk blocks is:
-
-    TunnelLongPark -> BottomMainA   length 4, 12 tiles, THREE switches
-    10,10{2} 10,11[SW] 11,11 11,12[SW] 12,12 13,12{1} 14,12[SW] 15,12 16,12 17,12 18,12 19,12{1}
-
-So a one-unit train lying inside tile 10,10 - which is measured at 2, and is the only tile it reaches -
-marks all twelve, across three switches, to the far end at BottomMainA. That is the screenshot.
-
-**Why the earlier reasoning was wrong.** It said a route using the edge passes end to end through the
-occupied part, so blocking it all costs nothing. That is true of the ROUTING, and it is not the whole
-story: this edge shares its first seven tiles with `-> RampDown` and `-> BottomCrossover`, which diverge at
-the switches inside it. The picture greys all twelve for every one of them.
-
-**And the first edge's covering is redundant for routing anyway.** The walk's first hop always has the
-train's own square as one endpoint, and `isPathClear` already refuses a path through an occupied point.
-So what the wide mark protects, occupancy protects already; what it costs is the picture.
-
-**There are already TWO marks and only one of them is coarse.**
-`AutonomySession.routesCoveredByStandingTrains` is per square AND per ROAD - it was built for MT-309, when
-Adam said *"graying makes it look confusing on double curve tiles"* - and it walks back only as far as the
-train reaches. The greying beside it, added 2026-09-09, is per EDGE and per whole tile. **The double-curve
-confusion he reports today is the second mark, not the first**, and the machinery to draw it selectively
-already exists in the first.
-
-So the choice, and it is his:
-
-  1. **Draw the wide mark per road**, as the narrow one already is. No effect on routing, and it answers
-     *"selectively gray the right half of it"* without a warning on every double curve.
-  2. **Stop the tail at the first switch**, which is his own vocabulary from the room rule - *"the train
-     comes to rest clear of the points"*. This narrows the GUARD, not just the picture, and a one-unit
-     train would then mark tile 10,10 and nothing else.
-
-(1) is safe and cheap. (2) is the one that makes the screenshot right, and it is a change to the guard
-that stops one train being routed into another.
-
-**Claude, 2026-09-12, third measurement - (1) is done and it is NOT enough, and the reason is a mechanism
-neither of the notes above accounts for.**
-
-Adam: *"75 407 DB cannot go from Tunnel to BottomMainA even though it should be able to"*, and then, at
-lengths of 1 and 2, *"this part still needs to be fixed."*  Asked of his own layout:
-
-    length 1: clear=false  why=null
-              lastError = Disallowed because EN57-203 is standing across
-                          BottomMainAPre (eastbound) -> BottomMainA (eastbound)
-    length 2: clear=false  why=too long ... which measures 1
-    length 3: clear=false  why=too long ... which measures 1
-
-Two different refusals, and the interesting one is the first.
-
-**The path does not use the covered edge at all.**  EN57-203 covers `BottomMainA (westbound) ->
-TunnelLongPark`; the path is `Tunnel (southbound) -> BottomMainAPre (eastbound) -> BottomMainA
-(eastbound)`.  What refuses it is `isPathClear`'s SHARED-METAL sweep: for each edge of the path it asks
-whether any edge sharing tiles with it is covered, through `getLockEdges()`.  Those two edges run over the
-same rails - 15,12 to 19,12 - so the covered one fouls the other.
-
-**And that is right in principle and wrong here**, because the covered edge is covered WHOLE while
-EN57-203 lies inside 10,10 alone.  A one-unit train therefore makes BottomMainA unreachable from
-anywhere.
-
-**It also corrects the note above.**  "The first hop's edge covering is redundant for routing, because it
-always has the train's own occupied square as an endpoint" is false: through shared metal it refuses edges
-whose endpoints are both free.  Narrowing the picture could never have fixed this, and did not.
-
-**What the real fix needs, and why it was not done tonight.**  Per-TILE coverage: the guard must ask
-whether another edge uses a tile the train is actually lying on. The runtime cannot ask that - `Edge`
-holds start, end, length, roomAtTheEnd and lockEdges, and **no tiles** - so it needs the builder to emit
-each edge's tiles AND their lengths, `parseAuto` to read them, and `Edge` to hold them. Only then can
-`edgesCoveredByStandingTrains` answer in tiles and the shared-metal sweep intersect against them.
-
-Measuring more track does NOT work around it: the first edge is covered whole whatever the lengths say.
-
-Left for a fresh pass, deliberately. This is the guard that stops one train being routed into another, the
-change is a model change, and the last two answers written on this issue were both wrong in a way that
-only measuring caught.
-
-**Claude, 2026-09-12 - FIXED, along the line Adam proposed.**
-
-*"Wouldn't the best solution be to create / leverage additional edges, as there has to be a computed
-pre-reduction point where the switch is?"*  There is, and the reduction has always had it: `locationsOf`
-gives every step of an edge a place id, and `deriveLocks` builds the whole shared-metal relation by
-intersecting those sets. Only the RESULT reached the runtime - "edge A cannot run with edge B" - so
-`Layout` could answer at whole-edge grain and no finer.
-
-So the places themselves now travel, rather than new nodes being invented for them: splitting the graph at
-switches would rename every edge that crosses one (an edge's identity is the pair of Point names) and put
-a Point with no feedback in the middle of the clearance check, when a Point in this model is a sensor.
-
-  - `GraphReducer.placesAlong` - each edge's places in order, each with what it measures. Far endpoint
-    included, near one not, so they sum to the edge's own length by construction.
-  - `AutonomyBuilder` writes them, `Edge.toJSON` re-writes them (S14-B3), `Layout.fromJSON` reads them.
-  - `Layout.walkStandingTrains` - the one tail walk, now answering in both edges and PLACES: it spends the
-    train's length across the places from the end it entered by, claiming each before spending it.
-  - `isPathClear`'s shared-metal sweep asks `tailLiesOn`: is the tail on metal THIS edge runs over? The
-    DIRECT case stays whole-edge - a path uses all of its own edges, so a tail anywhere on one is in the
-    way; only a SHARED edge can be touched at one end and no further.
-
-An edge with no places keeps the whole-edge answer, so a hand-written configuration behaves as it did.
-
-Measured on Adam's layout, same probe as the third measurement above:
-
-    length 1: clear=TRUE
-    length 2: clear=false  why=too long ... which measures 1
-    length 3: clear=false  why=too long ... which measures 1
-
-Test: `core.testAShortTrainDoesNotBlockTheWholeRun`, seen red first with exactly this refusal. It states
-the geometry it needs (the tile behind the park measured at 2), asserts the covering is real and PARTIAL -
-the train lies on some but not all of the covered run's places - and carries a control that a fifty-unit
-train there still blocks. Both claims also assert every edge involved carries places, so neither can be
-answered by the whole-edge fallback. Mutating `tailLiesOn` to a constant fails one claim each way.
-
-**What remained after this, and it is now settled.** Length 2 was still refused, by the ROOM rule
-rather than by EN57-203: `BottomMainAPre (eastbound) -> BottomMainA (eastbound)` measures 2 and its room
-after the last switch is 1, because the switch sits inside that stretch. Adam read it as *"there are 2
-units of room between BottomMainAPre and BottomMainA (2>=2)"*.
-
-**Claude, 2026-09-12 - his reading is now the rule, and it is his ruling that made it one.**
-
-Measured for him first, because the example he reached for did not say what he expected. With the figures
-he gave - the run is really 6, split 3 either side of the switch at 14,12 - a six-unit train at
-BottomMainA lies on the points whatever way the units are distributed, and closes both roads to the lower
-level: 33 ordered pairs of stations stop being reachable. His own stated criterion, *"it doesn't interfere
-with any other path to a primary station"*, refuses it. And the protruding train at TunnelLongPark he
-wanted told apart from it does the identical thing one junction along.
-
-So there is no property of the track that separates them, and he ruled on the difference himself: *"make
-a rule that parking berths cant block any other edges, but not make that check for active stations."*
-What decides is how long the train stays. `behaviour.md` section 5a carries the rule and what it spends;
-`core.testABerthAndAPlatformJudgeAnOverhangDifferently` is the test, with all four mutations run.
-
-On his layout as it stands today, `Tunnel -> BottomMainA` is now clear at lengths 1 AND 2 - the approach
-measures 2, so his 2>=2 is exactly what admits it - and still refused at 3.
-
 ### OB-208 - 2026-09-12 - the grey mark and what routing refuses no longer agree
 
 **Kind:** bug  
@@ -1063,6 +772,23 @@ measures 2, so his 2>=2 is exactly what admits it - and still refused at 3.
 
 I have not picked one. The last two answers written on this question were both wrong, and this one sits between a ruling of yours about the drawing and a ruling of yours about the guard.
 
+**ADAM'S RULING, 2026-09-23: the grey is the whole stretch** - option 2 above.  Asked which, he chose
+*the whole stretch*, and then said what the two marks are for in one line: *"orange shows where the train
+is, gray shows what's blocked."*
+
+So the two marks answer two different questions and are not meant to cover the same squares:
+
+- **orange** is the train's own extent, square by square, stopping when its length is spent - the
+  narrowing of OB-207 and MT-309, unchanged;
+- **grey** is what routing refuses because of that train - every covered edge, whole - which is what
+  `behaviour.md` 5c already says (*"The line is as long as the train; the grey is as long as the edge"*).
+
+The code is the side that is wrong: since OB-207 `tilesBlockedByStandingTrains` returns
+`tilesCoveredByStandingTrains`, so the grey draws the orange's squares and the middle category - grey and
+not orange - is empty.  OB-207's own complaint (*"too much blocked for such a short train"*) was made when
+the grey was the ONLY mark; with the orange line now saying where the train is, the grey is free to say
+what is blocked.  To build.
+
 ### OB-209 - 2026-09-12 - timetable capture test times out under load
 
 **Kind:** bug  
@@ -1078,42 +804,6 @@ The message is *"no locomotive moved in 480 seconds"*, with the one train report
 **Not OB-207.** Disabling the new place narrowing (`tailLiesOn` forced true, which restores the pre-2026-09-12 whole-edge sweep) leaves it red, so the change of that evening is not the cause.
 
 Left as a report rather than a fix: it needs the real refusal reason to be visible on the failing path before anything can be said about which rule is slow, and that is the same gap OB-199 describes about `whyNothingMoved` being asked after the flag it reports has been cleared.
-
-### OB-210 - 2026-09-12 - a non-reversible train is offered a terminus from the locomotive tab
-
-**Kind:** bug  
-**Raised from:** the triage API  
-**Filed:** 2026-09-12  
-
-Adam, 2026-09-12: *"In the current setup, why can non-reversible EN57-947 be manually sent from BottomSecondary to BottomMainC (terminus, train is non reversible, not a berth)?"*  And, on the diagnosis: *"there is no debate that bottommainc is a terminus."*
-
-**A rule enforced at one door of two, and the second door is mine.**  OB-205 put the rule in `Layout.isOfferableToOperator` - a train that cannot reverse is not offered an ordinary terminus, while a parking berth stays offered - and only `LayoutRightclickAutonomyMenu` asked it.  The Locomotive commands tab builds its list from `getPossiblePaths` and marks what autonomy will not choose with a DASH, which is right for a berth and wrong here: a dash is a label, not a refusal, and the row still executes on a double click.
-
-`AutoLocomotiveStatus.whatTheOperatorMayChoose` now filters that list through the same rule, inside the funnel both of its call sites already share.  **The rule itself, not a copy.**  `notChosenByAutonomy` beside it is a deliberate lock-free copy because it runs on the event thread three times per repaint; this runs where the path search runs, which is off the event thread for every caller with a worker and on it only for the fallback that was already taking the monitor for a whole-graph search on the same line.  `regression.testNothingOnTheEventThreadTakesTheRailwaysMonitor` carries that reasoning as its allowance.
-
-**The dash keeps its terminus limb** and it is not dead: a terminus that is ALSO a parking berth is still offered, still dashed.  That is the line Adam drew in OB-205 and the filter respects it.
-
-`regression.testTheDestinationDoorsAgree.testEveryDoorThatOffersADestinationAsksTheRule` is a source census over both doors, the shape `core.testNonReversibleTrains.testEveryManualDoorHandsOverAPrompt` already uses for this question.  Seen red on the Locomotive tab before the fix; taking the call back out fails it again.
-
-### OB-211 - 2026-09-12 - the ... under the destination list shows when nothing was truncated
-
-**Kind:** bug  
-**Raised from:** the triage API  
-**Filed:** 2026-09-12  
-
-Adam, 2026-09-12: *"why is the ... below the list of options visible?  shouldn't this be only shown if there are many more regular destinations than can be displayed?"*
-
-**Yes - and OB-205 is what made it fire constantly.**  The ellipsis compared against `PathOptions.possible`, a count of everything the search returned taken BEFORE the menu dropped the squares it never shows.  So it fired whenever anything at all had been filtered: a switched-off square, one excluding this train, and - after OB-205 - every ordinary terminus whenever the train cannot reverse.  On a non-reversible locomotive that is nearly every right-click, which is the complaint FR-058 was filed about arriving from a new direction.
-
-The rule has a name now, `theListWasCutShort`, and it means one thing: **more ordinary destinations than fitted**.  A square this menu deliberately hides is not a destination missing from the list; it is one somebody went out of their way to switch off, and the autonomy tab lists it - which is Adam's own ruling of 2026-09-01 about switched-off squares.
-
-**`possible` is deleted rather than corrected**, so there is no wrong number left to hand the rule.
-
-**Corrected the same evening, and the correction is the interesting part.**  The first fix kept a SECOND site for the case where the train has nowhere at all to go, on the reasoning that it needs a way to the tab that explains why.  Adam: *"I still see ... for 74 407 DB at Tunnel, even though it has no valid paths"*.  That was my judgement rather than his instruction - his was *"only shown if there are many more regular destinations than can be displayed"* - and it left the reported symptom in place for the train with the least to show.
-
-So the item is now decided in exactly ONE place, and nothing is lost that is not said better elsewhere: the "No available paths" tooltip names every station and why each was refused, and the setup editor's *Why not Moving?* answers the same question on the diagram.  A bare "..." said neither.
-
-`regression.testTheDestinationDoorsAgree.testTheEllipsisMeansTheListWasCutShort` carries three claims, and the last two exist because the first cannot catch this on its own.  The arithmetic pins what the rule computes.  The second asserts that no pre-filter count exists on `PathOptions` - what was wrong was never the comparison but WHICH NUMBER was passed to it.  The third counts the places the menu draws the item and requires exactly one - a second site sits outside the rule, which is how the rule could be right and the symptom stay.
 
 ### OB-212 - 2026-09-12 - multiple opacity changes
 
@@ -1335,26 +1025,6 @@ Adam, on MT-435 (2026-09-15): *"The closest sensor to the back should be the def
 
 Adam, on MT-335 (2026-09-15): *"The 335 park works, but I get: Could not run EN57-203 from BottomInner (northbound) to TopMainR0Park - the path stayed blocked. ... Shouldn't it get sent to rampdown and then parked?"*  His log: the plan moved 75 407 DB Tunnel -> BottomMainA first, then routed EN57-203 BottomInner -> Tunnel -> BottomMainAPre -> RampDown -> TopMainPost -> TopMainR0Park, and the runtime refused it: *"75 407 DB is standing across BottomMainAPre -> RampDown - the train is longer than the track in front of it"*.  The planner models the tails of trains that have not moved yet (MT-335's stated limit); a train it has moved now has a known road - the route the plan gave it - so its tail can be modelled too.  The same log's agreement check also reported the planner allowing 75 407 DB -> RampDown and -> BottomSecondary where the layout would refuse them.
 
-### OB-229 - 2026-09-15 - Return Home's agreement check: the planner allows 75 407 DB to RampDown and BottomSecondary, the layout does not
-
-**Kind:** bug  
-**Raised from:** MT-335  
-**Filed:** 2026-09-15  
-
-From Adam's MT-335 run of 2026-09-15 (log `traincontrol-20260915-035118.log`, 03:54:12 and again at 03:55:14, with 75 407 DB standing at Tunnel before the plan): *"planner allows 75 407 DB -> BottomSecondary, but the layout would refuse it"* and *"planner allows 75 407 DB -> RampDown, but the layout would refuse it"*.  `HomeStaging.auditAgainstRuntime` compares `firstClearRoute` with `Layout.getPossiblePaths` for the railway as it stands, so this is a rule the planner applies differently from the runtime - the OB-073 shape: a plan the runtime refuses on the move.  Neither move was in the plan that ran, and OB-228 was the refusal Adam saw, so this is recorded rather than guessed at: both are squares autonomy will never choose, and the berth rules are the first place to compare.  **Narrowed by review MFR-C8 (2026-09-15):** the audit counted three disagreements and printed two, because `logStagingAudit` prints `placeNameOf`, which names a square and not its copy - so the third is almost certainly RampDown's other copy (northbound, and northbound reverse).  The rule to compare is one that reads the copy - a turn at the destination, a route ending on a reverse copy - more than the berth rules.  FR-087 does not bear on it (neither square is one autonomy may choose), and OB-228's moved tails are empty when the audit runs.
-
-**Investigated 2026-09-15, and fixed.**  Reproduced on a copy of Adam's layout with 75 407 DB stood back at Tunnel: three
-disagreements - BottomSecondary, RampDown (southbound), and RampDown (southbound, reverse), the one the log did not print.
-**The planner was right.**  Its route to all three - Tunnel, BottomMainA or B, BottomMainPost, RampUp, TopMainR1,
-TopMainPost, down RampDown - passes `isPathClear`.  **The railway's route search did not find it.**  `Layout.bfs` marks a
-square visited the first time it is taken off the queue, and the shortest way to TopMainPost (eastbound) ran through
-TopMainR0Park, a terminus `isPathClear` refuses in the middle of a route - so that square was spent on a route that could
-never be used and the loop through it was never tried; its one offering for RampDown was refused, and it stopped.  The
-right-click menu (`getPossiblePaths`), autonomy (`pickPath`) and Why Not Moving? (`firstClearOrWhyNot`,
-`whyNoRouteFitsTo`) all use that search.  Asked how to fix it, Adam chose **search past termini**: the search does not
-extend a route through a terminus that is not its end.  For the four trains where they stood that is these three destinations - but **across every station pair** a later probe (every route each search can yield, put to `isPathClear` with a train at the start, disagreements retried thirty times) found **97 pairs opening on his layout and 153 on the frozen snapshot, and none lost**; the v2.8.1 railway drives the same 102 pairs before and after.  Every one is the same loop - up the ramp, across the top, down RampDown - and they end at seven destinations; the report Adam was sent lists them.  The first figure given him, +3, counted only the trains' current squares.  **Adam, 2026-09-15:** *"These paths all make sense to me, except for the circular ones like RampDown (northbound, reverse) -> RampDown (southbound, reverse).  These are the same point so we should never do a round trip just to change direction."*  Three of the 97 were those; the right-click menu and autonomy never offered them (a copy of the square a train stands on reads as occupied by it), and Return Home's planner now refuses them too - `core.testARouteIsFoundPastATerminus.testNoRoundTripBackToTheTrainsOwnSquare`, red first.  So 94 real pairs.  Two pinned counts that measure the search rather than the drivable railway moved with it: `test/autonomy_formats/v2_8_1-station-paths.txt` (1381 to 1095 pairs, none ever drivable) and the room-rule census's routable pairs (1848 to 1354).  `core.testARouteIsFoundPastATerminus`, red first (`4b519e71`); fixed
-in `badb0a2c`; MT-441.
-
 ### OB-230 - 2026-09-15 - Return Home's A* runs out of time on real arrangements: the heuristic gives no credit for getting closer
 
 **Kind:** bug  
@@ -1401,18 +1071,6 @@ Adam, 2026-09-16, asking what it would take: *"How big of a lift would it be to 
 
 **Revised the same day after review MAL** (`grep "^MAL-" docs/manual-tests/findings.tsv`).  The squares above are only the room rule's: the FR-087 allowance and the tail and berth walks read the switch and the track before it, and on this railway their reach is every leg.  Asked, Adam ruled *"Every leg, cut at switches"* and *"One length for all switches"*: every leg is cut into pieces between sensors and switches, switches are asked for together with one turnout length, and a piece needs a length only while its whole total is 0.  On a copy of the railway after the fix: 96 pieces (91 still with no length) and 54 switches.
 
-### OB-231 - 2026-09-16 - Mass Assign Lengths and Name Everything leave a trail of yellow flashes when skipped quickly
-
-**Kind:** bug  
-**Raised from:** MT-454  
-**Filed:** 2026-09-16  
-
-Adam, on MT-454, 2026-09-16: *"When iterating quickly on the assign lengths popup (like by clicking skip), it does not clear the prior highlights."*
-
-**Why.**  Every step of the walk calls `LayoutEditor.reveal`, which gives the square the diagram's yellow flash for 2.25 seconds by swapping its icon and starting a timer.  Nothing ended that flash when the walk moved on, so pressing Skip faster than 2.25 seconds left a trail of yellow squares, each looking like the one being asked about.  Name Everything reveals through the same door and had the same trail.  The orange outline of the stretch was replaced correctly at each step; the yellow flash was not.
-
-**Fixed.**  `LayoutLabel.endFlash` ends a flash at once, and `reveal` ends the flash on the square it revealed last before flashing the next.  `regression.testAWalkMovesTheFlashOn` opens the real editor on the live snapshot, reveals two squares in a row and requires the first to be back to its own picture at once - red first with the reported symptom, the first square still wearing the highlight.  The route editor's flash, which lights several squares on purpose, is untouched.
-
 ### FR-090 - 2026-09-16 - The walk's prompt stays where it was left until a new round is started
 
 **Kind:** feature request  
@@ -1424,20 +1082,6 @@ Adam, on MT-454, 2026-09-16: *"when the popup closes and reopens, make sure it r
 **Why it re-centred.**  Each prompt of the walk is a new dialog, and `JOptionPane.createDialog` centres every one on its owner - so a prompt dragged off the track diagram came back over it at the next Skip.
 
 **Built.**  Each prompt of a walk opens where the last one was left; starting a round from the right-click menu opens its first prompt afresh.  Name Everything's walk had the same habit and shares it.  `core.testMassAssignLengths.testTheWalkPromptStaysWhereItWasLeftUntilANewRound` drives the real walk on the event thread: it moves the first prompt, presses Skip, and requires the next prompt where the first was left, then presses Cancel, starts a new round and requires its first prompt NOT to open there.  Red first - the second prompt opened centred, at 733,489 - and a mutation dropping the new-round reset fails its second half.
-
-### OB-232 - 2026-09-16 - The walk prompt's number field did not have the keyboard focus
-
-**Kind:** bug  
-**Raised from:** MT-454  
-**Filed:** 2026-09-16  
-
-Adam, on MT-454, 2026-09-16: *"make sure the entry field is focused, and when I hit enter after typing the number, it submits and goes to the next one (it may already do the latter)"*
-
-**Why.**  The prompt was a `JOptionPane` with OK as its initial value, so when the dialog gained the keyboard focus it gave it to the OK button.  The field did ask for the focus, but when it was added to the prompt - before the dialog was on screen - so that request lost.  What was typed went nowhere; Enter on the empty field did submit, as he suspected, and an empty answer counts as Skip.
-
-**Fixed.**  Both walk prompts - Mass Assign Lengths and Name Everything - now have no initial value, so no button takes the focus and the field, the first thing in the prompt that can, has it.  Enter in the field answers OK through the field's own listener, as it already did.  A window-focus listener was tried first and is not in the fix: it lost the same race, and once the initial value was gone a mutation removing it changed nothing, so it would have been code nothing proves.
-
-`core.testMassAssignLengths.testTheNumberFieldHasFocusAndEnterSubmits` drives the real walk: it waits for the prompt to take the keyboard focus, requires it to be in the number field, then types 3 and presses Enter on the field and requires the next prompt and the first piece measured.  Red first: the prompt had the focus and the OK button held it.  A desktop that never gives the test window focus would make it skip, not pass; this one gives it.
 
 ### FR-091 - 2026-09-17 - Mass Assign Max Train Lengths walks the stations with no maximum
 
@@ -1603,251 +1247,6 @@ unit - and the paint never once left the edges the railway itself refuses.  So t
 code rather than something you are seeing: `pathBetween` would have to find a reduced edge joining two
 covered endpoints that no covered edge joins, and your geometry does not offer one.  It stays open
 because the next page you draw might.
-
-### OB-240 - 2026-09-21 - deleting a joining word silently turns an OR into an AND
-
-**Kind:** bug  
-**Raised from:** your note on MT-469, 2026-09-21  
-**Filed:** 2026-09-21  
-
-**Your note on MT-469, 2026-09-21:** *"in the layout view, we can review [remove] operators (like
-and) without deleting the conditions they are linked to.  This permanently leaves an orphan entry.  Any
-linked entries should also be deleted."*
-
-**Measured, because the consequence is worse than an orphan.**  The condition outline holds the joining
-words as lines of their own, and `removeAt` takes out only the line you picked: taking out a CONDITION
-also removes the word beside it (deliberately - "1 and 2" without 2 is "1"), but taking out a WORD
-leaves the two conditions with nothing between them.  `tidy()` sweeps a word with nothing on one side
-and two words in a row, and a RUN WITH NO WORD AT ALL is legal to it.  What that outline then means,
-run through `ConditionOutline.toExpression`:
-
-| the outline | what the route fires on |
-|---|---|
-| `1`, `and`, `2` | 1 AND 2 |
-| `1`, `or`, `2` | 1 OR 2 |
-| `1`, `2` - the word deleted | **1 AND 2** |
-| `1`, `or`, `2`, `3` | 1 OR 2 OR 3 - the wordless third is folded into the run |
-
-And `ConditionOutline.whatIsWrong` returns EMPTY for both wordless cases, so no row goes red and Save
-writes it.
-
-**So deleting an OR silently turns it into an AND.**  That is a change to when the route fires, made by
-a delete that says nothing about firing - the same shape as FR3-B1, whose comment in `tidy()` describes
-the level-0 word defaulting to AND after an unrelated deletion.
-
-**FIXED 2026-09-21, AS YOU WROTE IT.**  Asked whether this was done, you said the deletion of the
-and/or followed by orphaning is what you wanted put right, and your note on MT-469 already said how:
-*"Any linked entries should also be deleted."*
-
-**Built in the form that mirrors the rule already there, which is the smallest version of (a).**
-Deleting a CONDITION has always taken the word beside it - "1 and 2" without the 2 is "1" - so deleting
-the WORD now takes the term it joins on, and "1 and 2" without the `and` is "1" as well.  One term, not
-both sides: a keystroke removes exactly as much as the mirror-image keystroke already removed, so no
-confirmation dialog was added.  Say if you would rather it asked.
-
-**The term, which is not always one line.**  `ConditionOutline.write` puts a group's rows one level in,
-so the term after a word at depth *d* is either a single line at *d* - the `C` of `(A or B) and C` - or
-the run of deeper lines that follows - the `(B and C)` of `A or (B and C)`.  Taking only a group's first
-line would leave the rest of it behind with its own leading word, which `tidy()` then sweeps, producing
-the same wordless run by another road.  Both shapes are asserted.
-
-`ui.testRouteEditorValidation.testDeletingAJoiningWordTakesTheTermItJoinsWithIt`, seen red first: the
-pair case left two lines behind and read back as `And(x,x)`.
-
-**One thing deliberately NOT added, so you can ask for it.**  `whatIsWrong` still returns empty for a
-wordless run.  Nothing can now produce one: this door was the only way in, and an outline that arrives
-from a file is built by `ConditionOutline.of` from a parsed expression, which always carries its
-operators.  A flag there would be a check for a state nothing reaches - cheap to add through the same
-seam the tests use if you want belt and braces.
-
-MT-469 itself passed and is validated.
-
-### OB-241 - 2026-09-21 - the tail walk uses the recorded road for the first hop only
-
-**Kind:** bug  
-**Raised from:** measured while answering MT-438, 2026-09-21  
-**Filed:** 2026-09-21  
-
-**Found by measurement while answering MT-438, 2026-09-21.**
-
-`Layout.walkOneTail` uses the recorded road (`arrivedAlong`) to choose the way back at the FIRST hop
-only - its own comment says so: *"Only the first hop can be chosen this way; past that the train is
-somewhere it never stopped, and the deterministic rule below takes over."*  Past that it uses the fork
-rule: one way back means the tail certainly lies there, several means stop.
-
-But the road is the whole journey, not one leg.  Measured on your railway, with 75 407 DB standing at
-Tunnel and the twelve-edge road your configuration records:
-
-| the railway claims | your road says |
-|---|---|
-| `TunnelPre (northbound) -> Tunnel (southbound)` | the same |
-| `BottomSecondary -> TunnelPre (northbound)` | the same |
-| `RampDown (northbound, reverse) -> BottomSecondary` | **`RampDown (southbound) -> BottomSecondary`** |
-
-The third hop took the other COPY of the rail.  Here that costs nothing - two copies of one rail are one
-piece of metal, and `getLockEdges` treats them alike - but it shows the shape: at a square where the
-road knows which way the train came, the walk asks the graph instead.  Where the two roads back are
-DIFFERENT metal (RampDown has BottomMainAPre on one side and TopMainPost on the other), the fork rule
-stops rather than guessing, so nothing is claimed - but the road would have said which one, and the
-tail would have been claimed correctly and further back.
-
-**WITHDRAWN THE SAME DAY - THE PREMISE IS WRONG.**  `walkOneTail` already follows the road past a
-junction: MT-335, Adam's ruling of 2026-09-13, added exactly that - *"PAST A JUNCTION, THE ROAD IT CAME
-IN ON"* - and it is pinned by `core.testATailFollowsTheRouteItCameIn`, with the fork rule kept for a
-train that has no road.  The comment I read (*"Only the first hop can be chosen this way"*) is about the
-first-hop MECHANISM, not about the road being unused later.
-
-Found by writing the test first: three claims on a junction fixture all passed before any change, which
-is a green test disproving the hypothesis rather than a red one confirming it.  The duplicate test was
-deleted rather than committed - `testATailFollowsTheRouteItCameIn` already makes all three claims.
-
-What remains true is the observation, and it costs nothing: at RampDown the walk claimed the
-`northbound, reverse` copy where the road says `southbound`.  Two copies of one rail are one piece of
-metal and `getLockEdges` treats them alike, so the claim is the same track either way.
-
-**What it needs to ship**: a claim that goes red on the road CHOSEN rather than on how much is claimed -
-a fixture where the two ways back are different metal and the road names one of them. `single-switch`
-has the shape of a fork but not the recorded road; the tail suite's `aPlatformBehindAJunction` has the
-road but is built in code rather than on tiles.
-
-Low, because what it changes today is how FAR a tail is claimed rather than whether the claim is right,
-and it errs towards claiming less.
-
-### OB-242 - 2026-09-21 - a covered-track mark outlives the train that justified it
-
-**Kind:** bug  
-**Raised from:** MT-438, measured 2026-09-21  
-**Filed:** 2026-09-21  
-
-**Adam, MT-438, 2026-09-21:** *"75 407 DB's tail was there earlier, but it never crossed the
-switches.  it departed, so the tail would be gone as of the time of this screenshot."*
-
-So the orange mark outlived the train that justified it. The claim was true when it was made.
-
-**What the screenshot says, read off it as data.** On its true 30-pixel grid the TRAIN_MARK line is six
-tiles: `10,12 11,12 12,12 13,12 14,12 14,11` - the first places of the edge `BottomMainAPre ->
-RampDown`, stopping at switch 99. Everything else orange in that image is a badge (uniform 134-pixel
-blobs; parking points autonomy leaves alone).
-
-**The state that produces exactly those six**: searched, not assumed - of 1,590 placements on
-`live-snapshot` (every point, every arrival side, lengths 1 to 6), exactly ONE matches: a three-unit
-train at `BottomMainAPre (eastbound)` recorded as arrived from the east, with 13,12 and the two
-switches measured at one unit each so three units land at 14,11.
-
-**What is already ruled out, by reading:**
-
-- the refresh IS asked as a train moves - `Layout` fires its callbacks at each milestone,
-  `DiagramMonitor.markDirty` sets the flag, the driver's tick calls `updateVisiblePoints` ->
-  `refreshCoveredTrack`;
-- the coalescing hole that would drop the last ask of a run is closed, in `workOutCoveredTrack`'s
-  `finally`, with a comment describing that exact case;
-- `repaintTheWashWhereItChanged` repaints the symmetric difference, so a set that became empty should
-  have repainted all six squares.
-
-**Two candidates, and one gesture tells them apart.** With the stale orange on screen, switch pages and
-back (or resize):
-
-- **it goes** - the covered SET was already correct and the fault is the repaint reaching those labels.
-  The suspect is `DiagramTileRegistry` handing back labels a grid rebuild has replaced, which is the
-  OB-109 / MT-273 area: a rebuild that does not hide itself also does not re-register.
-- **it stays** - the model still claims the tail, so a Point still lists the locomotive as its
-  occupant. The suspect is `Point.assign`, the RESERVATION door: it puts a locomotive on a point
-  without sweeping it off anywhere else - *"reserving sets the locomotive exactly as arriving does"* -
-  and `walkStandingTrains` asks only `getCurrentLocomotive()`, so it cannot tell a reservation from a
-  standing train.
-
-**ANSWERED 2026-09-21, and it was neither: the mark was not stale.** It was being RECOMPUTED, correctly,
-from a reservation. A locked path reserves every point on it and `Point.reserve` does not sweep, so the
-locomotive was the occupant of several Points at once and the tail walk ran from each - which is why
-refreshing changed nothing: every refresh produced the same phantom. Fixed with OB-243: one tail per
-train, anchored at the head of its run. Nothing here needs a repaint change.
-
-### OB-243 - 2026-09-21 - the tail walk picks one of several same-side roads by list order
-
-**Kind:** bug  
-**Raised from:** MT-438, measured 2026-09-21  
-**Filed:** 2026-09-21  
-
-**Adam, MT-438, 2026-09-21:** *"coloring switch 99 and 100 is still an error regardless"* and *"why
-is the tail from bottommainapre to bottommaina not orange.  it's almost as if you are shifting the
-location of the train"*.
-
-Both sentences have one cause, and it is measured.
-
-**Four roads leave `BottomMainAPre (eastbound)` on side E, and they agree for five tiles:**
-
-| road | first places |
-|---|---|
-| -> BottomCrossover (northbound) | 10,12 11,12 12,12 13,12 14,12 **14,11** 15,11 |
-| -> BottomMainA (eastbound) | 10,12 11,12 12,12 13,12 14,12 **15,12** 16,12 |
-| -> RampDown (northbound) | 10,12 11,12 12,12 13,12 14,12 **14,11** 15,11 |
-| -> RampDown (northbound, reverse) | same |
-
-Every edge that ARRIVES at that point comes in on side W (from Tunnel and the three Tunnel parks). So
-with `arrivedFrom = E` no arriving edge matches, and `walkOneTail` falls through to *"The other copy is
-still taken when there is no arriving one"* - which here is not a copy of anything, but one of four
-different roads. It takes the FIRST in `getNeighborsAndIncoming` order: `-> BottomCrossover`.
-
-Measured, three units, no road recorded: claimed `BottomMainAPre -> BottomCrossover`, painted
-`10,12 11,12 12,12 13,12 14,12 14,11` - which is Adam's screenshot exactly.
-
-**So both of his observations are the same fault.** The switches are coloured because the road picked
-turns up at them; the road to BottomMainA is NOT coloured past the divergence because that is not the
-road picked; and the picture describes a train that came from BottomCrossover rather than from
-BottomMainA, which is what *"shifting the location of the train"* means.
-
-**This supersedes what I wrote earlier.** I called that claim true-when-made. It was not: it was the
-wrong road from the start, and the staleness (OB-242) is a second, separate fault on top of it.
-
-**Two remedies, and the choice is Adam's because it is his over-claim/under-claim trade.**
-
-- **(a) Claim what they agree on.** All four roads share the first five tiles, so the tail is CERTAIN
-  there and unknowable beyond; claim the common prefix and stop at the divergence. This gives exactly
-  the picture he expects - orange along row 12, nothing at 14,11 - and protects the track that really
-  is covered. It needs a cap on how far a claim reaches into an edge, which the `Edge -> Locomotive`
-  map has no room for today; `isPathClear` already narrows by places, so the reader side exists.
-- **(b) Claim nothing when the side is ambiguous.** One line, no model change: where more than one
-  distinct neighbour matches the side and the recorded road does not resolve it, stop - the same
-  reasoning the fork rule already uses one hop later. Never paints a wrong road; gives up the five
-  tiles that really are covered, which is the direction that lets another train onto occupied track.
-
-**FIXED 2026-09-21, and neither (a) nor (b): Adam ruled the ambiguity away.** *"There is no ambiguity -
-the tail is certain at departure and shouldn't change.  You also know which way the train went
-(bottommainapre to bottommaina onwards) when it started running.  Just unlock the rest of the diagram
-once the tail by length is far enough away from bottommainapre."*
-
-So the question was never which of four roads to guess: a running train's road is known, because the run
-is holding it. `walkStandingTrains` now walks ONE tail per locomotive, and for a running one it anchors
-at the head - its last reported milestone - and follows the part of its path it has already driven,
-spending the train's length back along that road and stopping. Which is his sentence, and the same
-arithmetic `tailHasProvablyPassed` already uses to hand an edge back as the head pulls away.
-
-**Why there were several tails at all.** A locked path RESERVES every point on it (`Point.reserve`,
-which deliberately does not sweep, because that reservation is what holds a junction behind the train
-against a second train reaching it another way). So during a run the locomotive is the occupant of
-several Points at once, and the walk ran from every one of them - a tail at the destination it had not
-reached, another at a square it left ten minutes ago - each choosing its road from whatever arrival side
-that Point happened to carry. That is where the four-road guess got in.
-
-Held by `core.testARunningTrainHasOneTail`: a real run through a junction, sensors thrown by hand,
-asked while the path is locked. Three claims - the road it drove IS claimed, the other road into the
-junction is NOT, the leg two back is NOT (a one-unit train cannot reach it, so a claim there can only
-come from a second anchor), and the leg AHEAD is not claimed as a tail either, which was Adam's *"as if
-you are shifting the location of the train"*. The mutation - walk every holder again, drop the head
-anchor - reddens two of them.
-
-Run green afterwards: the tail suite (`testATailFollowsTheRouteItCameIn`, `testATailRouteIsKept`,
-`testATrainCoversTheTrackBehindIt`, `testTheTailCrossedQuestion`, `testACoveredSwitchClosesTheOtherRoad`,
-`testAShortTrainDoesNotBlockTheWholeRun`), the room rules (`testABerthAndAPlatformJudgeAnOverhang
-Differently`, `testAManualSendIsRefusedABerthTooShort`, `testAStationsSizeIsAnAllowance`,
-`testHomeStaging`, `testReturnHomeKeepsClearOfTheTailsItLeaves`), the diagram marks
-(`testBlockedTrackIsGreyWhileAutonomyRuns`, `testTheGreyAppearsAtIdleToo`, `testTheShadingIsRedrawnWhen
-ATrainMoves`, `testTheTrainIsShownAsALine`, `testTheWashIsNoLongerThanTheTrain`,
-`testTheGreyDoesNotRebuildTheDiagram`, `testTheShadingFollowsTheTrain`) and `testAutoLayout`.
-
-**What holds it either way**: a fixture where two roads leave one square on the same side and diverge
-after a known number of tiles. `single-switch` has the shape (Approach's two arms), so no new scenario
-is needed.
 
 ### OB-245 - 2026-09-21 - a cancelled customization copy can leave the custom flag set
 
@@ -2542,15 +1941,6 @@ the fix and its claim go in together.
 was placeable, and this one blocked on the fixture.  The diagnosis is now certain; the fix is not going
 in behind a claim that cannot run.
 
-### OB-271 - 2026-09-22 - focusability in the route editor
-
-**Kind:** bug  
-**Raised from:** MT-446 (After an edit declined at the start of a run, where the trains are is saved again)  
-**Filed:** 2026-09-22 12:36  
-**Build:** commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-make the test, capture, etc. buttons in the route editor non focusable.
-
 ### FR-094 - 2026-09-22 - a bulk tool for locomotive train lengths, beside the one for track
 
 **Kind:** feature request  
@@ -2792,74 +2182,19 @@ switches back to back are the same case as his adjacent tracks.
 Related: `OB-273`, which is the other half of how a piece's length is shared out.  MT-454 and MT-459 are
 the hands-on tests for this walk.
 
-### OB-275 - 2026-09-23 - were lengths meant to be consolidated onto tiles with arrows? the record says an even share
+**ADAM'S RULING, 2026-09-23: a deliberate 0 reads as unmeasured.**  Asked whether his *"same meaning to
+the model"* means that, or that a 0 is a real measurement of nothing, he chose the first - twice over,
+since his cut-off sentence about the track-length tool turned out to be this entry again.
 
-**Kind:** bug  
-**Raised from:** Adam, 2026-09-23  
-**Filed:** 2026-09-23  
+**So the "third state" argued above is withdrawn.**  A deliberate 0 changes one thing: the piece is
+recorded as ANSWERED, so the walks stop offering it.  Every length rule reads it exactly as it reads a
+piece nobody has measured - 5b's *"unmeasured is unknown, not zero"* is untouched, and a stretch whose
+answers are all 0 is still not judged.  Which also removes the risk this entry warned about: nothing is
+admitted that was refused before, because nothing any rule reads has changed.
 
-Adam, 2026-09-23: *"I thought we were consolidating lengths on tiles with arrows?"*
-
-**I can find no such ruling in the record, and the decision that IS recorded is the opposite.**  Asked
-and answered rather than assumed:
-
-- `FR-089`, his own instruction of 2026-09-16: *"per stretch, every relevant square a rule reads"*, and
-  its entry says *"One whole length is typed and shared evenly over the squares that have none."*
-- Revised the same day after review MAL to *"Every leg, cut at switches"* and *"One length for all
-  switches"*, with `behaviour.md` 5a carrying the share rule: the share is even, and any unit left over
-  goes first to a square a train stands on, *"whose length its own tail never spends, which is the
-  refusing direction"* (MAL-B2).
-- `assignStretchLength` implements exactly that - an even share with the remainder to stations and
-  turn-round squares first.
-
-Nothing in `issues.md`, `tests.md` or `behaviour.md` mentions consolidating a piece's length onto a tile
-because it carries an arrow.  So this is either a decision taken in conversation and never written
-down - which is worth capturing here either way - or a memory of the arrow work of 2026-09-22, where
-directional arrows and lengths were discussed together on permanent turnouts (`behaviour.md` 5e) but
-lengths were not part of what changed.
-
-**IT MAY BE THE SAME REQUEST AS `OB-273` ARRIVING TWICE, and if so one answer settles both.**  There he
-said of a four-tile stretch: *"i'd prefer one to have length 2, and two others length 1, **or just 1 of
-length 4**."*  That second option IS consolidation - the whole of a piece's length on one square - and
-the tile carrying the arrow is a defensible choice of which square, because the arrow marks the
-direction the piece is read in.
-
-**What would settle it in one line from him:** is the wanted behaviour (a) an even share, as built; (b)
-the whole length on one square, chosen as the one with an arrow; or (c) the whole length on one square
-chosen some other way?  Each is a small change to one method, and each reads differently to the room and
-tail rules - a consolidated length sits on ONE square, so a train resting anywhere else on the piece
-spends nothing there, which is the direction that admits rather than refuses.  That last point is why
-this needs his word rather than a guess.
-
-
-**HIS RULING, 2026-09-23 - the even share stays:** *"let's stick to a then, since that is more visually
-pleasing."*
-
-So the record was right and nothing changes in `assignStretchLength`.  The question is answered rather
-than fixed, and the reason he gives is a reason this entry did not consider: a stretch whose squares
-each read 1 LOOKS like a measured stretch, and one square reading 5 beside four reading nothing looks
-like a stretch somebody gave up on.  The length display is read far more often than the length rules
-are.
-
-**And his reason happens to pick the option that was already the safe one**, which is worth recording
-because it will not always work out that way:
-
-- Every rule that ADDS a stretch up is indifferent - `roomAfterTheLastSwitch`, `sumLength`, the
-  editor's own readouts.  Same total either way.
-- The rule that reads squares ONE AT A TIME is not indifferent, and that is the tail.  The protrusion
-  walk spends length square by square backwards from where the train stands and stops the moment it has
-  spent the train's length (`AutonomySession:6121`).  Under consolidation the answer depends on where
-  the train happened to stop: on the square holding the whole length it spends it all at once and the
-  tail is drawn over ONE square - under-reporting, so track behind the train reads free - and on one of
-  the zeros it spends nothing and the tail is drawn over the WHOLE stretch.  Even share draws the tail
-  where the train is, wherever it stopped.
-- Consolidation also could not be built before `OB-274`: four squares of five would store 0, 0 means
-  unmeasured today, and they would come straight back onto the "still needs a length" list - which is
-  the phantom skip he filed OB-274 about.
-
-**Closed as answered, no code change, no MT.**  `behaviour.md` 5a already carries the rule and needed no
-edit.  The one thing this entry leaves behind is the observation above about which readers are
-indifferent and which are not, because the next request to move lengths around will need it.
+What it needs is therefore a record of the answer, separate from the length: the store keeps writing 0 as
+"no length" for every reader, and remembers that the piece was answered so the walk and the "still needs a
+length" queries can skip it.
 
 ### OB-276 - 2026-09-23 - the tail question lists one square twice when the road back to it is a single hop
 
@@ -2911,59 +2246,6 @@ of `behaviour.md` carries the rule about which sensors are offered.
 **His aside** - *"this is why my new, measured layout"* - reads as another argument for finalising and
 blessing the layout, which he raised the same day.  Recorded here because it is the third defect this
 week whose cause is one square being several Points.
-
-### FR-095 - 2026-09-23 - a right-click menu on the train name in the autonomy commands page, with Edit Locomotive
-
-**Kind:** feature request  
-**Raised from:** Adam, 2026-09-23  
-**Filed:** 2026-09-23  
-
-Adam, 2026-09-23: *"when right clicking the train name in the autonomous locomotive commands page, show a
-right click menu with the edit locomotive option, when allowed (maintain consistency with when autonomy
-is running, as the others)."*
-
-**Where.**  `AutoLocomotiveStatus` - one panel per locomotive on the autonomy Locomotive Commands tab.
-The train's name is the `locName` label, and it already carries a `MouseAdapter`: `locNameMouseClicked`
-makes that locomotive the active one.  So the plumbing is there and a popup trigger goes beside it
-rather than replacing it - a left click must go on meaning what it means today.
-
-**The gate already exists as ONE method and this must ask it rather than spell it again.**  Every other
-edit door asks the same two:
-
-- `TrainControlUI.refuseWhileAutonomyRunning(source)` - *"Cannot edit locomotives while autonomy is
-  running."*
-- `refuseWhileARouteDrivesIt(source, name)` (CS3-B1) - because a route running by hand rewrites what a
-  locomotive edit is changing, with autonomy idle.
-
-`changeLocAddress` and `deleteLoc` both ask both.  A third spelling of either is how they come apart.
-
-**"When allowed" is the OB-057 / OB-090 rule, and it needs BOTH halves.**  His *"maintain consistency
-with when autonomy is running, as the others"* is the rule this repository has paid for repeatedly: the
-control that OFFERS an action asks the question the guard asks.  So the item is greyed when the guard
-would refuse - not offered and then refused, which is the shape the others were fixed away from.
-
-And the greying alone is not enough, for the reason `testHomeStaging`'s own comment gives about the
-menu items it covers: **the item is greyed when the popup OPENS and the action fires when it is
-CLICKED**, and autonomy can be started from another window in between.  So the guard is still asked on
-the click.  Greyed at open, guarded on click; either alone is a hole.
-
-**Parenting, because this panel is the one that gets it right.**  `IND9X-C4` and `IND9X-C5` are about
-dialogs opening unowned - the right-click menu on the diagram parents on an already-dismissed popup,
-while `AutoLocomotiveStatus` parents its dialogs on itself correctly.  The new menu keeps that: hang
-the dialog off the panel or the label, not off a popup that is gone by the time the action runs.
-
-**Scope, as he wrote it: the edit option, singular.**  `loc.ui.dialogEditLocomotiveInfo` is what it
-opens.  Its natural siblings - change address, edit functions, delete - are behind the same two gates
-and would be one line each afterwards, but he asked for one item and one item is what this is.  Worth
-asking whether he wants the others while the menu is being built.
-
-**Not a defect**: nothing is wrong today, there is simply no way to reach the edit from that page.
-Minor, and display-side only.
-
-**WITHDRAWN IN FAVOUR OF FR-094, 2026-09-23.**  Adam: *"Rather than adding complexity through new
-menus, add a bulk tool to the autonomy editor to set missing train lengths, similar to how the station
-lengths are set."*  The right-click menu described above is not to be built; what it was a way to
-reach, a locomotive's train length, is reached through the Bulk Tools walk FR-094 describes.
 
 ### OB-277 - 2026-09-23 - the orange train line is not drawn on sensor squares
 
@@ -3020,6 +2302,13 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-23 | FR-095 | feature request | Adam: *"when right clicking the train name in the autonomous locomotive commands page, show a right click menu with the edit locomotive option"*.  Withdrawn the same day in favour of `FR-094`: *"Rather than adding complexity through new menus, add a bulk tool to the autonomy editor to set missing train lengths, similar to how the station lengths are set."* | declined | - |
+| 2026-09-23 | OB-275 | bug | Adam: *"I thought we were consolidating lengths on tiles with arrows?"*  No such ruling was on record; asked whether to consolidate a piece's length on one square or keep the even share, he chose the even share: *"let's stick to a then, since that is more visually pleasing."*  Answered, no change - `behaviour.md` 5a already carried the rule. | declined | - |
+| 2026-09-22 | OB-271 | bug | Adam, from MT-446: *"make the test, capture, etc. buttons in the route editor non focusable."*  `setFocusable(false)` on Test, Highlight, the capture box and its target; Save left focusable, since Enter on it is how a route is saved. | fixed unvalidated | - |
+| 2026-09-21 | OB-243 | bug | Adam, MT-438: *"coloring switch 99 and 100 is still an error regardless"* and *"it's almost as if you are shifting the location of the train"*.  A locked path reserves every Point on it, and the tail walk ran from each - one of four same-side roads picked by list order.  Fixed on his ruling, *"the tail is certain at departure and shouldn't change"*: one tail per train, a running one anchored at its head.  `core.testARunningTrainHasOneTail`. | - | `MT-438` |
+| 2026-09-21 | OB-242 | bug | Adam, MT-438: *"it departed, so the tail would be gone as of the time of this screenshot."*  Not a stale mark: it was recomputed, correctly, from a reservation - the same cause as `OB-243` and fixed with it. | - | `MT-438` |
+| 2026-09-21 | OB-241 | bug | Filed as "the tail walk uses the recorded road for the first hop only", and withdrawn the same day: the premise was wrong - `walkOneTail` has followed the road past a junction since MT-335, pinned by `core.testATailFollowsTheRouteItCameIn`, and a test written first passed before any change. | declined | - |
+| 2026-09-21 | OB-240 | bug | Adam, MT-469: *"we can remove operators (like and) without deleting the conditions they are linked to ... Any linked entries should also be deleted."*  Worse than an orphan: a deleted OR silently read as AND.  Deleting a joining word now takes the term it joins, the mirror of deleting a condition. | - | `MT-471` |
 | 2026-09-22 | OB-269 | bug | *"when running auto layout, more edges (tracks) may get locked than necessary ... significant bug."*  A lock reached TWO hops, because the write and the read each reach one: `setOccupied` marks every edge in each of a path's edges' `lockEdges`, and `isPathClear` read the flag off every edge in each CANDIDATE's `lockEdges` - so a candidate was refused when a THIRD edge shared rail with it and, separately, with the run, while the candidate and the run shared none.  `Edge.runOver` now counts only rail a path runs over and `isRunOver` asks it; `occupancy` and `isLockHeld` are untouched, so a held throat's accessories stay protected.  Two more rules were needed and each was found by a test rather than by reading: the same rail the OTHER WAY is refused on its own account, found by PLACE because the two directions live on different copies; and a train is never refused rail its OWN reservation holds, which is `behaviour.md` 5c and is what five trains with no way home turned out to be.  Held by `core.testALockReachesTheRailBeingRunOver` - four mechanism claims plus Adam's own list of eleven allowed concurrent journeys, which was red for six of them first and is what caught both extra rules.  Every mutation measured. | fixed unvalidated | - |
 | 2026-09-21 | OB-248 | bug | Twenty-nine findings were open and named in no document a reader opens - only in this entry's own paragraph, which is the failure it was about.  Adam, 2026-09-22: *"no idea what 'the twenty-nine' are"*, and then *"re-file the others if they are found and still relevant"*.  All twenty-nine were found: the deleted reviews are recoverable from `77649f88^` and `4020a899^`, and each finding was read out of its own document and then checked against the code as it stands, by reading - nothing was run.  **Six were already closed** by the 2026-09-22 audit (four fixed with their commits, two not defects).  **Three are closed now**: `MON-C12` is the decomposition question `open-questions.md` already defers past 3.0.0, and `VD15-R8` and `VD15-R11` were lost with the message that reported them and name only their own absence.  **Twenty are still true and are now OB-253 to OB-268**, each with what was checked and when - `FP-B3` is the B, a route import that deletes every route and then drops one of two sharing an id.  No open finding is now absent from a live document, which is the claim `testTheRecordsCountTheStore` makes. | fixed unvalidated | - |
 | 2026-09-21 | OB-246 | bug | The target column offered every locomotive in the database, including one whose name holds a COMMA - which `RouteCommand.isNameUsable` refuses, because a command line is comma-separated - so the operator picked it and learnt at Save that the only way out was to rename the locomotive.  Adam, 2026-09-22: *"yes"*.  Marked rather than hidden, because hiding it would refuse a legal selection with nothing shown: the row is drawn in the refusal ink with the gate's own reason on its tooltip, as it is typed.  A row nobody has filled in yet is not marked - a mark that is always there is a mark nobody reads.  Held by `testARowSaveWouldRefuseIsMarkedAsItIsTyped`, whose two mutations were each measured. | fixed unvalidated | - |

@@ -957,7 +957,8 @@ length square by square). Not yet built: `assignStretchLength` still includes ro
 that is set deliberately, i.e. for adjacent tracks.  same meaning to the model, but this will allow
 everything to get assigned without what appears to be a skip."*). So the walks accept 0, the piece is
 recorded as answered and is not asked about again, and **every length rule reads it exactly as it reads a
-piece nobody has measured** - 5b is unchanged. What changes is only whether the tools keep asking. Not
+piece nobody has measured** - 5b is unchanged. Confirmed by Adam when asked the question directly: a deliberate 0 is not a
+measurement of nothing, and a stretch whose answers are all 0 is still not judged. What changes is only whether the tools keep asking. Not
 yet built: today 0 is refused at the prompt and erased by the store, which is why an adjacent pair of
 sensors reads as skipped for ever.
 
@@ -1214,6 +1215,12 @@ The editor notice about turn-round squares with no length is a different questio
   the picture a strict subset of the refusal: a square the railway would not let a train onto looked
   exactly like free track. Adam: *"that is the whole point."* Two marks answer both questions at
   once, where narrowing one mark to answer the second question could only ever lose the first.
+
+  **Settled again on 2026-09-23 (OB-208), and it is this bullet that stands.** Adam, asked whether the
+  grey should cover only where the train is or the whole stretch it blocks: *the whole stretch* - *"orange
+  shows where the train is, gray shows what's blocked."* The narrowing of OB-207 was made when the grey
+  was the only mark; with the orange line saying where the train is, the grey says what routing refuses.
+  Open: since OB-207 the code has drawn the grey over the orange's squares only.
 
   **What is still not drawn**, and is explained in the "why not moving" view rather than on the
   diagram:
