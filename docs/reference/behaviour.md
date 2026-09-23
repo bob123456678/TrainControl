@@ -1541,8 +1541,10 @@ make control+L cycle the options"*, and asked which options: *"the dropdown's 4,
 the dropdown that shows the labels only"*). So the dropdown is Stations, Parked Locs, Homes, Labels only
 and None, and the key moves to the next of the five. The text written on squares is shown under
 **Labels only** and nowhere else: choosing a caption no longer turns it on, which it has done since FR-061
-read *None* as the text switch turned off. Not yet built - today anything but None shows the text too,
-and Control+L flips the text on and off.
+read *None* as the text switch turned off. Built 2026-09-23: Labels Only is appended after None so a remembered
+choice keeps its meaning, the grid draws a caption under the three caption modes and the writing under Labels
+Only, and in the track editor Control+L is still the text switch.
+`regression.testARememberedNoneOpensWithTheCaptionsOff`.
 
 **Control+E asks the menu's own question and writes where the menu writes.** `offersALength` is
 `buildTileMenu`'s three early returns in one place — a page the session knows, not a text label, not an

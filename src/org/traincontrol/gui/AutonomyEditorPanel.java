@@ -255,6 +255,16 @@ public class AutonomyEditorPanel extends JPanel
     public static final int CAPTIONS_NONE = 3;
 
     /**
+     * The text written on the diagram, and no captions (Adam, 2026-09-23, OB-272).
+     *
+     * *"make text labels be a dedicated setting, and hide the text labels unless it is selected"*, and, asked which
+     * options Control+L steps through: *"the dropdown's 4, plus add an option to the dropdown that shows the labels
+     * only"*.  Appended rather than put before None, because the index IS the remembered mode: anybody who had None
+     * remembered keeps None.
+     */
+    public static final int CAPTIONS_LABELS = 4;
+
+    /**
      * Whether captions name each square's HOME locomotive (MT-261 ruling 2).
      *
      * Adam: "add a display option ... ('show home locomotives').  If set, labels show the home
@@ -343,7 +353,8 @@ public class AutonomyEditorPanel extends JPanel
         I18n.t("autosetup.ui.captionsStations"),
         I18n.t("autosetup.ui.captionsParked"),
         I18n.t("autosetup.ui.captionsHomes"),
-        I18n.t("autosetup.ui.captionsNone")
+        I18n.t("autosetup.ui.captionsNone"),
+        I18n.t("autosetup.ui.captionsLabels")
     });
 
 
@@ -732,10 +743,13 @@ public class AutonomyEditorPanel extends JPanel
         // between them they could describe states this control cannot be in - both on, or a caption
         // choice with the text switched off - and migrating a contradiction produces a window that
         // disagrees with itself on the first open.
-        captions.setSelectedIndex(Math.max(CAPTIONS_STATIONS, Math.min(CAPTIONS_NONE,
+        captions.setSelectedIndex(Math.max(CAPTIONS_STATIONS, Math.min(CAPTIONS_LABELS,
             VIEW_PREFS.getInt(PREF_CAPTION_MODE, CAPTIONS_STATIONS))));
 
         captions.setFocusable(false);
+
+        // Control+L steps through these (OB-272), and says so the way the Text Labels box said it.
+        captions.setToolTipText("Control+L");
 
         showParkedTrains.setFocusable(false);
         showHomeLocomotives.setFocusable(false);
@@ -743,7 +757,7 @@ public class AutonomyEditorPanel extends JPanel
         // Seeded from what was restored, so Control+L comes back to the mode this window opened with
         // rather than to the default (RGD-C3).  The listener below is added after this and does not
         // fire for the restore.
-        if (captions.getSelectedIndex() != CAPTIONS_NONE)
+        if (isACaptionMode(captions.getSelectedIndex()))
         {
             lastNamedCaptionMode = captions.getSelectedIndex();
         }
@@ -788,9 +802,9 @@ public class AutonomyEditorPanel extends JPanel
         {
             VIEW_PREFS.putInt(PREF_CAPTION_MODE, captions.getSelectedIndex());
 
-            // What Control+L comes back to (RGD-C3).  Only the three that say something: None is the
-            // state being returned FROM, so remembering it would make the shortcut a no-op.
-            if (captions.getSelectedIndex() != CAPTIONS_NONE)
+            // What the text switch comes back to when it is turned off from outside (RGD-C3).  Only the
+            // three caption modes: None and Labels Only draw no caption to come back to.
+            if (isACaptionMode(captions.getSelectedIndex()))
             {
                 lastNamedCaptionMode = captions.getSelectedIndex();
             }
@@ -6609,8 +6623,53 @@ public class AutonomyEditorPanel extends JPanel
         showParkedTrains.setSelected(mode == CAPTIONS_PARKED);
         showHomeLocomotives.setSelected(mode == CAPTIONS_HOMES);
 
-        if (mode == CAPTIONS_NONE) turnTextLabelsOff();
-        else turnTextLabelsOn();
+        // THE TEXT SWITCH IS THE TEXT'S OWN NOW (Adam, 2026-09-23, OB-272): *"make text labels be a dedicated
+        // setting, and hide the text labels unless it is selected."*  It was on for every caption mode, on
+        // FR-061's reading that None was that switch turned off - so choosing Station Names drew his own writing
+        // as well.  The captions follow the dropdown directly (`isDrawingCaptions`, which the grid asks); the
+        // switch is on for Labels Only and off for everything else.
+        if (mode == CAPTIONS_LABELS) turnTextLabelsOn();
+        else turnTextLabelsOff();
+    }
+
+    /**
+     * Whether the diagram draws station captions - Station Names, Parked Locs or Homes (OB-272).
+     *
+     * The grid asks this for a caption, and the editor's text switch for the writing on the diagram, so the two are
+     * independent: a caption is drawn under the three caption modes whatever the switch says.
+     *
+     * @return true under a caption mode
+     */
+    public boolean isDrawingCaptions()
+    {
+        return isACaptionMode(captions.getSelectedIndex());
+    }
+
+    private static boolean isACaptionMode(int mode)
+    {
+        return mode == CAPTIONS_STATIONS || mode == CAPTIONS_PARKED || mode == CAPTIONS_HOMES;
+    }
+
+    /**
+     * Control+L: the next caption option, wrapping from the last to the first (OB-272).
+     *
+     * Adam, asked which options: *"the dropdown's 4, plus add an option to the dropdown that shows the labels
+     * only"*.  Selecting fires the dropdown's own listener, so the step is remembered and drawn like a choice made
+     * with the mouse.
+     */
+    public void cycleCaptionMode()
+    {
+        if (captions == null || captions.getItemCount() == 0) return;
+
+        captions.setSelectedIndex((captions.getSelectedIndex() + 1) % captions.getItemCount());
+    }
+
+    /**
+     * @return the caption option chosen, one of the `CAPTIONS_` constants
+     */
+    public int getCaptionMode()
+    {
+        return captions.getSelectedIndex();
     }
 
     /**
@@ -6635,11 +6694,13 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (captions == null) return;
 
-        boolean saysSomething = captions.getSelectedIndex() != CAPTIONS_NONE;
+        // THE SWITCH IS LABELS ONLY'S NOW (OB-272): on means that option, and off from it goes back to the last
+        // caption mode, which is what somebody who turned the text off from there had before.
+        boolean labelsOnly = captions.getSelectedIndex() == CAPTIONS_LABELS;
 
-        if (shown == saysSomething) return;
+        if (shown == labelsOnly) return;
 
-        captions.setSelectedIndex(shown ? lastNamedCaptionMode : CAPTIONS_NONE);
+        captions.setSelectedIndex(shown ? CAPTIONS_LABELS : lastNamedCaptionMode);
     }
 
     /**

@@ -60,6 +60,16 @@ public class testARememberedNoneOpensWithTheCaptionsOff
     private static boolean hiddenAfterNone;
     private static boolean hiddenAfterNamedAgain;
 
+    /** And the writing on the diagram that is not a caption, for each opening (OB-272) */
+    private static List<String> ownUnderNamedFirst;
+    private static List<String> ownUnderNone;
+    private static List<String> withLabelsOnly;
+    private static List<String> ownUnderLabelsOnly;
+    private static boolean hiddenAfterLabelsOnly;
+
+    /** The caption option after each press of Control+L, starting from Station Names */
+    private static List<Integer> cycled;
+
     /** What the preference said before this class touched it */
     private static int captionModeWas;
 
@@ -109,13 +119,21 @@ public class testARememberedNoneOpensWithTheCaptionsOff
         captionModeWas = prefs().getInt(PREF_CAPTION_MODE, AutonomyEditorPanel.CAPTIONS_STATIONS);
 
         namedFirst = openWith(AutonomyEditorPanel.CAPTIONS_STATIONS);
+        ownUnderNamedFirst = lastOwn;
         hiddenAfterNamedFirst = page.getEditHideText();
 
         withNone = openWith(AutonomyEditorPanel.CAPTIONS_NONE);
+        ownUnderNone = lastOwn;
         hiddenAfterNone = page.getEditHideText();
 
         namedAgain = openWith(AutonomyEditorPanel.CAPTIONS_STATIONS);
         hiddenAfterNamedAgain = page.getEditHideText();
+
+        withLabelsOnly = openWith(AutonomyEditorPanel.CAPTIONS_LABELS);
+        ownUnderLabelsOnly = lastOwn;
+        hiddenAfterLabelsOnly = page.getEditHideText();
+
+        cycled = pressControlLFiveTimes();
     }
 
     @AfterClass(alwaysRun = true)
@@ -172,9 +190,15 @@ public class testARememberedNoneOpensWithTheCaptionsOff
             "the editor drew no captions with Station Names remembered either, so this page states"
             + " nothing about captions and the None claim beside it means nothing");
 
-        assertFalse(hiddenAfterNamedFirst,
-            "the diagram's text switch was off with Station Names remembered, so the captions above"
-            + " were suppressed by the switch rather than by anything this test is about");
+        // THE SWITCH IS OFF UNDER STATION NAMES NOW, and the captions are drawn anyway (OB-272): the switch is the
+        // writing's own, and captions follow the dropdown.  Until 2026-09-23 this asserted the switch was ON here,
+        // which was FR-061's coupling - None being that switch turned off.
+        assertTrue(hiddenAfterNamedFirst,
+            "the diagram's text switch was on under Station Names, so his own writing is drawn beside the captions -"
+            + " OB-272: hide the text labels unless that option is selected");
+
+        assertEquals(ownUnderNamedFirst.size(), 0,
+            "Station Names drew writing that is not a caption: " + ownUnderNamedFirst);
     }
 
     /**
@@ -190,9 +214,94 @@ public class testARememberedNoneOpensWithTheCaptionsOff
             + " opening drew " + namedFirst.size() + ". A switch that goes off and stays off satisfies"
             + " the None claim for ever after without ever being right");
 
-        assertFalse(hiddenAfterNamedAgain,
-            "the text switch stayed off when the mode came back, so None turns the captions off"
-            + " permanently rather than for as long as it is chosen");
+        // The captions came back without the switch (OB-272): it stays off under a caption mode, and the count
+        // above is what says None did not latch.
+        assertTrue(hiddenAfterNamedAgain,
+            "the text switch came on with Station Names, so his own writing is drawn beside the captions (OB-272)");
+    }
+
+    /**
+     * Labels Only draws the writing on the diagram and no caption (Adam, 2026-09-23, OB-272).
+     *
+     * *"make text labels be a dedicated setting, and hide the text labels unless it is selected"*, and *"add an
+     * option to the dropdown that shows the labels only"*.  The page carries writing of his own - "Inner Loop" and
+     * the rest - so this is not satisfied by a page with nothing to show; None, beside it, draws none of it.
+     */
+    @Test
+    public void testLabelsOnlyDrawsTheWritingAndNoCaption()
+    {
+        assertEquals(withLabelsOnly.size(), 0, "Labels Only drew captions: " + withLabelsOnly);
+
+        assertTrue(ownUnderLabelsOnly.size() > 0,
+            "Labels Only drew none of the writing on the diagram, which is the one thing it is for");
+
+        assertFalse(hiddenAfterLabelsOnly, "the text switch is off under Labels Only");
+
+        assertEquals(ownUnderNone.size(), 0, "None drew writing that is not a caption: " + ownUnderNone);
+    }
+
+    /**
+     * Control+L steps through all five options and wraps (OB-272: *"make control+L cycle the options"* - *"the
+     * dropdown's 4, plus ... the labels only"*).  Pressed through the editor's own key handler, so the key and the
+     * option are asked together.
+     */
+    @Test
+    public void testControlLStepsThroughTheFiveAndWraps()
+    {
+        assertEquals(cycled, java.util.Arrays.asList(AutonomyEditorPanel.CAPTIONS_PARKED, AutonomyEditorPanel.CAPTIONS_HOMES,
+            AutonomyEditorPanel.CAPTIONS_NONE, AutonomyEditorPanel.CAPTIONS_LABELS, AutonomyEditorPanel.CAPTIONS_STATIONS),
+            "Control+L from Station Names did not step Parked, Homes, None, Labels Only and back to Station Names");
+    }
+
+    /** The writing that is not a caption, from the last `openWith` */
+    private static List<String> lastOwn;
+
+    private static List<Integer> pressControlLFiveTimes() throws Exception
+    {
+        prefs().putInt(PREF_CAPTION_MODE, AutonomyEditorPanel.CAPTIONS_STATIONS);
+
+        final LayoutEditor[] built = new LayoutEditor[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            built[0] = new LayoutEditor(page, 30, ui, 0);
+            built[0].render();
+            built[0].setAutonomyMode(session);
+        });
+
+        settle();
+
+        final List<Integer> out = new ArrayList<>();
+
+        final java.lang.reflect.Method press =
+            LayoutEditor.class.getDeclaredMethod("formKeyPressed", java.awt.event.KeyEvent.class);
+
+        press.setAccessible(true);
+
+        for (int i = 0; i < 5; i++)
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    press.invoke(built[0], new java.awt.event.KeyEvent(built[0], java.awt.event.KeyEvent.KEY_PRESSED,
+                        System.currentTimeMillis(), java.awt.event.InputEvent.CTRL_DOWN_MASK,
+                        java.awt.event.KeyEvent.VK_L, 'L'));
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            // READ AFTER THE HANDLER'S OWN POSTED WORK: `formKeyPressed` does everything in an `invokeLater`, so
+            // the answer is one turn of the queue behind the press.
+            javax.swing.SwingUtilities.invokeAndWait(() -> out.add(built[0].getAutonomyPanel().getCaptionMode()));
+        }
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> built[0].dispose());
+
+        return out;
     }
 
     /**
@@ -214,8 +323,11 @@ public class testARememberedNoneOpensWithTheCaptionsOff
         settle();
 
         final List<String> drawn = new ArrayList<>();
+        final List<String> own = new ArrayList<>();
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> collect(built[0].getContentPane(), drawn));
+        javax.swing.SwingUtilities.invokeAndWait(() -> collect(built[0].getContentPane(), drawn, own));
+
+        lastOwn = own;
 
         javax.swing.SwingUtilities.invokeAndWait(() -> built[0].dispose());
 
@@ -228,7 +340,7 @@ public class testARememberedNoneOpensWithTheCaptionsOff
      * `StationCaption` only - the window's own labels are ordinary JLabels, and counting those would
      * make this a test about the sidebar.
      */
-    private static void collect(java.awt.Container container, List<String> into)
+    private static void collect(java.awt.Container container, List<String> into, List<String> own)
     {
         for (java.awt.Component child : container.getComponents())
         {
@@ -236,10 +348,16 @@ public class testARememberedNoneOpensWithTheCaptionsOff
             {
                 String text = ((StationCaption) child).getText();
 
-                if (text != null && !text.trim().isEmpty()) into.add(text);
+                // A caption is a pill; the user's own writing is not (FR-028) - and the two are counted apart
+                // since OB-272 made them two settings.
+                if (text != null && !text.trim().isEmpty())
+                {
+                    if (((StationCaption) child).isPill()) into.add(text);
+                    else own.add(text);
+                }
             }
 
-            if (child instanceof java.awt.Container) collect((java.awt.Container) child, into);
+            if (child instanceof java.awt.Container) collect((java.awt.Container) child, into, own);
         }
     }
 

@@ -7189,7 +7189,12 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             // the original bug.
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_L)
             {
-                toggleText();
+                // IN THE AUTONOMY EDITOR, THE NEXT CAPTION OPTION (Adam, 2026-09-23, OB-272: *"make control+L
+                // cycle the options"* - *"the dropdown's 4, plus ... the labels only"*).  The same test
+                // `toggleText` uses to decide the dropdown is showing.  In the track editor it is still the
+                // text switch, which is the only text setting there.
+                if (autonomyPanel != null && autonomyPanel.isVisible()) autonomyPanel.cycleCaptionMode();
+                else toggleText();
 
                 return;
             }

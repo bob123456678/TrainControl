@@ -1271,6 +1271,17 @@ public class LayoutGrid
                     final String captionName = captioned == null
                         ? null : ui.autonomyStationNameAt(captioned);
 
+                    // WHETHER THIS LABEL IS DRAWN AT ALL (OB-272).  In the autonomy editor a CAPTION follows
+                    // the caption dropdown and the user's own writing follows the text switch, which only
+                    // Labels Only turns on - Adam, 2026-09-23: *"make text labels be a dedicated setting, and
+                    // hide the text labels unless it is selected."*  Everywhere else one switch decides both,
+                    // as it always has.
+                    final AutonomyEditorPanel captionPanel = autonomyEditor && master instanceof LayoutEditor
+                        ? ((LayoutEditor) master).getAutonomyPanel() : null;
+
+                    final boolean drawn = captioned != null && autonomyEditor && captionPanel != null
+                        ? captionPanel.isDrawingCaptions() : !layout.getEditHideText();
+
                     // Autonomy station caption, live.
                     //
                     // An excluded page is already gone by here, and the clause that used to say so has
@@ -1376,7 +1387,7 @@ public class LayoutGrid
                         });
                     }
                     // Regular labels
-                    else if (!layout.getEditHideText())
+                    else if (drawn)
                     {
                         if (captioned != null && autonomyEditor)
                         {
@@ -1667,7 +1678,7 @@ public class LayoutGrid
                     // Shift on-tile labels down
                     // Current limitation if we wanted to use borders: if you have a text element and an on-tile label in the same row
                     // , they both get shifted down by the same amount.  Therefore, do this multiline hack.
-                    if (c != null && !c.isText() && !layout.getEditHideText())
+                    if (c != null && !c.isText() && drawn)
                     {
                         //text.setBorder(new EmptyBorder(16 * (size / 30), 0, 0, 0)); //top, left, bottom, right
                         gbc.gridheight = 0;
@@ -1713,7 +1724,7 @@ public class LayoutGrid
                     // diagram saying the thing can be picked up, and the two must not disagree. The
                     // grid is rebuilt when the box is toggled, so ticking it back restores the drag.
                     if (autonomyEditor && captioned != null && master instanceof LayoutEditor
-                        && !layout.getEditHideText())
+                        && drawn)
                     {
                         org.traincontrol.automationui.TileGraph.TileKey here =
                             new org.traincontrol.automationui.TileGraph.TileKey(
