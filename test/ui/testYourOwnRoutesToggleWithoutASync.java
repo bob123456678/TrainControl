@@ -144,11 +144,18 @@ public class testYourOwnRoutesToggleWithoutASync
         {
             int before = syncsAskedFor();
 
+            // One batch at a time, as the prompt in front of each allows: two batches at once race each other's
+            // delete-and-re-add over the same database, which is not what this is about.
             ui.enableOrDisableMatching(PREFIX + "bulk f", true);
+
+            assertTrue(waitFor(() -> isEnabled(first), 10000), "precondition: the first batch never reached its route");
+
+            settle();
+
             ui.enableOrDisableMatching(PREFIX + "bulk s", true);
 
-            assertTrue(waitFor(() -> isEnabled(first) && isEnabled(second) && isEnabled(station), 10000),
-                "precondition: the bulk toggle never reached the routes");
+            assertTrue(waitFor(() -> isEnabled(second) && isEnabled(station), 10000),
+                "precondition: the second batch never reached its routes");
 
             settle();
 
@@ -228,13 +235,27 @@ public class testYourOwnRoutesToggleWithoutASync
         return count;
     }
 
+    /**
+     * Takes the one-sync-at-a-time flag, waiting out a sync already running - whose own `finally` would otherwise
+     * put the flag down under this test - or puts it down again.
+     */
     private static void holdTheSync(boolean held) throws Exception
     {
-        java.lang.reflect.Field flag = TrainControlUI.class.getDeclaredField("syncInFlight");
+        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("syncInFlight");
 
-        flag.setAccessible(true);
+        field.setAccessible(true);
 
-        ((java.util.concurrent.atomic.AtomicBoolean) flag.get(ui)).set(held);
+        java.util.concurrent.atomic.AtomicBoolean flag = (java.util.concurrent.atomic.AtomicBoolean) field.get(ui);
+
+        if (!held)
+        {
+            flag.set(false);
+
+            return;
+        }
+
+        assertTrue(waitFor(() -> flag.compareAndSet(false, true), 60000),
+            "precondition: a sync has been running for a minute, so the flag cannot be taken");
     }
 
     /**
