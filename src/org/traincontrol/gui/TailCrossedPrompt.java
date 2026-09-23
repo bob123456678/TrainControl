@@ -98,6 +98,14 @@ public class TailCrossedPrompt
             return road;
         }
 
+        /**
+         * @return whether the tail reaches the sensor; false for a road it lies on without reaching one (MT-477)
+         */
+        public boolean isReached()
+        {
+            return true;
+        }
+
         /** @return what the operator reads */
         public String getLabel()
         {

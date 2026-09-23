@@ -88,22 +88,33 @@ public class testTheTailCrossedQuestion
     }
 
     /**
-     * Three units reach past J and cross neither A nor C: only J is offered, and nothing is asked.
+     * Three units reach past J and cross neither A nor C: the question is put, offering J and the way the tail lies past
+     * it - towards A, or towards C (MT-477).
      *
-     * Every answer would be J, which cannot say which road the last two units lie on - so the walk stops at J, as it
-     * always has, and a question would change nothing.
+     * Adam, 2026-09-23, on MT-477: *"when set to lenth 3, the tail always follows switch 51 turned, rather than facing
+     * straight toward rampdown.  Not a major issue, but technically that length should qualify for the prompt."*  Until
+     * then a junction the tail passed without crossing a sensor beyond was not asked about (TLR-B1), on the reading that
+     * every answer would be J.  But the last two units lie on A's rail or on C's, and those are different track.
      */
     @Test
-    public void testATailThatCrossesNoSensorPastTheJunctionIsNotAsked() throws Exception
+    public void testATailPastTheJunctionShortOfASensorIsAsked() throws Exception
     {
         Layout layout = aPlatformBehindAJunction(2310, true);
         Point s = layout.getPoint("TQ_S");
 
-        assertEquals(farthestOf(TailCrossedPrompt.choicesFor(layout, s, "W", 3, null)), java.util.Arrays.asList("TQ_J"),
-            "a three-unit train crosses TQ_J and no sensor beyond it");
+        List<TailCrossedPrompt.Choice> choices = TailCrossedPrompt.choicesFor(layout, s, "W", 3, null);
 
-        assertFalse(TailCrossedPrompt.wouldAsk(layout, s, "W", 3),
-            "the question is put for a tail that crossed no sensor past the junction, where every answer is TQ_J");
+        assertEquals(farthestOf(choices), java.util.Arrays.asList("TQ_J", "TQ_A", "TQ_C"),
+            "a three-unit train crosses TQ_J and lies two units towards TQ_A or towards TQ_C - the list offers something"
+            + " else");
+
+        assertEquals(reachedOf(choices), java.util.Arrays.asList(true, false, false),
+            "TQ_A and TQ_C are three units past TQ_J and the tail has two left there: it lies towards them and has crossed"
+            + " neither, and the list says otherwise");
+
+        assertTrue(TailCrossedPrompt.wouldAsk(layout, s, "W", 3),
+            "the tail passed the junction and lies on A's rail or on C's, which is different track, and the question is"
+            + " not put.  Adam, MT-477: \"technically that length should qualify for the prompt\"");
 
         assertFalse(TailCrossedPrompt.wouldAsk(layout, s, "W", 1),
             "the question is put for a train no longer than its own approach");
@@ -147,6 +158,37 @@ public class testTheTailCrossedQuestion
 
         assertNull(TailCrossedPrompt.askAfterPlacement(layout, s, "W", 5, loc.getName(), null, null).getRoad(),
             "Not Known gave a road");
+    }
+
+    /**
+     * The way the tail lies is the rail it covers: towards A covers A -> J and not C -> J (MT-477).
+     */
+    @Test
+    public void testTheWayTheTailLiesIsTheRailItCovers() throws Exception
+    {
+        Layout layout = aPlatformBehindAJunction(2440, true);
+        Point s = layout.getPoint("TQ_S");
+
+        assertTrue(layout.moveLocomotive(loc.getName(), "TQ_S", false), "could not stand the train at TQ_S");
+
+        s.setArrivedFrom("W");
+        loc.setTrainLength(3);
+
+        TailCrossedPrompt.answerForTests("TQ_A");
+
+        List<Edge> road = TailCrossedPrompt.askAfterPlacement(layout, s, "W", 3, loc.getName(), null, null).getRoad();
+
+        assertNotNull(road, "the answer towards TQ_A gave no road");
+
+        s.setArrivedAlong(road);
+
+        Map<Edge, Locomotive> covered = layout.edgesCoveredByStandingTrains();
+
+        assertTrue(covered.containsKey(layout.getEdge("TQ_A", "TQ_J")),
+            "the tail was said to lie towards TQ_A, and A -> J is not covered.  Covered: " + covered.keySet());
+
+        assertFalse(covered.containsKey(layout.getEdge("TQ_C", "TQ_J")),
+            "the tail was claimed along C -> J, a road the answer did not name.  Covered: " + covered.keySet());
     }
 
     /**
@@ -247,7 +289,13 @@ public class testTheTailCrossedQuestion
 
         Point s = layout.getPoint("TQ_S");
 
-        assertEquals(farthestOf(TailCrossedPrompt.choicesFor(layout, s, "W", 5, null)), java.util.Arrays.asList("TQ_J", "TQ_A"),
+        List<TailCrossedPrompt.Choice> choices = TailCrossedPrompt.choicesFor(layout, s, "W", 5, null);
+
+        // TQ_C is offered too since MT-477, as the way the tail lies without reaching it.
+        assertEquals(farthestOf(choices), java.util.Arrays.asList("TQ_J", "TQ_A", "TQ_C"),
+            "precondition: five units cross TQ_J and TQ_A, and lie towards TQ_C on the other road");
+
+        assertEquals(reachedOf(choices), java.util.Arrays.asList(true, true, false),
             "precondition: five units cross TQ_J and TQ_A and not TQ_C");
 
         assertTrue(TailCrossedPrompt.wouldAsk(layout, s, "W", 5),
@@ -681,6 +729,15 @@ public class testTheTailCrossedQuestion
         model.parseAuto(session.buildConfiguration());
 
         return model.getAutoLayout();
+    }
+
+    private static List<Boolean> reachedOf(List<TailCrossedPrompt.Choice> choices)
+    {
+        List<Boolean> reached = new ArrayList<>();
+
+        for (TailCrossedPrompt.Choice choice : choices) reached.add(choice.isReached());
+
+        return reached;
     }
 
     private static List<String> farthestOf(List<TailCrossedPrompt.Choice> choices)
