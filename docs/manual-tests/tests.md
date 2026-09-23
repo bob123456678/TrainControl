@@ -66,8 +66,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-480](#mt-480) | 2026-09-23 | A train fits on the square it stands on, and TunnelLongPark takes three units | fixed unvalidated | OB-278 |
 | [MT-481](#mt-481) | 2026-09-23 | The orange line and the grey carry on across a route tile | fixed unvalidated | OB-279 |
 | [MT-482](#mt-482) | 2026-09-23 | The grey is only where the train is, and nothing past the switch | fixed unvalidated | OB-280 |
+| [MT-483](#mt-483) | 2026-09-23 | A cut train is pasted facing the way it would arrive | fixed unvalidated | OB-270 |
 
-Everything else - 443 of 482 - needs nothing from you unless the area changes again:
+Everything else - 443 of 483 - needs nothing from you unless the area changes again:
 392 **fixed validated** and 51 **superseded**.
 
 ---
@@ -24699,5 +24700,40 @@ sensor; now it covers only the squares the train lies on.
 *What this is:* `ui.testTheGreyAppearsAtIdleToo.testTheGreyIsWhatTheRailwayClaims` (the window greys exactly the squares
 the railway claims) and `testBlockedTrackIsGreyAtIdle` (a square of the train's edge that it does not reach is not
 grey) - each red on the whole-edge grey.
+
+---
+
+<a id="mt-483"></a>
+
+### MT-483 - 2026-09-23 - A cut train is pasted facing the way it would arrive
+
+**Disposition:** fixed unvalidated
+**From:** OB-270
+
+**Written:** 2026-09-23
+
+Your words, 2026-09-22: *"Trains should not inadvertently change direction when pasted, so a loc going west from
+bottomsecondary should always face east when pasted on bottommaina."*  And today, asked whether a cut train keeps the
+heading it was cut with: *"it should be east.  no train should inadvertently change direction when pasted."*
+
+**What was wrong.**  Control+X takes the train off the railway, so the paste had nowhere to work out the route from and
+kept the heading the train was cut with - west.  And it put the train on whichever copy of the square came first while
+recording a heading, so the two could disagree.  Now the paste works the route out from the square the train was cut
+from, and puts it on the copy that faces the way it would arrive.
+
+**Steps**
+
+1. Put a train at BottomSecondary facing west.
+2. Control+X it, hover over BottomMainA, Control+V.
+3. Look at which way it faces, and at the facing its right-click menu reports.
+
+**Expected**
+
+- It faces east, and the menu agrees.  With arrivals from the east barred at BottomMainA, east is the only way it can
+  stand there anyway; the difference shows on a square that holds both headings.
+
+*What this is:* `ui.testACutTrainArrivesTheWayItWouldDrive` - a real Control+X and Control+V on your frozen railway with
+BottomMainA's east bar lifted, red on the old code with the train westbound, and red again under each half of the fix
+taken away.
 
 ---

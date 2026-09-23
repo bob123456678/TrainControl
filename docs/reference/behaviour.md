@@ -636,9 +636,15 @@ direction (section 3). Where a square has two copies a train may stop at, facing
 used to be whichever `StationIndex.speakerAt` met first, so the record said east while the train stood
 westbound, and its arrival side and tail were then worked out for the wrong copy. **The rule: the copy
 taken is the operator's chosen heading where one was asked, and the walked heading otherwise**; a copy no
-train may be placed on is still refused (`copyFacing`). Not yet built - OB-270 has the diagnosis and is
-waiting on a fixture with two placeable copies. Adam reported on 2026-09-23 that the paste now faces
-correctly on his railway, and could not say whether his measurements are why, so it stays open.
+train may be placed on is still refused (`copyFacing`), and the heading is chosen and recorded over the
+copies a train may stand on, so no impossible facing is saved. Built 2026-09-23.
+
+**A cut train is walked from the square it was cut from** (Adam, 2026-09-23, OB-270: *"it should be east.
+no train should inadvertently change direction when pasted."*). Control+X takes the train off the railway,
+so the walk had nowhere to start and the paste kept the compass heading it was cut with (MT-368) - west, for
+a train cut going west at BottomSecondary, where the route to BottomMainA loops round and arrives facing
+east. The cut remembers its square, and the paste walks from there; the cut heading stands only where no
+route reaches the landing. `ui.testACutTrainArrivesTheWayItWouldDrive`.
 
 **Where there is no path**, the heading the train already has is kept if the landing can hold it, and
 otherwise the first copy it could depart from is taken. Adam's 2026-09-06 wording for that arm was
