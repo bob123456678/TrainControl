@@ -2536,6 +2536,38 @@ BottomMainAPre (westbound).  Only the eastbound copy is a destination.
 heading that turns the train round without his having asked for it.  His rule settles what the answer
 must be; what is left is which control is not asking for it.
 
+
+**Second attempt, 2026-09-22, and nothing shipped - the claim would not fail.**
+
+The candidate was a real seam and it is worth recording even though it is not his defect.  MT-394
+fixed the CHOSEN heading reaching the setup but not the railway - the train stayed on whichever copy
+`getAutonomyPointForTile` had picked, and the railway records direction by which copy a train stands
+on.  That fix is written `if (facingChosenAtTheLanding != null)`, so it covers the square that ASKS
+and leaves the ordinary square - which asks nothing, because it is not may-reverse - taking an
+arbitrary copy while the setup records the walk's answer.  BottomMainA is such a square.
+
+So the copy choice was made to follow the walk, and a claim was written for it: stand the train at
+BottomSecondary, paste onto BottomMainA, assert it lands on the eastbound copy.
+
+**It passed with the fix and passed without it.**  On this snapshot the arbitrary copy of BottomMainA
+IS the eastbound one, so the paste already lands facing east and the claim cannot fail.  A test that
+cannot fail is no evidence, and a fix shipped behind one is a fix nobody has checked - so both were
+reverted.
+
+**What that tells us about his report.**  The paste door is not where West came from, at least not on
+this geometry: the walk answers E, the setup records E, and the copy taken happens to be E as well.
+The doors still to look at are the ones that set a facing on a train ALREADY placed -
+`buildAutonomyFacingMenu` and the *"... Is Facing"* menu, which offer both copies because
+`facingsFor` reports both - and the placement menu, which picks a copy by name.
+
+**What would settle it in one line from him:** which gesture he used.  Ctrl+V over the square, a drag,
+the right-click placement menu, or the facing menu afterwards.  Each is a different door and only one
+of them needs changing.
+
+**Left as it is meanwhile**, because the iteration-order copy choice is a real fragility - it is the
+`SPEC-A1` shape, an arbitrary copy standing in for an answer - but changing it without a claim that
+can fail would be putting an unchecked change into the door that decides which way trains face.
+
 ### OB-271 - 2026-09-22 - focusability in the route editor
 
 **Kind:** bug  
