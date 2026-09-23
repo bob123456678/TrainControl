@@ -110,6 +110,12 @@ holds:
    stations do, and four stations are four Points each. The code paths this would remove are ones your
    graph exercises every day, and the four facing defects of that week were in them. **This reason is
    gone; whether it changes the decision is yours, and nothing has been done about it.**
+
+   **Recounted 2026-09-23**, on your measured layout: twenty-five of the fifty-eight squares split,
+   nine of the thirty-three stations do, and two (BottomMainPost and RampDown) are four Points each.
+   Fewer because your one-way marks and BottomMainC's compulsory turn took arrival sides away - not
+   because anything merged. Still far from "buys nothing", so the withdrawal stands and nothing else
+   here changes.
 2. **It is a change to the thing every feature stands on.** Locking, blocking, length, destinations and
    placement all read the graph. This is a bigger blast radius than `DD-C1`, which is at least only a
    file. *(Unaffected by the correction above, and now the strongest reason to wait.)*

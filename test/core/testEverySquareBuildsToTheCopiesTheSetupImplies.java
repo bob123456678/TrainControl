@@ -70,29 +70,37 @@ import org.traincontrol.marklin.file.CS2File;
 public class testEverySquareBuildsToTheCopiesTheSetupImplies
 {
     /**
-     * The census, measured on the wired railway on 2026-09-08.
+     * The census, measured on the wired railway on 2026-09-08 and again on 2026-09-23.
      *
      * A change to any of these is either an edit Adam made to his own railway - in which case update
      * the number and re-read `two-copies-evaluation.md`, because these are the figures its
      * recommendation is costed against - or a builder change that has started splitting or merging
      * squares, which is the thing this file exists to notice.
+     *
+     * 30 split squares and 13 split stations on 2026-09-08; **25 and 9** on the railway refrozen
+     * 2026-09-23 from `e36df979`.  His setup of that day made seven tracks one-way, made BottomMainC a
+     * compulsory turn and changed which sides are barred - each takes an arrival side away, and an
+     * arrival side is a copy.  The rule test above stayed green through the refreeze, so the builder
+     * still emits exactly what each square's setup implies: this is the railway moving, not squares
+     * being merged.  The evaluation was re-read and its recommendation stands (its first reason, already
+     * withdrawn, is recounted there).
      */
     private static final int SQUARES = 58;
     private static final int STATIONS = 33;
-    private static final int SPLIT_SQUARES = 30;
-    private static final int SPLIT_STATIONS = 13;
+    private static final int SPLIT_SQUARES = 25;
+    private static final int SPLIT_STATIONS = 9;
 
     /**
      * The squares that carry the FULL split - two arrival sides and a turn at each.
      *
-     * By name rather than by tile, because these are the four the rest of the documentation talks
-     * about: `behaviour.md` section 5b's room census names three of them as the berths it newly
-     * refuses, and it names them by their split copies - "BottomMainA (eastbound)", "BottomMainC
-     * (westbound)" - which is the same fact from the other side.
+     * By name rather than by tile, because these are the squares the rest of the documentation talks
+     * about by their split copies.  Four until 2026-09-23; BottomMainB and BottomMainC left the list
+     * that day - B has no westbound copy any more (its east side is one-way since his marks of that day),
+     * and C became a compulsory turn, which emits no plain copy.
      */
     private static final String[] FOUR_COPY_SQUARES =
     {
-        "BottomMainB", "BottomMainC", "BottomMainPost", "RampDown"
+        "BottomMainPost", "RampDown"
     };
 
     private static support.LayoutSandbox sandbox;

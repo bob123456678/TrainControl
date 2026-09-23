@@ -33,9 +33,11 @@ import org.traincontrol.marklin.MarklinControlStation;
  * So the refusal is right in principle and wrong in extent, and the extent is the whole of the bug: the
  * runtime cannot say which part of an edge a train is on, because `Edge` holds a length and no places.
  *
- * **This test states the geometry it depends on rather than hoping for it.** The checked-in snapshot
- * measures nothing at all, so nothing is covered on it and there would be no defect to see; the tile
- * behind TunnelLongPark is measured here, which is what makes the tail reach into that edge.
+ * **On his measured railway** (the snapshot refrozen 2026-09-23).  Until then it measured nothing, so
+ * the tile behind TunnelLongPark was measured here to give the tail something to reach; now his own
+ * measurements are what the train stands on - 2 on TunnelLongPark's square, 1 behind it - and nothing
+ * is set by this class.  A one-unit train lies on its own square (OB-278), which is the first place of
+ * the run into the park and nowhere near the metal the path shares.
  *
  * @author Adam
  */
@@ -46,9 +48,8 @@ public class testAShortTrainDoesNotBlockTheWholeRun
     private static AutonomySession session;
     private static Layout layout;
 
-    /** The square the short train stands on, and the one nothing should stop a train reaching. */
+    /** The square the short train stands on. */
     private static final TileKey PARK = new TileKey("1 - Main", 10, 9);
-    private static final TileKey BEHIND_PARK = new TileKey("1 - Main", 10, 10);
 
     private static Locomotive standing;
     private static Locomotive travelling;
@@ -67,11 +68,6 @@ public class testAShortTrainDoesNotBlockTheWholeRun
 
         session.open(support.LayoutSandbox.wiredPages(model));
 
-        // THE ONE MEASURED TILE THIS NEEDS.  The snapshot measures nothing, so a tail reaches nowhere and
-        // there is no coverage to be wrong about; two units behind the park is what lets a train stand
-        // inside that edge without filling it.
-        session.setTileLength(BEHIND_PARK, 2);
-
         session.rebuild();
 
         model.parseAuto(session.buildConfiguration());
@@ -79,6 +75,14 @@ public class testAShortTrainDoesNotBlockTheWholeRun
         layout = model.getAutoLayout();
 
         if (layout == null) throw new SkipException("the snapshot did not build");
+
+        // NOTHING OF HIS STANDING ABOUT.  The snapshot refrozen 2026-09-23 has 75 407 DB at BottomMainA, the end of the
+        // very journey this class asks about - so the path was refused because its destination was occupied, which is
+        // true and is not the tail this class is about.
+        for (Point point : layout.getPoints())
+        {
+            if (point.getCurrentLocomotive() != null) layout.moveLocomotive(null, point.getName(), true);
+        }
 
         List<String> names = model.getLocList();
 
@@ -121,8 +125,9 @@ public class testAShortTrainDoesNotBlockTheWholeRun
     public void testAOneUnitTrainLeavesTheRestOfTheRunUsable() throws Exception
     {
         Point park = pointAt(PARK, "TunnelLongPark");
-        Point from = pointNamed("Tunnel");
-        Point to = pointNamed("BottomMainA");
+        Point[] journey = tunnelToBottomMainA();
+        Point from = journey[0];
+        Point to = journey[1];
 
         List<Edge> path = layout.bfs(from, to, new java.util.ArrayList<List<Edge>>());
 
@@ -176,8 +181,7 @@ public class testAShortTrainDoesNotBlockTheWholeRun
 
         assertNotNull(behind, "the one-unit train at " + park.getName() + " does not cover the run that"
             + " shares metal with the path, so the sweep this test is about cannot fire and the claim"
-            + " below would pass on any code. The tile behind it is measured "
-            + session.getStore().getTileLength(BEHIND_PARK) + " units; covered: " + covered.keySet());
+            + " below would pass on any code. Covered: " + covered.keySet());
 
         assertTrue(behind.getLength() > standing.getTrainLength(),
             "the covered edge measures " + behind.getLength() + " and the train is "
@@ -236,8 +240,9 @@ public class testAShortTrainDoesNotBlockTheWholeRun
     public void testATrainLongEnoughToReachItStillBlocksIt() throws Exception
     {
         Point park = pointAt(PARK, "TunnelLongPark");
-        Point from = pointNamed("Tunnel");
-        Point to = pointNamed("BottomMainA");
+        Point[] journey = tunnelToBottomMainA();
+        Point from = journey[0];
+        Point to = journey[1];
 
         park.setLocomotive(standing);
 
@@ -293,22 +298,32 @@ public class testAShortTrainDoesNotBlockTheWholeRun
     }
 
     /**
-     * A Point whose base name is this, whichever copy comes first.
+     * Adam's journey, Tunnel to BottomMainA, as the pair of copies a route joins.
+     *
+     * By route rather than by name.  This took the first Point whose name STARTED with "Tunnel" - which TunnelLongPark
+     * and TunnelLeftPark do too - and the first destination copy of BottomMainA, and on the railway refrozen 2026-09-23
+     * that was a copy no route from Tunnel reaches.  His journey arrives on the eastbound copy.
+     *
+     * @return the copy of Tunnel it starts from and the copy of BottomMainA it ends at
+     * @throws Exception from the search
      */
-    private static Point pointNamed(String base)
+    private static Point[] tunnelToBottomMainA() throws Exception
     {
-        Point found = null;
-
-        for (Point point : layout.getPoints())
+        for (Point from : layout.getPoints())
         {
-            if (!point.getName().startsWith(base)) continue;
+            if (!from.getName().equals("Tunnel") && !from.getName().startsWith("Tunnel (")) continue;
 
-            // A destination copy for the far end, so the path has somewhere to finish.
-            if (found == null || (!found.isDestination() && point.isDestination())) found = point;
+            for (Point to : layout.getPoints())
+            {
+                if (!to.getName().equals("BottomMainA") && !to.getName().startsWith("BottomMainA (")) continue;
+
+                if (!to.isDestination() || to.getName().endsWith(", reverse)")) continue;
+
+                if (layout.bfs(from, to, new java.util.ArrayList<List<Edge>>()) != null) return new Point[] {from, to};
+            }
         }
 
-        if (found == null) throw new SkipException("the snapshot has no Point called " + base);
-
-        return found;
+        throw new AssertionError("no route joins a copy of Tunnel to a plain copy of BottomMainA a train may stop at, so"
+            + " the journey Adam reported (OB-207) is not on this railway");
     }
 }

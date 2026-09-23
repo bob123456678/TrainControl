@@ -92,17 +92,21 @@ public class testTheFrozenRailwayIsStillTheRailway
     {
         Layout built = scenario.build();
 
-        assertEquals(scenario.getSession().getReducer().getEdges().size(), 128,
+        // REFROZEN 2026-09-23 from Adam's measured layout (`e36df979`).  The first freeze reduced to 128 edges and
+        // built 96 Points and 149 edges; his one-way marks, compulsory turn at BottomMainC and barred arrivals of that
+        // day take arrival sides away, and an arrival side that is gone is an edge and a copy that are not built.  The
+        // five pages are byte-identical to the first freeze, so this is the setup moving, not the diagram.
+        assertEquals(scenario.getSession().getReducer().getEdges().size(), 122,
             "the frozen railway reduced to " + scenario.getSession().getReducer().getEdges().size()
-            + " edges rather than the 128 it was frozen with. Below about fifty this is the five-edge"
+            + " edges rather than the 122 it was frozen with. Below about fifty this is the five-edge"
             + " skeleton LayoutSandbox.wiredPages describes - a railway whose switches have no"
             + " accessories, which TileGraph refuses to trace through.");
 
-        assertEquals(built.getPoints().size(), 96,
-            "the frozen railway built to " + built.getPoints().size() + " Points rather than 96");
+        assertEquals(built.getPoints().size(), 87,
+            "the frozen railway built to " + built.getPoints().size() + " Points rather than 87");
 
-        assertEquals(built.getEdges().size(), 149,
-            "the frozen railway built to " + built.getEdges().size() + " edges rather than 149");
+        assertEquals(built.getEdges().size(), 125,
+            "the frozen railway built to " + built.getEdges().size() + " edges rather than 125");
     }
 
     /**

@@ -155,6 +155,12 @@ public class testTheLengthGuardsOnTheRealLayout
         session = new AutonomySession(sandbox.getFolder());
         session.open(pages);
 
+        // AND NO STATION'S SIZE (the refreeze of 2026-09-23).  Adam has since given every station a maximum train
+        // length, and `whyTooLongForThisRoute` asks that first - so a nine-unit train was refused BottomMainPost, which
+        // holds 3, before any track was looked at, and every claim below became a claim about the number typed on
+        // the station.  This class is about the TRACK: the lengths it sets are the only thing that may decide.
+        session.clearEveryMaxTrainLength();
+
         edgesAtOpen = session.getReducer().getEdges().size();
 
         assertTrue(edgesAtOpen > 50,

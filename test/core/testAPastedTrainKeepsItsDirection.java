@@ -307,90 +307,84 @@ public class testAPastedTrainKeepsItsDirection
             + " sets off from the wrong place - or from nowhere at all");
     }
     /**
-     * WHAT A COMPULSORY-TURN STATION ACTUALLY BUILDS TO (MON-C14).
+     * WHAT A COMPULSORY-TURN STATION ACTUALLY BUILDS TO (MON-C14): a station autonomy may choose exactly when it is not
+     * marked parking.
      *
-     * A review read `AutonomyBuilder:994` - `json.put(stops ? "terminus" : "reversing", true)` - and
-     * observed that the choice is made by whether anything ARRIVES at the copy, not by whether turning
-     * is compulsory. So a square marked compulsory-turn AND station should emit `terminus`, which is a
-     * destination, where `behaviour.md` says a compulsory turn is never one.
+     * A review read `AutonomyBuilder:994` - `json.put(stops ? "terminus" : "reversing", true)` - and observed that the
+     * choice is made by whether anything ARRIVES at the copy, not by whether turning is compulsory.  So a square marked
+     * compulsory-turn AND station emits `terminus`, which is a destination.  That branch is reached on his railway, and
+     * it is right: Adam, 2026-09-09 -
      *
-     * It was filed at C with "not demonstrated reachable... filed for a fixture to settle", and the
-     * fixture it wanted did not exist: every hand-built layout in this suite was a straight chain, and
-     * the real-layout fixture was building a five-edge skeleton in which no square split at all.
+     * > *Marking a square as a compulsory turn says what happens when a train ARRIVES, not who may send one there.*
      *
-     * It exists now, and the answer is: **the branch IS reached, and `behaviour.md` was the wrong half.**
-     * Every compulsory-turn square on this railway builds to `terminus=true`, and a terminus is a
-     * destination. Those squares are Adam's parking berths - he sends trains to them by hand and homes
-     * locomotives there - so being a destination is exactly right.
+     * `AutonomyBuilder` writes `autoDestination:false` for the PARKING marking and for nothing else, and the editor's
+     * set `stationsAutonomyWillNotChoose` asks the same question since OB-195.
      *
-     * **WHAT THIS TEST PINS IS HOW ADAM HAS MARKED HIS BERTHS, NOT WHAT THE FLAG IMPLIES** (his
-     * ruling, 2026-09-09). It reads as though a compulsory turn were never an auto-destination, and
-     * the code says no such thing: `AutonomyBuilder` writes `autoDestination:false` for the PARKING
-     * marking and for nothing else, and `Layout.isSendableDestination` admits a terminus. Adam:
+     * **Until 2026-09-23 this pinned a fact about his railway rather than the rule**: every compulsory turn on it was
+     * also marked parking, so "never an autonomy destination" and "exactly when not parking" gave the same answer, and
+     * `behaviour.md` section 3 said the two could not disagree there.  That day he made BottomMainC a compulsory turn
+     * and left autonomy free to choose it - the first square where the two markings differ, so the railway can now
+     * tell the rule from the coincidence.  Both kinds are asserted present, so this cannot pass by the railway losing
+     * one of them.
      *
-     * > *Marking a square as a compulsory turn says what happens when a train ARRIVES, not who may
-     * > send one there.*
-     *
-     * So every copy here comes back with `isAutoDestination` false because every compulsory turn on
-     * this railway is ALSO marked parking - both markings, made deliberately, on the same squares.
-     * That is worth pinning: it is the fact the magenta colouring and the Auto tier notice are true
-     * of, and if a berth ever loses its parking marking this is where it shows up.
-     *
-     * It is NOT evidence about the two flags being one flag, and `behaviour.md` section 3 now says so
-     * in the row this test used to be cited under. The editor's own set disagrees with the runtime on
-     * exactly this point and is filed as OB-195.
-     *
-     * MUTATION: none needed - this is a measurement with an assertion attached. If the railway stops
-     * having a compulsory-turn station the precondition fails rather than the test passing quietly.
+     * MUTATION: `AutonomyBuilder` writing `autoDestination:false` for a compulsory turn as well fails this at
+     * BottomMainC; `stationsAutonomyWillNotChoose` counting `isMustTurnAround` again fails the editor half there.
      *
      * @throws Exception on a failure to build
      */
     @Test
-    public void testACompulsoryTurnStationIsNotEmittedAsADestination() throws Exception
+    public void testACompulsoryTurnIsAnAutoDestinationExactlyWhenItIsNotParking() throws Exception
     {
         model.parseAuto(session.buildConfiguration());
 
-        java.util.List<String> compulsory = new LinkedList<>();
-        java.util.List<String> alsoDestinations = new LinkedList<>();
+        java.util.List<String> parked = new LinkedList<>();
+        java.util.List<String> choosable = new LinkedList<>();
+        java.util.List<String> wrong = new LinkedList<>();
+
+        java.util.Set<TileKey> editorSays = session.manualOnlyStations();
 
         for (TileKey square : session.getReducer().getPoints().keySet())
         {
             if (!session.isMustTurnAround(square)) continue;
 
+            boolean parking = session.isParking(square);
+
             for (String name : session.getStationIndex().pointNamesAt(square))
             {
                 Point built = model.getAutoLayout().getPoint(name);
 
-                if (built == null) continue;
+                if (built == null || !built.isDestination()) continue;
 
-                compulsory.add(name);
+                (parking ? parked : choosable).add(name);
 
-                // AUTO-DESTINATION, NOT DESTINATION, and the difference is the whole answer (MON-C14).
-                //
-                // Measured 2026-09-08: every compulsory-turn square on this railway - TunnelLeftPark,
-                // TunnelLongPark, TopR1ParkLong and the rest of the parking berths - builds to
-                // `terminus=true`, and a terminus IS a destination. So the branch the review read is
-                // reached, on this railway, today.
-                //
-                // AND THE REASON THEY ARE NOT AUTO-DESTINATIONS IS THE PARKING MARKING, not the
-                // compulsory turn (Adam's ruling, 2026-09-09). The builder writes
-                // `autoDestination:false` for `manualOnly` and for nothing else. So what this counts
-                // is squares Adam marked BOTH ways, which is every one of his.
-                if (built.isAutoDestination()) alsoDestinations.add(name + " (terminus="
-                    + built.isTerminus() + ")");
+                // THE RUNTIME: parking and nothing else keeps autonomy away.
+                if (built.isAutoDestination() == parking)
+                {
+                    wrong.add(name + " is " + (parking ? "" : "not ") + "marked parking and the runtime says autonomy "
+                        + (built.isAutoDestination() ? "may" : "may not") + " choose it");
+                }
+
+                // AND THE EDITOR, which colours the leg magenta and writes the Auto tier notice from its own set.
+                if (built.isActive() && editorSays.contains(square) == built.isAutoDestination())
+                {
+                    wrong.add(name + ": the editor's manual-only set " + (editorSays.contains(square) ? "holds" : "leaves"
+                        + " out") + " this square and the runtime disagrees");
+                }
             }
         }
 
-        assertFalse(compulsory.isEmpty(),
-            "no square on this railway is marked as one trains MUST turn at, so the branch this is"
-            + " about was not reached and the finding is still unsettled rather than answered");
+        assertFalse(parked.isEmpty(),
+            "no compulsory-turn station on this railway is marked parking, so the half of the rule that keeps autonomy"
+            + " away from a berth is not reached");
 
-        assertTrue(alsoDestinations.isEmpty(),
-            "a compulsory-turn square on this railway is one AUTONOMY may choose: " + alsoDestinations
-            + ". That is not a code fault - the compulsory-turn marking says nothing about who may send"
-            + " a train here (Adam, 2026-09-09) - it means one of Adam's parking berths has LOST its"
-            + " parking marking, which is the marking that keeps autonomy away. Check the setup before"
-            + " the builder (MON-C14, OB-195)");
+        assertFalse(choosable.isEmpty(),
+            "no compulsory-turn station on this railway is one autonomy may choose, so the rule and the coincidence it"
+            + " used to be pinned as give the same answer again.  BottomMainC was the one, marked 2026-09-23");
+
+        assertTrue(wrong.isEmpty(),
+            "a compulsory turn and the parking marking are being read as one thing: " + wrong + ".  Adam, 2026-09-09:"
+            + " the compulsory turn says what happens when a train arrives, not who may send one there (MON-C14,"
+            + " OB-195)");
     }
 
     /**

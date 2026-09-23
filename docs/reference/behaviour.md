@@ -283,9 +283,9 @@ is written, in [`two-copies-evaluation.md`](two-copies-evaluation.md), and nothi
 
 Its headline said *"on this railway the split does not fire"* - every named square building to exactly
 one copy - **and that was measured on a diagram whose switches had no accessories, so the railway was
-in pieces** (corrected 2026-09-08). On the wired reduction, **30 of the 58 squares build to more than
-one Point and 13 of the 33 stations do**; `BottomMainB`, `BottomMainC`, `BottomMainPost` and `RampDown`
-are four Points each. `core.testEverySquareBuildsToTheCopiesTheSetupImplies` is the census and the
+in pieces** (corrected 2026-09-08). On the wired reduction, **25 of the 58 squares build to more than
+one Point and 9 of the 33 stations do** (recounted 2026-09-23; 30 and 13 before Adam's one-way marks
+and BottomMainC's compulsory turn); `BottomMainPost` and `RampDown` are four Points each. `core.testEverySquareBuildsToTheCopiesTheSetupImplies` is the census and the
 tripwire.
 
 What survives the correction: following the edges is a real option - it moves the same state from the
