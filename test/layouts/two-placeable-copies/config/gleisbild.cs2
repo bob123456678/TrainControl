@@ -1,0 +1,19 @@
+[gleisbild]
+version
+ .major=1
+groesse
+seite
+ .id=5
+ .name=1 - Main
+seite
+ .id=1
+ .name=2 - Bottom
+seite
+ .id=2
+ .name=3 - Top Parking
+seite
+ .id=3
+ .name=4 - Combined
+seite
+ .id=4
+ .name=5 - Test

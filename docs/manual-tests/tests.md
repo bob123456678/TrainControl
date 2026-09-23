@@ -20704,6 +20704,13 @@ Run the steps as yesterday's note says.  If you have a second layout whose pages
 but are in a different order, importing between the two is the case that was wrong; the automated tests build
 that case, so it is not a separate entry.
 
+
+**Claude, 2026-09-22: held at `fixed unvalidated`, and not because of his verdict.**  He marked it
+*Works, with notes* on 2026-09-13; the import then changed twice underneath the same steps - pages
+matched by NAME rather than number, and an import made with no page loaded - which the comments below
+record. A verdict from before those is not a verdict about this build, and the steps it now carries
+name a layout that did not exist when he ran it.
+
 ---
 
 <a id="mt-381"></a>
@@ -22843,7 +22850,7 @@ Your note on MT-434: *"Does not work.  Changes don't happen when switching, and 
 
 ### MT-440 - 2026-09-15 - Return Home does not route a train over the tail of one it has just parked
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-228
 
 **Written:** 2026-09-15
@@ -22998,7 +23005,7 @@ Found by the wide autonomy review.  On **Manual**, Why Not Moving? answers for a
 
 ### MT-445 - 2026-09-15 - Return Home turns a train that cannot reverse only on its way into its berth
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** AMH-B1
 
 **Written:** 2026-09-15
@@ -23104,7 +23111,7 @@ Found by the wide autonomy review.  The **Unavailable While Occupied...** list o
 
 ### MT-448 - 2026-09-15 - No route goes round to another copy of the square it starts or ends at
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** AMR-B1
 
 **Written:** 2026-09-15
@@ -23197,7 +23204,7 @@ Found by the wide autonomy review, and your answer on how your detection behaves
 
 ### MT-451 - 2026-09-16 - Why Not Moving? gives the berth's own reason for a parking berth, not autonomy's preference
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** AMR-C2
 
 **Written:** 2026-09-16
@@ -23366,7 +23373,7 @@ Rewritten the same day after review MAL, to your rulings *"Every leg, cut at swi
 
 **One thing to expect while you are part-way through** (RTX-C2, and your ruling of 2026-09-19 that clear warnings are enough here): skipping a piece to reach the switch prompt leaves that piece at zero with the switches around it measured, and while it is in that state every parking berth behind it is closed to any train whose length is known.  The room rule claims a square before it spends on it and an unmeasured square spends nothing, so the whole approach is claimed.  Since 2026-09-20 the refusal says so - it names how many squares of that approach still have no length - and measuring them clears it.
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-089
 
 **Written:** 2026-09-16
@@ -23476,7 +23483,7 @@ Your request: *"Add a right click menu open to clear all max station train lengt
 
 ### MT-458 - 2026-09-19 - A negative maximum train length is refused, and one already stored can be cleared
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** SET-B1
 
 **Written:** 2026-09-19
@@ -23546,7 +23553,7 @@ Your ruling of 2026-09-19: *"For crossings: if its length is set, count that len
 
 ### MT-460 - 2026-09-19 - Segment Length shows and writes what the whole run measures
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** SET-B3
 
 **Written:** 2026-09-19
@@ -23620,7 +23627,7 @@ From the 2026-09-19 review round (UIX-B1), fixed the same day.  The exit asked t
 
 ### MT-462 - 2026-09-19 - A switch thrown during a route highlight is drawn in its real position
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** UIX-B2
 
 **Written:** 2026-09-19
@@ -23687,7 +23694,7 @@ You were right, and it was two defects in one line. The match was tile.getRawAdd
 
 ### MT-463 - 2026-09-19 - Return Home moves a train the railway had standing on a terminus
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RTX-B1
 
 **Written:** 2026-09-19
@@ -24162,13 +24169,20 @@ them."*
 message has nowhere to send you, which is the one thing the shortened wording promises and cannot yet
 keep.
 
+
+**Claude, 2026-09-22: held at `fixed unvalidated` deliberately, and this is the only reason.**  Adam
+marked it *Works, with notes* and the note was the message - which has since been shortened, in all
+eight bundles.  So what he validated was the behaviour and the OLD wording; step 1 says *"read the
+message"*, and the message is not the one he read.  It wants one look at the new sentence, which is
+seconds, rather than a disposition that claims he has seen it.
+
 ---
 
 <a id="mt-471"></a>
 
 ### MT-471 - 2026-09-22 - Deleting one condition of a group leaves a route that still saves
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-240
 
 **Written:** 2026-09-22
@@ -24224,7 +24238,7 @@ closing the editor and losing the edit.
 
 ### MT-472 - 2026-09-22 - The route editor marks a row it is going to refuse, while you are looking at it
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-246
 
 **Written:** 2026-09-22
@@ -24281,7 +24295,7 @@ seen failing first, with a control that a row Save accepts is not marked.
 
 ### MT-473 - 2026-09-22 - Two trains on one double-curve tile
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-238
 
 **Written:** 2026-09-22

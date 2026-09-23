@@ -2610,6 +2610,52 @@ javadoc says three attempts preceded it.
 **What would confirm it in one gesture:** paste onto `TopMainR1` or `TopMainR2` in the viewer and say
 whether the arrow disagrees with the way the train actually drives out.
 
+
+**REPRODUCED, 2026-09-22, on his railway as it stands - and the cause is settled.**
+
+His sequence: *"for BottomMainA if I face 75 407 DB east with tail to the west, and paste to
+BottomSecondary and then back to BottomMainA, it now faces west.  When pasted on topMainR1 or R2, it
+correctly faces north."*  Measured by pointing a sandbox at `cs2_sample_layout` - which COPIES, so his
+folder was only read, and it was verified byte-identical before and after:
+
+- leg 1, out to BottomSecondary: the walk says W, the setup records W, and BottomSecondary has one copy
+  facing W.  All correct.
+- leg 2, back to BottomMainA: the walk says **E**, `facingAfterAPaste` records **E**, and
+  `StationIndex.speakerAt` lands the train on **`BottomMainA (westbound)`**.
+
+**Why the snapshot said otherwise for three attempts.**  `speakerAt` prefers a copy trains may STOP at.
+On `live-snapshot` only the eastbound copy of BottomMainA is a destination, so it lands there and the
+paste agrees with the walk by accident.  On his railway TODAY **both** copies are destinations, so the
+preference no longer discriminates and it takes the first - the westbound one.  The fixture had lost the
+shape being tested and reported clean about it.
+
+**And it explains his other two symptoms in one go.**  The arrival side and the tail are worked out for
+the copy the train LANDED on, so landing westbound is why there was no prompt about the tail and why the
+tail was not from the west.  One cause, three symptoms.
+
+**TopMainR1 and R2 are right for the same reason turned round:** one placeable copy each, so there is
+nothing for `speakerAt` to get wrong.
+
+**The fix is one line** - the copy choice takes the chosen heading where there is one and the WALKED
+heading otherwise, instead of only the chosen one.  `copyFacing` already refuses a copy a train may not
+be placed on, so it is safe where the walked heading is not placeable.
+
+**What is blocking it is a fixture, not the fix.**  A claim needs a railway with two PLACEABLE copies
+facing different ways; `live-snapshot` has none, and his current geometry has two (`BottomMainA` and
+`LowerParkingOuter`).  A frozen copy of it is committed as `test/layouts/two-placeable-copies` - but a
+window stood up against it HANGS before any claim runs, after the version check, which is the shape of
+a modal dialog on the event thread.  The same class against `live-snapshot` runs and fails its own
+precondition correctly (*"has 1 placeable copies"*), so the class is sound and the fixture is not yet
+usable.
+
+**Next step, and it is bounded:** find what that fixture prompts about - or build a small hand-made
+layout with two placeable copies, the way `test/layouts/single-switch` was made for its own rule.  Then
+the fix and its claim go in together.
+
+**Nothing shipped.**  Four attempts: one claim that could not fail, two that assumed the walked heading
+was placeable, and this one blocked on the fixture.  The diagnosis is now certain; the fix is not going
+in behind a claim that cannot run.
+
 ### OB-271 - 2026-09-22 - focusability in the route editor
 
 **Kind:** bug  
