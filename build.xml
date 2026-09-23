@@ -460,6 +460,7 @@
         <test-one-class class="testRouteCommandParity"/>
         <test-one-class class="testRouteEditorLocked"/>
         <test-one-class class="testRouteEditorValidation"/>
+        <test-one-class class="testYourOwnRoutesToggleWithoutASync"/>
         <test-one-class class="testRouteInventory"/>
         <test-one-class class="testRoutePicking"/>
         <test-one-class class="testRouteReachesTheRails"/>

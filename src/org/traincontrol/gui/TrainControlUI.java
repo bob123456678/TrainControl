@@ -21777,8 +21777,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // a stack trace nobody sees, and skipping the sync and refresh that follow it.
         if (searchString == null || "".equals(searchString)) return;
 
-        final String search = searchString;
+        enableOrDisableMatching(searchString, enable);
+    }
 
+    /**
+     * Turns automatic execution on or off for every route whose name contains the search - Bulk
+     * Enable/Disable's work, after its question has been answered.
+     *
+     * A door of its own so the batch can be reached past the prompt (MT-467); the prompt stays in
+     * `BulkEnableOrDisable`, on the event thread, for the reason VB-B1 gives there.
+     *
+     * @param search what a route's name must contain, or "*" for every route
+     * @param enable the state to write
+     */
+    public void enableOrDisableMatching(String search, boolean enable)
+    {
         new Thread(()->
         {
             // WHETHER THE STATION HAS HEARD OF ANY OF THEM (OB-155, swept here by GUX-C5).  One sync
