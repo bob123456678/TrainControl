@@ -313,14 +313,6 @@ public class testATrainComesHomeFacingTheWayItWasHomed
         }
     }
 
-    /** A copy's name with the turning twin folded onto the plain one - one arrival, two things to do next. */
-    private static String arrival(String point)
-    {
-        String turning = ", reverse)";
-
-        return point.endsWith(turning) ? point.substring(0, point.length() - turning.length()) + ")" : point;
-    }
-
     private static void awaitStopped() throws Exception
     {
         long until = System.currentTimeMillis() + SETTLE_TIMEOUT_MS;

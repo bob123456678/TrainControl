@@ -1948,7 +1948,8 @@ public final class HomeStaging
             out.add(I18n.f("autolayout.whyHomeStartNotAStation", Layout.placeNameOf(from)));
         }
 
-        List<Point> copies = copiesOf(home);
+        // The copies it may come home on, as `canGetHome` asks them - so the sentence describes the rule that refused.
+        List<Point> copies = homeCopiesOf(home);
 
         boolean anyActive = false, anyAdmits = false, anyLongEnough = false, anyStation = false;
 
@@ -2070,6 +2071,29 @@ public final class HomeStaging
         return out;
     }
 
+    /**
+     * The copies of a home square a train may come home on: every copy, or - for a home held to a facing - those facing
+     * that way, which is what `atHome` counts as home (OB-282, TDY-C1).
+     *
+     * @param home the home
+     * @return the copies, never empty
+     */
+    private static List<Point> homeCopiesOf(Point home)
+    {
+        List<Point> all = copiesOf(home);
+
+        if (!home.isHomeFacingFixed()) return all;
+
+        List<Point> facing = new ArrayList<>();
+
+        for (Point copy : all)
+        {
+            if (java.util.Objects.equals(copy.getCopyFacing(), home.getCopyFacing())) facing.add(copy);
+        }
+
+        return facing.isEmpty() ? all : facing;
+    }
+
     private static void reason(Map<Locomotive, List<String>> into, Locomotive loc, String sentence)
     {
         List<String> list = into.get(loc);
@@ -2109,7 +2133,10 @@ public final class HomeStaging
 
         boolean sawACopy = false;
 
-        for (Point copy : home.getLayout().getPoints())
+        // THE COPIES IT MAY COME HOME ON - every copy of the square, or those facing the way a home held to a facing
+        // faces (TDY-C1).  Asked of every copy, a home the train could only reach turned round passed here, and the
+        // search spent its budget to answer "maybe" about something provable.
+        for (Point copy : homeCopiesOf(home))
         {
             if (!home.getBlock().equals(copy.getBlock())) continue;
 
