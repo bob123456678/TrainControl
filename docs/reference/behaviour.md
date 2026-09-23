@@ -1608,6 +1608,26 @@ the trains are.
 where a train may be sent: an inactive square stops both, a barred arrival stops both, a compulsory
 turn turns both.
 
+**A BARRED ARRIVAL STOPS BEING SENT THERE AND NOTHING ELSE** (Adam, 2026-09-23, of RampDown and
+BottomMainPost: *"may need station restrictions but not pass through restrictions, since they are meant
+for shunting only"*, with *"make sure trains can still go through there"*). The restriction is spent
+entirely on one flag: `AutonomyBuilder.arrivalAllowed` makes that copy of the square `station: false`.
+The copy is still built, still carries its edges and is still crossed by any route that runs over it -
+so a square can be closed as a destination and remain open as track, which is exactly the shunting
+siding he describes. The tile-wide copy a never-split square is emitted as is never barred at all,
+because there is no arrival side to bar and refusing it would make the station unreachable rather than
+restricted.
+
+**The flag is decided once**, and that is a fix rather than a tidy: it is emitted as both `station` and
+the terminus, and read twice the turn-round copy of a barred side came out as a terminus that is not a
+destination - a pair `Point.setTerminus` refuses and `parseAuto` answers by invalidating the whole
+layout. Restricting a terminus platform, the most natural use this setting has, once made a setup
+unloadable. Both of his squares are `canReverse`, so both are that shape.
+
+**Barring every way in is a different thing and is reported, not enforced.** `AutonomySession.shutStations`
+names a station whose every arrival side is barred, because such a square is no longer a destination by
+any road and that is worth saying out loud rather than discovering from an empty menu.
+
 On **Auto**, a station autonomy is told to leave alone is reported as reachable **and never chosen** —
 which is the state somebody opens the panel to explain. The route is still drawn, because the track
 is passable and reporting "no path" would be a lie about the railway to make a point about the

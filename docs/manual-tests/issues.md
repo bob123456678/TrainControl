@@ -2701,6 +2701,17 @@ through the route tile from the tile map; it does not.  The berths are measured 
 
 **Which makes the list of types one question asked once**, as this entry already argued: route tiles
 are the first entry on it, and text and labels are the obvious next ones to settle.
+
+**AND THE SHARE ITSELF IS CONFIRMED EVEN, 2026-09-23** (`OB-275`, answered the same day): *"let's stick
+to a then."*  So this entry's fix is the divisor and nothing else - route tiles leave the list of
+squares a stretch is shared over, and the share stays even.
+
+Which lands exactly on the answer he asked for.  His four-tile example is three plain squares and one
+route tile with 4 typed: the route tile is no longer in the list, 4 over 3 squares is 2, 1, 1 by the
+existing even-share rule with the remainder going first to a square a train stands on - and *"one to
+have length 2, and two others length 1"* is what he said he preferred.  No new sharing code; one
+exclusion.
+
 ### OB-274 - 2026-09-23 - Mass Assign Lengths cannot accept a deliberate length of 0, so a genuinely zero piece reads as skipped
 
 **Kind:** bug  
@@ -2786,6 +2797,36 @@ chosen some other way?  Each is a small change to one method, and each reads dif
 tail rules - a consolidated length sits on ONE square, so a train resting anywhere else on the piece
 spends nothing there, which is the direction that admits rather than refuses.  That last point is why
 this needs his word rather than a guess.
+
+
+**HIS RULING, 2026-09-23 - the even share stays:** *"let's stick to a then, since that is more visually
+pleasing."*
+
+So the record was right and nothing changes in `assignStretchLength`.  The question is answered rather
+than fixed, and the reason he gives is a reason this entry did not consider: a stretch whose squares
+each read 1 LOOKS like a measured stretch, and one square reading 5 beside four reading nothing looks
+like a stretch somebody gave up on.  The length display is read far more often than the length rules
+are.
+
+**And his reason happens to pick the option that was already the safe one**, which is worth recording
+because it will not always work out that way:
+
+- Every rule that ADDS a stretch up is indifferent - `roomAfterTheLastSwitch`, `sumLength`, the
+  editor's own readouts.  Same total either way.
+- The rule that reads squares ONE AT A TIME is not indifferent, and that is the tail.  The protrusion
+  walk spends length square by square backwards from where the train stands and stops the moment it has
+  spent the train's length (`AutonomySession:6121`).  Under consolidation the answer depends on where
+  the train happened to stop: on the square holding the whole length it spends it all at once and the
+  tail is drawn over ONE square - under-reporting, so track behind the train reads free - and on one of
+  the zeros it spends nothing and the tail is drawn over the WHOLE stretch.  Even share draws the tail
+  where the train is, wherever it stopped.
+- Consolidation also could not be built before `OB-274`: four squares of five would store 0, 0 means
+  unmeasured today, and they would come straight back onto the "still needs a length" list - which is
+  the phantom skip he filed OB-274 about.
+
+**Closed as answered, no code change, no MT.**  `behaviour.md` 5a already carries the rule and needed no
+edit.  The one thing this entry leaves behind is the observation above about which readers are
+indifferent and which are not, because the next request to move lengths around will need it.
 
 ### OB-276 - 2026-09-23 - the tail question lists one square twice when the road back to it is a single hop
 
