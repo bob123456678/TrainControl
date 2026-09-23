@@ -24571,7 +24571,8 @@ selections are possible."*  And: *"The next route sets it green, so that is out 
 **Steps**
 
 1. In the autonomy editor, right-click a station that trains stop at and that a signal leads into.  Choose
-   **Entry Guard Signals...** - it sits under **Signal Protecting This Station...**.
+   **Entry Guard Signal...** - it sits under **Exit Guard Signal...** (renamed 2026-09-23 from *Signal Protecting
+   This Station...*).
 2. Pair a signal with **Click It on the Diagram**, then a second one with **Enter Its Address...**.  Remove one
    with **Remove Selected**, add it back, and press **Done**.  Save.
 3. Right-click the station again and look at the item's label.

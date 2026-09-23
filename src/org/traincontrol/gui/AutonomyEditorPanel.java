@@ -455,7 +455,7 @@ public class AutonomyEditorPanel extends JPanel
      */
     private enum Guard
     {
-        /** Red while the platform is claimed - "Signal Protecting This Station", which he calls the exit guard. */
+        /** Red while the platform is claimed - the menu's "Exit Guard Signal...", once "Signal Protecting This Station". */
         EXIT("autosetup.ui.menuPairSignal", "autosetup.ui.promptSignalHow", "autosetup.ui.promptSignalsPaired",
             "autosetup.ui.promptClickSignal", "autosetup.ui.setSignal", "autosetup.ui.addedSignal",
             "autosetup.ui.removedSignal", "autosetup.ui.clearedSignal"),

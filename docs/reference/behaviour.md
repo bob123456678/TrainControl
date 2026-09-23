@@ -1926,13 +1926,14 @@ editor through the same dialog - the list, **Click It on the Diagram**, **Enter 
 comma-separated), **Remove Selected**, **Done** - and each may hold several signals, because a platform reachable from
 two ends needs one on each approach.
 
-**The exit guard** - *Signal Protecting This Station*.  Its signals are RED while the platform is claimed - a train
+**The exit guard** - *Exit Guard Signal...* on the menu (Adam, 2026-09-23: *"rename it, but add Signal at the end
+(Exit Guard Signal, Entry Guard Signal)"*; it was *Signal Protecting This Station*).  Its signals are RED while the platform is claimed - a train
 standing there, or a locked path that has reserved it - and GREEN when it is free.  An aspect DERIVED from the
 platform, asked again on every change of occupancy (`Layout.refreshProtectingSignal`), and asked per SIGNAL: one paired
 to two platforms stays red while either is claimed.  Only while trains are being run, so arranging the railway by hand
 moves no hardware.
 
-**The entry guard** - *Entry Guard Signals* (Adam, 2026-09-23, FR-096: *"a signal that turns red after arrival at the
+**The entry guard** - *Entry Guard Signal...* (Adam, 2026-09-23, FR-096: *"a signal that turns red after arrival at the
 final designation.  Same UI to set it as the current linked signal exit guard, and multiple selections are
 possible"*).  Its signals are thrown RED when a train ARRIVES at the station as the end of its journey - in every tier,
 because every run records its arrival in the same place (`Layout.executePath`).  A train that only passes the station
