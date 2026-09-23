@@ -192,25 +192,32 @@ public class testYourOwnRoutesToggleWithoutASync
     /**
      * How many syncs were turned away since the window opened - one per sync asked for while the flag is held.
      */
-    private static int syncsAskedFor() throws Exception
+    private static int syncsAskedFor()
     {
         final String[] text = new String[1];
 
-        SwingUtilities.invokeAndWait(() ->
+        try
         {
-            try
+            SwingUtilities.invokeAndWait(() ->
             {
-                java.lang.reflect.Field area = TrainControlUI.class.getDeclaredField("debugArea");
+                try
+                {
+                    java.lang.reflect.Field area = TrainControlUI.class.getDeclaredField("debugArea");
 
-                area.setAccessible(true);
+                    area.setAccessible(true);
 
-                text[0] = ((javax.swing.JTextArea) area.get(ui)).getText();
-            }
-            catch (ReflectiveOperationException e)
-            {
-                throw new IllegalStateException(e);
-            }
-        });
+                    text[0] = ((javax.swing.JTextArea) area.get(ui)).getText();
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+        }
+        catch (InterruptedException | java.lang.reflect.InvocationTargetException e)
+        {
+            throw new IllegalStateException(e);
+        }
 
         String line = I18n.t("ui.infoSyncAlreadyRunning");
 

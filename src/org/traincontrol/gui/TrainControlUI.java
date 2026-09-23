@@ -19752,17 +19752,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             
             if (dialogResult == JOptionPane.YES_OPTION)
             {
-                // The id is read BEFORE the delete, which is the only moment it exists (OB-155).
-                boolean wasLocal =
-                    org.traincontrol.marklin.MarklinControlStation.isLocalRouteId(route.getId());
+                // The lock is read BEFORE the delete, which is the only moment it exists (OB-155).
+                // The lock, not the id: see enableOrDisableRoute for why the id cannot say (MT-467).
+                boolean wasLocal = !route.isLocked();
 
                 this.model.deleteRoute(route.getName());
                 refreshRouteList();
 
                 // ONLY WHEN THE STATION COULD HAVE KNOWN THE ROUTE (OB-155).
                 //
-                // This synced after every delete, to "ensure route changes are synced".  A route at or
-                // above ROUTE_STARTING_ID was allocated here and the station has never heard of it, so
+                // This synced after every delete, to "ensure route changes are synced".  A route with no
+                // lock was never sent by the station, so the station has never heard of it and
                 // the round trip - the whole database, behind a modal spinner, and twice the connect
                 // timeout when the station is off - can bring back nothing about it.
                 if (!wasLocal) this.syncWithCS2();
@@ -20427,12 +20427,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             );
                         }
 
-                        // Both ends, because either could be the station's (OB-155).  Changing one
-                        // local id to another local id is invisible to the station both before and
-                        // after, so there is nothing for a sync to reconcile.
+                        // Both ends, because either could be the station's (OB-155).  The old end is
+                        // whether the station carried this route, which its lock says (MT-467 - see
+                        // enableOrDisableRoute); the new end is whether the id could be one the station
+                        // has issued since the last sync, which the id range says.  A route the station
+                        // never carried, moved to an id it never issues, is invisible to it both before
+                        // and after, so there is nothing for a sync to reconcile.
                         if (!org.traincontrol.marklin.MarklinControlStation.isLocalRouteId(newId)
-                            || !org.traincontrol.marklin.MarklinControlStation.isLocalRouteId(
-                                currentRoute.getId()))
+                            || currentRoute.isLocked())
                         {
                             this.syncWithCS2();
                         }
@@ -21811,6 +21813,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     if (r.getName().contains(search) || "*".equals(search))
                     {
+                         // WHETHER THE STATION CARRIED IT, which its lock says and its id does not (MT-467).
+                         // Read before the write, which replaces the route object.  See enableOrDisableRoute.
+                         if (r.isLocked()) anyOnTheStation = true;
+
                          // VAL-C6: routed through the same write enableOrDisableRoute uses, rather
                          // than a second inline this.model.editRoute(...) call with the same six
                          // arguments - so the write itself cannot drift between the two, even
@@ -21820,11 +21826,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                          // once per route, and folding in enableOrDisableRoute's own sync/refresh
                          // would turn one sync into as many as there are matching routes.
                          writeRouteEnabledState(r, enable);
-
-                         if (!org.traincontrol.marklin.MarklinControlStation.isLocalRouteId(r.getId()))
-                         {
-                             anyOnTheStation = true;
-                         }
                     }
                 }
             }
@@ -21860,16 +21861,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // on every route with no check of its own - see that menu for the other half of this.
             if (!enable || r.hasS88())
             {
+                // ONLY WHEN THE STATION CARRIED THE ROUTE (OB-155, swept here by GUX-C5; MT-467).
+                //
+                // The write below is a delete-and-re-add in the LOCAL database and tells the station
+                // nothing, so for a route the station never carried the round trip - the whole
+                // database, behind a modal spinner, and twice the connect timeout with the station off -
+                // can bring back nothing about the route that was just toggled.
+                //
+                // The route's LOCK says whether the station carried it: only the sync's import sets it,
+                // to exactly the routes the station sent, and it is kept with the route.  The id does
+                // not say it.  `isLocalRouteId` is true of the ids handed out here since 2025-02-01, and
+                // most of Adam's own routes are older - ids 1 to 87 - so they synced: *"there is a
+                // spinner for my own routes too, both single and bulk."*  Read before the write, which
+                // replaces the route object.
+                final boolean stationCarriedIt = r.isLocked();
+
                 writeRouteEnabledState(r, enable);
 
-                // ONLY WHEN THE STATION COULD HAVE KNOWN THE ROUTE (OB-155, swept here by GUX-C5).
-                //
-                // Delete and the editor's Save were given this test and this door was not.  The write
-                // above is a delete-and-re-add in the LOCAL database and tells the station nothing, so
-                // for a route this application allocated the round trip - the whole database, behind a
-                // modal spinner, and twice the connect timeout with the station off - can bring back
-                // nothing about the route that was just toggled.
-                if (!org.traincontrol.marklin.MarklinControlStation.isLocalRouteId(r.getId()))
+                if (stationCarriedIt)
                 {
                     this.syncWithCS2();
                 }

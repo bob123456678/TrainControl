@@ -2156,6 +2156,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Adam: "the route page should not have to sync with the cs2 after edits/deletions for routes >=
      * ID 1000."
      *
+     * **It says what an id could collide with, not where a route came from.**  Routes made here before
+     * 2025-02-01 have ids below 1000 - most of Adam's do - and the station never carried them.  Whether
+     * it carried a route is the route's lock, which only the sync's import sets (MT-467).
+     *
      * @param id the route id in question
      * @return true when no sync could tell us anything about it
      */
