@@ -6940,8 +6940,7 @@ public class AutonomyEditorPanel extends JPanel
         // A field that will not accept anything but digits, rather than an open one that complains
         // afterwards (OB-043).  A number is the only answer this question has, so refusing the keystroke
         // is kinder than accepting it and then throwing it away with an error box.
-        final javax.swing.JTextField field = digitsOnly(
-            String.valueOf(selection.isEmpty() ? lengthShownFor(sample) : session.getStore().getTileLength(sample)));
+        final javax.swing.JTextField field = digitsOnly(segmentLengthPrefill(sample, selection.isEmpty()));
 
         // SELECTED, so the number can be typed over rather than cleared first (OB-176).
         //
@@ -6996,6 +6995,18 @@ public class AutonomyEditorPanel extends JPanel
         // Emptied and submitted still means none (OB-043).  Adam: "if the segment length is cleared and submitted,
         // treat it as 0" - which was "no length" when 0 was; it is the Clear button's answer now that 0 is kept.
         applyLengthAnswer(tile, entered.isEmpty() ? null : Integer.valueOf(entered));
+    }
+
+    /**
+     * What Segment Length's box opens holding.
+     *
+     * @param sample the square read - the one clicked, or the first of a selection
+     * @param wholeRun whether the answer is for the run the square is in, rather than for each selected square
+     * @return the text to prefill
+     */
+    public String segmentLengthPrefill(TileKey sample, boolean wholeRun)
+    {
+        return String.valueOf(wholeRun ? lengthShownFor(sample) : session.getStore().getTileLength(sample));
     }
 
     /**

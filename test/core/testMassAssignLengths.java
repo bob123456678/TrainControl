@@ -2339,6 +2339,41 @@ public class testMassAssignLengths
     }
 
     /**
+     * Segment Length opens empty on a run with no length and no answer, so pressing OK untouched records nothing
+     * (GUI-B2).
+     *
+     * A 0 submitted in Segment Length is an answer since 2026-09-23 (Adam: *"no, add a clear button"*) - kept, never
+     * offered again by Mass Assign Lengths, and no longer listed as missing.  The box opened showing what the run
+     * measures, which for an unmeasured run was "0", with OK the default: Enter on an unmeasured square wrote the
+     * deliberate answer nobody gave.  Mass Assign Lengths' own prompt opens empty for exactly this reason.  An answered
+     * 0 still shows as 0, and a length as itself.
+     *
+     * MUTATION: prefill the measured length whatever it is, as it was, and the first claim fails.
+     *
+     * @throws IOException from the fixture
+     */
+    @Test
+    public void testSegmentLengthOpensEmptyWhereNothingHasBeenSaid() throws IOException
+    {
+        openBerthBehindASwitch(key(5, 1));
+
+        AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+        assertEquals(panel.segmentLengthPrefill(key(4, 1), true), "", "Segment Length opens holding a 0 on a run nobody"
+            + " has measured or answered, so pressing OK records a deliberate 0 - off Mass Assign Lengths and off every"
+            + " list of what still needs measuring - that nobody typed (GUI-B2)");
+
+        session.answerTileLengthsZero(java.util.Collections.singleton(key(4, 1)));
+
+        assertEquals(panel.segmentLengthPrefill(key(4, 1), false), "0", "a square answered 0 opens empty, hiding the"
+            + " answer that was given");
+
+        session.setTileLength(key(2, 1), 3);
+
+        assertEquals(panel.segmentLengthPrefill(key(2, 1), false), "3", "a measured square does not open on its length");
+    }
+
+    /**
      * Segment Length on a run re-derives the railway once, not once per square (AUS-C1).
      *
      * `touched()` is a full builder construction - a new graph, a new reduction, a new station index - and the
