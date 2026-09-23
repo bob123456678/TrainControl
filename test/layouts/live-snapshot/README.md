@@ -52,7 +52,8 @@ before anything reads it, so the checked-in fixture is never written to either.
   `5 - Test`.
 - **Everything in the files** — station names, s88 addresses, portals, priorities, homes, lock edges,
   the whole authored setup as it stood at that commit. It is a snapshot; that is the point.
-- **What it builds to**: 128 reduced edges, 96 Points, 149 edges. Pinned exactly in
+- **What it builds to**: 122 reduced edges, 87 Points, 125 edges since the refreeze of 2026-09-23 (128, 96 and
+  149 before it). Pinned exactly in
   `testTheFrozenRailwayIsStillTheRailway`, because far below that is the five-edge skeleton
   `support.LayoutSandbox.wiredPages` describes — a railway whose switches have no accessories — and a
   test standing on it passes by asserting about null.
@@ -68,12 +69,11 @@ before anything reads it, so the checked-in fixture is never written to either.
 
 ## Not invariants — set these in code
 
-- **Lengths.** No tile in this scenario has one, and that is deliberate. Adam, 2026-09-10: *"We put
-  the lengths of 1 in there for testing. Actual tracks are much longer... remove all currently set
-  segment lengths and set custom lengths where it makes sense for your tests."* Three tiles carried a
-  length of one unit until then — `5:19,12`, `5:14,13` and `5:22,7` — and every figure the two
-  censuses report was really a measurement of those three. A test that needs measured track calls
-  `session.setTileLength(tile, n)` itself and says why it chose that number.
+- **Lengths.** Since the refreeze of 2026-09-23 these are Adam's own measurements, and the station sizes he
+  gave. A test about the railway as he runs it reads them; a test about a rule with lengths of its own clears
+  his first (`clearEveryTileLength`, `clearEveryMaxTrainLength`) and says why - as the length guards and the
+  two censuses do. Until then the snapshot measured nothing: Adam, 2026-09-10, *"We put the lengths of 1 in
+  there for testing. Actual tracks are much longer."*
 - **Train placements and locomotive properties.** A test creates its own locomotives rather than
   borrowing one from the real database.
 
@@ -123,6 +123,8 @@ before anything reads it, so the checked-in fixture is never written to either.
 - `core.testABerthAndAPlatformJudgeAnOverhangDifferently`
 - `core.testAMayTurnStationIsNotATerminus`
 - `core.testWhatCountsAsAParkingSquare`
+- `core.testAnAnsweredZeroIsNotMissing`
+- `ui.testACutTrainArrivesTheWayItWouldDrive`
 - `ui.testAPastedTrainFacesTheWayTheOperatorChose`
 - `core.testALockReachesTheRailBeingRunOver`
 - `ui.testBulkToolsHoldsTheWholeLayoutTools`
