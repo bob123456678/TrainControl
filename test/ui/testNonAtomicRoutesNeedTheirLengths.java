@@ -549,6 +549,40 @@ public class testNonAtomicRoutesNeedTheirLengths
     }
 
     /**
+     * Execute Timetable asks the gate only once its own refusals have passed (GUI-A1).
+     *
+     * The gate writes the setting.  Asked first, a press refused as "wait for active locomotives to stop" switched the
+     * running railway to atomic on its way to being refused - and a refused press should change nothing.
+     *
+     * MUTATION: move the call back above the refusals and this fails.
+     *
+     * @throws Exception from reading the source
+     */
+    @Test
+    public void testExecuteTimetableAsksTheGateAfterItsRefusals() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(
+            new java.io.File("src/org/traincontrol/gui/TrainControlUI.java").toPath()), java.nio.charset.StandardCharsets.UTF_8);
+
+        int door = source.indexOf("private void executeTimetableActionPerformed(");
+        int end = source.indexOf("GEN-LAST:event_executeTimetableActionPerformed", door);
+
+        assertTrue(door > 0 && end > door, "precondition: Execute Timetable's handler is not where this looks for it");
+
+        String handler = source.substring(door, end);
+
+        int asks = handler.indexOf("keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack()");
+        int busy = handler.indexOf("autolayout.ui.errorWaitForActiveLocomotivesToStop");
+        int empty = handler.indexOf("timetable.ui.errorNoEntriesCaptureCommandsFirst");
+
+        assertTrue(busy > 0 && empty > 0, "precondition: the handler no longer refuses a busy railway or an empty"
+            + " timetable, so there is nothing for the gate to come after");
+
+        assertTrue(asks > busy && asks > empty, "Execute Timetable asks the Atomic Routes gate before it refuses - so a"
+            + " refused press still switches the running railway's setting (GUI-A1)");
+    }
+
+    /**
      * How many times one string occurs in another.
      *
      * @param text the whole

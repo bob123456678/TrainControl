@@ -4036,13 +4036,27 @@ public class Layout
         // without ever running the train would lower the cap for the rest of the session.
         this.takingPath.remove(loc);
 
+        // WHAT THIS RUN STILL HOLDS, NOT WHAT THE SETTING SAYS NOW (GUI-A1).
+        //
+        // The atomic road below gives every edge back and empties every Point of the path, which is right for a run
+        // that held all of it to the end.  A run that gave edges back early as its tail cleared them - Atomic Routes
+        // off while it ran - may have had them taken by another train since, and the setting can be switched on under
+        // it: the Atomic Routes gate does that when a train turns out to have no length, and two of its doors are
+        // reached while trains run.  Read here, at the end, the setting sent such a run down the atomic road, which
+        // gave those edges back a second time - lowering the claim of the train that took each one - and emptied the
+        // Points that train held.  So the road is chosen by what the run did: one that gave anything back early takes
+        // the careful road, which skips what it gave back and leaves alone what another train holds.
+        Set<Edge> givenBackEarly = this.clearedEdges.get(loc);
+
+        boolean heldItAll = givenBackEarly == null || givenBackEarly.isEmpty();
+
         List<Edge> output = new LinkedList<>();
-        
+
         for (int i = 0; i < path.size(); i++)
         {
             Edge e = path.get(i);
-            
-            if (this.atomicRoutes)
+
+            if (this.atomicRoutes && heldItAll)
             {            
                 if (i == 0)
                 {
@@ -10417,16 +10431,17 @@ public class Layout
     /**
      * Turns the early release of passed track on or off.
      *
-     * **NOT WHILE ANYTHING IS RUNNING** (SVN-C17).  A path releases its edges under one setting and
-     * `unlockPath` finishes under the other, and the true-to-false direction is the one that costs:
-     * `unlockPath` skips an edge it believes was already given up early, so an edge that never was
-     * stays held for the session.
+     * **A run that the setting changes under is unlocked by what it did** (GUI-A1).  A path releases its
+     * edges under one setting and `unlockPath` finishes under the other; `unlockPath` decides how to give
+     * track back by whether that run gave any back early - the edges `clearedEdges` records - not by the
+     * setting at its end.  So neither direction gives an edge back twice or leaves one held: false-to-true
+     * mid-run (the Atomic Routes gate's write, reached while trains run) stops further early releases and
+     * the unlock skips the ones already made; true-to-false starts them, and the same record covers them.
      *
-     * The window is narrow rather than open - the interface refuses the checkbox while
-     * `isAutoLayoutRunning()`, which includes hand dispatches, so what is left is a check-then-set on
-     * the event thread against a dispatch starting in the same instant.  Written down rather than
-     * locked: taking the layout monitor here would put a click behind a whole route being thrown,
-     * which is the freeze this class has twice been repaired for.
+     * The interface still refuses the checkbox while `isAutoLayoutRunning()` (SVN-C17), which is a
+     * statement about what an operator should be able to do mid-run rather than about safety.  Written
+     * down rather than locked: taking the layout monitor here would put a click behind a whole route
+     * being thrown, which is the freeze this class has twice been repaired for.
      *
      * @param atomicRoutes whether a route holds all its track until it finishes
      */

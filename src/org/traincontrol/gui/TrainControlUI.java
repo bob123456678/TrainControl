@@ -23094,11 +23094,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Refused BEFORE the button is greyed, so a refusal cannot leave it dead.
         if (refuseWhileEditorOpen()) return;
 
-        // AND NOT NON-ATOMIC OVER A RAILWAY THAT COULD RELEASE TRACK UNDER A TRAIN (GS-B1).  This
-        // door dispatches without going near Start, and a train length cleared on the live layout
-        // since the checkbox was unticked is not something anything here would otherwise notice.
-        keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
-
         this.executeTimetable.setEnabled(false);
 
         javax.swing.SwingUtilities.invokeLater(() ->
@@ -23126,6 +23121,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.executeTimetable.setEnabled(true);
                 return;
             }
+
+            // AND NOT NON-ATOMIC OVER A RAILWAY THAT COULD RELEASE TRACK UNDER A TRAIN (GS-B1).  This
+            // door dispatches without going near Start, and a train length cleared on the live layout
+            // since the checkbox was unticked is not something anything here would otherwise notice.
+            //
+            // After every refusal above, not before them (GUI-A1): a press refused as "wait for active
+            // locomotives to stop" switched the running railway to atomic on its way to being refused, and
+            // a refused press should change nothing.
+            keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
 
             // Conditional route warning
             for (String routeName : this.model.getRouteList())
