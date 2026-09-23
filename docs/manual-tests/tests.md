@@ -23957,6 +23957,12 @@ From the 2026-09-19 review round, fixed the same day.  OB-155 took the post-chan
 
 #### Comments
 
+**Adam, 2026-09-23 (triage).** Does not work.
+
+there is a spinner for my own routes too, both single and bulk.
+
+*Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-468"></a>
@@ -24178,6 +24184,10 @@ eight bundles.  So what he validated was the behaviour and the OLD wording; step
 message"*, and the message is not the one he read.  It wants one look at the new sentence, which is
 seconds, rather than a disposition that claims he has seen it.
 
+**Adam, 2026-09-23 (triage).** Works.
+
+*Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-471"></a>
@@ -24395,6 +24405,12 @@ real window's door asks `trainsWithoutALength` and writes through `applyTrainLen
 under its own mutation.  The last is why this entry exists: the walk claims run against a stand-in for the
 main window, and only you running it in the real one proves the two halves are joined.
 
+**Adam, 2026-09-23 (triage).** Works, with notes.
+
+Works, make sure the text field is focused by default. Also, when right clicking an empty square, show the bulk tools menu option.
+
+*Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-475"></a>
@@ -24438,6 +24454,10 @@ MT-373 accepted on 12 Sep**, on your ruling today.
 orange, and one unit shorter leaves that sensor clear) and
 `ui.testTheGreyAppearsAtIdleToo.testTheGreyIsTheWholeOfEveryCoveredEdge`, each shown red under its own
 mutation.  No claim draws a double curve yet - step 4 is the only check of that arc.
+
+**Adam, 2026-09-23 (triage).** Works.
+
+*Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -24484,6 +24504,10 @@ even share (1:19,3  1:4,11  5:6,7  5:16,12  5:15,13), and the length rules still
 `core.testAutonomyDiagramStore.testADeliberateZeroIsKeptAndReadsAsNoLength` for the save and load - all
 shown red under their own mutations.
 
+**Adam, 2026-09-23 (triage).** Works.
+
+*Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-477"></a>
@@ -24522,6 +24546,12 @@ railway, all at RampDown or BottomMainPost; none now.
 diagram-built railway with a may-turn square, at the first hop and one hop further back - shown red under
 each of three mutations.
 
+**Adam, 2026-09-23 (triage).** Works, with notes.
+
+Works. But when set to lenth 3, the tail always follows switch 51 turned, rather than facing straight toward rampdown.  Not a major issue, but technically that length should qualify for the prompt.  Also, since there is only one choice, it should be auto selected without a prompt.
+
+*Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-478"></a>
@@ -24556,6 +24586,10 @@ that shows the labels only"*.
 *What this is:* `regression.testARememberedNoneOpensWithTheCaptionsOff`, which opens the real editor on the
 frozen railway: captions and writing counted apart, Labels Only, Control+L through the editor's own key
 handler, and the drag - each shown red under its own mutation.
+
+**Adam, 2026-09-23 (triage).** Works.
+
+*Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -24600,6 +24634,12 @@ protecting list, forgotten when the square stops being a station, emitted to the
 `core.testAutonomyDiagramStore` (a deleted signal's pairing goes) - each shown red under its own mutation.  The
 dialog and the menu item are what only you can check.
 
+**Adam, 2026-09-23 (triage).** Works, with notes.
+
+works, but the editor window for entry/exit guards is much too wide.  make the sentence split over 2 lines so the window isn't too wide.
+
+*Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-480"></a>
@@ -24639,6 +24679,12 @@ TopR1ParkShort took no train at all.
 blocked behind a standing train, and the orange line, all on your measured TunnelLongPark) - each seen red on the old
 code and again under its own mutation.
 
+**Adam, 2026-09-23 (triage).** Works, with notes.
+
+the parking works, but with 75 407 DB pasted on bottommainpost and facing south, I am not offered a selection of feedback 2014 as the last square the train passed (i.e. tail going north out of bottommainpost, having arrived from the north and facing south).
+
+*Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-481"></a>
@@ -24671,6 +24717,10 @@ finding nothing, and drawing nothing there.  The grey was skipped the same way.
 sides it joins) and `core.testTheShadingFollowsTheTrain` (a real tile, painted, with a train lying across that route
 tile on your railway) - each red under its own mutation.
 
+**Adam, 2026-09-23 (triage).** Works.
+
+*Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-482"></a>
@@ -24702,6 +24752,10 @@ sensor; now it covers only the squares the train lies on.
 *What this is:* `ui.testTheGreyAppearsAtIdleToo.testTheGreyIsWhatTheRailwayClaims` (the window greys exactly the squares
 the railway claims) and `testBlockedTrackIsGreyAtIdle` (a square of the train's edge that it does not reach is not
 grey) - each red on the whole-edge grey.
+
+**Adam, 2026-09-23 (triage).** Works.
+
+*Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -24738,6 +24792,10 @@ from, and puts it on the copy that faces the way it would arrive.
 BottomMainA's east bar lifted, red on the old code with the train westbound, and red again under each half of the fix
 taken away.
 
+**Adam, 2026-09-23 (triage).** Works.
+
+*Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-484"></a>
@@ -24769,6 +24827,10 @@ Your words, 2026-09-23: *"no, add a clear button"*, and *"stop listing answered 
 *What this is:* `core.testMassAssignLengths` (Segment Length's 0 and Clear; the half-measured berth),
 `core.testAutonomyDiagramSession` (the reversal notice) and `core.testAnAnsweredZeroIsNotMissing` (the refusal, on your
 TunnelLongPark approach) - each red under its own mutation, seven in all.  The button itself is what only you can check.
+
+**Adam, 2026-09-23 (triage).** Works.
+
+*Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -24802,5 +24864,11 @@ memory until the setup is saved.
 *What this is:* `core.testMassAssignLengths.testARouteTilesLengthIsFoldedIntoTheTrackBesideIt` (a saved length comes back
 folded, the total unchanged) and `testHisFiveRouteTilesAreFoldedWhenHisRailwayIsOpened` (on your frozen railway, exactly
 those five) - each red under its own mutation.
+
+**Adam, 2026-09-23 (triage).** Could not run this.
+
+I can't see to test this when assigning individual tiles, and I already mass assigned lengths everywhere.
+
+*Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
