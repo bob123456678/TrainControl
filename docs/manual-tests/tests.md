@@ -56,12 +56,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-466](#mt-466) | 2026-09-19 | Cancel on the function editor undoes a Copy Customizations | fixed unvalidated | GUX-C3 |
 | [MT-467](#mt-467) | 2026-09-19 | Turning a local route's automatic execution on or off does not wait for the Central Station | fixed unvalidated | GUX-C5 |
 | [MT-468](#mt-468) | 2026-09-19 | Every screen still finds its text after 239 unused message keys were removed | fixed unvalidated | UIX-C4 |
-| [MT-470](#mt-470) | 2026-09-21 | Atomic Routes cannot be switched off while autonomy could release track under a train | fixed unvalidated | VD12-R4 |
 | [MT-474](#mt-474) | 2026-09-23 | Mass Assign Train Lengths asks each train that has no length | fixed unvalidated | FR-094 |
 | [MT-475](#mt-475) | 2026-09-23 | The orange is where the train is, sensors included; the grey is what it blocks | fixed unvalidated | OB-277, OB-208 |
-| [MT-476](#mt-476) | 2026-09-23 | Mass Assign Lengths passes over route tiles and takes a deliberate 0 | fixed unvalidated | OB-273, OB-274 |
 | [MT-477](#mt-477) | 2026-09-23 | The tail question lists RampDown once | fixed unvalidated | OB-276 |
-| [MT-478](#mt-478) | 2026-09-23 | Captions and your own writing are two settings; Control+L steps through five | fixed unvalidated | OB-272 |
 | [MT-479](#mt-479) | 2026-09-23 | An entry guard throws its signals red when a train arrives, and not when one passes | fixed unvalidated | FR-096 |
 | [MT-480](#mt-480) | 2026-09-23 | A train fits on the square it stands on, and TunnelLongPark takes three units | fixed unvalidated | OB-278 |
 | [MT-481](#mt-481) | 2026-09-23 | The orange line and the grey carry on across a route tile | fixed unvalidated | OB-279 |
@@ -71,8 +68,8 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-485](#mt-485) | 2026-09-23 | The five route tiles' lengths are folded into the track beside them | fixed unvalidated | OB-281 |
 | [MT-486](#mt-486) | 2026-09-23 | Return Home brings a train back facing the way its home was set | fixed unvalidated | OB-282 |
 
-Everything else - 443 of 486 - needs nothing from you unless the area changes again:
-392 **fixed validated** and 51 **superseded**.
+Everything else - 446 of 486 - needs nothing from you unless the area changes again:
+395 **fixed validated** and 51 **superseded**.
 
 ---
 
@@ -2735,6 +2732,10 @@ ironwork moved.
 **Adam, 2026-08-24 (triage).** Works.
 
 *Run against commit b1e22b5b.*
+
+**Claude, 2026-09-23.**
+
+Renamed since (DCN-C6): the item this entry opens is now called Exit Guard Signal... - it was Signal Protecting This Station - on your word of 2026-09-22 ("add Signal at the end"). Nothing else this entry does has changed.
 
 ---
 <a id="mt-024"></a>
@@ -16534,6 +16535,10 @@ label work of 2026-09-08 before it is filed, because it may already be gone.
 
 Filed, both of them. *"TopMainR2 still shows two labels"* is **OB-193**, which says to check it against the label work of 2026-09-08 before fixing it, because he called it pending at the time. *"we need a tooltip in the right-click menu ... showing that control+S is rename"* is **FR-067**. Adam, 2026-09-09: *"file them."*
 
+**Claude, 2026-09-23.**
+
+Overtaken on 2026-09-23 by OB-272 (DCN-C6). Control+L in the autonomy editor now steps the caption dropdown through its five options - Station Names, Parked Locs, Homes, None, Labels Only - rather than switching the text off and on, so from Parked Locs the first press gives Homes, not None. The Text Labels box is still hidden there, but it now belongs to Labels Only. MT-478 tests the new behaviour and you validated it on 2026-09-23; this entry's Expected describes the old one, so it should not be re-run as written.
+
 ---
 
 <a id="mt-294"></a>
@@ -24053,7 +24058,7 @@ Your orphan is fixed (OB-240), the way your note asked: deleting a joining word 
 
 ### MT-470 - 2026-09-21 - Atomic Routes cannot be switched off while autonomy could release track under a train
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** VD12-R4
 
 **Written:** 2026-09-21
@@ -24196,6 +24201,10 @@ seconds, rather than a disposition that claims he has seen it.
 **Adam, 2026-09-23 (triage).** Works.
 
 *Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-23.**
+
+Promoted on your *Works* of 2026-09-23. One thing changed near it after your run: Execute Timetable now asks this gate after its own refusals (0be2bbe4, GUI-A1), so a timetable refused for another reason no longer switches Atomic Routes on first. What this entry tests is unchanged.
 
 ---
 
@@ -24476,13 +24485,17 @@ mutation.  No claim draws a double curve yet - step 4 is the only check of that 
 
 *Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-23.**
+
+Two notes. (1) Step 3 was edited in place on 2026-09-23 when MT-482 replaced the grey rule, which this file's rules do not allow; the text stays as it is from here on. What MT-482 replaced: the grey no longer carries on to the next sensor, it covers only the squares the train lies on - so the title's "the grey is what it blocks" and the last Expected bullet ("the grey covers the stretches it still reaches") describe the old rule; read them as MT-482 says (DCN-C16). (2) Held at fixed unvalidated although you said *Works*: after your run the tail walk changed twice - 195aa1f1 (a tail past a switch is asked which way it lies, MT-477) and 6b7301fc (a train turned round on a square spends the square it stands on first) - and both decide where the orange ends. A re-run on the current build is all it needs.
+
 ---
 
 <a id="mt-476"></a>
 
 ### MT-476 - 2026-09-23 - Mass Assign Lengths passes over route tiles and takes a deliberate 0
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-273, OB-274
 
 **Written:** 2026-09-23
@@ -24524,6 +24537,10 @@ shown red under their own mutations.
 **Adam, 2026-09-23 (triage).** Works.
 
 *Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-23.**
+
+Promoted on your *Works* of 2026-09-23. Nothing Mass Assign Lengths does changed after your run; the route-tile fold at open (3492e38c) now never moves a length onto a sensor square, which is not a step here.
 
 ---
 
@@ -24587,7 +24604,7 @@ Left as it was, and yours to decide (it is in the report): with no answer, or No
 
 ### MT-478 - 2026-09-23 - Captions and your own writing are two settings; Control+L steps through five
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-272
 
 **Written:** 2026-09-23
@@ -24619,6 +24636,10 @@ handler, and the drag - each shown red under its own mutation.
 **Adam, 2026-09-23 (triage).** Works.
 
 *Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-23.**
+
+Promoted on your *Works* of 2026-09-23. Only comments changed in this area after your run.
 
 ---
 
@@ -24762,6 +24783,10 @@ tile on your railway) - each red under its own mutation.
 
 *Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-23.**
+
+Held at fixed unvalidated although you said *Works*: after your run the tail walk changed (195aa1f1, MT-477; 6b7301fc) and so did the route-tile fold (3492e38c: a route tile's old length is never moved onto a sensor square). Either can move where the orange ends by a square. A re-run on the current build is all it needs.
+
 ---
 
 <a id="mt-482"></a>
@@ -24837,6 +24862,10 @@ taken away.
 
 *Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-23.**
+
+Held at fixed unvalidated although you said *Works*: after your run, where a train may be put changed (1c855483: only on a copy trains may arrive at) and a cut now takes the westbound copy where a square has one (59fdb67d). Both are on this entry's path. A re-run on the current build is all it needs.
+
 ---
 
 <a id="mt-484"></a>
@@ -24872,6 +24901,10 @@ TunnelLongPark approach) - each red under its own mutation, seven in all.  The b
 **Adam, 2026-09-23 (triage).** Works.
 
 *Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-23.**
+
+Held at fixed unvalidated although you said *Works*: after your run, what Segment Length opens with changed (55959c9c). On a run with no length and no answer it now opens empty, so OK without typing records nothing rather than a 0. Typing 0 is still an answer, and Clear is unchanged. A re-run on the current build is all it needs.
 
 ---
 

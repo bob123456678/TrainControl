@@ -1096,6 +1096,15 @@ invariant is pinned only on a small fixture.
 
 **Checked against today's code, 2026-09-22.**  The test still takes both sides from `entrySideOf` and
 its message still says *"re-measure before assuming either way"*.
+
+### OB-283 - 2026-09-23 - Keep the current direction can end a journey net-reversed where it passed a compulsory-turn square
+
+**Kind:** bug  
+**Raised from:** OB-190  
+**Filed:** 2026-09-23  
+
+Adam's call rather than a defect, carried until now only on OB-190's Inbox body, which the certified-entries clear-out of 2026-09-23 removed (DCN-C14). A journey that passes a compulsory-turn square is turned there, invisibly to the operator, so at a may-reverse destination the answer "Yes - keep the current direction" can leave the train net-reversed: measured 2026-09-08, keep ends backward and reverse ends forward. Section 3 of behaviour.md promises the opposite. The question: should keep and reverse be measured against the way the train set off, or against the way it arrives?
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
