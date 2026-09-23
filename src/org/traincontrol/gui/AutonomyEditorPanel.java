@@ -2595,6 +2595,48 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * How wide to wrap text so the longest of these sentences takes two lines - and never narrower than `atLeast` (MT-479).
+     *
+     * Half the longest sentence's width, and the longest word over, because a line breaks between words and the half
+     * rarely falls between two.
+     *
+     * @param metrics the font the text is drawn in
+     * @param atLeast the narrowest the text may be - the width of what sits under it
+     * @param sentences the sentences
+     * @return the width in pixels
+     */
+    static int twoLineWidth(java.awt.FontMetrics metrics, int atLeast, String... sentences)
+    {
+        int widest = 0;
+        int longestWord = 0;
+
+        for (String sentence : sentences)
+        {
+            widest = Math.max(widest, metrics.stringWidth(sentence));
+
+            for (String word : sentence.split("\\s+")) longestWord = Math.max(longestWord, metrics.stringWidth(word));
+        }
+
+        return Math.max(atLeast, widest / 2 + longestWord);
+    }
+
+    /**
+     * Text wrapped at a width, as `wrapped` wraps a tooltip at its own.
+     *
+     * @param text the text
+     * @param width the width in pixels, or 0 or less to leave it on one line
+     * @return the text, wrapped
+     */
+    static String wrappedAt(String text, int width)
+    {
+        if (text == null || width <= 0) return text;
+
+        return "<html><body style='width: " + width + "px'>"
+            + text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            + "</body></html>";
+    }
+
+    /**
      * A tooltip that wraps instead of running off the screen.
      *
      * Swing lays a tooltip out on one line however long it is, and these explain what a setting MEANS
@@ -6241,6 +6283,9 @@ public class AutonomyEditorPanel extends JPanel
         final javax.swing.JButton done =
             new javax.swing.JButton(I18n.t("autosetup.ui.optionSignalsDone"));
 
+        // How wide the heading wraps - set once the buttons are laid out, below (MT-479).
+        final int[] headingWidth = {0};
+
         // What is paired now, on screen and on the diagram behind.  Called again after every change
         // rather than rebuilding the window.
         final Runnable show = () ->
@@ -6261,9 +6306,9 @@ public class AutonomyEditorPanel extends JPanel
 
             if (paired.isEmpty()) model.addElement(I18n.t("autosetup.ui.signalListEmpty"));
 
-            heading.setText(paired.isEmpty()
+            heading.setText(wrappedAt(paired.isEmpty()
                 ? I18n.f(guard.how, describeTile(station))
-                : I18n.f(guard.paired, describeTile(station)));
+                : I18n.f(guard.paired, describeTile(station)), headingWidth[0]));
 
             list.setEnabled(!paired.isEmpty());
             remove.setEnabled(!paired.isEmpty());
@@ -6289,6 +6334,29 @@ public class AutonomyEditorPanel extends JPanel
         buttons.add(done);
 
         panel.add(buttons, java.awt.BorderLayout.SOUTH);
+
+        // THE SENTENCE ON TWO LINES, NOT ONE (Adam, 2026-09-23, MT-479: *"the editor window for entry/exit guards is
+        // much too wide.  make the sentence split over 2 lines so the window isn't too wide."*).  The heading was a plain
+        // label, so the window was as wide as its sentence - the entry guard's is a hundred and fifty characters before a
+        // signal is paired.  It wraps at half that first sentence now, never narrower than the row of buttons.  The
+        // sentence once signals are paired is longer again, and takes more lines at the same width rather than widening
+        // the window; the heading keeps the taller of the two heights, so pairing the first signal changes the words and
+        // not the window.
+        String[] sentences = { I18n.f(guard.how, describeTile(station)), I18n.f(guard.paired, describeTile(station)) };
+
+        headingWidth[0] = twoLineWidth(heading.getFontMetrics(heading.getFont()), buttons.getPreferredSize().width,
+            sentences[0]);
+
+        int tallest = 0;
+
+        for (String sentence : sentences)
+        {
+            heading.setText(wrappedAt(sentence, headingWidth[0]));
+
+            tallest = Math.max(tallest, heading.getPreferredSize().height);
+        }
+
+        heading.setPreferredSize(new java.awt.Dimension(heading.getPreferredSize().width, tallest));
 
         byAddress.addActionListener(e ->
         {

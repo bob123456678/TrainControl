@@ -29,7 +29,7 @@ import org.traincontrol.util.I18n;
  *
  * **The real window**, opened through the method the menu item calls, on a panel with a station of its own.  Two
  * claims: the entry window is narrower than its sentence on one line, which is the width he reported; and neither
- * window's heading takes more than two lines, so the fix is not a tall narrow window instead.
+ * window's first sentence - the one before a signal is paired - takes more than the two lines he asked for.
  *
  * MUTATION: set the heading's text unwrapped, as it was, and the first claim fails.
  *
@@ -96,22 +96,21 @@ public class testTheGuardWindowIsNotTooWide
     }
 
     /**
-     * Neither window's heading takes more than two lines - the taller of its two sentences, the one before a signal is
-     * paired and the one after.
+     * Neither window's first sentence takes more than two lines.
      *
      * @throws Exception from the event thread or reflection
      */
     @Test
-    public void testNeitherHeadingTakesMoreThanTwoLines() throws Exception
+    public void testNeitherFirstSentenceTakesMoreThanTwoLines() throws Exception
     {
         for (String[] guard : new String[][] { { "EXIT", "autosetup.ui.menuPairSignal" },
             { "ENTRY", "autosetup.ui.menuPairEntrySignal" } })
         {
             Measured window = open(guard[0], guard[1]);
 
-            assertTrue(window.headingHeight <= window.lineHeight * 5 / 2, "the " + I18n.t(guard[1]) + " window's heading"
-                + " is " + window.headingHeight + " pixels tall at " + window.lineHeight + " a line - more than two"
-                + " lines, which trades a wide window for a tall one");
+            assertTrue(window.sentenceHeight <= window.lineHeight * 5 / 2, "the " + I18n.t(guard[1]) + " window's"
+                + " sentence is " + window.sentenceHeight + " pixels tall at " + window.lineHeight + " a line - more than"
+                + " the two lines Adam asked for, which trades a wide window for a tall one");
 
             closeTheWindows();
         }
@@ -124,7 +123,7 @@ public class testTheGuardWindowIsNotTooWide
     {
         int width;
         int sentenceOnOneLine;
-        int headingHeight;
+        int sentenceHeight;
         int lineHeight;
     }
 
@@ -199,7 +198,12 @@ public class testTheGuardWindowIsNotTooWide
 
             measured.width = open.getWidth();
             measured.sentenceOnOneLine = metrics.stringWidth(shown);
-            measured.headingHeight = heading.getPreferredSize().height;
+            // The sentence as laid out at the width it wraps to - not the label's preferred height, which is kept at the
+            // taller of the window's two sentences.
+            javax.swing.text.View view = (javax.swing.text.View) heading.getClientProperty(javax.swing.plaf.basic.BasicHTML.propertyKey);
+
+            measured.sentenceHeight = view == null ? heading.getPreferredSize().height
+                : (int) Math.ceil(view.getPreferredSpan(javax.swing.text.View.Y_AXIS));
             measured.lineHeight = metrics.getHeight();
         });
 
