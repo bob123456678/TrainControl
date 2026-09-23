@@ -6970,6 +6970,38 @@ public class Layout
     }
 
     /**
+     * Whether a place an edge runs over is the square a Point stands on (AUT-C3).
+     *
+     * Asked of the tile both name: a split square's block is its tile ("page:x,y"), or its tile and a road on a
+     * double curve ("page:x,y/W"), and a built place is its tile, or its tile and a route id there.  A Point with no
+     * block - a square emitted once, or a hand-written graph - cannot say which place is its square, so nothing is.
+     *
+     * @param placeId a place from an edge's places
+     * @param point the Point
+     * @return whether that place is the Point's own square
+     */
+    private static boolean isTheSquareOf(String placeId, Point point)
+    {
+        String block = point == null ? null : point.getBlock();
+
+        if (placeId == null || block == null) return false;
+
+        return tileOf(placeId).equals(tileOf(block));
+    }
+
+    /**
+     * The tile part of a place or block id: everything before a road or route written after the coordinates.
+     *
+     * Looked for after the last colon, because a page name may itself contain a slash.
+     */
+    private static String tileOf(String id)
+    {
+        int slash = id.indexOf('/', Math.max(0, id.lastIndexOf(':')));
+
+        return slash < 0 ? id : id.substring(0, slash);
+    }
+
+    /**
      * Whether the walk has already been on this square, under any of its names (TLR-A1).
      *
      * `walked` holds Point names, and a split square is several Points - so a name test says a copy the walk never
@@ -7386,7 +7418,14 @@ public class Layout
             // takes the one running away, whose places begin after the square: the square was never spent, and the tail
             // reached one square further back than the train lies.  So the square is read off a rail that does arrive
             // here, claimed, and spent, before anything behind it is.
-            if (here == standingHere && segment.getEnd() != here)
+            //
+            // ONLY WHERE THAT PLACE IS PROVABLY THIS SQUARE.  A built edge's places end with the square it arrives at,
+            // which is what makes the read above work - but a hand-written graph's places are the track alone, so its
+            // last place is the rail behind, and spending it as "the square" used up the train on track it has not
+            // yet been walked over and stopped the walk before it covered anything (the planner's tail fixture,
+            // 2026-09-23).  A split square's copies carry the square as their block, and a built place names the same
+            // tile; a graph that does not say which place is the square has no square to spend here.
+            if (here == standingHere && segment.getEnd() != here && here.getBlock() != null)
             {
                 for (Edge arriving : this.getIncomingEdges(here))
                 {
@@ -7398,6 +7437,8 @@ public class Layout
                     if (in.isEmpty() || in.size() != inSpans.size()) continue;
 
                     String own = in.get(in.size() - 1);
+
+                    if (!isTheSquareOf(own, here)) continue;
 
                     places.put(own, loc);
 

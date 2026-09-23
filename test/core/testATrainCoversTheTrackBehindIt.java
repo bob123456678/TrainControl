@@ -726,8 +726,10 @@ public class testATrainCoversTheTrackBehindIt
         Point arrivedByEast = point(layout, "TXW" + tag, true);
         Point arrivedByWest = point(layout, "TXE" + tag, true);
 
-        arrivedByEast.setBlock("TX-square" + tag);
-        arrivedByWest.setBlock("TX-square" + tag);
+        // THE BLOCK IS THE SQUARE'S OWN PLACE, as the build writes both - the tile, "page:x,y".  The walk spends a
+        // place as the square it stands on only when it can tell that it is, which is by this.
+        arrivedByEast.setBlock("X" + tag);
+        arrivedByWest.setBlock("X" + tag);
 
         // ON A ROW, west to east, as a built railway's squares are - the walk reads a rail's side from where its far
         // end lies when the rail does not arrive at the square.
