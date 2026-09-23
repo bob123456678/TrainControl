@@ -39,11 +39,11 @@ is not one.
 
 The railway defects live in the Inbox of `docs/manual-tests/issues.md`. **It is not empty**, and this
 paragraph said it was for twelve days (IND9X-B3, 2026-09-09).
-Today it holds 122 entries - 82 OB and 40 FR, recounted from the file on 2026-09-23: eighteen entries
+Today it holds 123 entries - 82 OB and 41 FR, recounted from the file on 2026-09-23: eighteen entries
 left it on Adam's word that day.  Seven were given their receipts then - OB-240 to OB-243, OB-271, OB-275
 and FR-095, each fixed, answered or withdrawn by its own text - and eleven had been receipted long before
 and were still sitting in the Inbox, which `triage.py` already treated as closed.  OB-272 to OB-277 and
-FR-094/FR-095 had been filed that morning.  Every
+FR-094/FR-095 had been filed that morning, and FR-096 was filed after the tidy.  Every
 earlier figure here was wrong in the same way, by being written rather than recounted: 99, then 111
 counted before six entries that had already been appended, then 118 (IND9X-B3, VD12-R13, VD13-R3).
 Most of them carry a receipt row that says the work was done - the protocol is that an entry is
