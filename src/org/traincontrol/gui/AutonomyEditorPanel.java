@@ -2725,6 +2725,16 @@ public class AutonomyEditorPanel extends JPanel
         // menu item is not.
         addCaptionItems(menu, tile, component, label, captioned);
 
+        // AND BULK TOOLS, as every square of track ends with (Adam, 2026-09-23, MT-474: *"when right clicking an
+        // empty square, show the bulk tools menu option."*).  They are about the whole setup rather than the square
+        // under the pointer, so they belong on every square's menu - at the bottom, behind a divider, as
+        // `buildTileMenu` places them and for the reason MT-257 gives there.
+        menu.addSeparator();
+
+        menu.add(bulkTools());
+
+        tidy(menu);
+
         return menu;
     }
 
@@ -10109,6 +10119,29 @@ public class AutonomyEditorPanel extends JPanel
         {
             pane.setValue(answers[0]);
             dialog.dispose();
+        });
+
+        // AND ASKED FOR BY NAME WHENEVER THE PROMPT HAS THE KEYBOARD (Adam, 2026-09-23, MT-474: *"make sure the text
+        // field is focused by default"*).  With no initial value the field is the first thing that can take the focus
+        // and takes it, and `ui.testTheLengthPromptHasTheKeyboard` sees it do so in the real editor window - but that
+        // is the focus policy's choice rather than this prompt's, and it was not what he saw.  So the prompt says which
+        // component it means: when the window opens, and every time it gains the keyboard back.
+        dialog.addWindowListener(new java.awt.event.WindowAdapter()
+        {
+            @Override
+            public void windowOpened(java.awt.event.WindowEvent e)
+            {
+                field.requestFocusInWindow();
+            }
+        });
+
+        dialog.addWindowFocusListener(new java.awt.event.WindowAdapter()
+        {
+            @Override
+            public void windowGainedFocus(java.awt.event.WindowEvent e)
+            {
+                field.requestFocusInWindow();
+            }
         });
 
         dialog.setVisible(true);
