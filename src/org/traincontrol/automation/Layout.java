@@ -1395,6 +1395,11 @@ public class Layout
 
         p.setHomeLoc(loc);
 
+        // THE COPY IS THE FACING, and the operator chose this one (Adam, 2026-09-23, OB-282: *"it should accomplish the
+        // facing"*).  A home named here is a home on this copy; Return Home brings its locomotive back to it or its
+        // turning twin.
+        p.setHomeFacingFixed(loc != null);
+
         this.rebuildHomeStations();
     }
 
@@ -11260,7 +11265,19 @@ public class Layout
                         // threw that answer away every time, because every copy carries a block. So a
                         // home could be set in the editor, look right, and be gone at the next start.
                         homeAt.setHomeLoc(home);
+
+                        // AND WHETHER IT WAS SET FACING THIS COPY'S WAY (OB-282).
+                        if (homeAt != null && home != null)
+                        {
+                            homeAt.setHomeFacingFixed(point.optBoolean("homeFacingFixed", false));
+                        }
                     }
+                }
+
+                // WHICH SIDE THIS COPY IS ARRIVED AT BY, on a split square (OB-282).
+                if (point.has("copyArrival") && layout.getPoint(point.getString("name")) != null)
+                {
+                    layout.getPoint(point.getString("name")).setCopyArrival(point.optString("copyArrival", null));
                 }
                 
                 if (point.has("excludedLocs") && point.get("excludedLocs") instanceof JSONArray)

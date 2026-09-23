@@ -4772,6 +4772,13 @@ public class AutonomySession
                     extras.put(AutonomyBuilder.FACING, facing.name());
                 }
 
+                // AND THE FACING OF A HOME THE RUNNING LAYOUT HOLDS TO ITS COPY (OB-282) - one set from the running
+                // diagram, which is a home on the copy the train stood on.
+                if (facing != null && extras.has("home") && point.optBoolean(AutonomyBuilder.HOME_FACING_FIXED, false))
+                {
+                    extras.put(AutonomyBuilder.HOME_FACING, facing.name());
+                }
+
                 // An empty one is still recorded, and must be.  Skipping it meant a square the running
                 // layout had NOTHING to say about never entered this map, so the merge below never ran
                 // for it and never reached its `else remove` - and a locomotive that had driven away
@@ -7214,6 +7221,39 @@ public class AutonomySession
     }
 
     /**
+     * The same, facing the way the operator said - for a locomotive not standing on the square (OB-282).
+     *
+     * Adam, 2026-09-23, on a home given to a train standing elsewhere: *"prompt the user for the direction"*.  A facing
+     * no copy trains may arrive at holds is not saved (*"we shouldn't allow an impossible facing to be saved"*).
+     *
+     * @param tile the square to make home
+     * @param locomotive the locomotive, or null to clear this square's home
+     * @param facing the way it should face there, or null to take the facing of the train standing there, if any
+     */
+    public void setHome(TileKey tile, String locomotive, Side facing)
+    {
+        writeHome(tile, locomotive);
+
+        if (locomotive != null && facing != null && homeFacingsFor(tile).contains(facing))
+        {
+            writePointProperty(tile, AutonomyBuilder.HOME_FACING, facing.name());
+        }
+
+        deriveStationIndex();
+    }
+
+    /**
+     * The ways a locomotive may be homed facing on this square (OB-282) - see `AutonomyBuilder.homeFacingsAt`.
+     *
+     * @param tile the square
+     * @return the facings, empty on a square that is not split
+     */
+    public java.util.Set<Side> homeFacingsFor(TileKey tile)
+    {
+        return reducer == null ? java.util.Collections.<Side>emptySet() : builder(null).homeFacingsAt(tile);
+    }
+
+    /**
      * The same rule, written without re-deriving, for a caller about to make several (SEV-C2).
      *
      * `setPointProperty` re-derives the station index on every call, which is a full builder
@@ -7239,10 +7279,38 @@ public class AutonomySession
             for (TileKey other : homesElsewhere(tile, locomotive))
             {
                 writePointProperty(other, "home", null);
+                writePointProperty(other, AutonomyBuilder.HOME_FACING, null);
             }
         }
 
         writePointProperty(tile, "home", locomotive);
+
+        // AND THE WAY IT IS FACING, where it is standing here (OB-282) - the facing Return Home brings it back in.  Only
+        // the facing the train standing here has, which is a copy a train stands on, so no impossible facing is saved;
+        // a home given to a train standing elsewhere is the square, whichever copy.
+        writePointProperty(tile, AutonomyBuilder.HOME_FACING, homeFacingOf(tile, locomotive));
+    }
+
+    /**
+     * The way a locomotive is facing on a square, if it is standing there - what its home there is set with (OB-282).
+     *
+     * @param tile the square
+     * @param locomotive the locomotive being homed there, or null
+     * @return the side it faces, or null when it is not standing there or nothing records its facing
+     */
+    private String homeFacingOf(TileKey tile, String locomotive)
+    {
+        if (locomotive == null) return null;
+
+        Object loc = getPointProperty(tile, "loc");
+
+        String standing = loc instanceof org.json.JSONObject ? ((org.json.JSONObject) loc).optString("name", null) : null;
+
+        if (!locomotive.equals(standing)) return null;
+
+        Object facing = getPointProperty(tile, AutonomyBuilder.FACING);
+
+        return facing instanceof String ? (String) facing : null;
     }
 
     /**
@@ -7266,6 +7334,7 @@ public class AutonomySession
         for (TileKey tile : homed)
         {
             writePointProperty(tile, "home", null);
+            writePointProperty(tile, AutonomyBuilder.HOME_FACING, null);
         }
 
         // ONCE, at the end.  Not skipped: the split names are computed from these properties, and a

@@ -655,6 +655,122 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A home remembers which way its train was facing when it was set, and the build puts it on that copy (OB-282).
+     *
+     * Adam, 2026-09-23: *"yes, it should accomplish the facing"*, and asked when the facing is taken: *"Direction it is
+     * facing when home is set."*  A copy is a facing, so the home goes on the copy the train was facing in, marked so
+     * that Return Home brings it back to that copy rather than to any copy of the square - and it survives a build
+     * and a capture.
+     *
+     * MUTATION: `writeHome` not recording the facing, or the build not marking the copy, fails this.
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testAHomeRemembersTheWayItsTrainWasFacing() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack()));
+        session.initialize("Default");
+
+        TileKey sensor = new TileKey("main", 1, 1);
+
+        session.setPointName(sensor, "Platform 1");
+        session.setStation(sensor, true);
+        session.placeLocomotive(sensor, "Test Loc");
+
+        java.util.List<org.traincontrol.automationui.TilePorts.Side> choices = session.facingChoices(sensor);
+
+        assertTrue(choices.size() > 1, "precondition: the square holds one facing, so which one the home keeps is no"
+            + " choice: " + choices);
+
+        // THE SECOND facing, so a build that put the home on copy 0 as before cannot pass by accident.
+        org.traincontrol.automationui.TilePorts.Side chosen = choices.get(choices.size() - 1);
+
+        session.setFacing(sensor, chosen);
+        session.setHome(sensor, "Test Loc");
+
+        assertEquals(session.getPointProperty(sensor, org.traincontrol.automationui.AutonomyBuilder.HOME_FACING),
+            chosen.name(), "the home was set with the train facing " + chosen + " and does not remember it");
+
+        String built = session.buildConfiguration();
+
+        String homedOn = null;
+
+        org.json.JSONArray points = new org.json.JSONObject(built).getJSONArray("points");
+
+        for (int at = 0; at < points.length(); at++)
+        {
+            org.json.JSONObject point = points.getJSONObject(at);
+
+            if (!"Test Loc".equals(point.optString("home", null))) continue;
+
+            assertTrue(point.optBoolean(org.traincontrol.automationui.AutonomyBuilder.HOME_FACING_FIXED, false),
+                "the home is emitted on " + point.optString("name") + " without saying it is held to that copy");
+
+            homedOn = point.getString("name");
+        }
+
+        assertNotNull(homedOn, "the build carries no home at all");
+
+        assertEquals(session.facingsFor(sensor).get(homedOn), chosen,
+            "the home was set facing " + chosen + " and the build put it on " + homedOn + ", which faces "
+            + session.facingsFor(sensor).get(homedOn));
+
+        // AND BACK THROUGH A CAPTURE, which is what the running railway does whenever it is asked to remember.
+        session.captureFromLayout(built);
+
+        assertEquals(session.getPointProperty(sensor, org.traincontrol.automationui.AutonomyBuilder.HOME_FACING),
+            chosen.name(), "a build and a capture changed the facing the home was set with");
+    }
+
+    /**
+     * A home given to a train standing elsewhere takes the facing asked for - and never one no train can stand in
+     * (OB-282).
+     *
+     * Adam, 2026-09-23: *"prompt the user for the direction"*, and *"we shouldn't allow an impossible facing to be
+     * saved."*
+     *
+     * @throws Exception on a failure to build
+     */
+    @Test
+    public void testAHomeForATrainElsewhereTakesTheFacingAskedAndNoImpossibleOne() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack()));
+        session.initialize("Default");
+
+        TileKey sensor = new TileKey("main", 1, 1);
+
+        session.setPointName(sensor, "Platform 1");
+        session.setStation(sensor, true);
+
+        java.util.Set<org.traincontrol.automationui.TilePorts.Side> canHold = session.homeFacingsFor(sensor);
+
+        assertTrue(canHold.size() > 1, "precondition: the square offers one facing to be homed in: " + canHold);
+
+        org.traincontrol.automationui.TilePorts.Side asked = new java.util.ArrayList<>(canHold).get(canHold.size() - 1);
+
+        session.setHome(sensor, "Elsewhere Loc", asked);
+
+        assertEquals(session.getPointProperty(sensor, org.traincontrol.automationui.AutonomyBuilder.HOME_FACING),
+            asked.name(), "the facing asked for a home was not kept");
+
+        // A FACING NO COPY TRAINS MAY ARRIVE AT HOLDS: on a straight east-west run, north.
+        org.traincontrol.automationui.TilePorts.Side impossible = null;
+
+        for (org.traincontrol.automationui.TilePorts.Side side : org.traincontrol.automationui.TilePorts.Side.values())
+        {
+            if (!canHold.contains(side)) impossible = side;
+        }
+
+        assertNotNull(impossible, "precondition: every side is a facing here, so there is no impossible one to refuse");
+
+        session.setHome(sensor, "Elsewhere Loc", impossible);
+
+        assertNull(session.getPointProperty(sensor, org.traincontrol.automationui.AutonomyBuilder.HOME_FACING),
+            "a home was saved facing " + impossible + ", which no copy of this square a train may arrive at holds");
+    }
+
+    /**
      * And across a build and a capture, which is the hop that actually rewrote it.
      *
      * `captureFromLayout` takes the running layout back into the setup, and a train standing on a copy

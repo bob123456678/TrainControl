@@ -182,6 +182,21 @@ public class AutonomyBuilder
     public static final String FACING = "facing";
 
     /**
+     * The per-square key naming the way a home's locomotive was facing when the home was set (OB-282) - one of
+     * `FACING`'s sides.  Setup only: the build turns it into which copy carries the home.
+     */
+    public static final String HOME_FACING = "homeFacing";
+
+    /**
+     * On a running Point, that its home was set facing the way this copy faces, and Return Home is to bring the
+     * locomotive back to this copy or its turning twin rather than to any copy of the square (OB-282).
+     */
+    public static final String HOME_FACING_FIXED = "homeFacingFixed";
+
+    /** On a running Point of a split square, the side trains arrive at this copy by (OB-282). */
+    public static final String COPY_ARRIVAL = "copyArrival";
+
+    /**
      * What this used to be called, still read so that a setup authored an hour ago keeps its berths.
      */
     public static final String PARKING = "parking";
@@ -662,8 +677,29 @@ public class AutonomyBuilder
      * @param nodes the copies this square was emitted as
      * @return the index of the copy to carry the home
      */
-    private int homeCopy(List<Node> nodes)
+    private int homeCopy(List<Node> nodes, JSONObject extras)
     {
+        // THE COPY FACING THE WAY THE HOME WAS SET, where the setup says which (OB-282) - and only one trains may
+        // arrive at, so a facing no train can stand in is never honoured.  The plain copy before its turning twin.
+        TilePorts.Side wanted = homeFacingOf(extras);
+
+        if (wanted != null)
+        {
+            for (int copy = 0; copy < nodes.size(); copy++)
+            {
+                Node node = nodes.get(copy);
+
+                if (facingOf(node) == wanted && !node.reverse && arrivalAllowed(node)) return copy;
+            }
+
+            for (int copy = 0; copy < nodes.size(); copy++)
+            {
+                Node node = nodes.get(copy);
+
+                if (facingOf(node) == wanted && arrivalAllowed(node)) return copy;
+            }
+        }
+
         for (int copy = 0; copy < nodes.size(); copy++)
         {
             if (!nodes.get(copy).reverse && arrivalAllowed(nodes.get(copy))) return copy;
@@ -675,6 +711,12 @@ public class AutonomyBuilder
         }
 
         return 0;
+    }
+
+    /** The facing a square's home was set with, or null when the setup does not say */
+    private static TilePorts.Side homeFacingOf(JSONObject extras)
+    {
+        return extras == null || !extras.has(HOME_FACING) ? null : side(extras.optString(HOME_FACING, null));
     }
 
     /**
@@ -878,7 +920,7 @@ public class AutonomyBuilder
             int placed = placementCopy(nodes, extras);
 
             // The other per-square singleton.  See homeCopy.
-            int homeOn = homeCopy(nodes);
+            int homeOn = homeCopy(nodes, extras);
 
             for (int copy = 0; copy < nodes.size(); copy++)
             {
@@ -1030,7 +1072,7 @@ public class AutonomyBuilder
                         // which is the behaviour the split exists to separate.  CAN_REVERSE never goes
                         // out at all - it is the instruction to split, not something parseAuto knows.
                         if (CAN_REVERSE.equals(key) || PARKING.equals(key)
-                                || FACING.equals(key) || AUTO_DESTINATION.equals(key)) continue;
+                                || FACING.equals(key) || AUTO_DESTINATION.equals(key) || HOME_FACING.equals(key)) continue;
 
                         if (DERIVED.contains(key)) continue;
 
@@ -1089,6 +1131,18 @@ public class AutonomyBuilder
                 if (manualOnly.contains(point.getTile()))
                 {
                     json.put(AUTO_DESTINATION, false);
+                }
+
+                // WHICH SIDE THIS COPY IS ARRIVED AT BY, on a split square (OB-282) - what Return Home compares to tell
+                // a copy from the other arrival.  A turning copy and its plain twin share it: one arrival.
+                if (nodes.size() > 1 && node.getArrival() != null) json.put(COPY_ARRIVAL, node.getArrival().name());
+
+                // AND THAT THE HOME ON THIS COPY WAS SET FACING THIS WAY (OB-282), where the setup says so and this copy
+                // holds it - otherwise the home is the square, as it has been since 2026-08-31.
+                if (copy == homeOn && extras != null && extras.has(HOME) && homeFacingOf(extras) != null
+                    && facingOf(node) == homeFacingOf(extras))
+                {
+                    json.put(HOME_FACING_FIXED, true);
                 }
 
                 pointList.put(json);
@@ -1359,6 +1413,27 @@ public class AutonomyBuilder
             {
                 out.put(nodeName(entry.getValue(), node), entry.getValue());
             }
+        }
+
+        return out;
+    }
+
+    /**
+     * The ways a locomotive may be homed facing on a square: the facings of the copies trains may arrive at (OB-282).
+     *
+     * *"we shouldn't allow an impossible facing to be saved"* - a copy trains may not arrive at is not one a train can
+     * be brought home to, so its facing is not offered and `homeCopy` would not honour it.
+     *
+     * @param tile the square
+     * @return the facings, empty on a square that is not split
+     */
+    public java.util.Set<TilePorts.Side> homeFacingsAt(TileKey tile)
+    {
+        java.util.Set<TilePorts.Side> out = new java.util.LinkedHashSet<>();
+
+        for (Node node : nodesFor(tile))
+        {
+            if (node.arrival != null && arrivalAllowed(node)) out.add(facingOf(node));
         }
 
         return out;

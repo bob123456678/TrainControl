@@ -110,6 +110,16 @@ public class Point
      */
     private Locomotive homeLoc;
 
+    /**
+     * Whether the home on this Point was set facing the way this copy faces, so Return Home brings its locomotive back
+     * to this copy or its turning twin (Adam, 2026-09-23, OB-282: *"it should accomplish the facing"*).  False means
+     * the home is the square, whichever copy - the rule since 2026-08-31 for a home nobody gave a facing.
+     */
+    private boolean homeFacingFixed;
+
+    /** On a split square, the side trains arrive at this copy by; null on a square that is one Point (OB-282) */
+    private String copyArrival;
+
     // Unique ID for any new node
     /**
      * The id allocator, atomic because `++` on a static is not (C6).
@@ -1111,6 +1121,41 @@ public class Point
     public void setHomeLoc(Locomotive homeLoc)
     {
         this.homeLoc = homeLoc;
+
+        // A facing belongs to a home; taking the home away takes it too.
+        if (homeLoc == null) this.homeFacingFixed = false;
+    }
+
+    /**
+     * @return whether this Point's home was set facing the way this copy faces (OB-282)
+     */
+    public boolean isHomeFacingFixed()
+    {
+        return this.homeLoc != null && this.homeFacingFixed;
+    }
+
+    /**
+     * @param fixed whether this Point's home was set facing the way this copy faces (OB-282)
+     */
+    public void setHomeFacingFixed(boolean fixed)
+    {
+        this.homeFacingFixed = fixed;
+    }
+
+    /**
+     * @return the side trains arrive at this copy by, or null on a square that is one Point (OB-282)
+     */
+    public String getCopyArrival()
+    {
+        return this.copyArrival;
+    }
+
+    /**
+     * @param side the side trains arrive at this copy by, or null
+     */
+    public void setCopyArrival(String side)
+    {
+        this.copyArrival = side;
     }
 
     /**
@@ -1218,7 +1263,11 @@ public class Point
             // By NAME, because a file has to.  This and Layout.parseAuto are now the only two places a
             // home is a string; everywhere in between it is the locomotive.
             jsonObj.put("home", this.homeLoc.getName());
+
+            if (this.homeFacingFixed) jsonObj.put("homeFacingFixed", true);
         }
+
+        if (this.copyArrival != null) jsonObj.put("copyArrival", this.copyArrival);
         
         if (this.currentLoc != null)
         {

@@ -5041,9 +5041,26 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
+        // WHICH WAY IT SHOULD FACE THERE, where it is not standing there to say (Adam, 2026-09-23, OB-282: *"prompt the
+        // user for the direction"*).  Only the facings a train may be brought home in are offered, and a dismissed
+        // question sets no home - the rule every question this door asks already follows.
+        org.traincontrol.automationui.TilePorts.Side facing = null;
+
+        if (picked != null && !picked.equals(locomotiveAt(tile)))
+        {
+            java.util.Set<org.traincontrol.automationui.TilePorts.Side> canHold = session.homeFacingsFor(tile);
+
+            if (FacingPrompt.wouldAsk(canHold))
+            {
+                facing = FacingPrompt.forHome(canHold, picked, describeTile(tile), owner());
+
+                if (facing == null) return;
+            }
+        }
+
         // Through setHome, which does the sweep. setPointProperty writes the one square and nothing
         // else, which is how two squares came to share a home in the first place.
-        session.setHome(tile, picked);
+        session.setHome(tile, picked, facing);
 
         refresh();
 

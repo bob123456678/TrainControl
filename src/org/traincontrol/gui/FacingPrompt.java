@@ -88,7 +88,32 @@ public class FacingPrompt
             return choicesFor(canHold).contains(answeredByATest) ? answeredByATest : null;
         }
 
-        return ask(parent, station, choicesFor(canHold), suggested);
+        return ask(parent, I18n.f("autolayout.ui.askFacing", station), choicesFor(canHold), suggested);
+    }
+
+    /**
+     * Asks which way a locomotive should face at a home it is not standing on (Adam, 2026-09-23, OB-282).
+     *
+     * *"prompt the user for the direction"* - a home is set facing the way the train stands there, and a train
+     * standing elsewhere has no facing on that square to take.  Return Home brings it back facing the answer.
+     *
+     * @param canHold the headings a train may be homed in there - copies trains may arrive at
+     * @param locomotive the locomotive being homed
+     * @param station what to call the square in the question
+     * @param parent what to centre the dialog on
+     * @return the chosen heading, or null when there was nothing to ask or the question was dismissed
+     */
+    public static Side forHome(Collection<Side> canHold, String locomotive, String station, Component parent)
+    {
+        if (!wouldAsk(canHold)) return null;
+
+        if (answeredByATest != null)
+        {
+            return choicesFor(canHold).contains(answeredByATest) ? answeredByATest : null;
+        }
+
+        return ask(parent, I18n.f("autolayout.ui.askHomeFacing", locomotive, station, I18n.t("ui.main.returnHome")),
+            choicesFor(canHold), null);
     }
 
     /**
@@ -166,12 +191,12 @@ public class FacingPrompt
      * presses return gets what the paste would have done without asking.
      *
      * @param parent what to centre on
-     * @param station the square's name
+     * @param question the question, already worded
      * @param sides the headings to offer
      * @param suggested the default, or null
      * @return the chosen heading, or null when dismissed
      */
-    private static Side ask(Component parent, String station, List<Side> sides, Side suggested)
+    private static Side ask(Component parent, String question, List<Side> sides, Side suggested)
     {
         final Side[] answer = {null};
 
@@ -189,7 +214,7 @@ public class FacingPrompt
                 int preferred = suggested == null ? 0 : Math.max(0, sides.indexOf(suggested));
 
                 int chose = JOptionPane.showOptionDialog(parent,
-                    I18n.f("autolayout.ui.askFacing", station),
+                    question,
                     I18n.t("autolayout.ui.askFacingTitle"),
                     JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null,
                     options, options[preferred]);

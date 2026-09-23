@@ -455,6 +455,7 @@
              is an arrangement autonomy can reach and Return Home cannot solve, which by his ruling is
              also a defect - it just needs the arrangement printed before anyone can act on it. -->
         <test-one-class class="testTrainsComeHomeFromAPinnedArrangement"/>
+        <test-one-class class="testATrainComesHomeFacingTheWayItWasHomed"/>
         <test-one-class class="testRouteCapture"/>
         <test-one-class class="testRouteCommandParity"/>
         <test-one-class class="testRouteEditorLocked"/>

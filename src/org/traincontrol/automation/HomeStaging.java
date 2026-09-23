@@ -2503,7 +2503,15 @@ public final class HomeStaging
      */
     private static boolean atHome(Point home, Point where)
     {
-        return home != null && home.isSamePlaceAs(where);
+        if (home == null || !home.isSamePlaceAs(where)) return false;
+
+        // AND FACING THE WAY IT WAS HOMED, where the home says which way (OB-282).  Adam, 2026-09-23: *"yes, it should accomplish the facing.  but it's also reasonable to expect that the input facings are ones realistic on the layout.  we shouldn't allow an impossible facing to be saved."*
+        //
+        // A copy is a facing (behaviour.md 3), so the other arrival of the home square is the train turned round -
+        // which MT-165 counted as home, because a home was the square.  Where the home was set facing a way, only a
+        // copy arrived at by the same side is home: that copy, or its turning twin, which is the same arrival and a
+        // different thing to do next.  A home set with no facing is the square, as before.
+        return !home.isHomeFacingFixed() || java.util.Objects.equals(home.getCopyArrival(), where.getCopyArrival());
     }
 
     /**
