@@ -182,6 +182,71 @@ public class testATrainComesHomeFacingTheWayItWasHomed
             + " round");
     }
 
+    /**
+     * A train standing turned round on its home square - on the turning copy of the arrival it was homed in - is not home
+     * (TDY-B1, AUT-B2).
+     *
+     * A turning copy points back at the side it came in by, so it faces the other way from its plain twin.  Return Home
+     * counted the twin as home because the two share an arrival, and on a square trains may turn at, a train left turned
+     * round there was reported already home.  On his railway that is BottomMainB, EN57-947's home.
+     *
+     * MUTATION: `HomeStaging.atHome` accepting the turning twin again fails this.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testATrainTurnedRoundOnItsHomeIsNotHome() throws Exception
+    {
+        // A PLAIN COPY WITH A TURNING TWIN, both places a train may stand - BottomMainB's where it has one.
+        Point plain = null;
+        Point twin = null;
+
+        for (Point candidate : layout.getPoints())
+        {
+            String name = candidate.getName();
+
+            if (!name.endsWith(")") || name.endsWith(", reverse)") || !candidate.isDestination()) continue;
+
+            Point turned = layout.getPoint(name.substring(0, name.length() - 1) + ", reverse)");
+
+            if (turned == null || !turned.isDestination()) continue;
+
+            if (plain == null || name.startsWith("BottomMainB")) { plain = candidate; twin = turned; }
+        }
+
+        assertNotNull(plain, "precondition: his railway has no square with a plain copy and a turning twin a train may stand"
+            + " on, so being turned round on one's home cannot happen here");
+
+        try
+        {
+            assertTrue(layout.moveLocomotive(OUR_TRAIN, plain.getName(), false), "could not stand the train on " + plain.getName());
+
+            layout.setHomeLocomotive(plain.getName(), OUR_TRAIN);
+
+            assertTrue(plain.isHomeFacingFixed(), "precondition: the home was not held to the copy it was set on");
+
+            assertTrue(layout.moveLocomotive(OUR_TRAIN, twin.getName(), false), "could not stand the train on " + twin.getName());
+
+            HomeStaging.Plan plan = layout.planReturnToHome();
+
+            assertTrue(plan.getOutcome() != HomeStaging.Outcome.ALREADY_HOME, "a train homed on " + plain.getName() + " and"
+                + " standing on " + twin.getName() + " - turned round, facing the other way - is reported already home."
+                + "  Adam, 2026-09-23: \"it should accomplish the facing\"");
+        }
+        finally
+        {
+            layout.clearHomeLocomotives();
+
+            for (Point p : new ArrayList<>(layout.getPoints()))
+            {
+                if (p.getCurrentLocomotive() != null && OUR_TRAIN.equals(p.getCurrentLocomotive().getName()))
+                {
+                    layout.moveLocomotive(null, p.getName(), true);
+                }
+            }
+        }
+    }
+
     /** A copy's name with the turning twin folded onto the plain one - one arrival, two things to do next. */
     private static String arrival(String point)
     {

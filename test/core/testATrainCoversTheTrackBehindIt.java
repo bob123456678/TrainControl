@@ -622,6 +622,85 @@ public class testATrainCoversTheTrackBehindIt
     }
 
     /**
+     * A tail blocks every copy of the rail it lies on - the rail into a square's turning copy as well as into its plain
+     * copy (AUT-B1).
+     *
+     * On a square a train may turn round at, the build emits the rail into it twice: once into the plain copy and once
+     * into the turning copy, over exactly the same places.  The tail walk covers the one it walks, and `isPathClear`
+     * refused only that Edge and its lock partners - so a train could be sent onto the turning copy of a square another
+     * train's tail lies across, while the diagram showed that square grey, which is what routing refuses (OB-280).
+     *
+     * MUTATION: take the by-place test out of `isPathClear` and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testATailBlocksEveryCopyOfTheRailItLiesOn() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        String tag = "_copies" + (addresses++);
+
+        Point before = point(layout, "CQ" + tag, true);
+        Point plain = point(layout, "CP" + tag, true);
+        Point turning = point(layout, "CPR" + tag, true);
+        Point berth = point(layout, "CS" + tag, true);
+
+        // ONE SQUARE, TWO COPIES: the plain one and the one a train turns round on.
+        plain.setBlock("CP-square" + tag);
+        turning.setBlock("CP-square" + tag);
+
+        Edge intoPlain = layout.createEdge(before.getName(), plain.getName());
+        Edge intoTurning = layout.createEdge(before.getName(), turning.getName());
+        Edge leadIn = layout.createEdge(plain.getName(), berth.getName());
+
+        // The same metal under both copies' rails.
+        intoPlain.setPlaces(java.util.Arrays.asList("q1" + tag, "P" + tag), java.util.Arrays.asList(1, 1));
+        intoTurning.setPlaces(java.util.Arrays.asList("q1" + tag, "P" + tag), java.util.Arrays.asList(1, 1));
+        leadIn.setPlaces(java.util.Arrays.asList("s1" + tag, "S" + tag), java.util.Arrays.asList(1, 1));
+
+        intoPlain.setLength(2);
+        intoTurning.setLength(2);
+        leadIn.setLength(2);
+
+        intoPlain.setEntrySide("S");
+        intoTurning.setEntrySide("S");
+        leadIn.setEntrySide("S");
+
+        Locomotive standing = model.getLocByName(model.getLocList().get(0));
+        Locomotive mover = model.getLocByName(model.getLocList().get(1));
+
+        standing.setTrainLength(3);
+        mover.setTrainLength(1);
+
+        // Three units standing at the berth, having come in over the plain copy: its tail lies back over the square.
+        berth.setLocomotive(standing);
+        berth.setArrivedFrom("S");
+        berth.setArrivedAlong(java.util.Arrays.asList(intoPlain, leadIn));
+
+        before.setLocomotive(mover);
+
+        try
+        {
+            assertEquals(layout.placesCoveredByStandingTrains().get("P" + tag), standing,
+                "precondition: the standing train's tail does not lie over the square, so nothing below is about a tail");
+
+            // THE CONTROL: the rail the walk took is refused.
+            assertFalse(layout.isPathClear(java.util.Arrays.asList(intoPlain), mover),
+                "control: the rail the tail was walked along is not refused either");
+
+            assertFalse(layout.isPathClear(java.util.Arrays.asList(intoTurning), mover),
+                "a train was cleared onto the turning copy of a square another train's tail lies across - the same metal"
+                + " as the rail that is refused, and drawn grey (OB-280: the grey is what routing refuses)");
+        }
+        finally
+        {
+            berth.setLocomotive(null);
+            before.setLocomotive(null);
+        }
+    }
+
+    /**
      * MOVING A TRAIN CHANGES THE COVERED SET, WHICH IS WHAT THE DIAGRAM HAS TO REDRAW (OB-180).
      *
      * Adam: **"when a train is manually moved to a new station in the track diagram viewer using
