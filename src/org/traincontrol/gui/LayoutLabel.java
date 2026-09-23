@@ -1857,6 +1857,19 @@ public final class LayoutLabel extends JLabel
 
         for (org.traincontrol.automationui.TileGraph.RouteId road : roads)
         {
+            // A ROUTE TILE'S ROADS ARE NOT IN THE PORT MAP (OB-279).  It carries whatever the track beside it carries, and
+            // its roads are named by the sides they join - so indexing the port map found nothing, and the orange line
+            // and the grey band broke at every route tile a train lay across.
+            if (org.traincontrol.automationui.TilePorts.isTransparent(component.getType()))
+            {
+                org.traincontrol.automationui.TilePorts.Route through =
+                    org.traincontrol.automationui.TileGraph.transparentRouteOf(road);
+
+                if (through != null && through.getA() != through.getB()) out.add(through);
+
+                continue;
+            }
+
             java.util.List<org.traincontrol.automationui.TilePorts.Route> routes =
                 org.traincontrol.automationui.TilePorts.ports(
                     component.getType(), component.getOrientation(), road.getState());

@@ -72,9 +72,10 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * square.  A synthetic graph has no diagram behind it, so the half of the mechanism this defect lives
  * in would not exist.
  *
- * **The lengths are assigned here**, as Adam asked: almost nothing on his layout carries one, and the
- * tail walk stops at the first unmeasured segment, so with no measurements nothing is ever covered and
- * every assertion below would be about an empty set.  Every tile of the reduced graph is measured at
+ * **The lengths are assigned here**, as Adam asked.  When this was written almost nothing on his layout
+ * carried one, and the tail walk stops at the first unmeasured segment, so nothing was ever covered; his
+ * railway is measured now, but unevenly, and a uniform length keeps the tail's reach arithmetic rather
+ * than a property of which squares he has measured.  Every tile of the reduced graph is measured at
  * {@link #TILE_LENGTH}, which is not a railway anybody would build and is the only way to be sure the
  * wash comes from the measurement rather than from the walk never being reached.
  *
@@ -107,8 +108,14 @@ public class testTheShadingFollowsTheTrain
      */
     private static final JPanel OURS = new JPanel();
 
-    /** Every tile measured the same, so the tail's reach is arithmetic rather than a property of his railway. */
-    private static final int TILE_LENGTH = 10;
+    /**
+     * Every tile measured the same, so the tail's reach is arithmetic rather than a property of his railway.
+     *
+     * One, so a four-unit train covers the square it stands on and three behind.  It was 10 until 2026-09-23, when
+     * the square a train stands on was not spent; since OB-278 it is, and at 10 a four-unit train fits on its own
+     * square and there is no tail behind it to follow.
+     */
+    private static final int TILE_LENGTH = 1;
 
     /**
      * Short, so the tail reaches back a segment or two rather than across the whole railway.
@@ -259,6 +266,11 @@ public class testTheShadingFollowsTheTrain
             public void run()
             {
                 measureEveryTileAs(TILE_LENGTH);
+
+                // AND NO STATION'S SIZE.  Adam has given every station a maximum train length since this was
+                // written, and the round trip below was refused on the way home by BottomInner's - a rule about
+                // the number typed on the platform, which is not what this class is about.
+                session.clearEveryMaxTrainLength();
             }
         });
 
@@ -297,8 +309,10 @@ public class testTheShadingFollowsTheTrain
         for (LayoutLabel label : homeLabels)
         {
             assertTrue(isWashed(label),
-                "a square the railway says is covered is drawn without the wash. Nothing below can"
-                + " tell the wash being TAKEN OFF from its never having been put on");
+                "the square " + squareOf(label) + " (covered roads " + ui.coveredRoutesAt(squareOf(label)) + ", "
+                + train.getName() + " at " + home.getName() + ", covered " + atHome + ") is one the railway says is"
+                + " covered, and it is drawn without the wash. Nothing below can tell the wash being TAKEN OFF from"
+                + " its never having been put on");
         }
 
         // ---------------------------------------------------------------- 2. away to the next station
@@ -327,7 +341,9 @@ public class testTheShadingFollowsTheTrain
         for (LayoutLabel label : homeLabels)
         {
             assertFalse(isWashed(label),
-                "the square behind where " + train.getName() + " used to stand is still drawn greyed"
+                "the square " + squareOf(label) + " (covered roads now " + ui.coveredRoutesAt(squareOf(label))
+                + ", home " + home.getName() + ", covered at home " + atHome + ")"
+                + " behind where " + train.getName() + " used to stand is still drawn greyed"
                 + " after it has run to " + next.getName() + ". The railway knows the track is clear"
                 + " and the diagram is still telling the operator it is blocked - which is OB-180"
                 + " itself: \"its former shaded icons are not reset\"");
@@ -591,6 +607,16 @@ public class testTheShadingFollowsTheTrain
         return out;
     }
 
+    /** The square a label was registered for, read back for a failure message. */
+    private static TileKey squareOf(LayoutLabel label) throws Exception
+    {
+        java.lang.reflect.Field square = LayoutLabel.class.getDeclaredField("square");
+
+        square.setAccessible(true);
+
+        return (TileKey) square.get(label);
+    }
+
     /**
      * Whether this tile is drawing the mark that says a train is lying across it.
      *
@@ -657,6 +683,12 @@ public class testTheShadingFollowsTheTrain
         for (Point point : layout.getPoints())
         {
             if (point.getCurrentLocomotive() == null || point.getArrivedFrom() == null) continue;
+
+            // AT A STATION AUTONOMY MAY CHOOSE.  One it does not choose is drawn in the train mark's own orange (Adam,
+            // 2026-09-12: one orange means one thing), so its square reads as marked with no train on it and the claim
+            // that the mark LEFT with the train cannot be asked there.  On the railway refrozen 2026-09-23 the first
+            // candidate was EN57-203 at TopMainR0Park, a parking berth.
+            if (!point.isAutoDestination()) continue;
 
             Locomotive candidate = point.getCurrentLocomotive();
 

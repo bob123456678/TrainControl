@@ -68,6 +68,53 @@ public class testRouteTilePlacement
     }
 
     /**
+     * The road a route tile carries can be turned back into the sides it joins, which is what drawing it needs (OB-279).
+     *
+     * Found on Adam's measured railway on 2026-09-23: a train's tail lay across the route tile at 1 - Main:15,10, and the
+     * orange line stopped there.  A route tile's roads are named by the sides they join - it has no port map of its own
+     * - and the tile was looking its road up in the port map by index, where there is nothing.
+     *
+     * MUTATION: `transparentRouteOf` answering null fails this; and dropping its use from `LayoutLabel.routesOf` fails
+     * `core.testTheShadingFollowsTheTrain`, whose train lies across that route tile.
+     */
+    @Test
+    public void testARouteTilesRoadCanBeDrawn() throws Exception
+    {
+        LayoutDiagram page = page();
+
+        // straight - button - straight, along one row: the button carries east-west
+        track(page, 1, 1);
+        button(page, 2, 1);
+        track(page, 3, 1);
+
+        page.checkBounds();
+
+        TileGraph graph = new TileGraph(new ArrayList<>(Arrays.asList(page)), java.util.Collections.<String>emptySet());
+
+        java.util.Map<TileGraph.RouteId, org.traincontrol.automationui.TilePorts.Route> roads =
+            graph.getRoutes(new TileGraph.TileKey(page.getName(), 2, 1));
+
+        assertEquals(roads.size(), 1, "precondition: a route button between two straights carries one road, and it"
+            + " carries " + roads.keySet());
+
+        for (java.util.Map.Entry<TileGraph.RouteId, org.traincontrol.automationui.TilePorts.Route> road : roads.entrySet())
+        {
+            org.traincontrol.automationui.TilePorts.Route drawn = TileGraph.transparentRouteOf(road.getKey());
+
+            assertNotNull(drawn, "the route tile's road " + road.getKey() + " cannot be turned into sides, so nothing"
+                + " can draw it - the orange line and the grey band break at every route tile");
+
+            assertEquals(java.util.EnumSet.of(drawn.getA(), drawn.getB()),
+                java.util.EnumSet.of(road.getValue().getA(), road.getValue().getB()),
+                "the route tile's road " + road.getKey() + " comes back as the wrong sides");
+        }
+
+        assertNull(TileGraph.transparentRouteOf(new TileGraph.RouteId(0, 0)),
+            "an ordinary tile's first road was read as a route tile's, so a straight would be drawn along the wrong"
+            + " axis");
+    }
+
+    /**
      * Two buttons side by side, with track into the pair, is refused (Adam's rule).
      */
     @Test

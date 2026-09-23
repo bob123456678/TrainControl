@@ -1384,12 +1384,37 @@ public class TileGraph
     }
 
     /**
+     * The road a route tile's identifier names, as the sides it joins - or null when the identifier is not one
+     * (OB-279).
+     *
+     * The inverse of `transparentRouteId`, kept beside it so the two cannot come to disagree.  A route tile's roads
+     * are not in the port map - they are whatever the track beside it carries - so a reader that turns a `RouteId`
+     * into a line by indexing the port map finds nothing there.  The orange line and the grey band did exactly that,
+     * and broke at every route tile a train lay across.
+     *
+     * @param id a route identifier
+     * @return the road it names, or null for an identifier of an ordinary tile
+     */
+    public static Route transparentRouteOf(RouteId id)
+    {
+        if (id == null || id.getState() != 0 || id.getIndex() < 100) return null;
+
+        int code = id.getIndex() - 100;
+
+        Side[] sides = Side.values();
+
+        if (code >= sides.length * sides.length) return null;
+
+        return new Route(sides[code / sides.length], sides[code % sides.length], null);
+    }
+
+    /**
      * Transparent routes are not drawn routes, so they are identified by the axis they turned out to
      * carry rather than by an index into the port map.
      */
     private static RouteId transparentRouteId(Route route)
     {
-        return new RouteId(0, 100 + route.getA().ordinal() * 4 + route.getB().ordinal());
+        return new RouteId(0, 100 + route.getA().ordinal() * Side.values().length + route.getB().ordinal());
     }
 
     /**
