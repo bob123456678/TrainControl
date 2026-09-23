@@ -7393,6 +7393,29 @@ public class AutonomySession
 
         String standing = loc instanceof org.json.JSONObject ? ((org.json.JSONObject) loc).optString("name", null) : null;
 
+        // FROM THE RAILWAY FIRST, as `facingOf` reads it (TDY-C2, after CONF-B1).  The setup names the heading a train
+        // set off with until a capture writes the arrival back, so after a run that turned the train at this square its
+        // FACING is the way it no longer faces - and Adam's rule is *"Direction it is facing when home is set"*.  The copy
+        // it stands on in the running layout IS its facing.
+        org.traincontrol.automation.Layout running = runningLayout == null ? null : runningLayout.get();
+
+        if (running != null && getStationIndex() != null)
+        {
+            for (org.traincontrol.automation.Point point : running.getPoints())
+            {
+                if (point.getCurrentLocomotive() == null || !locomotive.equals(point.getCurrentLocomotive().getName()))
+                {
+                    continue;
+                }
+
+                if (!tile.equals(getStationIndex().squareOf(point.getName()))) continue;
+
+                Side onThisCopy = facingsFor(tile).get(point.getName());
+
+                if (onThisCopy != null) return onThisCopy.name();
+            }
+        }
+
         if (!locomotive.equals(standing)) return null;
 
         Object facing = getPointProperty(tile, AutonomyBuilder.FACING);

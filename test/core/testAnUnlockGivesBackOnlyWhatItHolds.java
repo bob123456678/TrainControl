@@ -98,6 +98,7 @@ public class testAnUnlockGivesBackOnlyWhatItHolds
         s2.setLocomotive(null);
 
         clearedEdges(layout).put(a, new java.util.HashSet<>(Arrays.asList(first)));
+        runMap(layout, "releasedEarly").put(a, new java.util.HashSet<>(Arrays.asList(first)));
 
         // AND B TOOK IT, with the Point at its end.
         first.setOccupied();
@@ -178,6 +179,16 @@ public class testAnUnlockGivesBackOnlyWhatItHolds
         layout.createPoint(name + addresses, true, sensor.getName());
 
         return layout.getPoint(name + addresses);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<Locomotive, Set<Edge>> runMap(Layout layout, String name) throws Exception
+    {
+        java.lang.reflect.Field field = Layout.class.getDeclaredField(name);
+
+        field.setAccessible(true);
+
+        return (Map<Locomotive, Set<Edge>>) field.get(layout);
     }
 
     @SuppressWarnings("unchecked")

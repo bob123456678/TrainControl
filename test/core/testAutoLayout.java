@@ -2328,6 +2328,25 @@ public class testAutoLayout
 
             given.add(first);
 
+            // AND AS RELEASED, which is what the unlock reads to know it was given back (GUI-A1): the cleared set is kept
+            // in atomic mode too, where nothing in it is released, so it alone no longer says so.
+            try
+            {
+                java.lang.reflect.Field releasedField = Layout.class.getDeclaredField("releasedEarly");
+
+                releasedField.setAccessible(true);
+
+                @SuppressWarnings("unchecked")
+                java.util.Map<Locomotive, java.util.Set<org.traincontrol.automation.Edge>> released =
+                    (java.util.Map<Locomotive, java.util.Set<org.traincontrol.automation.Edge>>) releasedField.get(layout);
+
+                released.computeIfAbsent(loc, k -> new java.util.HashSet<>()).add(first);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+
             // And the claim another train makes in between.
             second.setOccupied();
 

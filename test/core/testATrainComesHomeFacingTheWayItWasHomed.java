@@ -301,6 +301,8 @@ public class testATrainComesHomeFacingTheWayItWasHomed
             session.placeLocomotive(square, null);
             session.setRunningLayoutSource(null);
 
+            layout.clearHomeLocomotives();
+
             for (Point p : new ArrayList<>(layout.getPoints()))
             {
                 if (p.getCurrentLocomotive() != null && OUR_TRAIN.equals(p.getCurrentLocomotive().getName()))

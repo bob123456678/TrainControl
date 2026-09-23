@@ -628,6 +628,16 @@ public class Layout
      * still be allowed to be changed by auto routes."
      */
     private final Map<Locomotive, Set<Edge>> clearedEdges;
+
+    /**
+     * The edges each running train has given BACK early - released, whole, as its tail cleared them (GUI-A1).
+     *
+     * Not `clearedEdges`, which it looks like: that set is kept in atomic mode too, so routes know which accessories
+     * behind a train may move, and in atomic mode nothing in it is released until the run ends.  `unlockPath` has to know
+     * what the run still holds, and only this says it - an edge the tail cleared under atomic routes is still held; one
+     * released under non-atomic routes is not, whatever the setting is by the end.
+     */
+    private final Map<Locomotive, Set<Edge>> releasedEarly;
     private final Map<Locomotive, String> locomotivePendingS88;
 
     /**
@@ -840,6 +850,7 @@ public class Layout
         // Same reason as the rest of these: written on locomotive threads, read by the UI and by the
         // route guard without a lock.
         this.clearedEdges = new ConcurrentHashMap<>();
+        this.releasedEarly = new ConcurrentHashMap<>();
         this.timetable = new LinkedList<>();
         this.homeStations = new LinkedHashMap<>();
         this.locomotivePendingS88 = new ConcurrentHashMap<>();
@@ -1078,6 +1089,7 @@ public class Layout
         this.activeLocomotives.remove(l);
         this.locomotiveMilestones.remove(l);
         this.clearedEdges.remove(l);
+        this.releasedEarly.remove(l);
 
         // The claim on a path slot.  Left behind it lowers the cap on how many trains may run for the
         // rest of the session - a leak that makes the railway quieter and quieter with nothing to say
@@ -4046,7 +4058,12 @@ public class Layout
         // gave those edges back a second time - lowering the claim of the train that took each one - and emptied the
         // Points that train held.  So the road is chosen by what the run did: one that gave anything back early takes
         // the careful road, which skips what it gave back and leaves alone what another train holds.
-        Set<Edge> givenBackEarly = this.clearedEdges.get(loc);
+        //
+        // WHAT WAS RELEASED, NOT WHAT THE TAIL CLEARED.  The first repair read `clearedEdges`, which is kept in atomic
+        // mode too and released nothing there - so an atomic run whose tail had passed anything took the careful road,
+        // skipped those edges as given back, and kept them and their locks for good: the next leg of a Return Home
+        // plan was refused on a lock edge nobody held.  `releasedEarly` records only real releases.
+        Set<Edge> givenBackEarly = this.releasedEarly.get(loc);
 
         boolean heldItAll = givenBackEarly == null || givenBackEarly.isEmpty();
 
@@ -4080,7 +4097,8 @@ public class Layout
                     (loc.equals(e.getEnd().getCurrentLocomotive()) || null == e.getEnd().getCurrentLocomotive())
                 )
                 {
-                    Set<Edge> alreadyGivenUp = this.clearedEdges.get(loc);
+                    // What this run really gave back (GUI-A1) - not the cleared set, which atomic mode fills too.
+                    Set<Edge> alreadyGivenUp = this.releasedEarly.get(loc);
 
                     if (alreadyGivenUp != null && alreadyGivenUp.contains(e))
                     {
@@ -4134,7 +4152,7 @@ public class Layout
                     // autonomy.json in which two edges name a third they never traverse stands for a
                     // better reason: a count only balances if every claim is given back exactly once,
                     // which is what the given-up test above is for.
-                    Set<Edge> givenUp = this.clearedEdges.get(loc);
+                    Set<Edge> givenUp = this.releasedEarly.get(loc);
 
                     if (givenUp == null || !givenUp.contains(e))
                     {
@@ -7925,6 +7943,7 @@ public class Layout
                     }
 
                     this.clearedEdges.remove(loc);
+                    this.releasedEarly.remove(loc);
                 }
 
                 // And the sensor this locomotive was said to be heading for.  A route condition asking
@@ -8100,6 +8119,7 @@ public class Layout
                 this.locomotiveMilestones.put(loc, new CopyOnWriteArrayList<>());
                 this.locomotiveMilestones.get(loc).add(start);
                 this.clearedEdges.put(loc, ConcurrentHashMap.<Edge>newKeySet());
+                this.releasedEarly.put(loc, ConcurrentHashMap.<Edge>newKeySet());
                 this.activeLocomotives.put(loc, path);
 
                 // Counted for real now, so the claim is given up.  Kept as a union rather than a sum
@@ -8431,6 +8451,15 @@ public class Layout
                                 path.get(waiting[0]).setUnoccupied();
                                 path.get(waiting[0]).getStart().setLocomotive(null);
                                 // the far end is not cleared: that unlocks the next edge early
+
+                                // WHAT THIS RUN NO LONGER HOLDS, for `unlockPath` (GUI-A1).  A record of the release just
+                                // made, behind the same proof - not a second place an edge is reported clear, which
+                                // `clearedEdges` above is the only one of (WK-B1).
+                                Set<Edge> released = this.releasedEarly.get(loc);
+
+                                Edge givenBack = path.get(waiting[0]);
+
+                                if (released != null) released.add(givenBack);
                             }
 
                             if (control.isDebug())
@@ -8730,6 +8759,7 @@ public class Layout
             this.activeLocomotives.remove(loc);
             this.locomotiveMilestones.remove(loc);
             this.clearedEdges.remove(loc);
+            this.releasedEarly.remove(loc);
 
             // AND NOW THE TRAIN MAY BE MOVED ONTO THE COPY IT FACES (PRW-A1, placed here by PRV-B2).
             //
@@ -10433,7 +10463,7 @@ public class Layout
      *
      * **A run that the setting changes under is unlocked by what it did** (GUI-A1).  A path releases its
      * edges under one setting and `unlockPath` finishes under the other; `unlockPath` decides how to give
-     * track back by whether that run gave any back early - the edges `clearedEdges` records - not by the
+     * track back by whether that run gave any back early - the edges `releasedEarly` records - not by the
      * setting at its end.  So neither direction gives an edge back twice or leaves one held: false-to-true
      * mid-run (the Atomic Routes gate's write, reached while trains run) stops further early releases and
      * the unlock skips the ones already made; true-to-false starts them, and the same record covers them.
