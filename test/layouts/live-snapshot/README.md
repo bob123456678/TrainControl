@@ -118,6 +118,7 @@ before anything reads it, so the checked-in fixture is never written to either.
 - `core.testAMayTurnStationIsNotATerminus`
 - `core.testWhatCountsAsAParkingSquare`
 - `ui.testAPastedTrainFacesTheWayTheOperatorChose`
+- `core.testALockReachesTheRailBeingRunOver`
 - `ui.testBulkToolsHoldsTheWholeLayoutTools`
 - `ui.testOnlyAStationHoldsAnotherBack`
 - `ui.testReturnHomeShowsItIsWorking`

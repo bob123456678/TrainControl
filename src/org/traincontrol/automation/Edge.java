@@ -40,6 +40,24 @@ public class Edge
      * FLOORED AT ZERO rather than allowed to go negative - see release().
      */
     private int occupancy;
+    /**
+     * How many paths are RUNNING OVER this rail, as against holding it clear (OB-269).
+     *
+     * `occupancy` counts both: a path increments every edge it runs over AND every edge in each of
+     * those edges' `lockEdges`, so an edge can carry a claim because of rail it merely shares.  That
+     * is right for `isOccupied`, and right for the accessory protection in `getActiveAccs` - a held
+     * throat's turnouts must not be thrown either way.
+     *
+     * It is too wide for one question, and only one: whether a CANDIDATE path may use this rail.
+     * Both sides of that transaction walk `lockEdges` forwards, so a candidate sharing rail with an
+     * edge that shares rail with a running path was refused while sharing nothing with the path
+     * itself.  Adam's case, 2026-09-22: `BottomSecondary -> TunnelPre -> Tunnel` refused
+     * `BottomInner -> BottomInnerOtherside`, naming `12,7 -> Tunnel` - eight tiles shared with the
+     * run, three with the hop, and none at all between the run and the hop.
+     *
+     * So this counts the narrow thing, `isRunOver` asks it, and `occupancy` is left alone.
+     */
+    private int runOver;
     private final Point start;
     private final Point end;
     private final Map<String, Accessory.accessorySetting> configCommands;
@@ -79,6 +97,7 @@ public class Edge
         this.start = start;
         this.end = end;
         this.occupancy = 0;
+        this.runOver = 0;
         this.lockEdges = new LinkedList<>();
         this.configCommands = new HashMap<>();
     }
@@ -523,6 +542,26 @@ public class Edge
     {
         return occupancy > 0;
     }
+    /**
+     * Whether a path is RUNNING OVER this rail, rather than holding it clear (OB-269).
+     *
+     * The narrow half of `isLockHeld`, and the difference is the whole of Adam's finding: a lock edge
+     * carries a claim either because a path runs over it, or because it shares rail with one that
+     * does.  Refusing a candidate for the second refuses it for rail nothing is on - against his rule
+     * that *"nothing should disturb the ability to go from bottominner to bottominnerotherside unless
+     * trains are crossing down, or passing through either of those stations"*.
+     *
+     * **Asked in exactly two places, both in `isPathClear`:** of a candidate's lock edges, and of the
+     * same rail in the other direction.  Everything else keeps `isLockHeld`, because a reserved
+     * throat's accessories must stay protected whether the reservation is direct or shared.
+     *
+     * @param loc the locomotive asking, kept for symmetry with its siblings
+     * @return true when some path is running over this rail
+     */
+    synchronized public boolean isRunOver(Locomotive loc)
+    {
+        return runOver > 0;
+    }
 
     /**
      * @param wholeBlock whether a train on ANOTHER copy of the end square counts as occupying it.
@@ -612,6 +651,9 @@ public class Edge
     synchronized public void setOccupied()
     {
         occupancy++;
+
+        // AND THIS ONE IS BEING RUN OVER, which the propagated claims below are not (OB-269).
+        runOver++;
         
         for (Edge e : this.lockEdges)
         {
@@ -625,6 +667,12 @@ public class Edge
     synchronized public void setUnoccupied()
     {
         release();
+
+        // THE SAME FLOOR, FOR THE SAME REASON (see `release`): `configureAndLockPath` counts
+        // an edge as taken BEFORE it takes it, so a release can arrive for a claim that was
+        // never made - and going negative would leave the NEXT train finding occupied rail
+        // free, which is the worse direction of the two.
+        if (this.runOver > 0) this.runOver--;
         
         for (Edge e : this.lockEdges)
         {

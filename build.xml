@@ -513,6 +513,7 @@
         <test-one-class class="testNonAtomicRoutesNeedTheirLengths"/>
         <test-one-class class="testTheRecordsCountTheStore"/>
         <test-one-class class="testTheSuppliedManualTestFilesAreWhatTheySay"/>
+        <test-one-class class="testALockReachesTheRailBeingRunOver"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

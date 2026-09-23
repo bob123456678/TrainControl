@@ -2370,120 +2370,6 @@ invariant is pinned only on a small fixture.
 **Checked against today's code, 2026-09-22.**  The test still takes both sides from `entrySideOf` and
 its message still says *"re-measure before assuming either way"*.
 
-### OB-269 - 2026-09-22 - excessive lock edges
-
-**Kind:** bug  
-**Raised from:** MT-463 (Return Home moves a train the railway had standing on a terminus)  
-**Filed:** 2026-09-22 12:22  
-**Build:** commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
-
-when running auto layout, more edges (tracks) may get locked than necessary.  For example, a path to tunnel from bottomsecondary should not block the path from buttominner to bottominnerotherside (and vice-versa), but I see that they do.  significant bug.
-
-
-**Checked against your railway, 2026-09-22, by deriving the graph from the frozen snapshot and asking
-each lock what it is FOR.** Every lock on a BottomInner edge is backed by tiles the two edges really
-do share - not one came back with nothing in common - so the relation is sound and the pair you named
-is not a phantom:
-
-- `Tunnel (northbound) -> BottomInnerOtherside` runs over eleven tiles, `1 - Main:7,6` round to
-  `1 - Main:14,3`.
-- `TunnelPre (northbound) -> Tunnel (southbound)` shares **eight** of them with it: `7,6`, `7,5`,
-  `7,4`, `7,3`, `8,3`, `9,3`, `10,3`, `11,3`.
-- `1 - Main 12,7 -> BottomInnerOtherside` shares `12,6` and `12,5` with `1 - Main 12,7 -> Tunnel
-  (southbound)`, and `12,3`, `13,3`, `14,3` with the Tunnel edge above.
-
-**So what is too much is not WHICH edges lock, but HOW MUCH of them.** A lock is whole-edge: one
-shared tile locks the whole of the other rail. A train on `7,3`-`11,3` therefore locks
-`12,3`-`14,3` as well, which it is nowhere near - and that is exactly *"more edges may get locked than
-necessary"*.
-
-**This is the half of OB-207 that was never carried over.** That one made the COVERED-track answer
-per-place - *"only over the part of it the train is actually lying on"* - and the lock relation
-between two paths stayed all-or-nothing. The places are already written on every edge, so the
-information the finer answer needs is there.
-
-**Not changed, and deliberately.** Loosening a lock is the direction that permits a collision, and it
-is the core of the anti-collision guarantee rather than a display rule - `behaviour.md` section 5c
-names the edge locks and the length rules as what every tier obeys. It also wants a red-first claim on
-your own geometry, which means a fixture built from the snapshot. It is not something to slip in
-between manual-test rounds, so it waits on your word.
-
-**One thing for you to confirm first**, because it decides whether this is one defect or two: is
-`Tunnel -> BottomInnerOtherside` a road that really runs the length of row 3 on your railway? If the
-reduction is walking a road that is not there, the granularity above is the second problem rather than
-the only one.
-
-
-**Reproduced, 2026-09-22, and the obvious fix is wrong**
-
-**Adam confirmed the row-3 road is real**, and gave the rule: *"nothing should disturb the ability to
-go from bottominner to bottominnerotherside unless trains are crossing down, or passing through either
-of those stations."*
-
-**It reproduces on the frozen snapshot, with every train taken off the railway first.**  That last
-part matters: the snapshot parks `75 407 DB` on `BottomInnerOtherside`, and a train standing there
-refuses the hop whatever the locking does - the first attempt at this measurement had no such step and
-was reading the parked train, which is a false reproduction that happened to agree with the
-conclusion.
-
-With the railway empty:
-
-- `BottomInner (northbound) -> 1 - Main 12,7 -> BottomInnerOtherside` is **clear**.
-- Occupy `BottomSecondary -> TunnelPre (northbound) -> Tunnel (southbound)`, the way a locked path
-  does.
-- The hop is now **refused**, and the reason names `1 - Main 12,7 -> Tunnel`.
-
-**The run and the hop share NOT ONE TILE.**  The run covers `12,11`, `11,11`, `11,10`-`11,3`,
-`10,3`-`7,3`, `7,4`-`7,7`; the hop covers `12,9`-`12,3`, `13,3`, `14,3`.  The edge named in the
-refusal, `12,7 -> Tunnel`, shares eight tiles with the run and three with the hop - so it is the
-go-between.
-
-**The mechanism: the write and the read each reach one hop, and together they reach two.**
-`Edge.setOccupied` marks every edge in each locked edge's `lockEdges`; `Layout.isPathClear` then reads
-the flag off every edge in each CANDIDATE edge's `lockEdges`.  Both are deliberate and
-`Edge.isLockHeld` explains why - the same list walked both ways is what makes a ONE-DIRECTIONAL
-relation refuse either ordering.  The side effect is that two edges sharing no rail conflict whenever
-some third edge shares rail with each of them separately.
-
-**What was tried, and why it is not the fix**
-
-Skipping a lock edge that names the candidate back - on the reasoning that a MUTUAL relation is
-already covered by the write side - **was written, tested, and refuted by its own control.**
-
-With it in place, a path over `Tunnel (northbound) -> TunnelPre (southbound)` was allowed while a
-train ran over `TunnelPre (northbound) -> Tunnel (southbound)`.  **Those are the two directions of one
-piece of rail**, and `GraphReducer.deriveLocks` deliberately does not lock them against each other -
-*"the two directions of one run are not rivals for the track; they are the same track"*.
-
-So the reasoning was wrong in a way worth writing down: a lock edge can be HELD without being on the
-running path, which is the whole two-hop phenomenon - and in that state the write side has covered
-nothing.  **The second hop is currently doing real work**: it is what stops a train being routed over
-the reverse direction of rail another train is running on.  Narrowing the reach without replacing that
-protection trades an over-refusal for a collision.
-
-**What a correct fix needs**
-
-The occupancy flag is a COUNTER and it loses the identity of the occupier, so nothing downstream can
-ask the question that actually settles this: *does this candidate share rail with what is running?*
-
-Two pieces, in this order:
-
-1. **The same rail in the other direction has to be refused on its own account**, rather than by
-   accident through a third edge.  That is a gap `deriveLocks` leaves open and the two-hop reach is
-   masking - and it is the same shape as `VAL8-A1` / `REG7-B3`, which found the covered-track set
-   naming one direction of a rail and not the other.
-2. **Then the reach can be narrowed to rail actually shared with a running path** - which is
-   `OB-207`'s per-place answer applied to locking instead of to covering.  The places are already
-   written on every edge, so the information is there.
-
-**The reproduction is written and kept** at `docs/manual-tests/files` scratch - a claim on his own
-geometry with the precondition that the two paths share no tile, the refusal as the failing claim, and
-the control that a path which DOES share rail is still refused.  It is the control that refuted the
-first attempt, so it goes in with whatever fix comes next.
-
-**Not attempted further without a ruling**, because both pieces change what refuses a train while
-another is running, and that is the anti-collision core rather than a display rule.
-
 ### OB-270 - 2026-09-22 - loc facing
 
 **Kind:** bug  
@@ -2704,6 +2590,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-22 | OB-269 | bug | *"when running auto layout, more edges (tracks) may get locked than necessary ... significant bug."*  A lock reached TWO hops, because the write and the read each reach one: `setOccupied` marks every edge in each of a path's edges' `lockEdges`, and `isPathClear` read the flag off every edge in each CANDIDATE's `lockEdges` - so a candidate was refused when a THIRD edge shared rail with it and, separately, with the run, while the candidate and the run shared none.  `Edge.runOver` now counts only rail a path runs over and `isRunOver` asks it; `occupancy` and `isLockHeld` are untouched, so a held throat's accessories stay protected.  Two more rules were needed and each was found by a test rather than by reading: the same rail the OTHER WAY is refused on its own account, found by PLACE because the two directions live on different copies; and a train is never refused rail its OWN reservation holds, which is `behaviour.md` 5c and is what five trains with no way home turned out to be.  Held by `core.testALockReachesTheRailBeingRunOver` - four mechanism claims plus Adam's own list of eleven allowed concurrent journeys, which was red for six of them first and is what caught both extra rules.  Every mutation measured. | fixed unvalidated | - |
 | 2026-09-21 | OB-248 | bug | Twenty-nine findings were open and named in no document a reader opens - only in this entry's own paragraph, which is the failure it was about.  Adam, 2026-09-22: *"no idea what 'the twenty-nine' are"*, and then *"re-file the others if they are found and still relevant"*.  All twenty-nine were found: the deleted reviews are recoverable from `77649f88^` and `4020a899^`, and each finding was read out of its own document and then checked against the code as it stands, by reading - nothing was run.  **Six were already closed** by the 2026-09-22 audit (four fixed with their commits, two not defects).  **Three are closed now**: `MON-C12` is the decomposition question `open-questions.md` already defers past 3.0.0, and `VD15-R8` and `VD15-R11` were lost with the message that reported them and name only their own absence.  **Twenty are still true and are now OB-253 to OB-268**, each with what was checked and when - `FP-B3` is the B, a route import that deletes every route and then drops one of two sharing an id.  No open finding is now absent from a live document, which is the claim `testTheRecordsCountTheStore` makes. | fixed unvalidated | - |
 | 2026-09-21 | OB-246 | bug | The target column offered every locomotive in the database, including one whose name holds a COMMA - which `RouteCommand.isNameUsable` refuses, because a command line is comma-separated - so the operator picked it and learnt at Save that the only way out was to rename the locomotive.  Adam, 2026-09-22: *"yes"*.  Marked rather than hidden, because hiding it would refuse a legal selection with nothing shown: the row is drawn in the refusal ink with the gate's own reason on its tooltip, as it is typed.  A row nobody has filled in yet is not marked - a mark that is always there is a mark nobody reads.  Held by `testARowSaveWouldRefuseIsMarkedAsItIsTyped`, whose two mutations were each measured. | fixed unvalidated | - |
 | 2026-09-21 | OB-238 | bug | The collision block that stops two trains standing on one square was keyed by the TILE, so a train on one arc of a double curve made the other arc read occupied and `isPathClear` refused track that is physically free.  Adam, 2026-09-22: *"it is two pieces of metal.  imagine two parallel tracks simple appearing on one tile for visual convenience.  two distinct, not connected paths."*  `AutonomyBuilder.blockFor` keys DOUBLE_CURVE, FEEDBACK_DOUBLE_CURVE and OVERPASS per ROAD - the grain the reduction has used since AUR-B1 - and every other split square still groups by the tile.  Held by `testEachArcOfADoubleCurveIsItsOwnPieceOfMetal`, seen failing first.  No hands-on test: it is what the build emits, and the claim reads it back out of the emitted configuration. | fixed unvalidated | - |

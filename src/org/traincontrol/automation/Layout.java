@@ -2440,15 +2440,91 @@ public class Layout
             // be - a sensor is an endpoint of the edges that meet there and part of the path of none of
             // them.  See Edge.isLockHeld, which also explains why nothing is given up by asking only
             // this.
+            // RAIL BEING RUN OVER, not rail that is merely held (Adam, 2026-09-22, OB-269).
+            //
+            // *"nothing should disturb the ability to go from bottominner to bottominnerotherside
+            // unless trains are crossing down, or passing through either of those stations."*
+            //
+            // **The write and the read each reach one hop, and together they reached two.**
+            // `setOccupied` marks every edge in each of a path's edges' `lockEdges`; this loop read
+            // the flag off every edge in each CANDIDATE's `lockEdges`.  So a candidate was refused
+            // when some THIRD edge shared rail with it and, separately, with the running path, while
+            // the candidate and the path shared no rail at all.  Measured on his railway:
+            // `BottomSecondary -> TunnelPre -> Tunnel` refused `BottomInner -> BottomInnerOtherside`,
+            // naming `12,7 -> Tunnel`, which shares eight tiles with the run and three with the hop.
+            // Six pairs off his own list of allowed concurrent paths were refused the same way.
+            //
+            // `isRunOver` is the narrow question; `isLockHeld` is unchanged for everything else,
+            // because a held throat's accessories must stay protected whether the hold is direct or
+            // shared (`getActiveAccs`).
+            //
+            // BOTH ORDERINGS OF AN ASYMMETRIC RELATION STILL REFUSE, which is what the two directions
+            // of the transaction are for: a lock edge ON the path marks this candidate's `occupancy`
+            // through the write, and the occupancy test above refuses it; a candidate NAMING an edge
+            // that is on the path is refused here.  Only the proxy-locked middle case is given up.
             for (Edge e2 : e.getLockEdges())
             {
-                if (e2.isLockHeld(loc))
+                if (e2.isRunOver(loc))
                 {
                     logPathError(loc, path, logFailures,
                         I18n.f("autolayout.errorLockEdgeOccupied", placeNameOf(e2))
                     );
                     return false;
                 }
+            }
+
+            // AND THE SAME RAIL THE OTHER WAY (OB-269, and it is not optional).
+            //
+            // A piece of rail is two `Edge` objects, and `GraphReducer.deriveLocks` deliberately does
+            // NOT lock them against each other - *"the two directions of one run are not rivals for
+            // the track; they are the same track"*.  So the reverse edge is in nobody's `lockEdges`,
+            // and what refused it until now was the second hop above, by accident: it shared rail
+            // with some third edge that also shared rail with the run.
+            //
+            // Narrowing the reach without this would trade an over-refusal for a collision, and that
+            // is not hypothetical - the first attempt at OB-269 did exactly that, and its own control
+            // caught it allowing a path over `Tunnel -> TunnelPre` while a train ran
+            // `TunnelPre -> Tunnel`.
+            //
+            // The covered set has known this since VAL8-A1 / REG7-B3, which found the same asymmetry
+            // one layer up and fixed it by covering both directions; the lock counter never learned it.
+            //
+            // FOUND BY PLACE, NOT BY NAME, and the first version of this got it wrong.  The two
+            // directions of one rail run between different COPIES of the two squares, because facing
+            // IS one-way edges here - so `getEdge(end.getName(), start.getName())` finds nothing and
+            // the check did nothing.  Its control caught it: a path over
+            // `Tunnel (northbound) -> TunnelPre (southbound)` was allowed while a train ran
+            // `TunnelPre (northbound) -> Tunnel (southbound)`, eleven shared tiles between them.
+            //
+            // This is the SAME QUESTION `deriveLocks` asks when it declines to lock such a pair, and
+            // it is asked the same way on purpose: two comparisons that must agree about what one rail
+            // is are how this defect was born.
+            for (Edge sameRailBack : this.edges.values())
+            {
+                if (sameRailBack == e) continue;
+
+                if (sameRailBack.getStart() == null || sameRailBack.getEnd() == null) continue;
+
+                if (!sameRailBack.getStart().isSamePlaceAs(e.getEnd())) continue;
+
+                if (!sameRailBack.getEnd().isSamePlaceAs(e.getStart())) continue;
+
+                if (!sameRailBack.isRunOver(loc)) continue;
+
+                // A TRAIN NEVER BLOCKS ITSELF (behaviour.md 5c, and `Edge.isOccupied` says the same
+                // of its own question: *"occupied by a different locomotive than the one specified"*).
+                //
+                // `isRunOver` counts claims and knows nothing about whose they are, so without this a
+                // train asking about the reverse of rail its OWN earlier leg holds was refused - and
+                // `core.testTrainsComeHomeToTheirPlatforms` is where that showed up, as trains with no
+                // way home.  Return Home plans a sequence and holds what it has already taken.
+                if (railHeldByThisTrain(sameRailBack, loc)) continue;
+
+                logPathError(loc, path, logFailures,
+                    I18n.f("autolayout.errorLockEdgeOccupied", placeNameOf(sameRailBack))
+                );
+
+                return false;
             }
         }
         
@@ -5347,6 +5423,35 @@ public class Layout
     private Point blockingOccupantOf(Point destination, Locomotive loc)
     {
         return Point.heldBackBy(destination, loc);
+    }
+
+    /**
+     * Whether this rail is held by the asking train's own path rather than somebody else's (OB-269).
+     *
+     * **A train never blocks itself** - `behaviour.md` 5c, and `Edge.isOccupied` honours the same rule
+     * for its own question.  The occupancy counters do not record an owner, so the answer comes from
+     * the path maps instead.
+     *
+     * **Both maps, for VD12-B3's reason:** `configureAndLockPath` claims `takingPath` and reserves the
+     * road before it returns, and `activeLocomotives` is written afterwards by the caller - so there is
+     * a window in which a train holds rail and appears in only one of them.  `walkStandingTrains` reads
+     * them as a union for exactly this, and says so.
+     *
+     * @param rail the piece of rail being asked about
+     * @param loc the train asking, or null when nobody is
+     * @return true when the claim on that rail is this train's own
+     */
+    private boolean railHeldByThisTrain(Edge rail, Locomotive loc)
+    {
+        if (rail == null || loc == null) return false;
+
+        List<Edge> mine = this.activeLocomotives.get(loc);
+
+        if (mine != null && mine.contains(rail)) return true;
+
+        mine = this.takingPath.get(loc);
+
+        return mine != null && mine.contains(rail);
     }
 
     /**
