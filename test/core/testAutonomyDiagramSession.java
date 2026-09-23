@@ -669,10 +669,11 @@ public class testAutonomyDiagramSession
     @Test
     public void testAHomeRemembersTheWayItsTrainWasFacing() throws Exception
     {
-        session.open(Arrays.asList(runOfTrack()));
+        session.open(Arrays.asList(throughStationPage()));
         session.initialize("Default");
 
-        TileKey sensor = new TileKey("main", 1, 1);
+        // THE MIDDLE SENSOR, which trains reach from either end - two copies, facing opposite ways.
+        TileKey sensor = new TileKey("main", 3, 1);
 
         session.setPointName(sensor, "Platform 1");
         session.setStation(sensor, true);
@@ -735,10 +736,11 @@ public class testAutonomyDiagramSession
     @Test
     public void testAHomeForATrainElsewhereTakesTheFacingAskedAndNoImpossibleOne() throws Exception
     {
-        session.open(Arrays.asList(runOfTrack()));
+        session.open(Arrays.asList(throughStationPage()));
         session.initialize("Default");
 
-        TileKey sensor = new TileKey("main", 1, 1);
+        // THE MIDDLE SENSOR, which trains reach from either end - two copies, facing opposite ways.
+        TileKey sensor = new TileKey("main", 3, 1);
 
         session.setPointName(sensor, "Platform 1");
         session.setStation(sensor, true);
