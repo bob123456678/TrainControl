@@ -58,8 +58,12 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-468](#mt-468) | 2026-09-19 | Every screen still finds its text after 239 unused message keys were removed | fixed unvalidated | UIX-C4 |
 | [MT-470](#mt-470) | 2026-09-21 | Atomic Routes cannot be switched off while autonomy could release track under a train | fixed unvalidated | VD12-R4 |
 | [MT-474](#mt-474) | 2026-09-23 | Mass Assign Train Lengths asks each train that has no length | fixed unvalidated | FR-094 |
+| [MT-475](#mt-475) | 2026-09-23 | The orange is where the train is, sensors included; the grey is what it blocks | fixed unvalidated | OB-277, OB-208 |
+| [MT-476](#mt-476) | 2026-09-23 | Mass Assign Lengths passes over route tiles and takes a deliberate 0 | fixed unvalidated | OB-273, OB-274 |
+| [MT-477](#mt-477) | 2026-09-23 | The tail question lists RampDown once | fixed unvalidated | OB-276 |
+| [MT-478](#mt-478) | 2026-09-23 | Captions and your own writing are two settings; Control+L steps through five | fixed unvalidated | OB-272 |
 
-Everything else - 443 of 474 - needs nothing from you unless the area changes again:
+Everything else - 443 of 478 - needs nothing from you unless the area changes again:
 392 **fixed validated** and 51 **superseded**.
 
 ---
@@ -24383,5 +24387,167 @@ are refused and asked again; the rule's edges; the item's count and greying; and
 real window's door asks `trainsWithoutALength` and writes through `applyTrainLength` - each shown going red
 under its own mutation.  The last is why this entry exists: the walk claims run against a stand-in for the
 main window, and only you running it in the real one proves the two halves are joined.
+
+---
+
+<a id="mt-475"></a>
+
+### MT-475 - 2026-09-23 - The orange is where the train is, sensors included; the grey is what it blocks
+
+**Disposition:** fixed unvalidated
+**From:** OB-277, OB-208
+
+**Written:** 2026-09-23
+
+Your words, 2026-09-23: *"when we draw orange lines, they don't overlap with sensors"*, and, asked what the
+grey should cover: *the whole stretch* - *"orange shows where the train is, gray shows what's blocked."*
+
+**What changed.**  The orange line used to leave out every sensor square, on purpose - the locomotive icon
+was taken to say a train is there.  It now runs over the square the train stands on and every sensor its
+body lies across.  The grey had been narrowed (OB-207) to exactly the orange's squares; it is the whole of
+every stretch between sensors the train blocks again, which is what routing refuses.  **This reverses what
+MT-373 accepted on 12 Sep**, on your ruling today.
+
+**Steps**
+
+1. In the track diagram viewer, with nothing running, pick a train at a station whose track behind it is
+   measured, and give it a length that reaches back past at least one sensor - the locomotive menu's train
+   length item.
+2. Look at the station square the train stands on, and at the sensor squares behind it.
+3. Look along the stretch the train's tail ends in.
+4. Find a double curve the grey crosses, if one is near - the lower level has several.
+
+**Expected**
+
+- Step 2: the orange line runs over the station square the train stands on (under the locomotive icon),
+  and over each sensor square its body lies across, along the track the train is on.
+- Step 3: the orange stops where the train's length runs out; the **grey carries on** to the next sensor,
+  covering the rest of that stretch.  Grey with no orange on it is track the train is not on and blocks.
+- Step 4: on a double curve only the arc the blocked stretch runs over is faded; the other arc is drawn
+  at full strength.
+- Shortening the train takes the orange back at once; the grey covers the stretches it still reaches.
+
+*What this is:* `regression.testTheWashIsNoLongerThanTheTrain` (the standing square and a sensor behind are
+orange, and one unit shorter leaves that sensor clear) and
+`ui.testTheGreyAppearsAtIdleToo.testTheGreyIsTheWholeOfEveryCoveredEdge`, each shown red under its own
+mutation.  No claim draws a double curve yet - step 4 is the only check of that arc.
+
+---
+
+<a id="mt-476"></a>
+
+### MT-476 - 2026-09-23 - Mass Assign Lengths passes over route tiles and takes a deliberate 0
+
+**Disposition:** fixed unvalidated
+**From:** OB-273, OB-274
+
+**Written:** 2026-09-23
+
+Your rulings, 2026-09-23: *"a route tile should not need or accept a length.  it just implicitly connects
+things as if it were a crossing"*; *"let's stick to a"* (the even share); and a deliberate 0 has *"same
+meaning to the model, but this will allow everything to get assigned without what appears to be a skip"*.
+
+**Steps**
+
+1. Open the autonomy editor on a page with a route tile inside a run of track that has no length yet.
+   (If every run is measured, clear one with Bulk Tools > Clear All Track Lengths on a copy you do not
+   mind re-measuring - or use a page you are still measuring.)
+2. Bulk Tools > Mass Assign Lengths.  When the stretch with the route tile comes up, look at what is
+   outlined, and type a length.
+3. Carry on until a stretch comes up that really has no length - two sensors with nothing between, or a
+   turnout straight into another.  Type **0** and press Enter.
+4. Finish or cancel the walk, then open it again.
+5. Turn on Unmeasured Track.
+6. Look at the notices for **TopR1ParkLong** and **TopR1ParkShort**.
+
+**Expected**
+
+- Step 2: the route tile is not outlined as part of the stretch, and after typing the length the route
+  tile shows none - the squares either side share it (your 4 over three squares comes out 2, 1, 1).  The
+  prompt ends "(0 = none)".
+- Step 3: 0 is accepted - no "enter at least 1" refusal - and the walk moves on.
+- Step 4: the stretch you answered 0 is not offered again.
+- Step 5: it is not highlighted as unmeasured, and no route tile is.
+- Step 6: neither says its approach is half measured any more.
+
+**Not changed, and on your list:** five route tiles on your layout already hold 1 unit each from an earlier
+even share (1:19,3  1:4,11  5:6,7  5:16,12  5:15,13), and the length rules still count them.
+
+*What this is:* five claims in `core.testMassAssignLengths` for route tiles and three for the 0, plus
+`core.testAutonomyDiagramStore.testADeliberateZeroIsKeptAndReadsAsNoLength` for the save and load - all
+shown red under their own mutations.
+
+---
+
+<a id="mt-477"></a>
+
+### MT-477 - 2026-09-23 - The tail question lists RampDown once
+
+**Disposition:** fixed unvalidated
+**From:** OB-276
+
+**Written:** 2026-09-23
+
+Your report, 2026-09-23: *"when pasting 75 407 DB on bottomsecondary, the tail question lists rampdown twice
+in the list."*
+
+**What it was.**  Measured on your railway: the two entries were RampDown's southbound lane and its
+northbound TURNING copy - a train that came in from the south and turned - and both leave south by the same
+rail, over exactly the same squares.  They were counted as two roads by their names.  21 such pairs on your
+railway, all at RampDown or BottomMainPost; none now.
+
+**Steps**
+
+1. Put 75 407 DB on BottomSecondary with Control+V in the track diagram viewer, facing so its tail lies
+   towards RampDown, at its own length and then at a longer one (the locomotive menu's train length).
+2. Do the same at TopMainPost (westbound) and at BottomMainA (westbound), the other squares where the
+   pairs were.
+
+**Expected**
+
+- RampDown (or BottomMainPost) appears **once** in the list.
+- Where the only road back was those two copies, **no question is asked at all** - both answers were the
+  same track.
+- A real junction still asks: BottomCrossover is still offered beside RampDown when the train is long
+  enough to have crossed either.
+
+*What this is:* `core.testTheTailCrossedQuestion.testTwoCopiesLeavingByOneRailAreOneRoadBack`, on a
+diagram-built railway with a may-turn square, at the first hop and one hop further back - shown red under
+each of three mutations.
+
+---
+
+<a id="mt-478"></a>
+
+### MT-478 - 2026-09-23 - Captions and your own writing are two settings; Control+L steps through five
+
+**Disposition:** fixed unvalidated
+**From:** OB-272
+
+**Written:** 2026-09-23
+
+Your words, 2026-09-23: *"make text labels be a dedicated setting, and hide the text labels unless it is
+selected.  Also, make control+L cycle the options"* - *"the dropdown's 4, plus add an option to the dropdown
+that shows the labels only"*.
+
+**Steps**
+
+1. Open the autonomy editor on **1 - Main**, which has writing of your own ("Inner Loop" and others).
+2. Set the caption dropdown to **Station Names**.
+3. Press **Control+L** five times, looking at the dropdown and the diagram after each press.
+4. Leave it on **Station Names** and drag a station caption to another square.
+5. Close the editor, open the track diagram editor on the same page, and press Control+L there.
+
+**Expected**
+
+- Step 2: station captions are drawn; your own writing is **not**.
+- Step 3: the dropdown steps Parked Locs, Homes, None, **Labels Only**, and back to Station Names.  Under
+  Labels Only your writing is drawn and no caption; under None, neither.
+- Step 4: the caption can be picked up and moved as before - the move cursor is there.
+- Step 5: in the track editor Control+L still turns the text on and off, as it always has.
+
+*What this is:* `regression.testARememberedNoneOpensWithTheCaptionsOff`, which opens the real editor on the
+frozen railway: captions and writing counted apart, Labels Only, Control+L through the editor's own key
+handler, and the drag - each shown red under its own mutation.
 
 ---
