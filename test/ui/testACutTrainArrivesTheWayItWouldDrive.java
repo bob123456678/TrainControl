@@ -157,14 +157,21 @@ public class testACutTrainArrivesTheWayItWouldDrive
     {
         Point from = null;
 
-        for (String copy : session.facingsFor(secondary).keySet())
-        {
-            Point point = layout.getPoint(copy);
+        // THE COPY FACING WEST, where the square has copies (TDY-C4): the journey he described is a train going west, and
+        // on a split square the copy IS the heading, so the copy cut from has to be the westbound one - the heading forced
+        // below is only what the cut remembers.  BottomSecondary is one Point on his railway, and then it is that one.
+        Map<String, Side> copies = session.facingsFor(secondary);
 
-            if (point != null && point.isDestination()) from = point;
+        for (Map.Entry<String, Side> copy : copies.entrySet())
+        {
+            Point point = layout.getPoint(copy.getKey());
+
+            if (point == null || !point.isDestination()) continue;
+
+            if (copies.size() == 1 || copy.getValue() == Side.W) from = point;
         }
 
-        assertNotNull(from, "no copy of BottomSecondary a train may stand on");
+        assertNotNull(from, "no copy of BottomSecondary a train may stand on facing west: " + copies);
 
         final String fromName = from.getName();
 
