@@ -1900,59 +1900,6 @@ the fix and its claim go in together.
 **Nothing shipped.**  Four attempts: one claim that could not fail, two that assumed the walked heading
 was placeable, and this one blocked on the fixture.  The diagnosis is now certain; the fix is not going
 in behind a claim that cannot run.
-
-### FR-096 - 2026-09-23 - an entry guard for stations: signals thrown red when a train arrives there at the end of its journey
-
-**Kind:** feature request  
-**Raised from:** Adam, 2026-09-23  
-**Filed:** 2026-09-23  
-
-Adam, 2026-09-23: *"file an FR for entry guard for stations.  This is a signal that turns red after
-arrival at the final designation.  Same UI to set it as the current linked signal exit guard, and
-multiple selections are possible."*  And, asked when it turns green again: *"The next route sets it
-green, so that is out of scope."*
-
-**What exists today, which he calls the exit guard.**  *Signal Protecting This Station...* on a
-station's menu pairs one or more signals with it (`AutonomyCompanionStore.stationSignals`, emitted as
-each copy's `protectingSignal`).  `Layout.refreshOneSignal` throws each such signal red while ANY station
-it is paired with is claimed - a train standing there, or a locked path that has reserved it - and green
-when none is.  It is driven from every occupancy change, only while trains are being run, and only when
-the aspect changes.
-
-**What this adds: a second list per station, with a narrower trigger.**
-
-- **Red when a train ARRIVES there as the END of its journey.**  Not when a path is locked to it - the
-  train still has to get in past the signal - and not when a train passes through on its way somewhere
-  else.  "Final destination" is the path's last Point, which every tier has: autonomy, a hand send and
-  Return Home all end a journey there.
-- **Nothing here ever turns it green.**  The next route that needs the signal sets it, which is his
-  ruling and the whole of the green half.  So unlike the exit guard this is a command on an event, not
-  an aspect derived from state: nothing is remembered and nothing is undone.
-- **Only while trains are being run**, the exit guard's fence and for its reason: placing or cutting a
-  train by hand is not an arrival and must not move hardware.
-
-**Same UI, as he asked.**  The station menu gets the entry list beside the existing one - the same
-dialog: the list of paired signals, *Click It on the Diagram* or *Enter Its Address...* (several
-addresses, comma-separated), *Remove Selected*, *Done*, and the paired signals outlined on the diagram
-while it is open.  The two lists should be told apart by name, so the existing item probably wants to
-say *exit* as well; worth confirming the wording when it is built.
-
-**Questions the build has to answer, none of which needs him unless the answer surprises:**
-
-- **One signal in both lists of one station.**  Arrival sets it red, and the exit guard, which derives
-  its aspect from the platform being claimed, would also hold it red - so they agree while the train is
-  there.  When the train leaves, the exit guard turns it green, which is also "the next route" in effect.
-  Allowed, and consistent.
-- **One signal as the entry guard of two stations** is fine for the same reason it is fine for the exit
-  guard: arrival at either sets it red, and nothing here clears it.
-- **Stored and emitted like the exit list**: a per-station square list in the setup, a per-copy name
-  list on the built Point, dropped with a log line where the signal no longer exists
-  (`checkProtectingSignalGone` has a sibling to write), carried through undo, copy and the page moves.
-  The store's collection registry (`ListMapKept`) is the one place that list has to be named, and the
-  guards that walk every collection will say so if it is not.
-
-Not built.  Filing is not asking for it to be worked.
-
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1969,6 +1916,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-23 | FR-096 | feature request | Adam: *"a signal that turns red after arrival at the final designation.  Same UI to set it as the current linked signal exit guard, and multiple selections are possible."*  Built as a second list per station beside the protecting signals, set up through the same dialog, thrown red where a journey's arrival is recorded; nothing turns it green (*"The next route sets it green"*). | - | `MT-479` |
 | 2026-09-23 | OB-277 | bug | Adam: *"when we draw orange lines, they don't overlap with sensors"* - on every sensor.  The walk behind the line left sensor squares out on purpose; it now draws the standing square and each sensor the body reaches, along the road facing the track.  The mechanism first filed (a live tile state) was wrong and is corrected on the entry. | - | `MT-475` |
 | 2026-09-23 | OB-276 | bug | Adam: *"the tail question lists rampdown twice in the list."*  Two copies of RampDown leaving by one rail were counted as two roads by name; roads are now compared by the places the rail runs over.  21 pairs on his railway, none now. | - | `MT-477` |
 | 2026-09-23 | OB-274 | bug | Adam: *"allow a length of 0 as a length that is set deliberately ... same meaning to the model"*.  The walk accepts 0 and stops offering the piece; every length rule reads it as unmeasured; it survives a save and a load. | - | `MT-476` |

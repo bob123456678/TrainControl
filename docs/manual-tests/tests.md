@@ -62,8 +62,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-476](#mt-476) | 2026-09-23 | Mass Assign Lengths passes over route tiles and takes a deliberate 0 | fixed unvalidated | OB-273, OB-274 |
 | [MT-477](#mt-477) | 2026-09-23 | The tail question lists RampDown once | fixed unvalidated | OB-276 |
 | [MT-478](#mt-478) | 2026-09-23 | Captions and your own writing are two settings; Control+L steps through five | fixed unvalidated | OB-272 |
+| [MT-479](#mt-479) | 2026-09-23 | An entry guard throws its signals red when a train arrives, and not when one passes | fixed unvalidated | FR-096 |
 
-Everything else - 443 of 478 - needs nothing from you unless the area changes again:
+Everything else - 443 of 479 - needs nothing from you unless the area changes again:
 392 **fixed validated** and 51 **superseded**.
 
 ---
@@ -24549,5 +24550,47 @@ that shows the labels only"*.
 *What this is:* `regression.testARememberedNoneOpensWithTheCaptionsOff`, which opens the real editor on the
 frozen railway: captions and writing counted apart, Labels Only, Control+L through the editor's own key
 handler, and the drag - each shown red under its own mutation.
+
+---
+
+<a id="mt-479"></a>
+
+### MT-479 - 2026-09-23 - An entry guard throws its signals red when a train arrives, and not when one passes
+
+**Disposition:** fixed unvalidated
+**From:** FR-096
+
+**Written:** 2026-09-23
+
+Your request, 2026-09-23: *"file an FR for entry guard for stations.  This is a signal that turns red after
+arrival at the final designation.  Same UI to set it as the current linked signal exit guard, and multiple
+selections are possible."*  And: *"The next route sets it green, so that is out of scope."*
+
+**Steps**
+
+1. In the autonomy editor, right-click a station that trains stop at and that a signal leads into.  Choose
+   **Entry Guard Signals...** - it sits under **Signal Protecting This Station...**.
+2. Pair a signal with **Click It on the Diagram**, then a second one with **Enter Its Address...**.  Remove one
+   with **Remove Selected**, add it back, and press **Done**.  Save.
+3. Right-click the station again and look at the item's label.
+4. Set the signal green by hand.  Send a train to that station from the track diagram, and let it arrive.
+5. Set the signal green again.  Send a train to a station BEYOND it, so it passes through without stopping.
+6. Run autonomy for a while, or a Return Home, with trains arriving at that station.
+
+**Expected**
+
+- Step 2: the same window as the protecting signal, saying the signals are thrown red when a train arrives at
+  the end of its journey; both signals are outlined on the diagram while it is open.
+- Step 3: the label names the signals by address, as the protecting item does.
+- Step 4: the signal goes **red** when the train arrives.
+- Step 5: the signal stays **green** - the train only passed.
+- Step 6: red after every arrival there, in every kind of run; nothing turns it green except a route that needs
+  it.  The protecting signals behave exactly as before.
+
+*What this is:* `regression.testBothProtectingSignalsAreThrown` (a real hand dispatch to the station, and one passing
+through it with the next station's guard as the control), `core.testAutonomyDiagramSession` (kept, apart from the
+protecting list, forgotten when the square stops being a station, emitted to the build) and
+`core.testAutonomyDiagramStore` (a deleted signal's pairing goes) - each shown red under its own mutation.  The
+dialog and the menu item are what only you can check.
 
 ---
