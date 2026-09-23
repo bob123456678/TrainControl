@@ -797,6 +797,193 @@ public class testMassAssignLengths
         return found[0];
     }
 
+    // ------------------------------------------------------------------------------ OB-273: route tiles take no length
+
+    /**
+     * A route tile is in no piece, and does not cut the piece it sits in (Adam, 2026-09-23, OB-273).
+     *
+     * *"a route tile should not need or accept a length.  it just implicitly connects things as if it were a
+     * crossing."*  The railway here is sensor, straight, ROUTE TILE, straight, sensor: one leg, which the route
+     * tile conducts straight through.  Before the ruling the route tile was an ordinary square of the piece.
+     */
+    @Test
+    public void testARouteTileIsInNoPieceAndDoesNotCutIt() throws IOException
+    {
+        openARouteTileInARun();
+
+        AutonomySession.Stretch piece = piece(key(2, 1));
+
+        assertNotNull(piece, "precondition: the straight beside the route tile is in no piece at all, so the route"
+            + " tile may not be conducting and nothing below is about it");
+
+        assertFalse(piece.getTiles().contains(key(3, 1)), "the route tile is a square of a piece: " + piece);
+
+        assertTrue(piece.getTiles().contains(key(4, 1)),
+            "the piece stops at the route tile instead of running on across it: " + piece);
+    }
+
+    /**
+     * His example, as he gave it: three squares and a route tile, 4 typed, comes out 2, 1, 1 - and nothing on the
+     * route tile.
+     *
+     * *"for example 3 regular tiles, 1 route, length 4 = 3 tiles have length 1.  i'd prefer one to have length 2, and
+     * two others length 1"*.  The even share is unchanged (OB-275: *"let's stick to a then"*); what changed is that the
+     * route tile is not one of the squares it is shared over.
+     */
+    @Test
+    public void testALengthIsSharedAroundARouteTileAndNotOnIt() throws IOException
+    {
+        openARouteTileInARun();
+
+        AutonomySession.Stretch piece = piece(key(2, 1));
+
+        assertEquals(piece.getTiles().size(), 4, "precondition: sensor, straight, straight, sensor - " + piece);
+
+        assertTrue(session.assignStretchLength(piece, 5), "a whole length the piece can hold was refused");
+
+        assertEquals(length(3, 1), 0, "the route tile was given a share of the piece's length");
+
+        assertEquals(length(1, 1) + length(2, 1) + length(4, 1) + length(5, 1), 5,
+            "the shares of the squares either side do not add up to what was typed");
+    }
+
+    /**
+     * A route tile with track on all four sides conducts two roads, like a crossing - and is still not asked for a
+     * length on its own the way a crossing is (OB-273).
+     */
+    @Test
+    public void testARouteTileIsNotAskedForOnItsOwnLikeACrossing() throws IOException
+    {
+        openARouteTileCrossroads();
+
+        assertTrue(session.getRoutes(key(2, 2)).size() > 1,
+            "precondition: the route tile conducts one road, not two, so it is not the crossing shape at all");
+
+        assertFalse(session.sharedSquaresALengthRuleReads().contains(key(2, 2)),
+            "a route tile two roads cross is asked for a length on its own, as a crossing is");
+
+        assertFalse(session.squaresNeedingALength().contains(key(2, 2)),
+            "a route tile is listed as a square still needing a length");
+    }
+
+    /**
+     * A berth whose approach runs over a route tile is not half measured because of it (OB-273) - with the control
+     * that a plain square left unmeasured still makes it so.
+     *
+     * The notice Adam saw on TopR1ParkLong and TopR1ParkShort: every square that takes a length was measured, and the
+     * squares counted as unmeasured were route tiles.
+     */
+    @Test
+    public void testARouteTileDoesNotMakeABerthHalfMeasured() throws IOException
+    {
+        openARouteTileInARun();
+
+        session.setAutoDestination(key(5, 1), false);
+
+        session.getStore().setTileLength(key(2, 1), 2);
+
+        assertTrue(session.stationsWithAHalfMeasuredApproach().containsKey(key(5, 1)),
+            "CONTROL: with the straight at 4,1 unmeasured the berth is not reported half measured, so the check"
+            + " below could pass by never firing at all");
+
+        session.getStore().setTileLength(key(4, 1), 2);
+
+        assertFalse(session.stationsWithAHalfMeasuredApproach().containsKey(key(5, 1)),
+            "the berth is reported half measured when every square that takes a length is measured - the route tile"
+            + " is being counted as unmeasured track");
+    }
+
+    /**
+     * The reducer never names a route tile as the unmeasured track after the last switch (OB-273).
+     *
+     * That list is what the "trains turn round here and its track has no length recorded" notice asks for, so a
+     * route tile on it would be a notice asking for a length the tile does not take.
+     */
+    @Test
+    public void testTheReducerNeverAsksForARouteTilesLength() throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.ROUTE, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
+
+        wire(page, 3, 1, 7);
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("Lengths");
+        session.setStation(key(5, 1), true);
+        session.rebuild();
+
+        GraphReducer.ReducedEdge arriving = null;
+
+        for (GraphReducer.ReducedEdge edge : session.getReducer().getEdges())
+        {
+            if (edge.getEnd().equals(key(5, 1)) && edge.getStart().equals(key(1, 1))) arriving = edge;
+        }
+
+        assertNotNull(arriving, "precondition: no edge runs from 1,1 over the switch and the route tile to 5,1");
+
+        boolean overTheRouteTile = false;
+
+        for (GraphReducer.TileStep step : arriving.getPath()) if (key(4, 1).equals(step.getTile())) overTheRouteTile = true;
+
+        assertTrue(overTheRouteTile, "precondition: the edge does not run over the route tile - " + arriving.getPath());
+
+        assertFalse(session.getReducer().unmeasuredAfterTheLastSwitch(arriving).contains(key(4, 1)),
+            "the route tile is named as unmeasured track after the switch, so the notice asks for its length");
+    }
+
+    /**
+     * 1,1 sensor - 2,1 - ROUTE TILE 3,1 - 4,1 - 5,1 sensor, with 5,1 a station.
+     */
+    private void openARouteTileInARun() throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.ROUTE, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("Lengths");
+        session.setStation(key(5, 1), true);
+        session.rebuild();
+    }
+
+    /**
+     * A route tile at 2,2 with a sensor on each side - two roads through it, north-south and east-west.
+     */
+    private void openARouteTileCrossroads() throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 6, 6, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 2, 1, 1, 0, 21, 21, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 22, 22, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.ROUTE, 2, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 2, 0, 0, 23, 23, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 2, 3, 1, 0, 24, 24, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("Lengths");
+        session.setStation(key(2, 1), true);
+        session.setStation(key(2, 3), true);
+        session.setStation(key(1, 2), true);
+        session.setStation(key(3, 2), true);
+        session.rebuild();
+    }
+
     // ------------------------------------------------------------------------------ FR-094: the train-length walk
 
     /**

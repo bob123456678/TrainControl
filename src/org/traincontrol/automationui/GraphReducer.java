@@ -1333,11 +1333,24 @@ public class GraphReducer
 
             int here = authored.getTileLength(tile);
 
+            // A ROUTE TILE IS NOT TRACK TO MEASURE (OB-273), so it is never the square asked for: it takes no
+            // length and a length rule does not read one.
             if (here > 0) measured += here;
-            else out.add(tile);
+            else if (!takesNoLength(tile)) out.add(tile);
         }
 
         return measured > 0 ? new ArrayList<TileKey>() : out;
+    }
+
+    /**
+     * @param tile a square
+     * @return whether it takes no length (`TilePorts.takesNoLength`), so is never asked for one
+     */
+    private boolean takesNoLength(TileKey tile)
+    {
+        LayoutDiagramComponent component = graph.getTiles().get(tile);
+
+        return component != null && TilePorts.takesNoLength(component.getType());
     }
 
     private int sumLength(List<TileStep> path)

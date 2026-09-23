@@ -2850,6 +2850,12 @@ public class AutonomySession
 
             for (int i = 0; i <= leg.size(); i++)
             {
+                // A ROUTE TILE IS IN NO PIECE AND DOES NOT CUT ONE (Adam, 2026-09-23, OB-273: *"a route tile should
+                // not need or accept a length.  it just implicitly connects things as if it were a crossing."*).  It
+                // is passed over, so the piece runs on across it and its length is shared over the track either
+                // side: his three squares and a route tile with 4 typed come out 2, 1, 1.
+                if (i < leg.size() && takesNoLength(leg.get(i))) continue;
+
                 boolean boundary = i == leg.size()
                     || isSwitchSquare(leg.get(i)) || shared.contains(leg.get(i));
 
@@ -3242,7 +3248,10 @@ public class AutonomySession
 
         for (java.util.Map.Entry<TileKey, Integer> entry : crossedBy.entrySet())
         {
+            // Not a route tile with track on all four sides: it conducts like a crossing and takes no length
+            // (OB-273), so it is not asked for one on its own either.
             if (entry.getValue() > 1 && !isSwitchSquare(entry.getKey())
+                && !takesNoLength(entry.getKey())
                 && getRoutes(entry.getKey()).size() > 1)
             {
                 out.add(entry.getKey());
@@ -3270,6 +3279,17 @@ public class AutonomySession
         }
 
         return out;
+    }
+
+    /**
+     * @param tile a square
+     * @return whether it takes no length (`TilePorts.takesNoLength`) - a route tile
+     */
+    private boolean takesNoLength(TileKey tile)
+    {
+        org.traincontrol.base.LayoutDiagramComponent component = getGraph().getTiles().get(tile);
+
+        return component != null && TilePorts.takesNoLength(component.getType());
     }
 
     private boolean isSwitchSquare(TileKey tile)
@@ -8427,6 +8447,10 @@ public class AutonomySession
                     // The berth's own square is an allowance the walk never spends, and the start of the leg is
                     // where a train would be coming FROM - neither is a place this walk claims.
                     if (step.getTile().equals(square)) continue;
+
+                    // Nor is a route tile, which takes no length (OB-273): counting it made TopR1ParkLong and
+                    // TopR1ParkShort read as half measured when every square that takes a length was measured.
+                    if (getGraph() != null && takesNoLength(step.getTile())) continue;
 
                     if (store.getTileLength(step.getTile()) > 0) anyMeasured = true;
                     else unmeasured++;

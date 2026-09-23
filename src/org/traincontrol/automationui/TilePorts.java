@@ -456,6 +456,23 @@ public class TilePorts
     }
 
     /**
+     * True if a square of this type is never given a length and no length rule reads one (OB-273).
+     *
+     * Adam, 2026-09-23: *"a route tile should not need or accept a length.  it just implicitly connects things
+     * as if it were a crossing."*  So a route tile is in no piece of Mass Assign Lengths, takes no share of one,
+     * is not asked about on its own, and is never reported as unmeasured.  **The one list of such types**, asked
+     * once here, because two lists that must agree is how OB-233 happened: route tiles are the only entry today,
+     * and text and labels never lie on a leg at all.
+     *
+     * @param type the tile's type
+     * @return true when the square takes no length
+     */
+    public static boolean takesNoLength(componentType type)
+    {
+        return isTransparent(type);
+    }
+
+    /**
      * True if this type has any routes at all in any state - false for decoration, turntables and
      * disqualified tiles.
      * @param type
