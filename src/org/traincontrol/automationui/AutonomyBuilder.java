@@ -189,12 +189,12 @@ public class AutonomyBuilder
 
     /**
      * On a running Point, that its home was set facing the way this copy faces, and Return Home is to bring the
-     * locomotive back to this copy or its turning twin rather than to any copy of the square (OB-282).
+     * locomotive back to a copy of the square facing that way rather than to any copy of the square (OB-282).
      */
     public static final String HOME_FACING_FIXED = "homeFacingFixed";
 
-    /** On a running Point of a split square, the side trains arrive at this copy by (OB-282). */
-    public static final String COPY_ARRIVAL = "copyArrival";
+    /** On a running Point of a split square, the way a train standing on this copy points (OB-282, TDY-B1). */
+    public static final String COPY_FACING = "copyFacing";
 
     /**
      * What this used to be called, still read so that a setup authored an hour ago keeps its berths.
@@ -1133,9 +1133,10 @@ public class AutonomyBuilder
                     json.put(AUTO_DESTINATION, false);
                 }
 
-                // WHICH SIDE THIS COPY IS ARRIVED AT BY, on a split square (OB-282) - what Return Home compares to tell
-                // a copy from the other arrival.  A turning copy and its plain twin share it: one arrival.
-                if (nodes.size() > 1 && node.getArrival() != null) json.put(COPY_ARRIVAL, node.getArrival().name());
+                // WHICH WAY A TRAIN ON THIS COPY POINTS, on a split square (OB-282) - what Return Home compares to tell
+                // whether a train is home facing the way it was homed.  The FACING, not the arrival side: a turning copy
+                // shares its plain twin's arrival and points the other way (TDY-B1, AUT-B2).
+                if (nodes.size() > 1 && facingOf(node) != null) json.put(COPY_FACING, facingOf(node).name());
 
                 // AND THAT THE HOME ON THIS COPY WAS SET FACING THIS WAY (OB-282), where the setup says so and this copy
                 // holds it - otherwise the home is the square, as it has been since 2026-08-31.

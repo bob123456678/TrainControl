@@ -2751,6 +2751,19 @@ public class Layout
                 }
             }
 
+            // AND EVERY OTHER COPY OF THE SAME METAL (AUT-B1).
+            //
+            // The two questions above ask about the Edge the tail was walked along and its lock partners, and one
+            // piece of rail is often several Edges: the build emits the rail into a square a train may turn round at
+            // twice - into the plain copy and into the turning copy - over exactly the same places, and those two are
+            // not each other's lock partners (the reduction derives locks between DIFFERENT reduced edges).  So a
+            // train could be sent onto the turning copy of a square another train's tail lies across, while the
+            // diagram drew that square grey - and the grey is what routing refuses (OB-280).
+            //
+            // The places are the metal: an edge whose places another train's tail has claimed is refused, whichever
+            // copy it is.  An edge described in no places keeps the two answers above, which is what it had.
+            if (lyingAcross == null) lyingAcross = anotherTailOn(e, loc, coveredPlaces);
+
             if (lyingAcross == null || lyingAcross.equals(loc)) continue;
 
             logPathError(
@@ -7543,6 +7556,29 @@ public class Layout
     }
 
     /**
+     * The train, other than the one being routed, whose tail lies over metal this edge runs on - or null (AUT-B1).
+     *
+     * By place, so every copy of a rail answers alike: the rail into a square's plain copy and into its turning copy
+     * run over the same places, and so do the two directions of one rail.
+     *
+     * @param edge the edge being asked about
+     * @param mover the locomotive being routed, whose own tail never blocks it
+     * @param claimed the places standing trains' tails reach, from `walkStandingTrains`
+     * @return the train lying there, or null
+     */
+    static Locomotive anotherTailOn(Edge edge, Locomotive mover, Map<String, Locomotive> claimed)
+    {
+        for (String place : edge.getPlaceIds())
+        {
+            Locomotive on = claimed.get(place);
+
+            if (on != null && !on.equals(mover)) return on;
+        }
+
+        return null;
+    }
+
+    /**
      * Whether a named locomotive's tail lies over any of the metal this edge runs on (OB-207).
      *
      * @param edge the edge being asked about
@@ -11274,10 +11310,10 @@ public class Layout
                     }
                 }
 
-                // WHICH SIDE THIS COPY IS ARRIVED AT BY, on a split square (OB-282).
-                if (point.has("copyArrival") && layout.getPoint(point.getString("name")) != null)
+                // WHICH WAY A TRAIN ON THIS COPY POINTS, on a split square (OB-282, TDY-B1).
+                if (point.has("copyFacing") && layout.getPoint(point.getString("name")) != null)
                 {
-                    layout.getPoint(point.getString("name")).setCopyArrival(point.optString("copyArrival", null));
+                    layout.getPoint(point.getString("name")).setCopyFacing(point.optString("copyFacing", null));
                 }
                 
                 if (point.has("excludedLocs") && point.get("excludedLocs") instanceof JSONArray)

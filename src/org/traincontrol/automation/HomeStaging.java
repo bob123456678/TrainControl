@@ -1546,6 +1546,9 @@ public final class HomeStaging
             Map<String, Locomotive> places = this.placesByAMove.computeIfAbsent(road,
                 r -> this.layout.placesATailWouldCover(end, train, r));
 
+            // AND EVERY OTHER COPY OF THE SAME METAL, as `Layout.isPathClear` asks it (AUT-B1).
+            if (Layout.anotherTailOn(edge, mover, places) != null) return false;
+
             for (Edge sharing : edge.getLockEdges())
             {
                 if (!covered.containsKey(sharing)) continue;
@@ -1631,6 +1634,10 @@ public final class HomeStaging
                 break;
             }
         }
+
+        // AND EVERY OTHER COPY OF THE SAME METAL, as `Layout.isPathClear` asks it (AUT-B1): the rail into a turning copy
+        // runs over the places of the rail into its plain twin, and is no lock partner of it.
+        if (lyingAcross == null) lyingAcross = Layout.anotherTailOn(edge, mover, this.placesCoveredAtStart);
 
         if (lyingAcross == null || lyingAcross.equals(mover)) return true;
 
@@ -2509,9 +2516,11 @@ public final class HomeStaging
         //
         // A copy is a facing (behaviour.md 3), so the other arrival of the home square is the train turned round -
         // which MT-165 counted as home, because a home was the square.  Where the home was set facing a way, only a
-        // copy arrived at by the same side is home: that copy, or its turning twin, which is the same arrival and a
-        // different thing to do next.  A home set with no facing is the square, as before.
-        return !home.isHomeFacingFixed() || java.util.Objects.equals(home.getCopyArrival(), where.getCopyArrival());
+        // copy FACING that way is home.  Not the copy with the same arrival side: that includes the home copy's turning
+        // twin, which points back at the side it came in by - the train turned round again, reported already home at
+        // BottomMainB, which trains may turn at (TDY-B1, AUT-B2).  A copy of the other arrival that has turned faces
+        // the home's way, and is home.  A home set with no facing is the square, as before.
+        return !home.isHomeFacingFixed() || java.util.Objects.equals(home.getCopyFacing(), where.getCopyFacing());
     }
 
     /**

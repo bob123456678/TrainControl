@@ -112,13 +112,19 @@ public class Point
 
     /**
      * Whether the home on this Point was set facing the way this copy faces, so Return Home brings its locomotive back
-     * to this copy or its turning twin (Adam, 2026-09-23, OB-282: *"it should accomplish the facing"*).  False means
-     * the home is the square, whichever copy - the rule since 2026-08-31 for a home nobody gave a facing.
+     * to a copy of the square facing the way this one faces (Adam, 2026-09-23, OB-282: *"it should accomplish the
+     * facing"*).  False means the home is the square, whichever copy - the rule since 2026-08-31 for a home nobody gave
+     * a facing.
      */
     private boolean homeFacingFixed;
 
-    /** On a split square, the side trains arrive at this copy by; null on a square that is one Point (OB-282) */
-    private String copyArrival;
+    /**
+     * On a split square, the way a train standing on this copy points; null on a square that is one Point (OB-282).
+     *
+     * The facing and not the arrival side, because a turning copy points back at the side it came in by: it shares its
+     * plain twin's arrival and faces the other way (TDY-B1, AUT-B2).
+     */
+    private String copyFacing;
 
     // Unique ID for any new node
     /**
@@ -1143,19 +1149,19 @@ public class Point
     }
 
     /**
-     * @return the side trains arrive at this copy by, or null on a square that is one Point (OB-282)
+     * @return the way a train standing on this copy points, or null on a square that is one Point (OB-282)
      */
-    public String getCopyArrival()
+    public String getCopyFacing()
     {
-        return this.copyArrival;
+        return this.copyFacing;
     }
 
     /**
-     * @param side the side trains arrive at this copy by, or null
+     * @param side the way a train standing on this copy points, or null
      */
-    public void setCopyArrival(String side)
+    public void setCopyFacing(String side)
     {
-        this.copyArrival = side;
+        this.copyFacing = side;
     }
 
     /**
@@ -1267,7 +1273,7 @@ public class Point
             if (this.homeFacingFixed) jsonObj.put("homeFacingFixed", true);
         }
 
-        if (this.copyArrival != null) jsonObj.put("copyArrival", this.copyArrival);
+        if (this.copyFacing != null) jsonObj.put("copyFacing", this.copyFacing);
         
         if (this.currentLoc != null)
         {

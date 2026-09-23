@@ -1656,8 +1656,11 @@ not fight: the post-processor only ever sees what the focus owner did not want.
   **asks** which way it should face (*"prompt the user for the direction"*), offering only the facings of copies
   trains may arrive at. The setup keeps it as `homeFacing`, the build puts the home on the copy facing that way and
   marks it, and a home set on the running diagram is held to the copy it was set on. Return Home then counts a train
-  home only on that copy or its turning twin - the same arrival - where MT-165 counted any copy of the square, which
-  on a square with two platforms facing opposite ways brought trains home turned round. A home with no facing -
+  home only on a copy FACING that way - where MT-165 counted any copy of the square, which on a square with two
+  platforms facing opposite ways brought trains home turned round. Not by arrival side: the home copy's turning twin
+  shares its arrival and points the other way, so on a square trains may turn at (BottomMainB, EN57-947's home) a
+  train left turned round there was reported already home (TDY-B1, AUT-B2);
+  `core.testATrainComesHomeFacingTheWayItWasHomed.testATrainTurnedRoundOnItsHomeIsNotHome`. A home with no facing -
   an old setup, or a copy no train may arrive at - is still the square, either way.
   `core.testATrainComesHomeFacingTheWayItWasHomed`,
   `core.testAutonomyDiagramSession.testAHomeRemembersTheWayItsTrainWasFacing`.

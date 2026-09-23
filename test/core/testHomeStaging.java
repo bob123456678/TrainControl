@@ -251,6 +251,18 @@ public class testHomeStaging
             "the runtime's covered-track rule has changed shape, so the planner above is now mirroring"
             + " a rule that no longer exists - which is how these two came to disagree in the first"
             + " place");
+
+        // AND THE BY-PLACE QUESTION, on both sides (AUT-B1): the runtime refuses every copy of a rail a tail lies
+        // across, and a planner that asked only the Edge would plan onto the turning copy the runtime then refuses.
+        assertTrue(layout.contains("lyingAcross = anotherTailOn(e, loc, coveredPlaces);"),
+            "the runtime no longer asks whether another train's tail lies on the metal an edge runs over (AUT-B1)");
+
+        assertTrue(planner.contains("if (Layout.anotherTailOn(edge, mover, places) != null) return false;"),
+            "the planner's check of the tails its own moves leave does not ask by place, so it plans onto a copy of"
+            + " the rail the runtime refuses (AUT-B1)");
+
+        assertTrue(planner.contains("lyingAcross = Layout.anotherTailOn(edge, mover, this.placesCoveredAtStart);"),
+            "the planner's check of the tails of trains that have not moved does not ask by place (AUT-B1)");
     }    /**
      * And a placement that DOES carry a value still applies it.
      *
