@@ -216,7 +216,12 @@ public class testTheWashIsNoLongerThanTheTrain
     }
 
     /**
-     * The defect, in Adam's own words: a train one square long shades one square.
+     * The defect, in Adam's own words: a train one square long shades one square - the one it stands on.
+     *
+     * Every tile measures one, so a one-unit train fits on its own square and nothing behind it is washed.
+     * Until OB-278 (2026-09-23) the square a train stands on was not spent, and this asserted one square
+     * BEHIND it; Adam: *"the 2 length tile with the s88 consumes 2 units of the train"*.  The whole-edge
+     * wash this was written against still fails it, with the whole edge behind the train.
      */
     @Test
     public void testATrainOfLengthOneCoversOneSquare() throws Exception
@@ -230,18 +235,17 @@ public class testTheWashIsNoLongerThanTheTrain
 
         Set<TileKey> washed = washedBehindTheTrain();
 
-        assertEquals(washed.size(), 1,
-            "the train is one square long and " + washed.size() + " squares behind it are shaded: "
-            + washed + ". The whole of the edge it arrived along is washed however short the train is,"
-            + " which is Adam's \"all of bottommaina stayed shaded ... as I set the length of"
-            + " EN57-203 to 1\"");
+        assertTrue(washed.isEmpty(),
+            "the train is one square long, stands on a square measuring one, and " + washed.size()
+            + " squares behind it are shaded: " + washed + ". Adam: \"all of bottommaina stayed shaded"
+            + " ... as I set the length of EN57-203 to 1\" - and the square it stands on consumes its one"
+            + " unit (OB-278)");
 
-        for (LayoutLabel label : labelsFor(washed))
-        {
-            assertTrue(isWashed(label),
-                "the one square the railway says is covered is drawn without the wash, so this test "
-                + "would pass equally well with the wash switched off altogether");
-        }
+        TileKey standingOn = session.getStationIndex().squareOf(arrived.getName());
+
+        assertTrue(ui.isTrackCovered(standingOn),
+            "a one-unit train shades nothing at all - not even the square it stands on - so the claim above"
+            + " would pass equally well with the wash switched off altogether");
     }
 
     /**
@@ -253,17 +257,20 @@ public class testTheWashIsNoLongerThanTheTrain
     @Test(dependsOnMethods = "testATrainOfLengthOneCoversOneSquare")
     public void testALongerTrainCoversMoreOfIt() throws Exception
     {
-        int longer = Math.min(3, wholeEdgeBehind);
+        // ITS OWN SQUARE AND THE REST BEHIND IT: a train n squares long lies on the one it stands on and n - 1
+        // behind (OB-278).
+        int longer = Math.min(3, wholeEdgeBehind + 1);
 
-        assertTrue(longer > 1, "the edge behind the train is too short to lengthen the train into");
+        assertTrue(longer > 2, "the edge behind the train is too short to lengthen the train into");
 
         washWith(longer);
 
         Set<TileKey> washed = washedBehindTheTrain();
 
-        assertEquals(washed.size(), longer,
-            "a train " + longer + " squares long shades " + washed.size() + " squares: " + washed
-            + ". The wash has to follow the length rather than being one square whatever is there");
+        assertEquals(washed.size(), longer - 1,
+            "a train " + longer + " squares long, on a square measuring one, shades " + washed.size()
+            + " squares behind it: " + washed + ". The wash has to follow the length rather than being one"
+            + " square whatever is there");
     }
 
     /**

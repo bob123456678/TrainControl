@@ -203,31 +203,27 @@ public class testARunningTrainHasOneTail
     }
 
     /**
-     * A milestone part-way along a run is ordinary block, and its measurement is not an allowance.
+     * A milestone part-way along a run is ordinary block, and so is the square a train comes to rest on.
      *
      * **Adam, 2026-09-22, asked where the maximum train length should be checked** (OB-244 / VD12-C1):
-     * *"it is the arrival station only"*.  A square a train has come to REST on measures how much train
-     * it may HOLD - his ruling of 2026-09-13, *"the station size is an allowance, not a length"* - so
-     * the tail walk does not charge the train for standing there, and spends its whole body further
-     * back instead.
+     * *"it is the arrival station only"*.  MT-438 had re-anchored a RUNNING train at its last milestone, and
+     * the tail walk then spent nothing on that milestone - the exemption it gave the square a train stands
+     * on - so the tail reached on past the square behind and `isPathClear` refused another train track that
+     * is free.
      *
-     * MT-438 then re-anchored a RUNNING train at its last milestone, and that exemption came with it.
-     * A milestone part-way along a run is ordinary block: the body really does lie over it, and
-     * charging it nothing let the tail reach on past the square behind, so `isPathClear` refused
-     * another train track that is free - the refusing direction Adam's standing rule is about.
+     * **That exemption was a misreading, and since OB-278 there is none** (Adam, 2026-09-23: *"the 2 length
+     * tile with the s88 consumes 2 units of the train"*, everywhere).  *"The station size is an allowance"*
+     * meant the station's maximum train length, not the length measured on its square; every square a body
+     * lies over is spent, the one it stands on first.  So the running train and the train at rest are the
+     * same arithmetic, and this now asks both.
      *
-     * **Two units, and the milestone measures two.**  So the train's whole body is the milestone and
-     * there is nothing left to reach `MR_B>MR_A` with.  The first claim is what makes the second one
-     * about the rule: a walk that produced nothing at all would satisfy a negative claim on its own.
+     * **Two units, and the milestone measures two.**  So the train's whole body is the milestone and there
+     * is nothing left to reach `MR_B>MR_A` with.  The first claim is what makes the second one about the
+     * rule: a walk that produced nothing at all would satisfy a negative claim on its own.
      *
-     * **And the allowance is still there for a train at rest**, which is the third claim - asked of the
-     * same railway, the same train and the same road, so the only thing that differs between the second
-     * claim and the third is whether the train is part-way through a run.
-     *
-     * MUTATION: drop the `atRest` clause from `onTheAllowance` in `Layout.walkOneTail` and the second
-     * claim fails, naming `MR_B>MR_A` - the milestone is exempted again, one unit survives it and the
-     * walk carries on to the leg behind the departure square.  Pass `false` from `tailAlong` instead
-     * and the third fails at the same edge, which is the rule taken away from the train it belongs to.
+     * MUTATION: leaving the square a train stands on unspent in `Layout.walkOneTail` fails the second claim
+     * and the third, each naming `MR_B>MR_A` - one unit survives the milestone and the walk carries on to
+     * the leg behind the departure square.
      *
      * @throws Exception from the run
      */
@@ -293,17 +289,19 @@ public class testARunningTrainHasOneTail
                 + " lying over.  The allowance belongs to the arrival station, not to a milestone"
                 + " part-way along a run (OB-244).  Claimed: " + mine);
 
-            // AND THE SAME TRAIN AT REST ON THE SAME SQUARE STILL HAS THE ALLOWANCE.  That is the
-            // question `edgesATailWouldCover` answers - a train standing at the end of a road it has
-            // driven - and it is the train the exemption was written for.
+            // AND THE SAME TRAIN AT REST ON THE SAME SQUARE SPENDS IT TOO (OB-278).  That is the question
+            // `edgesATailWouldCover` answers - a train standing at the end of a road it has driven.
             Set<String> resting = claimedBy(layout.edgesATailWouldCover(milestone, loc,
                 java.util.Arrays.asList(layout.getEdge("MR_A", "MR_J"))));
 
-            assertTrue(resting.contains("MR_B>MR_A"),
-                "a train STANDING at MR_J no longer spends its body past the square it stands on, so"
-                + " narrowing the exemption to a train at rest has taken it away from the train it"
-                + " belongs to - Adam, 2026-09-13: the station size is an allowance, not a length."
-                + "  Claimed: " + resting);
+            assertTrue(resting.contains("MR_A>MR_J"),
+                "a train standing at MR_J claims nothing on the road it drove in along, so the claim"
+                + " below would be satisfied by a walk that did nothing.  Claimed: " + resting);
+
+            assertFalse(resting.contains("MR_B>MR_A"),
+                "a two-unit train STANDING at MR_J, which measures two, is claimed on MR_B>MR_A as well -"
+                + " so the square it stands on was left unspent.  Adam, 2026-09-23: \"the 2 length tile"
+                + " with the s88 consumes 2 units of the train\" (OB-278).  Claimed: " + resting);
         }
         finally
         {
