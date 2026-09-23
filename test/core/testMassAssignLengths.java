@@ -797,6 +797,333 @@ public class testMassAssignLengths
         return found[0];
     }
 
+    // ------------------------------------------------------------------------------ FR-094: the train-length walk
+
+    /**
+     * A train-length door with no window behind it: a map of lengths, and a record of what was written.
+     *
+     * The walk's two halves live on the main window - the run list and `applyTrainLength` - and these claims are about
+     * the WALK: what it asks, what it refuses and what it writes.  The door the window really supplies is pinned
+     * separately, by `testTheWalkAsksTheRefusalsListAndWritesThroughTheOneDoor`.
+     */
+    private static final class Lengths implements AutonomyEditorPanel.TrainLengthDoor
+    {
+        final java.util.Map<String, Integer> length = new java.util.TreeMap<>();
+        final java.util.List<String> written = new java.util.ArrayList<>();
+
+        Lengths(Object... pairs)
+        {
+            for (int i = 0; i < pairs.length; i += 2) length.put((String) pairs[i], (Integer) pairs[i + 1]);
+        }
+
+        @Override
+        public java.util.List<String> trainsWithoutALength()
+        {
+            java.util.List<String> out = new java.util.ArrayList<>();
+
+            for (java.util.Map.Entry<String, Integer> e : length.entrySet())
+            {
+                if (e.getValue() == null || e.getValue() <= 0) out.add(e.getKey());
+            }
+
+            return out;
+        }
+
+        @Override
+        public void applyTrainLength(String train, int units)
+        {
+            length.put(train, units);
+            written.add(train + "=" + units);
+        }
+    }
+
+    private static void invokeTheTrainWalk(final AutonomyEditorPanel panel) throws Exception
+    {
+        final java.lang.reflect.Method walk = AutonomyEditorPanel.class.getDeclaredMethod("massAssignTrainLengths");
+        walk.setAccessible(true);
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            try { walk.invoke(panel); } catch (Exception e) { throw new RuntimeException(e); }
+        });
+    }
+
+    private static void type(final javax.swing.JDialog prompt, final String text) throws Exception
+    {
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            javax.swing.JTextField field = findField(prompt.getContentPane());
+
+            assertNotNull(field, "the prompt has no number box");
+
+            field.setText(text);
+        });
+    }
+
+    /**
+     * The walk asks about each train with no length in turn, writes what is typed, and leaves a skipped one alone.
+     *
+     * Adam, 2026-09-23: *"add a bulk tool to the autonomy editor to set missing train lengths, similar to how the station
+     * lengths are set."*  So it is the station walk's shape - the same prompt, titled with the walk's own name, OK and
+     * Skip - over the trains the door says have no length, and a train that already has one is never asked about.
+     * OK rather than Enter, for the reason `testTheMaximumWalkWritesWhatIsTypedAndMovesOn` gives.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheTrainWalkWritesWhatIsTypedAndSkipLeavesATrainAlone() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the walk's prompt needs a display");
+
+        openBerthBehindASwitch(key(5, 1));
+
+        Lengths lengths = new Lengths("Alpha", 0, "Bravo", 0, "Charlie", 5);
+
+        final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+        panel.setTrainLengthDoorForTest(lengths);
+
+        invokeTheTrainWalk(panel);
+
+        javax.swing.JDialog first = awaitPrompt(null, TRAINS);
+
+        assertTrue(promptText(first).contains("Alpha"), "the first prompt does not name the first train: " + promptText(first));
+
+        type(first, "3");
+        answer(first, org.traincontrol.util.I18n.t("ui.ok"));
+
+        javax.swing.JDialog second = awaitPrompt(first, TRAINS);
+
+        assertTrue(promptText(second).contains("Bravo"), "the second prompt does not name the second train");
+
+        answer(second, org.traincontrol.util.I18n.t("autosetup.ui.btnSkipOne"));
+
+        awaitNoPrompt(TRAINS);
+
+        // AND THE WALK FINISHED.  The last prompt closing is not the walk ending: the answer is written on the event
+        // thread after the prompt's modal loop returns, so the test thread can see the prompt gone before the write.
+        // An empty task queued behind the walk runs only once the walk has returned.
+        javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        assertEquals(lengths.written, Arrays.asList("Alpha=3"),
+            "the walk wrote something other than the one length typed - a skip must write nothing, and a train that"
+            + " already has a length must not be asked about");
+    }
+
+    /**
+     * A length of 0, or one past the locomotive menu's own maximum, is refused with a sentence and asked again.
+     *
+     * 0 is what a train with no length already holds, so writing it would answer the question with the state it was
+     * asked about; and the locomotive menu offers 0 to `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`, so a longer train here
+     * would be a number that dropdown cannot show.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testATrainLengthOfZeroOrPastTheMaximumIsRefusedAndAskedAgain() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the walk's prompt needs a display");
+
+        openBerthBehindASwitch(key(5, 1));
+
+        Lengths lengths = new Lengths("Alpha", 0);
+
+        final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+        panel.setTrainLengthDoorForTest(lengths);
+
+        invokeTheTrainWalk(panel);
+
+        javax.swing.JDialog prompt = awaitPrompt(null, TRAINS);
+
+        for (String refused : new String[] { "0", String.valueOf(org.traincontrol.gui.TrainControlUI.ROUTE_TRAIN_LENGTH_MAX + 1) })
+        {
+            type(prompt, refused);
+            answer(prompt, org.traincontrol.util.I18n.t("ui.ok"));
+
+            dismissTheRefusal(TRAINS);
+
+            assertTrue(lengths.written.isEmpty(), "a train length of " + refused + " was written: " + lengths.written);
+
+            prompt = awaitPrompt(prompt, TRAINS);
+        }
+
+        type(prompt, "4");
+        answer(prompt, org.traincontrol.util.I18n.t("ui.ok"));
+
+        awaitNoPrompt(TRAINS);
+
+        // AND THE WALK FINISHED.  The last prompt closing is not the walk ending: the answer is written on the event
+        // thread after the prompt's modal loop returns, so the test thread can see the prompt gone before the write.
+        // An empty task queued behind the walk runs only once the walk has returned.
+        javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        assertEquals(lengths.written, Arrays.asList("Alpha=4"), "the length typed after the refusals was not written once");
+    }
+
+    /** The rule the walk's refusal asks, at its edges. */
+    @Test
+    public void testATrainLengthIsOneToTheLocomotiveMenusMaximum()
+    {
+        int max = org.traincontrol.gui.TrainControlUI.ROUTE_TRAIN_LENGTH_MAX;
+
+        assertFalse(AutonomyEditorPanel.acceptsATrainLength(0), "0 is the length a train without one already has");
+        assertTrue(AutonomyEditorPanel.acceptsATrainLength(1));
+        assertTrue(AutonomyEditorPanel.acceptsATrainLength(max));
+        assertFalse(AutonomyEditorPanel.acceptsATrainLength(max + 1), "the locomotive menu cannot show " + (max + 1));
+    }
+
+    /**
+     * The Bulk Tools item counts the trains, greys when there are none, and says why.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheTrainWalkItemCountsAndGreys() throws Exception
+    {
+        openBerthBehindASwitch(key(5, 1));
+
+        final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+        panel.setTrainLengthDoorForTest(new Lengths("Alpha", 0, "Bravo", 0, "Charlie", 5));
+
+        javax.swing.JMenuItem item = trainWalkItem(panel);
+
+        assertNotNull(item, "the Bulk Tools menu has no Mass Assign Train Lengths item");
+        assertTrue(item.isEnabled(), "the item is greyed with two trains to ask about");
+        assertEquals(item.getToolTipText().replaceAll("<[^>]*>", ""),
+            org.traincontrol.util.I18n.f("autosetup.ui.tooltipMassAssignTrainLengths", 2));
+
+        panel.setTrainLengthDoorForTest(new Lengths("Charlie", 5));
+
+        item = trainWalkItem(panel);
+
+        assertFalse(item.isEnabled(), "the item offers a walk with no train to ask about");
+        assertEquals(item.getToolTipText().replaceAll("<[^>]*>", ""),
+            org.traincontrol.util.I18n.t("autosetup.ui.infoEveryTrainHasALength"), "the greyed item does not say why");
+    }
+
+    /**
+     * The door the main window supplies asks the list the Atomic Routes refusal names, and writes through the one
+     * train-length door.
+     *
+     * Read from the source because the window is the half these claims replace with a stand-in.  Two halves, each the
+     * reason FR-094 was filed: the refusal on MT-470 named trains and there was nowhere to go - so the walk must ask the
+     * SAME list - and `applyTrainLength` is where the findings and the grey are told, so a walk that set the field
+     * itself would leave both describing the length before last.
+     *
+     * @throws Exception reading the source
+     */
+    @Test
+    public void testTheWalkAsksTheRefusalsListAndWritesThroughTheOneDoor() throws Exception
+    {
+        String panel = new String(Files.readAllBytes(new File("src/org/traincontrol/gui/AutonomyEditorPanel.java").toPath()),
+            java.nio.charset.StandardCharsets.UTF_8).replace("\r", "");
+
+        int at = panel.indexOf("private TrainLengthDoor trainLengthDoor()");
+
+        assertTrue(at > 0, "the default door is not declared that way any more, so this checked nothing");
+
+        String door = panel.substring(at, panel.indexOf("\n    }\n", at));
+
+        assertTrue(door.contains("window.trainsWithoutALength()"),
+            "the walk no longer asks the list the Atomic Routes refusal names");
+        assertTrue(door.contains("window.applyTrainLength("),
+            "the walk no longer writes through applyTrainLength, so the findings and the grey are not told");
+
+        String ui = new String(Files.readAllBytes(new File("src/org/traincontrol/gui/TrainControlUI.java").toPath()),
+            java.nio.charset.StandardCharsets.UTF_8).replace("\r", "");
+
+        int list = ui.indexOf("public java.util.List<String> trainsWithoutALength()");
+
+        assertTrue(list > 0, "TrainControlUI.trainsWithoutALength is not declared that way any more");
+
+        assertTrue(ui.substring(list, ui.indexOf("\n    }\n", list)).contains("trainsWithNoLength()"),
+            "TrainControlUI.trainsWithoutALength no longer asks Layout.trainsWithNoLength, the refusal's own list");
+
+        int walk = panel.indexOf("private void massAssignTrainLengths()");
+
+        assertTrue(walk > 0, "the walk is not declared that way any more");
+
+        assertFalse(panel.substring(walk, panel.indexOf("\n    }\n", walk)).contains("setTrainLength("),
+            "the walk sets a length itself, past applyTrainLength");
+    }
+
+    /** The Mass Assign Train Lengths item, off the Bulk Tools menu as the right-click menu builds it. */
+    private static javax.swing.JMenuItem trainWalkItem(AutonomyEditorPanel panel) throws Exception
+    {
+        final javax.swing.JMenuItem[] found = new javax.swing.JMenuItem[1];
+
+        final String text = org.traincontrol.util.I18n.t(TRAINS);
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            javax.swing.JMenu bulk = panel.buildBulkMenuForTest();
+
+            for (int i = 0; i < bulk.getItemCount(); i++)
+            {
+                javax.swing.JMenuItem item = bulk.getItem(i);
+
+                if (item != null && text.equals(item.getText())) found[0] = item;
+            }
+        });
+
+        return found[0];
+    }
+
+    /** What the prompt says above its number box, with the markup taken out. */
+    private static String promptText(final javax.swing.JDialog prompt) throws Exception
+    {
+        final StringBuilder out = new StringBuilder();
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> collectLabels(prompt.getContentPane(), out));
+
+        return out.toString().replaceAll("<[^>]*>", "");
+    }
+
+    private static void collectLabels(java.awt.Container container, StringBuilder out)
+    {
+        for (java.awt.Component child : container.getComponents())
+        {
+            if (child instanceof javax.swing.JLabel) out.append(((javax.swing.JLabel) child).getText()).append(' ');
+
+            if (child instanceof java.awt.Container) collectLabels((java.awt.Container) child, out);
+        }
+    }
+
+    /** Waits for the refusal the walk shows over its own prompt, and closes it the way its OK button does. */
+    private static void dismissTheRefusal(String walkTitleKey) throws Exception
+    {
+        String walkTitle = org.traincontrol.util.I18n.t(walkTitleKey);
+        long giveUp = System.currentTimeMillis() + 10000;
+
+        while (System.currentTimeMillis() < giveUp)
+        {
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
+
+                final javax.swing.JDialog dialog = (javax.swing.JDialog) window;
+
+                if (walkTitle.equals(dialog.getTitle())) continue;
+
+                final JOptionPane[] pane = new JOptionPane[1];
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> pane[0] = findPane(dialog.getContentPane()));
+
+                if (pane[0] == null) continue;
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> pane[0].setValue(JOptionPane.OK_OPTION));
+
+                return;
+            }
+
+            Thread.sleep(50);
+        }
+
+        fail("the walk did not refuse the length with a message");
+    }
+
     // ------------------------------------------------------------------------------------ the 2026-09-19 review round
 
     /**
@@ -1038,6 +1365,7 @@ public class testMassAssignLengths
 
     private static final String LENGTHS = "autosetup.ui.menuMassAssignLengths";
     private static final String MAXIMA = "autosetup.ui.menuMassAssignMaxTrainLengths";
+    private static final String TRAINS = "autosetup.ui.menuMassAssignTrainLengths";
 
     private static javax.swing.JTextField findField(java.awt.Container container)
     {

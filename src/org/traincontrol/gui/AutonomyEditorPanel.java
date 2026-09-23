@@ -2223,6 +2223,23 @@ public class AutonomyEditorPanel extends JPanel
 
             bulk.add(massAssignMaximum);
 
+            // MASS ASSIGN TRAIN LENGTHS (FR-094; Adam, 2026-09-23: *"Rather than adding complexity through new menus, add
+            // a bulk tool to the autonomy editor to set missing train lengths, similar to how the station lengths are
+            // set."*).  Greyed on the walk's own count, as the two above it.  Not a page's question - a train is not on
+            // a page - so a page left out does not change it.
+            int trainsToMeasure = trainLengthDoor().trainsWithoutALength().size();
+
+            javax.swing.JMenuItem massAssignTrains =
+                item(I18n.t("autosetup.ui.menuMassAssignTrainLengths"), () -> massAssignTrainLengths());
+
+            massAssignTrains.setEnabled(trainsToMeasure > 0);
+
+            massAssignTrains.setToolTipText(wrapped(trainsToMeasure > 0
+                ? I18n.f("autosetup.ui.tooltipMassAssignTrainLengths", trainsToMeasure)
+                : I18n.t("autosetup.ui.infoEveryTrainHasALength")));
+
+            bulk.add(massAssignTrains);
+
             bulk.addSeparator();
         }
 
@@ -9539,6 +9556,7 @@ public class AutonomyEditorPanel extends JPanel
 
     private static final String LENGTHS_TITLE = "autosetup.ui.menuMassAssignLengths";
     private static final String MAXIMA_TITLE = "autosetup.ui.menuMassAssignMaxTrainLengths";
+    private static final String TRAINS_TITLE = "autosetup.ui.menuMassAssignTrainLengths";
 
     /**
      * Goes through every station on this page that will still take a train of any length, asking for its maximum (Mass
@@ -9598,6 +9616,177 @@ public class AutonomyEditorPanel extends JPanel
         // Persisted, and the running layout told - what `promptNumber` does for one station.
         if (wroteAny) setupChanged();
         else refresh();
+    }
+
+    /**
+     * Goes through every locomotive autonomy would run that has no train length, asking for each one's (Mass Assign
+     * Train Lengths, FR-094).
+     *
+     * Adam, 2026-09-23: *"Rather than adding complexity through new menus, add a bulk tool to the autonomy editor to set
+     * missing train lengths, similar to how the station lengths are set."*  **Mass Assign Max Train Lengths' walk, for
+     * trains**: the same prompt - the number box has the focus, Enter submits, each prompt opens where the last was
+     * left; OK, Skip and Cancel, with Escape stopping - and the list asked again before each train rather than trusted
+     * from the start.
+     *
+     * **Which trains: the list the Atomic Routes refusal names**, asked through `TrainControlUI.trainsWithoutALength`,
+     * so the refusal cannot name a train this walk does not offer.  That is where FR-094 came from: on MT-470 the
+     * refusal named the trains and there was nowhere to go.
+     *
+     * **A length is 1 to `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`**, the range the locomotive menu's own dropdown
+     * offers - two places that set one number must not disagree about what a legal value is.  0 is refused with a
+     * sentence saying why: it is what a train with no length already holds.  Skip leaves the train as it was.
+     *
+     * **Written through `applyTrainLength`**, the one door every other train-length gesture uses, so the findings and
+     * the grey follow the number exactly as they do from the locomotive menu.  A train length belongs to the
+     * locomotive, not to this setup, so the editor's Cancel does not take it back - and each prompt says so, before the
+     * answer is given rather than after.
+     *
+     * A train standing on this page is outlined and scrolled to while it is asked about; one elsewhere, or standing
+     * nowhere, is named and nothing is outlined.
+     */
+    private void massAssignTrainLengths()
+    {
+        // A NEW ROUND OPENS AFRESH, as the other walks.
+        walkPromptAt = null;
+
+        TrainLengthDoor door = trainLengthDoor();
+
+        java.util.List<String> trains = door.trainsWithoutALength();
+
+        if (trains.isEmpty())
+        {
+            say(hint, I18n.t("autosetup.ui.infoEveryTrainHasALength"));
+
+            return;
+        }
+
+        for (int i = 0; i < trains.size(); i++)
+        {
+            String train = trains.get(i);
+
+            // Asked again, as the other walks ask: a list made before the walk began is not trusted.
+            if (!door.trainsWithoutALength().contains(train)) continue;
+
+            TileKey standing = squareOfTrain(train);
+
+            if (standing != null && page != null && page.equals(standing.getPage()))
+            {
+                outlineAndReveal(java.util.Collections.singleton(standing));
+            }
+            else
+            {
+                selection.clear();
+                refresh();
+            }
+
+            String question = standing == null
+                ? I18n.f("autosetup.ui.promptMassAssignTrainLengthNotPlaced", i + 1, trains.size(), train)
+                : I18n.f("autosetup.ui.promptMassAssignTrainLength", i + 1, trains.size(), train,
+                    nameForPrompt(standing));
+
+            Integer units = askForWholeLength(question, TRAINS_TITLE);
+
+            while (units != null && units >= 0 && !acceptsATrainLength(units))
+            {
+                JOptionPane.showMessageDialog(owner(), wrapped(I18n.f("autosetup.ui.errorTrainLengthOutOfRange",
+                    TrainControlUI.ROUTE_TRAIN_LENGTH_MAX)));
+
+                units = askForWholeLength(question, TRAINS_TITLE);
+            }
+
+            if (units == null) break;
+
+            if (units > 0) door.applyTrainLength(train, units);
+        }
+
+        selection.clear();
+
+        refresh();
+    }
+
+    /**
+     * Whether a train length typed into the walk is one the railway takes: 1 to the locomotive menu's maximum.
+     *
+     * @param units what was typed
+     * @return true when it is a length
+     */
+    public static boolean acceptsATrainLength(int units)
+    {
+        return units >= 1 && units <= TrainControlUI.ROUTE_TRAIN_LENGTH_MAX;
+    }
+
+    /**
+     * @param train a locomotive's name
+     * @return the square it stands on in this setup, or null when it stands nowhere
+     */
+    private TileKey squareOfTrain(String train)
+    {
+        if (session == null || train == null) return null;
+
+        for (Map.Entry<TileKey, String> placed : session.placementsAutonomyWillWrite().entrySet())
+        {
+            if (train.equals(placed.getValue())) return placed.getKey();
+        }
+
+        return null;
+    }
+
+    /**
+     * Where Mass Assign Train Lengths finds the trains to ask about, and where it writes each answer (FR-094).
+     *
+     * Both halves live on the main window - the run list is the running layout's, and a length is written through
+     * `TrainControlUI.applyTrainLength` - and this panel is also built with no window at all.  So the walk asks this
+     * rather than the window, and without one there is simply nothing to ask about: the item greys and the walk says
+     * every train has a length, which is what a railway with no running layout can honestly say.
+     */
+    public interface TrainLengthDoor
+    {
+        /**
+         * @return the locomotives autonomy would run that have no train length, in the order to ask them
+         */
+        java.util.List<String> trainsWithoutALength();
+
+        /**
+         * @param train a locomotive's name
+         * @param units its length
+         */
+        void applyTrainLength(String train, int units);
+    }
+
+    private TrainLengthDoor trainLengthDoor;
+
+    /**
+     * @param door stands in for the main window's two halves, or null to go back to the window
+     */
+    public void setTrainLengthDoorForTest(TrainLengthDoor door)
+    {
+        this.trainLengthDoor = door;
+    }
+
+    private TrainLengthDoor trainLengthDoor()
+    {
+        if (trainLengthDoor != null) return trainLengthDoor;
+
+        return new TrainLengthDoor()
+        {
+            @Override
+            public java.util.List<String> trainsWithoutALength()
+            {
+                TrainControlUI window = parentWindow();
+
+                return window == null ? new java.util.ArrayList<String>() : window.trainsWithoutALength();
+            }
+
+            @Override
+            public void applyTrainLength(String train, int units)
+            {
+                TrainControlUI window = parentWindow();
+
+                if (window == null) return;
+
+                window.applyTrainLength(window.getModel().getLocByName(train), units);
+            }
+        };
     }
 
     private void outlineAndReveal(java.util.Collection<TileKey> squares)
