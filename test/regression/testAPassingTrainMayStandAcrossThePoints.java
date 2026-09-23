@@ -118,7 +118,7 @@ public class testAPassingTrainMayStandAcrossThePoints
         standing.setTrainLength(2);
 
         Point tunnel = copy(built, "Tunnel", true);
-        Point mainA = copy(built, "BottomMainA", true);
+        Point mainA = arrivalFrom(built, tunnel, "BottomMainA");
 
         List<Edge> route = built.bfs(tunnel, mainA, new LinkedList<List<Edge>>());
 
@@ -157,7 +157,7 @@ public class testAPassingTrainMayStandAcrossThePoints
         Layout built = emptied();
 
         Point tunnel = copy(built, "Tunnel", true);
-        Point mainA = copy(built, "BottomMainA", true);
+        Point mainA = arrivalFrom(built, tunnel, "BottomMainA");
 
         List<Edge> route = built.bfs(tunnel, mainA, new LinkedList<List<Edge>>());
 
@@ -207,7 +207,7 @@ public class testAPassingTrainMayStandAcrossThePoints
         other.setReversible(true);
 
         Point tunnel = copy(built, "Tunnel", true);
-        Point mainA = copy(built, "BottomMainA", true);
+        Point mainA = arrivalFrom(built, tunnel, "BottomMainA");
 
         List<Edge> route = built.bfs(tunnel, mainA, new LinkedList<List<Edge>>());
 
@@ -406,7 +406,7 @@ public class testAPassingTrainMayStandAcrossThePoints
         other.setReversible(true);
 
         Point tunnel = copy(built, "Tunnel", true);
-        Point mainA = copy(built, "BottomMainA", true);
+        Point mainA = arrivalFrom(built, tunnel, "BottomMainA");
 
         List<Edge> route = built.bfs(tunnel, mainA, new LinkedList<List<Edge>>());
 
@@ -480,6 +480,41 @@ public class testAPassingTrainMayStandAcrossThePoints
         if (found == null) throw new SkipException("the snapshot has no " + square);
 
         return found;
+    }
+
+    /**
+     * The plain copy of a square that a journey from here arrives on.
+     *
+     * By ROUTE, not by name.  Until the refreeze of 2026-09-23 only one plain copy of BottomMainA was a destination, so
+     * "the plain one" and "the one Tunnel reaches" were the same Point; since Adam's marks of that day both are, and the
+     * shorter name - the westbound copy - is one no route from Tunnel reaches.  Every claim here is about Adam's journey,
+     * which arrives eastbound.
+     *
+     * @param built the railway
+     * @param from where the journey starts
+     * @param square the square it ends at
+     * @return the first plain destination copy of that square a route reaches
+     * @throws Exception from the search
+     */
+    private static Point arrivalFrom(Layout built, Point from, String square) throws Exception
+    {
+        List<String> tried = new LinkedList<>();
+
+        for (Point point : built.getPoints())
+        {
+            String name = point.getName();
+
+            if (!name.equals(square) && !name.startsWith(square + " (")) continue;
+
+            if (!point.isDestination() || name.endsWith(", reverse)")) continue;
+
+            if (built.bfs(from, point, new LinkedList<List<Edge>>()) != null) return point;
+
+            tried.add(name);
+        }
+
+        throw new AssertionError("precondition: no route from " + from.getName() + " reaches a plain copy of " + square
+            + " (tried " + tried + "), so every claim in this class is about a journey the railway no longer has");
     }
 
     /** The first reason given for any copy of a square, or null when one of them is available. */
