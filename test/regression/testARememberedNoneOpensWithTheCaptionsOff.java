@@ -120,6 +120,7 @@ public class testARememberedNoneOpensWithTheCaptionsOff
 
         namedFirst = openWith(AutonomyEditorPanel.CAPTIONS_STATIONS);
         ownUnderNamedFirst = lastOwn;
+        movableUnderNamedFirst = lastMovable;
         hiddenAfterNamedFirst = page.getEditHideText();
 
         withNone = openWith(AutonomyEditorPanel.CAPTIONS_NONE);
@@ -256,6 +257,29 @@ public class testARememberedNoneOpensWithTheCaptionsOff
     /** The writing that is not a caption, from the last `openWith` */
     private static List<String> lastOwn;
 
+    /** The captions that can be picked up and moved, from the last `openWith` */
+    private static List<String> lastMovable;
+
+    private static List<String> movableUnderNamedFirst;
+
+    /**
+     * A caption can still be dragged under Station Names, with the text switch off (OB-272).
+     *
+     * The drag (FR-035) is installed only where the caption is drawn - OB-139 - and asked the TEXT switch whether it
+     * was.  That switch is off under every caption mode since OB-272, so reading it would take the drag off every
+     * caption the moment the captions and the writing were separated.  Every caption drawn must carry the move cursor
+     * the drag puts on it.
+     */
+    @Test
+    public void testACaptionCanStillBeDraggedWithTheTextSwitchOff()
+    {
+        assertTrue(namedFirst.size() > 0, "precondition: Station Names drew no captions to drag");
+
+        assertEquals(movableUnderNamedFirst.size(), namedFirst.size(),
+            "under Station Names only " + movableUnderNamedFirst.size() + " of " + namedFirst.size()
+            + " captions can be picked up - the drag is asking the text switch, which OB-272 turned off here");
+    }
+
     private static List<Integer> pressControlLFiveTimes() throws Exception
     {
         prefs().putInt(PREF_CAPTION_MODE, AutonomyEditorPanel.CAPTIONS_STATIONS);
@@ -324,10 +348,12 @@ public class testARememberedNoneOpensWithTheCaptionsOff
 
         final List<String> drawn = new ArrayList<>();
         final List<String> own = new ArrayList<>();
+        final List<String> movable = new ArrayList<>();
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> collect(built[0].getContentPane(), drawn, own));
+        javax.swing.SwingUtilities.invokeAndWait(() -> collect(built[0].getContentPane(), drawn, own, movable));
 
         lastOwn = own;
+        lastMovable = movable;
 
         javax.swing.SwingUtilities.invokeAndWait(() -> built[0].dispose());
 
@@ -340,7 +366,8 @@ public class testARememberedNoneOpensWithTheCaptionsOff
      * `StationCaption` only - the window's own labels are ordinary JLabels, and counting those would
      * make this a test about the sidebar.
      */
-    private static void collect(java.awt.Container container, List<String> into, List<String> own)
+    private static void collect(java.awt.Container container, List<String> into, List<String> own,
+        List<String> movable)
     {
         for (java.awt.Component child : container.getComponents())
         {
@@ -354,10 +381,14 @@ public class testARememberedNoneOpensWithTheCaptionsOff
                 {
                     if (((StationCaption) child).isPill()) into.add(text);
                     else own.add(text);
+
+                    // The drag's own mark (FR-035): it puts the move cursor on the caption it installs on.
+                    if (((StationCaption) child).isPill()
+                        && child.getCursor().getType() == java.awt.Cursor.MOVE_CURSOR) movable.add(text);
                 }
             }
 
-            if (child instanceof java.awt.Container) collect((java.awt.Container) child, into, own);
+            if (child instanceof java.awt.Container) collect((java.awt.Container) child, into, own, movable);
         }
     }
 
