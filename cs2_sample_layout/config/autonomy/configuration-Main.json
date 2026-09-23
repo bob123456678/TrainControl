@@ -44,20 +44,33 @@
     "3 - Top Parking:18,11": {},
     "3 - Top Parking:10,10": {},
     "1 - Main:0,11": {
-      "loc": {"name": "2-8-4 3505 SP"},
       "maxTrainLength": 4,
-      "facing": "E",
-      "arrivedFrom": "N",
       "priority": -1,
       "home": "2-8-4 3505 SP"
     },
     "1 - Main:20,14": {
+      "loc": {"name": "2-8-4 3505 SP"},
       "mustReverse": true,
       "maxTrainLength": 2,
+      "arrivedAlong": [
+        [
+          "Tunnel (southbound)",
+          "BottomMainBCPre (eastbound)"
+        ],
+        [
+          "BottomMainBCPre (eastbound)",
+          "BottomMainC"
+        ]
+      ],
+      "facing": "W",
+      "arrivedFrom": "W",
       "priority": 2
     },
     "1 - Main:20,12": {
+      "loc": {"name": "75 407 DB"},
       "maxTrainLength": 5,
+      "facing": "E",
+      "arrivedFrom": "W",
       "home": "75 407 DB"
     },
     "1 - Main:20,13": {
@@ -216,16 +229,7 @@
       "maxTrainLength": 2,
       "autoDestination": false
     },
-    "1 - Main:13,11": {
-      "loc": {"name": "75 407 DB"},
-      "maxTrainLength": 4,
-      "arrivedAlong": [[
-        "RampDown (southbound)",
-        "BottomSecondary"
-      ]],
-      "facing": "W",
-      "arrivedFrom": "E"
-    },
+    "1 - Main:13,11": {"maxTrainLength": 4},
     "1 - Main:6,9": {},
     "1 - Main:17,10": {},
     "2 - Bottom:22,10": {},
