@@ -121,6 +121,52 @@ public class testAnUnlockGivesBackOnlyWhatItHolds
         assertEquals(occupancy(third), 0, "A's unlock did not give back an edge it still held");
     }
 
+    /**
+     * An atomic run gives everything back at its end, though its tail has passed edges on the way (GUI-A1's own fix).
+     *
+     * The set of edges a tail has cleared is kept in atomic mode too - routes read it to know which accessories behind a
+     * train may move - but nothing in it is released until the end.  The first repair chose how to unlock by whether that
+     * set was empty, so an atomic run whose tail had passed anything kept those edges, and their locks, for good: the
+     * next leg of a Return Home plan was refused on a lock edge nobody held.
+     *
+     * MUTATION: choose the careful road by the cleared set rather than by what was released, and this fails.
+     *
+     * @throws Exception from reflection or the fixture
+     */
+    @Test
+    public void testAnAtomicRunGivesBackEverythingItHeld() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.setAtomicRoutes(true);
+
+        Point s1 = point(layout, "V1");
+        Point s2 = point(layout, "V2");
+        Point s3 = point(layout, "V3");
+
+        Edge first = layout.createEdge(s1.getName(), s2.getName());
+        Edge second = layout.createEdge(s2.getName(), s3.getName());
+
+        List<Edge> path = Arrays.asList(first, second);
+
+        Locomotive a = model.getLocByName(model.getLocList().get(0));
+
+        for (Edge e : path) e.setOccupied();
+
+        s1.setLocomotive(a);
+        s2.setLocomotive(a);
+        s3.setLocomotive(a);
+
+        // ITS TAIL PASSED THE FIRST EDGE, recorded and - atomic - not released.
+        clearedEdges(layout).put(a, new java.util.HashSet<>(Arrays.asList(first)));
+
+        layout.unlockPath(path, a);
+
+        assertEquals(occupancy(first), 0, "an atomic run's unlock kept an edge its tail had passed - held for good, with"
+            + " its locks, and the next route over it refused on a claim nobody holds");
+        assertEquals(occupancy(second), 0, "an atomic run's unlock kept an edge it held");
+    }
+
     // ---------------------------------------------------------------------------------------------
 
     private static Point point(Layout layout, String name) throws Exception
