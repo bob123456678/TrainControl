@@ -3032,12 +3032,13 @@ public class AutonomySession
      * Only a piece that adds up to nothing is written - one that has a length is measured, by the ruling above.  The
      * whole length is shared evenly; a square may get 0 where there are fewer units than squares.
      *
-     * **ANY UNIT LEFT OVER GOES FIRST TO A SQUARE A TRAIN STANDS ON** (MAL-B2).  That square's own length is an allowance
-     * the tail and berth walks never spend for the train standing there, so a unit on it is a unit less of rail they can
-     * spend - the tail reaches further, which is the refusing direction.  The first version gave the unit to the far end
-     * and argued it was refusing; measured, a four-unit tail claimed two squares under that split and four under this
-     * one.  Past the standing squares the rest go in the order the leg runs; the room rule and the FR-087 allowance read
-     * only the total, so for them the split changes nothing.
+     * **ANY UNIT LEFT OVER GOES FIRST TO A SQUARE A TRAIN STANDS ON** (MAL-B2), which is where Adam puts the larger share
+     * when he measures by hand - TunnelLongPark is 2 on its sensor square and 1 behind.  Every walk spends that square
+     * first (OB-278), so where the unit goes decides only how many squares of THIS piece a short train's tail claims, and
+     * no other road joins a piece between its switches.  From MAL-B2 to OB-278 the reason given was the opposite one -
+     * that the square was never spent, so a unit on it pushed the tail further back - and the split did not change when
+     * that stopped being true.  Past the standing squares the rest go in the order the leg runs; the room rule and the
+     * FR-087 allowance read only the total, so for them the split changes nothing.
      *
      * @param stretch the piece
      * @param wholeLength its whole length, at least 1
@@ -6223,23 +6224,11 @@ public class AutonomySession
 
         walked.add(at);
 
-        // THE STANDING SQUARE IS NOT SPENT HERE, AND THAT IS A QUESTION FOR ADAM (PRW-B4).
-        //
-        // The guard - `Layout.walkStandingTrains` - claims the square the train stands on and does not
-        // spend its length (the allowance of section 5c).  This walk DRAWS that square since OB-277 and
-        // does not spend it either; what still differs is the far end, whose length this walk spends
-        // and the guard's places may not, so the picture can reach `len(far end)` less far back.
-        //
-        // Charging the standing square here was tried on 2026-09-12 and reverted the same day: it
-        // leaves a train shorter than its own square with nothing drawn behind it, which failed two
-        // validated claims - `testATrainOfLengthOneCoversOneSquare` ("the whole of the edge it arrived
-        // along is washed however short the train is", against Adam's *"all of bottommaina stayed
-        // shaded ... as I set the length of EN57-203 to 1"*) and `testTheShadingFollowsTheTrain`,
-        // which shaded nothing at all with every tile measured at 10.
-        //
-        // Whether a train shorter than the square it stands on should shade any track behind it is
-        // about what the operator wants to SEE, and two shipped claims already answer it one way.
-        // Left as it is until he rules.
+        // THE STANDING SQUARE IS SPENT FIRST, as the guard spends it (Adam, 2026-09-23, OB-278: *"the 2
+        // length tile with the s88 consumes 2 units of the train"*, and *"Everywhere"*).  A train no longer
+        // than the square it stands on is drawn on that square and nowhere behind it.  The orange says
+        // where the train IS (OB-277); what it blocks is the grey, which is whole covered edges (OB-208)
+        // and is not this walk.
         while (remaining > 0)
         {
             TileKey next = null;
@@ -6268,8 +6257,15 @@ public class AutonomySession
             // that the orange shows where the train is, the locomotive icon notwithstanding.
             //
             // The standing square is drawn once, when the first hop says which of its sides the body
-            // leaves by.  Drawn, not spent: its length is the allowance of section 5c.
-            if (walked.size() == 1) markTheSensor(out, at, next);
+            // leaves by - and then its length is spent, before any square behind it (OB-278).
+            if (walked.size() == 1)
+            {
+                markTheSensor(out, at, next);
+
+                remaining -= store.getTileLength(at);
+
+                if (remaining <= 0) return;
+            }
 
             List<GraphReducer.TileStep> between = pathBetween(at, next);
 
@@ -8559,9 +8555,9 @@ public class AutonomySession
 
                 for (GraphReducer.TileStep step : arriving.getPath())
                 {
-                    // The berth's own square is an allowance the walk never spends, and the start of the leg is
-                    // where a train would be coming FROM - neither is a place this walk claims.
-                    if (step.getTile().equals(square)) continue;
+                    // The berth's own square is rail the walk spends first (OB-278), so it counts as a measured
+                    // place here as it does in `Layout.whyABerthCannotHoldIt`.  The start of the leg is where a
+                    // train would be coming FROM, and is not a step of the path.
 
                     // Nor is a route tile, which takes no length (OB-273): counting it made TopR1ParkLong and
                     // TopR1ParkShort read as half measured when every square that takes a length was measured.

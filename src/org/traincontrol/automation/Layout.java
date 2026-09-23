@@ -6981,12 +6981,6 @@ public class Layout
             String side = standing.getArrivedFrom();
             List<Edge> road = standing.getArrivedAlong();
 
-            // WHETHER THIS TRAIN HAS COME TO REST (OB-244).  True until a run is found below, and a
-            // run that has ENDED leaves nothing here to find - `executePathInternal` removes the
-            // locomotive from `activeLocomotives` and unlocks the path before the train stands - so
-            // this is false for exactly the trains that are part-way along one.
-            boolean atRest = true;
-
             // THE PATH IT IS TAKING, WHICHEVER MAP HOLDS IT YET (VD12-B3).
             //
             // `configureAndLockPath` claims `takingPath` and reserves every Point on the road before
@@ -7003,8 +6997,6 @@ public class Layout
 
             if (running != null && !running.isEmpty())
             {
-                atRest = false;
-
                 Point head = theHeadOfTheRun(loc, running);
 
                 if (head != null)
@@ -7028,18 +7020,10 @@ public class Layout
                 }
             }
 
-            // THE ALLOWANCE IS THE ARRIVAL STATION'S (Adam, 2026-09-22, on OB-244 / VD12-C1, asked
-            // where the maximum train length should be checked: *"it's the arrival station only"*).
-            //
-            // A square a train has come to REST on measures how much train it may HOLD, which is why
-            // the walk does not charge it.  A milestone part-way along a run is ordinary block - the
-            // body really does lie over it - so charging it nothing let the tail reach on PAST the
-            // square behind it, and `isPathClear` then refused another train track that is free.
-            //
-            // Asked of the run rather than of the anchor: `anchor == standing` is also true of a
-            // running train whose head happens to be the first reserved Point this loop meets, which
-            // is iteration order rather than a fact about the railway.
-            walkOneTail(anchor, loc, side, road, covered, places, atRest);
+            // EVERY SQUARE THE BODY LIES OVER IS CHARGED, the one it stands on first (Adam, 2026-09-23,
+            // OB-278) - so a running train anchored at a milestone and a train at rest at its
+            // destination are walked alike, which is what OB-244 asked of the milestone.
+            walkOneTail(anchor, loc, side, road, covered, places);
         }
     }
 
@@ -7149,11 +7133,9 @@ public class Layout
      * @param arrivedAlong the road it came along, or null
      * @param covered filled with every covered edge and this train
      * @param places filled with every claimed place and this train
-     * @param atRest whether the anchor is a square the train has come to REST on, which is the only
-     *  case where its own measurement is an allowance rather than track the body lies over
      */
     private void walkOneTail(Point standing, Locomotive loc, String arrivedFrom, List<Edge> arrivedAlong,
-        Map<Edge, Locomotive> covered, Map<String, Locomotive> places, boolean atRest)
+        Map<Edge, Locomotive> covered, Map<String, Locomotive> places)
     {
         int remaining = loc.getTrainLength();
 
@@ -7236,8 +7218,8 @@ public class Layout
                     //
                     // The train arrived along the copy that ENDS here - that is what
                     // `arrivedFrom` records - and it is the one whose places describe where a
-                    // tail lies.  It also carries the standing square, which is what the
-                    // allowance rule below is written against.
+                    // tail lies.  It also carries the standing square, which is the first place
+                    // the body is spent on.
                     //
                     // The other copy is still taken when there is no arriving one, which is the
                     // case at a square a train has been turned on: it lies across that rail
@@ -7334,19 +7316,13 @@ public class Layout
             // THE MEASUREMENT RULE.  Nothing can be said about an unmeasured segment, including
             // how much of the train would still be left after it.
             //
-            // AND THE STANDING SQUARE'S OWN MEASUREMENT DOES NOT COUNT AS ONE (SVX-B1).
-            //
             // `getLength()` is the path PLUS the square the edge arrives at, and on the first hop
-            // that square is the one the train stands on - whose measurement Adam ruled an
-            // allowance rather than track.  So a berth measured on an otherwise unmeasured
-            // approach passed this test with nothing spendable behind it, and the walk then
-            // claimed every place on the approach.
-            //
-            // `whyABerthCannotHoldIt` was given the matching bound a round earlier and this was
-            // not, which left the pair worse than before either had it: the berth rule ACCEPTED
-            // the train and this guard then blocked the roads behind it.  That configuration is
-            // the one `Automation.md` produces first, because it tells him to measure the berth.
-            if (segment.getLength() - spendableAllowance(segment, here, standingHere, atRest) <= 0) break;
+            // that square is the one the train stands on - which is track, and counts (OB-278).  A
+            // berth measured on an otherwise unmeasured approach is therefore a measured segment:
+            // a train that fits on the berth is spent there and claims nothing behind, and one
+            // longer than it claims the unmeasured squares behind for nothing, which is the
+            // refusing side `whyABerthCannotHoldIt` takes on the same approach.
+            if (segment.getLength() <= 0) break;
 
             // BOTH DIRECTIONS OF THE SAME RAIL (VAL8-A1, REG7-B3).
             //
@@ -7387,10 +7363,6 @@ public class Layout
 
             List<Integer> spans = segment.getPlaceLengths();
 
-            // What the standing square's own measurement came to, where this hop had one to skip
-            // (SEV-B3).  Zero everywhere else, so the hop budget is unchanged there.
-            int allowance = 0;
-
             // What the places walk actually charged, which is what this hop costs (PRW-C3).
             // Negative until the places are walked at all, so the edge's own length can stand in
             // for a configuration that does not carry them.
@@ -7410,52 +7382,23 @@ public class Layout
 
                     places.put(ids.get(at), loc);
 
-                    // THE SQUARE THE TRAIN IS STANDING ON IS AN ALLOWANCE, NOT RAIL TO SPEND.
+                    // THE SQUARE THE TRAIN STANDS ON IS SPENT FIRST, like every square behind it
+                    // (Adam, 2026-09-23, OB-278: *"the 2 length tile with the s88 consumes 2 units
+                    // of the train"*, and asked where: *"Everywhere"*).  The station's SIZE - the
+                    // maximum train length typed on it - is the allowance his ruling of 2026-09-13
+                    // names, and `whyTooLongForThisRoute` asks it; the length measured on the square
+                    // is rail.  From 2026-09-13 to 2026-09-23 this left that square unspent, which
+                    // put the whole of every standing train behind its own square: on his measured
+                    // railway, over the switch behind nearly every berth.
                     //
-                    // Adam, 2026-09-13: *"if the segment length is shorter, more should be
-                    // blocked.  The station size is an allowance, not a length."*  What a station
-                    // measures is how much train it may HOLD - the question `whyTooLongForThisRoute`
-                    // asks - and reading it here as well made one number answer two questions.  A
-                    // train at a generously-sized platform had its whole body absorbed by the
-                    // platform and blocked nothing behind it, however long it was.
-                    //
-                    // Claimed, though: it IS standing there.  Only the subtraction is skipped, and
-                    // only for the first square of the first hop - every square further back is
-                    // ordinary track the body really does lie over.
-                    //
-                    // This settles PRW-B4, which was filed on the guard and the picture charging
-                    // different squares.  `AutonomySession.walkBackFrom` never charged the standing
-                    // square; a repair that made the picture match the guard instead was tried on
-                    // 2026-09-12 and reverted the same day, because it left a train shorter than
-                    // its own square with nothing drawn behind it - failing two claims Adam had
-                    // already validated.  The picture was right and this was not.
-                    // AND ONLY WHERE THE TRAIN HAS COME TO REST (OB-244).  A milestone part-way
-                    // along a run is ordinary block, and the body does lie over it.
-                    boolean onTheAllowance = atRest && fromTheEnd && step == 0 && here == standingHere;
-
                     // AND NOT TWICE (PRW-C3).  The square the walk turned at is the end of the
                     // last edge and a place on this one; charging it again shortens the tail by
                     // its length and leaves the track under the train's back end unclaimed.
                     if (!spent.add(ids.get(at))) continue;
 
-                    if (onTheAllowance)
-                    {
-                        // AND THE HOP BUDGET HAS TO SKIP IT TOO (SEV-B3).
-                        //
-                        // `remaining -= segment.getLength()` below spends the whole edge, and
-                        // `GraphReducer` builds an edge's length as the path PLUS the square it
-                        // arrives at - which on this first hop is the square the train is standing
-                        // on.  Skipping the allowance here and spending it there would leave the
-                        // two budgets disagreeing by exactly the allowance, and a train whose body
-                        // reaches into a second edge would have its last units silently dropped.
-                        allowance = Math.max(0, spans.get(at));
-                    }
-                    else
-                    {
-                        left -= Math.max(0, spans.get(at));
+                    left -= Math.max(0, spans.get(at));
 
-                        chargedHere += Math.max(0, spans.get(at));
-                    }
+                    chargedHere += Math.max(0, spans.get(at));
 
                     if (left <= 0) break;
                 }
@@ -7466,13 +7409,13 @@ public class Layout
             // This read `remaining -= segment.getLength() - allowance`, which is a second
             // arithmetic over the same train: the places walk spends span by span and this spent
             // the whole edge.  They agreed only while every square on the edge was measured, the
-            // standing square was ordinary track, and no square belonged to two hops - and each
-            // of those three assumptions has failed in turn (SEV-B3, SVX-B1, PRW-C3).
+            // standing square was treated alike by both, and no square belonged to two hops - and
+            // each of those three assumptions failed in turn (SEV-B3, SVX-B1, PRW-C3).
             //
             // What the finer walk charged IS what the hop costs.  The edge's own length is kept
             // for a configuration that carries no places, where there is nothing finer to spend -
             // an old file behaves as it always did.
-            remaining -= chargedHere >= 0 ? chargedHere : segment.getLength() - allowance;
+            remaining -= chargedHere >= 0 ? chargedHere : segment.getLength();
 
             Point next = segment.getStart() == here ? segment.getEnd() : segment.getStart();
 
@@ -7528,54 +7471,7 @@ public class Layout
 
         if (road == null || road.isEmpty()) return;
 
-        // A TAIL ASKED ABOUT DIRECTLY IS ONE THAT HAS COME TO REST: this is the question
-        // `placesATailWouldCover` answers for a train standing somewhere, not a run in progress.
-        walkOneTail(standing, loc, entrySideOf(road.get(road.size() - 1), standing), road, covered,
-            places, true);
-    }
-
-    /**
-     * The part of this segment's length that is the standing square's allowance rather than track.
-     *
-     * `GraphReducer` builds an edge's length as the path plus the square it arrives at, and where that
-     * square is the one the train is STANDING on its measurement is an allowance - how much train the
-     * station may hold - rather than rail the body lies over (Adam, 2026-09-13).  Both the measurement
-     * test and the hop budget have to leave it out, or they disagree with the places walk beside them.
-     *
-     * Zero unless this really is the first hop and the train arrived along this edge, which is the
-     * only case where the square at the end of it is the one being stood on.
-     *
-     * @param segment the edge being walked back along
-     * @param here the point the walk has reached
-     * @param standingHere the point the train is actually standing on
-     * @return the allowance to leave out of this segment's length
-     */
-    private static int spendableAllowance(Edge segment, Point here, Point standingHere, boolean atRest)
-    {
-        // ONLY THE FIRST HOP.  The places loop's own test is `fromTheEnd && step == 0 && here ==
-        // standingHere`, and the third clause is the one that matters here: on a later hop `here` is
-        // an intermediate square, and ITS measurement is ordinary track the body lies over. Without
-        // this the two would disagree the moment a tail reached a second edge, which is the defect
-        // SEV-B3 was about, pointing the other way.
-        // AND NOTHING AT ALL FOR A RUNNING TRAIN (Adam, 2026-09-22, on OB-244 / VD12-C1).
-        //
-        // The allowance is the ARRIVAL STATION's - "the station size is an allowance, not a
-        // length" - so it belongs to a square a train has come to rest on.  MT-438's fix
-        // anchors a running train at its last MILESTONE, and a milestone part-way along a run is
-        // ordinary block whose measurement is track the body lies over.  Exempting it claimed a
-        // square BEHIND that block as well, so `isPathClear` refused another train track that is
-        // free - the refusing direction his standing rule is about.
-        if (!atRest) return 0;
-
-        if (segment == null || here != standingHere || segment.getEnd() != here) return 0;
-
-        List<Integer> spans = segment.getPlaceLengths();
-
-        if (spans.isEmpty()) return 0;
-
-        Integer own = spans.get(spans.size() - 1);
-
-        return own == null ? 0 : Math.max(0, own);
+        walkOneTail(standing, loc, entrySideOf(road.get(road.size() - 1), standing), road, covered, places);
     }
 
     /**
@@ -9637,19 +9533,18 @@ public class Layout
      * and 90 ordered pairs of stations stop being reachable from one another while it is there.  A
      * two-unit train lies over nothing at all while the tile behind the berth is unmeasured - which is
      * what that railway said when this was written, and not a promise about a short train (SVX-C1).
-     * Once that tile IS measured the same two units reach back over it, because the berth's own
-     * measurement is an allowance and is not spent.
+     * On his measured railway TunnelLongPark is 2 on its own square and 1 behind it, so three units
+     * fit before the switch and four do not.
      *
      * **Which places the train would claim is the same arithmetic the tail walk uses** - spend the
      * train's length across the approach's places from the end it comes in by, claiming each before
-     * spending it, and SKIPPING the berth's own square, whose measurement says how much train the
-     * station may hold rather than how much rail the body lies over (Adam, 2026-09-13).
+     * spending it, the berth's own square first (Adam, 2026-09-23, OB-278: *"the 2 length tile with the
+     * s88 consumes 2 units of the train"*).
      *
      * The two walks are written to agree and are not one piece of code, which is where SEV-B1 and
-     * SVX-B1 both came from: the allowance reached one of them a round before the other, and in each
-     * direction the pair was worse than either half alone.  The measurement test and the hop budget in
-     * `walkStandingTrains` leave the same square out, through `spendableAllowance`; the bound below
-     * does it here.  A reader who needs them to agree should check both, not trust this sentence.
+     * SVX-B1 both came from: a change reached one of them a round before the other, and in each
+     * direction the pair was worse than either half alone.  A reader who needs them to agree should
+     * check both, not trust this sentence.
      *
      * **Its own way in and out does not count.**  Every road that starts or ends at the berth's own
      * square is blocked by the train being there at all, whichever copy of a split square it is
@@ -9706,19 +9601,13 @@ public class Layout
         // zero"*.  One measurement is something to reason from and the walk uses it; none is nothing,
         // and a guard that refuses on nothing is the over-strict check he would rather not have at
         // all.
-        // MEASURED WHERE IT COUNTS - which is everywhere the walk can actually SPEND (SVV-B1).
-        //
-        // This counted every place including the last, and the last place is the berth itself, whose
-        // measurement the walk stopped spending when Adam ruled a station's size an allowance.  So a
-        // berth measured on an otherwise unmeasured approach turned the rule back on with nothing
-        // spendable behind it: the walk claims every place and refuses the berth against any road
-        // sharing any of them, which is PRW-B1's invented refusal returning by the back door.
-        //
-        // It is not hypothetical - `Automation.md`'s section on lengths tells him to measure the berth
-        // square first, so that is the layout the advice produces.
+        // THE BERTH'S OWN SQUARE COUNTS (OB-278).  It is rail the train stands on and is spent first, so
+        // a berth measured on an otherwise unmeasured approach is something to reason from: a train that
+        // fits on it is held there, and one longer than it claims the unmeasured squares behind.  From
+        // 2026-09-13 it was left out here, because the walk below did not spend it (SVV-B1).
         boolean anyMeasured = false;
 
-        for (int n = 0; n < spans.size() - 1; n++)
+        for (int n = 0; n < spans.size(); n++)
         {
             Integer span = spans.get(n);
 
@@ -9745,23 +9634,13 @@ public class Layout
         {
             claimed.add(ids.get(n));
 
-            // THE BERTH'S OWN MEASUREMENT IS AN ALLOWANCE, NOT RAIL TO SPEND (Adam, 2026-09-13;
-            // SEV-B1).
-            //
-            // *"The station size is an allowance, not a length."*  `walkStandingTrains` stopped
-            // spending the standing square on that ruling, and this walk - which asks the same
-            // question about the same train, "where does its body lie" - went on spending the berth's
-            // own span.  The two then disagree by exactly that span about one train on one piece of
-            // track, and the guard is the stricter and the later: a train this rule accepts is claimed
-            // by the guard once it is parked, fouling a road that nothing refused it.
-            //
-            // The last place is the square being arrived at - `placesAlong` orders them from the
-            // edge's start - so this is the same "first square of the walk" the guard skips.
-            boolean onTheAllowance = (n == ids.size() - 1);
+            // THE BERTH'S OWN SQUARE FIRST, and spent like the rest (OB-278) - the same order and the
+            // same arithmetic as `walkOneTail`, which is what keeps a train this rule accepts from being
+            // claimed over a road once it is parked.  The last place is the square being arrived at:
+            // `placesAlong` orders them from the edge's start.
+            if (spans.get(n) == null || spans.get(n) <= 0) unmeasured++;
 
-            if (!onTheAllowance && (spans.get(n) == null || spans.get(n) <= 0)) unmeasured++;
-
-            if (!onTheAllowance) left -= Math.max(0, spans.get(n));
+            left -= spans.get(n) == null ? 0 : Math.max(0, spans.get(n));
 
             if (left <= 0) break;
         }
@@ -11947,15 +11826,15 @@ public class Layout
                     // ALL OF THEM OR NONE OF THEM (SVX-C9).
                     //
                     // These are read POSITIONALLY: the last entry is the square the edge arrives at,
-                    // and where a train is standing there that square's measurement is an allowance
-                    // rather than track - `spendableAllowance` and `whyABerthCannotHoldIt`'s own
-                    // bound both take the last element and nothing checks it against `getEnd()`.
+                    // which is where a standing train's body is spent from - `walkOneTail` and
+                    // `whyABerthCannotHoldIt` both start at the last element and nothing checks it
+                    // against `getEnd()`.
                     //
                     // Skipping a malformed entry and carrying on therefore does not produce a shorter
                     // list of places; it produces a list whose positions mean something else.  Drop
-                    // the FINAL entry and the tile behind the berth becomes "the berth", the
-                    // allowance is subtracted from the wrong square, and every rule downstream is
-                    // quietly out by one tile - on the permitting side.
+                    // the FINAL entry and the tile behind the berth becomes "the berth", the walk
+                    // starts from the wrong square, and every rule downstream is quietly out by one
+                    // tile - on the permitting side.
                     //
                     // A build never writes one - `GraphReducer.placesAlong` always appends the end
                     // place - so this is a hand-edited or truncated file, and the honest answer for

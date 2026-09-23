@@ -31,28 +31,39 @@ import org.traincontrol.marklin.MarklinControlStation;
  *
  * At a station autonomy may choose, a train is PASSING: it fits if it fits past the last switch, as
  * before, **or** within its own approach. The second is the relaxation - on his example the approach
- * measures 6 with 3 of it past the switch, so a six-unit train stands across the points, and he rules
+ * measured 6 with 3 of it past the switch, so a six-unit train stood across the points, and he ruled
  * that acceptable because the train moves on.
  *
  * At a parking berth, a train is STAYING, and a berth is not worth a road: it must foul no track that
- * is not a way in or out of that square. On his railway a three-unit train at TunnelLongPark lies over
- * `BottomMainAPre -> RampDown` and `-> BottomCrossover`, which are the only roads to the lower level -
- * measured, 90 pairs of stations lose their connection - and that is what the berth half refuses.
+ * is not a way in or out of that square. A train too long for TunnelLongPark lies back over
+ * `BottomMainAPre -> RampDown` and `-> BottomCrossover`, which are the only roads to the lower level,
+ * and that is what the berth half refuses.
  *
  * **The failure this class exists to catch is the relaxation leaking.** Both halves are about a train
  * standing on points, and a rule that stopped asking WHICH KIND OF SQUARE it is standing at would admit
  * the berth case along with the platform one. So the berth claims are not decoration; they are the
  * mutation target.
  *
- * **The lengths are Adam's hypothetical, set here rather than read.** He has not written them into the
- * layout - *"i didnt update any layout files with this info, but this should be the example motivating
- * the design"* - so the two squares of that run are measured in the sandbox at the figures he gave:
- * 3 either side of the switch at 14,12.
+ * **ON HIS MEASURED RAILWAY (refrozen 2026-09-23 from `2958fcf3`), not on figures set here.** Until
+ * then the snapshot measured almost nothing, so this class wrote Adam's hypothetical into it - *"i didnt
+ * update any layout files with this info, but this should be the example motivating the design"* - 3
+ * either side of the switch at 14,12.  His own measurements do not have that shape there (the eastbound
+ * approach to BottomMainA measures 5 with 4 past the switch, and BottomMainA holds 5, so no train the
+ * station takes stands across those points).  They have it at the WESTBOUND end: the approach from
+ * BottomMainPost measures 4 with 2 past the switch, so a three- or four-unit train stands across the
+ * points of a platform that holds five.  That is the platform this class asks about now, and the berth
+ * is still TunnelLongPark, which measures 3 past its switch on an approach of 7.
+ *
+ * **One setting of his is taken off, and it is the berth's capacity.**  He gave every berth a maximum
+ * equal to the room past its switch, so on his railway the capacity rule refuses an overhanging train at
+ * a berth before the berth rule is asked - and a claim that the relaxation has not leaked would pass
+ * with the leak in place.  The capacity rule is `Point.validateTrainLength`, asked first in
+ * `whyTooLongForThisRoute`, and it is tested where it is the subject.
  *
  * MUTATION: drop the `isAutoDestination` test so the relaxation applies everywhere, and the berth claim
- * at length 3 fails. Remove the relaxation and the platform claim at 6 fails. Make the relaxation
- * unbounded - any length at a station - and the claim at 7 fails. Make the berth check always answer
- * null and the direct claim at the bottom fails.
+ * at one unit past the room fails. Remove the relaxation and the platform claim at the approach's length
+ * fails. Make the relaxation unbounded - any length at a station - and the claim one unit past the
+ * approach fails. Make the berth check always answer null and the direct claim at the bottom fails.
  *
  * @author Adam
  */
@@ -65,19 +76,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     private static Locomotive train;
     private static Integer lengthWas;
 
-    /** The two squares of that run Adam gave figures for */
-    private static final TileKey BEFORE_THE_SWITCH = new TileKey("1 - Main", 13, 12);
-    private static final TileKey THE_PLATFORM = new TileKey("1 - Main", 19, 12);
-
-    /**
-     * And the berth itself, which the snapshot does not measure either.
-     *
-     * `test/layouts/live-snapshot` carries NO lengths at all - that is deliberate, and OB-196 says why
-     * - so every figure this class needs is set here. Two units is the berth Adam's own railway has at
-     * TunnelLongPark, and it is what makes the berth half of the rule askable: a train of two fits
-     * inside it and a train of three does not.
-     */
-    private static final TileKey THE_BERTH = new TileKey("1 - Main", 10, 10);
+    /** TunnelLongPark, whose capacity is taken off so the berth rule is what answers */
+    private static final TileKey THE_BERTH = new TileKey("1 - Main", 10, 9);
 
     /** The approach to a station autonomy may choose, and the approach to a parking berth */
     private static Edge toThePlatform;
@@ -94,11 +94,13 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
 
         session.open(support.LayoutSandbox.wiredPages(model));
 
-        // HIS FIGURES, in the copy: *"each segment that's currently 1 should actually be 3 on either
-        // side of it."*
-        session.setTileLength(BEFORE_THE_SWITCH, 3);
-        session.setTileLength(THE_PLATFORM, 3);
-        session.setTileLength(THE_BERTH, 2);
+        // HIS MEASUREMENTS, AND NOT THE BERTH'S CAPACITY.  He set it equal to the room past the switch,
+        // so it refuses every overhang there first and the berth rule is never reached - see the class
+        // comment.  Nothing else is changed.
+        assertEquals(session.getStationIndex().nameOf(THE_BERTH), "TunnelLongPark",
+            "the square this class clears the capacity of is no longer TunnelLongPark");
+
+        session.setPointProperty(THE_BERTH, "maxTrainLength", null);
 
         session.rebuild();
 
@@ -108,10 +110,10 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
 
         if (layout == null) throw new SkipException("the snapshot did not build");
 
-        // NAMED, not searched for.  Three runs reach TunnelLongPark and two reach BottomMainA, and
-        // only one of each is the piece of railway Adam gave figures for - picking "the longest" got
-        // an unmeasured one and the class then asserted things about a different approach.
-        toThePlatform = approachFrom("BottomMainAPre (eastbound)", "BottomMainA (eastbound)");
+        // NAMED, not searched for.  Several runs reach TunnelLongPark and BottomMainA, and only one of
+        // each is the piece of railway this class is about - picking "the longest" once got an
+        // unmeasured one and the class then asserted things about a different approach.
+        toThePlatform = approachFrom("BottomMainPost (southbound)", "BottomMainA (westbound)");
         toTheBerth = approachFrom("BottomMainA (westbound)", "TunnelLongPark");
 
         List<String> names = model.getLocList();
@@ -139,9 +141,10 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     /**
      * The geometry this class rests on, stated rather than hoped for.
      *
-     * Every claim below is about a particular shape of railway - an approach measuring 6 with 3 of it
-     * past the points, and a berth with 2 - and if the snapshot or Adam's figures stop producing that
-     * shape, the claims would pass or fail for reasons that have nothing to do with the rule.
+     * Every claim below is about a particular shape of railway - a platform approach measuring 4 with 2
+     * of it past the points, at a platform that holds more than the approach, and a berth with 3 past
+     * its switch on a longer approach - and if the snapshot stops producing that shape, the claims
+     * would pass or fail for reasons that have nothing to do with the rule.
      *
      * @throws Exception from the railway
      */
@@ -152,22 +155,50 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
             toThePlatform.getEnd().getName() + " is not a station autonomy may choose, so the"
             + " relaxation this class is about does not apply to it");
 
-        assertEquals(toThePlatform.getLength(), 6,
+        assertEquals(toThePlatform.getLength(), 4,
             "the approach to " + toThePlatform.getEnd().getName() + " measures "
-            + toThePlatform.getLength() + " and Adam's example is 6");
+            + toThePlatform.getLength() + " and Adam's measurement of 2026-09-23 is 4");
 
-        assertEquals(toThePlatform.getRoomAtTheEnd(), 3,
+        assertEquals(toThePlatform.getRoomAtTheEnd(), 2,
             "the room past the last switch on that approach is " + toThePlatform.getRoomAtTheEnd()
-            + " and the example is 3 - a six-unit train has to stand across the points for any of this"
-            + " to be the case he described");
+            + " and his measurement is 2 - a train longer than that has to stand across the points for"
+            + " any of this to be the case he described");
+
+        // AND THE PLATFORM HOLDS MORE THAN ITS APPROACH, so the claim one unit past the approach is
+        // answered by the route bound rather than by the capacity he typed on the platform.
+        assertTrue(toThePlatform.getEnd().getMaxTrainLength() == null
+            || toThePlatform.getEnd().getMaxTrainLength() == 0
+            || toThePlatform.getEnd().getMaxTrainLength() > toThePlatform.getLength(),
+            toThePlatform.getEnd().getName() + " holds " + toThePlatform.getEnd().getMaxTrainLength()
+            + ", no more than its approach, so the capacity rule refuses the longer train before the"
+            + " relaxation's bound is asked");
 
         assertFalse(toTheBerth.getEnd().isAutoDestination(),
             toTheBerth.getEnd().getName() + " is a station autonomy may choose, so it is not the"
             + " parking berth half of the rule and the controls below prove nothing");
 
-        assertEquals(toTheBerth.getRoomAtTheEnd(), 2,
+        assertEquals(toTheBerth.getRoomAtTheEnd(), 3,
             "the room past the last switch into " + toTheBerth.getEnd().getName() + " is "
-            + toTheBerth.getRoomAtTheEnd() + ", not the 2 this class's lengths are chosen around");
+            + toTheBerth.getRoomAtTheEnd() + ", not the 3 his measurements give");
+
+        assertTrue(toTheBerth.getLength() > toTheBerth.getRoomAtTheEnd() + 1,
+            "the approach to " + toTheBerth.getEnd().getName() + " measures " + toTheBerth.getLength()
+            + ", so a train one unit longer than the berth's room would not fit it either and the"
+            + " relaxation, if it leaked, would still refuse it");
+
+        assertTrue(toTheBerth.getEnd().validateTrainLength(trainOf(toTheBerth.getLength())),
+            "the berth's capacity is still in place, so it refuses the overhang before the berth rule"
+            + " is asked and every berth claim below passes with the relaxation leaked");
+    }
+
+    /**
+     * The class's train at the given length, for asking the capacity rule on its own.
+     */
+    private static Locomotive trainOf(int units)
+    {
+        train.setTrainLength(units);
+
+        return train;
     }
 
     /**
@@ -178,10 +209,11 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     @Test
     public void testAPlatformTakesATrainAsLongAsItsWholeApproach() throws Exception
     {
-        train.setTrainLength(6);
+        train.setTrainLength(toThePlatform.getLength());
 
         assertNull(Layout.whyTooLongForThisRoute(justTheApproach(toThePlatform), train),
-            "a six-unit train was refused " + toThePlatform.getEnd().getName() + ", whose approach"
+            "a " + toThePlatform.getLength() + "-unit train was refused " + toThePlatform.getEnd().getName()
+            + ", which has " + toThePlatform.getRoomAtTheEnd() + " units past its switch and whose approach"
             + " measures " + toThePlatform.getLength() + ". Adam, 2026-09-12: \"the 6 units would be"
             + " between bottommainapre and bottommaina... we need a clear rule to govern that this is"
             + " OK\". Refused with: "
@@ -215,10 +247,11 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     @Test
     public void testAParkingBerthStillRefusesAnOverhang() throws Exception
     {
-        train.setTrainLength(3);
+        train.setTrainLength(toTheBerth.getRoomAtTheEnd() + 1);
 
         assertNotNull(Layout.whyTooLongForThisRoute(justTheApproach(toTheBerth), train),
-            "a three-unit train was accepted at " + toTheBerth.getEnd().getName() + ", which has "
+            "a " + train.getTrainLength() + "-unit train was accepted at " + toTheBerth.getEnd().getName()
+            + ", whose approach measures " + toTheBerth.getLength() + " and which has "
             + toTheBerth.getRoomAtTheEnd() + " units past its last switch. Adam: \"make a rule that"
             + " parking berths cant block any other edges, but not make that check for active"
             + " stations\" - the relaxation has leaked from the platforms to the berths");
@@ -232,10 +265,10 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     @Test
     public void testAParkingBerthStillTakesATrainThatFits() throws Exception
     {
-        train.setTrainLength(2);
+        train.setTrainLength(toTheBerth.getRoomAtTheEnd());
 
         assertNull(Layout.whyTooLongForThisRoute(justTheApproach(toTheBerth), train),
-            "a two-unit train was refused " + toTheBerth.getEnd().getName() + ", which has "
+            "a " + train.getTrainLength() + "-unit train was refused " + toTheBerth.getEnd().getName() + ", which has "
             + toTheBerth.getRoomAtTheEnd() + " units past its last switch, so the claim above is"
             + " satisfied by a berth that takes nothing at all. Refused with: "
             + Layout.whyTooLongForThisRoute(justTheApproach(toTheBerth), train));
@@ -246,27 +279,29 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
      *
      * On this railway the two agree at TunnelLongPark - a train that fits past the switch also fouls
      * nothing - so the claim above would pass with the berth check removed entirely. This asks the new
-     * rule directly: at three units the train lies over `BottomMainAPre -> RampDown` and
-     * `-> BottomCrossover`, which are somebody else's roads, and at two it lies over nothing at all.
+     * rule directly: one unit longer than the berth, the train lies back over somebody else's road, and
+     * at the berth's own room it lies over nothing at all.
      *
      * @throws Exception from the railway
      */
     @Test
     public void testTheBerthRuleNamesTheRoadItWouldFoul() throws Exception
     {
-        train.setTrainLength(3);
+        int room = toTheBerth.getRoomAtTheEnd();
+
+        train.setTrainLength(room + 1);
 
         String fouled = Layout.whyABerthCannotHoldIt(justTheApproach(toTheBerth), train);
 
         assertNotNull(fouled,
-            "a three-unit train at " + toTheBerth.getEnd().getName() + " lies over the roads to the"
-            + " lower level and the berth rule said nothing about it, so what refuses it above is the"
-            + " room rule alone and this half of Adam's ruling is not being enforced");
+            "a " + (room + 1) + "-unit train at " + toTheBerth.getEnd().getName() + " lies back past the"
+            + " switch and the berth rule said nothing about it, so what refuses it above is the room"
+            + " rule alone and this half of Adam's ruling is not being enforced");
 
-        train.setTrainLength(2);
+        train.setTrainLength(room);
 
         assertNull(Layout.whyABerthCannotHoldIt(justTheApproach(toTheBerth), train),
-            "a two-unit train at " + toTheBerth.getEnd().getName() + " fits inside the berth and the"
+            "a " + room + "-unit train at " + toTheBerth.getEnd().getName() + " fits inside the berth and the"
             + " berth rule refused it anyway, which would make every berth on the layout unusable:"
             + " " + Layout.whyABerthCannotHoldIt(justTheApproach(toTheBerth), train));
     }
@@ -388,8 +423,8 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
 
         try
         {
-            // NOBODY HAS MEASURED THIS APPROACH, which is the state Adam's own railway is in for all
-            // 41 of its non-station approaches.
+            // NOBODY HAS MEASURED THIS APPROACH, which is the state Adam's own railway was in for all
+            // 41 of its non-station approaches until he measured it, and every railway is in first.
             List<Integer> none = new ArrayList<>();
 
             for (int i = 0; i < was.size(); i++) none.add(0);

@@ -38,9 +38,9 @@ import org.traincontrol.util.I18n;
  * **How far back a sensor may be offered is a suggestion, not the blocking rule.**  Each road back is spent against
  * the train's length using the measured lengths of its edges, and a sensor is offered once the train reaches it,
  * with some of the train left beyond it or none (OB-226).  An unmeasured edge ends a road, because the walk stops there too (*"if no length specified,
- * just stop there"*).  This does not repeat the walk's allowance for the standing square's own measurement or its
- * place-by-place arithmetic, so at a boundary it can offer one sensor more or fewer than the walk would reach -
- * and what blocks track is still the walk, reading the road the operator chose.
+ * just stop there"*).  It spends whole edges - the standing square's length included, as the walk spends it (OB-278) -
+ * and does not repeat the walk's place-by-place arithmetic, so at a boundary it can offer one sensor more or fewer
+ * than the walk would reach - and what blocks track is still the walk, reading the road the operator chose.
  */
 public class TailCrossedPrompt
 {
