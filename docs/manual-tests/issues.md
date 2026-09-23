@@ -2810,6 +2810,54 @@ of `behaviour.md` carries the rule about which sensors are offered.
 blessing the layout, which he raised the same day.  Recorded here because it is the third defect this
 week whose cause is one square being several Points.
 
+### FR-095 - 2026-09-23 - a right-click menu on the train name in the autonomy commands page, with Edit Locomotive
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-09-23  
+**Filed:** 2026-09-23  
+
+Adam, 2026-09-23: *"when right clicking the train name in the autonomous locomotive commands page, show a
+right click menu with the edit locomotive option, when allowed (maintain consistency with when autonomy
+is running, as the others)."*
+
+**Where.**  `AutoLocomotiveStatus` - one panel per locomotive on the autonomy Locomotive Commands tab.
+The train's name is the `locName` label, and it already carries a `MouseAdapter`: `locNameMouseClicked`
+makes that locomotive the active one.  So the plumbing is there and a popup trigger goes beside it
+rather than replacing it - a left click must go on meaning what it means today.
+
+**The gate already exists as ONE method and this must ask it rather than spell it again.**  Every other
+edit door asks the same two:
+
+- `TrainControlUI.refuseWhileAutonomyRunning(source)` - *"Cannot edit locomotives while autonomy is
+  running."*
+- `refuseWhileARouteDrivesIt(source, name)` (CS3-B1) - because a route running by hand rewrites what a
+  locomotive edit is changing, with autonomy idle.
+
+`changeLocAddress` and `deleteLoc` both ask both.  A third spelling of either is how they come apart.
+
+**"When allowed" is the OB-057 / OB-090 rule, and it needs BOTH halves.**  His *"maintain consistency
+with when autonomy is running, as the others"* is the rule this repository has paid for repeatedly: the
+control that OFFERS an action asks the question the guard asks.  So the item is greyed when the guard
+would refuse - not offered and then refused, which is the shape the others were fixed away from.
+
+And the greying alone is not enough, for the reason `testHomeStaging`'s own comment gives about the
+menu items it covers: **the item is greyed when the popup OPENS and the action fires when it is
+CLICKED**, and autonomy can be started from another window in between.  So the guard is still asked on
+the click.  Greyed at open, guarded on click; either alone is a hole.
+
+**Parenting, because this panel is the one that gets it right.**  `IND9X-C4` and `IND9X-C5` are about
+dialogs opening unowned - the right-click menu on the diagram parents on an already-dismissed popup,
+while `AutoLocomotiveStatus` parents its dialogs on itself correctly.  The new menu keeps that: hang
+the dialog off the panel or the label, not off a popup that is gone by the time the action runs.
+
+**Scope, as he wrote it: the edit option, singular.**  `loc.ui.dialogEditLocomotiveInfo` is what it
+opens.  Its natural siblings - change address, edit functions, delete - are behind the same two gates
+and would be one line each afterwards, but he asked for one item and one item is what this is.  Worth
+asking whether he wants the others while the menu is being built.
+
+**Not a defect**: nothing is wrong today, there is simply no way to reach the edit from that page.
+Minor, and display-side only.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
