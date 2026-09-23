@@ -99,25 +99,76 @@ public class Util
     public static final String ISOLATED_PREFERENCES_ROOT = "traincontrol-test-runs";
 
     /**
-     * Where one of the application's data files is: the working directory, as it always has been.
+     * Where one of the application's data files is: the working directory - unless a test run has named a folder of
+     * its own.
+     *
+     * Adam, 2026-09-23: *"does my app really have to stay closed? I thought the battery got isolated earlier."*  Every
+     * test JVM read and wrote the working directory's `LocDB.data` and `UIState.data`, which his running application
+     * keeps there too.  `docs/tools/one.sh` and `battery.sh` copy the two into a folder of the run's own and name it in
+     * `traincontrol.dataDir`; with the property unset this is the bare name, exactly what every call site used before.
      *
      * @param name the file's name - `LocDB.data`, `UIState.data`, the backup folder
      * @return its path
      */
     public static String dataPath(String name)
     {
-        return name;
+        String folder = System.getProperty(DATA_DIR_PROPERTY);
+
+        if (folder == null || folder.trim().isEmpty()) return name;
+
+        return new File(folder.trim(), name).getPath();
     }
 
     /**
-     * The preference node for a class's package: the user node, as it always has been.
+     * The preference node for a class's package: the user node - unless a test run has named a node of its own.
+     *
+     * The same reason as `dataPath`, and a sharper one: `LayoutSandbox` points this node's layout path at a sandbox for
+     * the length of a test class, and an application starting meanwhile would open the sandbox.  A run names itself in
+     * `traincontrol.preferences`, and gets `traincontrol-test-runs/<run>/<package path>`, which starts as a copy of the
+     * real node - so a class sees the settings it always saw - and which the runner deletes at the end.  The real node
+     * is only ever read.
+     *
+     * A run that cannot build its node does not fall back to the real one, which is the sharing this exists to end.
      *
      * @param owner a class in the package
      * @return the node
      */
     public static java.util.prefs.Preferences preferencesFor(Class<?> owner)
     {
-        return java.util.prefs.Preferences.userNodeForPackage(owner);
+        java.util.prefs.Preferences real = java.util.prefs.Preferences.userNodeForPackage(owner);
+
+        String run = System.getProperty(PREFERENCES_PROPERTY);
+
+        if (run == null || run.trim().isEmpty()) return real;
+
+        String path = ISOLATED_PREFERENCES_ROOT + "/" + run.trim() + real.absolutePath();
+
+        try
+        {
+            java.util.prefs.Preferences root = java.util.prefs.Preferences.userRoot();
+
+            boolean fresh = !root.nodeExists(path);
+
+            java.util.prefs.Preferences isolated = root.node(path);
+
+            if (fresh)
+            {
+                for (String key : real.keys())
+                {
+                    String value = real.get(key, null);
+
+                    if (value != null) isolated.put(key, value);
+                }
+
+                isolated.flush();
+            }
+
+            return isolated;
+        }
+        catch (java.util.prefs.BackingStoreException | IllegalArgumentException | IllegalStateException cannot)
+        {
+            throw new IllegalStateException("could not build this run's own preference node " + path, cannot);
+        }
     }
 
     /**

@@ -1,5 +1,6 @@
 package ui;
 
+import org.traincontrol.util.Util;
 import java.awt.GraphicsEnvironment;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -23,8 +24,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * and no automatic backup.  Writing atomically is no protection at all against this - a complete
  * successful write of nothing is not a partial write.
  *
- * **This test writes to the working directory**, because that is where the application keeps the file
- * and it uses a relative path to find it.  So the real `UIState.data` is copied aside before anything
+ * **This test writes where the application keeps the file** - `Util.dataPath`, which is the working directory,
+ * or under `docs/tools/one.sh` and `battery.sh` a copy of the run's own, so that there it never touches the
+ * operator's file at all.  Where it is the working directory, the real `UIState.data` is copied aside before anything
  * happens and put back afterwards, whatever the outcome - which is exactly why Adam asked for a backup
  * before this was run by hand.  If the restore ever fails, the copy is left in the scratch file named
  * in the failure message rather than deleted.
@@ -87,7 +89,7 @@ public class testUiStateIsNotLostWhenUnreadable
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        File live = new File(DATA);
+        File live = new File(Util.dataPath(DATA));
 
         hadOne = live.exists();
 
@@ -105,7 +107,7 @@ public class testUiStateIsNotLostWhenUnreadable
             throw new SkipException("this builds the main window, which needs a display");
         }
 
-        File live = new File(DATA);
+        File live = new File(Util.dataPath(DATA));
 
         // What the backup folder held before, so that only a NEW file counts
         java.util.Set<String> before = listBackups();
@@ -113,7 +115,7 @@ public class testUiStateIsNotLostWhenUnreadable
         // On disk before a single byte is changed, and not deleted until the restore has been checked
         if (hadOne)
         {
-            onDisk = new File(DATA + ".reviewbak");
+            onDisk = new File(Util.dataPath(DATA + ".reviewbak"));
 
             Files.write(onDisk.toPath(), original);
         }
@@ -167,7 +169,7 @@ public class testUiStateIsNotLostWhenUnreadable
                 + "gained " + after + " is not a backup of it, and there is no undo: "
                 + "tc_backup should hold an unreadable<timestamp>UIState.data");
 
-            File copy = new File(BACKUPS, copied);
+            File copy = new File(Util.dataPath(BACKUPS), copied);
 
             assertTrue(copy.length() > 0, "the copy that was kept is empty, which keeps nothing");
 
@@ -191,7 +193,7 @@ public class testUiStateIsNotLostWhenUnreadable
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        File live = new File(DATA);
+        File live = new File(Util.dataPath(DATA));
 
         if (hadOne)
         {
@@ -221,14 +223,14 @@ public class testUiStateIsNotLostWhenUnreadable
         // into place.  Harmless where it lies - the next write overwrites it - but it is litter in the
         // project root, and litter beside a data file is the sort of thing somebody later has to work
         // out the meaning of.
-        File staging = new File(DATA + ".part");
+        File staging = new File(Util.dataPath(DATA + ".part"));
 
         if (staging.exists()) staging.delete();
 
         // And the copy this run put in the backup folder, which holds the test's own rubbish rather
         // than anything of the operator's.  Checked by CONTENT, not by name: deleting from a backup
         // folder on a guess is exactly the wrong instinct.
-        File backups = new File(BACKUPS);
+        File backups = new File(Util.dataPath(BACKUPS));
 
         String[] found = backups.list();
 
@@ -253,7 +255,7 @@ public class testUiStateIsNotLostWhenUnreadable
     {
         java.util.Set<String> names = new java.util.LinkedHashSet<>();
 
-        String[] found = new File(BACKUPS).list();
+        String[] found = new File(Util.dataPath(BACKUPS)).list();
 
         if (found != null) names.addAll(java.util.Arrays.asList(found));
 
