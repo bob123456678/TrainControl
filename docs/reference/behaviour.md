@@ -958,7 +958,13 @@ plain squares and a route tile with 4 typed is 2, 1, 1 by the even share, where 
 lands on the route tile and nothing draws it. **The share stays even** (OB-275, Adam: *"let's stick to a
 then, since that is more visually pleasing"*) - the other option he offered, the whole length on one
 square, would also have made the tail depend on which square a train happened to stop on (5c spends
-length square by square). Not yet built: `assignStretchLength` still includes route tiles.
+length square by square). Built 2026-09-23 (MT-476): `assignStretchLength` shares over the track squares only.
+
+**A length a route tile already holds is folded into the track beside it** (Adam, 2026-09-23, OB-281: *"Fold them,
+they were likely auto set during the mass assignment run."*). Five of his route tiles held 1 each from before the
+ruling, so each piece they sat in measured a unit less than he gave it. Opening a setup moves each onto the square
+beside it along the road it carries - plain track before a switch - so every total is what it was.
+`AutonomySession.foldRouteTileLengths`, `core.testMassAssignLengths.testHisFiveRouteTilesAreFoldedWhenHisRailwayIsOpened`.
 
 **A deliberate 0 is an answer** (Adam, 2026-09-23, OB-274: *"we need to allow a length of 0 as a length
 that is set deliberately, i.e. for adjacent tracks.  same meaning to the model, but this will allow

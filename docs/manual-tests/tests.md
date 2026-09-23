@@ -68,8 +68,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-482](#mt-482) | 2026-09-23 | The grey is only where the train is, and nothing past the switch | fixed unvalidated | OB-280 |
 | [MT-483](#mt-483) | 2026-09-23 | A cut train is pasted facing the way it would arrive | fixed unvalidated | OB-270 |
 | [MT-484](#mt-484) | 2026-09-23 | Segment Length takes a 0 as an answer, and has a Clear button | fixed unvalidated | FR-097 |
+| [MT-485](#mt-485) | 2026-09-23 | The five route tiles' lengths are folded into the track beside them | fixed unvalidated | OB-281 |
 
-Everything else - 443 of 484 - needs nothing from you unless the area changes again:
+Everything else - 443 of 485 - needs nothing from you unless the area changes again:
 392 **fixed validated** and 51 **superseded**.
 
 ---
@@ -24768,5 +24769,38 @@ Your words, 2026-09-23: *"no, add a clear button"*, and *"stop listing answered 
 *What this is:* `core.testMassAssignLengths` (Segment Length's 0 and Clear; the half-measured berth),
 `core.testAutonomyDiagramSession` (the reversal notice) and `core.testAnAnsweredZeroIsNotMissing` (the refusal, on your
 TunnelLongPark approach) - each red under its own mutation, seven in all.  The button itself is what only you can check.
+
+---
+
+<a id="mt-485"></a>
+
+### MT-485 - 2026-09-23 - The five route tiles' lengths are folded into the track beside them
+
+**Disposition:** fixed unvalidated
+**From:** OB-281
+
+**Written:** 2026-09-23
+
+Your words, 2026-09-23: *"Fold them, they were likely auto set during the mass assignment run."*
+
+The route tiles at **2 - Bottom** 19,3 and 4,11, and **1 - Main** 6,7, 16,12 and 15,13 each held a length of 1.  A
+route tile takes no length now, so that unit was being lost from the piece it sat in.  Opening a setup now moves it
+onto the square beside it - plain track before a switch - so every piece measures what you gave it.  The change is in
+memory until the setup is saved.
+
+**Steps**
+
+1. Open the autonomy editor and look at the length shown on each of those five route tiles, and on the track either
+   side of each.
+2. Save, close and reopen.
+
+**Expected**
+
+- Step 1: each route tile shows no length, and one square beside it shows one unit more than it did.
+- Step 2: the same - nothing moves a second time.
+
+*What this is:* `core.testMassAssignLengths.testARouteTilesLengthIsFoldedIntoTheTrackBesideIt` (a saved length comes back
+folded, the total unchanged) and `testHisFiveRouteTilesAreFoldedWhenHisRailwayIsOpened` (on your frozen railway, exactly
+those five) - each red under its own mutation.
 
 ---
