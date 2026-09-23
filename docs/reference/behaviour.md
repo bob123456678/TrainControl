@@ -1018,8 +1018,9 @@ The editor notice about turn-round squares with no length is a different questio
     click to select as well."*). The whole train lies between the farthest sensor its tail has crossed and the
     square it stands on, so that sensor names the road. The question is put - when a train is pasted, placed
     from the right-click menu, or set in the locomotive dialog - only where a junction behind the train has two
-    roads back and its tail has crossed a sensor on at least one of them (a square's lane copy and turning copy
-    are one road; its two ends, one per arrival side, are two);
+    roads back and its tail has crossed a sensor on at least one of them - two roads being two pieces of METAL,
+    compared by the places the rail runs over (OB-276: RampDown's southbound lane and its northbound turning copy
+    both leave south by one rail, and were offered as two "RampDown"s; a balloon's two ends are still two);
     elsewhere every answer describes the same track. Not asked, or closed without an answer, the road the train
     had on the railway is kept where it stays on the same square with the same side; **Not known** forgets it. The
     list starts on the road it has; with none, on the one sensor nearest the back of the train where exactly one

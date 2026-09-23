@@ -559,6 +559,130 @@ public class testTheTailCrossedQuestion
         return built;
     }
 
+    // ------------------------------------------------------------------------------------------------ OB-276
+
+    /**
+     * Two copies of one square leaving by the same rail are ONE road back, offered once and no reason to ask (OB-276).
+     *
+     * Adam, 2026-09-23: *"when pasting 75 407 DB on bottomsecondary, the tail question lists rampdown twice in the
+     * list."*  Measured on his railway, the two were RampDown's southbound lane and its northbound TURNING copy - a train
+     * that came in from the south and turned - both leaving south over the same places.  Keyed by lane name they were
+     * two roads.
+     *
+     * Built on the diagram, because the copies are the builder's: X - R - Q - A in a line, R a square trains may turn
+     * at, so R is emitted as a plain copy and a turning one for each side, and two of them leave east over the same
+     * rail towards Q.  Every square measured at one unit: a three-unit train at Q has its tail across R, which is the
+     * first hop; a five-unit train at A has it across Q and R, which is the same two copies one hop further back.
+     *
+     * Before the fix: R offered twice (its two names), and `wouldAsk` true - a junction counted where there is one rail.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testTwoCopiesLeavingByOneRailAreOneRoadBack() throws Exception
+    {
+        Layout layout = aTurnRoundSquareBehindAPlatform();
+
+        // THE FIRST HOP: a train at Q, whose tail reaches R one rail back.
+        Point at = pointWithSensor(layout, 3304);
+
+        assertNotNull(at, "precondition: the platform Q was not built as a Point");
+
+        java.util.Set<String> copiesOfR = new java.util.TreeSet<>();
+
+        for (Point p : layout.getPoints()) if ("3302".equals(p.getS88())) copiesOfR.add(p.getName());
+
+        assertTrue(copiesOfR.size() >= 3,
+            "precondition: R was not split into plain and turning copies, so there is nothing here to tell apart - " + copiesOfR);
+
+        List<TailCrossedPrompt.Choice> choices = TailCrossedPrompt.choicesFor(layout, at, "W", 3, null);
+
+        int offersOfR = 0;
+
+        for (TailCrossedPrompt.Choice choice : choices) if ("3302".equals(choice.getFarthest().getS88())) offersOfR++;
+
+        assertEquals(offersOfR, 1, "R is offered " + offersOfR + " times - one piece of metal read as several roads back: "
+            + farthestOf(choices));
+
+        assertFalse(TailCrossedPrompt.isATurningCopyForTests(choices.get(0).getFarthest()),
+            "of two copies leaving by the same rail the turning copy was kept, so the road recorded is the turn's rather than"
+            + " the lane's: " + farthestOf(choices));
+
+        assertFalse(TailCrossedPrompt.wouldAsk(layout, at, "W", 3),
+            "the question is put where the only two roads back are the same rail, so every answer describes the same track");
+
+        // AND FURTHER BACK: a train at A, whose tail passes Q and reaches R - where the same two copies arrive at Q.
+        Point further = pointWithSensor(layout, 3303);
+
+        assertNotNull(further, "precondition: the platform A was not built as a Point");
+
+        List<TailCrossedPrompt.Choice> behindQ = TailCrossedPrompt.choicesFor(layout, further, "W", 5, null);
+
+        int deeperOffersOfR = 0;
+
+        for (TailCrossedPrompt.Choice choice : behindQ) if ("3302".equals(choice.getFarthest().getS88())) deeperOffersOfR++;
+
+        assertEquals(deeperOffersOfR, 1, "R is offered " + deeperOffersOfR + " times from two rails back - the same rail"
+            + " counted as two roads past the first hop: " + farthestOf(behindQ));
+    }
+
+    private static Point pointWithSensor(Layout layout, int s88)
+    {
+        for (Point p : layout.getPoints()) if (String.valueOf(s88).equals(p.getS88())) return p;
+
+        return null;
+    }
+
+    /**
+     * 1,1 sensor X (3301) - 2,1 - 3,1 sensor R (3302), trains may turn - 4,1 - 5,1 sensor Q (3304) - 6,1 - 7,1 sensor A
+     * (3303).  Every square measured at one unit.
+     */
+    private static Layout aTurnRoundSquareBehindAPlatform() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-tail-one-rail").toFile();
+
+        folder.deleteOnExit();
+
+        org.traincontrol.base.LayoutDiagram page = new org.traincontrol.base.LayoutDiagram("main", 10, 4, null, null);
+
+        org.traincontrol.base.LayoutDiagramComponent.componentType feedback =
+            org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK;
+        org.traincontrol.base.LayoutDiagramComponent.componentType straight =
+            org.traincontrol.base.LayoutDiagramComponent.componentType.STRAIGHT;
+        org.traincontrol.base.Accessory.accessoryDecoderType mm2 = org.traincontrol.base.Accessory.accessoryDecoderType.MM2;
+
+        page.addComponent(feedback, 1, 1, 0, 0, 3301, 3301, mm2, null);
+        page.addComponent(straight, 2, 1, 0, 0, 0, 0, mm2, null);
+        page.addComponent(feedback, 3, 1, 0, 0, 3302, 3302, mm2, null);
+        page.addComponent(straight, 4, 1, 0, 0, 0, 0, mm2, null);
+        page.addComponent(feedback, 5, 1, 0, 0, 3304, 3304, mm2, null);
+        page.addComponent(straight, 6, 1, 0, 0, 0, 0, mm2, null);
+        page.addComponent(feedback, 7, 1, 0, 0, 3303, 3303, mm2, null);
+
+        page.setPageId("1");
+
+        org.traincontrol.automationui.AutonomySession session = new org.traincontrol.automationui.AutonomySession(folder);
+
+        session.open(java.util.Arrays.asList(page));
+        session.initialize("Tail");
+
+        org.traincontrol.automationui.TileGraph.TileKey r = new org.traincontrol.automationui.TileGraph.TileKey("main", 3, 1);
+
+        session.setStation(r, true);
+        session.setStation(new org.traincontrol.automationui.TileGraph.TileKey("main", 5, 1), true);
+        session.setStation(new org.traincontrol.automationui.TileGraph.TileKey("main", 7, 1), true);
+        session.setStation(new org.traincontrol.automationui.TileGraph.TileKey("main", 1, 1), true);
+        session.setPointProperty(r, "canReverse", true);
+
+        for (int x = 1; x <= 7; x++) session.setTileLength(new org.traincontrol.automationui.TileGraph.TileKey("main", x, 1), 1);
+
+        session.rebuild();
+
+        model.parseAuto(session.buildConfiguration());
+
+        return model.getAutoLayout();
+    }
+
     private static List<String> farthestOf(List<TailCrossedPrompt.Choice> choices)
     {
         List<String> names = new ArrayList<>();

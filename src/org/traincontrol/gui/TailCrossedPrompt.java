@@ -482,7 +482,16 @@ public class TailCrossedPrompt
 
             if (cameInBy == null || !arrivedFrom.equalsIgnoreCase(cameInBy)) continue;
 
-            firstHops.putIfAbsent(roadKeyOf(candidate.getStart()), candidate);
+            // ONE ROAD PER PIECE OF METAL (OB-276), and the plain lane rather than a turning copy where two copies
+            // leave by the same rail, so the road recorded does not depend on the order the rails come back in.
+            String key = roadKeyOf(candidate);
+
+            Edge had = firstHops.get(key);
+
+            if (had == null || (isATurningCopy(had.getStart()) && !isATurningCopy(candidate.getStart())))
+            {
+                firstHops.put(key, candidate);
+            }
         }
 
         Set<String> walked = new LinkedHashSet<>();
@@ -543,7 +552,7 @@ public class TailCrossedPrompt
 
             // BY PLACE (TLR-B2): a square a train may turn at is a lane copy and a turning copy, the same metal under
             // two names, and counted by name it was a second road back.
-            if (further == null || walked.contains(placeOf(further)) || !seen.add(roadKeyOf(further))) continue;
+            if (further == null || walked.contains(placeOf(further)) || !seen.add(roadKeyOf(candidate))) continue;
 
             if (back(layout, candidate, further, behind, beyond, road, walked, into, forks, depth + 1)) crossedBeyond++;
         }
@@ -637,6 +646,53 @@ public class TailCrossedPrompt
     private static String placeOf(Point point)
     {
         return point.getBlock() != null ? "block " + point.getBlock() : "point " + point.getName();
+    }
+
+    /**
+     * One road back, by the METAL it runs over: the square it comes from and the places the rail crosses (OB-276).
+     *
+     * Adam, 2026-09-23: *"when pasting 75 407 DB on bottomsecondary, the tail question lists rampdown twice in the
+     * list."*  Measured on his railway: the two were `RampDown (northbound, reverse) -> BottomSecondary` and
+     * `RampDown (southbound) -> BottomSecondary`, over exactly the same places, 21,7 to 13,11.  The turning copy of the
+     * northbound lane is a train that came in from the south and turned, so it leaves south - by the same rail as the
+     * southbound lane.  Keyed by LANE, as `roadKeyOf(Point)` keys, they were two roads: the list offered one answer
+     * twice, and the junction count behind `wouldAsk` counted a junction that is not there, so the question was put
+     * where both answers describe the same track.  21 such pairs on his railway, at five squares, every one at RampDown
+     * or BottomMainPost.
+     *
+     * A balloon's two ends are still two roads: they reach the square by different rails, so their places differ.  A
+     * rail with no places - a hand-written configuration, or one from before 3.0.0 - falls back to the lane.
+     *
+     * @param rail a rail arriving towards the train
+     * @return the key
+     */
+    static String roadKeyOf(Edge rail)
+    {
+        if (rail == null) return "";
+
+        List<String> places = rail.getPlaceIds();
+
+        if (places == null || places.isEmpty() || rail.getStart() == null) return roadKeyOf(rail.getStart());
+
+        return placeOf(rail.getStart()) + " over " + places;
+    }
+
+    /**
+     * @param point a Point
+     * @return whether it is the turning copy of a lane - "X (eastbound, reverse)" beside "X (eastbound)"
+     */
+    private static boolean isATurningCopy(Point point)
+    {
+        return point != null && !laneOf(point.getName()).equals(point.getName());
+    }
+
+    /**
+     * @param point a Point
+     * @return whether it is a turning copy, for a test that has to say which of two copies was kept
+     */
+    public static boolean isATurningCopyForTests(Point point)
+    {
+        return isATurningCopy(point);
     }
 
     /**
