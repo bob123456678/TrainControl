@@ -111,6 +111,11 @@ public class testWhichSquaresTheRoomRuleClosesOff
         session = new AutonomySession(sandbox.getFolder());
         session.open(pages);
 
+        // HIS MEASUREMENTS AND STATION SIZES COME OFF FIRST (the refreeze of 2026-09-23).  Until then the snapshot
+        // carried neither, so the three tiles below were the whole of what this measured.  It carries both now, and
+        // this is still the experiment it was: what a rule about room does on a railway with no room.
+        session.clearEveryTileLength();
+        session.clearEveryMaxTrainLength();
 
         // THE THREE TIGHT TILES, SET HERE RATHER THAN READ OUT OF THE FIXTURE (Adam, 2026-09-10).
         //

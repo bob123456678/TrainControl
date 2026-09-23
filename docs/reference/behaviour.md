@@ -1376,11 +1376,20 @@ the count below with nothing saying why.
 
 | | |
 |---|---|
-| ordered station pairs | 1980 (45 destination Points, each against the other 44) |
-| of those, routable | 1301 (1354 after OB-229, 1848 before it) |
+| ordered station pairs | 1332 (37 destination Points, each against the other 36; 1980 before the refreeze of 2026-09-23) |
+| of those, routable | 956 (1301 before the refreeze, 1354 after OB-229, 1848 before it) |
 | train lengths asked, the census's own | 1, 2, 3, 4, 5, 6 |
-| journeys the widening NEWLY refuses | **610** (880 before OB-229) |
-| every one of them arriving at | BottomMainA (eastbound), BottomMainB (eastbound), BottomMainC (westbound), BottomMainPost (northbound) - each measured at **ONE** unit of room |
+| journeys the widening NEWLY refuses | **505** (610 before the refreeze, 880 before OB-229) |
+| every one of them arriving at | BottomMainA (eastbound), BottomMainB (eastbound), BottomMainPost (northbound) - each measured at **ONE** unit of room |
+
+**Re-measured 2026-09-23, on the railway refrozen from Adam's measured layout.** His own lengths and station sizes are
+taken off in the census's copy first, so this is still the three-tile experiment; what moved is the railway under it.
+His one-way marks, barred sides and the compulsory turn at BottomMainC leave 37 destination Points rather than 45.
+BottomMainC is off the list of berths because it is a terminus now - one copy, every train turned - and a refusal at a
+terminus is not new. No route turns at a measured square under these three tiles any more, so the census no longer
+reaches the turn bound; `core.testNonReversibleTrains` and `core.testATrainIsJudgedOnlyWhereItStops` hold it.
+`core.testWhichSquaresTheRoomRuleClosesOff`, on the same three tiles, still finds no square that offers a longer train
+nothing at all.
 
 The room rule declines to judge almost everything else: the railway carries only a few measurements.
 

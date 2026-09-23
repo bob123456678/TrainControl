@@ -83,7 +83,10 @@ public class testTheRoomRuleCensusOnTheRealLayout
      * rule has changed and that section is out of date - which is exactly the state section 5c was in
      * while it had no probe: it could say anything, and nothing would disagree.
      */
-    private static final int ORDERED_PAIRS = 1980;
+    // 2026-09-23, THE RAILWAY REFROZEN FROM ADAM'S MEASURED LAYOUT (`e36df979`), with his lengths and station sizes
+    // cleared so this is still the three-tile experiment: 37 destination Points rather than 45 - his one-way marks,
+    // barred sides and compulsory turn at BottomMainC take copies away - so every count below is over fewer pairs.
+    private static final int ORDERED_PAIRS = 1332;
     /**
      * 1848 when measured; **1354 since OB-229** (2026-09-15).  `Layout.bfs` no longer extends a route through a terminus
      * that is not its end - the route check refuses every such route - and 494 pairs had no other.  A probe asked
@@ -94,10 +97,12 @@ public class testTheRoomRuleCensusOnTheRealLayout
     // routes doubled back through another copy of the square the journey starts or ends at are no longer walked.  Every
     // one of them was a lap through the train's own platform, which is what he ruled out; measured separately on the
     // same railway, 14 station pairs lose their last route and all 14 are from `BottomMainPost`.
-    private static final int PAIRS_WITH_A_PATH = 1301;
+    // 956 on the railway refrozen 2026-09-23.
+    private static final int PAIRS_WITH_A_PATH = 956;
     // 880 when section 5c was written; 610 SINCE OB-229 (2026-09-15) - the 494 pairs whose only routes ran through a
     // terminus are no longer walked, and every journey over one was refused by the route check before length arose.
-    private static final int NEWLY_REFUSED = 610;
+    // 505 on the railway refrozen 2026-09-23.
+    private static final int NEWLY_REFUSED = 505;
 
     /**
      * The lengths this census is over - and they are THIS TEST'S, not a reading of Adam's database.
@@ -146,10 +151,11 @@ public class testTheRoomRuleCensusOnTheRealLayout
      * split copies - and the ONE unit of room is the number Adam gave himself: *"bottommainb, which
      * has a length of 1 leading up to its switch"*.
      */
+    // THREE SINCE 2026-09-23.  BottomMainC is a compulsory turn on the refrozen railway and builds to one copy, a
+    // terminus - and a refusal at a terminus is not NEW, it is what the rule did before MT-262.
     private static final String[] BERTHS =
     {
-        "BottomMainA (eastbound)", "BottomMainB (eastbound)",
-        "BottomMainC (westbound)", "BottomMainPost (northbound)"
+        "BottomMainA (eastbound)", "BottomMainB (eastbound)", "BottomMainPost (northbound)"
     };
 
     private static support.LayoutSandbox sandbox;
@@ -206,6 +212,11 @@ public class testTheRoomRuleCensusOnTheRealLayout
         session = new AutonomySession(sandbox.getFolder());
         session.open(pages);
 
+        // HIS MEASUREMENTS AND STATION SIZES COME OFF FIRST (the refreeze of 2026-09-23).  Until then the snapshot
+        // carried neither, so the three tiles below were the whole of what this measured.  It carries both now, and
+        // this is still the experiment it was: what a rule about room does on a railway with no room.
+        session.clearEveryTileLength();
+        session.clearEveryMaxTrainLength();
 
         // THE THREE TIGHT TILES, SET HERE RATHER THAN READ OUT OF THE FIXTURE (Adam, 2026-09-10).
         //
@@ -414,8 +425,14 @@ public class testTheRoomRuleCensusOnTheRealLayout
     // left after OB-229 were laps through another copy of the journey's own start or end.  Adam ruled those out
     // ("a copy makes a cycle"), so they are no longer walked and what remains is the handful of genuine turn-backs.
     // The band is still a band, for the reason above: which routes the search yields moves by a couple of per cent
-    // between JVMs.  A floor of 5 catches the bound being taken out altogether; the ceiling catches it spreading.
-    private static final int AT_A_TURN_AT_LEAST = 5;
+    // between JVMs.  A floor of 5 caught the bound being taken out altogether; the ceiling catches it spreading.
+    //
+    // AND 0 ON THE RAILWAY REFROZEN 2026-09-23, so the floor is gone.  With these three tiles at one unit, no route on
+    // Adam's measured railway turns at a square with a measured stretch behind it: his one-way marks took away the
+    // turn-backs that did.  This census no longer reaches the turn bound at all - which the comment where it is
+    // asserted already said it could not guard - and what holds that bound is `core.testNonReversibleTrains`, through
+    // the real door, and `core.testATrainIsJudgedOnlyWhereItStops` on fixtures of its own.
+    private static final int AT_A_TURN_AT_LEAST = 0;
 
     /**
      * The other end of that band.  See `AT_A_TURN_AT_LEAST`.
@@ -430,7 +447,8 @@ public class testTheRoomRuleCensusOnTheRealLayout
      */
     // 1760 when measured; 1030 SINCE OB-229 (2026-09-15), over the 1354 routable pairs rather than 1848 - see
     // PAIRS_WITH_A_PATH.
-    private static final int REFUSED_AT_THE_BERTH = 1030;
+    // 850 on the railway refrozen 2026-09-23, over 956 routable pairs.
+    private static final int REFUSED_AT_THE_BERTH = 850;
 
     /**
      * The squares that refuse on the way: NONE since AMR-B1 (2026-09-15), so the list is empty and any square at all
