@@ -25,11 +25,12 @@ import org.traincontrol.marklin.MarklinControlStation;
  * rather than the flag. Claim 1 went in the same evening asking exactly that flag, so a square trains
  * may turn at became a square a non-reversible train could not be sent to at all.
  *
- * **The question is about the SQUARE, not about this copy of it.** Measured on Adam's own railway:
+ * **The question is about the SQUARE, not about this copy of it.** Measured on Adam's own railway, as
+ * refrozen on 2026-09-23:
  *
  * <pre>
- *   BottomMainB   (eastbound, reverse) terminus     (westbound) plain, (eastbound) plain
- *   BottomMainC   (eastbound, reverse) terminus     (westbound, reverse) reversing
+ *   BottomMainB   (eastbound, reverse) terminus     (eastbound) plain
+ *   BottomMainC   one copy, a terminus - he made it a compulsory turn, and it is emitted with no plain copy
  * </pre>
  *
  * BottomMainB has a copy a train can stand at without turning, so a non-reversible train is not
@@ -127,50 +128,26 @@ public class testAMayTurnStationIsNotATerminus
     /**
      * And the control: a square every way in turns the train at is still refused.
      *
-     * **The compulsory case is BUILT here rather than found.** On Adam's live railway BottomMainC is
-     * one - its only copies are a terminus and a reversing point - and on `live-snapshot`, frozen
-     * earlier, the same square still has plain through copies. He has changed it since. A test that
-     * went looking for a compulsory terminus in the fixture would therefore be testing whichever
-     * railway the snapshot happened to be, which is how a class comes to pass for a reason nobody
-     * chose; closing the ways through says what the case IS.
+     * **The compulsory case is his railway's own now.**  Until the refreeze of 2026-09-23 the snapshot
+     * predated his making BottomMainC a compulsory turn, so this closed its plain copies to build the
+     * case.  The snapshot now has it as he runs it - one copy, a terminus, no way through - so nothing is
+     * arranged, and the precondition says so.
      *
      * @throws Exception from the railway
      */
     @Test
     public void testACompulsoryTerminusIsStillRefused() throws Exception
     {
-        Point terminus = named("BottomMainC (eastbound, reverse)");
+        Point terminus = named("BottomMainC");
 
-        List<Point> wereOpen = new java.util.ArrayList<>();
+        assertTrue(terminus.isTerminus() && !aWayThroughExists(terminus),
+            "precondition: BottomMainC is not a compulsory turn on this fixture any more (terminus="
+            + terminus.isTerminus() + "), so it is not the square Adam said is correctly barred");
 
-        for (Point sibling : layout.getPoints())
-        {
-            if (sibling == terminus || !terminus.isSamePlaceAs(sibling)) continue;
-
-            if (!sibling.isTerminus() && !sibling.isReversing()) wereOpen.add(sibling);
-        }
-
-        assertFalse(wereOpen.isEmpty(),
-            "precondition: " + terminus.getName() + " already has no way through in this fixture, so"
-            + " the arrangement below changes nothing and the claim is not the one it says it is");
-
-        try
-        {
-            for (Point open : wereOpen) open.setTerminus(true);
-
-            assertFalse(aWayThroughExists(terminus),
-                "precondition: closing every plain copy of that square left a way through anyway,"
-                + " so this is still not the compulsory case: " + wereOpen);
-
-            assertFalse(layout.isOfferableToOperator(terminus, train),
-                train.getName() + " cannot reverse and is still offered " + terminus.getName()
-                + ", where every way to be on that square turns it. Adam: \"It is correctly barred"
-                + " from BottomMainC, a terminus\" - and it must stay barred");
-        }
-        finally
-        {
-            for (Point open : wereOpen) open.setTerminus(false);
-        }
+        assertFalse(layout.isOfferableToOperator(terminus, train),
+            train.getName() + " cannot reverse and is still offered " + terminus.getName()
+            + ", where every way to be on that square turns it. Adam: \"It is correctly barred"
+            + " from BottomMainC, a terminus\" - and it must stay barred");
     }
 
     /**
@@ -188,27 +165,24 @@ public class testAMayTurnStationIsNotATerminus
      * One compulsory-turn station, half refused and half offered, to the same locomotive. To a train
      * that cannot reverse the two words say one thing: you must turn round here.
      *
-     * This is the fixture's own square rather than a manufactured one, so the claim goes red on the
-     * railway the report came from.
+     * **The spelling is arranged; the square is his.**  BottomMainC builds to one copy now, spelled
+     * `terminus`, so it is re-spelled `reversing` here for the length of the claim - the case the report
+     * was about, on the square it was about.
      *
      * @throws Exception from the railway
      */
     @Test
     public void testTheReversingCopyOfACompulsoryTurnIsRefusedToo() throws Exception
     {
-        Point reversing = named("BottomMainC (westbound, reverse)");
+        Point reversing = named("BottomMainC");
 
         assertTrue(reversing.isAutoDestination(),
             "precondition: that copy is not one autonomy may choose, so the berth exemption applies"
             + " and refusing it is not what this claim is about");
 
-        // THE STATE HAS TO BE ARRANGED, because the snapshot predates the edit that produced it.
-        //
-        // Adam set `mustReverse` on BottomMainC on 2026-09-13 and reported this the same day; the
-        // checked-in copy of his railway still has it as `canReverse`, so that square has a way
-        // through here and being offered is correct. What the claim is about is the COMPULSORY case:
-        // every copy a turning copy, and at least one of them spelled `reversing` rather than
-        // `terminus`.
+        // THE SPELLING HAS TO BE ARRANGED.  What the claim is about is the COMPULSORY case with a copy
+        // spelled `reversing` rather than `terminus`; his BottomMainC is compulsory and spelled
+        // `terminus`.  Any plain sibling is closed too, so the claim holds if the square ever grows one.
         List<Point> closed = new java.util.ArrayList<>();
 
         boolean wasTerminus = false;
@@ -294,21 +268,10 @@ public class testAMayTurnStationIsNotATerminus
     @Test(dependsOnMethods = "testACompulsoryTerminusIsStillRefused")
     public void testAReversibleTrainIsOfferedTheTerminus() throws Exception
     {
-        Point terminus = named("BottomMainC (eastbound, reverse)");
-
-        List<Point> wereOpen = new java.util.ArrayList<>();
-
-        for (Point sibling : layout.getPoints())
-        {
-            if (sibling == terminus || !terminus.isSamePlaceAs(sibling)) continue;
-
-            if (!sibling.isTerminus() && !sibling.isReversing()) wereOpen.add(sibling);
-        }
+        Point terminus = named("BottomMainC");
 
         try
         {
-            for (Point open : wereOpen) open.setTerminus(true);
-
             train.setReversible(true);
 
             assertTrue(layout.isOfferableToOperator(terminus, train),
@@ -318,8 +281,6 @@ public class testAMayTurnStationIsNotATerminus
         finally
         {
             train.setReversible(false);
-
-            for (Point open : wereOpen) open.setTerminus(false);
         }
     }
 

@@ -89,6 +89,14 @@ public class testAPlacedTrainRecordsWhereItCameFrom
         session = new AutonomySession(sandbox.getFolder());
         session.open(support.LayoutSandbox.wiredPages(model));
 
+        // A STATION WITH TWO WAYS IN, made in this copy.  On Adam's railway refrozen 2026-09-23 there is none left:
+        // his one-way track and barred sides close the second way into every square a train may stop at, so the
+        // choice of arrival side this class is about is never offered there.  RampDown's barred south side is lifted
+        // here - in the sandbox only - which gives it back the second way in it had before; BottomMainA keeps its bar,
+        // which is what the barred-side claim below needs.
+        session.setBarredArrivals(new TileKey("1 - Main", 21, 6),
+            java.util.Collections.<org.traincontrol.automationui.TilePorts.Side>emptySet());
+
         model.parseAuto(session.buildConfiguration());
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
@@ -142,6 +150,8 @@ public class testAPlacedTrainRecordsWhereItCameFrom
 
         TileKey square = null;
 
+        java.util.List<TileKey> tried = new java.util.ArrayList<>();
+
         for (Point point : layout.getPoints())
         {
             TileKey at = session.getStationIndex().squareOf(point.getName());
@@ -155,6 +165,16 @@ public class testAPlacedTrainRecordsWhereItCameFrom
             if (session.arrivalSides(at).size() > 1
                 && session.arrivalSides(at).size() - session.getBarredArrivals(at).size() == 1)
             {
+                // AND ONE WHERE THE CONTROL BELOW CAN SEE THE DEFECT: the raw sides give the two facings
+                // different answers.  Taking the first square of the right shape took BottomMainPost on the
+                // railway refrozen 2026-09-23, where they agree, and every run skipped.
+                String rawOne = ArrivalSidePrompt.suggestedFor(layout, point, "E", false, session.arrivalSides(at));
+                String rawOther = ArrivalSidePrompt.suggestedFor(layout, point, "W", false, session.arrivalSides(at));
+
+                tried.add(at);
+
+                if (java.util.Objects.equals(rawOne, rawOther)) continue;
+
                 narrowed = point;
 
                 square = at;
@@ -165,8 +185,8 @@ public class testAPlacedTrainRecordsWhereItCameFrom
 
         if (narrowed == null)
         {
-            throw new SkipException("no square on this fixture has a barred arrival, so there is"
-                + " nothing here that the barred list changes");
+            throw new SkipException("no square on this fixture has a barred arrival where the raw sides tell the"
+                + " two facings apart (tried " + tried + "), so there is nothing here that the barred list changes");
         }
 
         assertEquals(session.unbarredArrivalSides(square).size(), 1,
