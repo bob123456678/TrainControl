@@ -238,6 +238,90 @@ public class testACutTrainArrivesTheWayItWouldDrive
         return handled[0];
     }
 
+    /**
+     * The Place Locomotive dialog puts the train on the copy facing the way it records - not on whichever copy the menu
+     * was opened on (GUI-B3).
+     *
+     * OB-270 is a rule about putting a train down - the copy IS the direction - and was fixed at the paste.  The dialog
+     * is the same act by another door: it moved the train onto the copy it was opened on, then recorded the train's old
+     * heading wherever any copy held it.  On a square with two copies facing opposite ways the setup then said west while
+     * the train stood on the east copy, until the next load changed its direction.
+     *
+     * MUTATION: have `GraphLocAssign.commitAndRecord` commit onto the copy it was opened on again and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testTheDialogPutsTheTrainOnTheCopyItRecords() throws Exception
+    {
+        Point westbound = layout.getPoint("BottomMainA (westbound)");
+        Point eastbound = layout.getPoint("BottomMainA (eastbound)");
+
+        assertTrue(westbound != null && westbound.isDestination() && eastbound != null && eastbound.isDestination(),
+            "precondition: BottomMainA does not have two copies a train may stand on here");
+
+        TailCrossedPrompt.answerForTests(TailCrossedPrompt.NOT_KNOWN);
+
+        try
+        {
+            // FACING WEST, where the dialog will be opened on the copy facing east.
+            assertTrue(layout.moveLocomotive(OUR_TRAIN, westbound.getName(), false), "could not stand the train westbound");
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.placeLocomotive(mainA, OUR_TRAIN);
+                session.setFacing(mainA, Side.W);
+
+                org.traincontrol.gui.GraphLocAssign edit =
+                    new org.traincontrol.gui.GraphLocAssign(ui, eastbound, false, session, layout);
+
+                try
+                {
+                    Field combo = org.traincontrol.gui.GraphLocAssign.class.getDeclaredField("locAssign");
+
+                    combo.setAccessible(true);
+
+                    ((javax.swing.JComboBox<?>) combo.get(edit)).setSelectedItem(OUR_TRAIN);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+
+                org.traincontrol.gui.GraphLocAssign.commitAndRecord(edit);
+            });
+
+            Point standing = null;
+
+            for (Point point : layout.getPoints())
+            {
+                if (point.getCurrentLocomotive() != null && OUR_TRAIN.equals(point.getCurrentLocomotive().getName()))
+                {
+                    standing = point;
+                }
+            }
+
+            assertNotNull(standing, "the dialog took the train off the railway");
+
+            assertEquals(session.getFacing(mainA), session.facingsFor(mainA).get(standing.getName()), "the dialog recorded"
+                + " the train facing " + session.getFacing(mainA) + " and stood it on " + standing.getName() + ", which"
+                + " faces " + session.facingsFor(mainA).get(standing.getName()) + " - the record and the railway disagree"
+                + " about which way it points (GUI-B3)");
+        }
+        finally
+        {
+            TailCrossedPrompt.answerForTests(null);
+
+            for (Point point : layout.getPoints())
+            {
+                if (point.getCurrentLocomotive() != null && OUR_TRAIN.equals(point.getCurrentLocomotive().getName()))
+                {
+                    layout.moveLocomotive(null, point.getName(), true);
+                }
+            }
+        }
+    }
+
     /** The copies of a square a train may stand on, with the way each faces. */
     private static Map<String, Side> placeableCopiesOf(TileKey square)
     {

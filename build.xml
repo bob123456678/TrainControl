@@ -466,6 +466,7 @@
         <test-one-class class="testTheGuardWindowIsNotTooWide"/>
         <test-one-class class="testARunKeepsItsOwnState"/>
         <test-one-class class="testAnUnlockGivesBackOnlyWhatItHolds"/>
+        <test-one-class class="testATrainIsPutOnlyWhereItCanStart"/>
         <test-one-class class="testRouteInventory"/>
         <test-one-class class="testRoutePicking"/>
         <test-one-class class="testRouteReachesTheRails"/>
