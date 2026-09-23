@@ -7363,6 +7363,39 @@ public class Layout
                 if (neighbours.size() != 1) break;
             }
 
+            // THE SQUARE IT STANDS ON, WHERE THE RAIL TAKEN DOES NOT ARRIVE AT IT (AUT-C3).
+            //
+            // OB-278 spends the standing square first, and the walk does that by reading the first hop's places from
+            // the end - which holds the standing square only when the hop ARRIVES at this copy.  A train turned where
+            // it stands and re-stood on the other arrival's copy - the idle drain does that after a turn at a square
+            // trains may turn at, putting back the side it came in by - has no rail arriving by that side, so the walk
+            // takes the one running away, whose places begin after the square: the square was never spent, and the tail
+            // reached one square further back than the train lies.  So the square is read off a rail that does arrive
+            // here, claimed, and spent, before anything behind it is.
+            if (here == standingHere && segment.getEnd() != here)
+            {
+                for (Edge arriving : this.getIncomingEdges(here))
+                {
+                    if (arriving.getEnd() != here) continue;
+
+                    List<String> in = arriving.getPlaceIds();
+                    List<Integer> inSpans = arriving.getPlaceLengths();
+
+                    if (in.isEmpty() || in.size() != inSpans.size()) continue;
+
+                    String own = in.get(in.size() - 1);
+
+                    places.put(own, loc);
+
+                    if (spent.add(own)) remaining -= Math.max(0, inSpans.get(inSpans.size() - 1));
+
+                    break;
+                }
+
+                // A train no longer than its own square lies on nothing behind it.
+                if (remaining <= 0) break;
+            }
+
             // THE MEASUREMENT RULE.  Nothing can be said about an unmeasured segment, including
             // how much of the train would still be left after it.
             //
