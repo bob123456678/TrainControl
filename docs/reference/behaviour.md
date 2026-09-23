@@ -1634,6 +1634,18 @@ not fight: the post-processor only ever sees what the focus owner did not want.
 
 - Return Home stages every locomotive that has a home, as one plan.
 - One locomotive has one home; assigning a home takes it away from wherever it was.
+- **A home has a facing, and Return Home brings the train back in it** (Adam, 2026-09-23, OB-282: *"yes, it should
+  accomplish the facing.  but it's also reasonable to expect that the input facings are ones realistic on the
+  layout.  we shouldn't allow an impossible facing to be saved."*). The facing is **the way the train is facing
+  when the home is set** (*"Direction it is facing when home is set"*); a home given to a train standing elsewhere
+  **asks** which way it should face (*"prompt the user for the direction"*), offering only the facings of copies
+  trains may arrive at. The setup keeps it as `homeFacing`, the build puts the home on the copy facing that way and
+  marks it, and a home set on the running diagram is held to the copy it was set on. Return Home then counts a train
+  home only on that copy or its turning twin - the same arrival - where MT-165 counted any copy of the square, which
+  on a square with two platforms facing opposite ways brought trains home turned round. A home with no facing -
+  an old setup, or a copy no train may arrive at - is still the square, either way.
+  `core.testATrainComesHomeFacingTheWayItWasHomed`,
+  `core.testAutonomyDiagramSession.testAHomeRemembersTheWayItsTrainWasFacing`.
 - It refuses an inactive **start** (see §1) and obeys every length rule in §5.
 - It **does** read the occupancy restrictions of §1, in both halves, since Adam's ruling of
   2026-09-10 that they bind every tier. **Planning** asks them against the occupancy the plan has

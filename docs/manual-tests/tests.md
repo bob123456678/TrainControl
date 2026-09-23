@@ -69,8 +69,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-483](#mt-483) | 2026-09-23 | A cut train is pasted facing the way it would arrive | fixed unvalidated | OB-270 |
 | [MT-484](#mt-484) | 2026-09-23 | Segment Length takes a 0 as an answer, and has a Clear button | fixed unvalidated | FR-097 |
 | [MT-485](#mt-485) | 2026-09-23 | The five route tiles' lengths are folded into the track beside them | fixed unvalidated | OB-281 |
+| [MT-486](#mt-486) | 2026-09-23 | Return Home brings a train back facing the way its home was set | fixed unvalidated | OB-282 |
 
-Everything else - 443 of 485 - needs nothing from you unless the area changes again:
+Everything else - 443 of 486 - needs nothing from you unless the area changes again:
 392 **fixed validated** and 51 **superseded**.
 
 ---
@@ -24870,5 +24871,42 @@ those five) - each red under its own mutation.
 I can't see to test this when assigning individual tiles, and I already mass assigned lengths everywhere.
 
 *Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-486"></a>
+
+### MT-486 - 2026-09-23 - Return Home brings a train back facing the way its home was set
+
+**Disposition:** fixed unvalidated
+**From:** OB-282
+
+**Written:** 2026-09-23
+
+Your words, 2026-09-23: *"yes, it should accomplish the facing"*, *"Direction it is facing when home is set"*, and for
+a train standing somewhere else, *"prompt the user for the direction."*
+
+**What was wrong.**  Return Home counted a train on either copy of its home square as home.  On a platform both
+directions can stop at, that brought trains back turned round.
+
+**Steps**
+
+1. Stand a train on a platform that can be stopped at facing either way, facing one way, and set it as the train's home.
+2. Drive it away, then press Return Home.
+3. In the autonomy editor, set a home for a train standing somewhere else, on a square that can be faced two ways.
+
+**Expected**
+
+- Step 2: it comes back facing the way it faced when you set the home.
+- Step 3: you are asked which way it should face there, offered only the ways a train can stand; closing the question
+  sets no home.
+
+With arrivals from the east barred at BottomMainA, your railway has few squares that hold two facings; step 1 needs one
+that does, or a bar lifted for the test.
+
+*What this is:* `core.testATrainComesHomeFacingTheWayItWasHomed` (a real Return Home on your frozen railway, with
+BottomMainA's east bar lifted: homed westbound, it comes back westbound) and `core.testAutonomyDiagramSession` (the home
+remembers its facing through a build and a capture, and no impossible facing is saved) - each red under its own
+mutation.  The question in step 3 is what only you can check.
 
 ---
