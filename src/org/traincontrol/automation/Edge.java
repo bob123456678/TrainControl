@@ -423,6 +423,32 @@ public class Edge
     }
 
     /**
+     * The places answered 0 on purpose (Adam, 2026-09-23: *"stop listing answered zeros as missing"*).
+     *
+     * They measure 0 and every rule reads them as unmeasured - the walk still claims them for nothing - but a refusal
+     * that counts the squares with no length leaves them out: the operator has already answered them.
+     */
+    private java.util.Set<String> answeredPlaces = Collections.emptySet();
+
+    /**
+     * @param ids the places answered 0 on purpose
+     */
+    public void setAnsweredPlaces(java.util.Collection<String> ids)
+    {
+        this.answeredPlaces = ids == null ? Collections.<String>emptySet()
+            : Collections.unmodifiableSet(new java.util.LinkedHashSet<>(ids));
+    }
+
+    /**
+     * @param id a place identifier
+     * @return whether that place's 0 was answered on purpose
+     */
+    public boolean isPlaceAnswered(String id)
+    {
+        return id != null && this.answeredPlaces.contains(id);
+    }
+
+    /**
      * Returns the edge length
      * @return 
      */
@@ -768,6 +794,8 @@ public class Edge
 
                 place.put("at", this.placeIds.get(i));
                 place.put("length", this.placeLengths.get(i));
+
+                if (this.answeredPlaces.contains(this.placeIds.get(i))) place.put("answered", true);
 
                 placeList.add(place);
             }

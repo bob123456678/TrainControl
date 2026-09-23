@@ -1183,6 +1183,10 @@ public class AutonomyBuilder
                 at.put("at", place.getId());
                 at.put("length", place.getLength());
 
+                // AND WHETHER ITS 0 WAS ANSWERED ON PURPOSE, so the runtime does not call it missing (Adam,
+                // 2026-09-23: "stop listing answered zeros as missing").  Written only where true.
+                if (place.isAnswered()) at.put("answered", true);
+
                 places.put(at);
             }
 

@@ -3168,6 +3168,38 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A stretch answered 0 on purpose is not reported as a reversal without a length (Adam, 2026-09-23: *"stop
+     * listing answered zeros as missing"*).
+     *
+     * The same railway as the claim below, at its last step - measured elsewhere, nothing on this run-in - where the
+     * notice fires.  Every square of the run-in answered 0 then silences it; the rules still read those squares as
+     * unmeasured, so the guard stays exactly as blind as the notice used to say.
+     */
+    @Test
+    public void testAReversalWhoseStretchIsAnsweredZeroIsNotAsked() throws IOException
+    {
+        session.open(Arrays.asList(runOfTrack()));
+        session.initialize("Lengths");
+
+        TileKey turns = new TileKey("main", 1, 1);
+
+        session.setStation(turns, true);
+        session.setPointProperty(turns, "canReverse", Boolean.TRUE);
+        session.setTileLength(new TileKey("main", 4, 1), 7);
+        session.rebuild();
+
+        assertTrue(session.reversalsWithoutLength().containsKey(turns),
+            "CONTROL: nothing on the run-in is measured and the notice did not fire, so the claim below would pass by"
+            + " the notice never firing");
+
+        for (int x = 1; x <= 3; x++) session.getStore().answerTileLengthZero(new TileKey("main", x, 1));
+
+        assertFalse(session.reversalsWithoutLength().containsKey(turns),
+            "every square of the run-in was answered 0 on purpose and the editor still asks for its length: "
+            + session.reversalsWithoutLength());
+    }
+
+    /**
      * The editor asks for lengths where trains reverse - but only on a layout that measures track.
      *
      * Adam: "Add notices to the autonomy editor to add track lengths between stations and switches

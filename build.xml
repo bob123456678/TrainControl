@@ -279,6 +279,7 @@
         <test-one-class class="testTheArrivalHonoursTheAnswer"/>
         <test-one-class class="testAPasteDoesNotTurnTheTrainRound"/>
         <test-one-class class="testAStationsSizeIsAnAllowance"/>
+        <test-one-class class="testAnAnsweredZeroIsNotMissing"/>
         <test-one-class class="testWhatCountsAsAParkingSquare"/>
         <test-one-class class="testWhatHasAWayThrough"/>
         <test-one-class class="testAPastedTrainFacesTheWayTheOperatorChose"/>

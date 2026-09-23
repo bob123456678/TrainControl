@@ -9638,7 +9638,9 @@ public class Layout
             // same arithmetic as `walkOneTail`, which is what keeps a train this rule accepts from being
             // claimed over a road once it is parked.  The last place is the square being arrived at:
             // `placesAlong` orders them from the edge's start.
-            if (spans.get(n) == null || spans.get(n) <= 0) unmeasured++;
+            // AN ANSWERED 0 IS NOT COUNTED AS MISSING (Adam, 2026-09-23: "stop listing answered zeros as missing"):
+            // it is still read as nothing, and claimed, but the operator has already answered it.
+            if ((spans.get(n) == null || spans.get(n) <= 0) && !approach.isPlaceAnswered(ids.get(n))) unmeasured++;
 
             left -= spans.get(n) == null ? 0 : Math.max(0, spans.get(n));
 
@@ -11821,6 +11823,8 @@ public class Layout
 
                     List<Integer> spans = new LinkedList<>();
 
+                    List<String> answered = new LinkedList<>();
+
                     JSONArray places = edge.getJSONArray("places");
 
                     // ALL OF THEM OR NONE OF THEM (SVX-C9).
@@ -11856,11 +11860,15 @@ public class Layout
                         ids.add(place.getString("at"));
 
                         spans.add(Math.max(0, place.optInt("length", 0)));
+
+                        if (place.optBoolean("answered", false)) answered.add(place.getString("at"));
                     }
 
                     if (whole)
                     {
                         e.setPlaces(ids, spans);
+
+                        e.setAnsweredPlaces(answered);
                     }
                     else
                     {

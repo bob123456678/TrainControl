@@ -1573,6 +1573,74 @@ public class testMassAssignLengths
     }
 
     /**
+     * Segment Length's 0 is a deliberate 0, and Clear takes the length away (Adam, 2026-09-23).
+     *
+     * Asked whether a 0 typed into Segment Length should go on clearing the length, now that a 0 answered in Mass
+     * Assign Lengths is kept as an answer (OB-274): *"no, add a clear button."*  So 0 records every square of the run
+     * as answered - Mass Assign Lengths and Unmeasured Track leave them alone, and every length rule still reads them
+     * as unmeasured - and clearing is a button of its own, which also answers an empty field.
+     *
+     * MUTATION: `applyLengthAnswer` writing 0 as a plain length again leaves the run unanswered; Clear answering 0
+     * leaves it answered.
+     */
+    @Test
+    public void testSegmentLengthZeroIsAnAnswerAndClearTakesItAway() throws IOException
+    {
+        openARunOfTwoPlainSquares();
+
+        AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+        TileKey[] run = { key(2, 1), key(3, 1) };
+
+        panel.applyLengthAnswer(key(3, 1), 0);
+
+        for (TileKey square : run)
+        {
+            assertTrue(session.getStore().isTileLengthAnswered(square),
+                "Segment Length was given 0 on the run and " + square + " is not recorded as answered - so Mass Assign"
+                + " Lengths offers it again, and the 0 typed on purpose reads as a length never given");
+
+            assertEquals(session.getStore().getTileLength(square), 0,
+                "an answered 0 is still a 0: " + square + " measures " + session.getStore().getTileLength(square));
+        }
+
+        panel.applyLengthAnswer(key(3, 1), null);
+
+        for (TileKey square : run)
+        {
+            assertFalse(session.getStore().isTileLengthAnswered(square),
+                "Clear left " + square + " answered, so there is no way back from a deliberate 0 to \"not given\"");
+        }
+    }
+
+    /**
+     * An answered 0 is not reported as a berth's missing length (Adam, 2026-09-23: *"stop listing answered zeros as
+     * missing"*).
+     *
+     * The half-measured notice counts the squares on a berth's approach that have no length; a square answered 0 has
+     * been given one on purpose, and the rules still read it as 0.  CONTROL first: unanswered, it is reported.
+     */
+    @Test
+    public void testAnAnsweredZeroDoesNotMakeABerthHalfMeasured() throws IOException
+    {
+        openARouteTileInARun();
+
+        session.setAutoDestination(key(5, 1), false);
+
+        session.getStore().setTileLength(key(2, 1), 2);
+
+        assertTrue(session.stationsWithAHalfMeasuredApproach().containsKey(key(5, 1)),
+            "CONTROL: with the straight at 4,1 unmeasured the berth is not reported half measured, so the check below"
+            + " could pass by never firing at all");
+
+        session.getStore().answerTileLengthZero(key(4, 1));
+
+        assertFalse(session.stationsWithAHalfMeasuredApproach().containsKey(key(5, 1)),
+            "the straight at 4,1 was answered 0 on purpose and the berth is still reported half measured - an answered"
+            + " zero listed as missing");
+    }
+
+    /**
      * 1,1 sensor - 2,1 - 3,1 - 4,1 station: a run of two plain squares between two sensors.
      */
     private void openARunOfTwoPlainSquares() throws IOException

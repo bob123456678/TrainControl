@@ -6874,25 +6874,68 @@ public class AutonomyEditorPanel extends JPanel
             public void ancestorRemoved(javax.swing.event.AncestorEvent event) { }
         });
 
-        int chose = JOptionPane.showConfirmDialog(owner(),
+        // OK, CLEAR, CANCEL (Adam, 2026-09-23: "no, add a clear button").  A 0 typed here is an answer now, so taking
+        // a length away needs a door of its own.
+        Object ok = javax.swing.UIManager.getString("OptionPane.okButtonText");
+        Object clear = I18n.t("autosetup.ui.optionClearLength");
+        Object cancel = javax.swing.UIManager.getString("OptionPane.cancelButtonText");
+
+        int chose = JOptionPane.showOptionDialog(owner(),
             new Object[] {I18n.t("autosetup.ui.promptTileLength"), field},
             I18n.t("autosetup.ui.menuSetLength"),
-            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+            JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, new Object[] {ok, clear, cancel}, ok);
 
-        if (chose != JOptionPane.OK_OPTION) return;
+        if (chose == 1)
+        {
+            applyLengthAnswer(tile, null);
+
+            return;
+        }
+
+        if (chose != 0) return;
 
         String entered = field.getText().trim();
 
-        // Cleared and submitted means none (OB-043).  Adam: "if the segment length is cleared and
-        // submitted, treat it as 0."  Emptying a field is how somebody says "I do not want this any
-        // more", and 0 is exactly what "no length" is stored as everywhere else here.
-        int length = entered.isEmpty() ? 0 : Integer.parseInt(entered);
+        // Emptied and submitted still means none (OB-043).  Adam: "if the segment length is cleared and submitted,
+        // treat it as 0" - which was "no length" when 0 was; it is the Clear button's answer now that 0 is kept.
+        applyLengthAnswer(tile, entered.isEmpty() ? null : Integer.valueOf(entered));
+    }
+
+    /**
+     * What Segment Length does with an answer: a length for the run, or for each selected square; null clears it.
+     *
+     * **0 is an answer, and clearing is null** (Adam, 2026-09-23: *"no, add a clear button"*).  A 0 typed here records
+     * the run - or each selected square - as answered 0, as Mass Assign Lengths does (OB-274): not offered again, and
+     * read as unmeasured by every rule.  Until then a 0 here cleared the length, which the Clear button does now.
+     *
+     * The decision, apart from the dialog that asks for it, so it can be driven without a display.
+     *
+     * @param tile the square the dialog was opened on
+     * @param length the length typed, or null to clear
+     */
+    public void applyLengthAnswer(TileKey tile, Integer length)
+    {
+        Set<TileKey> targets = selection.isEmpty()
+            ? new LinkedHashSet<>(java.util.Arrays.asList(tile)) : new LinkedHashSet<>(selection);
+
+        if (length != null && length == 0)
+        {
+            session.answerTileLengthsZero(selection.isEmpty() ? runTilesOf(tile) : targets);
+
+            selection.clear();
+
+            setupChanged();
+
+            return;
+        }
+
+        int typed = length == null ? 0 : length;
 
         if (selection.isEmpty())
         {
             // ONE SQUARE SPEAKS FOR THE RUN, which means the run measures what was typed (SET-B3).  This
             // announces the change itself, so the setupChanged below is for the selection arm.
-            setRunLength(tile, length);
+            setRunLength(tile, typed);
             selection.clear();
 
             return;
@@ -6903,7 +6946,7 @@ public class AutonomyEditorPanel extends JPanel
             // number to each of them, and a run in the selection is reached through the leader that is in it.
             for (TileKey target : targets)
             {
-                session.setTileLength(target, length);
+                session.setTileLength(target, typed);
             }
         }
 

@@ -4074,6 +4074,12 @@ public class AutonomyCompanionStore
             {
                 return AutonomyCompanionStore.this.getTileLength(tile);
             }
+
+            @Override
+            public boolean isTileLengthAnswered(TileKey tile)
+            {
+                return AutonomyCompanionStore.this.isTileLengthAnswered(tile);
+            }
         };
     }
 

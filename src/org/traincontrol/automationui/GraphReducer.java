@@ -285,6 +285,18 @@ public class GraphReducer
          * @return the length assigned to this tile; 0 by default, which disables length accounting
          */
         int getTileLength(TileKey tile);
+
+        /**
+         * Whether this tile's 0 was answered on purpose (OB-274) - read as unmeasured by every rule, and not listed
+         * as missing (Adam, 2026-09-23).
+         *
+         * @param tile the square
+         * @return true when its length was answered 0; false by default
+         */
+        default boolean isTileLengthAnswered(TileKey tile)
+        {
+            return false;
+        }
     }
 
     /**
@@ -1497,10 +1509,27 @@ public class GraphReducer
 
         private final int length;
 
+        /** Measures 0 because it was answered 0 on purpose, rather than because nobody has measured it */
+        private final boolean answered;
+
         Place(String id, int length)
+        {
+            this(id, length, false);
+        }
+
+        Place(String id, int length, boolean answered)
         {
             this.id = id;
             this.length = length;
+            this.answered = answered;
+        }
+
+        /**
+         * @return whether this place measures 0 because it was answered 0 on purpose (Adam, 2026-09-23)
+         */
+        public boolean isAnswered()
+        {
+            return this.answered;
         }
 
         /**
@@ -1554,13 +1583,19 @@ public class GraphReducer
         {
             for (String id : locationsOf(step))
             {
-                out.add(new Place(id, lengthOf(step.getTile())));
+                out.add(new Place(id, lengthOf(step.getTile()), answeredAtZero(step.getTile())));
             }
         }
 
-        out.add(new Place(edge.getEnd().toString(), lengthOf(edge.getEnd())));
+        out.add(new Place(edge.getEnd().toString(), lengthOf(edge.getEnd()), answeredAtZero(edge.getEnd())));
 
         return out;
+    }
+
+    /** Whether a square measures 0 because it was answered 0, which the runtime is told so as not to call it missing */
+    private boolean answeredAtZero(TileKey tile)
+    {
+        return lengthOf(tile) == 0 && authored.isTileLengthAnswered(tile);
     }
 
     private void lock(ReducedEdge a, ReducedEdge b)

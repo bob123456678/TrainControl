@@ -2750,10 +2750,18 @@ public class AutonomySession
 
                 anApproachExists = true;
 
-                missing.addAll(reducer.unmeasuredAfterTheLastSwitch(arriving));
+                // AN ANSWERED 0 IS NOT MISSING (Adam, 2026-09-23: "stop listing answered zeros as missing").  The
+                // guard still reads it as nothing; the operator has answered it, so it is not asked for again.
+                for (TileKey unmeasured : reducer.unmeasuredAfterTheLastSwitch(arriving))
+                {
+                    if (!store.isTileLengthAnswered(unmeasured)) missing.add(unmeasured);
+                }
             }
 
-            if (!anApproachExists && store.getTileLength(tile) <= 0) missing.add(tile);
+            if (!anApproachExists && store.getTileLength(tile) <= 0 && !store.isTileLengthAnswered(tile))
+            {
+                missing.add(tile);
+            }
 
             // A SET, so a square reached by two approaches is counted once - the notice says how many
             // squares need a number, and the same square twice is one square.
@@ -7565,6 +7573,28 @@ public class AutonomySession
     }
 
     /**
+     * Answers these squares 0 on purpose, replacing any length they had, and re-derives once (Adam, 2026-09-23).
+     *
+     * What Segment Length's 0 means since *"no, add a clear button"*: a 0 typed there is the same answer a 0 in Mass
+     * Assign Lengths is (OB-274) - kept, not offered again, and read as unmeasured by every rule.  Clearing a length is
+     * `setTileLength(tile, 0)`, which removes the answer as well.
+     *
+     * @param tiles the squares
+     */
+    public void answerTileLengthsZero(java.util.Collection<TileKey> tiles)
+    {
+        if (tiles == null || tiles.isEmpty()) return;
+
+        for (TileKey tile : tiles)
+        {
+            store.setTileLength(tile, 0);
+            store.answerTileLengthZero(tile);
+        }
+
+        touched();
+    }
+
+    /**
      * Writes several squares' lengths and re-derives once (AUS-C1).
      *
      * `touched()` is a full builder construction - a new graph, a new reduction, a new station index - and the
@@ -8629,7 +8659,9 @@ public class AutonomySession
                     if (getGraph() != null && takesNoLength(step.getTile())) continue;
 
                     if (store.getTileLength(step.getTile()) > 0) anyMeasured = true;
-                    else unmeasured++;
+
+                    // AN ANSWERED 0 IS NOT MISSING (Adam, 2026-09-23: "stop listing answered zeros as missing").
+                    else if (!store.isTileLengthAnswered(step.getTile())) unmeasured++;
                 }
 
                 if (anyMeasured && unmeasured > worst) worst = unmeasured;
