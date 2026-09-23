@@ -2673,6 +2673,92 @@ one question for OB-233 - two lists that must agree is how that defect happened.
 
 Related: MT-454 and MT-459 are the hands-on tests for this walk, and both are in his retest queue.
 
+### OB-274 - 2026-09-23 - Mass Assign Lengths cannot accept a deliberate length of 0, so a genuinely zero piece reads as skipped
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-09-23  
+**Filed:** 2026-09-23  
+
+Adam, 2026-09-23: *"in the mass assign lengths, we need to allow a length of 0 as a length that is set
+deliberately, i.e. for adjacent tracks.  same meaning to the model, but this will allow everything to
+get assigned without what appears to be a skip."*
+
+**Today 0 and "not set" are the same value, and that is why it looks like a skip.**
+`AutonomyCompanionStore.setTileLength` reads:
+
+    if (length <= 0) tileLengths.remove(tile);
+
+so writing 0 ERASES the entry, `getTileLength` answers 0 for an absent one, and every "still needs a
+length" query asks `<= 0` - seven of them.  `assignStretchLength` refuses `wholeLength < 1` outright and
+the prompt says so: *"0 is the same as no length at all.  Enter at least 1."*  So a piece whose real
+length IS zero - two sensors with no track between them, his adjacent tracks - cannot be answered.  It
+stays in the unmeasured list for ever, and the walk keeps offering it.
+
+**What he is asking for is a THIRD state, and the model already half has one.**  `behaviour.md` 5b's
+rule is *"Unmeasured is unknown, not zero"* - which is exactly right and is the reason 0 cannot simply
+be treated as measured today.  A deliberate 0 is neither: it is **known to be zero**.  So:
+
+- absent  -> unknown, ask for it;
+- 0       -> known, and contributes nothing;
+- above 0 -> known, and contributes that.
+
+**And it makes the railway MORE measured, not less.**  A piece that is genuinely 0 currently reads as
+unknown, so the room rule, the tail walk and the atomic-routes gate all treat it as indeterminate and
+refuse things they need not.  Answering it truthfully lets them proceed - which is the opposite of the
+refusing direction, so the change wants care rather than being waved through.
+
+**What it touches.**  The store's write (stop erasing on 0), the JSON round trip (a 0 must survive a
+save and a load, or the answer is lost on restart), the seven `<= 0` readers - each has to be read for
+whether it means "unknown" or "contributes nothing", and they are not all the same - and the prompt's
+refusal, which becomes a legal answer.  `behaviour.md` 5a's sentence *"the least a piece can be given is
+1"* is his own earlier ruling and is what this reverses; it should say so rather than be quietly
+rewritten.
+
+**Also affects the switch and crossing steps**, which refuse `length < 1` the same way - and two
+switches back to back are the same case as his adjacent tracks.
+
+Related: `OB-273`, which is the other half of how a piece's length is shared out.  MT-454 and MT-459 are
+the hands-on tests for this walk.
+
+### OB-275 - 2026-09-23 - were lengths meant to be consolidated onto tiles with arrows? the record says an even share
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-09-23  
+**Filed:** 2026-09-23  
+
+Adam, 2026-09-23: *"I thought we were consolidating lengths on tiles with arrows?"*
+
+**I can find no such ruling in the record, and the decision that IS recorded is the opposite.**  Asked
+and answered rather than assumed:
+
+- `FR-089`, his own instruction of 2026-09-16: *"per stretch, every relevant square a rule reads"*, and
+  its entry says *"One whole length is typed and shared evenly over the squares that have none."*
+- Revised the same day after review MAL to *"Every leg, cut at switches"* and *"One length for all
+  switches"*, with `behaviour.md` 5a carrying the share rule: the share is even, and any unit left over
+  goes first to a square a train stands on, *"whose length its own tail never spends, which is the
+  refusing direction"* (MAL-B2).
+- `assignStretchLength` implements exactly that - an even share with the remainder to stations and
+  turn-round squares first.
+
+Nothing in `issues.md`, `tests.md` or `behaviour.md` mentions consolidating a piece's length onto a tile
+because it carries an arrow.  So this is either a decision taken in conversation and never written
+down - which is worth capturing here either way - or a memory of the arrow work of 2026-09-22, where
+directional arrows and lengths were discussed together on permanent turnouts (`behaviour.md` 5e) but
+lengths were not part of what changed.
+
+**IT MAY BE THE SAME REQUEST AS `OB-273` ARRIVING TWICE, and if so one answer settles both.**  There he
+said of a four-tile stretch: *"i'd prefer one to have length 2, and two others length 1, **or just 1 of
+length 4**."*  That second option IS consolidation - the whole of a piece's length on one square - and
+the tile carrying the arrow is a defensible choice of which square, because the arrow marks the
+direction the piece is read in.
+
+**What would settle it in one line from him:** is the wanted behaviour (a) an even share, as built; (b)
+the whole length on one square, chosen as the one with an arrow; or (c) the whole length on one square
+chosen some other way?  Each is a small change to one method, and each reads differently to the room and
+tail rules - a consolidated length sits on ONE square, so a train resting anywhere else on the piece
+spends nothing there, which is the direction that admits rather than refuses.  That last point is why
+this needs his word rather than a guess.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
