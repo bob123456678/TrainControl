@@ -1493,6 +1493,79 @@ public class AutonomySession
     }
 
     /**
+     * Each copy of a square a train may be put down on, with the way it faces (OB-270, GUI-B1).
+     *
+     * `facingsFor` names every copy, and a square's copies are not all destinations: a copy trains may not arrive at is
+     * built as no station, and a train stood there is one autonomy will not start - *"It is standing on {0}, which is
+     * not a station."*  So a heading only such a copy holds is one no placement may give (Adam, 2026-09-23: *"we
+     * shouldn't allow an impossible facing to be saved"*).  One method for every door that puts a train down and records
+     * which way it faces - the paste, the editor's Place, the Place Locomotive dialog - where there were three spellings
+     * and two of them without the test.
+     *
+     * With no running layout there is nothing to ask a copy, and every copy is returned, which is what each door did
+     * before.
+     *
+     * @param square the square
+     * @param running the running layout, or null
+     * @return the placeable copies by name, in the build's order
+     */
+    public Map<String, Side> placeableFacingsFor(TileKey square, org.traincontrol.automation.Layout running)
+    {
+        Map<String, Side> all = square == null ? new LinkedHashMap<String, Side>() : facingsFor(square);
+
+        if (running == null) return all;
+
+        Map<String, Side> out = new LinkedHashMap<>();
+
+        for (Map.Entry<String, Side> copy : all.entrySet())
+        {
+            org.traincontrol.automation.Point point = running.getPoint(copy.getKey());
+
+            if (point != null && point.isDestination()) out.put(copy.getKey(), copy.getValue());
+        }
+
+        return out;
+    }
+
+    /**
+     * The copy of a square a train facing this way stands on - one it may be put down on, preferring one that does not
+     * turn it (MT-368, MT-394, GUI-B1).
+     *
+     * More than one copy can face the same way (a plain copy and its turning twin); the plain one is where a train could
+     * have come to rest facing so.  A copy trains may not arrive at is never the answer: measured on BottomMainB, the
+     * plain westbound copy is no station and the only copy a train can stand on facing west is the turning one - and at
+     * BottomMainPost the FIRST copy facing south is one no train may arrive at, which is where the Facing door and the
+     * idle drain after a turn used to put the train.
+     *
+     * @param square the square
+     * @param facing the heading asked for
+     * @param running the running layout
+     * @return that copy on the running layout, or null when no copy a train may stand on faces that way
+     */
+    public org.traincontrol.automation.Point copyFacing(TileKey square, Side facing,
+        org.traincontrol.automation.Layout running)
+    {
+        if (square == null || facing == null || running == null) return null;
+
+        org.traincontrol.automation.Point turning = null;
+
+        for (Map.Entry<String, Side> copy : placeableFacingsFor(square, running).entrySet())
+        {
+            if (copy.getValue() != facing) continue;
+
+            org.traincontrol.automation.Point candidate = running.getPoint(copy.getKey());
+
+            if (candidate == null) continue;
+
+            if (!candidate.isTerminus() && !candidate.isReversing()) return candidate;
+
+            if (turning == null) turning = candidate;
+        }
+
+        return turning;
+    }
+
+    /**
      * Stands a locomotive on the copy of its square that faces a given way (`DIR-B3`).
      *
      * A square is several Points once it is split - one per facing a train can hold there - and the
@@ -1521,7 +1594,11 @@ public class AutonomySession
 
         org.traincontrol.base.Locomotive train = null;
 
-        org.traincontrol.automation.Point onto = null;
+        // A COPY IT MAY BE STOOD ON, facing that way (GUI-B1).  This took the first copy facing that way, and at
+        // BottomMainPost - which trains may turn at, with arrivals from the north barred - the first copy facing south is
+        // one no train may arrive at: a train that came in from the south and turned was moved onto it by the idle drain,
+        // with no gesture at all, and autonomy would not start it from there.
+        org.traincontrol.automation.Point onto = copyFacing(tile, facing, running);
 
         org.traincontrol.automation.Point from = null;
 
@@ -1534,8 +1611,6 @@ public class AutonomySession
             if (point == null) continue;
 
             here.add(point);
-
-            if (facing == copy.getValue() && onto == null) onto = point;
 
             if (point.getCurrentLocomotive() != null
                 && locomotive.equals(point.getCurrentLocomotive().getName()))

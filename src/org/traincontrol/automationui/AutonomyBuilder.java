@@ -738,16 +738,33 @@ public class AutonomyBuilder
         // through to the first, and put the locomotive on the copy pointing the opposite way.  On a dead
         // end that copy is the one with no way out; elsewhere its first move is the backwards edge this
         // whole split exists to forbid.  Either way the next capture then wrote the wrong facing back.
+        // ONLY A COPY TRAINS MAY ARRIVE AT (GUI-B1), as `homeCopy` asks at every step.  A copy that is not is built as no
+        // station, and a train stood there is one autonomy will not start - so a facing only such a copy holds, saved by a
+        // door or by an older setup, put the train where nothing could move it.
         for (int copy = 0; copy < nodes.size(); copy++)
         {
             // the plain copy in preference to the turning one: a train standing at a place it MAY turn
             // round has not turned round yet
-            if (facingOf(nodes.get(copy)) == facing && !nodes.get(copy).reverse) return copy;
+            if (facingOf(nodes.get(copy)) == facing && !nodes.get(copy).reverse && arrivalAllowed(nodes.get(copy)))
+            {
+                return copy;
+            }
         }
 
         for (int copy = 0; copy < nodes.size(); copy++)
         {
-            if (facingOf(nodes.get(copy)) == facing) return copy;
+            if (facingOf(nodes.get(copy)) == facing && arrivalAllowed(nodes.get(copy))) return copy;
+        }
+
+        // AND WHERE NO COPY TRAINS MAY ARRIVE AT FACES THAT WAY, one they may - the facing is one no train can stand in.
+        for (int copy = 0; copy < nodes.size(); copy++)
+        {
+            if (!nodes.get(copy).reverse && arrivalAllowed(nodes.get(copy))) return copy;
+        }
+
+        for (int copy = 0; copy < nodes.size(); copy++)
+        {
+            if (arrivalAllowed(nodes.get(copy))) return copy;
         }
 
         return 0;

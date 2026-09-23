@@ -301,6 +301,18 @@ public class testAPassingTrainMayStandAcrossThePoints
     @Test
     public void testTheRoadIsFollowedAfterTheTrainIsTurned() throws Exception
     {
+        // BOTH LANES OF BOTTOMMAINA ONES A TRAIN MAY STAND ON, as at `2958fcf3` (GUI-B1).  The turn stands the train on
+        // the other lane's copy, and with arrivals from the east barred - Adam's edit of the same day - that copy is no
+        // station, and a train is never stood where autonomy could not start it.  This claim is about the road after a
+        // turn, which needs a turn that can happen.
+        TileKey mainASquare = scenario.tile("1 - Main", 20, 12);
+
+        assertEquals(scenario.getSession().getStore().getPointName(mainASquare), "BottomMainA",
+            "precondition: 1 - Main 20,12 is not BottomMainA on this snapshot");
+
+        scenario.getSession().setBarredArrivals(mainASquare,
+            java.util.Collections.<org.traincontrol.automationui.TilePorts.Side>emptySet());
+
         Layout built = aThreeUnitTrainDrivenToBottomMainA();
 
         Point mainA = null;

@@ -213,8 +213,6 @@ public class GraphLocAssign extends javax.swing.JPanel
     {
         if (edit == null || edit.p == null) return;
 
-        final org.traincontrol.automation.Point point = edit.p;
-
         final org.traincontrol.automationui.AutonomySession session = edit.session;
 
         final org.traincontrol.automation.Layout layout = edit.running;
@@ -223,6 +221,29 @@ public class GraphLocAssign extends javax.swing.JPanel
 
         org.traincontrol.automationui.TilePorts.Side heading =
             arriving == null || session == null ? null : session.facingOf(arriving, layout);
+
+        // THE COPY IT WILL STAND ON, chosen by the rule the facing is recorded with (GUI-B3), as the paste chooses it
+        // (OB-270).  The copy IS the direction: this door moved the train onto whichever copy the menu was opened on -
+        // "any copy will do" on an empty square - and then recorded the train's old heading, so on a square with two
+        // copies facing opposite ways the setup said west while the train stood on the east copy, until the next load
+        // turned it round.
+        if (session != null && layout != null && session.getStationIndex() != null)
+        {
+            org.traincontrol.automationui.TileGraph.TileKey square = session.getStationIndex().squareOf(edit.p.getName());
+
+            if (square != null)
+            {
+                org.traincontrol.automationui.TilePorts.Side intended =
+                    org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
+                        session.placeableFacingsFor(square, layout), heading, edit.p.getName());
+
+                org.traincontrol.automation.Point facingThatWay = session.copyFacing(square, intended, layout);
+
+                if (facingThatWay != null) edit.p = facingThatWay;
+            }
+        }
+
+        final org.traincontrol.automation.Point point = edit.p;
 
         // WHAT THE TRAIN HAD ON THE RAILWAY, before the dialog's commit moves it (TLW-A1).
         org.traincontrol.automation.Point wasOn = null;
@@ -260,9 +281,10 @@ public class GraphLocAssign extends javax.swing.JPanel
         // than `arriving`: an assignment that did not take should not write a facing.
         if (point.getCurrentLocomotive() != null)
         {
+            // Over the copies it may be put down on (GUI-B1), the rule the copy above was chosen by.
             session.setFacing(tile,
                 org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
-                    session.facingsFor(tile), heading, point.getName()));
+                    session.placeableFacingsFor(tile, layout), heading, point.getName()));
 
             // AND WHERE ITS TAIL IS (REV9-B2, closed 2026-09-11).  See the note above: answered in the
             // dialog, written here, and into both stores because the walk that blocks track reads the

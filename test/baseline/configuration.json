@@ -8336,6 +8336,7 @@
       "copyFacing": "N"
     },
     {
+      "loc": {"name": "EN57-203"},
       "s88": 1015,
       "protectingSignal": "Signal 107",
       "name": "TopMainR1Inter (southbound)",
@@ -8348,7 +8349,6 @@
       "copyFacing": "E"
     },
     {
-      "loc": {"name": "EN57-203"},
       "s88": 1015,
       "protectingSignal": "Signal 107",
       "name": "TopMainR1Inter (westbound)",
@@ -8713,7 +8713,6 @@
       "priority": 1
     },
     {
-      "loc": {"name": "2-8-4 3505 SP"},
       "s88": 1022,
       "protectingSignal": "Signal 63",
       "name": "TopMainR1 (southbound)",
@@ -8726,6 +8725,7 @@
       "copyFacing": "S"
     },
     {
+      "loc": {"name": "2-8-4 3505 SP"},
       "s88": 1022,
       "protectingSignal": "Signal 63",
       "name": "TopMainR1 (northbound)",

@@ -7426,31 +7426,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return null;
         }
 
-        org.traincontrol.automation.Layout running = this.model.getAutoLayout();
-
-        org.traincontrol.automation.Point turning = null;
-
-        for (java.util.Map.Entry<String, org.traincontrol.automationui.TilePorts.Side> copy
-            : getAutonomySession().facingsFor(square).entrySet())
-        {
-            if (copy.getValue() != facing) continue;
-
-            org.traincontrol.automation.Point candidate = running.getPoint(copy.getKey());
-
-            // ONLY A COPY A TRAIN MAY BE PUT DOWN ON (MT-394, second half).
-            //
-            // `moveLocomotive` refuses a copy that is not a destination, and a square's copies are not
-            // all destinations.  Measured on BottomMainB: the plain westbound copy is not one, and the
-            // only copy a train can stand on facing west is the turning copy - so preferring the plain
-            // copy regardless made every west paste place nothing at all.
-            if (candidate == null || !candidate.isDestination()) continue;
-
-            if (!candidate.isTerminus() && !candidate.isReversing()) return candidate;
-
-            if (turning == null) turning = candidate;
-        }
-
-        return turning;
+        // The session's rule, which every door that puts a train down asks (GUI-B1): only a copy a train may be put down
+        // on (MT-394), the plain one before its turning twin.
+        return getAutonomySession().copyFacing(square, facing, this.model.getAutoLayout());
     }
 
     /**
@@ -8243,22 +8221,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> placeableFacings(
         org.traincontrol.automationui.TileGraph.TileKey square)
     {
-        java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> out = new java.util.LinkedHashMap<>();
-
         if (square == null || getAutonomySession() == null || this.model == null || !this.model.hasAutoLayout())
         {
-            return out;
+            return new java.util.LinkedHashMap<>();
         }
 
-        for (java.util.Map.Entry<String, org.traincontrol.automationui.TilePorts.Side> copy
-            : getAutonomySession().facingsFor(square).entrySet())
-        {
-            org.traincontrol.automation.Point point = this.model.getAutoLayout().getPoint(copy.getKey());
-
-            if (point != null && point.isDestination()) out.put(copy.getKey(), copy.getValue());
-        }
-
-        return out;
+        // The session's rule, which every door that puts a train down asks (GUI-B1).
+        return getAutonomySession().placeableFacingsFor(square, this.model.getAutoLayout());
     }
 
     /**
