@@ -143,7 +143,7 @@ public class testTheGreyAppearsAtIdleToo
 
     /** What the WINDOW held blocked after each gesture, with nobody asking it to recompute. */
     private static Set<TileKey> windowBlockedAtIdle;
-    private static Set<TileKey> wholeEdgesAtIdle;
+    private static Set<TileKey> claimedAtIdle;
     private static Set<TileKey> windowBlockedAfterLengthZero;
     private static Set<TileKey> windowBlockedAfterLengthBack;
     private static Set<TileKey> windowBlockedWithTilesUnmeasured;
@@ -244,8 +244,8 @@ public class testTheGreyAppearsAtIdleToo
 
         windowBlockedAtIdle = whatTheWindowHoldsBlocked();
 
-        // AND THE RAILWAY'S OWN WHOLE-EDGE ANSWER AT THE SAME MOMENT, for the OB-208 claim.
-        wholeEdgesAtIdle = everyTileOfEveryCoveredEdge();
+        // AND THE SQUARES THE RAILWAY CLAIMS AT THE SAME MOMENT, for the OB-280 claim.
+        claimedAtIdle = everySquareTheRailwayClaims();
 
         // AND AT IDLE WITH NOTHING STANDING ANYWHERE, which is the reference every "is this square
         // marked at all" question is asked against.  A length of zero is how this railway says "not
@@ -317,23 +317,22 @@ public class testTheGreyAppearsAtIdleToo
             + "manual send across this square is refused while the diagram paints it as free "
             + "(W7B-B1)");
 
-        // AND THE TRACK BEYOND WHAT THE TRAIN REACHES IS GREY TOO, AND NOT ORANGE (Adam, OB-208).
+        // AND THE TRACK BEYOND WHAT THE TRAIN REACHES IS NOT GREY (Adam, OB-280).
         //
         // `blockedSquare` is a tile of the same covered EDGE that the train does not reach - it carries
-        // no orange line, which is the test's own way of saying so.  From OB-207 until 2026-09-23 it was
-        // NOT washed: the grey was narrowed to the train's own squares, when it was the only mark and
-        // *"too much blocked for such a short train"* was a complaint about that one mark.  Asked again
-        // with the orange line there to say where the train is, Adam chose the whole stretch: *"orange
-        // shows where the train is, gray shows what's blocked."*  Routing refuses this edge whole - a
-        // path uses all of its own edges - so this square is refused, and is now drawn so.
+        // no orange line, which is the test's own way of saying so.  Adam, 2026-09-23: *"grey what routing
+        // actually refuses.  if the train doesn't protrude past the switch, there should be nothing else to
+        // gray."*  Routing refuses a path over the squares the train lies on, not over the rest of the edge
+        // it arrived along.  For a few hours that day (OB-208) this square WAS grey - the whole covered edge -
+        // and before that, from OB-207, it was not; this is the second of those again, now said by him.
         assertEquals(orangePixels(idleBlocked), 0,
             "the orange line is drawn on " + blockedSquare + ", so it is a square the train is shown "
             + "on rather than one beyond its reach, and the claim below is about the wrong tile");
 
-        assertTrue(contrast(idleBlocked) < contrast(bareBlocked) - 2,
-            "the square " + blockedSquare + " is not greyed although the railway refuses it - it is a "
-            + "tile of the edge the train stands on, and routing refuses that edge whole.  OB-208: the "
-            + "orange shows where the train is, the grey shows what is blocked");
+        assertFalse(contrast(idleBlocked) < contrast(bareBlocked) - 2,
+            "the square " + blockedSquare + " is greyed although the train does not reach it and routing does"
+            + " not refuse it - it is simply another tile of the edge the train arrived along.  Adam, OB-280:"
+            + " \"grey what routing actually refuses\"");
     }
 
     /**
@@ -342,13 +341,14 @@ public class testTheGreyAppearsAtIdleToo
     @Test(dependsOnMethods = "testBlockedTrackIsGreyAtIdle")
     public void testTheIdleMarkIsTheWholeSquareAndNotAStrokeAcrossIt()
     {
-        // ON THE BLOCKED SQUARE AGAIN (OB-208), which is grey and carries no orange line - so every pixel
-        // that differs is the fade's, and "a real fraction of the square changed" means what it says.
-        // From OB-207 until 2026-09-23 there was no such square and this was measured on the covered one,
-        // where the orange line inflated the count and made the claim weaker than it looked.
-        int changed = differingPixels(idleBlocked, bareBlocked);
+        // ON THE COVERED SQUARE (OB-280), because there is no square that is grey and not covered - the grey
+        // is where the train lies.  The orange line is drawn on this tile as well, so more pixels differ than
+        // the fade alone accounts for; that makes the "a real fraction of the square changed" claim below
+        // EASIER to satisfy and so weaker than it was while OB-208 gave it a grey square with no line on it.
+        // Said rather than left to be discovered: what it still catches is the fade disappearing altogether.
+        int changed = differingPixels(idleCovered, bareCovered);
 
-        int drawn = drawnPixels(bareBlocked);
+        int drawn = drawnPixels(bareCovered);
 
         // A REAL FRACTION OF THE SQUARE, not one pixel (E8-C6).  `drawn > 0` admits a tile with
         // eight drawn pixels, where "seven of them changed" is satisfied by any mark at all - and the
@@ -610,7 +610,7 @@ public class testTheGreyAppearsAtIdleToo
     {
         Set<TileKey> out = new LinkedHashSet<>();
 
-        for (TileKey square : everyTile())
+        for (TileKey square : everySquare())
         {
             if (ui.isTrackBlocked(square)) out.add(square);
         }
@@ -640,24 +640,50 @@ public class testTheGreyAppearsAtIdleToo
     }
 
     /**
-     * The grey is every tile of every edge the railway holds covered, endpoints excluded (Adam, OB-208).
+     * The grey is exactly the squares the railway claims under standing trains (Adam, OB-280).
      *
-     * *"orange shows where the train is, gray shows what's blocked."*  Routing refuses a covered edge whole,
-     * so the grey is the whole of it - compared here against this class's own statement of that, which is
-     * worked out from the railway and the reducer and not from the method under test.  The OB-207 narrowing
-     * made the grey the orange's squares; putting it back turns this red with the tiles the train does not
-     * reach missing from the grey.
+     * *"grey what routing actually refuses.  if the train doesn't protrude past the switch, there should be nothing
+     * else to gray."*  `isPathClear` refuses a path over a place a standing train claims, so the grey is those places
+     * - compared here against this class's own reading of `Layout.placesCoveredByStandingTrains`, which parses the
+     * place ids rather than asking the method under test.  Put the whole-edge grey of OB-208 back and this goes red
+     * with the tiles of the edge the train does not reach added to the grey.
      */
     @Test
-    public void testTheGreyIsTheWholeOfEveryCoveredEdge()
+    public void testTheGreyIsWhatTheRailwayClaims()
     {
         // BOTH TAKEN AT IDLE WITH THE TRAIN STANDING, in `setUpClass`: by the time a claim runs the class has
         // taken the train's length off and the train away, so asking now would compare nothing.
-        assertFalse(wholeEdgesAtIdle.isEmpty(), "no standing train covers any track, so this compares nothing");
+        assertFalse(claimedAtIdle.isEmpty(), "no standing train claims any track, so this compares nothing");
 
-        assertEquals(new LinkedHashSet<>(windowBlockedAtIdle), wholeEdgesAtIdle,
-            "the window greys something other than the whole of the edges the railway refuses - OB-208: the "
-            + "orange shows where the train is, the grey shows what is blocked");
+        assertEquals(new LinkedHashSet<>(windowBlockedAtIdle), claimedAtIdle,
+            "the window greys something other than the squares the railway claims under standing trains - Adam,"
+            + " OB-280: \"grey what routing actually refuses\"");
+    }
+
+    /**
+     * The squares of every place a standing train claims, read from the place ids themselves.
+     *
+     * A place id is the square, `page:x,y`, or on a double curve or overpass the square and the road,
+     * `page:x,y/road` - `GraphReducer.locationsOf` - so the square is what comes before the slash.
+     */
+    private static Set<TileKey> everySquareTheRailwayClaims()
+    {
+        Set<TileKey> out = new LinkedHashSet<>();
+
+        for (String place : layout.placesCoveredByStandingTrains().keySet())
+        {
+            String square = place.indexOf('/') >= 0 ? place.substring(0, place.indexOf('/')) : place;
+
+            int colon = square.lastIndexOf(':');
+            int comma = square.lastIndexOf(',');
+
+            if (colon < 0 || comma < colon) continue;
+
+            out.add(new TileKey(square.substring(0, colon), Integer.parseInt(square.substring(colon + 1, comma)),
+                Integer.parseInt(square.substring(comma + 1))));
+        }
+
+        return out;
     }
 
     /**
@@ -719,8 +745,8 @@ public class testTheGreyAppearsAtIdleToo
             pump();
 
             // THE WHOLE-EDGE ANSWER, to pick the tiles this class is about.  `blockedSquare` has to be a
-            // tile of the covered EDGE that the train does not reach - which is exactly the difference
-            // between the two marks since OB-208: grey, and no orange line on it.
+            // tile of the covered EDGE that the train does not reach - which since OB-280 is a square that is
+            // neither orange nor grey, though the train's edge runs over it.
             Set<TileKey> blocked = everyTileOfEveryCoveredEdge();
 
             TileKey onTheTrain = null;
@@ -990,6 +1016,33 @@ public class testTheGreyAppearsAtIdleToo
             {
                 if (step.getTile() != null) out.add(step.getTile());
             }
+        }
+
+        return out;
+    }
+
+    /**
+     * Every square of the railway, the sensor squares at the ends of the edges included (OB-280).
+     *
+     * The grey is the squares a train claims, and the square it stands on is one of them - a sensor, at the end of an
+     * edge rather than on its path - so asking the window about `everyTile` alone missed exactly those.  The squares
+     * this class paints are still picked from `everyTile`: a sensor square carries the train's own icon, which is not
+     * the fade those claims are about.
+     */
+    private static Set<TileKey> everySquare()
+    {
+        Set<TileKey> out = new LinkedHashSet<>();
+
+        for (GraphReducer.ReducedEdge edge : session.getReducer().getEdges())
+        {
+            if (edge.getStart() != null) out.add(edge.getStart());
+
+            for (GraphReducer.TileStep step : edge.getPath())
+            {
+                if (step.getTile() != null) out.add(step.getTile());
+            }
+
+            if (edge.getEnd() != null) out.add(edge.getEnd());
         }
 
         return out;

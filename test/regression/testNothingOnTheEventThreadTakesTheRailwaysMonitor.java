@@ -220,8 +220,9 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         // THE GREY'S OWN ANSWER, BACK (OB-208).  `tilesBlockedByStandingTrains` left this list when the two
         // marks were made one, and a permission left behind for a member that had stopped calling would have
         // been one for whatever was written into it next.  Adam's ruling of 2026-09-23 - *"orange shows where
-        // the train is, gray shows what's blocked"* - made the grey the whole of every covered edge again, so
-        // the railway is asked once more, by `routesBlockedByStandingTrains`, on the same worker.
+        // the train is, gray shows what's blocked"* - gave the grey its own answer again, so the railway is
+        // asked once more, by `routesBlockedByStandingTrains`, on the same worker: the places it claims
+        // (OB-280), where OB-208 asked for the covered edges.
         ALLOWED.put("AutonomySession.java#routesBlockedByStandingTrains",
             "OFF THE EVENT THREAD: reached only from TrainControlUI.workOutCoveredTrack, on"
             + " CoveredTrackRenderer - the covered set's sibling, asked in the same pass");

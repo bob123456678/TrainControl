@@ -6121,27 +6121,30 @@ public class AutonomySession
     }
 
     /**
-     * The same answer, saying WHICH ROAD of each square is blocked (OB-208).
+     * The same answer, saying WHICH ROAD of each square is blocked (OB-280).
      *
-     * **The whole of every covered edge, again.**  Adam, 2026-09-23, asked whether the grey should cover only
-     * where the train is or the whole stretch it blocks: *the whole stretch* - *"orange shows where the train
-     * is, gray shows what's blocked."*  From OB-207 until then this returned the orange's own squares, which
-     * made the two marks one: the narrowing was made when the grey was the ONLY mark, and *"too much blocked
-     * for such a short train"* was a complaint about that single mark claiming to say where the train was.
-     * With the orange line saying that, the grey is free to say what routing refuses - and routing refuses a
-     * covered edge whole, because a path uses all of its own edges.
+     * **What routing actually refuses: the squares standing trains claim.**  Adam, 2026-09-23: *"grey what routing
+     * actually refuses.  if the train doesn't protrude past the switch, there should be nothing else to gray."*  So
+     * the grey is `Layout.placesCoveredByStandingTrains` - the places the runtime's own tail walk claims, which is
+     * what `isPathClear`'s shared-metal sweep refuses a path over (OB-207) - translated into squares.  A train that
+     * fits on its berth claims that square alone (OB-278), and nothing past the switch behind it is grey.
      *
-     * **Per road, so a double curve is not greyed on both arcs** (Adam, 2026-09-08, *"graying makes it look
-     * confusing on double curve tiles"*).  Each step of a covered edge carries the route it runs through, so
-     * the tile can fade that road and leave the other at full strength - the band `LayoutLabel.theRoadToFade`
-     * draws.
+     * From OB-208 (earlier the same day) until this it was the whole of every covered EDGE, on the reasoning that a
+     * path uses all of its own edges.  That is true of a path driving ALONG the covered edge, and a path doing that
+     * ends at or runs through the square the train stands on, which is claimed; but a path crossing only the far
+     * end of the edge is not refused, and the grey said it was.
      *
-     * **The endpoint squares are excluded**, `pathBetween`'s own rule and Adam's about the covered set: *"edges,
-     * because the points are technically unoccupied"*.  A train standing at a sensor is shown there by the
-     * orange; what the grey adds is the track between sensors that nothing may use.
+     * **Asked of the railway, not restated.**  The places come from the runtime; the reduction only says which
+     * square, and which road of it, each place id names - the place ids `GraphReducer.placesAlong` built them from,
+     * one per step and one for the square the edge arrives at.
+     *
+     * **Per road where the place is per road**: a double curve or an overpass carries two roads that never meet, and
+     * its place ids name the road, so the tile fades that road and leaves the other at full strength - the band
+     * `LayoutLabel.theRoadToFade` draws.  Everywhere else the place is the whole square, and it is returned with
+     * no road named, which fades the whole tile: a train on one leg of a turnout blocks the other.
      *
      * @param running the layout, which is what knows where the trains are
-     * @return each blocked square, with the routes of it that are blocked
+     * @return each blocked square, with the routes of it that are blocked - none named where the whole square is
      */
     public Map<TileKey, Set<RouteId>> routesBlockedByStandingTrains(org.traincontrol.automation.Layout running)
     {
@@ -6149,31 +6152,43 @@ public class AutonomySession
 
         if (running == null || reducer == null || getStationIndex() == null) return out;
 
-        for (org.traincontrol.automation.Edge edge : running.edgesCoveredByStandingTrains().keySet())
+        Set<String> claimed = running.placesCoveredByStandingTrains().keySet();
+
+        if (claimed.isEmpty()) return out;
+
+        for (GraphReducer.ReducedEdge edge : reducer.getEdges())
         {
-            if (edge == null || edge.getStart() == null || edge.getEnd() == null) continue;
+            List<GraphReducer.Place> places = reducer.placesAlong(edge);
 
-            TileKey from = getStationIndex().squareOf(edge.getStart().getName());
-            TileKey to = getStationIndex().squareOf(edge.getEnd().getName());
+            List<GraphReducer.TileStep> path = edge.getPath();
 
-            if (from == null || to == null) continue;
+            // One place per step, then the square the edge arrives at - `placesAlong`'s own shape.
+            if (places.size() != path.size() + 1) continue;
 
-            List<GraphReducer.TileStep> steps = pathBetween(from, to);
-
-            if (steps == null) continue;
-
-            for (GraphReducer.TileStep step : steps)
+            for (int at = 0; at < places.size(); at++)
             {
-                Set<RouteId> roads = out.get(step.getTile());
+                String id = places.get(at).getId();
+
+                if (!claimed.contains(id)) continue;
+
+                boolean onTheWay = at < path.size();
+
+                TileKey tile = onTheWay ? path.get(at).getTile() : edge.getEnd();
+
+                Set<RouteId> roads = out.get(tile);
 
                 if (roads == null)
                 {
                     roads = new LinkedHashSet<>();
 
-                    out.put(step.getTile(), roads);
+                    out.put(tile, roads);
                 }
 
-                if (step.getRouteId() != null) roads.add(step.getRouteId());
+                // A PLACE THAT NAMES A ROAD blocks that road; one that names the square blocks all of it.
+                if (onTheWay && id.indexOf('/') >= 0 && path.get(at).getRouteId() != null)
+                {
+                    roads.add(path.get(at).getRouteId());
+                }
             }
         }
 

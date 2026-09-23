@@ -7813,9 +7813,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         // length is changed."*  The guard and the affordance ask one question
                         // (OB-057/OB-090), and the affordance is now asking the guard's own.
                         //
-                        // Nothing else about the mark changes: the extent is still the covered EDGES,
-                        // the two sets are still computed together and diffed together, and
-                        // `repaintTheWashWhereItChanged` still redraws only the squares that changed.
+                        // Nothing else about the mark changes: the extent is the squares the railway
+                        // claims (OB-280), the two sets are still computed together and diffed together,
+                        // and `repaintTheWashWhereItChanged` still redraws only the squares that changed.
                         greyed = ask.setup.routesBlockedByStandingTrains(ask.railway);
                     }
                 }
