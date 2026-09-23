@@ -701,6 +701,100 @@ public class testATrainCoversTheTrackBehindIt
     }
 
     /**
+     * A train turned where it stands and re-stood on the other arrival's copy spends the square it stands on first, as it
+     * does everywhere (AUT-C3, OB-278).
+     *
+     * After a train turns at a square it may turn round at, the idle drain stands it on the copy facing its new way -
+     * which can be the plain copy of the OTHER arrival - and puts back the side it came in by.  No rail arrives at that
+     * copy by that side, so the walk takes the rail running away from it, whose places begin AFTER the square the train
+     * stands on: the square was neither claimed nor spent, and the tail reached one square further back than the train
+     * lies - over a switch, a road refused for nothing.
+     *
+     * MUTATION: stop the walk spending the standing square on that rail and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testATurnedTrainSpendsTheSquareItStandsOn() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        String tag = "_turned" + (addresses++);
+
+        Point westOf = point(layout, "TW" + tag, true);
+        Point eastOf = point(layout, "TE" + tag, true);
+        Point arrivedByEast = point(layout, "TXW" + tag, true);
+        Point arrivedByWest = point(layout, "TXE" + tag, true);
+
+        arrivedByEast.setBlock("TX-square" + tag);
+        arrivedByWest.setBlock("TX-square" + tag);
+
+        // ON A ROW, west to east, as a built railway's squares are - the walk reads a rail's side from where its far
+        // end lies when the rail does not arrive at the square.
+        westOf.setX(0);
+        arrivedByEast.setX(1);
+        arrivedByWest.setX(1);
+        eastOf.setX(2);
+
+        for (Point p : java.util.Arrays.asList(westOf, arrivedByEast, arrivedByWest, eastOf)) p.setY(0);
+
+        String square = "X" + tag;
+
+        // Into the square from the east, and away from that copy to the west.
+        Edge fromTheEast = layout.createEdge(eastOf.getName(), arrivedByEast.getName());
+        Edge awayWest = layout.createEdge(arrivedByEast.getName(), westOf.getName());
+
+        // Into the square from the west, and away from that copy to the east.
+        Edge fromTheWest = layout.createEdge(westOf.getName(), arrivedByWest.getName());
+        Edge awayEast = layout.createEdge(arrivedByWest.getName(), eastOf.getName());
+
+        fromTheEast.setPlaces(java.util.Arrays.asList("e1" + tag, square), java.util.Arrays.asList(1, 2));
+        awayWest.setPlaces(java.util.Arrays.asList("w1" + tag, "W" + tag), java.util.Arrays.asList(1, 1));
+        fromTheWest.setPlaces(java.util.Arrays.asList("w1" + tag, square), java.util.Arrays.asList(1, 2));
+        awayEast.setPlaces(java.util.Arrays.asList("e1" + tag, "E" + tag), java.util.Arrays.asList(1, 1));
+
+        for (Edge e : java.util.Arrays.asList(fromTheEast, fromTheWest)) e.setLength(3);
+        for (Edge e : java.util.Arrays.asList(awayWest, awayEast)) e.setLength(2);
+
+        fromTheEast.setEntrySide("E");
+        fromTheWest.setEntrySide("W");
+
+        Locomotive standing = model.getLocByName(model.getLocList().get(0));
+
+        standing.setTrainLength(2);
+
+        try
+        {
+            // THE CONTROL: on the copy it arrived at from the west, a two-unit train fits on the two-unit square.
+            arrivedByWest.setLocomotive(standing);
+            arrivedByWest.setArrivedFrom("W");
+
+            java.util.Map<String, Locomotive> claimed = layout.placesCoveredByStandingTrains();
+
+            assertEquals(claimed.get(square), standing, "control: the train does not claim the square it stands on");
+            assertFalse(claimed.containsKey("w1" + tag), "control: a train that fits on its square claims track behind it");
+
+            arrivedByWest.setLocomotive(null);
+
+            // TURNED, AND RE-STOOD ON THE OTHER ARRIVAL'S COPY with the side it came in by - as the idle drain leaves it.
+            arrivedByEast.setLocomotive(standing);
+            arrivedByEast.setArrivedFrom("W");
+
+            claimed = layout.placesCoveredByStandingTrains();
+
+            assertFalse(claimed.containsKey("w1" + tag), "a two-unit train turned on a two-unit square claims the track"
+                + " behind it: the walk took the rail running away from its copy, whose places begin after the square it"
+                + " stands on, and that square was never spent (OB-278: the square a train stands on is spent first)."
+                + "  Claimed: " + claimed.keySet());
+        }
+        finally
+        {
+            arrivedByEast.setLocomotive(null);
+            arrivedByWest.setLocomotive(null);
+        }
+    }
+
+    /**
      * MOVING A TRAIN CHANGES THE COVERED SET, WHICH IS WHAT THE DIAGRAM HAS TO REDRAW (OB-180).
      *
      * Adam: **"when a train is manually moved to a new station in the track diagram viewer using
