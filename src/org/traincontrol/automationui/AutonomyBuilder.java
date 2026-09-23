@@ -339,6 +339,24 @@ public class AutonomyBuilder
     private Map<TileKey, List<String>> protectingSignals = Collections.emptyMap();
 
     /**
+     * The signals thrown red when a train arrives at each station as the end of its journey (FR-096).
+     *
+     * Emitted on every copy of the square, as the protecting signals are, and for their reason: the copies are one
+     * platform and the guard is on the way into it rather than on a side of it.
+     *
+     * @param signals station square to accessory names
+     * @return this
+     */
+    public AutonomyBuilder withEntrySignals(Map<TileKey, List<String>> signals)
+    {
+        this.entrySignals = signals == null ? Collections.<TileKey, List<String>>emptyMap() : signals;
+
+        return this;
+    }
+
+    private Map<TileKey, List<String>> entrySignals = Collections.emptyMap();
+
+    /**
      * Stations that are unavailable to autonomy while another square is occupied (FR-001).
      *
      * Expressed as LOCK EDGES rather than as a rule of its own, which is Adam's call and the reason
@@ -958,6 +976,14 @@ public class AutonomyBuilder
                 {
                     json.put("protectingSignal", protecting.size() == 1
                         ? (Object) protecting.get(0) : new JSONArray(protecting));
+                }
+
+                // And the entry guard (FR-096), in the same two shapes.
+                List<String> entry = entrySignals.get(point.getTile());
+
+                if (entry != null && !entry.isEmpty())
+                {
+                    json.put("entrySignal", entry.size() == 1 ? (Object) entry.get(0) : new JSONArray(entry));
                 }
 
                 // COORDINATES ALWAYS, not only for the inspection copy (Adam, 2026-09-07).

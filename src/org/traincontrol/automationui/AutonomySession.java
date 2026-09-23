@@ -1176,8 +1176,9 @@ public class AutonomySession
 
                 if (p == null) continue;
 
+                // `entrySignal` too (FR-096): one more key only this version writes.
                 if (p.has(AutonomyBuilder.AUTO_DESTINATION) || p.has("protectingSignal")
-                    || p.has("block"))
+                    || p.has("block") || p.has("entrySignal"))
                 {
                     modern++;
                 }
@@ -3826,6 +3827,7 @@ public class AutonomySession
             .withParkingTiles(parkingTiles())
             .withBarredArrivals(barredArrivals())
             .withProtectingSignals(protectingSignalNames())
+            .withEntrySignals(entrySignalNames())
             .withBlockingPoints(store.getBlockingPoints());
     }
 
@@ -3875,6 +3877,27 @@ public class AutonomySession
     }
 
     /**
+     * @param station a station's square
+     * @return the squares of every signal guarding the way into it (FR-096)
+     */
+    public List<TileKey> getEntrySignals(TileKey station)
+    {
+        return store.getEntrySignals(station);
+    }
+
+    /**
+     * Replaces every signal guarding the way into a station (FR-096).
+     *
+     * @param station a station's square
+     * @param signals the signals' squares; empty or null unpairs
+     */
+    public void setEntrySignals(TileKey station, List<TileKey> signals)
+    {
+        store.setEntrySignals(station, signals);
+        touched();
+    }
+
+    /**
      * Every square switched out of service (V31-C3).
      *
      * The same question `pointBadges` asks one square at a time - `Boolean.FALSE.equals` of the
@@ -3905,11 +3928,32 @@ public class AutonomySession
      */
     public Map<TileKey, List<String>> protectingSignalNames()
     {
+        return signalNames(store.getProtectingSignals());
+    }
+
+    /**
+     * The entry-guard pairings as accessory names, for the build (FR-096) - the same join, asked of the other list.
+     *
+     * @return station square to accessory names
+     */
+    public Map<TileKey, List<String>> entrySignalNames()
+    {
+        return signalNames(store.getEntrySignals());
+    }
+
+    /**
+     * Station square to signal squares, turned into station square to accessory names - one join for both guards.
+     *
+     * @param pairings the store's pairings
+     * @return station square to accessory names, leaving out every signal that has gone or has no address
+     */
+    private Map<TileKey, List<String>> signalNames(Map<TileKey, List<TileKey>> pairings)
+    {
         Map<TileKey, List<String>> out = new LinkedHashMap<>();
 
         if (graph == null) return out;
 
-        for (Map.Entry<TileKey, List<TileKey>> pair : store.getProtectingSignals().entrySet())
+        for (Map.Entry<TileKey, List<TileKey>> pair : pairings.entrySet())
         {
             List<String> names = new ArrayList<>();
 
@@ -5015,7 +5059,22 @@ public class AutonomySession
 
         // ANY of them, not all: a station paired to two signals of which one has gone is protected on
         // one approach and not on the other, which is exactly the state worth warning about.
-        for (Map.Entry<TileKey, List<TileKey>> pair : store.getProtectingSignals().entrySet())
+        //
+        // BOTH GUARDS (FR-096): an entry-guard signal that has gone is dropped from the build the same way, and the
+        // way into that station is then as unguarded as a platform whose protecting signal went.
+        Map<TileKey, List<TileKey>> both = new LinkedHashMap<>(store.getProtectingSignals());
+
+        for (Map.Entry<TileKey, List<TileKey>> entry : store.getEntrySignals().entrySet())
+        {
+            List<TileKey> merged = new ArrayList<>(both.containsKey(entry.getKey())
+                ? both.get(entry.getKey()) : java.util.Collections.<TileKey>emptyList());
+
+            for (TileKey signal : entry.getValue()) if (!merged.contains(signal)) merged.add(signal);
+
+            both.put(entry.getKey(), merged);
+        }
+
+        for (Map.Entry<TileKey, List<TileKey>> pair : both.entrySet())
         {
             // NOT ABOUT A PAGE THAT IS SWITCHED OFF (SVN-C6).
             //
@@ -5577,6 +5636,9 @@ public class AutonomySession
 
         // And the signal that protected it: a plain point is not somewhere trains are held out of.
         if (!station) store.setProtectingSignal(tile, null);
+
+        // And its entry guard (FR-096), for the same reason: nothing arrives at a plain point.
+        if (!station) store.setEntrySignals(tile, null);
 
         // And being unavailable while another square is occupied (AMS-B2).  Unlike the arrival bar it is NOT inert
         // on a square that is no longer a station - the build locks every route into it against the watched square -

@@ -747,4 +747,148 @@ public class testBothProtectingSignalsAreThrown
             + "\"edges\": [{\"start\": \"APPROACH\", \"end\": \"PLATFORM\", \"length\": 1}],"
             + "\"minDelay\": 1, \"maxDelay\": 2, \"defaultLocSpeed\": 35}";
     }
+
+    // ------------------------------------------------------------------------------------ FR-096: the entry guard
+
+    /**
+     * A train that arrives at a station as the end of its journey throws the station's entry guard red (FR-096).
+     *
+     * Adam, 2026-09-23: *"a signal that turns red after arrival at the final designation"*, and *"The next route
+     * sets it green, so that is out of scope."*
+     *
+     * Through a real hand dispatch, as `testAHandDispatchedTrainProtectsItsDestination` above is: the claim is about
+     * the call in `executePath` where the arrival is recorded, not about the method it calls.
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testAnEntryGuardGoesRedWhenATrainArrivesThere() throws Exception
+    {
+        Layout layout = entryGuardLine();
+
+        layout.getPoint("EG B").setEntrySignals(Arrays.asList(far.getName()));
+
+        far.setState(Accessory.accessorySetting.GREEN);
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        assertTrue(layout.moveLocomotive(loc.getName(), "EG A", false), "precondition - the train must start at A");
+
+        List<Edge> path = new LinkedList<>();
+        path.add(layout.getEdge("EG A", "EG B"));
+
+        try
+        {
+            assertTrue(layout.executePath(path, loc, 30, null), "the dispatch did not complete, so nothing below tests anything");
+
+            assertTrue(far.isSwitched(), "a train arrived at B at the end of its journey and B's entry guard stayed GREEN");
+        }
+        finally
+        {
+            layout.getPoint("EG B").setLocomotive(null);
+            layout.getPoint("EG A").setLocomotive(null);
+        }
+    }
+
+    /**
+     * A train that only PASSES a station leaves its entry guard alone - and throws the one at the station it stops at.
+     *
+     * "Final destination" is the end of the journey (FR-096).  The second half is the control: without it a guard that
+     * never threw anything at all would pass the first.
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testATrainPassingThroughLeavesTheEntryGuardAlone() throws Exception
+    {
+        Layout layout = entryGuardLine();
+
+        layout.getPoint("EG B").setEntrySignals(Arrays.asList(near.getName()));
+        layout.getPoint("EG C").setEntrySignals(Arrays.asList(far.getName()));
+
+        near.setState(Accessory.accessorySetting.GREEN);
+        far.setState(Accessory.accessorySetting.GREEN);
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        assertTrue(layout.moveLocomotive(loc.getName(), "EG A", false), "precondition - the train must start at A");
+
+        List<Edge> path = new LinkedList<>();
+        path.add(layout.getEdge("EG A", "EG B"));
+        path.add(layout.getEdge("EG B", "EG C"));
+
+        try
+        {
+            assertTrue(layout.executePath(path, loc, 30, null), "the dispatch did not complete, so nothing below tests anything");
+
+            assertFalse(near.isSwitched(), "a train that only passed B threw B's entry guard red");
+
+            assertTrue(far.isSwitched(), "CONTROL: the train stopped at C and C's entry guard stayed GREEN");
+        }
+        finally
+        {
+            layout.getPoint("EG C").setLocomotive(null);
+            layout.getPoint("EG A").setLocomotive(null);
+        }
+    }
+
+    /**
+     * One entry-guard signal is written as a string, several as an array, and both come back (FR-096) - the shapes
+     * the protecting signals use.
+     */
+    @Test
+    public void testAnEntryGuardIsReadAndWrittenInBothShapes() throws Exception
+    {
+        String json = "{"
+            + "\"points\": ["
+            + "  {\"name\": \"ONE\", \"station\": true, \"s88\": 108, \"entrySignal\": \"" + near.getName() + "\"},"
+            + "  {\"name\": \"TWO\", \"station\": true, \"s88\": 109,"
+            + "   \"entrySignal\": [\"" + near.getName() + "\", \"" + far.getName() + "\"]}"
+            + "],"
+            + "\"edges\": [{\"start\": \"ONE\", \"end\": \"TWO\", \"length\": 1}],"
+            + "\"minDelay\": 1, \"maxDelay\": 2, \"defaultLocSpeed\": 35}";
+
+        Layout layout = Layout.fromJSON(json, model);
+
+        assertTrue(layout.isValid(), "the layout is invalid: " + Layout.getLastError());
+
+        assertEquals(layout.getPoint("ONE").getEntrySignals(), Arrays.asList(near.getName()));
+        assertEquals(layout.getPoint("TWO").getEntrySignals(), Arrays.asList(near.getName(), far.getName()));
+
+        assertTrue(layout.getPoint("ONE").toJSON().get("entrySignal") instanceof String,
+            "one entry-guard signal was not written back as a bare string");
+        assertTrue(layout.getPoint("TWO").toJSON().get("entrySignal") instanceof org.json.JSONArray,
+            "two entry-guard signals were not written back as a list");
+
+        assertTrue(layout.getPoint("TWO").getProtectingSignals().isEmpty(),
+            "the entry guard was read into the protecting signals - two lists that are thrown at different moments");
+    }
+
+    /**
+     * A line A - B - C, this class's own feedbacks 47461-47463, simulated and with no delays.
+     */
+    private Layout entryGuardLine() throws Exception
+    {
+        for (String feedback : new String[] {"47461", "47462", "47463"})
+        {
+            if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
+
+            model.setFeedbackState(feedback, false);
+        }
+
+        Layout layout = new Layout(model);
+
+        layout.setMaxDelay(0);
+        layout.setMinDelay(0);
+        layout.setSimulate(true);
+
+        layout.createPoint("EG A", true, "47461");
+        layout.createPoint("EG B", true, "47462");
+        layout.createPoint("EG C", true, "47463");
+
+        layout.createEdge("EG A", "EG B");
+        layout.createEdge("EG B", "EG C");
+
+        return layout;
+    }
 }

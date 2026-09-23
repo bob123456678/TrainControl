@@ -70,7 +70,9 @@ public class testStoreCollectionsAreHandledEverywhere
         "pointNames", "stations", "tileLengths", "tileDirections", "barredArrivals", "portals",
         "blockedPoints",
         "stationSignals", "captions", "linkNames", "excludedPages", "keptDespiteRepeats",
-        "disabledPortals"));
+        "disabledPortals",
+        // The entry guard (FR-096): the same shape as stationSignals, and setup for the same reason.
+        "entrySignals"));
 
     /**
      * Everything else the store holds, and why it is not setup.
@@ -179,7 +181,7 @@ public class testStoreCollectionsAreHandledEverywhere
         // written down once, here, rather than argued about each time somebody reads that method.
         for (String notTrack : new String[] {"pointNames", "stations", "tileLengths", "barredArrivals",
             "stationSignals", "captions", "linkNames", "excludedPages", "keptDespiteRepeats",
-            "blockedPoints"})
+            "blockedPoints", "entrySignals"})
         {
             EXEMPT.put("applyTo:" + notTrack, "applyTo populates the tile GRAPH, which models track - "
                 + "pairings, switched-off links and directions. This is not a property of track");

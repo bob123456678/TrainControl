@@ -8661,6 +8661,13 @@ public class Layout
                 // 2026-09-13: "keep claiming along the road it actually arrived on").
                 arrived.setArrivedAlong(path);
 
+        // AND ITS ENTRY GUARD GOES RED (Adam, 2026-09-23, FR-096): *"a signal that turns red after arrival at the
+        // final designation."*  Here, where the journey's END is recorded - the path's last Point, reached by every
+        // tier's run: autonomy, a hand dispatch and Return Home all come through this method.  A square the train
+        // only passed is never `arrived`, so it throws nothing.  Nothing turns it green: *"The next route sets it
+        // green, so that is out of scope."*
+        throwEntryGuard(arrived);
+
         // AND THE SQUARE IT LEFT NO LONGER HAS A TAIL ON IT.  Without this the track behind an empty
         // platform stays blocked by a train that drove away from it - which is worse than never
         // having blocked anything, because it takes a rebuild to clear.
@@ -9269,6 +9276,37 @@ public class Layout
             // with its track locked for the rest of the session, and every other train refused that
             // track.  A NoClassDefFoundError out of a repaint is not a reason to strand a railway.
             this.control.log(e instanceof Exception ? (Exception) e : new Exception(e));
+        }
+    }
+
+    /**
+     * Throws a station's entry-guard signals red, now that a train has arrived there at the end of its journey (FR-096).
+     *
+     * A COMMAND ON AN EVENT, where the exit guard beside it is an aspect derived from state: nothing is remembered and
+     * nothing is undone, because the green half belongs to the next route that needs the signal.  Through
+     * `Accessory.setState`, the door the exit guard and a route's own switching use.
+     *
+     * Quiet about failures, as the exit guard is: a signal that has gone from the layout, or a control station that is
+     * not listening, must not stop a train arriving - and this runs on the driving thread.
+     *
+     * @param arrived the Point the journey ended on
+     */
+    void throwEntryGuard(Point arrived)
+    {
+        if (arrived == null || this.control == null) return;
+
+        for (String accessory : arrived.getEntrySignals())
+        {
+            try
+            {
+                Accessory acc = this.control.getAccessoryByName(accessory);
+
+                if (acc != null) acc.setState(Accessory.accessorySetting.RED);
+            }
+            catch (Exception e)
+            {
+                this.control.log(e);
+            }
         }
     }
 
@@ -11232,6 +11270,25 @@ public class Layout
                     }
 
                     layout.getPoint(point.getString("name")).setProtectingSignals(signals);
+                }
+
+                // The entry guard (FR-096), read in the same two shapes.
+                if (point.has("entrySignal"))
+                {
+                    List<String> signals = new ArrayList<>();
+
+                    JSONArray several = point.optJSONArray("entrySignal");
+
+                    if (several != null)
+                    {
+                        for (int at = 0; at < several.length(); at++) signals.add(several.getString(at));
+                    }
+                    else if (point.optString("entrySignal", null) != null)
+                    {
+                        signals.add(point.getString("entrySignal"));
+                    }
+
+                    layout.getPoint(point.getString("name")).setEntrySignals(signals);
                 }
 
                 // The points whose occupancy makes this station unavailable to autonomy (FR-001).

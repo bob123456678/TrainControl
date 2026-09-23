@@ -6302,6 +6302,73 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A station's entry guard survives a save, is kept apart from its protecting signals, and goes when the station
+     * does (FR-096).
+     */
+    @Test
+    public void testAnEntryGuardIsKeptApartAndForgottenWithTheStation() throws Exception
+    {
+        session.open(Arrays.asList(pageOnDisk()));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey north = new TileKey("main", 2, 1);
+        TileKey south = new TileKey("main", 3, 1);
+
+        session.setStation(station, true);
+        session.setEntrySignals(station, Arrays.asList(north, south));
+
+        session.save();
+
+        AutonomySession reopened = new AutonomySession(layout);
+        reopened.open(Arrays.asList(pageOnDisk()));
+
+        assertEquals(reopened.getEntrySignals(station), Arrays.asList(north, south), "the entry guard did not survive the file");
+
+        assertTrue(reopened.getProtectingSignals(station).isEmpty(),
+            "the entry guard came back as protecting signals - two lists thrown at different moments");
+
+        reopened.setStation(station, false);
+
+        assertTrue(reopened.getEntrySignals(station).isEmpty(), "a plain point kept an entry guard");
+    }
+
+    /**
+     * Every entry-guard signal reaches the built configuration, under its own key (FR-096).
+     */
+    @Test
+    public void testEveryEntryGuardSignalReachesTheBuiltConfiguration() throws Exception
+    {
+        session.open(Arrays.asList(pageWithTwoSignals()));
+
+        TileKey station = new TileKey("main", 1, 1);
+
+        session.setStation(station, true);
+        session.setEntrySignals(station, Arrays.asList(new TileKey("main", 2, 1), new TileKey("main", 3, 1)));
+
+        assertEquals(session.entrySignalNames().get(station).size(), 2,
+            "one of the two entry-guard signals was lost on the way to the accessory names");
+
+        org.json.JSONArray points = new org.json.JSONObject(session.buildConfiguration()).getJSONArray("points");
+
+        boolean seen = false;
+
+        for (int at = 0; at < points.length(); at++)
+        {
+            org.json.JSONObject point = points.getJSONObject(at);
+
+            assertFalse(point.has("protectingSignal"), "the entry guard was emitted as a protecting signal");
+
+            if (!point.has("entrySignal")) continue;
+
+            seen = true;
+
+            assertEquals(point.getJSONArray("entrySignal").length(), 2, "the built configuration lost an entry-guard signal");
+        }
+
+        assertTrue(seen, "nothing in the built configuration carries an entry guard");
+    }
+
+    /**
      * A run of track with a station at one end and two signals beside it.
      */
     private LayoutDiagram pageWithTwoSignals() throws IOException

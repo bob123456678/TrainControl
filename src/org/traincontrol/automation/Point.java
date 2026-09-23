@@ -659,6 +659,42 @@ public class Point
     private final List<String> protectingSignals = new ArrayList<>();
 
     /**
+     * The accessories thrown red when a train arrives here as the end of its journey - the entry guard (FR-096).
+     *
+     * Never turned green here: the next route that needs a signal sets it (Adam: *"The next route sets it green, so
+     * that is out of scope."*).  Carried by every copy of the square, as the protecting signals are.
+     *
+     * Never null.
+     */
+    private final List<String> entrySignals = new ArrayList<>();
+
+    /**
+     * @return every entry-guard signal of this platform, in the order they were paired (FR-096)
+     */
+    public List<String> getEntrySignals()
+    {
+        return Collections.unmodifiableList(this.entrySignals);
+    }
+
+    /**
+     * Replaces the entry guard (FR-096).
+     *
+     * @param accessories the signals, or null to clear
+     * @return this
+     */
+    public Point setEntrySignals(List<String> accessories)
+    {
+        this.entrySignals.clear();
+
+        if (accessories != null)
+        {
+            for (String one : accessories) if (one != null && !this.entrySignals.contains(one)) this.entrySignals.add(one);
+        }
+
+        return this;
+    }
+
+    /**
      * Points whose occupancy makes this station unavailable to autonomy.
      *
      * FR-001, and the half of it that lock edges cannot express.  The build ALSO emits a lock edge
@@ -1137,6 +1173,16 @@ public class Point
         else if (!this.protectingSignals.isEmpty())
         {
             jsonObj.put("protectingSignal", new JSONArray(this.protectingSignals));
+        }
+
+        // The entry guard (FR-096), in the same two shapes.
+        if (this.entrySignals.size() == 1)
+        {
+            jsonObj.put("entrySignal", this.entrySignals.get(0));
+        }
+        else if (!this.entrySignals.isEmpty())
+        {
+            jsonObj.put("entrySignal", new JSONArray(this.entrySignals));
         }
 
         // Which piece of track this Point is part of.

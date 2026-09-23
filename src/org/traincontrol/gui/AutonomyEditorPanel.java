@@ -443,6 +443,62 @@ public class AutonomyEditorPanel extends JPanel
     // The station whose protecting signal is being picked by clicking one, waiting for that click
     private TileKey signalFor;
 
+    // And which of its two lists the click is for (FR-096): the protecting signals or the entry guard
+    private Guard signalForGuard = Guard.EXIT;
+
+    /**
+     * Which of a station's two signal lists a pairing works on (FR-096).
+     *
+     * Adam, 2026-09-23: *"Same UI to set it as the current linked signal exit guard, and multiple selections are
+     * possible."*  So there is ONE dialog - the list, click it on the diagram, enter its address, remove, done - told
+     * which list to read and write and which sentences to say, rather than a second copy of it that would drift.
+     */
+    private enum Guard
+    {
+        /** Red while the platform is claimed - "Signal Protecting This Station", which he calls the exit guard. */
+        EXIT("autosetup.ui.menuPairSignal", "autosetup.ui.promptSignalHow", "autosetup.ui.promptSignalsPaired",
+            "autosetup.ui.promptClickSignal", "autosetup.ui.setSignal", "autosetup.ui.addedSignal",
+            "autosetup.ui.removedSignal", "autosetup.ui.clearedSignal"),
+
+        /** Red when a train arrives at the station as the end of its journey (FR-096). */
+        ENTRY("autosetup.ui.menuPairEntrySignal", "autosetup.ui.promptEntrySignalHow",
+            "autosetup.ui.promptEntrySignalsPaired", "autosetup.ui.promptClickEntrySignal",
+            "autosetup.ui.setEntrySignal", "autosetup.ui.addedEntrySignal", "autosetup.ui.removedEntrySignal",
+            "autosetup.ui.clearedEntrySignal");
+
+        final String title;
+        final String how;
+        final String paired;
+        final String click;
+        final String set;
+        final String added;
+        final String removed;
+        final String cleared;
+
+        Guard(String title, String how, String paired, String click, String set, String added, String removed,
+            String cleared)
+        {
+            this.title = title;
+            this.how = how;
+            this.paired = paired;
+            this.click = click;
+            this.set = set;
+            this.added = added;
+            this.removed = removed;
+            this.cleared = cleared;
+        }
+    }
+
+    /**
+     * @param guard which list
+     * @param station the station's square
+     * @return the signals on it
+     */
+    private java.util.List<TileKey> signalsOf(Guard guard, TileKey station)
+    {
+        return guard == Guard.ENTRY ? session.getEntrySignals(station) : session.getProtectingSignals(station);
+    }
+
     /**
      * The station waiting to be told which square holds it back, or null (FR-025).
      *
@@ -1261,6 +1317,9 @@ public class AutonomyEditorPanel extends JPanel
         // Held and added at the foot of the menu - see where it is built
         javax.swing.JMenuItem signalItem = null;
 
+        // And the entry guard's, beside it (FR-096)
+        javax.swing.JMenuItem entryItem = null;
+
         if (isPoint)
         {
             // Locomotives first, because placing one is the commonest reason to open this menu once a
@@ -1627,6 +1686,17 @@ public class AutonomyEditorPanel extends JPanel
                             ? "autosetup.ui.menuPairedSignal" : "autosetup.ui.menuPairedSignals",
                             signalAddresses(paired)),
                     () -> pairProtectingSignal(target));
+
+                // THE ENTRY GUARD, the same dialog on the other list (FR-096), and labelled the same way.
+                java.util.List<TileKey> guarding = session.getEntrySignals(target);
+
+                entryItem = item(
+                    guarding.isEmpty()
+                        ? I18n.t("autosetup.ui.menuPairEntrySignal")
+                        : I18n.f(guarding.size() == 1
+                            ? "autosetup.ui.menuPairedEntrySignal" : "autosetup.ui.menuPairedEntrySignals",
+                            signalAddresses(guarding)),
+                    () -> pairGuardSignals(Guard.ENTRY, target));
             }
 
 
@@ -1799,6 +1869,8 @@ public class AutonomyEditorPanel extends JPanel
         if (signalItem != null || advanced != null) menu.addSeparator();
 
         if (signalItem != null) menu.add(signalItem);
+
+        if (entryItem != null) menu.add(entryItem);
 
         if (advanced != null) menu.add(advanced);
 
@@ -6070,11 +6142,23 @@ public class AutonomyEditorPanel extends JPanel
      */
     private void pairProtectingSignal(TileKey station)
     {
+        pairGuardSignals(Guard.EXIT, station);
+    }
+
+    /**
+     * The pairing window, for either of a station's two signal lists (FR-096) - the protecting signals, or the
+     * signals guarding the way in.
+     *
+     * @param guard which list
+     * @param station the station's square
+     */
+    private void pairGuardSignals(Guard guard, TileKey station)
+    {
         signalWindowOpen = true;
 
         try
         {
-            askAboutProtectingSignals(station);
+            askAboutSignals(guard, station);
         }
         finally
         {
@@ -6101,7 +6185,7 @@ public class AutonomyEditorPanel extends JPanel
      *
      * @param station the station's square
      */
-    private void askAboutProtectingSignals(TileKey station)
+    private void askAboutSignals(final Guard guard, TileKey station)
     {
         // A dialog of its own, held open while the list is worked on.
         //
@@ -6111,7 +6195,7 @@ public class AutonomyEditorPanel extends JPanel
         // has to survive being edited.
         final javax.swing.JDialog dialog = new javax.swing.JDialog(
             ownerWindow(),
-            I18n.t("autosetup.ui.menuPairSignal"),
+            I18n.t(guard.title),
             java.awt.Dialog.ModalityType.APPLICATION_MODAL);
 
         // OB-124: built here rather than being a class of its own, and just as much a window.
@@ -6134,7 +6218,7 @@ public class AutonomyEditorPanel extends JPanel
         // rather than rebuilding the window.
         final Runnable show = () ->
         {
-            java.util.List<TileKey> paired = session.getProtectingSignals(station);
+            java.util.List<TileKey> paired = signalsOf(guard, station);
 
             highlightedSignals.clear();
             highlightedSignals.addAll(paired);
@@ -6151,8 +6235,8 @@ public class AutonomyEditorPanel extends JPanel
             if (paired.isEmpty()) model.addElement(I18n.t("autosetup.ui.signalListEmpty"));
 
             heading.setText(paired.isEmpty()
-                ? I18n.f("autosetup.ui.promptSignalHow", describeTile(station))
-                : I18n.f("autosetup.ui.promptSignalsPaired", describeTile(station)));
+                ? I18n.f(guard.how, describeTile(station))
+                : I18n.f(guard.paired, describeTile(station)));
 
             list.setEnabled(!paired.isEmpty());
             remove.setEnabled(!paired.isEmpty());
@@ -6181,18 +6265,18 @@ public class AutonomyEditorPanel extends JPanel
 
         byAddress.addActionListener(e ->
         {
-            pairSignalsByAddress(station);
+            pairSignalsByAddress(guard, station);
 
             show.run();
         });
 
         remove.addActionListener(e ->
         {
-            java.util.List<TileKey> paired = session.getProtectingSignals(station);
+            java.util.List<TileKey> paired = signalsOf(guard, station);
 
             int at = list.getSelectedIndex();
 
-            if (at >= 0 && at < paired.size()) removeProtectingSignal(station, paired.get(at));
+            if (at >= 0 && at < paired.size()) removeGuardSignal(guard, station, paired.get(at));
 
             show.run();
         });
@@ -6209,10 +6293,11 @@ public class AutonomyEditorPanel extends JPanel
             }
 
             signalFor = station;
+            signalForGuard = guard;
 
             dialog.dispose();
 
-            waitFor(I18n.f("autosetup.ui.promptClickSignal", describeTile(station)));
+            waitFor(I18n.f(guard.click, describeTile(station)));
 
             refresh();
         });
@@ -6329,10 +6414,10 @@ public class AutonomyEditorPanel extends JPanel
      *
      * @param station the station's square
      */
-    private void pairSignalsByAddress(TileKey station)
+    private void pairSignalsByAddress(Guard guard, TileKey station)
     {
         String typed = JOptionPane.showInputDialog(owner(),
-            I18n.t("autosetup.ui.promptSignalAddress"), I18n.t("autosetup.ui.menuPairSignal"),
+            I18n.t("autosetup.ui.promptSignalAddress"), I18n.t(guard.title),
             JOptionPane.PLAIN_MESSAGE);
 
         if (typed == null) return;
@@ -6365,7 +6450,7 @@ public class AutonomyEditorPanel extends JPanel
 
         for (TileKey one : found)
         {
-            addProtectingSignal(station, one, false);
+            addGuardSignal(guard, station, one, false);
         }
 
         if (!found.isEmpty()) refresh();
@@ -6419,10 +6504,10 @@ public class AutonomyEditorPanel extends JPanel
      * @param signal the signal's square
      * @param redraw whether to repaint now - false while several are being added at once
      */
-    private void addProtectingSignal(TileKey station, TileKey signal, boolean redraw)
+    private void addGuardSignal(Guard guard, TileKey station, TileKey signal, boolean redraw)
     {
         java.util.List<TileKey> paired
-            = new java.util.ArrayList<>(session.getProtectingSignals(station));
+            = new java.util.ArrayList<>(signalsOf(guard, station));
 
         if (paired.contains(signal))
         {
@@ -6432,9 +6517,10 @@ public class AutonomyEditorPanel extends JPanel
 
         paired.add(signal);
 
-        session.setProtectingSignals(station, paired);
+        if (guard == Guard.ENTRY) session.setEntrySignals(station, paired);
+        else session.setProtectingSignals(station, paired);
 
-        say(hint, I18n.f(paired.size() == 1 ? "autosetup.ui.setSignal" : "autosetup.ui.addedSignal",
+        say(hint, I18n.f(paired.size() == 1 ? guard.set : guard.added,
             describeTile(station), describeTile(signal)));
 
         if (redraw) refresh();
@@ -6449,18 +6535,19 @@ public class AutonomyEditorPanel extends JPanel
      * @param station the station's square
      * @param signal the signal's square
      */
-    private void removeProtectingSignal(TileKey station, TileKey signal)
+    private void removeGuardSignal(Guard guard, TileKey station, TileKey signal)
     {
         java.util.List<TileKey> paired
-            = new java.util.ArrayList<>(session.getProtectingSignals(station));
+            = new java.util.ArrayList<>(signalsOf(guard, station));
 
         if (!paired.remove(signal)) return;
 
-        session.setProtectingSignals(station, paired);
+        if (guard == Guard.ENTRY) session.setEntrySignals(station, paired);
+        else session.setProtectingSignals(station, paired);
 
         say(hint, paired.isEmpty()
-            ? I18n.f("autosetup.ui.clearedSignal", describeTile(station))
-            : I18n.f("autosetup.ui.removedSignal", describeTile(signal), describeTile(station)));
+            ? I18n.f(guard.cleared, describeTile(station))
+            : I18n.f(guard.removed, describeTile(signal), describeTile(station)));
 
         refresh();
 
@@ -6982,11 +7069,13 @@ public class AutonomyEditorPanel extends JPanel
 
             signalFor = null;
 
-            addProtectingSignal(station, tile, true);
+            Guard guard = signalForGuard;
+
+            addGuardSignal(guard, station, tile, true);
 
             // And straight back to the list, which is where the signal just clicked now appears.  A
             // second one is a button and another click rather than the whole right-click menu again.
-            pairProtectingSignal(station);
+            pairGuardSignals(guard, station);
             return;
         }
 

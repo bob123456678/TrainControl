@@ -1995,6 +1995,26 @@ public class testAutonomyDiagramStore
     }
 
     /**
+     * An entry-guard pairing to a signal whose tile has been deleted goes, as a protecting one does (FR-096).
+     */
+    @Test
+    public void testAnEntryGuardPairingGoesWhenTheSignalsTileDoes()
+    {
+        TileKey station = new TileKey("1 - Main", 6, 10);
+        TileKey stays = new TileKey("1 - Main", 7, 10);
+        TileKey deleted = new TileKey("1 - Main", 8, 10);
+
+        store.setStation(station, true);
+        store.setPointName(station, "Entry guarded");
+        store.setEntrySignals(station, java.util.Arrays.asList(stays, deleted));
+
+        store.reconcile(new java.util.LinkedHashSet<>(java.util.Arrays.asList(station, stays)));
+
+        assertEquals(store.getEntrySignals(station), java.util.Arrays.asList(stays),
+            "the entry-guard pairing with the deleted signal survived - autonomy would throw an accessory nobody paired");
+    }
+
+    /**
      * And a station whose signals have all gone stops being paired at all.
      */
     @Test

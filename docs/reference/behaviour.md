@@ -1908,6 +1908,30 @@ The help text used to say only *"The route is held until these are true"*, with 
 firing, so a user who added a condition, pressed Test, was told the route would not fire, and then
 pressed Play got every switch in it thrown. It now says which firing it means.
 
+## 7c. The signals a station commands: the exit guard and the entry guard
+
+A station can be paired with signals of two kinds, each set up from the station's right-click menu in the autonomy
+editor through the same dialog - the list, **Click It on the Diagram**, **Enter Its Address...** (several at once,
+comma-separated), **Remove Selected**, **Done** - and each may hold several signals, because a platform reachable from
+two ends needs one on each approach.
+
+**The exit guard** - *Signal Protecting This Station*.  Its signals are RED while the platform is claimed - a train
+standing there, or a locked path that has reserved it - and GREEN when it is free.  An aspect DERIVED from the
+platform, asked again on every change of occupancy (`Layout.refreshProtectingSignal`), and asked per SIGNAL: one paired
+to two platforms stays red while either is claimed.  Only while trains are being run, so arranging the railway by hand
+moves no hardware.
+
+**The entry guard** - *Entry Guard Signals* (Adam, 2026-09-23, FR-096: *"a signal that turns red after arrival at the
+final designation.  Same UI to set it as the current linked signal exit guard, and multiple selections are
+possible"*).  Its signals are thrown RED when a train ARRIVES at the station as the end of its journey - in every tier,
+because every run records its arrival in the same place (`Layout.executePath`).  A train that only passes the station
+throws nothing.  **Nothing turns it green**: *"The next route sets it green, so that is out of scope."*  So it is a
+command on an event rather than an aspect, and nothing is remembered or undone.
+
+The two lists are separate and thrown at different moments; one signal may be on both.  Both are dropped with the
+station when it stops being one, and a pairing whose signal tile has gone is dropped when the setup is reconciled and
+reported by the editor's gone-signal notice.
+
 ## 7b. Routes that come from a file, and the pause between their commands
 
 **A route read from a file arrives switched off.** Adam, 2026-09-10: *"they should not be armed.  The

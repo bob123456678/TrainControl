@@ -198,6 +198,19 @@ public class AutonomyCompanionStore
     private final Map<TileKey, List<TileKey>> blockedPoints = new LinkedHashMap<>();
 
     /**
+     * The signals thrown red when a train ARRIVES at a station as the end of its journey - its entry guard (FR-096).
+     *
+     * Adam, 2026-09-23: *"file an FR for entry guard for stations.  This is a signal that turns red after arrival at
+     * the final designation.  Same UI to set it as the current linked signal exit guard, and multiple selections
+     * are possible."*  And, asked when it turns green again: *"The next route sets it green, so that is out of scope."*
+     *
+     * The same shape as `stationSignals` - several per station, keyed square to squares - and kept beside it for the
+     * reasons that one gives.  A different list, because the two are thrown at different moments: the exit guard is an
+     * aspect DERIVED from the platform being claimed, and this is a COMMAND on arrival that nothing here undoes.
+     */
+    private final Map<TileKey, List<TileKey>> entrySignals = new LinkedHashMap<>();
+
+    /**
      * @param station the station's square
      * @return the squares that make it unavailable while occupied, in the order they were added
      */
@@ -363,6 +376,64 @@ public class AutonomyCompanionStore
             if (station == null) continue;
 
             List<TileKey> signals = getProtectingSignals(station);
+
+            if (!signals.isEmpty()) out.put(station, signals);
+        }
+
+        return out;
+    }
+
+    /**
+     * @param station the station's square
+     * @return the squares of every signal guarding the way into it (FR-096), in the order they were paired
+     */
+    public List<TileKey> getEntrySignals(TileKey station)
+    {
+        List<TileKey> out = new ArrayList<>();
+
+        if (station == null) return out;
+
+        List<TileKey> keys = entrySignals.get(station);
+
+        if (keys != null) for (TileKey key : keys) if (key != null) out.add(key);
+
+        return out;
+    }
+
+    /**
+     * Replaces every signal guarding the way into a station (FR-096).
+     *
+     * @param station the station's square
+     * @param signals the signals' squares; empty or null unpairs
+     */
+    public void setEntrySignals(TileKey station, List<TileKey> signals)
+    {
+        if (station == null) return;
+
+        List<TileKey> keys = new ArrayList<>();
+
+        if (signals != null)
+        {
+            // De-duplicated here, as the protecting list is, so no writer can leave one signal in it twice.
+            for (TileKey signal : signals) if (signal != null && !keys.contains(signal)) keys.add(signal);
+        }
+
+        if (keys.isEmpty()) entrySignals.remove(station);
+        else entrySignals.put(station, keys);
+    }
+
+    /**
+     * @return every station with entry-guard signals, against those signals' squares (FR-096)
+     */
+    public Map<TileKey, List<TileKey>> getEntrySignals()
+    {
+        Map<TileKey, List<TileKey>> out = new LinkedHashMap<>();
+
+        for (TileKey station : entrySignals.keySet())
+        {
+            if (station == null) continue;
+
+            List<TileKey> signals = getEntrySignals(station);
 
             if (!signals.isEmpty()) out.put(station, signals);
         }
@@ -3796,6 +3867,27 @@ public class AutonomyCompanionStore
         // that commands real hardware: autonomy would start throwing an accessory nobody paired.
         report.droppedTileProperties.addAll(asStrings(dropMissing(stationSignals, keys)));
         report.droppedTileProperties.addAll(asStrings(dropMissing(blockedPoints, keys)));
+        report.droppedTileProperties.addAll(asStrings(dropMissing(entrySignals, keys)));
+
+        // THE ENTRY GUARD'S SIGNAL SQUARES TOO (FR-096), on the protecting list's rule below and for its reason: a
+        // pairing to a square that has gone would be inherited by whatever is drawn there next, and this list
+        // commands real hardware as well.
+        for (java.util.Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
+            = entrySignals.entrySet().iterator(); pairs.hasNext();)
+        {
+            Map.Entry<TileKey, List<TileKey>> pair = pairs.next();
+
+            List<TileKey> kept = new ArrayList<>();
+
+            for (TileKey signal : pair.getValue())
+            {
+                if (keys.contains(signal)) kept.add(signal);
+                else report.droppedTileProperties.add("entry guard signal at " + signal);
+            }
+
+            if (kept.isEmpty()) pairs.remove();
+            else pair.setValue(kept);
+        }
 
         for (java.util.Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
             = stationSignals.entrySet().iterator(); pairs.hasNext();)
@@ -4131,6 +4223,7 @@ public class AutonomyCompanionStore
         fields.put("portals", Held.SQUARE_VALUE);
         fields.put("captions", Held.SQUARE_VALUE);
         fields.put("stationSignals", Held.SQUARE_LIST_VALUE);
+        fields.put("entrySignals", Held.SQUARE_LIST_VALUE);
         fields.put("blockedPoints", Held.SQUARE_LIST_VALUE);
         fields.put("stations", Held.SQUARE_LIST);
         fields.put("disabledLinks", Held.SQUARE_LIST);
@@ -4952,6 +5045,7 @@ public class AutonomyCompanionStore
         all.add(new DirectionMapKept("tileDirections", tileDirections));
         all.add(new StringMapKept("barredArrivals", barredArrivals));
         all.add(new ListMapKept("stationSignals", stationSignals));
+        all.add(new ListMapKept("entrySignals", entrySignals));
         all.add(new ListMapKept("blockedPoints", blockedPoints));
         all.add(new PairMapKept("portals", portals, false));
         all.add(new PairMapKept("captions", captions, true));

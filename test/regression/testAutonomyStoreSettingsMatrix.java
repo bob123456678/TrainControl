@@ -135,6 +135,11 @@ public class testAutonomyStoreSettingsMatrix
             (store, at) -> store.setProtectingSignal(at, ELSEWHERE),
             (store, at) -> store.getProtectingSignal(at)),
 
+        // And the signals guarding the way into it (FR-096) - square to squares, the same shape
+        new Setting("a signal guarding the way into a station", "entrySignals",
+            (store, at) -> store.setEntrySignals(at, java.util.Arrays.asList(ELSEWHERE)),
+            (store, at) -> store.getEntrySignals(at).isEmpty() ? null : store.getEntrySignals(at)),
+
         // A reference rather than a fact: this square carries the NAME of another one
         new Setting("a label naming a station", "captions",
             (store, at) -> store.setCaption(at, ELSEWHERE),
