@@ -3681,6 +3681,20 @@ public class Layout
 
         synchronized (this)
         {
+            // ALREADY OUT, ASKED AGAIN WHERE THE CLAIM IS TAKEN (AUT-C1).
+            //
+            // `executePath` asks this before it gets here, outside the monitor - and the claim that answer reads is taken
+            // below, inside it, which can be seconds later while another train throws its accessories.  Two dispatches
+            // of one train in that window both passed the outer check and queued here; where their routes shared no
+            // track, both locked and two threads drove one train.  Asked in the same monitor as the claim, the second
+            // is refused.  Returned before anything is taken, so the caller's clean-up has nothing of this call's to
+            // remove - it removes only a claim that is this call's own (see `executePathInternal`).
+            if (this.isAlreadyUnderway(loc))
+            {
+                this.control.logf("autolayout.errorLocomotiveBusy", loc.getName());
+                return false;
+            }
+
             // Return if this path isn't clear
             if (!this.isPathClear(path, loc))
             {
@@ -8139,7 +8153,11 @@ public class Layout
             // The claim is dropped here as well as on the paths that set this, because a claim that
             // outlives its path lowers the cap for the rest of the session - a leak that makes the
             // railway quieter and quieter with nothing to say why.
-            this.takingPath.remove(loc);
+            //
+            // THIS CALL'S OWN CLAIM ONLY (AUT-C1).  A dispatch refused because the train is already claiming another
+            // route took nothing, and `remove(loc)` removed the WINNER's claim - leaving the train in neither map while
+            // it was still validating, so a third dispatch was let through and the cap undercounted.
+            this.takingPath.remove(loc, path);
             return false;
         }
         else
