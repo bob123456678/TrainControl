@@ -255,13 +255,14 @@ tier's "reachable and never chosen" notice, both in section 7 - counted a compul
 autonomy will never choose whether or not it was also parking, and its own comment claimed to BE
 `isSendableDestination`. Adam ruled that the editor should narrow, and it did: the set asks
 `isStation && !isAutoDestination` and, since E8-B1, `isActive` as well - the two clauses of the runtime
-rule that a SQUARE can answer. On his railway the two could not disagree, because he has no compulsory
-turn that is not also parking, which is exactly why it went unnoticed. The ruling is below, under
-*Turning round, and being chosen*.
+rule that a SQUARE can answer. Until 2026-09-23 the two could not disagree on his railway, because every
+compulsory turn on it was also parking, which is exactly why it went unnoticed; that day he made
+BottomMainC a compulsory turn that autonomy may still choose. The ruling is below, under *Turning
+round, and being chosen*.
 
-`testACompulsoryTurnStationIsNotEmittedAsADestination` measures that last fact against the real
-railway: every compulsory-turn copy on it has `isAutoDestination` false. It is a statement about how
-Adam has marked his berths, not about what the flag implies.
+`testACompulsoryTurnIsAnAutoDestinationExactlyWhenItIsNotParking` asks it of the real railway, which
+now has both kinds: every compulsory-turn copy is an autonomy destination exactly when its square is
+not marked parking, in the runtime and in the editor's set alike.
 
 **Which matters for length** (§5): the track-room rule has no terminus requirement and no
 destination requirement, so a compulsory turn a train does not physically fit into is still refused.
@@ -932,8 +933,8 @@ places, or no length, both halves fall back to the answer 5a already gives.
 
 **Mass Assign Lengths and Unmeasured Track: every leg, cut at switches** (FR-089; Adam, 2026-09-16, on review
 MAL-B1). The length rules between them read every leg on the railway: the room rule the track past the last switch,
-but the FR-087 allowance (5a) whole legs back until a reversal, and the tail and berth walks (5c) the switch square and
-the track before it. Measured on Adam's railway, that reach is every one of its 75 legs. So the tools cut every leg into
+but the FR-087 allowance (5a) whole legs back until a reversal, and the tail and berth walks (5c) the standing square,
+the switch square and the track before it. Measured on Adam's railway, that reach is every one of its 75 legs. So the tools cut every leg into
 **pieces** between two fixed points - a sensor or a switch - and ask for each piece's whole length once; each square is
 in exactly one piece. **A switch square is in no piece**: a share of a piece's length landing on it would sit where the
 room rule does not count it, so switches are asked for together, one turnout length for all of a page's switches with
@@ -1036,25 +1037,23 @@ The editor notice about turn-round squares with no length is a different questio
     road chosen. A road given this way runs along rails laid towards the train, as a run's road does. `core.testTheTailCrossedQuestion`,
     `regression.testTheTailCanBeGivenInTheEditor`.
 - **It stops at unmeasured track.** Only positive lengths are determinate.
-- **The square the train is standing on is an allowance, not track it lies over.** Adam, 2026-09-13:
+- **The square the train is standing on is track, and it is spent first** (Adam, 2026-09-23, OB-278:
+  *"the 2 length tile with the s88 consumes 2 units of the train"*, and asked where, *"Everywhere"*).
+  A train no longer than the square it stands on lies on that square and blocks nothing behind it;
+  a longer one spends the square and lies back over the rest. Every walk that works out where a body
+  lies does this alike - the tail walk here (places budget and hop budget), the berth rule, and the
+  orange line (§5c below) - and so does the room rule, which always counted the square.
+  **The allowance is the station's SIZE** - the maximum train length typed on it, which says how much
+  train it may hold and is what `whyTooLongForThisRoute` asks first. Adam's ruling of 2026-09-13,
   *"if the segment length is shorter, more should be blocked. The station size is an allowance, not a
-  length."* What a station measures is how much train it may HOLD - the question
-  `whyTooLongForThisRoute` asks - so a 2-unit train at a platform measured 10 still lies back over the
-  track behind the platform, and that track is still blocked. The square is claimed (the train is on
-  it) and its measurement is not spent, in the places budget and in the hop budget alike. Before this
-  a generously measured platform absorbed the whole of any train standing at it and blocked nothing
-  behind it, however long the train was. The berth rule reads the same square the same way, and the
-  two are written to agree rather than being one piece of code - which is where SEV-B1 and SVX-B1 both
-  came from, in opposite directions.
-- **And it is the ARRIVAL station's allowance, so a running train does not get one.** Adam,
-  2026-09-22, asked where the maximum train length should be checked (OB-244): *"it's the arrival
-  station only"*. MT-438 anchors a train part-way through a run at its last MILESTONE, and a milestone
-  is ordinary block - the body really does lie over it - so it is charged like any other square. Left
-  exempt, a train whose milestone is a long block claimed a square BEHIND that block as well, and
-  `isPathClear` then refused track no train is on. `walkStandingTrains` decides this from the RUN
-  rather than from the anchor, because a running train's head can also be the first reserved Point
-  that loop meets, which is iteration order rather than a fact about the railway; a run that has ENDED
-  leaves nothing to find, so a train standing at the end of one keeps the allowance unchanged.
+  length"*, says exactly that; from 2026-09-13 to 2026-09-23 it was read as meaning the length measured
+  on the station's square, and all three walks left that square unspent. On his measured railway,
+  where each berth's length is written on its sensor square, that put every standing train's tail over
+  the switch behind: TunnelLongPark (2 on its square, 1 behind, holds 3) took a one-unit train and no
+  longer, and TunnelCenterPark and TopR1ParkShort took none. `core.testAStationsSizeIsAnAllowance`.
+- **A train part-way along a run is walked the same way from its last MILESTONE** (OB-244, MT-438):
+  a milestone is ordinary block and the body lies over it. That used to be the exception to the
+  misreading above; with the square spent everywhere there is no exception left to make.
   `core.testARunningTrainHasOneTail.testAMidRunMilestoneIsNotAnAllowance`.
 - **The first hop takes the copy of the rail the train ARRIVED along** (SVZ-B1). A piece of rail is two
   edges, one per direction, and at a berth both can report the same way in. An edge's places are the
@@ -1189,7 +1188,7 @@ The editor notice about turn-round squares with no length is a different questio
   most. Adam, 2026-09-23: *"when we draw orange lines, they don't overlap with sensors"* - on every sensor,
   occupied or not. They had been left out on purpose - *"a train standing there would be shown standing
   there"* - and his ruling is that the orange shows where the train is. Built 2026-09-23 (OB-277): the
-  standing square is drawn and not spent (its length is the allowance above), and each sensor the body
+  standing square is drawn and, since OB-278, spent first like every square behind it, and each sensor the body
   reaches is drawn along the road facing the track just walked, which names one arc even on a double
   curve. `regression.testTheWashIsNoLongerThanTheTrain.testTheSquareTheTrainStandsOnIsOrange` and
   `testASensorTheTailLiesAcrossIsOrange`, the second with the train one unit too short as its control.

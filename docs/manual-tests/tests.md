@@ -63,8 +63,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-477](#mt-477) | 2026-09-23 | The tail question lists RampDown once | fixed unvalidated | OB-276 |
 | [MT-478](#mt-478) | 2026-09-23 | Captions and your own writing are two settings; Control+L steps through five | fixed unvalidated | OB-272 |
 | [MT-479](#mt-479) | 2026-09-23 | An entry guard throws its signals red when a train arrives, and not when one passes | fixed unvalidated | FR-096 |
+| [MT-480](#mt-480) | 2026-09-23 | A train fits on the square it stands on, and TunnelLongPark takes three units | fixed unvalidated | OB-278 |
 
-Everything else - 443 of 479 - needs nothing from you unless the area changes again:
+Everything else - 443 of 480 - needs nothing from you unless the area changes again:
 392 **fixed validated** and 51 **superseded**.
 
 ---
@@ -24592,5 +24593,44 @@ through it with the next station's guard as the control), `core.testAutonomyDiag
 protecting list, forgotten when the square stops being a station, emitted to the build) and
 `core.testAutonomyDiagramStore` (a deleted signal's pairing goes) - each shown red under its own mutation.  The
 dialog and the menu item are what only you can check.
+
+---
+
+<a id="mt-480"></a>
+
+### MT-480 - 2026-09-23 - A train fits on the square it stands on, and TunnelLongPark takes three units
+
+**Disposition:** fixed unvalidated
+**From:** OB-278
+
+**Written:** 2026-09-23
+
+Your report, 2026-09-23: *"75 407 DB can't go to TunnelLongPark from BottomMainPost unless it is length 1, whereas up
+to length 3 should be allowed (both measured and max on the station)."*  And: *"the 2 length tile with the s88
+consumes 2 units of the train"* - at every station.
+
+**What was wrong.**  Your ruling of 13 September - *"The station size is an allowance, not a length"* - was read as
+meaning the length measured on the station's square, not the station's maximum train length.  So the square a train
+stands on was never counted, and every train was placed behind it: at TunnelLongPark (2 on its square, 1 behind) a
+two-unit train reached the switch.  It was the same at nearly every berth you measured - TunnelCenterPark and
+TopR1ParkShort took no train at all.
+
+**Steps**
+
+1. Stand 75 407 DB at BottomMainPost and set its length to 1.  Right-click it and look for TunnelLongPark.  Repeat at
+   lengths 2, 3 and 4.
+2. Park a two-unit train at TunnelLongPark and look at the orange line.  Then make it three units.
+3. Send a two-unit train to TunnelCenterPark.
+
+**Expected**
+
+- Step 1: TunnelLongPark is offered at 1, 2 and 3; at 4 it is refused because the station holds 3.
+- Step 2: at two units the orange is on TunnelLongPark's own square only; at three it also covers the square behind,
+  and stops short of the switch.
+- Step 3: it is accepted.
+
+*What this is:* `core.testAStationsSizeIsAnAllowance` (your journey at 1 to 4 units, the berth rule, the track
+blocked behind a standing train, and the orange line, all on your measured TunnelLongPark) - each seen red on the old
+code and again under its own mutation.
 
 ---

@@ -44,15 +44,15 @@ import org.traincontrol.marklin.MarklinControlStation;
  * the berth case along with the platform one. So the berth claims are not decoration; they are the
  * mutation target.
  *
- * **ON HIS MEASURED RAILWAY (refrozen 2026-09-23 from `2958fcf3`), not on figures set here.** Until
+ * **ON HIS MEASURED RAILWAY (refrozen 2026-09-23 from `e36df979`), not on figures set here.** Until
  * then the snapshot measured almost nothing, so this class wrote Adam's hypothetical into it - *"i didnt
  * update any layout files with this info, but this should be the example motivating the design"* - 3
  * either side of the switch at 14,12.  His own measurements do not have that shape there (the eastbound
  * approach to BottomMainA measures 5 with 4 past the switch, and BottomMainA holds 5, so no train the
- * station takes stands across those points).  They have it at the WESTBOUND end: the approach from
- * BottomMainPost measures 4 with 2 past the switch, so a three- or four-unit train stands across the
- * points of a platform that holds five.  That is the platform this class asks about now, and the berth
- * is still TunnelLongPark, which measures 3 past its switch on an approach of 7.
+ * station takes stands across those points).  They have it at Tunnel: the approach from TunnelPre
+ * measures 4 with 2 past the switch, so a three- or four-unit train stands across the points of a
+ * platform that holds five.  That is the platform this class asks about now, and the berth is still
+ * TunnelLongPark, which measures 3 past its switch on an approach of 7.
  *
  * **One setting of his is taken off, and it is the berth's capacity.**  He gave every berth a maximum
  * equal to the room past its switch, so on his railway the capacity rule refuses an overhanging train at
@@ -113,7 +113,7 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
         // NAMED, not searched for.  Several runs reach TunnelLongPark and BottomMainA, and only one of
         // each is the piece of railway this class is about - picking "the longest" once got an
         // unmeasured one and the class then asserted things about a different approach.
-        toThePlatform = approachFrom("BottomMainPost (southbound)", "BottomMainA (westbound)");
+        toThePlatform = approachFrom("TunnelPre", "Tunnel (southbound)");
         toTheBerth = approachFrom("BottomMainA (westbound)", "TunnelLongPark");
 
         List<String> names = model.getLocList();
@@ -151,7 +151,7 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
     @Test
     public void testTheFixtureIsTheShapeTheRuleIsAbout() throws Exception
     {
-        assertTrue(toThePlatform.getEnd().isAutoDestination(),
+        assertTrue(toThePlatform.getEnd().isDestination() && toThePlatform.getEnd().isAutoDestination(),
             toThePlatform.getEnd().getName() + " is not a station autonomy may choose, so the"
             + " relaxation this class is about does not apply to it");
 
@@ -172,6 +172,10 @@ public class testABerthAndAPlatformJudgeAnOverhangDifferently
             toThePlatform.getEnd().getName() + " holds " + toThePlatform.getEnd().getMaxTrainLength()
             + ", no more than its approach, so the capacity rule refuses the longer train before the"
             + " relaxation's bound is asked");
+
+        assertTrue(toTheBerth.getEnd().isDestination(),
+            toTheBerth.getEnd().getName() + " is not a destination, so no train stops there and the berth half"
+            + " is about nothing");
 
         assertFalse(toTheBerth.getEnd().isAutoDestination(),
             toTheBerth.getEnd().getName() + " is a station autonomy may choose, so it is not the"
