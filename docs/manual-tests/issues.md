@@ -2759,6 +2759,57 @@ tail rules - a consolidated length sits on ONE square, so a train resting anywhe
 spends nothing there, which is the direction that admits rather than refuses.  That last point is why
 this needs his word rather than a guess.
 
+### OB-276 - 2026-09-23 - the tail question lists one square twice when the road back to it is a single hop
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-09-23  
+**Filed:** 2026-09-23  
+
+Adam, 2026-09-23: *"when pasting 75 407 DB on bottomsecondary, the tail question lists rampdown twice in
+the list."*
+
+**Two entries, one name - and they are almost certainly two COPIES of RampDown.**  The walk keys its
+first hops by `roadKeyOf(candidate.getStart())` and marks squares walked by PLACE, so it does not visit
+one square twice; what it can do is reach two different copies of RampDown by two different roads back,
+and both are shown by whatever `shown` maps their Point name to, which is the square's own name.  His
+railway builds `RampDown (northbound)` and `RampDown (northbound, reverse)`, so there are two to reach.
+
+**The disambiguation already exists, and a guard switches it off in exactly his case.**
+`TailCrossedPrompt.label` counts the shown names and, where one occurs more than once, relabels it
+*"<name> via <next sensor>"* (TLR-C3), then falls back to naming every sensor on the way where that is
+still ambiguous (TLV-B3).  Both passes are guarded by:
+
+    choice.getRoad().size() > 1
+
+BottomSecondary is one hop from RampDown, so each road back is a SINGLE edge, the guard is false for
+both choices, and neither gets a via - leaving two entries reading `RampDown`.
+
+The guard is not careless: with a one-edge road there is no *"next sensor towards the train"* to name,
+so `viaNames` would have nothing to say.  The machinery simply has no material for an adjacent square.
+
+**So the fix needs a discriminator that works when the road is one hop**, and the honest options are:
+
+- the SIDE the road comes in by, which `entrySideOf` already answers and which the arrival-side prompt
+  already shows the operator elsewhere;
+- the copy's own facing, which is what makes the two answers different in the first place;
+- or the square itself as the via - *"RampDown via RampDown"* is useless, so this is the one to reject.
+
+**IT MUST NOT BE DEDUPED.**  The two choices describe DIFFERENT roads - that is why there are two - so
+dropping one silently discards a real answer about where the train's tail is, and the tail is what
+blocks track behind it.  The exception is two choices whose roads are literally the same edges, which
+would be a genuine duplicate and should be collapsed by ROAD rather than by name.  Which of those his
+two are is the first thing to measure.
+
+**Worth checking at the same time:** whether the same guard hides a duplicate anywhere else.  Two
+squares adjacent to a junction is not a rare shape, and `label` is the only place that disambiguates.
+
+Related: `FR-088` is the question itself, `MT-435` and `MT-438` are its hands-on tests, and section 5c
+of `behaviour.md` carries the rule about which sensors are offered.
+
+**His aside** - *"this is why my new, measured layout"* - reads as another argument for finalising and
+blessing the layout, which he raised the same day.  Recorded here because it is the third defect this
+week whose cause is one square being several Points.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
