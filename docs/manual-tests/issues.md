@@ -2568,6 +2568,48 @@ of them needs changing.
 `SPEC-A1` shape, an arbitrary copy standing in for an answer - but changing it without a claim that
 can fail would be putting an unchecked change into the door that decides which way trains face.
 
+
+**The door is confirmed, 2026-09-22.**  Adam: *"Control V over the square in the viewer."*  The popup
+diagram forwards its keys to the main window - `LayoutPopupUI.formKeyPressed` calls
+`childWindowKeyEvent`, which calls `LocControlPanelKeyPressed` - so Control+V in the viewer is the
+same `locomotiveGestureOnDiagram` door, keyed off the hovered tile.  There is no second paste
+implementation to look for.
+
+**And the copy a paste takes disagrees with the walk on TEN of the seventeen ordinary two-copy squares
+of his railway**, measured on an empty snapshot: `BottomMainAPre`, `BottomMainBCPre`, `TopMainR1Inter`,
+`LowerFrontPre`, `TunnelPre`, `BottomCrossover`, `LowerDownPre`, `TopMainR2Inter`, `TopMainR1`,
+`TopMainR2`.  `StationIndex.speakerAt` prefers a copy trains may STOP at - a sound rule for the
+question it was written for, and one that says nothing about which way a train points.
+
+**BottomMainA is NOT one of the ten**, which is why his own square would not reproduce: only its
+eastbound copy is a destination, so `speakerAt` lands on it and the paste agrees with the walk there.
+
+**What the third attempt found, and it is sharper than where this started.**  Making the copy follow
+the walk does not work on most of those ten, because `copyFacing` accepts only a copy that
+`isDestination` - `moveLocomotive` refuses any other - and on `TopMainR1` the southbound copy the walk
+names is not one.  So the walked heading cannot be PLACED there at all.
+
+**But it is still RECORDED.**  `facingAfterAPaste` keeps the walk's heading whenever
+`held.containsValue(keep)`, and `held` is `facingsFor` - every copy of the square, including copies a
+train may not stand on.  So the two sides of one paste ask different questions:
+
+- the RECORD asks `facingsFor`: does any copy face this way?
+- the PLACEMENT asks `isDestination`: may a train be put on that copy?
+
+Where those disagree the setup records a heading the train is not standing on - and a diagram drawn
+from the recorded facing then shows it pointing a way the railway does not have it.  That is a
+one-line agreement rather than a redesign: `facingAfterAPaste` should be given the headings a train
+may be PLACED on, not every heading the square builds.
+
+**Three attempts, each refuted by its own evidence, and nothing shipped.**  The first was a claim that
+could not fail (BottomMainA, where the two already agree).  The second and third each assumed the
+walked heading was placeable.  Recorded rather than fixed because the next step changes what a paste
+RECORDS, and the fourth thing to change about this is worth getting right - `facingAfterAPaste`'s own
+javadoc says three attempts preceded it.
+
+**What would confirm it in one gesture:** paste onto `TopMainR1` or `TopMainR2` in the viewer and say
+whether the arrow disagrees with the way the train actually drives out.
+
 ### OB-271 - 2026-09-22 - focusability in the route editor
 
 **Kind:** bug  
