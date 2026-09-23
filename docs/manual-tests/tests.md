@@ -23964,6 +23964,14 @@ there is a spinner for my own routes too, both single and bulk.
 
 *Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-23.**
+
+Fixed - the guard was asking the wrong question.  It asked whether a route's id was 1000 or more, which is what TrainControl has handed out since 2025-02-01, and most of your own routes are older than that: ids 1 to 87.  So it took them for the Central Station's and synced behind the spinner, single and bulk alike.
+
+What says a route came from the station is its lock: only a sync sets it, to exactly the routes the station sent, and it is saved with the route.  Enable/Disable, the bulk version, Delete and the old end of Change Route ID all ask the lock now.  Change Route ID still syncs when the NEW id is below 1000, because that is an id the station could have issued since the last sync.
+
+`ui.testYourOwnRoutesToggleWithoutASync` - single and bulk, each with a station route as the control - was red first, and is red again under each of three mutations.  Steps 1 to 4 are worth running again; step 5 still needs a route from the station.
+
 ---
 
 <a id="mt-468"></a>
@@ -24412,6 +24420,14 @@ Works, make sure the text field is focused by default. Also, when right clicking
 
 *Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-23.**
+
+Both done, one with a caveat.
+
+**Bulk Tools** is now at the bottom of an empty square's menu, and a text square's, behind a divider - as on a square of track.  `ui.testBulkToolsHoldsTheWholeLayoutTools.testAnEmptySquaresMenuHasBulkTools`, red first.
+
+**The focus** I could not make fail.  A new test opens the real editor window with two of your trains unmeasured, starts the walk from the Bulk Tools item - once by the item itself, once through the right-click menu's own click handling, which takes the menu down first - and finds the number field focused on the first train, after 0 is refused, and on the second train (`ui.testTheLengthPromptHasTheKeyboard`).  So the prompt now asks for the field by name whenever it gains the keyboard, rather than leaving it to Swing's focus order, but I cannot show that this changes what you saw.  If it still happens, please say which prompt - the first, the one after a refused number, or a later train - and whether that train was on the page you were looking at.
+
 ---
 
 <a id="mt-475"></a>
@@ -24553,6 +24569,18 @@ Works. But when set to lenth 3, the tail always follows switch 51 turned, rather
 
 *Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-23.**
+
+Both notes were one defect, and it is fixed.
+
+Measured on your railway: the rails from RampDown (4 units, straight) and BottomCrossover (5, turned) share every square from BottomSecondary up to switch 51 at 18,11 - three units - so at length 3 the tail ends on the points.  The question only counted a junction once the tail had crossed a sensor beyond it, so at 3 nothing was asked and the tail was laid on whichever rail the walk met first: the turned one.  At 4 it reached RampDown's sensor and not BottomCrossover's, so the list offered RampDown alone - the one choice you saw - though the train could as well be four units up the turned rail.
+
+Now the question is put wherever the tail has passed the switch its roads part at, and every road it can lie on is offered: a sensor it reached by name, and one it has not reached as "towards X (not reached)".  At 3 you get towards RampDown and towards BottomCrossover; at 4, RampDown (chosen to start with - the one sensor crossed) and towards BottomCrossover; at 2 or less nothing is asked, because the tail has not reached the points.  So a one-entry list no longer comes up, and there was nothing left to auto-select.  The question's wording says this in all eight languages.
+
+`core.testATailPastASwitchIsAskedAbout` on your frozen railway and two new claims in `core.testTheTailCrossedQuestion`, red first; five mutations, each red.
+
+Left as it was, and yours to decide (it is in the report): with no answer, or Not known, a fork right behind the platform still puts the tail on the first rail the walk finds - at BottomSecondary the turned one - where every other fork stops at the switch.
+
 ---
 
 <a id="mt-478"></a>
@@ -24641,6 +24669,12 @@ works, but the editor window for entry/exit guards is much too wide.  make the s
 
 *Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-23.**
+
+Done.  The sentence now wraps so that the one you see before any signal is paired takes two lines, and the window is never narrower than its row of buttons.  The longer sentence shown once signals are paired takes more lines at the same width rather than widening the window, and the window is sized for it from the start, so pairing the first signal does not make it jump.
+
+`ui.testTheGuardWindowIsNotTooWide` opens the real window for both guards: the entry window was 1123 pixels wide for a 1085-pixel sentence.  Red first, and red under two mutations - no wrapping, and wrapping as narrow as a tooltip.
+
 ---
 
 <a id="mt-480"></a>
@@ -24685,6 +24719,12 @@ code and again under its own mutation.
 the parking works, but with 75 407 DB pasted on bottommainpost and facing south, I am not offered a selection of feedback 2014 as the last square the train passed (i.e. tail going north out of bottommainpost, having arrived from the north and facing south).
 
 *Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-23.**
+
+Nothing to fix here, I think - here is why.  At BottomMainPost facing south, having come in from the north, the only road back north is the one from feedback 2014, the sensor at 1 - Main 7,1: 10 units on your measurements.  75 407 DB is 3 units long, so its tail lies about a third of the way along that stretch and has not crossed 2014.  The question asks for the farthest sensor the tail has crossed, and there is none.  With only one road back there is nothing to choose between either: the tail can only be on that stretch, and the orange shows it there.
+
+A train of 10 units or more would have 2014 in its list - but still would not be asked, because with one road every answer describes the same track.  If by "the last square the train passed" you meant the last sensor the FRONT passed on the way in, say so: that is a different question from the one this prompt asks.
 
 ---
 
@@ -24871,6 +24911,18 @@ those five) - each red under its own mutation.
 I can't see to test this when assigning individual tiles, and I already mass assigned lengths everywhere.
 
 *Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-23.**
+
+You do not need to run it: your own saved setup shows it happened.  Read from cs2_sample_layout/config/autonomy/setup.json as your app last saved it, against the frozen copy taken before the fold: all five route tiles now carry no length, and each unit is on a square beside it.
+
+- 2 - Bottom 19,3 -> 20,3, which went from 1 to 2.
+- 2 - Bottom 4,11 -> 4,12, from none to 1.
+- 1 - Main 16,12 -> 17,12, from 1 to 2.
+- 1 - Main 15,13 -> 16,13, from none to 1.
+- 1 - Main 6,7 -> 6,6.  That stretch has since been written as 3 on 6,5 - a Segment Length, I assume - which is the same total.
+
+The layout's lengths add up to 181 units before and after.  If that is enough, mark it as working.  The steps asked you to read a length on each square, which the editor does not show square by square - my mistake.
 
 ---
 

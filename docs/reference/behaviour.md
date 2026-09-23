@@ -999,7 +999,13 @@ carrying one, and the bulk clear counts any non-zero maximum so that one already
 and **Clear All Max Train Lengths** (FR-092) each take their setting off every page after a confirmation that says how
 many.  The two WALKS - lengths and maxima - share one prompt: the number box has the keyboard focus, Enter submits,
 Skip leaves the square as it was, Cancel or Escape stops, and the prompt opens where the last one was left
-until a new round is started.  The two clears ask once, in a confirmation.
+until a new round is started.  The number box is asked for by name whenever the prompt gains the keyboard (Adam,
+2026-09-23, MT-474: *"make sure the text field is focused by default"*).  The two clears ask once, in a confirmation.
+
+**Bulk Tools is on every square's menu** - an empty square's and a text square's as well as track's (Adam, 2026-09-23,
+MT-474: *"when right clicking an empty square, show the bulk tools menu option"*).  Its items are about the whole setup
+rather than the square under the pointer, so they sit at the bottom, behind a divider.
+`ui.testBulkToolsHoldsTheWholeLayoutTools.testAnEmptySquaresMenuHasBulkTools`.
 
 **Segment Length speaks for the whole run** (SET-B3).  A run of plain track has one square that speaks for it, and
 that has to stay true now that Mass Assign Lengths shares a piece's length over every square it covers: the dialog
@@ -1037,15 +1043,24 @@ The editor notice about turn-round squares with no length is a different questio
     the tail of the train recently crossed.  Also, ideally in the autonomy editor, it should allow the user to
     click to select as well."*). The whole train lies between the farthest sensor its tail has crossed and the
     square it stands on, so that sensor names the road. The question is put - when a train is pasted, placed
-    from the right-click menu, or set in the locomotive dialog - only where a junction behind the train has two
-    roads back and its tail has crossed a sensor on at least one of them - two roads being two pieces of METAL,
-    compared by the places the rail runs over (OB-276: RampDown's southbound lane and its northbound turning copy
-    both leave south by one rail, and were offered as two "RampDown"s; a balloon's two ends are still two);
-    elsewhere every answer describes the same track. Not asked, or closed without an answer, the road the train
+    from the right-click menu, or set in the locomotive dialog - only where the tail lies past a junction with two
+    roads back and the roads put it on different track - two roads being two pieces of METAL, compared by the
+    places the rail runs over (OB-276: RampDown's southbound lane and its northbound turning copy both leave south
+    by one rail, and were offered as two "RampDown"s; a balloon's two ends are still two); elsewhere every answer
+    describes the same track. **A tail that has passed the switch the roads part at is asked about whether or not
+    it has reached a sensor** (Adam, 2026-09-23, MT-477: *"when set to lenth 3, the tail always follows switch 51
+    turned, rather than facing straight toward rampdown ... technically that length should qualify for the
+    prompt"*): the last square two rails share holds the points, and a tail reaching into it lies on one leg or the
+    other. Each road it can lie on is offered - by its sensor where the tail reached it, and as **towards X (not
+    reached)** where it did not - so at BottomSecondary three units are offered towards RampDown and towards
+    BottomCrossover, and four units RampDown and towards BottomCrossover, where the list once offered RampDown
+    alone. A tail that ends before the points covers the same squares on every road, and is not asked.
+    `core.testATailPastASwitchIsAskedAbout`. Not asked, or closed without an answer, the road the train
     had on the railway is kept where it stays on the same square with the same side; **Not known** forgets it. The
     list starts on the road it has; with none, on the one sensor nearest the back of the train where exactly one
     qualifies - no other offered sensor lies further back on the same road - and on nothing otherwise (FR-088,
-    Adam on MT-435, 2026-09-15: *"so the user can just click OK if appropriate"*). The list
+    Adam on MT-435, 2026-09-15: *"so the user can just click OK if appropriate"*); a way towards a sensor the tail
+    has not reached is no sensor crossed, and is never where the list starts (MT-477). The list
     offers each such sensor, nearest first, and **Not known**, which keeps the fork rule. A sensor exactly the
     train's length back is offered: the tail has reached it (OB-226). Only roads a train can drive in on are
     offered - the walk back takes rails that run towards the train - so a road it could only have reversed along is

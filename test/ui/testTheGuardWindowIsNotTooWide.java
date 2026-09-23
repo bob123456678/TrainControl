@@ -31,7 +31,8 @@ import org.traincontrol.util.I18n;
  * claims: the entry window is narrower than its sentence on one line, which is the width he reported; and neither
  * window's first sentence - the one before a signal is paired - takes more than the two lines he asked for.
  *
- * MUTATION: set the heading's text unwrapped, as it was, and the first claim fails.
+ * MUTATION: wrap it at no width, as it was, and the first claim fails; wrap it at a tooltip's 320 pixels and the second
+ * does.
  *
  * @author Adam
  */
