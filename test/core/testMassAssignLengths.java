@@ -922,6 +922,9 @@ public class testMassAssignLengths
 
         session.setAutoDestination(key(5, 1), false);
 
+        // The berth measured too: its own square counts, as the berth rule counts it (TDY-B2).
+        session.getStore().setTileLength(key(5, 1), 2);
+
         session.getStore().setTileLength(key(2, 1), 2);
 
         assertTrue(session.stationsWithAHalfMeasuredApproach().containsKey(key(5, 1)),
@@ -1714,6 +1717,9 @@ public class testMassAssignLengths
 
         session.setAutoDestination(key(5, 1), false);
 
+        // The berth measured too: its own square counts, as the berth rule counts it (TDY-B2).
+        session.getStore().setTileLength(key(5, 1), 2);
+
         session.getStore().setTileLength(key(2, 1), 2);
 
         assertTrue(session.stationsWithAHalfMeasuredApproach().containsKey(key(5, 1)),
@@ -2293,6 +2299,43 @@ public class testMassAssignLengths
         assertTrue(session.stationsWithAHalfMeasuredApproach().isEmpty(),
             "an ordinary platform is warned about a refusal that never happens there - the berth rule exempts"
             + " every station autonomy may choose");
+    }
+
+    /**
+     * The berth's own square counts, as the berth rule counts it: measured alone it makes the approach half measured,
+     * and unmeasured it is one of the squares still to measure (TDY-B2).
+     *
+     * OB-278 made the square a train stands on rail the walk spends first, and `Layout.whyABerthCannotHoldIt` counts it
+     * among the measured places - so a berth measured and nothing behind it is JUDGED, and refuses every train longer
+     * than it, claiming the unmeasured squares behind for nothing.  The notice walked the leg's path, which leaves out
+     * the square the leg ends on, so it never saw that state - the first one the berth rule's own advice produces
+     * ("measure the berth square first").
+     *
+     * MUTATION: stop the notice looking at the leg's end and both claims fail.
+     *
+     * @throws IOException from the fixture
+     */
+    @Test
+    public void testTheBerthsOwnSquareCountsInTheHalfMeasuredNotice() throws IOException
+    {
+        openBerthBehindASwitch(key(5, 1));
+
+        // THE BERTH MEASURED, AND NOTHING BEHIND IT.
+        session.setTileLength(key(5, 1), 2);
+
+        assertTrue(session.stationsWithAHalfMeasuredApproach().containsKey(key(5, 1)), "a berth measured on its own"
+            + " square with nothing behind it is judged by the berth rule, which then refuses every train longer than the"
+            + " berth - and the notice says nothing: " + session.stationsWithAHalfMeasuredApproach());
+
+        // AND THE OTHER WAY ROUND: everything behind measured, the berth not.
+        session.setTileLength(key(5, 1), 0);
+        session.setTileLength(key(4, 1), 2);
+        session.setTileLength(key(3, 1), 1);
+        session.setTileLength(key(2, 1), 2);
+
+        assertTrue(session.stationsWithAHalfMeasuredApproach().containsKey(key(5, 1)), "the approach is measured and"
+            + " the berth itself is not, which the berth rule counts as a square with no length - and the notice does"
+            + " not: " + session.stationsWithAHalfMeasuredApproach());
     }
 
     /**

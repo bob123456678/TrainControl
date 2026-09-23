@@ -8807,20 +8807,27 @@ public class AutonomySession
                 boolean anyMeasured = false;
                 int unmeasured = 0;
 
-                for (GraphReducer.TileStep step : arriving.getPath())
+                // THE PATH AND THE BERTH ITSELF.  The path is the squares between the leg's two ends, endpoints
+                // excluded: the start is where a train would be coming FROM, and the end - the berth - is rail the walk
+                // spends first (OB-278), which `Layout.whyABerthCannotHoldIt` counts among the measured places.  Left
+                // out, a berth measured with nothing behind it - judged by the rule, and closed to every longer train
+                // - was not warned about, and an unmeasured berth was one square fewer than the rule's count (TDY-B2).
+                java.util.List<TileKey> squares = new java.util.ArrayList<>();
+
+                for (GraphReducer.TileStep step : arriving.getPath()) squares.add(step.getTile());
+
+                squares.add(square);
+
+                for (TileKey tile : squares)
                 {
-                    // The berth's own square is rail the walk spends first (OB-278), so it counts as a measured
-                    // place here as it does in `Layout.whyABerthCannotHoldIt`.  The start of the leg is where a
-                    // train would be coming FROM, and is not a step of the path.
-
-                    // Nor is a route tile, which takes no length (OB-273): counting it made TopR1ParkLong and
+                    // Not a route tile, which takes no length (OB-273): counting it made TopR1ParkLong and
                     // TopR1ParkShort read as half measured when every square that takes a length was measured.
-                    if (getGraph() != null && takesNoLength(step.getTile())) continue;
+                    if (getGraph() != null && takesNoLength(tile)) continue;
 
-                    if (store.getTileLength(step.getTile()) > 0) anyMeasured = true;
+                    if (store.getTileLength(tile) > 0) anyMeasured = true;
 
                     // AN ANSWERED 0 IS NOT MISSING (Adam, 2026-09-23: "stop listing answered zeros as missing").
-                    else if (!store.isTileLengthAnswered(step.getTile())) unmeasured++;
+                    else if (!store.isTileLengthAnswered(tile)) unmeasured++;
                 }
 
                 if (anyMeasured && unmeasured > worst) worst = unmeasured;
