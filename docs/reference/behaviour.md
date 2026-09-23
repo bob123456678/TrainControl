@@ -965,9 +965,16 @@ that is set deliberately, i.e. for adjacent tracks.  same meaning to the model, 
 everything to get assigned without what appears to be a skip."*). So the walks accept 0, the piece is
 recorded as answered and is not asked about again, and **every length rule reads it exactly as it reads a
 piece nobody has measured** - 5b is unchanged. Confirmed by Adam when asked the question directly: a deliberate 0 is not a
-measurement of nothing, and a stretch whose answers are all 0 is still not judged. What changes is only whether the tools keep asking. Not
-yet built: today 0 is refused at the prompt and erased by the store, which is why an adjacent pair of
-sensors reads as skipped for ever.
+measurement of nothing, and a stretch whose answers are all 0 is still not judged. What changes is only whether the tools keep asking.
+Built 2026-09-23 (MT-476).
+
+**Segment Length's 0 is the same answer, and Clear is its own button** (Adam, 2026-09-23, FR-097: *"no, add a clear
+button"*). A 0 typed there records the run - or each selected square - as answered 0; **Clear**, or an emptied field,
+removes the length and the answer. And **an answered 0 is not listed as missing** (*"stop listing answered zeros as
+missing"*): the half-measured berth notice, the reversal notice and the berth refusal's "N squares still have no
+length" leave answered squares out, while the rules go on reading them as nothing. The refusal is worded on the
+running layout, so the build marks an answered place and the runtime keeps the mark.
+`core.testMassAssignLengths.testSegmentLengthZeroIsAnAnswerAndClearTakesItAway`, `core.testAnAnsweredZeroIsNotMissing`.
 
 **A square two roads cross is in no piece either** (Adam, 2026-09-19, on review SET-B2): *"For crossings: if its
 length is set, count that length once in each direction."*  A crossing - or a double curve with track on both of its

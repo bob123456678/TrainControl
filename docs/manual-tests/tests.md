@@ -67,8 +67,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-481](#mt-481) | 2026-09-23 | The orange line and the grey carry on across a route tile | fixed unvalidated | OB-279 |
 | [MT-482](#mt-482) | 2026-09-23 | The grey is only where the train is, and nothing past the switch | fixed unvalidated | OB-280 |
 | [MT-483](#mt-483) | 2026-09-23 | A cut train is pasted facing the way it would arrive | fixed unvalidated | OB-270 |
+| [MT-484](#mt-484) | 2026-09-23 | Segment Length takes a 0 as an answer, and has a Clear button | fixed unvalidated | FR-097 |
 
-Everything else - 443 of 483 - needs nothing from you unless the area changes again:
+Everything else - 443 of 484 - needs nothing from you unless the area changes again:
 392 **fixed validated** and 51 **superseded**.
 
 ---
@@ -24735,5 +24736,37 @@ from, and puts it on the copy that faces the way it would arrive.
 *What this is:* `ui.testACutTrainArrivesTheWayItWouldDrive` - a real Control+X and Control+V on your frozen railway with
 BottomMainA's east bar lifted, red on the old code with the train westbound, and red again under each half of the fix
 taken away.
+
+---
+
+<a id="mt-484"></a>
+
+### MT-484 - 2026-09-23 - Segment Length takes a 0 as an answer, and has a Clear button
+
+**Disposition:** fixed unvalidated
+**From:** FR-097
+
+**Written:** 2026-09-23
+
+Your words, 2026-09-23: *"no, add a clear button"*, and *"stop listing answered zeros as missing."*
+
+**Steps**
+
+1. In the autonomy editor, turn on the Unmeasured Track display.  Right-click a highlighted run of plain track and
+   choose **Segment Length...**.  Type 0 and press OK.
+2. Open Segment Length on the same run again and press **Clear**.
+3. On a parking berth whose approach has squares with no length, answer each of those squares 0 (Mass Assign Lengths or
+   Segment Length).  Look at the editor's notices, and at the reason a long train is refused that berth.
+
+**Expected**
+
+- Step 1: the run's squares stop being highlighted - they are answered.
+- Step 2: the run is highlighted again - it has no length and no answer.
+- Step 3: no notice asks for those squares, and the refusal no longer says some squares of the approach "still have no
+  length".  The train is still refused - an answered 0 is still counted as nothing.
+
+*What this is:* `core.testMassAssignLengths` (Segment Length's 0 and Clear; the half-measured berth),
+`core.testAutonomyDiagramSession` (the reversal notice) and `core.testAnAnsweredZeroIsNotMissing` (the refusal, on your
+TunnelLongPark approach) - each red under its own mutation, seven in all.  The button itself is what only you can check.
 
 ---
