@@ -8,8 +8,12 @@ random movement checks. I'd recommend using these complex setups as the base for
 
 ## Where it came from
 
-Taken from **commit `e6f4649ceea0258e5fa6a378616b0158d04c6289`** (branch `autonomy-diagram-r0`,
-2026-09-09), via `git show HEAD:cs2_sample_layout/...` — **not** from the working tree. That matters:
+**Refrozen from commit `2958fcf31ac4cdb26f948867e51db7d3688db93c`** (branch `autonomy-diagram-r0`,
+2026-09-23) - Adam's fully measured layout, which he asked to have blessed: *"perhaps it's time that I finalize
+the layout so that we can bless it"*, and *"OK, my fully measured layout is now in."*  Only the two autonomy
+files changed; the five pages are byte-identical to the first freeze.  First taken from **commit
+`e6f4649ceea0258e5fa6a378616b0158d04c6289`** (2026-09-09).  Both via `git show HEAD:cs2_sample_layout/...` —
+**not** from the working tree. That matters:
 his tree carried uncommitted operating changes to `setup.json`, `configuration-Main.json` and
 `1 - Main.cs2` when this was frozen, and a fixture taken from a working tree is a fixture nobody can
 reproduce.
