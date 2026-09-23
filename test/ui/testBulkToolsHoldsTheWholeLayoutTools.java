@@ -176,6 +176,61 @@ public class testBulkToolsHoldsTheWholeLayoutTools
             "Name Everything is still mounted in the editor's column as well as on the menu");
     }
 
+    /**
+     * An empty square's menu has Bulk Tools too (MT-474).
+     *
+     * Adam, 2026-09-23: *"when right clicking an empty square, show the bulk tools menu option."*  An empty square
+     * opens the station-label menu - Show Station Here - which had nothing else on it; a square of track has always
+     * ended with Bulk Tools.  Built through `buildTileMenu`, the door the right-click itself calls.
+     *
+     * MUTATION: take `bulkTools()` back off `buildTextMenu` and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testAnEmptySquaresMenuHasBulkTools() throws Exception
+    {
+        final List<String> labels = new ArrayList<>();
+        final String[] square = new String[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            LayoutDiagram page = model.getLayout(PAGE);
+
+            org.traincontrol.automationui.TileGraph.TileKey empty = null;
+
+            for (int x = 0; x < 40 && empty == null; x++)
+            {
+                for (int y = 0; y < 40 && empty == null; y++)
+                {
+                    if (page.getComponent(x, y) == null) empty = new org.traincontrol.automationui.TileGraph.TileKey(PAGE, x, y);
+                }
+            }
+
+            if (empty == null) return;
+
+            square[0] = empty.toString();
+
+            javax.swing.JPopupMenu menu = editor.getAutonomyPanel().buildTileMenu(empty, null);
+
+            if (menu == null) return;
+
+            for (java.awt.Component item : menu.getComponents())
+            {
+                if (item instanceof javax.swing.JMenuItem) labels.add(((javax.swing.JMenuItem) item).getText());
+            }
+        });
+
+        assertTrue(square[0] != null, "precondition: " + PAGE + " has no empty square in its first forty columns");
+
+        assertTrue(labels.contains(I18n.t("autosetup.ui.menuShowStationHere")), "precondition: the menu of the empty"
+            + " square " + square[0] + " is not the station-label menu an empty square opens: " + labels);
+
+        assertTrue(labels.contains(I18n.t("autosetup.ui.menuBulkTools")), "right-clicking the empty square " + square[0]
+            + " offers no Bulk Tools: " + labels + ".  Adam, MT-474: \"when right clicking an empty square, show the bulk"
+            + " tools menu option.\"");
+    }
+
     /** The Swing parent of one of the panel's own button fields, read by reflection. */
     private static Object parentOf(AutonomyEditorPanel panel, String field)
     {

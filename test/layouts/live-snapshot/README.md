@@ -137,3 +137,4 @@ before anything reads it, so the checked-in fixture is never written to either.
 - `regression.testTheTailCanBeGivenInTheEditor`
 - `regression.testPathTypeRedrawsTheTestInTheEditor`
 - `ui.testYourOwnRoutesToggleWithoutASync`
+- `ui.testTheLengthPromptHasTheKeyboard`
