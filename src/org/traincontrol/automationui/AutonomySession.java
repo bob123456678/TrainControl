@@ -4851,6 +4851,18 @@ public class AutonomySession
                 before.put(AutonomyBuilder.FACING, captured.get(AutonomyBuilder.FACING));
             }
 
+            // AND A HOME'S FACING, where the running layout holds the home to a copy (OB-282): a home set on the
+            // running diagram is set facing the way that copy faces.  Kept where the layout's home carries none - the
+            // build put it on a copy by its own rule - and gone when the home is.
+            if (captured.has(AutonomyBuilder.HOME_FACING))
+            {
+                before.put(AutonomyBuilder.HOME_FACING, captured.get(AutonomyBuilder.HOME_FACING));
+            }
+            else if (!before.has("home"))
+            {
+                before.remove(AutonomyBuilder.HOME_FACING);
+            }
+
             existing.put(id, before);
         }
 

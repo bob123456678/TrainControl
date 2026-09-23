@@ -722,6 +722,43 @@ public class testAutonomyDiagramSession
 
         assertEquals(session.getPointProperty(sensor, org.traincontrol.automationui.AutonomyBuilder.HOME_FACING),
             chosen.name(), "a build and a capture changed the facing the home was set with");
+
+        // AND A HOME SET ON THE RUNNING DIAGRAM, on the OTHER copy: the running layout holds it to that copy, and the
+        // capture is what tells the setup.  Made here by moving the home in the built configuration, which is what the
+        // running layout's own `toJSON` would write after `setHomeLocomotive` on that copy.
+        org.json.JSONObject running = new org.json.JSONObject(built);
+
+        org.traincontrol.automationui.TilePorts.Side other = null;
+
+        for (int at = 0; at < running.getJSONArray("points").length(); at++)
+        {
+            org.json.JSONObject point = running.getJSONArray("points").getJSONObject(at);
+
+            org.traincontrol.automationui.TilePorts.Side faces = session.facingsFor(sensor).get(point.optString("name"));
+
+            if (faces == null) continue;
+
+            if (faces == chosen)
+            {
+                point.remove("home");
+                point.remove(org.traincontrol.automationui.AutonomyBuilder.HOME_FACING_FIXED);
+            }
+            else
+            {
+                point.put("home", "Test Loc");
+                point.put(org.traincontrol.automationui.AutonomyBuilder.HOME_FACING_FIXED, true);
+
+                other = faces;
+            }
+        }
+
+        assertNotNull(other, "precondition: the square has no copy facing another way to move the home to");
+
+        session.captureFromLayout(running.toString());
+
+        assertEquals(session.getPointProperty(sensor, org.traincontrol.automationui.AutonomyBuilder.HOME_FACING),
+            other.name(), "a home set on the running diagram facing " + other + " was captured without its facing - the"
+            + " next build puts it back on the copy facing " + chosen);
     }
 
     /**
