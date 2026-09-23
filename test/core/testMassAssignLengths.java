@@ -1051,6 +1051,51 @@ public class testMassAssignLengths
     }
 
     /**
+     * The fold never puts a length on a sensor square (AUT-C4).
+     *
+     * A sensor square's length is the last place of every rail arriving at it and the first thing a train standing there
+     * spends (OB-278), so a unit folded onto it lengthens every OTHER approach to that sensor as well - a train arriving
+     * from the far side is then judged a unit longer than the track, and its tail claimed a unit short.  The fold took
+     * "plain track" to mean anything that is not a switch, and a sensor is not a switch.  Here the route tile has a
+     * sensor on the side asked first and a straight on the other, and the straight takes the unit.
+     *
+     * MUTATION: let the fold take a sensor square again and this fails.
+     *
+     * @throws IOException from the fixture
+     */
+    @Test
+    public void testTheFoldNeverPutsALengthOnASensor() throws IOException
+    {
+        // 1,1 sensor - 2,1 straight - 3,1 ROUTE - 4,1 sensor - 5,1 straight - 6,1 sensor.
+        LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.ROUTE, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 6, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("Fold");
+
+        session.getStore().setTileLength(key(3, 1), 1);
+        session.getStore().setTileLength(key(4, 1), 2);
+
+        session.save();
+
+        session.open(Arrays.asList(page));
+
+        assertEquals(session.getStore().getTileLength(key(4, 1)), 2, "the route tile's unit was folded onto the sensor at"
+            + " 4,1 - which lengthens every other approach to that sensor as well");
+
+        assertEquals(session.getStore().getTileLength(key(2, 1)), 1, "the route tile's unit did not go to the straight at"
+            + " 2,1, the plain track beside it");
+    }
+
+    /**
      * Opening Adam's own railway folds his five route tiles, and no other square (Adam, 2026-09-23: *"Fold them"*).
      *
      * On the frozen snapshot of his measured layout.  The five held a length of 1 each; nothing else on it is a route
