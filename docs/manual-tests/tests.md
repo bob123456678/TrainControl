@@ -65,8 +65,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-479](#mt-479) | 2026-09-23 | An entry guard throws its signals red when a train arrives, and not when one passes | fixed unvalidated | FR-096 |
 | [MT-480](#mt-480) | 2026-09-23 | A train fits on the square it stands on, and TunnelLongPark takes three units | fixed unvalidated | OB-278 |
 | [MT-481](#mt-481) | 2026-09-23 | The orange line and the grey carry on across a route tile | fixed unvalidated | OB-279 |
+| [MT-482](#mt-482) | 2026-09-23 | The grey is only where the train is, and nothing past the switch | fixed unvalidated | OB-280 |
 
-Everything else - 443 of 481 - needs nothing from you unless the area changes again:
+Everything else - 443 of 482 - needs nothing from you unless the area changes again:
 392 **fixed validated** and 51 **superseded**.
 
 ---
@@ -24424,8 +24425,8 @@ MT-373 accepted on 12 Sep**, on your ruling today.
 
 - Step 2: the orange line runs over the station square the train stands on (under the locomotive icon),
   and over each sensor square its body lies across, along the track the train is on.
-- Step 3: the orange stops where the train's length runs out; the **grey carries on** to the next sensor,
-  covering the rest of that stretch.  Grey with no orange on it is track the train is not on and blocks.
+- Step 3: the orange stops where the train's length runs out.  *(Superseded the same day by MT-482: the grey no
+  longer carries on to the next sensor - it covers only the squares the train lies on.)*
 - Step 4: on a double curve only the arc the blocked stretch runs over is faded; the other arc is drawn
   at full strength.
 - Shortening the train takes the orange back at once; the grey covers the stretches it still reaches.
@@ -24666,5 +24667,37 @@ finding nothing, and drawing nothing there.  The grey was skipped the same way.
 *What this is:* `core.testRouteTilePlacement.testARouteTilesRoadCanBeDrawn` (a route tile's road turns back into the
 sides it joins) and `core.testTheShadingFollowsTheTrain` (a real tile, painted, with a train lying across that route
 tile on your railway) - each red under its own mutation.
+
+---
+
+<a id="mt-482"></a>
+
+### MT-482 - 2026-09-23 - The grey is only where the train is, and nothing past the switch
+
+**Disposition:** fixed unvalidated
+**From:** OB-280
+
+**Written:** 2026-09-23
+
+Your words, 2026-09-23: *"grey what routing actually refuses.  if the train doesn't protrude past the switch, there
+should be nothing else to gray."*  **This replaces the grey step of MT-475** - there the grey carried on to the next
+sensor; now it covers only the squares the train lies on.
+
+**Steps**
+
+1. In the track diagram viewer, with nothing running, stand a three-unit train at TunnelLongPark.
+2. Look at the track between TunnelLongPark and BottomMainA, over the switch.
+3. Make the train four units long, and look again.
+
+**Expected**
+
+- Step 2: TunnelLongPark and the square behind it are grey (and orange); the switch and everything past it are not
+  grey.
+- Step 3: the switch behind it is grey now - the train reaches it - and whole, both legs, because a train on one leg
+  of a turnout blocks the other.
+
+*What this is:* `ui.testTheGreyAppearsAtIdleToo.testTheGreyIsWhatTheRailwayClaims` (the window greys exactly the squares
+the railway claims) and `testBlockedTrackIsGreyAtIdle` (a square of the train's edge that it does not reach is not
+grey) - each red on the whole-edge grey.
 
 ---

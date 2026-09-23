@@ -1215,9 +1215,10 @@ The editor notice about turn-round squares with no length is a different questio
   unresponsive. Trains still run, but nothing is repainted, and controls are stuck."* So the pass runs
   on a worker and the marks land a beat after they are asked for. Nothing about **what** is drawn
   changes; only where the work happens.
-- **WHAT IS DRAWN IS WHAT IS REFUSED, once both marks are counted.** The grey is the covered EDGES -
-  the whole hop between two sensors, which is what `Layout.edgesCoveredByStandingTrains` makes
-  unavailable - so blocked track that no train is drawn on is visible as blocked track.
+- **WHAT IS DRAWN IS WHAT IS REFUSED, once both marks are counted.** The grey is the squares
+  standing trains CLAIM - `Layout.placesCoveredByStandingTrains`, which is what `isPathClear`'s
+  shared-metal sweep refuses a path over - so blocked track is visible as blocked track, and track a
+  train does not lie on is not grey (OB-280, below).
 
   This bullet said the opposite between 2026-09-08 and 2026-09-09, in bold, and the reversal is the
   point of the change. Replacing the wash with the line answered the double-curve complaint and made
@@ -1232,14 +1233,21 @@ The editor notice about turn-round squares with no length is a different questio
   Built 2026-09-23: the grey is every tile of every covered edge again, per road so a double curve fades only
   the arc the edge runs over (`AutonomySession.routesBlockedByStandingTrains`), and the fade follows the grey's
   roads rather than the orange's. This reverses what MT-373 validated on 2026-09-12, on his ruling.
-  `ui.testTheGreyAppearsAtIdleToo.testTheGreyIsTheWholeOfEveryCoveredEdge`.
+
+  **And settled a third time the same day (OB-280), and it is this that stands.** Adam: *"grey what routing
+  actually refuses.  if the train doesn't protrude past the switch, there should be nothing else to gray."*
+  A path driving along a covered edge ends at or runs through the square the train stands on, which is
+  claimed; a path crossing only the far end of that edge is NOT refused (OB-207) - and the whole-edge grey said
+  it was. So the grey is the squares the railway claims under standing trains: the whole square where the
+  place is the square (a train on one leg of a turnout blocks the other), one road where the place names a road
+  (a double curve or an overpass). With OB-278, a train that fits on its berth greys that square and nothing
+  behind it. `AutonomySession.routesBlockedByStandingTrains`,
+  `ui.testTheGreyAppearsAtIdleToo.testTheGreyIsWhatTheRailwayClaims`.
 
   **What is still not drawn**, and is explained in the "why not moving" view rather than on the
   diagram:
 
-  - the **endpoint squares** of a covered edge, which are deliberately not greyed - *"edges, because
-    the points are technically unoccupied"*, and a train standing at a sensor is already shown
-    standing there;
+  - a covered edge's squares the train does not lie on, which routing does not refuse (OB-280);
   - a path refused because an edge it uses **shares metal** with a covered one - the lock-edge
     relation `GraphReducer` derives from shared tiles - is refused over a square that is itself
     greyed, but the *path* is not marked as refused anywhere on the diagram.
