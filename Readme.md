@@ -151,7 +151,7 @@ Monitor the usage of different locomotives.
 * Download locomotive, layout, and route information from the CS2/CS3
 * Customize locomotive icons and function icons without needing to set them in the CS2/CS3
 * Powerful keyboard interface
-    * Configure up to 50 different key mappings for up to 260 locomotives
+    * Configure up to 50 different key mappings for up to 1,300 locomotives
     * Convenient hotkeys for power off, emergency stop, and smooth deceleration
     * Simultaneous operation across multiple PCs
 * Track diagrams
@@ -236,12 +236,20 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Control+R (rotate hovered tile)
     * Control+T (edit text of hovered tile)
     * Control+A (edit address of hovered tile)
-    * Control+L (show text labels)
+    * Control+Y (redo)
+    * Control+L (show text labels; in the autonomy editor, step through the station caption options)
     * Control+D (show address labels)
+    * Control+K (show the grid)
     * Control+I (increase diagram by 1 row and 1 column)
     * Control+S (name the hovered square, in the autonomy editor)
+    * Control+N (show a station name on the hovered square, in the autonomy editor)
+    * Control+E (set the length of the hovered piece of track, in the autonomy editor)
+    * Control+B (set the hovered station's longest train, in the autonomy editor)
+    * Control+H (set the hovered station's home locomotive, in the autonomy editor)
+    * Control+G (show track lengths, in the autonomy editor)
+    * Shift+click (pick several squares at once)
     * Delete (delete hovered tile)
-    * Escape (clear clipboard & reset tool)
+    * Escape (let go of whatever is held; with nothing held, close the editor)
     * Left mouse click (cut hovered tile / paste new tile)
     * Middle-mouse click (rotate hovered tile)
     * Right mouse click (show all options)
@@ -366,7 +374,11 @@ Tab icons provided by Freepik.
             - Autonomy setups are saved as named configurations that can be duplicated, renamed, deleted, exported and imported, and the one you were last using is loaded when TrainControl starts.  An autonomy.json from an older version can be imported from the same menu.
             - You can now choose how trains pick their route when more than one will do: at random respecting station priority (the default, and how earlier versions behaved), completely at random, past the fewest or the most stations, over the shortest or the longest track, across the fewest or the most sensors, by whichever station has gone longest without a train, or by weighing a station's priority against how far away it is.  The choice is stored with the autonomy configuration, so two configurations can use different rules.
             - Track with no recorded length now counts as one sensor's worth, so the shortest-track and longest-track rules give different answers on a railway where most sections are unmeasured.
-            - A station can be paired with a signal, which is set to red while a train is standing at that station and back to green once it leaves.  Pick the signal by clicking it on the diagram, or by typing its address.
+            - A station can be paired with signals, which are set to red while a train is standing at that station and back to green once it leaves - "Exit Guard Signal" on the station's right-click menu.  Pick each signal by clicking it on the diagram, or by typing its address.
+            - A station can also have entry guard signals, set to red when a train arrives there at the end of its journey - "Entry Guard Signal" on the same menu.  The next route that needs one sets it green again.
+            - The autonomy editor's Bulk Tools menu can walk a page asking for each length that is missing - the track, each station's longest train, and each train's own length - and can clear every track length, or every station's longest train, at once.
+            - A switched-off station can no longer be sent to by hand, nor driven through: switched off now means nothing uses it.  To keep a parking track reachable by hand but out of autonomy's choices, leave it switched on and untick Automatic Destination.
+            - Atomic Routes stays switched on while any track autonomy runs over, or any train, has no length recorded, because releasing track behind a train depends on knowing how long both are.  It can be switched off once everything is measured.
             - Stations can say which directions trains are allowed to arrive from, and one-way travel restrictions are now drawn on the ordinary track diagram as well as in the editor.
             - A running train draws its route along the track, following the rails through curves and switches: red for the track ahead of it, green for the track it has already covered, and arrows showing which way it is going.
             - When a train is not going anywhere, TrainControl now says why.  Hovering "No available paths" in the locomotive list names every station it might have been sent to and the reason each one was refused - occupied and by whom, switched off, excluded, or no track at all.  The setup editor has a matching "Why not Moving?" tool that draws every route the train could take on the diagram and lists the reasons for the rest underneath.
@@ -387,8 +399,9 @@ Tab icons provided by Freepik.
             - A new route editor built from dropdowns rather than typed commands.  Each command is a row - what kind of thing, which one, what to do to it, which decoder it speaks to, and how long to wait afterwards - so a route can be built and read without knowing the command syntax, and rows are added, duplicated, deleted and reordered from marks in the rows themselves.
             - Conditions are written as an indented list instead of with brackets.  Each line is either a condition or the word joining it to the line before, and both can be indented, so "sensor 1 occupied, and either sensor 2 or sensor 3" is written by indenting the two sensors under the word that joins them.  A word that disagrees with the others at its level is shown in red until it is indented or changed.
             - Capturing commands by working the railway still works exactly as before, and can now be pointed at the conditions instead - so "run this route when these points are already set the way I have just set them" can be built by setting them.  Routes that came from the Central Station open read-only.
-            - Every route tile on the track diagram now has a play button that runs the route straight away, while a click elsewhere on the tile still asks first and a right-click still opens the menu.
-            - Find Route on the Routes menu takes a name or part of one: an exact name runs outright, and a fragment matching several offers the choice.
+            - Every route in the Routes tab now has a play button that runs it straight away, while a click elsewhere on the route still asks first and a right-click still opens the menu.
+            - Find Route on the Routes menu takes a name or part of one: an exact name goes straight to that route in the list, and a fragment matching several offers the choice.
+            - Routes read from a file with Import Routes arrive with automatic firing switched off, whatever the file says, so nothing starts firing before you are ready.  Turn on the ones you want from their right-click menu, or all at once with Bulk Enable.
             - Deleting or saving a route created in TrainControl no longer forces a full sync with the Central Station.
         - Track Diagrams
             - You can now pick out several squares at once in the track diagram editor.  Shift-click picks a square, shift-click again unpicks it, and Escape lets everything go; a picked group can then be dragged, copied, pasted, rotated or deleted as one, and one press of undo takes the whole thing back.  A group dragged or pasted past the edge of the diagram is refused rather than losing the part that would fall off.

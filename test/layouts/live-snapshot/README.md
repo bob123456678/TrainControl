@@ -60,14 +60,9 @@ before anything reads it, so the checked-in fixture is never written to either.
 
 ## Not invariants — set these in code
 
-- **Lengths, train placements and locomotive properties**, exactly as in the hand-authored scenarios.
-  The snapshot *does* carry the placements and lengths that were in the file at that commit, so a test
-  that cares about either should set them rather than read them: they are ground truth for the file,
-  not a promise about the railway. A test that picks a subject out of this railway *by a property* —
-  "the first station with a length", "a locomotive long enough" — is the failure mode the whole library
-  exists to end, and freezing the folder does not fix it. Name the square.
-
-## Not invariants — set these in code
+A test that picks a subject out of this railway *by a property* — "the first station with a length", "a
+locomotive long enough" — is the failure mode the whole library exists to end, and freezing the folder does
+not fix it. Name the square.
 
 - **Lengths.** Since the refreeze of 2026-09-23 these are Adam's own measurements, and the station sizes he
   gave. A test about the railway as he runs it reads them; a test about a rule with lengths of its own clears

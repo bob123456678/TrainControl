@@ -16,7 +16,7 @@ Beyond its GUI, the TrainControl software can be used to progammatically control
 There are three types of automation described on this page:
 * Manually defining basic automation logic and commands via the Java API (good)
 * Using TrainControl's `Layout` class to represent your layout as a graph model and programmatically start autonomous operation (better)
-* Using TrainControl's UI to represent your layout as a graph model, make visual edits, and monitor operation (best)
+* Using TrainControl's UI to represent your layout as a graph model, make visual edits, and monitor operation (best - and since v3.0.0 this is done on the track diagram itself; see [Automation.md](Automation.md))
 
 The only hardware requirement is that you have feedback modules (S88 sensors) configured at your stations.  The minimum is one S88 per station, but we recommend having sensors before, at, and after the stopping point for the smoothest and most versatile operation.
 
@@ -391,6 +391,8 @@ Point shapes and sizes work together: the SHAPE says whether trains turn here, t
 
 # Prettifying the Graph Visualizaton
 
+> **The graph window described below was removed in v3.0.0.** Autonomy is now set up and watched on the track diagram (see [Automation.md](Automation.md)). The JSON format on this page is still what an older `autonomy.json` is written in, and the autonomy menu can import one; the coordinates and window instructions in this section no longer have anything to act on.
+
 For each point, you can specify optional, relative `x` and `y` coordinates in the JSON: these will fix the points to a specific location on the graph.  If any point is missing a coordinate, the points on the graph will assume a random layout.
 
 If you want to adjust the graph once created, maximize it, and simply use your mouse to move points around.  The coordinates will automatically be saved on exit, or you can use the "Export Current Graph" button to view the updated JSON file.
@@ -433,7 +435,7 @@ This applies to reversing **stations** only.  A reversing point that is not a st
 
 TrainControl's graph model can be used to automate layouts with complex designs and tons of switches. A more advanced example (automation JSON plus CS2 layout files) can be found in [cs2_sample_layout](cs2_sample_layout/config/)
 
-Remember that everything described below can now be fully edited via TrainControl's graph UI! 
+Everything described below is set in the autonomy editor on the track diagram since v3.0.0, by right-clicking a square; the JSON keys are what an older `autonomy.json` carries. 
 
 ## Train lengths and non-atomic routes
 
@@ -505,6 +507,8 @@ The `speedMultiplier` setting on any `Point` will adjust the speed of the incomi
 The allowed range is 0.1-2.0, with 1.0 (no change to the speed) being the default.
 
 ## Displaying locomotive locations on track diagrams (v2.4.9+)
+
+> **Superseded in v3.0.0.** Station names are now placed with **Show a Station Name Here...** in the autonomy editor; a `Point:` label from an older version is taken over the first time the setup opens, and one typed today is shown as plain text.
 
 If you want locomotives to also show up on the track diagram (not just in the graph UI) as they move around, simply create a text label with the value `"Point:StationName"`, where StationName corresponds to the name of the point at that location.  If a locomotive is present at that point, its name will be shown in the label.
 

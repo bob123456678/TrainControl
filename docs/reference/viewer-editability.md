@@ -66,8 +66,9 @@ of them captures the running layout first** — see "What it costs", below.
 | Bulk Tools ▸ Clear All Home Locomotives | every `home` |
 | Show a Station Name Here… / Stop Showing *station* | a caption (on a text square only; the editor also offers it on a track square) |
 
-Two things the editor keeps to itself, because `menuOnly` gates them: **Signal Protecting This
-Station…**, and the caption items on a *track* square.
+Three things the editor keeps to itself, because `menuOnly` gates them: **Exit Guard Signal…** and
+**Entry Guard Signal…** (the first was called *Signal Protecting This Station…* until 2026-09-23), and
+the caption items on a *track* square.
 
 ### B. Items outside that submenu — the viewer's own
 

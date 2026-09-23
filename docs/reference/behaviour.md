@@ -141,7 +141,7 @@ config, not the UI."*).
 | **At random, respecting priority** (`RANDOM`) - the default | the first clear route found; the shuffle makes that random. The default because it is what every earlier version did |
 | **Completely at random** (`RANDOM_ANY_STATION`) | the first clear route found, **with priority ignored** - a station at -5 is visited as often as one at 9 (OB-156, Adam: *"one completely random, and one that respects priority"*) |
 | **Fewest / most stations** | the route passing the fewest, or most, OTHER stations |
-| **Shortest / longest track** | the route over the least, or most, measured track - only as good as the lengths: with none set every route measures 0 and the first found wins |
+| **Shortest / longest track** | the route over the least, or most, measured track - and a section with no length counts ONE, so with nothing measured it is the route over the fewest, or most, sections (Adam: *"a min length option that tries to minimize total track length, where we count each s88 as length 1 by default"*; `Layout.lengthOf`, DCN-B2) |
 | **Fewest / most sensors** | the route over the fewest, or most, distinct s88s - sensors, not hops of the graph, because a square is several Points |
 | **Least recently visited** | the station that has gone longest without a train arriving; one never visited wins outright |
 | **Balanced priority** (`BALANCED_PRIORITY`) | the most priority per unit of track - **the one rule that crosses priorities**, so a nearer, less important station can beat a far important one (Adam: *"one that balances priority vs distance as a ratio"*). With every priority left at 0 it is the shortest route with extra arithmetic |
@@ -171,8 +171,7 @@ been asked to stop, because after a stop there is no next journey for it to spac
 
 **How many trains may be out at once is section 1's cap**, and it binds here as well as there.
 
-*(OB-265 recorded that this section did not exist. The per-rule explanations written for the dropdown
-are still not shown anywhere, which is OB-163.)*
+*(OB-265 recorded that this section did not exist. The per-rule explanations are the dropdown's tooltip, for the rule chosen (OB-163, fixed 2026-08-30).)*
 
 ---
 
@@ -990,7 +989,10 @@ are cut at it and it is asked for on its own, one length for all such squares on
 length to each road, which is the ruling.  A square whose geometry carries two roads but which only one leg runs over
 is ordinary track and stays in its piece.
 
-**The four bulk doors on Bulk Tools.**  **Mass Assign Lengths** (FR-089) walks the pieces of the page, then its
+**The bulk doors on Bulk Tools.**  **Mass Assign Train Lengths** (FR-094; Adam, 2026-09-23: *"add a bulk tool to
+the autonomy editor to set missing train lengths, similar to how the station lengths are set"*) walks every train
+autonomy would run that has no length, in the same prompt, writing each answer to the locomotive itself - so Cancel in
+the editor does not take it back, and the prompt says so; a length is 1 to 20.  **Mass Assign Lengths** (FR-089) walks the pieces of the page, then its
 switches, then its crossings.  **Mass Assign Max Train Lengths** (FR-091; Adam, 2026-09-17: *"add a similar feature to
 walk stations that don't have a max length set up, so I can enter it"*) walks the stations on the page that will take
 a train of any length, row by row, and asks each one's maximum - the walk refuses 0, because 0 IS "any length" and the station already has it.  A
@@ -1576,10 +1578,10 @@ can't be chosen shouldn't be offered"*.  Held by
 
 ### The autonomy editor's keyboard doors
 
-Four shortcuts act on **the square the pointer is over**, and they ask one question to find it -
+Five shortcuts act on **the square the pointer is over**, and they ask one question to find it -
 `LayoutEditor.hoveredSquare()`, which answers null when the remembered label is not on the grid it is
 asked about, and forgets it while it is there. They read a field nothing cleared until 2026-09-10, so
-after stepping to another page all three named a square on the page before (OB-198).
+after stepping to another page each of them named a square on the page before (OB-198).
 
 | | |
 |---|---|
@@ -1587,12 +1589,13 @@ after stepping to another page all three named a square on the page before (OB-1
 | **Control+E** | Opens **Segment Length** on it (FR-066). Adam picked the key: *"let's do E"*, Control+D being taken twice over. |
 | **Control+B** | Opens **Maximum Train Length** on it (OB-197's free letter, picked for the berth the maximum belongs to). Asks the station menu's own question, so it does nothing on a square that is not a station. |
 | **Control+H** | Sets the home locomotive. |
+| **Control+N** | **Show a Station Name Here** on it (FR-086), asking the menu's own `offersAStationName`. |
 
 **Control+L steps through the caption options, and text labels are one of them** (Adam, 2026-09-23,
 OB-272: *"make text labels be a dedicated setting, and hide the text labels unless it is selected.  Also,
 make control+L cycle the options"*, and asked which options: *"the dropdown's 4, plus add an option to
-the dropdown that shows the labels only"*). So the dropdown is Stations, Parked Locs, Homes, Labels only
-and None, and the key moves to the next of the five. The text written on squares is shown under
+the dropdown that shows the labels only"*). So the dropdown is Stations, Parked Locs, Homes, None and
+Labels only, in that order, and the key moves to the next of the five. The text written on squares is shown under
 **Labels only** and nowhere else: choosing a caption no longer turns it on, which it has done since FR-061
 read *None* as the text switch turned off. Built 2026-09-23: Labels Only is appended after None so a remembered
 choice keeps its meaning, the grid draws a caption under the three caption modes and the writing under Labels

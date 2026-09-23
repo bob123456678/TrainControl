@@ -163,7 +163,7 @@ The first is a measurement, the second is a preference. Both are checked and eit
 
 **How much track a standing train is actually occupying.** A train longer than its platform hangs back over the approach, across track that has no sensor of its own. TrainControl blocks that track, and draws it: the orange line on the diagram is as long as the train. Without lengths it cannot know, and two trains can be routed into the same piece of rail.
 
-**Which route is picked**, if you have chosen *Over the shortest track* or *Over the longest track*. Both are measured in your lengths; with none set they have nothing to compare.
+**Which route is picked**, if you have chosen *Over the shortest track* or *Over the longest track*. Both are measured in your lengths, and a section with no length counts as one - so with nothing measured they pick the route over the fewest, or the most, sections.
 
 ### When to set them
 
@@ -187,7 +187,7 @@ Measure **the squares a train comes to rest on, and the run back to the switch b
 
 So if a short train seems to be blocking a surprising amount of track, the answer is almost always an unmeasured square behind it, not a fault. Set its length and watch the orange line shrink.
 
-**And the square a train is standing on is how much it can HOLD, not track that swallows the train.** A 2-unit train at a platform measured 10 still lies back over the track behind the platform, and that track is still blocked — the 10 says a 10-unit train would fit there, and nothing more. Measuring a station generously does not make the trains standing at it get out of the way.
+**The square a train is standing on is track, and it is spent first.** A 2-unit train on a platform square measured 2 fits on that square and blocks nothing behind it; a 3-unit train there lies one unit back over the track behind the platform, and that track is blocked. How long a train a station will take is a separate setting - Maximum Train Length on the station's right-click menu - and says only which trains may be sent there.
 
 ---
 
@@ -197,7 +197,7 @@ While autonomy is running the diagram shows you what is happening, and it is wor
 
 **A train's route is drawn along the track.** Red for the track ahead of it, green for the track it has already covered, black arrows for which way it is going. The line follows the track through curves and switches rather than cutting across them, so it reads as a route rather than as an overlay.
 
-**Station labels show what is standing there.** A square marked `Point:StationName` as a text label shows the name of any locomotive at that station.
+**Station names are shown on the diagram.** In the autonomy editor, right-click a square beside a station and choose **Show a Station Name Here...** (or press Control+N over it). The caption dropdown then chooses what every such name shows: the station, the locomotive parked there, or its home locomotive. A text label typed as `Point:StationName` in an older version is taken over the first time the setup opens; one typed today is shown as plain text.
 
 **A signal paired with a station** goes red while a train is standing there, and green again once it leaves. Pair one by right-clicking the station and picking the signal — either by clicking it on the diagram, or by typing its address.
 
@@ -211,22 +211,24 @@ While autonomy is running the diagram shows you what is happening, and it is wor
 
 ## Choosing how trains pick their route
 
-When more than one route will do, TrainControl has to choose. Under the **Autonomy** menu, **Choose Routing Logic...**, you can say how:
+When more than one route will do, TrainControl has to choose. The **Routing Logic** dropdown on the **Autonomy Settings** tab says how:
 
 | Setting | What it does |
 | --- | --- |
-| At random | Picks any of them. This is the behaviour TrainControl has always had, and it stays the default |
+| At random, respecting priority | Picks any of them, highest-priority stations first. This is the behaviour TrainControl has always had, and it stays the default |
+| Completely at random | Picks any of them, to any station - station priority is ignored |
 | Past the fewest stations | The most direct route |
 | Past the most stations | Trains call at things on the way rather than going straight there |
-| Over the shortest track | By measured length, if you have set lengths |
+| Over the shortest track | By measured length; a section with no length counts as one |
 | Over the longest track | The scenic route |
 | Across the fewest sensors | Fewest reporting points on the way |
 | Across the most sensors | The busiest-looking route |
 | Whichever station has gone longest without a train | For a layout with a favourite loop, so the far corner still gets visited. Station priority still applies first |
+| Weighing station priority against distance | The one rule that crosses priorities: a near ordinary station can beat a distant important one |
 
 The "most" and "longest" settings exist for a layout that should look busy rather than efficient. On a small layout they are the difference between a train shuttling back and forth and a train that appears to be going somewhere.
 
-This applies to every layout rather than to one configuration, and stations you have marked as higher priority are still chosen first either way.
+The choice is saved with the autonomy configuration, so two configurations can use different rules. Stations you have marked as higher priority are chosen first under every rule except *Completely at random*, which ignores priority, and *Weighing station priority against distance*, which trades it against how far away a station is.
 
 ---
 
@@ -254,7 +256,7 @@ Getting everyone home is rarely as simple as driving each train to its own stati
 
 Trains must be stopped first, so use `Gracefully Stop Autonomy` if autonomy is running. If no arrangement can be found you are told so and nothing moves.
 
-A station with a home locomotive is outlined in teal on the diagram: solid when that locomotive is standing there, dotted when it is somewhere else. The dotted ones are exactly what `Return Locomotives Home` would move.
+To see the homes on the diagram, set the caption dropdown to **Homes**: each station caption then names its home locomotive, in black when that locomotive is standing there and in white on dark grey when it is somewhere else. The white ones are exactly what `Return Locomotives Home` would move.
 
 ---
 
