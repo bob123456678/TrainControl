@@ -69,6 +69,21 @@ public class FacingPrompt
         answeredByATest = answer;
     }
 
+    /** What the last question answered by a test called the square, for a claim about the wording. */
+    private static volatile String askedAboutByATest;
+
+    /**
+     * What the last facing question answered by a test named the square as - the text the dialog would have shown.
+     *
+     * For tests only.
+     *
+     * @return the square's name as asked, or null when nothing has been asked
+     */
+    public static String lastAskedAboutForTests()
+    {
+        return askedAboutByATest;
+    }
+
     /**
      * Asks which way a train being put down should face, where that is a real question.
      *
@@ -85,6 +100,8 @@ public class FacingPrompt
 
         if (answeredByATest != null)
         {
+            askedAboutByATest = station;
+
             return choicesFor(canHold).contains(answeredByATest) ? answeredByATest : null;
         }
 

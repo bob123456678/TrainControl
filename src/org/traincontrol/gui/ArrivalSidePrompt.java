@@ -68,6 +68,33 @@ public class ArrivalSidePrompt
         answeredByATest = side;
     }
 
+    /** What the last question answered by a test called the square, for a claim about the wording. */
+    private static volatile String askedAboutByATest;
+
+    /**
+     * What the last arrival-side question answered by a test named the square as - the text the dialog would have
+     * shown.
+     *
+     * For tests only.
+     *
+     * @return the square's name as asked, or null when nothing has been asked
+     */
+    public static String lastAskedAboutForTests()
+    {
+        return askedAboutByATest;
+    }
+
+    /**
+     * What the arrival-side question calls the square.
+     *
+     * @param at the Point the train is being put on
+     * @return the name the question shows
+     */
+    static String squareNameFor(Point at)
+    {
+        return at.getName();
+    }
+
     /**
      * The side a hand-placed train should be recorded as having arrived from, asking if it must.
      *
@@ -293,6 +320,8 @@ public class ArrivalSidePrompt
     {
         if (answeredByATest != null)
         {
+            askedAboutByATest = squareNameFor(at);
+
             for (String side : sides)
             {
                 if (answeredByATest.equalsIgnoreCase(side)) return side;
@@ -315,7 +344,7 @@ public class ArrivalSidePrompt
                 }
 
                 int chose = JOptionPane.showOptionDialog(parent,
-                    I18n.f("autolayout.ui.askArrivalSide", at.getName()),
+                    I18n.f("autolayout.ui.askArrivalSide", squareNameFor(at)),
                     I18n.t("autolayout.ui.askArrivalSideTitle"),
                     JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null,
                     options, options[0]);

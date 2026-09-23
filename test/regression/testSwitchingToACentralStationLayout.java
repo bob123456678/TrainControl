@@ -339,6 +339,63 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
+     * Start is not offered over a layout that lives on the Central Station, which Start refuses (REG-C3).
+     *
+     * `refuseAutonomyStartWhileBroken`'s first test is `isRemoteLayout`, and the diagram's right-click menu decides
+     * whether to offer Start by `canStartAutonomy` - which asked the button and the setup's errors and not that.  Its
+     * javadoc said the button is always disabled on a remote layout, so the term would be dead weight; but an
+     * `autonomy.json` loads on a Central Station layout and enables the button, and the menu then offered what the
+     * handler refused.
+     *
+     * The button is enabled here directly, which is the state a loaded JSON graph leaves it in.
+     *
+     * MUTATION: take `isRemoteLayout` out of `canStartAutonomy` and this fails.
+     *
+     * @throws Exception from the window or reflection
+     */
+    @Test
+    public void testStartIsNotOfferedOverACentralStationLayout() throws Exception
+    {
+        support.LayoutSandbox sandbox = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open();
+
+            final org.traincontrol.gui.TrainControlUI[] built = new org.traincontrol.gui.TrainControlUI[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> built[0] = new org.traincontrol.gui.TrainControlUI());
+
+            org.traincontrol.gui.TrainControlUI ui = built[0];
+
+            // WHAT SWITCHING TO A CENTRAL STATION LAYOUT STORES; the sandbox puts the real value back.
+            org.traincontrol.gui.TrainControlUI.getPrefs().put(
+                org.traincontrol.gui.TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+
+            final javax.swing.JButton start = (javax.swing.JButton) field(ui, "startAutonomy");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> start.setEnabled(true));
+
+            try
+            {
+                assertTrue(ui.isRemoteLayout(), "precondition: the layout is not read as a Central Station one");
+
+                assertFalse(ui.canStartAutonomy(), "Start is offered over a layout that lives on the Central"
+                    + " Station, and pressing it is refused with 'autonomy needs a layout on this computer' - the"
+                    + " menu offering what the handler refuses (REG-C3)");
+            }
+            finally
+            {
+                javax.swing.SwingUtilities.invokeAndWait(() -> ui.dispose());
+            }
+        }
+        finally
+        {
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
      * "Is a layout loaded" is stored once and read everywhere (OB-127, OB-128).
      *
      * Adam: "we just need a layout loaded flag in the TrainControlUI class, rather than something that
@@ -851,8 +908,9 @@ public class testSwitchingToACentralStationLayout
         // (UIX-C5/GUX-C1), the cancelled function copy (GUX-C3) and the export's grid (GUX-C4).
         // 50 on 2026-09-20: the declined setup edit (MT-267, MT-326), which opens a sandbox first too.
         // 51 on 2026-09-23: ui.testTheLengthPromptHasTheKeyboard (MT-474), which opens a sandbox first.
-        assertEquals(checked, 51,
-            checked + " test classes were found to build a window, not the 51 there were when this "
+        // 52 the same day: ui.testAStartLoadsOnlyAGraphSomebodyAskedFor (REG-B2), which opens a sandbox first.
+        assertEquals(checked, 52,
+            checked + " test classes were found to build a window, not the 52 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating - and "
             + "nothing else in this method is hidden by that any more, because the checks that "

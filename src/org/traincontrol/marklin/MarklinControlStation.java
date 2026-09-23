@@ -4153,10 +4153,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     /**
      * Replaces existing route data with that from a JSON file
-     * @param json 
+     * @param json
+     * @return how many routes were added
      */
     @Override
-    public void importRoutes(String json)
+    public int importRoutes(String json)
     {
         List<MarklinRoute> routes = this.parseRoutesFromJson(json);
 
@@ -4171,6 +4172,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
 
         // If all read successfully, remove existing routes and update route DB
+        int added = 0;
+
         for (MarklinRoute route : routes)
         {
             this.logf("route.adding", route.getName());
@@ -4179,7 +4182,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 this.logf("route.notAdded", route.getName());
             }
+            else
+            {
+                added++;
+            }
         }
+
+        return added;
     }
         
     /**

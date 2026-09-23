@@ -160,6 +160,30 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
     }
 
     /**
+     * Both questions name the square the way the diagram does, not by the copy the paste happened to pick (GUI-C7).
+     *
+     * A split square's Points are named with a heading - "BottomMainB (eastbound)" - and both questions asked here
+     * are ABOUT direction, so the name put an answer in the question, and an arbitrary one: the Point is picked before
+     * either answer, and on an empty square any copy will do.
+     *
+     * MUTATION: name the square by its Point again in either question and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testBothQuestionsNameTheSquare() throws Exception
+    {
+        pasteFacing(Side.W);
+
+        assertEquals(FacingPrompt.lastAskedAboutForTests(), SQUARE_NAME, "the facing question named the square"
+            + " by one of its copies, whose name states a direction the operator is being asked about (GUI-C7)");
+
+        assertEquals(ArrivalSidePrompt.lastAskedAboutForTests(), SQUARE_NAME, "the arrival-side question named"
+            + " the square by one of its copies, whose name states a direction the operator is being asked about"
+            + " (GUI-C7)");
+    }
+
+    /**
      * Pastes the train onto the square with both questions answered, and says which way it now faces.
      *
      * @param chosen the heading the facing question is answered with

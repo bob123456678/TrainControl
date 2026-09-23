@@ -206,7 +206,8 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
      * MUTATION: have `settle` record nothing and the first claim fails, the row drawn in ordinary ink
      * while Save still refuses it.  Mark on the answer alone - drop the `named` clause - and the
      * fourth claim fails: a row nobody has filled in yet is red the moment it is added, and a mark
-     * that is always there is a mark nobody reads.
+     * that is always there is a mark nobody reads.  Stop `unshaded` clearing the tooltip and the + row
+     * claim fails: that row wears the refusal of the row drawn before it (GUI-C2).
      *
      * @throws Exception from the event thread
      */
@@ -261,6 +262,25 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
             assertTrue(complains(frame[0], unusable),
                 "the row is marked for something Save does not refuse, so the mark and the gate"
                 + " disagree.  What Save said: " + frame[0].problemsForTest());
+
+            // AND THE + ROW UNDER IT SAYS NOTHING (GUI-C2).  It returned before the tooltip was set, and
+            // this renderer is one recycled component for the whole table - so the line that adds a
+            // command wore the refusal of the row drawn a moment before it.
+            final int plus = frame[0].commandRowCountForTest();
+            final String[] onPlus = new String[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                frame[0].commandCellForTest(0, 4);
+
+                java.awt.Component cell = frame[0].commandCellForTest(plus, 4);
+
+                onPlus[0] = cell instanceof javax.swing.JComponent
+                    ? ((javax.swing.JComponent) cell).getToolTipText() : null;
+            });
+
+            assertNull(onPlus[0], "the + row, which adds a command, carries the refusal of the row drawn"
+                + " before it: " + onPlus[0] + " (GUI-C2)");
 
             // A ROW NOBODY HAS FILLED IN YET IS NOT MARKED.  It is added empty, Save refuses it, and
             // marking on that answer alone painted every new row red before a character was typed.

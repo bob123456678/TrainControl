@@ -2,6 +2,8 @@ package regression;
 
 import java.util.Collections;
 import javax.swing.SwingUtilities;
+import static org.traincontrol.base.Accessory.accessoryDecoderType.DCC;
+import static org.traincontrol.base.Accessory.accessoryDecoderType.MM2;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
@@ -161,6 +163,115 @@ public class testTheRouteHighlightAsksWhatATileIs
             + " accessory address, so Highlight on Diagram now lights nothing at all");
 
         assertTrue(flashing(TURNOUT), "the turnout did not flash");
+    }
+
+    /**
+     * A three-way answers to its second decoder too, which is how a route sets its other diverging road (GUI-C5).
+     *
+     * `layout.switchThreeWayAddr` prints both addresses; only the first is the tile's logical address, so a route
+     * commanding only the second lit nothing and said there was nothing to show.
+     *
+     * MUTATION: drop the three-way clause from `answersToAccessoryAddress` and this fails.
+     *
+     * @throws Exception building the tiles
+     */
+    @Test
+    public void testAThreeWayAnswersToItsSecondDecoder() throws Exception
+    {
+        org.traincontrol.base.LayoutDiagramComponent threeWay = accessoryTile(
+            org.traincontrol.base.LayoutDiagramComponent.componentType.SWITCH_THREE, 10, null);
+
+        assertTrue(threeWay.answersToAccessoryAddress(11, MM2), "a three-way at 10 does not answer to 11, its"
+            + " second decoder - a route commanding only that one lights nothing (GUI-C5)");
+
+        assertTrue(threeWay.answersToAccessoryAddress(10, MM2), "control: a three-way at 10 does not answer to 10");
+
+        assertFalse(threeWay.answersToAccessoryAddress(12, MM2), "a three-way at 10 answers to 12, which is"
+            + " neither of its decoders");
+
+        org.traincontrol.base.LayoutDiagramComponent plain = accessoryTile(
+            org.traincontrol.base.LayoutDiagramComponent.componentType.SWITCH_LEFT, 10, null);
+
+        assertFalse(plain.answersToAccessoryAddress(11, MM2), "an ordinary turnout at 10 answers to 11 - only a"
+            + " three-way is two decoders");
+    }
+
+    /**
+     * An address is one per protocol: an MM2 turnout 5 and a DCC turnout 5 are two decoders (GUI-C5).
+     *
+     * MUTATION: stop comparing the protocol in `answersToAccessoryAddress` and this fails.
+     *
+     * @throws Exception building the tiles
+     */
+    @Test
+    public void testAnAddressIsOnePerProtocol() throws Exception
+    {
+        org.traincontrol.base.LayoutDiagramComponent dcc = accessoryTile(
+            org.traincontrol.base.LayoutDiagramComponent.componentType.SWITCH_LEFT, 5, DCC);
+
+        assertFalse(dcc.answersToAccessoryAddress(5, MM2), "a DCC turnout 5 answers to a command for MM2 5,"
+            + " which is a different decoder - a route commanding one lit both (GUI-C5)");
+
+        assertTrue(dcc.answersToAccessoryAddress(5, DCC), "control: a DCC turnout 5 does not answer to DCC 5");
+
+        // A tile with no protocol is the implicit one, which is what the parser and a route command both read a
+        // missing protocol as.
+        org.traincontrol.base.LayoutDiagramComponent unstated = accessoryTile(
+            org.traincontrol.base.LayoutDiagramComponent.componentType.SWITCH_LEFT, 5, null);
+
+        assertTrue(unstated.answersToAccessoryAddress(5, MM2), "a turnout with no protocol does not answer to"
+            + " MM2, which is what a missing protocol means everywhere else");
+
+        assertFalse(unstated.answersToAccessoryAddress(5, DCC), "a turnout with no protocol answers to DCC");
+    }
+
+    /**
+     * And the window asks the decoder: the scenario's MM2 turnout is not lit for a DCC command (GUI-C5).
+     *
+     * The claims above are about the tile; this is the door Highlight on Diagram uses.
+     *
+     * MUTATION: have `highlightAccessories` pass the addresses on without their protocols and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheHighlightAsksTheDecoder() throws Exception
+    {
+        endEveryFlash();
+
+        final int[] lit = new int[2];
+
+        SwingUtilities.invokeAndWait(() -> lit[0] = ui.highlightAccessories(
+            Collections.singletonMap(ACCESSORY_OF_THE_TURNOUT, Collections.singleton(DCC)),
+            org.traincontrol.util.ImageUtil.HIGHLIGHT, 4000));
+
+        settle();
+
+        assertEquals(lit[0], 0, "a command to DCC " + ACCESSORY_OF_THE_TURNOUT + " lit the scenario's MM2"
+            + " turnout numbered alike, which is a different decoder (GUI-C5)");
+
+        endEveryFlash();
+
+        SwingUtilities.invokeAndWait(() -> lit[1] = ui.highlightAccessories(
+            Collections.singletonMap(ACCESSORY_OF_THE_TURNOUT, Collections.singleton(MM2)),
+            org.traincontrol.util.ImageUtil.HIGHLIGHT, 4000));
+
+        settle();
+
+        assertTrue(lit[1] > 0, "control: a command to MM2 " + ACCESSORY_OF_THE_TURNOUT + " does not light the"
+            + " scenario's turnout, so the door refuses everything");
+    }
+
+    private static org.traincontrol.base.LayoutDiagramComponent accessoryTile(
+        org.traincontrol.base.LayoutDiagramComponent.componentType type, int address,
+        org.traincontrol.base.Accessory.accessoryDecoderType protocol) throws Exception
+    {
+        org.traincontrol.base.LayoutDiagramComponent tile =
+            new org.traincontrol.base.LayoutDiagramComponent(type, 1, 1, 0, 0, 0, 0, protocol);
+
+        tile.setLogicalAddress(address, protocol == null ? MM2 : protocol, false);
+
+        return tile;
     }
 
     /**

@@ -1216,6 +1216,18 @@ public class LayoutDiagramComponent
         return protocol;
     }
 
+    /**
+     * Whether a command to this accessory address, in this protocol, reaches this tile's decoder.
+     *
+     * @param address the logical address the command names
+     * @param protocol the protocol it is sent in
+     * @return whether it reaches this tile
+     */
+    public boolean answersToAccessoryAddress(int address, accessoryDecoderType protocol)
+    {
+        return address == this.getLogicalAddress();
+    }
+
     public void setProtocol(accessoryDecoderType protocol)
     {
         this.protocol = protocol;

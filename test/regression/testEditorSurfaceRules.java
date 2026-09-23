@@ -3262,6 +3262,54 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * The excluded-page label and the banner's Fix Setup bring an open editor forward, as the Edit item does (GUI-C8).
+     *
+     * Adam, 2026-09-19, on the label: *"just make it attempt to click the edit button if it's enabled"*.  With an
+     * editor already open the Edit item IS enabled, and `openLayoutEditor` brings that window forward (OB-058).  The
+     * label and Fix Setup asked `refuseWhileEditorOpen` first, which in exactly that state shows "Close the editor
+     * first" - telling the operator to close the window the Edit item would have handed them.  Loading is still
+     * refused while an editor is open, which is what that guard is for.
+     *
+     * Read from the source: an open editor in a test would need the whole window, and the dialog this is about is
+     * modal.
+     *
+     * MUTATION: put `refuseWhileEditorOpen()` back in either and this fails.
+     *
+     * @throws Exception reading the source
+     */
+    @Test
+    public void testTheWaysIntoTheEditorBringAnOpenOneForward() throws Exception
+    {
+        String ui = codeOnly(new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8));
+
+        String label = bodyOf(ui, "public void openAutonomyEditorIfItCan()");
+
+        assertFalse(label.isEmpty(), "cannot find openAutonomyEditorIfItCan - has it been renamed?");
+
+        assertTrue(label.contains("openAutonomyEditor(null)"), "the label no longer opens the editor");
+
+        assertFalse(label.contains("refuseWhileEditorOpen()"), "the excluded-page label refuses with 'Close the"
+            + " editor first' where the Edit item it imitates brings the open editor forward (GUI-C8)");
+
+        int fix = ui.indexOf("I18n.t(\"autosetup.ui.btnFixSetup\")");
+
+        assertTrue(fix >= 0, "cannot find the banner's Fix Setup button");
+
+        int next = ui.indexOf("autosetup.ui.btnLoadConfiguration", fix);
+
+        assertTrue(next > fix, "cannot find the banner's Load button, which bounds Fix Setup's action");
+
+        String fixSetup = ui.substring(fix, next);
+
+        assertTrue(fixSetup.contains("openAutonomyEditor(null)"), "Fix Setup no longer opens the editor");
+
+        assertFalse(fixSetup.contains("refuseWhileEditorOpen()"), "Fix Setup refuses with 'Close the editor"
+            + " first' where the Edit item brings the open editor forward - and the editor is what fixes the setup"
+            + " (GUI-C8)");
+    }
+
+    /**
      * "Is an editor open" is asked of the EDITOR, not of the button that opens one.
      *
      * This was `!editLayoutButton.isEnabled()`, which was a true answer for as long as the button

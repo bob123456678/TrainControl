@@ -8870,6 +8870,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return lit;
     }
 
+    /**
+     * Lights every accessory square whose decoder one of these commands reaches, in these protocols.
+     *
+     * @param byAddress each logical address, and the protocols it is commanded in
+     * @param wash the colour
+     * @param holdMs how long to hold it
+     * @return how many squares were lit
+     */
+    public int highlightAccessories(
+        java.util.Map<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>> byAddress,
+        java.awt.Color wash, int holdMs)
+    {
+        return byAddress == null ? 0 : highlightAddresses(byAddress.keySet(), AddressedAs.ACCESSORY, wash, holdMs);
+    }
+
     public DiagramTileRegistry getDiagramTileRegistry()
     {
         return diagramTileRegistry;
@@ -9642,7 +9657,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     this.getAutonomyViewerPanel().loadActive();
                 }
-                else
+                else if (resumesFromJsonAtStart())
                 {
                     this.validateButtonActionPerformed(new CustomActionEvent(this, ActionEvent.ACTION_PERFORMED, "", ""));
                 }
@@ -9658,6 +9673,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Show window - this is now called externally once this call returns        
     }
     
+    /**
+     * Whether the start-up load falls back to the old JSON graph, for a layout with no configuration to resume.
+     *
+     * @return whether to load the JSON graph now
+     */
+    public boolean resumesFromJsonAtStart()
+    {
+        return true;
+    }
+
     /**
      * Renders the UI once everything is initialized - to be called externally
      */

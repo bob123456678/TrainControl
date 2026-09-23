@@ -138,7 +138,13 @@ public interface ViewListener
     public boolean changeRouteId(String name, int newId);
     public void clearLayouts();
     public String exportRoutes() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, Exception;
-    public void importRoutes(String json);
+    /**
+     * Replaces every route with those in a route export, each arriving with its automatic firing off.
+     *
+     * @param json the export
+     * @return how many routes were added
+     */
+    public int importRoutes(String json);
     public List<Locomotive> getLocomotives();
     public void changeLocAddress(String locName, int newAddress, decoderType newDecoderType) throws Exception;
     public void sendPing(boolean force);
