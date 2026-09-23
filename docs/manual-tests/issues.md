@@ -2673,6 +2673,34 @@ one question for OB-233 - two lists that must agree is how that defect happened.
 
 Related: MT-454 and MT-459 are the hands-on tests for this walk, and both are in his retest queue.
 
+
+**HIS RULING, 2026-09-23, and it settles the open question above:** *"a route tile should not need or
+accept a length.  it just implicitly connects things as if it were a crossing."*
+
+So the answer is not to share the length differently - it is that a route tile is **not a square a
+length rule reads at all**.  It neither takes a share nor is asked for one, and it connects what is
+either side of it the way a crossing does.
+
+**That settles three things at once.**
+
+- This entry: exclude route tiles from the stretch's squares, and the divisor shrinks so his 2, 1, 1
+  falls out on its own.  No tile is given a share it cannot show, because no such tile is in the list.
+- `OB-274`'s adjacent case is smaller than it looked: a piece that is genuinely zero because the only
+  thing between two sensors is a route tile stops needing a deliberate 0 at all.  The rest of OB-274
+  stands - two sensors truly adjacent still need one.
+- The `checkHalfMeasuredApproach` warnings on `TopR1ParkLong` and `TopR1ParkShort`: the unmeasured
+  squares the check counts on those approaches ARE route tiles - `5:3,5` for the first, `5:3,7` and
+  `5:4,7` for the second - so both warnings go once route tiles are out of the walk, with nothing
+  measured and nothing changed about the berths.
+
+**And a correction he made to my reading of his diagram**, recorded because it is about his railway
+rather than about the code: *"there is no path from 2,5 to 4,5 through 3,5, so TopR1ParkShort should
+still allow trains of length 3 because 2,5's length is 3."*  I had inferred the approach ran east-west
+through the route tile from the tile map; it does not.  The berths are measured - `5:2,5` is 3 and
+`5:2,7` is 4 - and a berth must admit a train of its own measured length.
+
+**Which makes the list of types one question asked once**, as this entry already argued: route tiles
+are the first entry on it, and text and labels are the obvious next ones to settle.
 ### OB-274 - 2026-09-23 - Mass Assign Lengths cannot accept a deliberate length of 0, so a genuinely zero piece reads as skipped
 
 **Kind:** bug  
@@ -2857,6 +2885,45 @@ asking whether he wants the others while the menu is being built.
 
 **Not a defect**: nothing is wrong today, there is simply no way to reach the edit from that page.
 Minor, and display-side only.
+
+### OB-277 - 2026-09-23 - the orange train line is not drawn on sensor squares
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-09-23  
+**Filed:** 2026-09-23  
+
+Adam, 2026-09-23: *"when we draw orange lines, they don't overlap with sensors."*
+
+**A likely cause, and it is the same root as `OB-263` filed this morning.**  `LayoutLabel.coveredRoads`
+decides the line's shape by asking
+
+    TilePorts.ports(component.getType(), component.getOrientation(), road.getState())
+
+and `TilePorts.ports` answers `Collections.emptyList()` whenever the state is past the end of that
+type's table - it does not throw.  A FEEDBACK tile has exactly ONE state, so any state of 1 returns
+nothing, `roads.isEmpty()` is true, and the method returns before a line is drawn.
+
+**Which would explain the symptom exactly, and in the worst place.**  A sensor with a train on it is
+the one that reads occupied - so the square where the train actually is would be the square with no
+line, and the orange would break at every sensor it covers.
+
+**Why this is worth taking seriously rather than filing as cosmetic:** `IND9X-C8` / `OB-263` is the
+same trap one layer away - `LayoutGrid.runsNorthSouth` asks the port table with a feedback tile's saved
+`zustand` and gets an empty answer, which is why a station caption's rotation depends on whether the
+s88 happened to be occupied when the layout was exported.  `AutonomySession.labelSides` documents the
+trap and asks `graph.getRoutes(tile)` instead.  That makes this the THIRD site of one confusion, and
+the fix is the one already written down: ask the graph what roads a tile has, not the port table with a
+state it cannot interpret.
+
+**ONE MEASUREMENT WOULD CONFIRM IT** and it needs a quiet tree: put a train on a sensor square, read
+`coveredRoads` for that square, and see whether the list is empty.  If it is, the mechanism above is
+it; if it is not, the line is being drawn and something later hides it, which is a different fault.
+The mechanism is read from the code rather than observed, and that distinction is kept here because
+this repository has been caught by a plausible-but-unmeasured cause twice this week.
+
+**What it costs him:** the orange is how he reads where a train's body is.  Broken at every sensor, it
+under-reports the very squares a tail walk is most often asked about - and `behaviour.md` 5c's claim
+that the picture and the guard mark the same squares stops being true at exactly those squares.
 
 ## What has been picked up
 
