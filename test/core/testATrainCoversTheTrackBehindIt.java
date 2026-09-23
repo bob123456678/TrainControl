@@ -722,19 +722,24 @@ public class testATrainCoversTheTrackBehindIt
             "the redraw repaints every square in either set rather than the ones that changed, which"
             + " is the whole-diagram repaint the targeted one exists to avoid (MT-334)");
 
-        // AND THE GREY IS DIFFED IN THE SAME PASS, in both directions (2026-09-09).
+        // AND THE GREY IS DIFFED IN THE SAME PASS, in both directions (2026-09-09), BY ROAD (OB-208).
         //
-        // A plain symmetric difference, because the wash is over the whole square - it is there or it
-        // is not - where the line needs the road compared as well.  Both arms are asked for: the first
-        // takes the wash off a square that has stopped being blocked, which is OB-180's own half of
-        // this rule arriving at the second mark.
-        assertTrue(ui.contains("if (!greyAfter.contains(at)) changed.add(at)"),
-            "a square that has stopped being blocked is not redrawn, so the grey stays on track"
-            + " nothing blocks any more - and on every square on the railway once autonomy stops");
+        // It was a plain symmetric difference while the wash was over the whole square.  Since OB-208 the
+        // grey is per road, like the line - a double curve on a covered edge fades only the arc the edge
+        // runs over - so a square can stay grey while what it fades changes, and the grey is compared the
+        // way the line is: the union of both sets, and a square added wherever its roads differ.  Both
+        // directions fall out of that one comparison - a square that has stopped being blocked has roads
+        // before and none after, one just blocked the other way round - and each is asked for below.
+        assertTrue(ui.contains("greySquares.addAll(greyAfter.keySet())"),
+            "the grey diff no longer walks both sets, so a square that has just become blocked is not"
+            + " redrawn - it goes on being drawn as free track until something unrelated repaints it");
 
-        assertTrue(ui.contains("if (!greyBefore.contains(at)) changed.add(at)"),
-            "a square that has just become blocked is not redrawn, so it goes on being drawn as free"
-            + " track until something unrelated repaints it");
+        assertTrue(ui.contains("new java.util.HashSet<>(greyBefore.keySet())"),
+            "the grey diff no longer starts from the old set, so a square that has stopped being blocked"
+            + " is not redrawn - the grey stays on track nothing blocks, on every square once a train moves");
+
+        assertTrue(ui.contains("if (then == null ? after != null : !then.equals(after)) changed.add(at)"),
+            "the grey diff does not add a square whose blocked roads changed, in either direction");
 
         assertTrue(ui.contains("label.refreshCoveredMark()"),
             "nothing asks the tiles to re-apply the wash, so the set changed and the screen did not");

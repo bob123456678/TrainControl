@@ -7559,10 +7559,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * refusal it draws was never fenced that way, so a stopped railway refused manual sends over
      * track this said was free.  `workOutCoveredTrack` holds the argument.
      *
+     * **Per ROAD, like the covered set** (OB-208).  Since Adam's ruling of 2026-09-23 - *"orange shows where
+     * the train is, gray shows what's blocked"* - this is the whole of every covered edge again rather than
+     * the orange's own squares, and a double curve on such an edge must fade only the arc the edge runs over.
+     *
      * Cached, volatile and replaced wholesale, for the reasons the covered set gives above.
      */
-    private volatile java.util.Set<org.traincontrol.automationui.TileGraph.TileKey>
-        blockedTrack = java.util.Collections.emptySet();
+    private volatile java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+        java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> blockedTrack = java.util.Collections.emptyMap();
 
     /**
      * Whether a standing train has blocked this square, so the diagram can grey it.
@@ -7575,7 +7579,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public boolean isTrackBlocked(org.traincontrol.automationui.TileGraph.TileKey square)
     {
-        return square != null && blockedTrack.contains(square);
+        return square != null && blockedTrack.containsKey(square);
+    }
+
+    /**
+     * WHICH ROADS of a square are blocked (OB-208) - the grey's own answer, as `coveredRoutesAt` is the
+     * orange's.
+     *
+     * @param square the tile
+     * @return the routes, never null; empty for a square nothing blocks, or one whose road cannot be named
+     */
+    public java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> blockedRoutesAt(org.traincontrol.automationui.TileGraph.TileKey square)
+    {
+        if (square == null) return java.util.Collections.emptySet();
+
+        java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> roads = blockedTrack.get(square);
+
+        return roads == null ? java.util.Collections.<org.traincontrol.automationui.TileGraph.RouteId>emptySet() : roads;
     }
 
     /**
@@ -7759,13 +7779,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> found =
                     java.util.Collections.emptyMap();
 
-                java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> greyed =
-                    java.util.Collections.emptySet();
+                java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+                    java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> greyed = java.util.Collections.emptyMap();
 
                 java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
                     java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> was = coveredTrack;
 
-                java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> wasBlocked = blockedTrack;
+                java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+                    java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> wasBlocked = blockedTrack;
 
                 try
                 {
@@ -7795,7 +7816,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         // Nothing else about the mark changes: the extent is still the covered EDGES,
                         // the two sets are still computed together and diffed together, and
                         // `repaintTheWashWhereItChanged` still redraws only the squares that changed.
-                        greyed = ask.setup.tilesBlockedByStandingTrains(ask.railway);
+                        greyed = ask.setup.routesBlockedByStandingTrains(ask.railway);
                     }
                 }
                 catch (Exception cannotWorkItOut)
@@ -7803,7 +7824,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     // NOTHING MARKED rather than a broken diagram.  A picture nobody can read is worse
                     // than a protection nobody can see.
                     found = java.util.Collections.emptyMap();
-                    greyed = java.util.Collections.emptySet();
+                    greyed = java.util.Collections.emptyMap();
                 }
 
                 coveredTrack = found;
@@ -7973,8 +7994,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> was,
         java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
             java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> now,
-        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> wasBlocked,
-        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> nowBlocked)
+        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> wasBlocked,
+        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> nowBlocked)
     {
         try
         {
@@ -8005,29 +8026,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 if (then == null ? after == null : then.equals(after)) key.remove();
             }
 
-            // AND THE SQUARES WHOSE GREY CHANGED, which is a plain symmetric difference: the wash is
-            // over the whole square, so a square either has it or has not.  Added after the covered
-            // squares have been filtered, because a square whose line did not change may still have
-            // gained or lost the wash - which is every square on the railway the moment autonomy
-            // starts or stops.
-            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> greyBefore =
-                wasBlocked == null
-                    ? java.util.Collections.<org.traincontrol.automationui.TileGraph.TileKey>emptySet()
-                    : wasBlocked;
+            // AND THE SQUARES WHOSE GREY CHANGED - by road, as the covered half is compared, since OB-208 made the
+            // grey per road: a double curve whose blocked arc changes stays in the set both times and still has
+            // to be redrawn.  Added after the covered squares have been filtered, because a square whose line
+            // did not change may still have gained or lost the wash - which is every square on the railway the
+            // moment a train is placed or its length changes.
+            java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> greyBefore =
+                wasBlocked == null ? java.util.Collections.<org.traincontrol.automationui.TileGraph.TileKey, java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>>emptyMap() : wasBlocked;
 
-            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> greyAfter =
-                nowBlocked == null
-                    ? java.util.Collections.<org.traincontrol.automationui.TileGraph.TileKey>emptySet()
-                    : nowBlocked;
+            java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> greyAfter =
+                nowBlocked == null ? java.util.Collections.<org.traincontrol.automationui.TileGraph.TileKey, java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>>emptyMap() : nowBlocked;
 
-            for (org.traincontrol.automationui.TileGraph.TileKey at : greyBefore)
+            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> greySquares = new java.util.HashSet<>(greyBefore.keySet());
+
+            greySquares.addAll(greyAfter.keySet());
+
+            for (org.traincontrol.automationui.TileGraph.TileKey at : greySquares)
             {
-                if (!greyAfter.contains(at)) changed.add(at);
-            }
+                java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> then = greyBefore.get(at);
+                java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> after = greyAfter.get(at);
 
-            for (org.traincontrol.automationui.TileGraph.TileKey at : greyAfter)
-            {
-                if (!greyBefore.contains(at)) changed.add(at);
+                if (then == null ? after != null : !then.equals(after)) changed.add(at);
             }
 
             for (org.traincontrol.automationui.TileGraph.TileKey key : changed)

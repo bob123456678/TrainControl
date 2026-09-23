@@ -1780,22 +1780,25 @@ public final class LayoutLabel extends JLabel
 
         if (getWidth() <= 0 || getHeight() <= 0) return null;
 
-        java.util.List<org.traincontrol.automationui.TilePorts.Route> covered = coveredRoads();
-
-        if (covered.isEmpty()) return null;
-
-        java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> roads =
-            tcUI.coveredRoutesAt(square);
+        // THE BLOCKED ROADS, NOT THE TRAIN'S (OB-208).  The fade is the grey, and since Adam's ruling of
+        // 2026-09-23 the grey is its own answer - the whole of every covered edge, per road - rather than the
+        // orange's squares.  Asking the orange here would fade the whole of a double curve the train is not
+        // on, over which a covered edge runs on one arc: the confusion MT-309 was about.
+        java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> roads = tcUI.blockedRoutesAt(square);
 
         if (roads.isEmpty()) return null;
 
-        // EVERY ROAD THIS SQUARE HAS, in the state the covered one was found in - which is the state the
+        java.util.List<org.traincontrol.automationui.TilePorts.Route> covered = routesOf(roads);
+
+        if (covered.isEmpty()) return null;
+
+        // EVERY ROAD THIS SQUARE HAS, in the state the blocked one was found in - which is the state the
         // reduction walked it in.  A switch has one road per state and is not what this is for.
         java.util.List<org.traincontrol.automationui.TilePorts.Route> all =
             org.traincontrol.automationui.TilePorts.ports(component.getType(),
                 component.getOrientation(), roads.iterator().next().getState());
 
-        // Nothing to separate: one road, or the train is on all of them.
+        // Nothing to separate: one road, or every road is blocked.
         if (all.size() < 2 || covered.size() >= all.size()) return null;
 
         java.awt.geom.Area shape = new java.awt.geom.Area();
@@ -1829,19 +1832,37 @@ public final class LayoutLabel extends JLabel
      */
     private java.util.List<org.traincontrol.automationui.TilePorts.Route> coveredRoads()
     {
+        if (edit || square == null || tcUI == null || component == null)
+        {
+            return new java.util.ArrayList<>();
+        }
+
+        return routesOf(tcUI.coveredRoutesAt(square));
+    }
+
+    /**
+     * Roads of this square, named by the reduction, as the sides they join - one translation for both marks,
+     * so the orange line and the grey band cannot come to describe a road differently.
+     *
+     * @param roads the reduction's names for them
+     * @return the roads, possibly none
+     */
+    private java.util.List<org.traincontrol.automationui.TilePorts.Route> routesOf(
+        java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> roads)
+    {
         java.util.List<org.traincontrol.automationui.TilePorts.Route> out =
             new java.util.ArrayList<>();
 
-        if (edit || square == null || tcUI == null || component == null) return out;
+        if (component == null || roads == null) return out;
 
-        for (org.traincontrol.automationui.TileGraph.RouteId road : tcUI.coveredRoutesAt(square))
+        for (org.traincontrol.automationui.TileGraph.RouteId road : roads)
         {
             java.util.List<org.traincontrol.automationui.TilePorts.Route> routes =
                 org.traincontrol.automationui.TilePorts.ports(
                     component.getType(), component.getOrientation(), road.getState());
 
-            // A route the port map no longer has: the diagram has been edited under a covered set
-            // computed before it.  The square keeps its mark at the next refresh.
+            // A route the port map no longer has: the diagram has been edited under a set computed before
+            // it.  The square keeps its mark at the next refresh.
             if (road.getIndex() < 0 || road.getIndex() >= routes.size()) continue;
 
             org.traincontrol.automationui.TilePorts.Route route = routes.get(road.getIndex());

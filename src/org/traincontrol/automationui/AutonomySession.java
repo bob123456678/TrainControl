@@ -5981,42 +5981,67 @@ public class AutonomySession
      */
     public Set<TileKey> tilesBlockedByStandingTrains(org.traincontrol.automation.Layout running)
     {
-        // WHERE THE TRAIN IS, NOT EVERY TILE OF THE EDGE IT STANDS ON (Adam, OB-207).
-        //
-        // *"When at tunnellongpark, en57-203 blocks most of the track leading up to bottommaina, even
-        // though it is of length 1, and the track next to it is of length 2.  too much blocked for such
-        // a short train."*  And, when the first answer here missed it: *"I still don't understand how
-        // this train can be blocking anything based on the set lengths."*
-        //
-        // He was right, and the numbers say how far wrong this was. Measured on his own layout, the
-        // edge behind that square is
-        //
-        //     TunnelLongPark -> BottomMainA   length 4, 12 tiles, THREE switches
-        //     10,10{2} 10,11[SW] 11,11 11,12[SW] 12,12 13,12{1} 14,12[SW] 15,12 ... 19,12{1}
-        //
-        // and this method greyed all twelve for a train that lies inside 10,10 alone - a tile measured
-        // at 2, against a train of 1. The lengths were never consulted: it walked the tiles of every
-        // COVERED EDGE, and an edge is covered whole.
-        //
-        // **What was written here before, and why it was wrong.** *"The whole edge, which is what
-        // routing actually refuses ... between the two marks the picture and the guard agree again."*
-        // The first half is true and the conclusion does not follow. The walk's first hop always has the
-        // train's own square as one endpoint, and `Layout.isPathClear` already refuses any path through
-        // an occupied point - so the extra thing the wide mark drew was already refused by occupancy,
-        // and what it cost was twelve tiles of picture for one tile of train.
-        //
-        // **So the extent is the narrow one**, which has consumed the tile lengths since MT-309 and
-        // stops the moment the train is used up. The two marks now cover the same squares and say
-        // different things about them: this one washes the tile, `routesCoveredByStandingTrains` draws
-        // the line along the road - which is also the answer to *"graying makes it look confusing on
-        // double curve tiles"*, since a tile is only washed now if the train is really on it.
-        //
-        // **What this gives up, said plainly:** a train long enough to reach back past a Point leaves
-        // the far part of the last edge it enters refused by routing and no longer washed. That is an
-        // under-statement of a few tiles at the end of a long train, against an over-statement of a
-        // whole edge behind every short one. Adam's railway has trains of one and two units on edges of
-        // twelve tiles, so the trade is not close.
-        return tilesCoveredByStandingTrains(running);
+        return routesBlockedByStandingTrains(running).keySet();
+    }
+
+    /**
+     * The same answer, saying WHICH ROAD of each square is blocked (OB-208).
+     *
+     * **The whole of every covered edge, again.**  Adam, 2026-09-23, asked whether the grey should cover only
+     * where the train is or the whole stretch it blocks: *the whole stretch* - *"orange shows where the train
+     * is, gray shows what's blocked."*  From OB-207 until then this returned the orange's own squares, which
+     * made the two marks one: the narrowing was made when the grey was the ONLY mark, and *"too much blocked
+     * for such a short train"* was a complaint about that single mark claiming to say where the train was.
+     * With the orange line saying that, the grey is free to say what routing refuses - and routing refuses a
+     * covered edge whole, because a path uses all of its own edges.
+     *
+     * **Per road, so a double curve is not greyed on both arcs** (Adam, 2026-09-08, *"graying makes it look
+     * confusing on double curve tiles"*).  Each step of a covered edge carries the route it runs through, so
+     * the tile can fade that road and leave the other at full strength - the band `LayoutLabel.theRoadToFade`
+     * draws.
+     *
+     * **The endpoint squares are excluded**, `pathBetween`'s own rule and Adam's about the covered set: *"edges,
+     * because the points are technically unoccupied"*.  A train standing at a sensor is shown there by the
+     * orange; what the grey adds is the track between sensors that nothing may use.
+     *
+     * @param running the layout, which is what knows where the trains are
+     * @return each blocked square, with the routes of it that are blocked
+     */
+    public Map<TileKey, Set<RouteId>> routesBlockedByStandingTrains(org.traincontrol.automation.Layout running)
+    {
+        Map<TileKey, Set<RouteId>> out = new LinkedHashMap<>();
+
+        if (running == null || reducer == null || getStationIndex() == null) return out;
+
+        for (org.traincontrol.automation.Edge edge : running.edgesCoveredByStandingTrains().keySet())
+        {
+            if (edge == null || edge.getStart() == null || edge.getEnd() == null) continue;
+
+            TileKey from = getStationIndex().squareOf(edge.getStart().getName());
+            TileKey to = getStationIndex().squareOf(edge.getEnd().getName());
+
+            if (from == null || to == null) continue;
+
+            List<GraphReducer.TileStep> steps = pathBetween(from, to);
+
+            if (steps == null) continue;
+
+            for (GraphReducer.TileStep step : steps)
+            {
+                Set<RouteId> roads = out.get(step.getTile());
+
+                if (roads == null)
+                {
+                    roads = new LinkedHashSet<>();
+
+                    out.put(step.getTile(), roads);
+                }
+
+                if (step.getRouteId() != null) roads.add(step.getRouteId());
+            }
+        }
+
+        return out;
     }
 
     /**
@@ -6065,11 +6090,10 @@ public class AutonomySession
 
         // THE STANDING SQUARE IS NOT SPENT HERE, AND THAT IS A QUESTION FOR ADAM (PRW-B4).
         //
-        // The guard - `Layout.walkStandingTrains` - claims the square the train stands on and spends
-        // its length before walking back.  This walk never puts that square in `out` at all: "its
-        // square does not get drawn: a train standing there would be shown standing there", because
-        // the train mark is already on it.  So the two describe different sets by construction, and
-        // the picture reaches `len(standing) - len(far end)` further back than the guard's claim.
+        // The guard - `Layout.walkStandingTrains` - claims the square the train stands on and does not
+        // spend its length (the allowance of section 5c).  This walk DRAWS that square since OB-277 and
+        // does not spend it either; what still differs is the far end, whose length this walk spends
+        // and the guard's places may not, so the picture can reach `len(far end)` less far back.
         //
         // Charging the standing square here was tried on 2026-09-12 and reverted the same day: it
         // leaves a train shorter than its own square with nothing drawn behind it, which failed two
@@ -6101,6 +6125,17 @@ public class AutonomySession
 
             if (next == null) return;
 
+            // THE SENSOR SQUARES ARE DRAWN TOO (Adam, 2026-09-23, OB-277: *"when we draw orange lines,
+            // they don't overlap with sensors"*, and on every sensor, occupied or not).  The square a
+            // train stands on is a sensor, and so is every Point its tail lies back across - so leaving
+            // them out broke the line at exactly the squares that say where the train is.  It used to be
+            // deliberate - "a train standing there would be shown standing there" - and his ruling is
+            // that the orange shows where the train is, the locomotive icon notwithstanding.
+            //
+            // The standing square is drawn once, when the first hop says which of its sides the body
+            // leaves by.  Drawn, not spent: its length is the allowance of section 5c.
+            if (walked.size() == 1) markTheSensor(out, at, next);
+
             List<GraphReducer.TileStep> between = pathBetween(at, next);
 
             for (GraphReducer.TileStep step : between)
@@ -6123,14 +6158,10 @@ public class AutonomySession
                 if (remaining <= 0) return;
             }
 
-            // The far end's own length counts, and its square does not get drawn: a train standing
-            // there would be shown standing there.
-            //
-            // The sentence that used to justify this by analogy - `GraphReducer` builds an edge's
-            // length as "the path plus the square it arrives at" - is inverted, and is dropped rather
-            // than repaired: the square an arriving edge arrives at is the square the TRAIN stands on,
-            // not this one.  What is true is the line above: this square is the next one back, and the
-            // body lies over it.
+            // The far end is the next square back and the body lies over it - so it is drawn (OB-277),
+            // along the road that faces the track just walked, and its own length counts.
+            markTheSensor(out, next, at);
+
             remaining -= store.getTileLength(next);
 
             walked.add(next);
@@ -6182,6 +6213,80 @@ public class AutonomySession
             if (otherWay) java.util.Collections.reverse(steps);
 
             return steps;
+        }
+
+        return null;
+    }
+
+    /**
+     * Puts a sensor square a train is lying on into the covered set, with the road of it the train is on
+     * (OB-277).
+     *
+     * The square goes in even when the road cannot be named - a portal hop has no side on the grid - for the
+     * reason `walkBackFrom` gives for a step with no route: the square is still spoken for, and the tile then
+     * simply draws no line rather than a line along a rail it cannot name.
+     *
+     * @param out the covered set, added to
+     * @param sensor the Point's square
+     * @param towards the neighbouring Point's square the train's body runs on towards
+     */
+    private void markTheSensor(Map<TileKey, Set<RouteId>> out, TileKey sensor, TileKey towards)
+    {
+        Set<RouteId> roads = out.get(sensor);
+
+        if (roads == null)
+        {
+            roads = new LinkedHashSet<>();
+
+            out.put(sensor, roads);
+        }
+
+        RouteId road = roadOfTheSensor(sensor, towards);
+
+        if (road != null) roads.add(road);
+    }
+
+    /**
+     * Which road of a sensor square runs towards a neighbouring Point, or null when that cannot be said.
+     *
+     * **Asked of the same edge `pathBetween` walks**: the first reduced edge joining the two squares, either way
+     * round, in the reducer's own order - so the line through the sensor and the line along the track beside it
+     * describe one road rather than two answers that could part.  The side is where that edge leaves or reaches
+     * the sensor, and the road is the one of the square's routes that uses that side.  A double curve's two arcs
+     * share no side, so the answer is one road even there - which is the case MT-309 was about.
+     *
+     * @param sensor the Point's square
+     * @param towards the neighbouring Point's square
+     * @return the road, or null
+     */
+    private RouteId roadOfTheSensor(TileKey sensor, TileKey towards)
+    {
+        if (sensor == null || towards == null || reducer == null || graph == null) return null;
+
+        Side side = null;
+
+        for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+        {
+            if (sensor.equals(edge.getStart()) && towards.equals(edge.getEnd()))
+            {
+                side = edge.getExitSide();
+
+                break;
+            }
+
+            if (towards.equals(edge.getStart()) && sensor.equals(edge.getEnd()))
+            {
+                side = edge.getEntrySide();
+
+                break;
+            }
+        }
+
+        if (side == null) return null;
+
+        for (Map.Entry<RouteId, Route> road : graph.getRoutes(sensor).entrySet())
+        {
+            if (road.getValue().getA() == side || road.getValue().getB() == side) return road.getKey();
         }
 
         return null;

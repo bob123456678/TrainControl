@@ -217,10 +217,14 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             + " describeStagingOutcome passes LOCOMOTIVES_RUNNING with a null list and never reaches"
             + " this (OB-206)");
 
-        // `tilesBlockedByStandingTrains` was here and is not any more.  It delegates to
-        // `tilesCoveredByStandingTrains` since the two marks were made one answer, so it no longer
-        // reaches the railway itself - and a permission left behind for a member that has stopped
-        // calling is a permission for whatever is written into it next.
+        // THE GREY'S OWN ANSWER, BACK (OB-208).  `tilesBlockedByStandingTrains` left this list when the two
+        // marks were made one, and a permission left behind for a member that had stopped calling would have
+        // been one for whatever was written into it next.  Adam's ruling of 2026-09-23 - *"orange shows where
+        // the train is, gray shows what's blocked"* - made the grey the whole of every covered edge again, so
+        // the railway is asked once more, by `routesBlockedByStandingTrains`, on the same worker.
+        ALLOWED.put("AutonomySession.java#routesBlockedByStandingTrains",
+            "OFF THE EVENT THREAD: reached only from TrainControlUI.workOutCoveredTrack, on"
+            + " CoveredTrackRenderer - the covered set's sibling, asked in the same pass");
 
         // ------------------------------------------------------------ on the event thread, and why
 

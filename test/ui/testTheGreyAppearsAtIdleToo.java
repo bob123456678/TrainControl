@@ -143,6 +143,7 @@ public class testTheGreyAppearsAtIdleToo
 
     /** What the WINDOW held blocked after each gesture, with nobody asking it to recompute. */
     private static Set<TileKey> windowBlockedAtIdle;
+    private static Set<TileKey> wholeEdgesAtIdle;
     private static Set<TileKey> windowBlockedAfterLengthZero;
     private static Set<TileKey> windowBlockedAfterLengthBack;
     private static Set<TileKey> windowBlockedWithTilesUnmeasured;
@@ -243,6 +244,9 @@ public class testTheGreyAppearsAtIdleToo
 
         windowBlockedAtIdle = whatTheWindowHoldsBlocked();
 
+        // AND THE RAILWAY'S OWN WHOLE-EDGE ANSWER AT THE SAME MOMENT, for the OB-208 claim.
+        wholeEdgesAtIdle = everyTileOfEveryCoveredEdge();
+
         // AND AT IDLE WITH NOTHING STANDING ANYWHERE, which is the reference every "is this square
         // marked at all" question is asked against.  A length of zero is how this railway says "not
         // set", and an unmeasured train covers nothing.
@@ -313,22 +317,23 @@ public class testTheGreyAppearsAtIdleToo
             + "manual send across this square is refused while the diagram paints it as free "
             + "(W7B-B1)");
 
-        // AND THE TRACK BEYOND WHAT THE TRAIN REACHES IS NOT GREY (Adam, OB-207).
+        // AND THE TRACK BEYOND WHAT THE TRAIN REACHES IS GREY TOO, AND NOT ORANGE (Adam, OB-208).
         //
         // `blockedSquare` is a tile of the same covered EDGE that the train does not reach - it carries
-        // no orange line, which is the test's own way of saying so. It used to be washed, because the
-        // wash took every tile of every covered edge: *"when at tunnellongpark, en57-203 blocks most of
-        // the track leading up to bottommaina, even though it is of length 1, and the track next to it
-        // is of length 2."*  Measured on his railway, one unit of train washed twelve tiles across
-        // three switches.
+        // no orange line, which is the test's own way of saying so.  From OB-207 until 2026-09-23 it was
+        // NOT washed: the grey was narrowed to the train's own squares, when it was the only mark and
+        // *"too much blocked for such a short train"* was a complaint about that one mark.  Asked again
+        // with the orange line there to say where the train is, Adam chose the whole stretch: *"orange
+        // shows where the train is, gray shows what's blocked."*  Routing refuses this edge whole - a
+        // path uses all of its own edges - so this square is refused, and is now drawn so.
         assertEquals(orangePixels(idleBlocked), 0,
             "the orange line is drawn on " + blockedSquare + ", so it is a square the train is shown "
             + "on rather than one beyond its reach, and the claim below is about the wrong tile");
 
-        assertFalse(contrast(idleBlocked) < contrast(bareBlocked) - 2,
-            "the square " + blockedSquare + " is washed although the train does not reach it - it is "
-            + "simply another tile of the edge the train stands on. That is OB-207: the wash is where "
-            + "the train IS now, and the tile lengths decide how far that goes");
+        assertTrue(contrast(idleBlocked) < contrast(bareBlocked) - 2,
+            "the square " + blockedSquare + " is not greyed although the railway refuses it - it is a "
+            + "tile of the edge the train stands on, and routing refuses that edge whole.  OB-208: the "
+            + "orange shows where the train is, the grey shows what is blocked");
     }
 
     /**
@@ -337,14 +342,13 @@ public class testTheGreyAppearsAtIdleToo
     @Test(dependsOnMethods = "testBlockedTrackIsGreyAtIdle")
     public void testTheIdleMarkIsTheWholeSquareAndNotAStrokeAcrossIt()
     {
-        // ON THE COVERED SQUARE SINCE OB-207, because there is no longer a square that is washed and
-        // not covered - the wash follows the train. The orange line is drawn on this tile as well, so
-        // more pixels differ than the fade alone accounts for; that makes the "a real fraction of the
-        // square changed" claim below EASIER to satisfy and so weaker than it was. Said rather than
-        // left to be discovered: what it still catches is the wash disappearing altogether.
-        int changed = differingPixels(idleCovered, bareCovered);
+        // ON THE BLOCKED SQUARE AGAIN (OB-208), which is grey and carries no orange line - so every pixel
+        // that differs is the fade's, and "a real fraction of the square changed" means what it says.
+        // From OB-207 until 2026-09-23 there was no such square and this was measured on the covered one,
+        // where the orange line inflated the count and made the claim weaker than it looked.
+        int changed = differingPixels(idleBlocked, bareBlocked);
 
-        int drawn = drawnPixels(bareCovered);
+        int drawn = drawnPixels(bareBlocked);
 
         // A REAL FRACTION OF THE SQUARE, not one pixel (E8-C6).  `drawn > 0` admits a tile with
         // eight drawn pixels, where "seven of them changed" is satisfied by any mark at all - and the
@@ -630,8 +634,30 @@ public class testTheGreyAppearsAtIdleToo
         // ASKED, NOT RE-DERIVED (OB-207).  This held its own copy of "which squares are washed" - every
         // tile of every covered edge - and when Adam overruled that extent the copy went on asserting
         // the old rule against a window that had moved. A test that re-implements the thing it is
-        // measuring can only ever catch the window drifting from the test.
+        // measuring can only ever catch the window drifting from the test.  The independent statement
+        // is `everyTileOfEveryCoveredEdge`, and `testTheGreyIsTheWholeOfEveryCoveredEdge` compares them.
         return session.tilesBlockedByStandingTrains(layout);
+    }
+
+    /**
+     * The grey is every tile of every edge the railway holds covered, endpoints excluded (Adam, OB-208).
+     *
+     * *"orange shows where the train is, gray shows what's blocked."*  Routing refuses a covered edge whole,
+     * so the grey is the whole of it - compared here against this class's own statement of that, which is
+     * worked out from the railway and the reducer and not from the method under test.  The OB-207 narrowing
+     * made the grey the orange's squares; putting it back turns this red with the tiles the train does not
+     * reach missing from the grey.
+     */
+    @Test
+    public void testTheGreyIsTheWholeOfEveryCoveredEdge()
+    {
+        // BOTH TAKEN AT IDLE WITH THE TRAIN STANDING, in `setUpClass`: by the time a claim runs the class has
+        // taken the train's length off and the train away, so asking now would compare nothing.
+        assertFalse(wholeEdgesAtIdle.isEmpty(), "no standing train covers any track, so this compares nothing");
+
+        assertEquals(new LinkedHashSet<>(windowBlockedAtIdle), wholeEdgesAtIdle,
+            "the window greys something other than the whole of the edges the railway refuses - OB-208: the "
+            + "orange shows where the train is, the grey shows what is blocked");
     }
 
     /**
@@ -692,9 +718,9 @@ public class testTheGreyAppearsAtIdleToo
 
             pump();
 
-            // THE OLD WIDE ANSWER, to pick the tiles this class is about (OB-207).  `blockedSquare`
-            // has to be a tile of the covered EDGE that the train does not reach - which is exactly
-            // the difference between the two answers, and no longer something the washed set contains.
+            // THE WHOLE-EDGE ANSWER, to pick the tiles this class is about.  `blockedSquare` has to be a
+            // tile of the covered EDGE that the train does not reach - which is exactly the difference
+            // between the two marks since OB-208: grey, and no orange line on it.
             Set<TileKey> blocked = everyTileOfEveryCoveredEdge();
 
             TileKey onTheTrain = null;

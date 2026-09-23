@@ -282,9 +282,93 @@ public class testTheWashIsNoLongerThanTheTrain
 
         assertFalse(washed.isEmpty(), "nothing is shaded, so the containment below is vacuous");
 
-        assertTrue(everyTileOfTheCoveredEdges().containsAll(washed),
+        assertTrue(everySquareTheRailwayHoldsCovered().containsAll(washed),
             "the diagram is shading track the railway does not hold covered: " + washed
-            + " against " + everyTileOfTheCoveredEdges());
+            + " against " + everySquareTheRailwayHoldsCovered());
+    }
+
+    /**
+     * The square the train stands on is drawn with the orange line (Adam, OB-277).
+     *
+     * *"when we draw orange lines, they don't overlap with sensors"* - on every sensor, occupied or not.  The
+     * walk left the standing square out on purpose, on the reasoning that the locomotive icon already says a
+     * train is there; his ruling is that the orange shows where the train is, and the train is on this square.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheSquareTheTrainStandsOnIsOrange() throws Exception
+    {
+        washWith(1);
+
+        TileKey standingOn = session.getStationIndex().squareOf(arrived.getName());
+
+        assertTrue(ui.isTrackCovered(standingOn),
+            "the train stands on " + standingOn + " and the orange line leaves that square out (OB-277)");
+
+        assertFalse(ui.coveredRoutesAt(standingOn).isEmpty(),
+            "the standing square is covered but no road of it is named, so the tile has nothing to draw the line along");
+
+        for (LayoutLabel label : labelsFor(java.util.Collections.singleton(standingOn)))
+        {
+            assertTrue(support.Rendered.showsTheTrainMark(label),
+                "the standing square is in the covered set and is still drawn without the orange line");
+        }
+    }
+
+    /**
+     * A sensor the train's tail lies across is drawn with the orange line, from the length that reaches it and
+     * not before (Adam, OB-277).
+     *
+     * The length is found rather than worked out: the shortest train whose line reaches a sensor square behind
+     * the one it stands on.  The CONTROL is the same train one unit shorter, which must leave that sensor clear -
+     * without it, a walk that marked every sensor of every covered edge whatever the length would pass.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testASensorTheTailLiesAcrossIsOrange() throws Exception
+    {
+        TileKey standingOn = session.getStationIndex().squareOf(arrived.getName());
+
+        java.util.Set<TileKey> sensors = session.getReducer().getPoints().keySet();
+
+        TileKey reached = null;
+        int length = 0;
+
+        for (int l = 1; l <= 40 && reached == null; l++)
+        {
+            washWith(l);
+
+            for (TileKey square : washedBehindTheTrain())
+            {
+                if (sensors.contains(square) && !square.equals(standingOn))
+                {
+                    reached = square;
+                    length = l;
+
+                    break;
+                }
+            }
+        }
+
+        assertNotNull(reached, "no train up to 40 units long reaches a sensor behind " + standingOn
+            + " with the orange line, so the tail's sensor squares are never drawn (OB-277)");
+
+        assertFalse(ui.coveredRoutesAt(reached).isEmpty(),
+            "the sensor " + reached + " is covered but no road of it is named, so nothing is drawn on it");
+
+        for (LayoutLabel label : labelsFor(java.util.Collections.singleton(reached)))
+        {
+            assertTrue(support.Rendered.showsTheTrainMark(label),
+                "the sensor " + reached + " is in the covered set and is drawn without the orange line");
+        }
+
+        washWith(length - 1);
+
+        assertFalse(ui.isTrackCovered(reached),
+            "a train one unit too short to reach " + reached + " is drawn across it anyway - the line follows the"
+            + " covered edges rather than the train's length");
     }
 
     /**
@@ -454,9 +538,9 @@ public class testTheWashIsNoLongerThanTheTrain
                 + " mark that says which track is blocked.  covered=" + layout.edgesCoveredByStandingTrains().keySet() + " side=" + standing.getArrivedFrom() + " road=" + standing.getArrivedAlong() + " milestones=" + layout.getReachedMilestones(train) + "  Anchor: "
                 + anchor + ", standing at " + standing.getName());
 
-            assertTrue(everyTileOfTheCoveredEdges().containsAll(washed),
+            assertTrue(everySquareTheRailwayHoldsCovered().containsAll(washed),
                 "with a path locked ahead of it, the diagram shades track the railway does not hold"
-                + " covered: " + washed + " against " + everyTileOfTheCoveredEdges()
+                + " covered: " + washed + " against " + everySquareTheRailwayHoldsCovered()
                 + ".  The train has not moved - the lock only reserved the road - so the wash cannot"
                 + " have moved either.  Anchor: " + anchor
                 + ", standing at " + standing.getName() + " (VD12-B1)");
@@ -529,14 +613,48 @@ public class testTheWashIsNoLongerThanTheTrain
         pump();
     }
 
-    /** Every square the window is washing, which on this railway is all behind the one train. */
+    /**
+     * Every square the window draws the train on BEHIND it, which on this railway is all of them but the one it
+     * stands on.
+     *
+     * The standing square is left out since OB-277 put the orange on it (Adam, 2026-09-23: *"when we draw orange
+     * lines, they don't overlap with sensors"*): the claims here count how far back the train reaches, and the
+     * square it is on is not "back".  `testTheSquareTheTrainStandsOnIsOrange` is about that square.
+     */
     private static Set<TileKey> washedBehindTheTrain()
     {
         Set<TileKey> out = new LinkedHashSet<>();
 
+        TileKey standingOn = session.getStationIndex().squareOf(arrived.getName());
+
         for (TileKey tile : everyTile())
         {
+            if (tile.equals(standingOn)) continue;
+
             if (ui.isTrackCovered(tile)) out.add(tile);
+        }
+
+        return out;
+    }
+
+    /**
+     * Every square the train can be lying on while the railway holds these edges covered: their tiles, and the
+     * sensor squares at their ends - which the orange line has covered since OB-277, because a train lies across
+     * the sensors between two edges as much as the track between them.
+     */
+    private static Set<TileKey> everySquareTheRailwayHoldsCovered()
+    {
+        Set<TileKey> out = everyTileOfTheCoveredEdges();
+
+        for (Edge covered : layout.edgesCoveredByStandingTrains().keySet())
+        {
+            if (covered.getStart() == null || covered.getEnd() == null) continue;
+
+            TileKey from = session.getStationIndex().squareOf(covered.getStart().getName());
+            TileKey to = session.getStationIndex().squareOf(covered.getEnd().getName());
+
+            if (from != null) out.add(from);
+            if (to != null) out.add(to);
         }
 
         return out;

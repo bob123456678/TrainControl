@@ -1130,8 +1130,9 @@ The editor notice about turn-round squares with no length is a different questio
 
   **And it is applied once.** A square blocked by a standing train and also locked by a route a running
   train holds is drawn at the same 40%, not faded twice (Adam, 2026-09-12, OB-212: *"keep one level of
-  opacity, dont stack."*). Two reasons to refuse a square are still one refused square. Open: today the
-  two fades multiply.
+  opacity, dont stack."*). Two reasons to refuse a square are still one refused square. Built and
+  validated (MT-375, `ui.testTheWashDoesNotStack`): the route's and the annotation's washes are told the
+  region the tile has already faded and do not lay a second one over it.
 
   **This said "only while autonomy is running" between 2026-09-09 and 2026-09-09, and the reversal is
   the point of the change** (W7B-B1). The bound was Adam's own sentence - *"can we just grey out the
@@ -1185,7 +1186,12 @@ The editor notice about turn-round squares with no length is a different questio
 - **The line is drawn on every square the train lies over, the sensor squares included.** The square a
   train stands on is always a sensor, so a line missing there is missing from the one square that matters
   most. Adam, 2026-09-23: *"when we draw orange lines, they don't overlap with sensors"* - on every sensor,
-  occupied or not. Open as OB-277.
+  occupied or not. They had been left out on purpose - *"a train standing there would be shown standing
+  there"* - and his ruling is that the orange shows where the train is. Built 2026-09-23 (OB-277): the
+  standing square is drawn and not spent (its length is the allowance above), and each sensor the body
+  reaches is drawn along the road facing the track just walked, which names one arc even on a double
+  curve. `regression.testTheWashIsNoLongerThanTheTrain.testTheSquareTheTrainStandsOnIsOrange` and
+  `testASensorTheTailLiesAcrossIsOrange`, the second with the train one unit too short as its control.
 - **The line is as long as the train; the grey is as long as the edge.** That difference is what
   separates the two marks. The line walks square by square from where the train stands, each square
   paying its own length, and stops when the train is used up - drawing the whole edge instead washed
@@ -1220,7 +1226,10 @@ The editor notice about turn-round squares with no length is a different questio
   grey should cover only where the train is or the whole stretch it blocks: *the whole stretch* - *"orange
   shows where the train is, gray shows what's blocked."* The narrowing of OB-207 was made when the grey
   was the only mark; with the orange line saying where the train is, the grey says what routing refuses.
-  Open: since OB-207 the code has drawn the grey over the orange's squares only.
+  Built 2026-09-23: the grey is every tile of every covered edge again, per road so a double curve fades only
+  the arc the edge runs over (`AutonomySession.routesBlockedByStandingTrains`), and the fade follows the grey's
+  roads rather than the orange's. This reverses what MT-373 validated on 2026-09-12, on his ruling.
+  `ui.testTheGreyAppearsAtIdleToo.testTheGreyIsTheWholeOfEveryCoveredEdge`.
 
   **What is still not drawn**, and is explained in the "why not moving" view rather than on the
   diagram:
