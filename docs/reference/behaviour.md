@@ -112,6 +112,70 @@ out of a square somebody switched off is the opposite of what switching it off m
 
 ---
 
+## 1a. How autonomy chooses: priority, the routing rule, the yield and the pauses
+
+Everything in this section is about **full autonomy**. A hand dispatch and Return Home do not choose -
+the operator or the planner does (section 1) - so none of it applies to them.
+
+Each locomotive on the run list has a loop of its own: choose a journey, drive it, pause, choose again.
+**What follows only ORDERS the journeys the rules of this document already admit.** A candidate is a
+station autonomy may send a train to (`Layout.isSendableDestination`: active, a destination, choosable
+in full autonomy, not a reversing point), with nothing standing in its block, not a terminus for a
+train that cannot reverse, and not a station that excludes this train; and a route to it is used only
+if it turns the train nowhere on the way and `isPathClear` passes it. No routing rule can admit a
+journey any of that refuses.
+
+**Station priority is absolute, and it is the default behaviour.** Every station has a whole-number
+priority, 0 unless set - clearing the box means 0. The candidates are shuffled and then sorted highest
+priority first, and the sort keeps the shuffle within a priority, so equals are chosen between at
+random. A lower priority is looked at only when nothing of a higher one has a clear route. So *"send
+it to the highest-priority station it can reach"* needs no setting of its own: it is what happens.
+
+**The routing rule decides between the stations of that one priority** (`Layout.PathPreference`,
+the Autonomy tab's routing dropdown). It is stored in the configuration rather than in the program's
+preferences, so it travels with the railway it was chosen for (Adam: *"that way it travels with the
+config, not the UI."*).
+
+| rule | chooses, within the highest priority that has a clear route |
+|---|---|
+| **At random, respecting priority** (`RANDOM`) - the default | the first clear route found; the shuffle makes that random. The default because it is what every earlier version did |
+| **Completely at random** (`RANDOM_ANY_STATION`) | the first clear route found, **with priority ignored** - a station at -5 is visited as often as one at 9 (OB-156, Adam: *"one completely random, and one that respects priority"*) |
+| **Fewest / most stations** | the route passing the fewest, or most, OTHER stations |
+| **Shortest / longest track** | the route over the least, or most, measured track - only as good as the lengths: with none set every route measures 0 and the first found wins |
+| **Fewest / most sensors** | the route over the fewest, or most, distinct s88s - sensors, not hops of the graph, because a square is several Points |
+| **Least recently visited** | the station that has gone longest without a train arriving; one never visited wins outright |
+| **Balanced priority** (`BALANCED_PRIORITY`) | the most priority per unit of track - **the one rule that crosses priorities**, so a nearer, less important station can beat a far important one (Adam: *"one that balances priority vs distance as a ratio"*). With every priority left at 0 it is the shortest route with extra arithmetic |
+
+The "most" rules are not a joke: a railway somebody is watching wants its trains taking the long way
+round, where a timetable wants them going straight there.
+
+**A train that has gone quiet is given a turn** (`maxLocInactiveSeconds` on the Autonomy tab; 0, the
+default, switches it off). After each attempt, while full autonomy is running, a train checks whether
+another train on the run list - not paused, and with somewhere autonomy could send it - has gone that
+many seconds longer than itself without a journey. If one has, it waits up to thirty seconds
+(`Layout.YIELD_SECONDS`) for that train to move before choosing its own next journey. It is a courtesy
+and not a queue: nothing stops the waiting train from setting off at the end of the thirty seconds.
+
+**The pauses are two numbers in seconds, a minimum and a maximum**, and neither may be negative or
+cross the other - the setter refuses both. They are used two ways:
+
+- **after every attempt**, found or not, a train waits the MINIMUM before choosing again;
+- **where a pause is meant to look like a person did it** - before a departure's functions, either side
+  of an arrival's functions, before the change of direction at a terminus or a reversing point on the
+  way, and when there was nowhere to go - it waits a random whole number of seconds between the two.
+
+So a train that finds nothing waits a random pause and then the minimum. With the minimum at 0 a train
+with nowhere to go still waits a quarter of a second before searching again (`NO_PATH_IDLE_MS`), or it
+would search the whole graph as fast as the processor allows. And a pause is skipped once the run has
+been asked to stop, because after a stop there is no next journey for it to space out.
+
+**How many trains may be out at once is section 1's cap**, and it binds here as well as there.
+
+*(OB-265 recorded that this section did not exist. The per-rule explanations written for the dropdown
+are still not shown anywhere, which is OB-163.)*
+
+---
+
 ## 2. Inactive squares
 
 > *"Inactive really means nothing can pass."* — Adam, 2026-09-06
@@ -563,6 +627,18 @@ they must reverse on paste"* falling out of the same rule rather than bolted bes
 This is the fourth site of one confusion: a may-turn square's turning copy is emitted with
 `terminus: true`, so `isTerminus()` cannot tell it from a real terminus (OB-205 claims 1-3, MT-368).
 
+**And the train is PUT on the copy the walk names, not only recorded as facing that way** (Adam,
+2026-09-22, OB-270: *"Trains should not inadvertently change direction when pasted, so a loc going west
+from bottomsecondary should always face east when pasted on bottommaina."*). A paste writes two things -
+the heading in the setup and the copy the train stands on in the running layout - and the copy IS the
+direction (section 3). Where a square has two copies a train may stop at, facing opposite ways, the copy
+used to be whichever `StationIndex.speakerAt` met first, so the record said east while the train stood
+westbound, and its arrival side and tail were then worked out for the wrong copy. **The rule: the copy
+taken is the operator's chosen heading where one was asked, and the walked heading otherwise**; a copy no
+train may be placed on is still refused (`copyFacing`). Not yet built - OB-270 has the diagnosis and is
+waiting on a fixture with two placeable copies. Adam reported on 2026-09-23 that the paste now faces
+correctly on his railway, and could not say whether his measurements are why, so it stays open.
+
 **Where there is no path**, the heading the train already has is kept if the landing can hold it, and
 otherwise the first copy it could depart from is taken. Adam's 2026-09-06 wording for that arm was
 *"pick randomly from the allowed departure destinations"*, on the reasoning that nothing in the
@@ -863,9 +939,27 @@ in exactly one piece. **A switch square is in no piece**: a share of a piece's l
 room rule does not count it, so switches are asked for together, one turnout length for all of a page's switches with
 none (*"One length for all switches"*). Two switches back to back have no piece between them - there is no square of
 track there to measure. **A piece needs a length only while its whole total is 0**, by the ruling above - a square
-inside a measured piece may rightly hold 0 - so the least a piece can be given is 1. The share is even; any unit left
+inside a measured piece may rightly hold 0 - so the least a piece could be given was 1, until the ruling below. The share is even; any unit left
 over goes first to a square a train stands on, whose length its own tail never spends, which is the refusing direction
 (MAL-B2).
+
+**A route tile is in no piece, and is never asked for a length** (Adam, 2026-09-23, OB-273: *"a route
+tile should not need or accept a length.  it just implicitly connects things as if it were a
+crossing."*). It carries no rails of its own - section 8 - so no length rule reads it, the tools do not
+ask for it, and a piece's length is shared over the track squares either side of it. His example: three
+plain squares and a route tile with 4 typed is 2, 1, 1 by the even share, where today the fourth unit
+lands on the route tile and nothing draws it. **The share stays even** (OB-275, Adam: *"let's stick to a
+then, since that is more visually pleasing"*) - the other option he offered, the whole length on one
+square, would also have made the tail depend on which square a train happened to stop on (5c spends
+length square by square). Not yet built: `assignStretchLength` still includes route tiles.
+
+**A deliberate 0 is an answer** (Adam, 2026-09-23, OB-274: *"we need to allow a length of 0 as a length
+that is set deliberately, i.e. for adjacent tracks.  same meaning to the model, but this will allow
+everything to get assigned without what appears to be a skip."*). So the walks accept 0, the piece is
+recorded as answered and is not asked about again, and **every length rule reads it exactly as it reads a
+piece nobody has measured** - 5b is unchanged. What changes is only whether the tools keep asking. Not
+yet built: today 0 is refused at the prompt and erased by the store, which is why an adjacent pair of
+sensors reads as skipped for ever.
 
 **A square two roads cross is in no piece either** (Adam, 2026-09-19, on review SET-B2): *"For crossings: if its
 length is set, count that length once in each direction."*  A crossing - or a double curve with track on both of its
@@ -966,6 +1060,14 @@ The editor notice about turn-round squares with no length is a different questio
   and taking the other one left that square claimed by nobody, at some stations and not at others.
   Where there is no arriving copy - a square a train has been turned on - the other is still used.
 - A train never blocks itself — pulling forward off its own tail is how it leaves.
+- **One tail per train, and a running train's starts at its head** (Adam, 2026-09-21, OB-243: *"the
+  tail is certain at departure and shouldn't change.  You also know which way the train went ... Just
+  unlock the rest of the diagram once the tail by length is far enough away"*). A locked path reserves
+  every Point on it, so during a run a locomotive is the occupant of several Points at once - and the walk
+  used to start from each of them, drawing a tail at a destination the train had not reached and another
+  at a square it had long left (OB-242). It now walks once per locomotive. A running train is anchored at
+  its last reported milestone and spends its length back along the road it has already driven; a standing
+  train is anchored where it stands. `core.testARunningTrainHasOneTail`.
 - **And the track it shares metal with is closed too, which is the anti-collision rule at a switch.**
   Adam, 2026-09-07: EN57-203 *"is allowed to traverse a blocked/shaded switch (60) to get from
   TunnelLeftPark to BottomMainC, even though it should not be possible."* Coverage is recorded per
@@ -1025,6 +1127,11 @@ The editor notice about turn-round squares with no length is a different questio
   draws on top, the train line included, is painted at full strength, so a square that is both still
   reads as both. `LayoutLabel.BLOCKED_ALPHA` is the number.
 
+  **And it is applied once.** A square blocked by a standing train and also locked by a route a running
+  train holds is drawn at the same 40%, not faded twice (Adam, 2026-09-12, OB-212: *"keep one level of
+  opacity, dont stack."*). Two reasons to refuse a square are still one refused square. Open: today the
+  two fades multiply.
+
   **This said "only while autonomy is running" between 2026-09-09 and 2026-09-09, and the reversal is
   the point of the change** (W7B-B1). The bound was Adam's own sentence - *"can we just grey out the
   tiles just like blocked edges while autonomy is running?"* - and the reason written down for it was
@@ -1074,6 +1181,10 @@ The editor notice about turn-round squares with no length is a different questio
   carries two roads, and a train on one of them was indistinguishable from a train on the other. The
   grey that came back on 2026-09-09 does not reopen this: a square that is grey and not orange is not
   claiming a train is on either road, only that the track is unavailable.
+- **The line is drawn on every square the train lies over, the sensor squares included.** The square a
+  train stands on is always a sensor, so a line missing there is missing from the one square that matters
+  most. Adam, 2026-09-23: *"when we draw orange lines, they don't overlap with sensors"* - on every sensor,
+  occupied or not. Open as OB-277.
 - **The line is as long as the train; the grey is as long as the edge.** That difference is what
   separates the two marks. The line walks square by square from where the train stands, each square
   paying its own length, and stops when the train is used up - drawing the whole edge instead washed
@@ -1138,7 +1249,10 @@ The editor notice about turn-round squares with no length is a different questio
   avoid these pitfalls."*
 
 **Known limits, deliberately.** A tail that really does reach past a fork, or across unmeasured
-track, is not blocked. Both under-claim. Blocking on a guess is still a refusal, and it stops trains
+track, is not blocked. Nor is the tail of a train whose recorded arrival side names a side no track now
+leaves its square by - a value left stale by an edit to the diagram: the walk stops before its first
+hop and claims nothing, even where the geometry leaves only one way back (`Layout.walkOneTail`; this was
+stated only in the code until OB-264). All three under-claim. Blocking on a guess is still a refusal, and it stops trains
 that could have run.
 
 **Two things about the room sum were open, and Adam settled both on 2026-09-11** (MON-C13). They had
@@ -1392,7 +1506,7 @@ can't be chosen shouldn't be offered"*.  Held by
 
 ### The autonomy editor's keyboard doors
 
-Three shortcuts act on **the square the pointer is over**, and they ask one question to find it -
+Four shortcuts act on **the square the pointer is over**, and they ask one question to find it -
 `LayoutEditor.hoveredSquare()`, which answers null when the remembered label is not on the grid it is
 asked about, and forgets it while it is there. They read a field nothing cleared until 2026-09-10, so
 after stepping to another page all three named a square on the page before (OB-198).
@@ -1403,6 +1517,15 @@ after stepping to another page all three named a square on the page before (OB-1
 | **Control+E** | Opens **Segment Length** on it (FR-066). Adam picked the key: *"let's do E"*, Control+D being taken twice over. |
 | **Control+B** | Opens **Maximum Train Length** on it (OB-197's free letter, picked for the berth the maximum belongs to). Asks the station menu's own question, so it does nothing on a square that is not a station. |
 | **Control+H** | Sets the home locomotive. |
+
+**Control+L steps through the caption options, and text labels are one of them** (Adam, 2026-09-23,
+OB-272: *"make text labels be a dedicated setting, and hide the text labels unless it is selected.  Also,
+make control+L cycle the options"*, and asked which options: *"the dropdown's 4, plus add an option to
+the dropdown that shows the labels only"*). So the dropdown is Stations, Parked Locs, Homes, Labels only
+and None, and the key moves to the next of the five. The text written on squares is shown under
+**Labels only** and nowhere else: choosing a caption no longer turns it on, which it has done since FR-061
+read *None* as the text switch turned off. Not yet built - today anything but None shows the text too,
+and Control+L flips the text on and off.
 
 **Control+E asks the menu's own question and writes where the menu writes.** `offersALength` is
 `buildTileMenu`'s three early returns in one place — a page the session knows, not a text label, not an
@@ -1695,6 +1818,15 @@ terminus on its way, never by lapping the railway back onto where it started.
 
 ---
 
+**Known limit: in non-atomic mode the diagram's right-click menu can offer a train no destinations**
+where the Locomotive commands panel offers several (OB-164, MT-087). The two ask different questions -
+the menu gates on the one locomotive being on a run, the panel on the whole railway running - and the
+state that separates them was never reproduced. Adam, 2026-08-31: *"The user can rely on full autonomy
+or the panels to send trains more clearly."* Accepted as it stands, and written here so the next reader
+who notices the two surfaces disagree finds the answer rather than reopening it.
+
+---
+
 **A sensor announces itself however it changed** (W21-B1). A module changes state two ways - a
 message arriving over the wire, and `setState`, which is everything else: clicking an s88 tile on the
 track diagram, the simulation's own announce and clear, the restore at start-up. Only the first told
@@ -1864,6 +1996,15 @@ that the page says so itself, and that it will not be written over until the fil
   The train’s own ability to run in either direction is `Locomotive.isReversible`, a different fact
   asked in different places (§3).
 
+- **A route tile carries no track of its own; it conducts what is beside it, like a fixed crossing.**
+  Adam, 2026-08-30 (OB-160): *"I am inclined to treat it as a static crossing under the hood"*, and
+  2026-09-23: *"it just implicitly connects things as if it were a crossing."* Track facing it from two
+  sides is joined through it - a straight or a corner; from all four sides it is a crossing, two roads
+  that do not meet. **Two situations are errors on the setup's findings list**, because the tile would
+  otherwise conduct something nobody drew: track facing it from THREE sides, where one arm would be
+  dropped in silence and there is no honest guess, and two route tiles side by side whose run reaches real
+  track, which would splice two lines together across diagram with no rails on it. Route tiles with no
+  track beside them are a control panel and conduct nothing. **And it takes no length** - 5a.
 - **Facing is encoded as one-way edges.** There is no direction field on a train's route; the sparse
   and doubled edges *are* the direction.
 - **A sensor stays occupied while a train is standing on it.**  Adam, 2026-09-19, asked directly: *"the sensor
