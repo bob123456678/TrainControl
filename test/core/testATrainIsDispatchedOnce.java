@@ -140,6 +140,53 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
+     * The lock itself refuses a locomotive already claiming a route - where a race has let a second dispatch past the
+     * check outside it (AUT-C1).
+     *
+     * `executePath` asks `isAlreadyUnderway` before it reaches `configureAndLockPath`, and the claim that answer reads is
+     * taken inside the lock's monitor - seconds later when another train is throwing its accessories.  Two dispatches of
+     * one train in that window both pass the outer check and queue on the monitor.  Where the two routes share no track -
+     * a square nothing arrives at is one Point that may leave by any side - both locked, and two threads drove one train.
+     * So the lock asks again, in the monitor where the claim is taken.
+     *
+     * MUTATION: take the check out of `configureAndLockPath` and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testTheLockRefusesALocomotiveAlreadyClaimingARoute() throws Exception
+    {
+        Layout layout = oneEdge();
+
+        // A SECOND WAY OUT OF THE SAME SQUARE, sharing no track with the first.
+        layout.createPoint("DSP_c", true, model.newFeedback(196, null).getName());
+        layout.createEdge("DSP_a", "DSP_c");
+
+        Locomotive train = aTrainAtTheStart(layout);
+
+        List<Edge> other = Arrays.asList(layout.getEdge("DSP_a", "DSP_c"));
+
+        assertTrue(layout.configureAndLockPath(theRoute(layout), train),
+            "the first route would not lock, so the state this test is about was never reached");
+
+        try
+        {
+            // THE SECOND DISPATCH, arrived at the lock as a race delivers it: past the outer check.
+            boolean second = layout.configureAndLockPath(other, train);
+
+            if (second) layout.unlockPath(other, train);
+
+            assertFalse(second, "a locomotive already claiming one route locked a second one, sharing no track with the"
+                + " first - two threads would drive one train.  The outer check had been passed in the window the claim"
+                + " is taken in, and the lock did not ask again (AUT-C1)");
+        }
+        finally
+        {
+            layout.unlockPath(theRoute(layout), train);
+        }
+    }
+
+    /**
      * And one that is registered as running is not dispatched again either.
      *
      * The sequential case, which needs no race: `activeLocomotives` is what "running" means, and the
