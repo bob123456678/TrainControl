@@ -1210,6 +1210,30 @@ public class TileGraph
     }
 
     /**
+     * The real track either side of a route tile, along the roads it carries - where its length is folded to.
+     *
+     * In the order `transparentRoutes` names the sides, and only squares with rails on them: a route tile beside
+     * another route tile passes nothing to it.
+     *
+     * @param tile the route tile
+     * @return the squares beside it along its roads, possibly none
+     */
+    public List<TileKey> trackBesideARouteTile(TileKey tile)
+    {
+        List<TileKey> out = new ArrayList<>();
+
+        for (Route route : transparentRoutes(tile))
+        {
+            for (Side side : new Side[] {route.getA(), route.getB()})
+            {
+                if (realTrackOn(tile, side) && !out.contains(neighbour(tile, side))) out.add(neighbour(tile, side));
+            }
+        }
+
+        return out;
+    }
+
+    /**
      * The sides of a transparent tile that something conducts to (OB-160).
      *
      * Extracted so that transparentRoutes and the checks below cannot disagree about what "facing"

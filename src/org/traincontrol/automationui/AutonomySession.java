@@ -139,6 +139,11 @@ public class AutonomySession
 
         rebuild();
 
+        // A ROUTE TILE'S LENGTH GOES TO THE TRACK BESIDE IT, once, as the setup is read (Adam, 2026-09-23).
+        foldedRouteTiles = foldRouteTileLengths();
+
+        if (!foldedRouteTiles.isEmpty()) rebuild();
+
         // Captions used to live in the layout file.  Anything still written there is brought across now,
         // once; see migrateStationLabels.  Its failures are kept for the UI to report rather than thrown,
         // because a page that could not be rewritten is not a reason to refuse to open the setup - the
@@ -151,6 +156,79 @@ public class AutonomySession
         forgetCaptionsOfNonStations();
 
         dirty = false;
+    }
+
+    /** The route tiles whose length was folded as this setup was opened, each to the square that took it. */
+    private Map<TileKey, TileKey> foldedRouteTiles = new LinkedHashMap<>();
+
+    /**
+     * The route tiles whose length was folded into the track beside them when this setup was opened.
+     *
+     * @return route tile to the square that took its length, empty when there were none
+     */
+    public Map<TileKey, TileKey> getFoldedRouteTiles()
+    {
+        return java.util.Collections.unmodifiableMap(foldedRouteTiles);
+    }
+
+    /**
+     * Moves any length a route tile holds onto the track beside it, keeping the total (Adam, 2026-09-23).
+     *
+     * A route tile takes no length (OB-273) - *"it just implicitly connects things as if it were a crossing"* - and
+     * no rule reads one.  Five of Adam's held a length of 1 from before that ruling, most likely written by a Mass
+     * Assign Lengths run that shared a piece's length over them.  Asked whether to drop them or move them: *"Fold
+     * them, they were likely auto set during the mass assignment run."*  So each goes to the square beside the route
+     * tile along the road it carries - plain track in preference to a switch, whose length is the page's one turnout
+     * length - and the piece measures what it measured before.
+     *
+     * Run as the setup is opened, so it applies to any layout carrying one, and to one written again by hand.  A route
+     * tile with no track beside it keeps its length, which nothing reads.
+     *
+     * @return route tile to the square that took its length
+     */
+    public Map<TileKey, TileKey> foldRouteTileLengths()
+    {
+        Map<TileKey, TileKey> moved = new LinkedHashMap<>();
+
+        if (graph == null) return moved;
+
+        for (Map.Entry<TileKey, org.traincontrol.base.LayoutDiagramComponent> tile
+            : new LinkedHashMap<>(graph.getTiles()).entrySet())
+        {
+            if (tile.getValue() == null || !TilePorts.takesNoLength(tile.getValue().getType())) continue;
+
+            int length = store.getTileLength(tile.getKey());
+
+            if (length <= 0) continue;
+
+            TileKey into = null;
+
+            for (TileKey beside : graph.trackBesideARouteTile(tile.getKey()))
+            {
+                org.traincontrol.base.LayoutDiagramComponent track = graph.getTiles().get(beside);
+
+                if (track == null) continue;
+
+                if (into == null) into = beside;
+
+                // PLAIN TRACK FIRST: a switch's length is the page's one turnout length (MAL-B1), not a share of a piece.
+                if (!track.isSwitch())
+                {
+                    into = beside;
+
+                    break;
+                }
+            }
+
+            if (into == null) continue;
+
+            store.setTileLength(into, Math.max(0, store.getTileLength(into)) + length);
+            store.setTileLength(tile.getKey(), 0);
+
+            moved.put(tile.getKey(), into);
+        }
+
+        return moved;
     }
 
     /**

@@ -1003,6 +1003,93 @@ public class testMassAssignLengths
     }
 
     /**
+     * A route tile's length is folded into the track beside it when the setup is opened, keeping the total (Adam,
+     * 2026-09-23: *"Fold them, they were likely auto set during the mass assignment run."*).
+     *
+     * Five route tiles on his railway held a length of 1 from before OB-273, and nothing reads a route tile's length
+     * now - so the piece they sat in measured one unit less than he had given it.  Written to the file and read back,
+     * because the fold is what opening a setup does.
+     *
+     * MUTATION: dropping the fold from `open` leaves the route tile's length where it was.
+     */
+    @Test
+    public void testARouteTilesLengthIsFoldedIntoTheTrackBesideIt() throws IOException
+    {
+        openARouteTileInARun();
+
+        session.getStore().setTileLength(key(2, 1), 2);
+        session.getStore().setTileLength(key(3, 1), 1);
+        session.getStore().setTileLength(key(4, 1), 3);
+
+        session.save();
+
+        LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.ROUTE, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+
+        assertEquals(session.getStore().getTileLength(key(3, 1)), 0,
+            "the route tile at 3,1 still holds a length after the setup was opened - Adam: \"Fold them\"");
+
+        int beside = session.getStore().getTileLength(key(2, 1)) + session.getStore().getTileLength(key(4, 1));
+
+        assertEquals(beside, 6, "the track either side of the route tile measures " + beside + " rather than the 2 + 1 +"
+            + " 3 the piece measured - the route tile's unit was dropped rather than folded");
+
+        assertEquals(session.getFoldedRouteTiles().keySet(), java.util.Collections.singleton(key(3, 1)),
+            "the fold does not say which route tile it moved");
+    }
+
+    /**
+     * Opening Adam's own railway folds his five route tiles, and no other square (Adam, 2026-09-23: *"Fold them"*).
+     *
+     * On the frozen snapshot of his measured layout.  The five held a length of 1 each; nothing else on it is a route
+     * tile with a length, so the list is exact.
+     *
+     * @throws Exception from the sandbox
+     */
+    @Test
+    public void testHisFiveRouteTilesAreFoldedWhenHisRailwayIsOpened() throws Exception
+    {
+        support.LayoutSandbox sandbox = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            org.traincontrol.marklin.MarklinControlStation model =
+                org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+
+            AutonomySession his = new AutonomySession(sandbox.getFolder());
+
+            his.open(support.LayoutSandbox.wiredPages(model));
+
+            Set<TileKey> expected = new java.util.LinkedHashSet<>(Arrays.asList(
+                new TileKey("2 - Bottom", 19, 3), new TileKey("2 - Bottom", 4, 11), new TileKey("1 - Main", 6, 7),
+                new TileKey("1 - Main", 16, 12), new TileKey("1 - Main", 15, 13)));
+
+            assertEquals(new java.util.LinkedHashSet<>(his.getFoldedRouteTiles().keySet()), expected,
+                "opening his railway folded " + his.getFoldedRouteTiles() + " rather than his five route tiles");
+
+            for (TileKey routeTile : expected)
+            {
+                assertEquals(his.getStore().getTileLength(routeTile), 0, routeTile + " still holds a length");
+            }
+        }
+        finally
+        {
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
      * A route tile at 2,2 with a sensor on each side - two roads through it, north-south and east-west.
      */
     private void openARouteTileCrossroads() throws IOException
