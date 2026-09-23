@@ -1230,8 +1230,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // looked like it did.
         //
         // Loading is not running - it builds the graph and draws it, and starting trains is still a
-        // separate press.  A layout with no setup is unaffected, and anybody who does not want it keeps
-        // their unticked box.  It is announced in the changelog: "the one you were last using is loaded
+        // separate press.  A layout with no setup is unaffected - which was not true until REG-B2: the
+        // JSON arm that a layout with no setup reaches now keeps 2.8.1's terms, a box somebody ticked
+        // and a graph to load (`resumesFromJsonAtStart`).  Anybody who does not want it keeps their
+        // unticked box.  It is announced in the changelog: "the one you were last using is loaded
         // when TrainControl starts."
         //
         // **"NOTHING FOR THE DEFAULT TO PUT AT RISK" WAS TOO STRONG** (REL-B3), and it is worth
@@ -7221,8 +7223,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (org.traincontrol.gui.FacingPrompt.wouldAsk(canHold))
                 {
+                    // NAMED AS THE SQUARE, not as the copy `point` happens to be (GUI-C7): a copy's name
+                    // states a heading, and the heading is what this asks.
                     facingChosenAtTheLanding = org.traincontrol.gui.FacingPrompt.forPlacement(
-                        canHold, facingAtTheLanding, point.getName(), this);
+                        canHold, facingAtTheLanding, getAutonomySession().baseNameOf(point.getName()), this);
 
                     if (facingChosenAtTheLanding == null) return true;
                 }
@@ -8590,14 +8594,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // needs is the way to the problems, which is the editor.
         if (session.hasBlockingProblems())
         {
+            // Opening is not refused while an editor is open, unlike loading below: `openAutonomyEditor` brings
+            // the open one forward, which is what somebody pressing Fix Setup is looking for (GUI-C8).
             autonomyDiagramBanner.offer(I18n.t("autosetup.ui.bannerSetupCannotRun"),
                 I18n.t("autosetup.ui.btnFixSetup"),
-                () ->
-                {
-                    if (refuseWhileEditorOpen()) return;
-
-                    openAutonomyEditor(null);
-                });
+                () -> openAutonomyEditor(null));
         }
         else
         {
@@ -8702,18 +8703,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * and it is not asked here (FXV-C2): it is a property of that menu's own construction rather than
      * of the editor, and this label is only ever shown on a page that exists - the page it is sitting
      * on.  Silent rather than complaining when the refusal bites: the label carries the reason in its
-     * own tooltip already.
+     * own tooltip already.  An editor that is already open is not a refusal: it is brought forward, as the Edit
+     * item does (GUI-C8).
      */
     public void openAutonomyEditorIfItCan()
     {
         if (whyAutonomyEditorCannotOpen() != null) return;
 
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            if (refuseWhileEditorOpen()) return;
-
-            openAutonomyEditor(null);
-        });
+        // NOT `refuseWhileEditorOpen` (GUI-C8).  With an editor open the Edit item is enabled and brings that
+        // window forward (`openLayoutEditor`, OB-058); asking the guard first showed "Close the editor first"
+        // in exactly that state - the one place this label and the item it imitates differed.
+        javax.swing.SwingUtilities.invokeLater(() -> openAutonomyEditor(null));
     }
 
     /**
@@ -8831,6 +8831,49 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (addresses == null || addresses.isEmpty()) return 0;
 
+        return lightWhere(tile ->
+        {
+            // IT HAS TO BE THE RIGHT KIND OF THING (MT-462, the first half).
+            if (!answersTo(tile, kind)) return false;
+
+            // AN ACCESSORY IS ASKED OF ITS DECODER (GUI-C5), in whatever protocol the tile has - this door is
+            // given numbers only; `highlightAccessories` is the one that knows the protocol.  Which answers a
+            // three-way's second address as well as its first.
+            if (kind == AddressedAs.ACCESSORY)
+            {
+                for (Integer address : addresses)
+                {
+                    if (address != null && tile.answersToAccessoryAddress(address, tile.getProtocol())) return true;
+                }
+
+                return false;
+            }
+
+            // THE LOGICAL ADDRESS, WHICH IS WHAT A ROUTE RECORDS (MT-462, the second half).
+            //
+            // This asked `getRawAddress()`, and for an accessory the raw address is TWICE the logical one -
+            // `setLogicalAddress` writes `address * 2`, plus one for a green uncoupler.  So a route commanding
+            // accessory 1 never matched the turnout numbered 1 at all; what it matched was whatever else happened
+            // to carry the number 1 as its raw value, which for an s88, a route tile and a link IS the logical
+            // number.  That is why every tile Adam saw light was of the wrong kind: the only tiles the comparison
+            // could ever match were the kinds whose two addresses are the same.
+            return addresses.contains(tile.getLogicalAddress());
+        }, wash, holdMs);
+    }
+
+    /**
+     * Lights every square of every page whose tile the test accepts, and says how many labels were lit.
+     *
+     * Squares that are not on screen are lit anyway - see `highlightAddresses`.
+     *
+     * @param answers whether a tile is one to light
+     * @param wash the colour
+     * @param holdMs how long to hold it
+     * @return how many labels were lit
+     */
+    private int lightWhere(java.util.function.Predicate<org.traincontrol.base.LayoutDiagramComponent> answers,
+        java.awt.Color wash, int holdMs)
+    {
         int lit = 0;
 
         for (String page : this.model.getLayoutList())
@@ -8841,19 +8884,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             for (org.traincontrol.base.LayoutDiagramComponent tile : diagram.getAll())
             {
-                // THE LOGICAL ADDRESS, WHICH IS WHAT A ROUTE RECORDS (MT-462, the second half).
-                //
-                // This asked `getRawAddress()`, and for an accessory the raw address is TWICE the
-                // logical one - `setLogicalAddress` writes `address * 2`, plus one for a green
-                // uncoupler.  So a route commanding accessory 1 never matched the turnout numbered 1
-                // at all; what it matched was whatever else happened to carry the number 1 as its raw
-                // value, which for an s88, a route tile and a link IS the logical number.  That is why
-                // every tile Adam saw light was of the wrong kind: the only tiles the comparison could
-                // ever match were the kinds whose two addresses are the same.
-                if (tile == null || !addresses.contains(tile.getLogicalAddress())) continue;
-
-                // AND IT HAS TO BE THE RIGHT KIND OF THING (MT-462, the first half).
-                if (!answersTo(tile, kind)) continue;
+                if (tile == null || !answers.test(tile)) continue;
 
                 org.traincontrol.automationui.TileGraph.TileKey key =
                     new org.traincontrol.automationui.TileGraph.TileKey(page, tile.getX(), tile.getY());
@@ -8882,7 +8913,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         java.util.Map<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>> byAddress,
         java.awt.Color wash, int holdMs)
     {
-        return byAddress == null ? 0 : highlightAddresses(byAddress.keySet(), AddressedAs.ACCESSORY, wash, holdMs);
+        if (byAddress == null || byAddress.isEmpty()) return 0;
+
+        // THE DECODER, NOT THE NUMBER (GUI-C5): the protocol each address is commanded in, and a three-way's
+        // second decoder - both asked of the tile, which is what knows them.
+        return lightWhere(tile ->
+        {
+            if (!answersTo(tile, AddressedAs.ACCESSORY)) return false;
+
+            for (java.util.Map.Entry<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>>
+                wanted : byAddress.entrySet())
+            {
+                for (org.traincontrol.base.Accessory.accessoryDecoderType protocol : wanted.getValue())
+                {
+                    if (tile.answersToAccessoryAddress(wanted.getKey(), protocol)) return true;
+                }
+            }
+
+            return false;
+        }, wash, holdMs);
     }
 
     public DiagramTileRegistry getDiagramTileRegistry()
@@ -9674,13 +9723,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * Whether the start-up load falls back to the old JSON graph, for a layout with no configuration to resume.
+     * Whether the start-up load falls back to the old JSON graph, for a layout with no configuration to resume
+     * (REG-B2).
+     *
+     * Auto-load became the default in this release, so that a configuration somebody set up is there when
+     * TrainControl starts.  The same box sends a layout with no configuration down the JSON path - a Central Station
+     * layout always, a local one until it is set up or imported - and at v2.8.1 the box was unticked unless somebody
+     * ticked it.  So an upgrading user who never had was sent there on every start: with no `autonomy.json`, a modal
+     * Blank / Sample chooser during start-up and a validation error after a cancel, again on every start; with a
+     * 2.8.1 file, its route activations applied before anybody asked, which switches off every s88 route the file
+     * does not list.  The legacy import refuses those two keys for exactly that reason.
+     *
+     * So the JSON arm keeps 2.8.1's terms: somebody ticked the box, and there is a graph to load.  The configuration
+     * arm keeps the new default.  The box still SHOWS ticked for somebody who never touched it, which is true of the
+     * configuration arm and not of this one; ticking it (or unticking and ticking) is what stores the choice.
      *
      * @return whether to load the JSON graph now
      */
     public boolean resumesFromJsonAtStart()
     {
-        return true;
+        // CHOSEN, NOT DEFAULTED: only the menu item writes this key, so an absent one is 2.8.1's unticked box.
+        if (prefs.get(AUTO_LOAD_AUTONOMY, null) == null) return false;
+
+        // NOTHING TO LOAD is not a reason to ask, during start-up, what to create.
+        return !this.autonomyJSON.getText().trim().isEmpty();
     }
 
     /**
@@ -24446,17 +24512,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * the checks, which it does not - the button is deliberately left enabled and explains at press
      * time.
      *
-     * What it does NOT ask, and deliberately: `isRemoteLayout`. `refuseAutonomyStartWhileBroken`
-     * refuses that case too, but a remote layout has no autonomy session at all, so the Start button
-     * is already disabled and the extra term would be dead weight. If that ever stops being true this
-     * is the place it has to be added.
+     * **And `isRemoteLayout`, the guard's first question** (REG-C3).  This javadoc said it was left out
+     * because a remote layout has no autonomy session, so the Start button would already be disabled -
+     * and said that if that ever stopped being true, this is where it had to be added.  It is not true:
+     * an `autonomy.json` still loads on a Central Station layout and enables the button, and the diagram's
+     * right-click menu then offered Start while `refuseAutonomyStartWhileBroken` refused it.
      *
      * @return whether Start would be accepted
      */
     public boolean canStartAutonomy()
     {
         return this.startAutonomy != null && this.startAutonomy.isEnabled()
-            && !autonomyHasErrors();
+            && !isRemoteLayout() && !autonomyHasErrors();
     }
 
     /**
@@ -25990,13 +26057,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Held rather than thrown, because the work half must not raise a dialog: that would be the
         // same violation one layer down.
         final Exception[] failed = new Exception[1];
+        final int[] added = new int[1];
 
         BusyDialog.run(this, I18n.t("ui.busySyncingWithCS"),
             () ->
             {
                 try
                 {
-                    this.model.importRoutes(new String(Files.readAllBytes(Paths.get(
+                    added[0] = this.model.importRoutes(new String(Files.readAllBytes(Paths.get(
                         chosen.getPath()))));
 
                     prefs.put(LAST_USED_FOLDER, chosen.getParent());
@@ -26030,6 +26098,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 resetRouteSpinners();
                     refreshRouteList();
+
+                // THE ROUTES ARRIVE OFF, and the door says so (REG-B3) - the log line alone is not where
+                // somebody restoring a backup is looking.
+                JOptionPane.showMessageDialog(this, I18n.f(
+                    org.traincontrol.marklin.MarklinControlStation.IMPORTED_ROUTES_NOTICE, added[0],
+                    I18n.t("ui.main.bulkEnable"), I18n.t("route.ui.menuEnableAutoExecution")));
             });
     }//GEN-LAST:event_importRoutesMenuItemActionPerformed
 

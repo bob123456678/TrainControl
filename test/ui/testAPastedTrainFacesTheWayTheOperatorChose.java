@@ -178,9 +178,31 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
         assertEquals(FacingPrompt.lastAskedAboutForTests(), SQUARE_NAME, "the facing question named the square"
             + " by one of its copies, whose name states a direction the operator is being asked about (GUI-C7)");
 
+        // THE ARRIVAL-SIDE QUESTION, put where it is asked: this paste does not ask it (the train fits and the walk
+        // answers), so it is asked here of one of the square's copies directly, as the paste and the right-click
+        // Place door ask it.
+        Point copy = null;
+
+        for (Point point : layout.getPoints())
+        {
+            if (point.getName().startsWith(SQUARE_NAME + " (")) copy = point;
+        }
+
+        assertNotNull(copy, "precondition: " + SQUARE_NAME + " has no copy named with a heading, so there is nothing"
+            + " for this claim to catch");
+
+        // Two ways in, given as the build's sides are, so the question is really put: what this asks about is the
+        // name it is put with, not which squares it is put at.
+        List<Side> sides = java.util.Arrays.asList(Side.E, Side.W);
+
+        assertTrue(ArrivalSidePrompt.wouldAsk(layout, copy, true, sides), "precondition: the arrival-side question"
+            + " is not asked at " + copy.getName() + ", so this claim would assert nothing");
+
+        ArrivalSidePrompt.forPlacement(layout, copy, null, true, null, sides);
+
         assertEquals(ArrivalSidePrompt.lastAskedAboutForTests(), SQUARE_NAME, "the arrival-side question named"
-            + " the square by one of its copies, whose name states a direction the operator is being asked about"
-            + " (GUI-C7)");
+            + " the square as " + ArrivalSidePrompt.lastAskedAboutForTests() + ", one of its copies, whose name states"
+            + " a direction the operator is being asked about (GUI-C7)");
     }
 
     /**

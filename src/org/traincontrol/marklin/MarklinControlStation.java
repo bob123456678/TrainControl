@@ -4188,8 +4188,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
         }
 
+        // AND SAID (REG-B3).  At 2.8.1 an import restored each route as it was saved, which is what the pair of
+        // buttons was introduced for - backups.  Disarming them is Adam's rule; saying so is what stops a restored
+        // backup from first being noticed when a train runs through a sensor that used to set a road.  The door
+        // shows the same sentence.
+        this.logf(IMPORTED_ROUTES_NOTICE, added, I18n.t("ui.main.bulkEnable"),
+            I18n.t("route.ui.menuEnableAutoExecution"));
+
         return added;
     }
+
+    /**
+     * What an import of routes says about them, with the count, then Bulk Enable, then the right-click item (REG-B3).
+     */
+    public static final String IMPORTED_ROUTES_NOTICE = "route.infoImportedArriveDisarmed";
         
     /**
      * Exports the locomotive database to a user-friendly CSV file for reference

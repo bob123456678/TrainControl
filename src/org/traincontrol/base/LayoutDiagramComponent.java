@@ -1217,7 +1217,18 @@ public class LayoutDiagramComponent
     }
 
     /**
-     * Whether a command to this accessory address, in this protocol, reaches this tile's decoder.
+     * Whether a command to this accessory address, in this protocol, reaches this tile's decoder (GUI-C5).
+     *
+     * **A three-way is two decoders**, at its address and the next - `layout.switchThreeWayAddr` prints both, and
+     * a CS2 route sets the other diverging road by commanding the second.  Only the first is the logical address,
+     * so matching on that alone lit nothing for a route commanding only the second.
+     *
+     * **And an address is one per protocol**: an MM2 turnout 5 and a DCC turnout 5 are two decoders.  A null
+     * protocol, on either side, is the implicit one - which is what the parser and a route command both read a
+     * missing protocol as.
+     *
+     * The address half only: whether this tile is an accessory at all is the caller's question
+     * (`TrainControlUI.answersTo`), since every kind of tile carries a number.
      *
      * @param address the logical address the command names
      * @param protocol the protocol it is sent in
@@ -1225,7 +1236,14 @@ public class LayoutDiagramComponent
      */
     public boolean answersToAccessoryAddress(int address, accessoryDecoderType protocol)
     {
-        return address == this.getLogicalAddress();
+        int own = this.getLogicalAddress();
+
+        if (address != own && !(this.isThreeWay() && address == own + 1)) return false;
+
+        accessoryDecoderType mine = this.protocol != null ? this.protocol : Accessory.DEFAULT_IMPLICIT_PROTOCOL;
+        accessoryDecoderType asked = protocol != null ? protocol : Accessory.DEFAULT_IMPLICIT_PROTOCOL;
+
+        return mine == asked;
     }
 
     public void setProtocol(accessoryDecoderType protocol)

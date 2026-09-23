@@ -2162,6 +2162,10 @@ public class RouteEditorFrame extends JFrame
      */
     private static java.awt.Component unshaded(java.awt.Component out, JTable which, boolean selected)
     {
+        // AND NO TOOLTIP (GUI-C2).  The same recycled component, and both rows that come here return before
+        // OB-246's tooltip is set - so the + row wore the refusal of the row drawn a moment before it.
+        if (out instanceof javax.swing.JComponent) ((javax.swing.JComponent) out).setToolTipText(null);
+
         if (!selected && out instanceof javax.swing.JComponent)
         {
             ((javax.swing.JComponent) out).setOpaque(true);
@@ -2169,6 +2173,20 @@ public class RouteEditorFrame extends JFrame
         }
 
         return out;
+    }
+
+    /**
+     * Files an accessory command under its address and the protocol it is sent in (GUI-C5).
+     *
+     * @param into the addresses so far
+     * @param command an accessory command
+     */
+    private static void byDecoder(
+        java.util.Map<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>> into,
+        org.traincontrol.base.RouteCommand command)
+    {
+        into.computeIfAbsent(command.getAddress(), address -> new java.util.LinkedHashSet<>())
+            .add(command.getProtocol());
     }
 
     /**
@@ -2226,7 +2244,8 @@ public class RouteEditorFrame extends JFrame
                 // SET ON EVERY CELL, never skipped: this renderer hands back one recycled component
                 // for the whole table, so a row that is fine would otherwise wear the tooltip of the
                 // marked row drawn a moment earlier - which is the defect the note above is about,
-                // in the other direction.
+                // in the other direction.  The two rows that return above have it cleared in
+                // `unshaded` (GUI-C2).
                 String refused = which instanceof CommandTable
                     ? ((CommandTable) which).whyWrong(row) : null;
 
@@ -2962,9 +2981,13 @@ public class RouteEditorFrame extends JFrame
         // type."*  A command names an accessory, another route, or a locomotive; a condition names an
         // s88 or an accessory - and a tile of any kind carries a number, so the kind has to travel
         // with the address or the wrong tiles light.
-        java.util.Set<Integer> commanded = new java.util.LinkedHashSet<>();
+        //
+        // AND BY DECODER (GUI-C5): an accessory address is one per protocol, so the protocol travels with it.
+        java.util.Map<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>> commanded =
+            new java.util.LinkedHashMap<>();
         java.util.Set<Integer> commandedRoutes = new java.util.LinkedHashSet<>();
-        java.util.Set<Integer> checked = new java.util.LinkedHashSet<>();
+        java.util.Map<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>> checked =
+            new java.util.LinkedHashMap<>();
         java.util.Set<Integer> checkedSensors = new java.util.LinkedHashSet<>();
 
         // A sensor a COMMAND names, which only a route saved by an older version can hold (VD13-C6).
@@ -2982,7 +3005,7 @@ public class RouteEditorFrame extends JFrame
             // touches.  `hasAddress()` exists for exactly this and was not being asked.
             if (command == null || !command.hasAddress() || command.getAddress() <= 0) continue;
 
-            if (command.isAccessory()) commanded.add(command.getAddress());
+            if (command.isAccessory()) byDecoder(commanded, command);
 
             if (command.isRoute()) commandedRoutes.add(command.getAddress());
 
@@ -3001,7 +3024,7 @@ public class RouteEditorFrame extends JFrame
             // The same question on the condition side (IPR-B1): a condition can name a locomotive.
             if (!row.getCommand().hasAddress() || row.getCommand().getAddress() <= 0) continue;
 
-            if (row.getCommand().isAccessory()) checked.add(row.getCommand().getAddress());
+            if (row.getCommand().isAccessory()) byDecoder(checked, row.getCommand());
 
             if (row.getCommand().isFeedback()) checkedSensors.add(row.getCommand().getAddress());
         }
@@ -3016,8 +3039,19 @@ public class RouteEditorFrame extends JFrame
         // A square that is BOTH commanded and checked is drawn as commanded.  It is the stronger of the
         // two statements - the route does something to it - and two washes on one tile is a colour
         // neither of them chose.  Asked within a kind, because an accessory and a sensor numbered alike
-        // are two different squares and neither says anything about the other.
-        checked.removeAll(commanded);
+        // are two different squares and neither says anything about the other - and within a decoder, for
+        // the same reason: MM2 5 and DCC 5 are two turnouts (GUI-C5).
+        for (java.util.Map.Entry<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>>
+            both : commanded.entrySet())
+        {
+            java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType> alsoChecked = checked.get(both.getKey());
+
+            if (alsoChecked == null) continue;
+
+            alsoChecked.removeAll(both.getValue());
+
+            if (alsoChecked.isEmpty()) checked.remove(both.getKey());
+        }
 
         // AND THE SAME FOR THE SENSORS, HERE, BEFORE EITHER IS PAINTED (VD13-C6, VD14-C3, VD15-B1).
         //
@@ -3038,14 +3072,14 @@ public class RouteEditorFrame extends JFrame
         // icon.  A statement whose only effect is to be read as a rule is worse than no statement.
         checkedSensors.removeAll(commandedSensors);
 
-        int lit = parent.highlightAddresses(commanded, TrainControlUI.AddressedAs.ACCESSORY,
-            org.traincontrol.util.ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);
+        int lit = parent.highlightAccessories(commanded, org.traincontrol.util.ImageUtil.HIGHLIGHT,
+            HIGHLIGHT_HOLD_MS);
 
         lit += parent.highlightAddresses(commandedRoutes, TrainControlUI.AddressedAs.ROUTE,
             org.traincontrol.util.ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);
 
-        lit += parent.highlightAddresses(checked, TrainControlUI.AddressedAs.ACCESSORY,
-            org.traincontrol.util.ImageUtil.HIGHLIGHT_CONDITION, HIGHLIGHT_HOLD_MS);
+        lit += parent.highlightAccessories(checked, org.traincontrol.util.ImageUtil.HIGHLIGHT_CONDITION,
+            HIGHLIGHT_HOLD_MS);
 
         lit += parent.highlightAddresses(checkedSensors, TrainControlUI.AddressedAs.FEEDBACK,
             org.traincontrol.util.ImageUtil.HIGHLIGHT_CONDITION, HIGHLIGHT_HOLD_MS);

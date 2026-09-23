@@ -85,14 +85,19 @@ public class ArrivalSidePrompt
     }
 
     /**
-     * What the arrival-side question calls the square.
+     * What the arrival-side question calls the square: its name, not the copy's (GUI-C7).
+     *
+     * A split square's Points are named with a heading - "BottomMainB (eastbound)" - and this question is ABOUT
+     * direction, so the copy's name put an answer in the question, and an arbitrary one: the Point is picked before
+     * the question, and on an empty square any copy will do.  The facing question asked after it names the square
+     * the same way (`TrainControlUI`'s paste door).
      *
      * @param at the Point the train is being put on
      * @return the name the question shows
      */
     static String squareNameFor(Point at)
     {
-        return at.getName();
+        return org.traincontrol.automationui.StationIndex.withoutArrivalSuffix(at.getName());
     }
 
     /**

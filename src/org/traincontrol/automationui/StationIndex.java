@@ -223,7 +223,7 @@ public final class StationIndex
      * @param name an emitted Point name
      * @return the square's name, as far as it can be recovered
      */
-    private static String withoutArrivalSuffix(String name)
+    public static String withoutArrivalSuffix(String name)
     {
         if (name == null) return "";
 
