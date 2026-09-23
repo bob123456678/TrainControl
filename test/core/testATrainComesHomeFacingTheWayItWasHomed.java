@@ -49,6 +49,7 @@ public class testATrainComesHomeFacingTheWayItWasHomed
     private static support.LayoutSandbox sandbox;
     private static MarklinControlStation model;
     private static Layout layout;
+    private static AutonomySession session;
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -66,7 +67,7 @@ public class testATrainComesHomeFacingTheWayItWasHomed
 
         for (String page : model.getLayoutList()) pages.add(model.getLayout(page));
 
-        AutonomySession session = new AutonomySession(sandbox.getFolder());
+        session = new AutonomySession(sandbox.getFolder());
 
         session.open(pages);
 
@@ -236,6 +237,69 @@ public class testATrainComesHomeFacingTheWayItWasHomed
         finally
         {
             layout.clearHomeLocomotives();
+
+            for (Point p : new ArrayList<>(layout.getPoints()))
+            {
+                if (p.getCurrentLocomotive() != null && OUR_TRAIN.equals(p.getCurrentLocomotive().getName()))
+                {
+                    layout.moveLocomotive(null, p.getName(), true);
+                }
+            }
+        }
+    }
+
+    /**
+     * A home is set facing the way the train faces ON THE RAILWAY, not the way the setup last said (TDY-C2).
+     *
+     * Adam's rule for the facing: *"Direction it is facing when home is set."*  It was read from the setup's FACING,
+     * which names the heading a train set off with until a capture writes the arrival back - so after a run that turned
+     * the train at this square, the home was saved facing the way it no longer faces.  `facingOf` was given the
+     * running-layout-first reading for exactly this staleness (CONF-B1); the home door is its sibling.
+     *
+     * MUTATION: read the setup's facing alone again and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAHomeTakesTheFacingTheTrainHasOnTheRailway() throws Exception
+    {
+        Point plain = layout.getPoint("BottomMainB (eastbound)");
+        Point twin = layout.getPoint("BottomMainB (eastbound, reverse)");
+
+        assertTrue(plain != null && plain.isDestination() && twin != null && twin.isDestination(),
+            "precondition: BottomMainB has no plain copy and turning twin a train may stand on");
+
+        TileKey square = session.getStationIndex().squareOf(plain.getName());
+
+        assertNotNull(square, "precondition: BottomMainB is not a square of the setup");
+
+        String plainFacing = session.facingsFor(square).get(plain.getName()).name();
+        String twinFacing = session.facingsFor(square).get(twin.getName()).name();
+
+        assertTrue(!plainFacing.equals(twinFacing), "precondition: the twin faces the way its plain copy does");
+
+        session.setRunningLayoutSource(() -> layout);
+
+        try
+        {
+            // THE SETUP SAYS IT STANDS HERE FACING EAST...
+            session.placeLocomotive(square, OUR_TRAIN);
+            session.setFacing(square, org.traincontrol.automationui.TilePorts.Side.valueOf(plainFacing));
+
+            // ...AND ON THE RAILWAY IT HAS TURNED, uncaptured.
+            assertTrue(layout.moveLocomotive(OUR_TRAIN, twin.getName(), false), "could not stand the train on " + twin.getName());
+
+            session.setHome(square, OUR_TRAIN);
+
+            assertEquals(session.getPointProperty(square, org.traincontrol.automationui.AutonomyBuilder.HOME_FACING),
+                twinFacing, "the train stands on " + twin.getName() + ", facing " + twinFacing + ", and its home there was"
+                + " set facing the way the setup last said.  Adam: \"Direction it is facing when home is set\"");
+        }
+        finally
+        {
+            session.setHome(square, null);
+            session.placeLocomotive(square, null);
+            session.setRunningLayoutSource(null);
 
             for (Point p : new ArrayList<>(layout.getPoints()))
             {
