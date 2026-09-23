@@ -19761,9 +19761,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * so they silently came to point somewhere else and the new number was written to the file -
      * measured on the five pages of the sample layout, adding one page repointed FOUR OF SEVEN arrows.
      *
-     * **Every page operation goes through here**, which is the point of the method.  The three callers
-     * each used to write the index themselves, and a repair applied to one of three call sites and not
-     * its twins is the defect this project produces most often.  The order the arrows were written
+     * **Delete and Combine go through here.**  Add, Duplicate and Rename go through `LayoutPageEdit`,
+     * which re-aims the arrows before it writes the page and then writes the index itself
+     * (`LayoutDiagram.writeLayoutIndex`, whose javadoc says the same).  Each operation used to write the
+     * index on its own, and a repair applied to one call site and not its twins is the defect this
+     * project produces most often.  The order the arrows were written
      * against is worked out here rather than by the caller, so a caller cannot get that wrong either -
      * and it is taken from the PAGES this session holds, not from the index file, because an index
      * naming two pages the same aliases them onto one entry (FV3-A2, T10-C1).
@@ -19772,7 +19774,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * place - Adam, 2026-09-10.  See `LayoutDiagramComponent.setLinkedPageIndex`.
      *
      * @param layoutList the new page list, name-sorted, as writeLayoutIndex takes it
-     * @param renamed old name -&gt; new name, or null
+     * @param renamed old name -&gt; new name, or null - which both callers pass; a rename goes through
+     *     `LayoutPageEdit`
      * @param keepAbsent pages to hold in the index though they are not loaded (FR-018), or null
      * @throws java.io.IOException if the index cannot be written, which is the caller's to report
      */

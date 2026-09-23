@@ -617,12 +617,18 @@ public class AutonomySession
      * plainer one: it is the operator's setting and the import is a migration, not an edit.
      *
      * What that changes for an imported graph is worth knowing.  Adam's own frozen legacy file carries
-     * twenty-four points with `active: false`, six of them not stations, and each of those is now a
-     * point no path may pass through - manual routes included, because `isPathClear`'s intermediate
-     * rule is not fenced behind `isAutoRunning`.  That is a RESTORATION rather than a regression: at
-     * v2.8.1 the raw `autonomy.json` went straight into `parseAuto` and those points blocked paths
-     * then too.  It is recorded here because the change was argued entirely from the editor's menu and
-     * this is the other door it came through.
+     * twenty-four points with `active: false`, eighteen of them stations, and each of those is now a
+     * point no path may pass through OR END ON - manual routes included, because neither
+     * `isPathClear`'s intermediate rule nor, since Adam's ruling of 2026-09-06, its destination rule is
+     * fenced behind `isAutoRunning`.  For the six that are not stations that is a RESTORATION: at v2.8.1
+     * the raw `autonomy.json` went straight into `parseAuto` and those points blocked paths then too.
+     * For the eighteen stations it is not (REG-B1): v2.8.1 let a hand-picked route END on a switched-off
+     * station, and sixteen of them are reversing stations the import already marks parking, where
+     * `active: false` was the old way of saying "autonomy stays out, I drive in by hand".  After the
+     * import nobody drives in; switching the station back on is the way past, and for those sixteen it
+     * is safe because parking already keeps autonomy out.  Whether the import should translate the flag
+     * rather than carry it is Adam's decision.  It is recorded here because the change was argued
+     * entirely from the editor's menu and this is the other door it came through.
      */
     private static final List<String> CARRIED_SETTINGS =
         Arrays.asList("priority", "speedMultiplier", "excludedLocs", "active", "maxTrainLength");
@@ -5429,7 +5435,9 @@ public class AutonomySession
     /**
      * Whether a stored point records a home locomotive.
      *
-     * One spelling of "carries a home", so the three callers cannot drift about what a blank means.
+     * One spelling of "carries a home" - a blank is none.  It has one caller; the other reads of the
+     * key either ask WHICH locomotive, which is a different question, or spell this answer out where
+     * they stand (DCN-C12).
      *
      * @param point the stored point
      * @return true when it names one

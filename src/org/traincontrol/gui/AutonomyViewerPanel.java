@@ -1443,7 +1443,7 @@ public class AutonomyViewerPanel extends JPanel
             // reader to work out whether it was written, found, or about to be overwritten - and then
             // to go and find the folder themselves.  Same two steps the update download takes.
             JOptionPane.showMessageDialog(ui,
-                I18n.f("autosetup.ui.infoGraphExported", out.getName(), out.getParent()));
+                I18n.f("autosetup.ui.infoGraphExported", out.getName()));
 
             ui.showFileExplorer(out.getParentFile());
         }

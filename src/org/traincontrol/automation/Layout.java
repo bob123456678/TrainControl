@@ -109,8 +109,9 @@ public class Layout
         /**
          * The route over the shortest track, added up from the lengths set on the tiles.
          *
-         * Only as good as the lengths that have been set.  With none set every route measures zero and
-         * this falls back to whichever was found first, so it is offered rather than assumed.
+         * Only as good as the lengths that have been set - and a section with none counts ONE (`lengthOf`,
+         * Adam: *"where we count each s88 as length 1 by default"*), so with nothing measured this is the
+         * route over the fewest sections rather than a tie (DCN-B2).  Offered rather than assumed.
          */
         SHORTEST_LENGTH,
 
@@ -2546,12 +2547,13 @@ public class Layout
         }
         
         // An INTERMEDIATE point that has been switched off may never be driven through, whatever asked
-        // for the route.  This one is deliberately NOT fenced behind isAutoRunning, unlike the endpoint
-        // rules above and below it: a manually chosen route may still START from a deactivated point,
-        // which is how a train held in place is driven out by hand, and may still FINISH on one, which
-        // is how a route to a parked-up berth is picked.  Passage is the absolute case, because a train
-        // crossing a point the operator switched off is the one place where nobody chose that point at
-        // all - the route was only trying to get past it.
+        // for the route.  This one is deliberately NOT fenced behind isAutoRunning, unlike the every-edge
+        // rule above it: a manually chosen route may still START from a deactivated point, which is how a
+        // train held in place is driven out by hand.  It may no longer FINISH on one - the destination
+        // rule below lost its fence on Adam's ruling of 2026-09-06, "Inactive really means nothing can
+        // pass" (REG-B1: before that a hand-picked route could end on a parked-up berth).  Passage was the
+        // first absolute case, because a train crossing a point the operator switched off is the one
+        // place where nobody chose that point at all - the route was only trying to get past it.
         //
         // Intermediates are exactly the END of every edge but the last: any edge start other than the
         // first is the previous edge end, so this visits each intermediate once and neither endpoint.
@@ -9384,17 +9386,6 @@ public class Layout
     }
 
     /**
-     * Whoever is standing on a block, ignoring one Point of it.
-     *
-     * Walked rather than indexed: the points map is small, this is asked while choosing a path rather
-     * than while driving, and an index would be a second structure to keep in step with renames and
-     * rebuilds - which is the class of bug this area keeps producing.
-     *
-     * @param block the shared identity
-     * @param except the Point asking, whose own occupancy the caller has already read
-     * @return the locomotive on another copy of that square, or null
-     */
-    /**
      * Sets a station's protecting signal to match whether its platform is claimed.
      *
      * Red when a train is standing there or a locked path has reserved it, green when it is free.
@@ -10258,6 +10249,17 @@ public class Layout
         }
     }
 
+    /**
+     * Whoever is standing on a block, ignoring one Point of it.
+     *
+     * Walked rather than indexed: the points map is small, this is asked while choosing a path rather
+     * than while driving, and an index would be a second structure to keep in step with renames and
+     * rebuilds - which is the class of bug this area keeps producing.
+     *
+     * @param block the shared identity
+     * @param except the Point asking, whose own occupancy the caller has already read
+     * @return the locomotive on another copy of that square, or null
+     */
     Locomotive locomotiveInBlock(String block, Point except)
     {
         if (block == null) return null;

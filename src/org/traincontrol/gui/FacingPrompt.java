@@ -227,8 +227,9 @@ public class FacingPrompt
         }
         catch (Exception cannotAsk)
         {
-            // Nothing, and null stands - the paste keeps the heading the walk worked out, which is
-            // what it did before this question existed.
+            // Nothing, and null stands - which every caller reads as a dismissal (GUI-C6): the paste
+            // returns without moving the train, and the home door sets no home (OB-282).  The safe
+            // answer to a question that could not be asked is to do nothing it would have decided.
         }
 
         return answer[0];

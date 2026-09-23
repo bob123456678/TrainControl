@@ -5203,7 +5203,8 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * Hides the captions, idempotently - the other half of the pair (FR-061).
      *
-     * The autonomy editor's caption choice includes None, and None is this. Written as a twin of
+     * The autonomy editor calls it for every caption option but Labels Only, which is the switch
+     * turned on (OB-272; under FR-061 it was None alone). Written as a twin of
      * `showTextLabels` rather than as a call to `toggleText`, for the reason given there: a flip is the
      * wrong verb for a caller that needs a particular state, and would turn the text back ON for
      * somebody who already had it off.
@@ -5228,8 +5229,10 @@ public class LayoutEditor extends PositionAwareJFrame
             refreshGrid();
 
             // AND THE CAPTION DROPDOWN, which is the only visible state of this switch in autonomy
-            // mode (RGD-C3).  The checkbox above is hidden there because None IS this switch off, so
-            // without this Control+L emptied the diagram under a control still naming a caption.
+            // mode (RGD-C3).  The checkbox above is hidden there because Labels Only IS this switch
+            // on (OB-272), so without this the diagram's writing changed under a dropdown still naming
+            // another option.  (Control+L no longer reaches here in autonomy mode: it steps the
+            // dropdown instead.)
             //
             // After the rebuild, not before: the panel answers by changing its selection, which asks
             // for a rebuild of its own.

@@ -17,7 +17,8 @@ import org.testng.annotations.Test;
  * documentation at all.
  *
  * Nothing warns about it, and it has happened repeatedly here. The three the review names are the ones
- * that matter: `Layout`'s `locomotiveInBlock` parameters sat above `refreshProtectingSignal`, which
+ * that matter, all three reattached (the first two on 2026-09-23, DCN-C12, which found the header saying so
+ * before it was true): `Layout`'s `locomotiveInBlock` parameters sat above `refreshProtectingSignal`, which
  * commands real signals; `AutonomyCompanionStore`'s "a tile that moves leaves its setup behind"
  * rationale sat above `forgetTiles`, leaving `moveTiles` undocumented; and `Util`'s entire explanation
  * of why the locomotive database is staged and moved into place - the best paragraph in that file -
@@ -50,7 +51,9 @@ public class testJavadocsAreAttached
     // moved out of the way.  Lowered so the repair cannot be given back.
     // 91 -> 90 on 2026-09-19: GUX-C6, the fourth javadoc orphaned in RouteEditorFrame, reattached to
     // conditionCount, which is the method it was written for.
-    private static final int ALLOWED = 90;
+    // 90 -> 88 on 2026-09-23: DCN-C12, the two this header names - Layout.locomotiveInBlock and
+    // AutonomyCompanionStore.moveTiles - reattached to the members they were written for.
+    private static final int ALLOWED = 88;
 
     /**
      * WHICH files carry the orphans, not just how many (VAL-C8).
@@ -61,13 +64,13 @@ public class testJavadocsAreAttached
      */
     private static final String[] ORPHANS_BY_FILE = {
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "automation" + File.separator + "Layout.java (3)",
+            + "automation" + File.separator + "Layout.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "automationui" + File.separator + "AutonomyBuilder.java (6)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "automationui" + File.separator + "AutonomyChecks.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "automationui" + File.separator + "AutonomyCompanionStore.java (4)",
+            + "automationui" + File.separator + "AutonomyCompanionStore.java (3)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "automationui" + File.separator + "AutonomySession.java (9)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator

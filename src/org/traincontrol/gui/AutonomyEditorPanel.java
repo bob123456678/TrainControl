@@ -6751,8 +6751,10 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * The last caption mode that drew something, for Control+L to come back to (RGD-C3).
+     * The last caption mode, for the text switch to come back to when it is turned off from Labels Only (RGD-C3,
+     * OB-272).
      *
+     * Only the three modes that draw a caption are kept here - None and Labels Only draw none to come back to.
      * Station Names to begin with, which is what the dropdown itself defaults to.
      */
     private int lastNamedCaptionMode = CAPTIONS_STATIONS;
@@ -6764,9 +6766,10 @@ public class AutonomyEditorPanel extends JPanel
      * remembered mode is restored during CONSTRUCTION and applied there, and the half of
      * `applyCaptionMode` that reaches the diagram goes through `owner()` -
      * `SwingUtilities.getWindowAncestor(this)` - which is null until the panel has been added to the
-     * editor.  So the two tick boxes were set and the text switch, which is what None IS, was not: the
-     * dropdown said None over a diagram still drawing every station name, which is precisely the state
-     * the four exclusive options exist to make impossible.
+     * editor.  So the two tick boxes were set and the text switch - which under FR-061 was what None
+     * meant, and since OB-272 is Labels Only's - was not: the dropdown said None over a diagram still
+     * drawing every station name, which is precisely the state exclusive options exist to make
+     * impossible.
      *
      * Called by `LayoutEditor.setAutonomyMode` from the same posted block that redraws the grid, and
      * for the same reason written there - *"the first draw happened before this window knew what it
@@ -6785,19 +6788,21 @@ public class AutonomyEditorPanel extends JPanel
      * mutually exclusive here by construction, which is what retires OB-174: there is no longer a
      * state where somebody has asked for parked trains while the text is off.
      *
-     * **Text on for the three that say something, off for None.** That is the master switch the
-     * dropdown subsumes, and driving it from here is why the two boxes no longer need to reach for it
-     * themselves.
+     * **Text on for Labels Only, off for every other option (OB-272).** The switch is the writing on
+     * the diagram and nothing else now: whether a caption is drawn is the dropdown's own answer,
+     * `isDrawingCaptions`.  Under FR-061 it was on for the three caption modes and off for None, so
+     * choosing Station Names drew the labels as well.  Driving it from here is still why the two
+     * boxes need not reach for it themselves.
      *
      * **At open as well, which it did not used to be (RGD-C3).** The text switch was left alone when
      * the window opened, on the grounds that opening a setup should not override a choice somebody
      * made in the plain editor. But the mode is REMEMBERED between opens ("with the setting remembered
      * between open") and the text switch is not - it is a plain field that defaults to on - so None
      * came back as a word and not as an effect: the dropdown said None while station names were drawn
-     * under it, which is the state the four options exist to make impossible.
+     * under it, which is the state exclusive options exist to make impossible.
      *
      * The cost is the courtesy: opening the autonomy editor now imposes its caption mode on the text
-     * switch. That is what a control naming four exclusive options claims to do, and the alternative
+     * switch. That is what a control naming five exclusive options claims to do, and the alternative
      * was a control that lies on the first open after every restart.
      */
     private void applyCaptionMode()
@@ -6859,14 +6864,15 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Told that the diagram's text switch moved on its own, so the dropdown can agree (RGD-C3).
      *
-     * The Text Labels checkbox is hidden in autonomy mode because None IS that switch turned off - but
-     * Control+L still reaches it, and the box was the only thing that used to show its state. Pressing
-     * it with "Parked Locs" selected made every caption vanish under a control still saying Parked,
-     * which is OB-174's symptom ("indistinguishable from a control that does not work") reached
-     * through the shortcut the tidy-up left wired.
+     * The Text Labels checkbox is hidden in autonomy mode because the dropdown shows its state: Labels
+     * Only IS that switch turned on (OB-272).  Control+L steps the dropdown there (`cycleCaptionMode`)
+     * rather than flipping the switch, so this is the answer to anything else that flips it.  Written
+     * under FR-061, when None was the switch turned off and Control+L still flipped it: pressing it with
+     * "Parked Locs" selected made every caption vanish under a control still saying Parked, which is
+     * OB-174's symptom ("indistinguishable from a control that does not work").
      *
-     * Turning the text back on restores the last mode that said something, rather than a default: the
-     * operator who pressed Control+L twice asked for what they had before.
+     * On selects Labels Only.  Off from Labels Only goes back to the last caption mode rather than a
+     * default: somebody who turned the labels off asked for what they had before.
      *
      * Selecting fires the dropdown's own listener, which is wanted - the choice really did change, and
      * it should be stored and drawn like any other. The listener's call back into the text switch is
@@ -6888,7 +6894,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * The way to say None, which is the editor's own text switch turned off (FR-061).
+     * The editor's own text switch turned off, for every option but Labels Only (OB-272; under FR-061
+     * this was how None was said).
      *
      * The twin of `turnTextLabelsOn`, and idempotent for the same reason: `toggleText` flips, which is
      * the wrong verb for a caller that needs a particular state.
@@ -6900,11 +6907,12 @@ public class AutonomyEditorPanel extends JPanel
         if (where instanceof LayoutEditor) ((LayoutEditor) where).hideTextLabels();
     }
     /**
-     * Turns the diagram's text labels on, if this panel is in an editor that has them (OB-174).
+     * Turns the diagram's text labels on, if this panel is in an editor that has them - for Labels Only
+     * (OB-174, OB-272).
      *
-     * The caption switches in this column decide what a caption SAYS.  Whether captions are drawn at
-     * all is the editor's own "text labels" box, and with that off these are settings whose effect
-     * arrives at some unrelated moment - which reads as a switch that does not work.
+     * Captions no longer depend on it: the grid asks `isDrawingCaptions`.  They did until OB-272, and
+     * with the switch off the caption choices were settings whose effect arrived at some unrelated
+     * moment - which reads as a switch that does not work, and is why this was written (OB-174).
      *
      * Quiet when there is no editor: this panel is also built with no window at all, only to make
      * menus from, and a null there is not a fault.

@@ -2939,30 +2939,6 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Follows tiles being moved on the diagram.
-     *
-     * Everything here is keyed by SQUARE, so a tile that moves leaves its whole setup behind at the
-     * old coordinates - where there is now no track.  The next reconcile finds a station on a square
-     * with no sensor and drops it, and a station that took ten minutes to name, face, restrict and
-     * measure is gone because somebody nudged a tile one square left.  The caption alone was
-     * followed, which made the loss look arbitrary: the NAME moved and the station under it did not.
-     *
-     * The whole set in one call, not one tile at a time.  A group dragged one square right has every
-     * source square landing on another source square, so moving them in sequence makes each write
-     * destroy the data the next read was going to need - the same trap the captions hit, where
-     * dragging left happened to work and dragging right ate every other one.
-     *
-     * Two different things happen to a key.  A square that MOVES takes what is written about it; a
-     * square that is only NAMED by something else - a caption pointing at a station, a station's
-     * protecting signal, a portal's partner - is repointed where it stands.  Doing only the first
-     * leaves half the setup naming the square the tile used to be on.
-     *
-     * A tile moved onto a square that is not itself moving replaces what was there, which is what
-     * the diagram does too.
-     *
-     * @param moves each square being vacated, and where it is going
-     */
-    /**
      * Squares that have been built over, whose setup is therefore about track that is gone.
      *
      * moveTiles does this for the squares a move LANDS on, and for a long time that was the only way a
@@ -2991,6 +2967,30 @@ public class AutonomyCompanionStore
         return keys;
     }
 
+    /**
+     * Follows tiles being moved on the diagram.
+     *
+     * Everything here is keyed by SQUARE, so a tile that moves leaves its whole setup behind at the
+     * old coordinates - where there is now no track.  The next reconcile finds a station on a square
+     * with no sensor and drops it, and a station that took ten minutes to name, face, restrict and
+     * measure is gone because somebody nudged a tile one square left.  The caption alone was
+     * followed, which made the loss look arbitrary: the NAME moved and the station under it did not.
+     *
+     * The whole set in one call, not one tile at a time.  A group dragged one square right has every
+     * source square landing on another source square, so moving them in sequence makes each write
+     * destroy the data the next read was going to need - the same trap the captions hit, where
+     * dragging left happened to work and dragging right ate every other one.
+     *
+     * Two different things happen to a key.  A square that MOVES takes what is written about it; a
+     * square that is only NAMED by something else - a caption pointing at a station, a station's
+     * protecting signal, a portal's partner - is repointed where it stands.  Doing only the first
+     * leaves half the setup naming the square the tile used to be on.
+     *
+     * A tile moved onto a square that is not itself moving replaces what was there, which is what
+     * the diagram does too.
+     *
+     * @param moves each square being vacated, and where it is going
+     */
     public void moveTiles(Map<TileKey, TileKey> moves)
     {
         moveTiles(moves, null);
