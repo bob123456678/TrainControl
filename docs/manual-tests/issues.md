@@ -2574,6 +2574,39 @@ gate fire.
 **Where it belongs:** Bulk Tools, under the two that are there.  With this built, the atomic-routes
 notice has somewhere to send you, which is what its shortened wording now promises.
 
+**ASKED FOR AGAIN, 2026-09-23, AND IT REPLACES FR-095.**  Adam: *"Rather than adding complexity through
+new menus, add a bulk tool to the autonomy editor to set missing train lengths, similar to how the
+station lengths are set."*  So the way to a locomotive's length from the autonomy side is this walk, not a
+right-click menu on the commands page, and FR-095 is withdrawn in its favour.
+
+**What "similar to how the station lengths are set" fixes, taken from FR-091 rather than re-invented:**
+
+- **Bulk Tools, as its own item**, beside Mass Assign Lengths and Mass Assign Max Train Lengths.  Greyed
+  when there is nothing to ask about, with a tooltip saying how many there are when there is - the
+  station walk's own affordance.
+- **One prompt per locomotive**, the shared walk prompt: the number field has the keyboard focus, Enter
+  submits, Skip leaves the locomotive as it was, Cancel or Escape stops, and the prompt opens where the
+  last one was left.
+- **0 is refused**, as the station walk refuses it: 0 is what a train with no length already holds, and
+  it is the value that makes the atomic-routes gate fire.  A skip leaves it unset, not 0.
+
+**Which locomotives: the ones the gate names, asked through the same method.**  The atomic-routes notice
+lists `Layout.trainsWithNoLength()` - every locomotive on the run list with no length, alphabetically -
+so the walk asks exactly that list and in that order.  One method for both is what stops the notice
+naming a train the walk never offers, which is the guard-and-affordance rule (OB-057 / OB-090).
+
+**Two things that differ from the station walk, because a train is not a square:**
+
+- **Where it is written.**  A train length belongs to the locomotive, in the locomotive database, not to
+  the autonomy setup - so the editor's Cancel, which restores the setup as it opened (OB-223), does not
+  take it back.  The walk says so before it starts, the way the bulk clear says what Cancel does
+  (OB-194), rather than leaving it to be discovered.
+- **What it points at.**  The station walk flashes the square it is asking about.  A train standing on
+  the diagram can be shown the same way - its square flashed while it is asked about - and one that is
+  not placed has nowhere to show, so the prompt names it and nothing flashes.
+
+**Not built.**  Filing is not asking for it to be worked; this is ready to build when he says so.
+
 ### OB-272 - 2026-09-23 - text labels follow the autonomy editor's caption setting instead of having one of their own
 
 **Kind:** bug  
@@ -2926,6 +2959,11 @@ asking whether he wants the others while the menu is being built.
 
 **Not a defect**: nothing is wrong today, there is simply no way to reach the edit from that page.
 Minor, and display-side only.
+
+**WITHDRAWN IN FAVOUR OF FR-094, 2026-09-23.**  Adam: *"Rather than adding complexity through new
+menus, add a bulk tool to the autonomy editor to set missing train lengths, similar to how the station
+lengths are set."*  The right-click menu described above is not to be built; what it was a way to
+reach, a locomotive's train length, is reached through the Bulk Tools walk FR-094 describes.
 
 ### OB-277 - 2026-09-23 - the orange train line is not drawn on sensor squares
 
