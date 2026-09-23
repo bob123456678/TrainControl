@@ -246,6 +246,12 @@ AUS-D6	2026-09-19-AUS-autonomy-editor-second-pass.md	Closed	-	**`flowMarks` stal
 AUS-D7	2026-09-19-AUS-autonomy-editor-second-pass.md	Closed	-	**`setRunLength` on a square in no run writes that square alone**, and Control+E and the menu still land in one place. `runTilesOf` (8712-8726) is the
 AUS-D8	2026-09-19-AUS-autonomy-editor-second-pass.md	Closed	-	**A walk skipped throughout leaves no unsaved-work prompt behind.** `outlineAndReveal` (9504-9519) calls `refresh()` per prompt, and `refresh()` ends
 AUS-D9	2026-09-19-AUS-autonomy-editor-second-pass.md	Closed	-	**The one-way tool cannot change the leg set on its own, so C3 needs the cycle click or the radio.** `setOneWayRun` writes `TOWARD_A`/`TOWARD_B` only
+AUT-B1	AUT.md	Closed	Fixed - ac5fe2f2 (claim 8873b0a4, red first): `Layout.anotherTailOn` - a standing tail blo	a standing train's tail never reaches the OTHER copies of the rail it lies on, so a train can be routed onto a turning copy under that tail
+AUT-B2	AUT.md	Closed	Fixed - ac5fe2f2, with TDY-B1 (the same defect)	a home "facing" accepts its turning twin, which faces the other way; OB-282 still brings a train home turned round at a may-turn square
+AUT-C1	AUT.md	Closed	Fixed - 5e2fbda5 (claim 0d060ffb, red first): asked again inside the monitor; the refused 	`isAlreadyUnderway` is asked outside the monitor that takes the claim, and the dispatch that loses the race deletes the winner's claim
+AUT-C2	AUT.md	Open - Adam's decision	Open - Adam's decision: whether the entry guard should look at the routes commanding its s	the entry guard throws a signal red with no look at the routes that are commanding it green
+AUT-C3	AUT.md	Closed	Fixed - 6b7301fc (claim c7308e7c, red first): the standing square is spent off an arriving	a train re-stood onto the other arrival's copy after turning has its own square left unspent by the tail walk, so it claims one square further back th
+AUT-C4	AUT.md	Closed	Fixed - 3492e38c (claim 4ed14f85, red first): the fold skips sensor squares; javadoc corre	the route-tile fold rests on "no rule reads a route tile's length", which is false, and it may fold onto a sensor square
 AUT9-B1	AUT-autonomy-review.md	Closed	-	A battery test reads the operator's LIVE railway and is RED right now because a train moved
 AUT9-B2	AUT-autonomy-review.md	Closed	-	The shared-metal covered-track refusal is a live anti-collision rule with no red-on-mutation test
 AUT9-C1	AUT-autonomy-review.md	Closed	-	`maxActiveTrains` (the concurrency cap) is enforced only under `isAutoRunning`, and is in no reference doc
@@ -480,6 +486,24 @@ DAY-D6	2026-08-31-day-of-commits-review.md	Closed	-	MT-149's self-eviction skip 
 DAY-D7	2026-08-31-day-of-commits-review.md	Closed	-	the `tellAutonomy` overloads reach the right callers
 DAY-D8	2026-08-31-day-of-commits-review.md	Closed	-	OB-157's border cache has no unrecorded writer
 DAY-D9	2026-08-31-day-of-commits-review.md	Closed	-	the `AutonomyChecks` signature change reached both overloads and its one caller
+DCN-B1	DCN.md	Closed	Fixed - 4fb36b4b	Automation.md, the user guide the Readme links for v3.0.0, teaches mechanisms that are gone, puts the routing rule in a menu that does not exist, and
+DCN-B2	DCN.md	Closed	Fixed - 4fb36b4b (behaviour.md, Automation.md, the tooltips in eight bundles) and fd6341dd	behaviour.md §1a, the tooltip in all eight languages, the enum javadoc and Automation.md all say an unmeasured railway makes Shortest/Longest Track a
+DCN-C1	DCN.md	Closed	Fixed - 4fb36b4b	Readme feature list: "50 different key mappings for up to 260 locomotives" - the 260 is the old ten-page arithmetic
+DCN-C10	DCN.md	Closed	Fixed - 4fb36b4b	behaviour.md "The four bulk doors on Bulk Tools" misses the fifth length door, Mass Assign Train Lengths (FR-094), which behaviour.md does not mention
+DCN-C11	DCN.md	Closed	Fixed - 4fb36b4b	The v3.0.0 changelog has no line for five user-visible features built since it was last written
+DCN-C12	DCN.md	Closed	Fixed - fd6341dd: the two counts corrected, and the two orphaned javadocs reattached (ratc	Three comments whose counts or "every" no longer hold: the page-index writer, `carriesAHome`, and the orphan-javadoc test's "sat"
+DCN-C13	DCN.md	Closed	Fixed - 4fb36b4b	behaviour.md §1a, written today, says the per-rule routing explanations "are still not shown anywhere, which is OB-163"; OB-163 was fixed on 2026-08-3
+DCN-C14	DCN.md	Closed	Fixed - 997ac6d9: filed as its own Inbox entry, open-questions.md repointed	open-questions.md says the one open reversal question is recorded on OB-190 in the Inbox; today's Inbox clear-out removed OB-190's body, and its recei
+DCN-C15	DCN.md	Closed	Fixed - 997ac6d9: MT-470, 476 and 478 promoted; MT-475, 481, 482, 483 and 484 held with a 	Eight MT entries carry Adam's "Works." of 2026-09-23 and are still "fixed unvalidated", so the ledger asks him for them again
+DCN-C16	DCN.md	Closed	Fixed - 997ac6d9: a dated comment on MT-475 saying which bullets MT-482 replaced	MT-475's Expected was rewritten in place when MT-482 replaced its grey step, against the append-only rule, and its last bullet still states the replac
+DCN-C2	DCN.md	Closed	Fixed - 4fb36b4b	Readme "Layout editor" shortcut list describes 2.8.1's Escape and Control+L, and omits eight keys added since
+DCN-C3	DCN.md	Open - Adam's decision	Open - Adam's decision: removing about 180 lines of unreachable whole-column/row move code	The whole-column / whole-row move has had no caller since 2026-08-19, and four javadocs and one test still describe it as a live gesture
+DCN-C4	DCN.md	Closed	Fixed - fd6341dd, with GUI-C4	OB-272 (this morning) changed what the text switch means; six comments on both sides of it still state the old rule
+DCN-C5	DCN.md	Closed	Fixed - 4fb36b4b	behaviour.md "The autonomy editor's keyboard doors": "Four shortcuts" is five, "all three" is neither, and the caption order is given two ways
+DCN-C6	DCN.md	Closed	Fixed - 997ac6d9: dated comments on MT-293 and MT-023	MT-293 (fixed validated) expects Control+L to go Parked Locs -> None -> Parked Locs; since OB-272 it goes Parked Locs -> Homes, and nothing on the ent
+DCN-C7	DCN.md	Closed	Fixed - 4fb36b4b	viewer-editability.md: "Two things the editor keeps to itself ... Signal Protecting This Station" - it is three things and the item has a new name
+DCN-C8	DCN.md	Closed	Fixed - 4fb36b4b	live-snapshot README has two "Not invariants" sections that give opposite advice about reading the lengths
+DCN-C9	DCN.md	Closed	Fixed - 4fb36b4b	AutomationAPI.md: CMT-B3 took the deleted graph window out of one section; six siblings still send the reader to it, and one teaches the retired `Poin
 DD-A1	2026-08-22-duplication-and-design.md	Open	Open	the automationui chain
 DD-A1	2026-09-22-GS-backlog.md	Open	**cannot be settled**	(listed in a table, no section of its own)
 DD-A2	2026-08-22-duplication-and-design.md	Closed	Closed `ae94421a` - 34 classes added, `ant test` runs 75	`Layout.java` and `HomeStaging`
@@ -1049,6 +1073,24 @@ GST-C4	2026-09-22-GS-threading.md	Open	`repaintTimetable`'s comment justifies it
 GST-C5	2026-09-22-GS-threading.md	Open	`createPoint`/`createEdge` are the unsynchronized, unguarded siblings of `deletePoint`/`de	`createPoint`/`createEdge` are the unsynchronized, unguarded siblings of the delete doors
 GST-C6	2026-09-22-GS-threading.md	Open	`getInvalidReason()` has no callers; the javadoc describes a surface nothing implements	`getInvalidReason()` has no callers, and its javadoc describes a surface nothing implements
 GST-C7	2026-09-22-GS-threading.md	Open	Open	quitting while autonomy is running skips the exit capture of the session's placements in silence, and autosetup.log.placementsNotSaved already exists 
+GUI-A1	GUI.md	Closed	Fixed - 0be2bbe4 (claim 5d871f6d, red first), second pass 919e0dc8 (claim b6d08239, red ag	the Atomic Routes gate switches atomic mode on in the middle of a run, and the run's unlock then gives back track it already gave back
+GUI-B1	GUI.md	Closed	Fixed - 1c855483 (claims 2e565b5e, red first): placement only on a copy trains may arrive 	the placement doors other than the paste still save a facing only a barred copy holds, and the next build stands the train on that copy, where autonom
+GUI-B2	GUI.md	Closed	Fixed - 55959c9c (claim 41589728, red first): Segment Length opens empty where nothing has	Segment Length opens on an unmeasured square showing "0", so pressing OK untouched now records a deliberate 0
+GUI-B3	GUI.md	Closed	Fixed - 1c855483: the dialog commits onto the copy it records	OB-270 was fixed at the paste and not at "Place Locomotive At...": the dialog still puts the train on whichever copy came first and records a differen
+GUI-C1	GUI.md	Closed	Fixed - ff129a4d: the 53 keys translated in all seven bundles, including the three reworde	fifty messages added since v2.8.1 are English in all seven translations, and three reworded ones kept their old translation
+GUI-C2	GUI.md	Closed	Fixed - e2223851 (claim d64023cb, red first): `unshaded` clears the tooltip	the route editor's "+" row wears the refusal tooltip of the row above it
+GUI-C3	GUI.md	Closed	Fixed - 59fdb67d, with TDY-C3	MT-477 reworded the tail question in the dialog and not in the editor, whose heading now sits over "not reached" answers
+GUI-C4	GUI.md	Closed	Fixed - fd6341dd: the seven comments rewritten for OB-272's meaning	OB-272 changed what the text switch means; six comments still say None is the text switch turned off
+GUI-C5	GUI.md	Closed	Fixed - e2223851 (claims d64023cb, red first): `LayoutDiagramComponent.answersToAccessoryA	Highlight on Diagram matches an accessory by one address and no protocol, so a three-way's second decoder and a same-numbered DCC/MM2 pair answer wron
+GUI-C6	GUI.md	Closed	Fixed - fd6341dd: the catch comment, the dead argument, and the dead `hasRememberedBounds`	small stale sentences and a dead argument
+GUI-C7	GUI.md	Closed	Fixed - e2223851 (claim d64023cb, red first): both questions name the square by its base n	the two questions a paste asks at a may-reverse square name the square by an internal copy name that already states a direction
+GUI-C8	GUI.md	Closed	Fixed - e2223851 (claim d64023cb, red first): the label and Fix Setup open the editor, whi	the "page is left out" label refuses with a dialog where the Edit item it imitates brings the open editor forward
+GUI-D1	GUI.md	Closed	Closed - checked clean	the eight bundles: placeholders, arity, keys the forms ask for
+GUI-D2	GUI.md	Closed	Closed - checked clean	the Exit/Entry Guard dialog's sixteen keys and their argument order
+GUI-D3	GUI.md	Closed	Closed - checked clean today; one latent gap in the guard's list	the event-thread monitor census, against a call graph
+GUI-D4	GUI.md	Closed	Closed - checked clean	dialogs off the event thread, and dismissals read as answers
+GUI-D5	GUI.md	Closed	Closed - not reachable as far as the builder's copies go	the paste's facing question offers every copy's heading rather than the placeable ones
+GUI-D6	GUI.md	Closed	Closed - checked clean	MT-467's "the lock says the station carried it"
 GUX-B1	2026-09-19-GUX-main-interface-second-pass.md	Closed	fixed 2026-09-19 - howTheRouteMoved, and the Save asks before overwriting	the route editor does not know its route has changed underneath it, and its Save either fails with no way out or silently undoes the change
 GUX-C1	2026-09-19-GUX-main-interface-second-pass.md	Closed	fixed 2026-09-19 - all four listeners read the modifiers, numbers off the key handler	the speed buttons promise Control and Alt behaviour they do not have - UIX-C5's twin, one row up
 GUX-C2	2026-09-19-GUX-main-interface-second-pass.md	Closed	fixed 2026-09-19 - the tooltip now says sensors are captured and throttled	the capture-target tooltip says s88 feedback is not captured; it has been, on purpose, since 2026-08-22
@@ -1755,6 +1797,22 @@ RC-C6	2026-08-30-release-candidate-review.md	Closed	-	the fourth copy of a zoom 
 RC-C7	2026-08-30-release-candidate-review.md	Closed	-	the menu separator described an order Adam changed
 RC-C8	2026-08-30-release-candidate-review.md	Closed	-	`homeLoc` is a reference, and its javadoc said "by name"
 RC-C9	2026-08-30-release-candidate-review.md	Closed	-	two comments in one file disagreed about whether an item is disabled
+REG-B1	REG.md	Open - Adam's decision	Partly fixed - the changelog says it (4fb36b4b) and the two comments are corrected (fd6341	a 2.8.1 user's switched-off parking stations can no longer be reached by hand, and the only changelog line about it still promises they can
+REG-B2	REG.md	Closed	Fixed - e2223851 (claims d64023cb, red first): the start-up JSON arm keeps 2.8.1's terms -	the auto-load default now reaches the old JSON path on every start, which `REL-B3`'s closure did not consider: a chooser dialog for users with no auto
+REG-B3	REG.md	Closed	Fixed - e2223851 (claim d64023cb, red first): the import logs and shows how many routes ar	Import Routes now switches every imported route off, and nothing says so - not the import, not the changelog
+REG-C1	REG.md	Closed	Fixed - 4fb36b4b: a changelog sentence	a 2.8.1 railway that ran with Atomic Routes off now runs with them on after every load, and the changelog does not say so
+REG-C2	REG.md	Closed	Fixed - 4fb36b4b	two sentences in the changelog's Routes block describe controls that are not what or where they say
+REG-C3	REG.md	Closed	Fixed - 4fb36b4b (Automation.md's prerequisite) and e2223851 (claim d64023cb, red first: t	autonomy on a diagram read from the Central Station is gone, and the user guide's prerequisite still reads as if it works
+REG-D1	REG.md	Closed	-	`LocDB.data` still round-trips with 2.8.1 in both directions
+REG-D10	REG.md	Closed	-	smaller changes that looked like losses and are not
+REG-D2	REG.md	Closed	-	route JSON: the same keys written and read at both revisions
+REG-D3	REG.md	Closed	-	`autonomy.json` as HEAD writes it is a superset of what 2.8.1 wrote
+REG-D4	REG.md	Closed	-	the bundle sweep, at three revisions, adds nothing since `RG3`
+REG-D5	REG.md	Closed	-	preferences: one default changed, nothing renamed
+REG-D6	REG.md	Closed	-	keyboard and menus
+REG-D7	REG.md	Closed	-	earlier regression findings marked fixed, re-checked at HEAD
+REG-D8	REG.md	Closed	-	the bundled libraries still run on Java 8
+REG-D9	REG.md	Closed	-	Central Station traffic: the changes found are fixes
 REG6-A1	REG6-regressions-2026-09-06.md	Closed	Open	a manual send is offered "keep direction" at squares the path turns the train at, and the default drives it off the path
 REG6-A2	REG6-regressions-2026-09-06.md	Closed	Open	the deferred post-run facing flip lands on the square the train left, not the one it is on
 REG6-B1	REG6-regressions-2026-09-06.md	Closed	Open	the prompt's answer is discarded whenever the journey ends at a terminus
@@ -2547,6 +2605,12 @@ TDR-C6	2026-09-14-TDR-ten-day-review.md	Closed	Fixed	an import made while no pag
 TDR-C7	2026-09-14-TDR-ten-day-review.md	Closed	Fixed	a field this version does not model was saved in the exporter's numbering
 TDR-C8	2026-09-14-TDR-ten-day-review.md	Closed	Fixed	Return Home's reasons named the builder's copies
 TDR-C9	2026-09-14-TDR-ten-day-review.md	Closed	Fixed	Return Home's plan lines still name the builder's copies
+TDY-B1	TDY.md	Closed	Fixed - ac5fe2f2 (claim 8873b0a4, red first): a home held to a facing is home only on a co	Return Home counts the turning twin as home, and the turning twin faces the other way: at a may-reverse home a train can still come home turned round
+TDY-B2	TDY.md	Closed	Fixed - a67452cd: the half-measured notice walks the berth's own square	OB-278 says the half-measured notice now counts the berth's own square; it never looks at it, so the one half-measured state OB-278 creates is not war
+TDY-C1	TDY.md	Closed	Fixed - ce8983ce (claim 273727eb, red first): the pre-check asks `homeCopiesOf`	The IMPOSSIBLE pre-check still asks about any copy of the home square, while the goal now needs the home's arrival
+TDY-C2	TDY.md	Closed	Fixed - 919e0dc8 (claim cdedb3fc, red first): the facing is read from the running layout f	A home's facing is read from the setup only, the reading CONF-B1 fixed in `facingOf` for exactly this staleness
+TDY-C3	TDY.md	Closed	Fixed - 59fdb67d: the editor's tail pick uses MT-477's heading and wording, eight bundles	The editor's tail pick still says "click the farthest sensor the tail has crossed" while it now outlines sensors the tail has not reached
+TDY-C4	TDY.md	Closed	Fixed - 59fdb67d: the cut claim cuts from the westbound copy where there is one	OB-270's claim pins the old code's variable and leaves the new one's unasserted
 TLR-A1	2026-09-15-TLR-tail-feature-review.md	Closed	Fixed	a turned train's tail stops at the junction again
 TLR-A1	2026-09-15-TLV-fix-validation.md	Closed	Confirmed fixed	Either half of the fix (pass order, by-place test) alone turns its claim green; neither is pinned on its own. Recorded.
 TLR-A2	2026-09-15-TLR-tail-feature-review.md	Closed	Fixed	a departed train's tail comes back from a split square's other copies
