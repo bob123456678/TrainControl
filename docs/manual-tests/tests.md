@@ -40,36 +40,27 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-437](#mt-437) | 2026-09-15 | What the measured route in holds, and which tier is bound by it | needs test | FR-087 |
 | [MT-438](#mt-438) | 2026-09-15 | The tail question: a sensor at exactly the length, roads a train can drive, and a default | fixed unvalidated | OB-226, OB-227, FR-088 |
 | [MT-439](#mt-439) | 2026-09-15 | Why Not Moving? and Test a Path both follow Path Type | fixed unvalidated | OB-225 |
-| [MT-440](#mt-440) | 2026-09-15 | Return Home does not route a train over the tail of one it has just parked | fixed unvalidated | OB-228 |
 | [MT-442](#mt-442) | 2026-09-15 | Why Not Moving? says a terminus is in the way, not that no track leads there | fixed unvalidated | PTR-B1 (OB-229) |
 | [MT-443](#mt-443) | 2026-09-15 | Making a square no longer a station takes Unavailable While Occupied with it | fixed unvalidated | AMS-B2 |
 | [MT-444](#mt-444) | 2026-09-15 | Why Not Moving? on Manual gives a reason for a station the right-click menu leaves out | fixed unvalidated | AMR-B2 (OB-225) |
-| [MT-445](#mt-445) | 2026-09-15 | Return Home turns a train that cannot reverse only on its way into its berth | fixed unvalidated | AMH-B1 |
 | [MT-446](#mt-446) | 2026-09-15 | After an edit declined at the start of a run, where the trains are is saved again | fixed unvalidated | AMS-B1 (MT-267) |
 | [MT-447](#mt-447) | 2026-09-15 | Unavailable While Occupied naming a station on an excluded page does not stop autonomy loading | fixed unvalidated | AMG-B1 |
-| [MT-448](#mt-448) | 2026-09-15 | No route goes round to another copy of the square it starts or ends at | fixed unvalidated | AMR-B1 |
 | [MT-450](#mt-450) | 2026-09-15 | Return Home is not stopped by the sensor under a standing train's tail | fixed unvalidated | AMH-B2 |
-| [MT-451](#mt-451) | 2026-09-16 | Why Not Moving? gives the berth's own reason for a parking berth, not autonomy's preference | fixed unvalidated | AMR-C2 |
 | [MT-452](#mt-452) | 2026-09-16 | Loading a configuration that names a train you no longer have keeps the rest of it | fixed unvalidated | AMR-C3 |
 | [MT-453](#mt-453) | 2026-09-16 | A lock naming track that is not in the file is dropped, and the log says so loudly | fixed unvalidated | AMR-C3 |
 | [MT-454](#mt-454) | 2026-09-16 | Mass Assign Lengths walks every piece of track on the page that has no length, then its switches | fixed unvalidated | FR-089 |
-| [MT-455](#mt-455) | 2026-09-16 | The Unmeasured Track display highlights the track still needing a length, and follows every edit | fixed unvalidated | FR-089 |
 | [MT-456](#mt-456) | 2026-09-17 | Mass Assign Max Train Lengths walks every station on the page that has no maximum | fixed unvalidated | FR-091 |
 | [MT-457](#mt-457) | 2026-09-17 | Clear All Max Train Lengths takes the maximum off every station on every page | fixed unvalidated | FR-092 |
-| [MT-458](#mt-458) | 2026-09-19 | A negative maximum train length is refused, and one already stored can be cleared | fixed unvalidated | SET-B1 |
 | [MT-459](#mt-459) | 2026-09-19 | Mass Assign Lengths asks for crossings on their own, and each road counts them once | fixed unvalidated | SET-B2 |
-| [MT-460](#mt-460) | 2026-09-19 | Segment Length shows and writes what the whole run measures | fixed unvalidated | SET-B3 |
-| [MT-462](#mt-462) | 2026-09-19 | A switch thrown during a route highlight is drawn in its real position | fixed unvalidated | UIX-B2 |
-| [MT-463](#mt-463) | 2026-09-19 | Return Home moves a train the railway had standing on a terminus | fixed unvalidated | RTX-B1 |
 | [MT-464](#mt-464) | 2026-09-19 | A locomotive cannot be deleted or renamed while a route that drives it is running, and the route finishes | fixed unvalidated | CS3-B1 |
 | [MT-466](#mt-466) | 2026-09-19 | Cancel on the function editor undoes a Copy Customizations | fixed unvalidated | GUX-C3 |
 | [MT-467](#mt-467) | 2026-09-19 | Turning a local route's automatic execution on or off does not wait for the Central Station | fixed unvalidated | GUX-C5 |
 | [MT-468](#mt-468) | 2026-09-19 | Every screen still finds its text after 239 unused message keys were removed | fixed unvalidated | UIX-C4 |
 | [MT-470](#mt-470) | 2026-09-21 | Atomic Routes cannot be switched off while autonomy could release track under a train | fixed unvalidated | VD12-R4 |
-| [MT-471](#mt-471) | 2026-09-22 | Deleting one condition of a group leaves a route that still saves | fixed unvalidated | OB-240 |
+| [MT-474](#mt-474) | 2026-09-23 | Mass Assign Train Lengths asks each train that has no length | fixed unvalidated | FR-094 |
 
-Everything else - 431 of 471 - needs nothing from you unless the area changes again:
-380 **fixed validated** and 51 **superseded**.
+Everything else - 443 of 474 - needs nothing from you unless the area changes again:
+392 **fixed validated** and 51 **superseded**.
 
 ---
 
@@ -24335,5 +24326,62 @@ touch, which is the grain the reduction has used for them since AUR-B1.  Held by
 **Adam, 2026-09-22 (triage).** Works.
 
 *Run against commit bb183cad, build\classes, compiled 22 Sep 12:01 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+---
+
+<a id="mt-474"></a>
+
+### MT-474 - 2026-09-23 - Mass Assign Train Lengths asks each train that has no length
+
+**Disposition:** fixed unvalidated
+**From:** FR-094
+
+**Written:** 2026-09-23
+
+Your request, 2026-09-23: *"Rather than adding complexity through new menus, add a bulk tool to the
+autonomy editor to set missing train lengths, similar to how the station lengths are set."*
+
+**What it is.**  **Bulk Tools > Mass Assign Train Lengths...**, after Mass Assign Max Train Lengths.  It
+asks about every locomotive autonomy would run that has no train length - the same list the Atomic Routes
+refusal names - one prompt each, alphabetically, in the prompt the station walk uses.  A length is 1 to
+20, the range the locomotive menu's own Train Length list offers.
+
+**Steps**
+
+1. You need at least two placed trains with no length.  If every train has one, right-click a
+   locomotive's key-mapping button, choose the train length item and set it to **0** for two of them -
+   0 is "no length".  Note which two.
+2. Open the autonomy editor.  Right-click the diagram, open **Bulk Tools**, and hover **Mass Assign Train
+   Lengths...** without clicking.
+3. Click it.  Look at the first prompt.
+4. Type **0** and press OK.  Then type **21** and press OK.
+5. Type **3** and press **Enter**.
+6. On the second train's prompt, press **Skip**.  Close any further prompts with Cancel.
+7. Open **Bulk Tools** again and hover the item.
+8. Close the editor with **Cancel**.  Then check both trains' lengths through the locomotive menu from
+   step 1.
+
+**Expected**
+
+- Step 2: the item is enabled and its tooltip counts the trains with no length - at least the two you
+  set.  With every train measured it is greyed and says every train already has a length.
+- Step 3: the prompt is titled **Mass Assign Train Lengths**, names the first train alphabetically and
+  where it stands, and says the length is set on the locomotive itself, not in this setup, so Cancel in
+  this window does not take it back.  If that train stands on the page you are looking at, its square is
+  outlined.  The number box has the keyboard focus - you can type straight away.
+- Step 4: each is refused with a sentence saying a train length is 1 to 20, and the same prompt comes
+  back.  Nothing is written.
+- Step 5: the walk moves on to the next train.  Any editor finding about a train with no length stops
+  naming this one.
+- Step 7: the count is one smaller, and the skipped train is still counted.
+- Step 8: the first train is **3** and the skipped one still **0**, even though you pressed Cancel - a
+  train length belongs to the locomotive, not to the setup, and the prompt said so before you answered.
+
+*What this is:* the tool the Atomic Routes refusal needed somewhere to send you to (MT-470).  Held by five
+claims in `core.testMassAssignLengths` - the walk writes what is typed and a Skip writes nothing; 0 and 21
+are refused and asked again; the rule's edges; the item's count and greying; and a source claim that the
+real window's door asks `trainsWithoutALength` and writes through `applyTrainLength` - each shown going red
+under its own mutation.  The last is why this entry exists: the walk claims run against a stand-in for the
+main window, and only you running it in the real one proves the two halves are joined.
 
 ---

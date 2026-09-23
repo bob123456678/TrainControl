@@ -1941,62 +1941,6 @@ the fix and its claim go in together.
 was placeable, and this one blocked on the fixture.  The diagnosis is now certain; the fix is not going
 in behind a claim that cannot run.
 
-### FR-094 - 2026-09-22 - a bulk tool for locomotive train lengths, beside the one for track
-
-**Kind:** feature request  
-**Raised from:** MT-470 (Atomic Routes cannot be switched off while autonomy could release track)  
-**Filed:** 2026-09-22  
-
-Adam, 2026-09-22, on MT-470: *"sounds like we need a bulk tool for locomotive lengths."*
-
-**Why it came up there.** Atomic Routes cannot be switched off while any locomotive autonomy runs has
-no train length - that is the second half of the gate (VD14-B1), because a train with no length is
-treated as clear of the track the moment its head passes. The notice names the locomotives, and then
-there is nowhere to go: Bulk Tools walks the TRACK (Mass Assign Lengths, FR-089) and the STATIONS
-(Mass Assign Max Train Lengths, FR-091), and a locomotive's own length is set one at a time in the
-locomotive dialog.
-
-**What it would be.** The same walk the other two use - the locomotives autonomy would run that have
-no length, one prompt each, in a stable order, with the prompt opening where the last one was left.
-Skipping one leaves it unset rather than setting it to zero, because zero is the value that makes the
-gate fire.
-
-**Where it belongs:** Bulk Tools, under the two that are there.  With this built, the atomic-routes
-notice has somewhere to send you, which is what its shortened wording now promises.
-
-**ASKED FOR AGAIN, 2026-09-23, AND IT REPLACES FR-095.**  Adam: *"Rather than adding complexity through
-new menus, add a bulk tool to the autonomy editor to set missing train lengths, similar to how the
-station lengths are set."*  So the way to a locomotive's length from the autonomy side is this walk, not a
-right-click menu on the commands page, and FR-095 is withdrawn in its favour.
-
-**What "similar to how the station lengths are set" fixes, taken from FR-091 rather than re-invented:**
-
-- **Bulk Tools, as its own item**, beside Mass Assign Lengths and Mass Assign Max Train Lengths.  Greyed
-  when there is nothing to ask about, with a tooltip saying how many there are when there is - the
-  station walk's own affordance.
-- **One prompt per locomotive**, the shared walk prompt: the number field has the keyboard focus, Enter
-  submits, Skip leaves the locomotive as it was, Cancel or Escape stops, and the prompt opens where the
-  last one was left.
-- **0 is refused**, as the station walk refuses it: 0 is what a train with no length already holds, and
-  it is the value that makes the atomic-routes gate fire.  A skip leaves it unset, not 0.
-
-**Which locomotives: the ones the gate names, asked through the same method.**  The atomic-routes notice
-lists `Layout.trainsWithNoLength()` - every locomotive on the run list with no length, alphabetically -
-so the walk asks exactly that list and in that order.  One method for both is what stops the notice
-naming a train the walk never offers, which is the guard-and-affordance rule (OB-057 / OB-090).
-
-**Two things that differ from the station walk, because a train is not a square:**
-
-- **Where it is written.**  A train length belongs to the locomotive, in the locomotive database, not to
-  the autonomy setup - so the editor's Cancel, which restores the setup as it opened (OB-223), does not
-  take it back.  The walk says so before it starts, the way the bulk clear says what Cancel does
-  (OB-194), rather than leaving it to be discovered.
-- **What it points at.**  The station walk flashes the square it is asking about.  A train standing on
-  the diagram can be shown the same way - its square flashed while it is asked about - and one that is
-  not placed has nowhere to show, so the prompt names it and nothing flashes.
-
-**Not built.**  Filing is not asking for it to be worked; this is ready to build when he says so.
-
 ### OB-272 - 2026-09-23 - text labels follow the autonomy editor's caption setting instead of having one of their own
 
 **Kind:** bug  
@@ -2354,6 +2298,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-22 | FR-094 | feature request | Adam, on MT-470: *"sounds like we need a bulk tool for locomotive lengths."*  Asked for again on 2026-09-23 in place of FR-095's menu: *"add a bulk tool to the autonomy editor to set missing train lengths, similar to how the station lengths are set."*  Bulk Tools > Mass Assign Train Lengths walks the trains the Atomic Routes refusal names, 1 to 20, through `applyTrainLength`. | - | `MT-474` |
 | 2026-09-23 | FR-095 | feature request | Adam: *"when right clicking the train name in the autonomous locomotive commands page, show a right click menu with the edit locomotive option"*.  Withdrawn the same day in favour of `FR-094`: *"Rather than adding complexity through new menus, add a bulk tool to the autonomy editor to set missing train lengths, similar to how the station lengths are set."* | declined | - |
 | 2026-09-23 | OB-275 | bug | Adam: *"I thought we were consolidating lengths on tiles with arrows?"*  No such ruling was on record; asked whether to consolidate a piece's length on one square or keep the even share, he chose the even share: *"let's stick to a then, since that is more visually pleasing."*  Answered, no change - `behaviour.md` 5a already carried the rule. | declined | - |
 | 2026-09-22 | OB-271 | bug | Adam, from MT-446: *"make the test, capture, etc. buttons in the route editor non focusable."*  `setFocusable(false)` on Test, Highlight, the capture box and its target; Save left focusable, since Enter on it is how a route is saved. | fixed unvalidated | - |
