@@ -1076,8 +1076,46 @@ public class AutonomyCompanionStore
     }
 
     /**
+     * Records that a square's length was answered 0 on purpose (Adam, 2026-09-23, OB-274).
+     *
+     * *"we need to allow a length of 0 as a length that is set deliberately, i.e. for adjacent tracks.  same
+     * meaning to the model, but this will allow everything to get assigned without what appears to be a skip."*
+     * So the 0 is KEPT - where `setTileLength` erases one - and nothing that reads a length can tell it from a
+     * square nobody measured: `getTileLength` answers 0 for both, and every length rule asks `> 0`.  What reads the
+     * difference is only `isTileLengthAnswered`, which the Mass Assign Lengths walk and the Unmeasured Track display
+     * ask so that an answered square is not offered again.  Adam, asked directly: a deliberate 0 is not a
+     * measurement of nothing, and a stretch whose answers are all 0 is still not judged.
+     *
+     * A square that already has a length keeps it.
+     *
+     * @param tile the square
+     */
+    public void answerTileLengthZero(TileKey tile)
+    {
+        if (tile == null) return;
+
+        Integer had = tileLengths.get(tile);
+
+        if (had != null && had > 0) return;
+
+        tileLengths.put(tile, 0);
+    }
+
+    /**
+     * Whether a square's length has been answered at all - a length, or a deliberate 0 (OB-274).
+     *
+     * @param tile the square
+     * @return true when something was recorded for it
+     */
+    public boolean isTileLengthAnswered(TileKey tile)
+    {
+        return tile != null && tileLengths.containsKey(tile);
+    }
+
+    /**
      * Lengths of 0 are not stored.  A layout where nobody has assigned any adds nothing to the file, and
-     * 0 is what an unassigned tile means anyway.
+     * 0 is what an unassigned tile means anyway - so writing 0 here CLEARS a square, a deliberate 0 included.
+     * The one way a 0 is kept is `answerTileLengthZero` (OB-274), which the Mass Assign Lengths walk uses.
      * @param tile
      * @param length
      */

@@ -9477,7 +9477,7 @@ public class AutonomyEditorPanel extends JPanel
             // Asked again rather than trusted from the list made before the walk began.  No two pieces share a square,
             // so nothing answered earlier can have filled this one - but a walk that trusts a stale list is how a prompt
             // ends up about nothing.
-            if (measuredTotal(piece) > 0) continue;
+            if (!session.needsALength(piece)) continue;
 
             outlineAndReveal(piece.getTiles());
 
@@ -9486,15 +9486,12 @@ public class AutonomyEditorPanel extends JPanel
 
             Integer whole = askForWholeLength(question, LENGTHS_TITLE);
 
-            while (whole != null && whole >= 0 && !session.assignStretchLength(piece, whole))
-            {
-                JOptionPane.showMessageDialog(owner(), wrapped(I18n.t("autosetup.ui.errorLengthZero")));
-
-                whole = askForWholeLength(question, LENGTHS_TITLE);
-            }
-
+            // 0 IS AN ANSWER NOW (Adam, 2026-09-23, OB-274): *"allow a length of 0 as a length that is set
+            // deliberately ... this will allow everything to get assigned without what appears to be a skip."*  It
+            // used to be refused with "0 is the same as no length at all".  Skip, and a blank box, still leave the
+            // piece as it was.
             if (whole == null) stopped = true;
-            else if (whole >= 0) wroteAny = true;
+            else if (whole >= 0 && session.assignStretchLength(piece, whole)) wroteAny = true;
         }
 
         if (!stopped)
@@ -9509,14 +9506,8 @@ public class AutonomyEditorPanel extends JPanel
 
                 Integer turnout = askForWholeLength(question, LENGTHS_TITLE);
 
-                while (turnout != null && turnout >= 0 && !session.assignSwitchLength(switches, turnout))
-                {
-                    JOptionPane.showMessageDialog(owner(), wrapped(I18n.t("autosetup.ui.errorLengthZero")));
-
-                    turnout = askForWholeLength(question, LENGTHS_TITLE);
-                }
-
-                if (turnout != null && turnout > 0) wroteAny = true;
+                // 0 answers the switches as well (OB-274) - two switches back to back are his adjacent tracks.
+                if (turnout != null && turnout >= 0 && session.assignSwitchLength(switches, turnout)) wroteAny = true;
 
                 if (turnout == null) stopped = true;
             }
@@ -9537,14 +9528,7 @@ public class AutonomyEditorPanel extends JPanel
 
                 Integer across = askForWholeLength(question, LENGTHS_TITLE);
 
-                while (across != null && across >= 0 && !session.assignSwitchLength(crossings, across))
-                {
-                    JOptionPane.showMessageDialog(owner(), wrapped(I18n.t("autosetup.ui.errorLengthZero")));
-
-                    across = askForWholeLength(question, LENGTHS_TITLE);
-                }
-
-                if (across != null && across > 0) wroteAny = true;
+                if (across != null && across >= 0 && session.assignSwitchLength(crossings, across)) wroteAny = true;
             }
         }
 
@@ -9804,15 +9788,6 @@ public class AutonomyEditorPanel extends JPanel
                 return;
             }
         }
-    }
-
-    private int measuredTotal(AutonomySession.Stretch piece)
-    {
-        int total = 0;
-
-        for (TileKey square : piece.getTiles()) total += Math.max(0, session.getStore().getTileLength(square));
-
-        return total;
     }
 
     /**

@@ -2932,7 +2932,7 @@ public class AutonomySession
 
         for (Stretch stretch : stretchesALengthRuleReads())
         {
-            if (measuredIn(stretch) <= 0) out.add(stretch);
+            if (needsALength(stretch)) out.add(stretch);
         }
 
         return out;
@@ -2976,7 +2976,7 @@ public class AutonomySession
 
         for (TileKey tile : switchesALengthRuleReads())
         {
-            if (tile.getPage() != null && tile.getPage().equals(page) && store.getTileLength(tile) <= 0) out.add(tile);
+            if (tile.getPage() != null && tile.getPage().equals(page) && squareNeedsALength(tile)) out.add(tile);
         }
 
         return out;
@@ -2996,21 +2996,22 @@ public class AutonomySession
 
         for (TileKey tile : switchesALengthRuleReads())
         {
-            if (store.getTileLength(tile) <= 0) out.add(tile);
+            if (squareNeedsALength(tile)) out.add(tile);
         }
 
         // AND THE SQUARES TWO ROADS SHARE, which are in no piece and so would otherwise never be highlighted at all
         // although a length rule reads them on both roads (SET-B2).
         for (TileKey tile : sharedSquaresALengthRuleReads())
         {
-            if (store.getTileLength(tile) <= 0) out.add(tile);
+            if (squareNeedsALength(tile)) out.add(tile);
         }
 
         return out;
     }
 
     /**
-     * The least whole length a piece can be given: one unit, because 0 is the same as no length at all.
+     * The least whole length a piece can be given: 0 since OB-274, where a deliberate 0 is an answer that reads as
+     * unmeasured.  It was one unit, on the reading that 0 is the same as no length at all.
      *
      * @param stretch the piece
      * @return the least whole length `assignStretchLength` accepts; a piece that already has a length, what it holds
@@ -3021,7 +3022,7 @@ public class AutonomySession
 
         int measured = measuredIn(stretch);
 
-        return measured > 0 ? measured : 1;
+        return measured > 0 ? measured : 0;
     }
 
     /**
@@ -3043,7 +3044,18 @@ public class AutonomySession
      */
     public boolean assignStretchLength(Stretch stretch, int wholeLength)
     {
-        if (stretch == null || wholeLength < 1 || measuredIn(stretch) > 0) return false;
+        if (stretch == null || wholeLength < 0 || measuredIn(stretch) > 0) return false;
+
+        // A DELIBERATE 0 IS AN ANSWER (OB-274): every square of the piece is recorded as answered, so the walk does
+        // not offer it again, and every length rule goes on reading it as unmeasured.
+        if (wholeLength == 0)
+        {
+            for (TileKey tile : stretch.getTiles()) store.answerTileLengthZero(tile);
+
+            touched();
+
+            return true;
+        }
 
         java.util.List<TileKey> order = new java.util.ArrayList<>();
 
@@ -3080,7 +3092,7 @@ public class AutonomySession
      */
     public boolean assignSwitchLength(java.util.Collection<TileKey> switches, int length)
     {
-        if (switches == null || switches.isEmpty() || length < 1) return false;
+        if (switches == null || switches.isEmpty() || length < 0) return false;
 
         boolean wrote = false;
 
@@ -3088,7 +3100,18 @@ public class AutonomySession
         {
             if (store.getTileLength(tile) > 0) continue;
 
-            store.setTileLength(tile, length);
+            // 0 ANSWERS IT (OB-274) - two switches back to back are his adjacent tracks - and reads as unmeasured.
+            if (length == 0)
+            {
+                if (store.isTileLengthAnswered(tile)) continue;
+
+                store.answerTileLengthZero(tile);
+            }
+            else
+            {
+                store.setTileLength(tile, length);
+            }
+
             wrote = true;
         }
 
@@ -3275,7 +3298,7 @@ public class AutonomySession
 
         for (TileKey tile : sharedSquaresALengthRuleReads())
         {
-            if (tile.getPage() != null && tile.getPage().equals(page) && store.getTileLength(tile) <= 0) out.add(tile);
+            if (tile.getPage() != null && tile.getPage().equals(page) && squareNeedsALength(tile)) out.add(tile);
         }
 
         return out;
@@ -3317,6 +3340,36 @@ public class AutonomySession
         for (TileKey tile : tiles) names.add(String.valueOf(tile));
 
         return names.toString();
+    }
+
+    /**
+     * Whether a piece is still to be asked about: nothing in it measured, and not answered 0 on purpose (OB-274).
+     *
+     * A piece answered 0 has every square recorded as 0 - `assignStretchLength` writes it that way - so a square
+     * added to the piece later by an edit to the diagram has no answer, and the piece is asked about again.
+     *
+     * @param stretch the piece
+     * @return true when the walk should ask for it
+     */
+    public boolean needsALength(Stretch stretch)
+    {
+        if (stretch == null || measuredIn(stretch) > 0) return false;
+
+        for (TileKey tile : stretch.getTiles())
+        {
+            if (!store.isTileLengthAnswered(tile)) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param tile a switch or a square two roads cross
+     * @return whether it is still to be asked for its length - neither measured nor answered 0 (OB-274)
+     */
+    private boolean squareNeedsALength(TileKey tile)
+    {
+        return store.getTileLength(tile) <= 0 && !store.isTileLengthAnswered(tile);
     }
 
     private int measuredIn(Stretch stretch)

@@ -142,6 +142,48 @@ public class testAutonomyDiagramStore
     }
 
     /**
+     * A deliberate 0 is kept, survives a save and a load, and reads as no length (Adam, 2026-09-23, OB-274).
+     *
+     * *"allow a length of 0 as a length that is set deliberately ... same meaning to the model, but this will allow
+     * everything to get assigned without what appears to be a skip."*  So `getTileLength` answers 0 for it exactly as
+     * for a square nobody measured, and only `isTileLengthAnswered` tells them apart - including after a restart,
+     * or the walk would offer the square again the next evening.  And the single door keeps its meaning: writing 0
+     * through `setTileLength` still clears a square, answer included.
+     */
+    @Test
+    public void testADeliberateZeroIsKeptAndReadsAsNoLength() throws IOException
+    {
+        TileKey answered = new TileKey("1 - Main", 6, 7);
+        TileKey untouched = new TileKey("1 - Main", 7, 7);
+
+        store.answerTileLengthZero(answered);
+
+        assertTrue(store.isTileLengthAnswered(answered), "the deliberate 0 was not recorded");
+        assertFalse(store.isTileLengthAnswered(untouched), "a square nobody answered reads as answered");
+        assertEquals(store.getTileLength(answered), 0, "a deliberate 0 reads as a length");
+        assertFalse(store.measuresAnyTrack(), "a deliberate 0 makes the railway read as measured");
+        assertTrue(store.tilesWithALength().isEmpty(), "a deliberate 0 is counted as a length");
+
+        store.save();
+
+        AutonomyCompanionStore reloaded = new AutonomyCompanionStore(layout);
+        reloaded.load();
+
+        assertTrue(reloaded.isTileLengthAnswered(answered), "the deliberate 0 did not survive a save and a load");
+        assertEquals(reloaded.getTileLength(answered), 0);
+
+        reloaded.setTileLength(answered, 0);
+
+        assertFalse(reloaded.isTileLengthAnswered(answered),
+            "writing 0 through setTileLength no longer clears the square - the single door's 0 has changed meaning");
+
+        store.setTileLength(untouched, 3);
+        store.answerTileLengthZero(untouched);
+
+        assertEquals(store.getTileLength(untouched), 3, "answering 0 overwrote a length already measured");
+    }
+
+    /**
      * Everything a person decided survives a round trip.  This is the whole job of the class.
      */
     @Test

@@ -282,31 +282,76 @@ public class testMassAssignLengths
     }
 
     /**
-     * Fewer units than squares can be entered, and 0 cannot.
+     * Fewer units than squares can be entered, and so can 0 - which answers the piece and reads as no length (OB-274).
      *
      * Two squares, one unit: one square gets it and the other rightly holds nothing.  The first version demanded a unit
      * per square, so a short piece drawn with several squares could not be entered at all.
+     *
+     * 0 was refused until 2026-09-23 - *"0 is the same as no length at all"* - which left a piece that genuinely has
+     * none offered for ever.  Adam: *"allow a length of 0 as a length that is set deliberately ... same meaning to the
+     * model, but this will allow everything to get assigned without what appears to be a skip."*  So 0 is accepted, the
+     * piece stops being asked about, and its squares still read as unmeasured to every length rule.
      */
     @Test
-    public void testFewerUnitsThanSquaresCanBeEnteredButNotZero() throws IOException
+    public void testFewerUnitsThanSquaresCanBeEnteredAndZeroIsAnAnswer() throws IOException
     {
         openBerthBehindASwitch(key(5, 1));
 
         AutonomySession.Stretch beforeTheSwitch = piece(key(1, 1));
 
-        assertEquals(session.leastWholeLengthOf(beforeTheSwitch), 1, "the least a piece can be given is one unit");
+        assertEquals(session.leastWholeLengthOf(beforeTheSwitch), 0, "the least a piece can be given is 0 since OB-274");
 
-        assertFalse(session.assignStretchLength(beforeTheSwitch, 0), "0 was accepted, and it means no length at all");
-        assertEquals(length(1, 1) + length(2, 1), 0, "a refused length still wrote something");
+        assertTrue(pieceNeedsALength(key(1, 1)), "precondition: the piece is not asked about before anything is typed");
 
-        assertTrue(session.assignStretchLength(beforeTheSwitch, 1), "one unit over two squares was refused");
-        assertEquals(length(1, 1) + length(2, 1), 1);
+        assertTrue(session.assignStretchLength(beforeTheSwitch, 0), "0 was refused, though it is now an answer");
 
-        assertFalse(pieceNeedsALength(key(1, 1)), "a piece whose total is now 1 is still asked for");
+        assertEquals(length(1, 1) + length(2, 1), 0, "a deliberate 0 reads as a length");
+
+        assertFalse(pieceNeedsALength(key(1, 1)),
+            "a piece answered 0 is still offered by the walk - the phantom skip OB-274 is about");
+
+        assertFalse(session.squaresNeedingALength().contains(key(2, 1)),
+            "a square answered 0 is still highlighted as needing a length");
+
+        assertFalse(session.getStore().measuresAnyTrack(), "a deliberate 0 made the railway read as measured");
+
+        // CONTROL, on the other piece of the same railway: one unit over two squares is still shared and still measures.
+        AutonomySession.Stretch theBerth = piece(key(5, 1));
+
+        assertTrue(session.assignStretchLength(theBerth, 1), "one unit over two squares was refused");
+        assertEquals(length(5, 1) + length(4, 1), 1);
+        assertFalse(pieceNeedsALength(key(5, 1)), "a piece whose total is now 1 is still asked for");
+    }
+
+    /**
+     * 0 answers the switches too - two switches back to back are his adjacent tracks - and a switch already measured
+     * keeps its length (OB-274).
+     */
+    @Test
+    public void testZeroAnswersTheSwitchesAndKeepsAMeasuredOne() throws IOException
+    {
+        openTwoSwitchesBackToBack();
+
+        session.setTileLength(key(2, 1), 3);
+
+        java.util.Set<TileKey> switches = session.switchesNeedingALengthOn("main");
+
+        assertEquals(switches, set(key(3, 1)), "precondition: the switch without a length is the one asked about");
+
+        assertTrue(session.assignSwitchLength(java.util.Arrays.asList(key(2, 1), key(3, 1)), 0),
+            "0 was refused for the switches");
+
+        assertTrue(session.switchesNeedingALengthOn("main").isEmpty(), "a switch answered 0 is still offered");
+        assertFalse(session.squaresNeedingALength().contains(key(3, 1)), "a switch answered 0 is still highlighted");
+        assertEquals(length(3, 1), 0, "a switch answered 0 reads as a length");
+        assertEquals(length(2, 1), 3, "answering 0 overwrote the switch that was already measured");
     }
 
     /**
      * One turnout length goes to every switch on the page that has none, and a switch already measured keeps its own.
+     *
+     * This also refused 0 until OB-274 made a deliberate 0 an answer; `testZeroAnswersTheSwitchesAndKeepsAMeasuredOne`
+     * is where 0 is asked about now.
      */
     @Test
     public void testOneTurnoutLengthGoesToEverySwitchStillWithout() throws IOException
@@ -316,9 +361,6 @@ public class testMassAssignLengths
         session.setTileLength(key(2, 1), 3);
 
         assertEquals(session.switchesNeedingALengthOn("main"), set(key(3, 1)), "a measured switch is asked for again");
-
-        assertFalse(session.assignSwitchLength(session.switchesNeedingALengthOn("main"), 0), "0 was accepted for a switch");
-        assertEquals(length(3, 1), 0, "a refused switch length still wrote something");
 
         assertTrue(session.assignSwitchLength(session.switchesNeedingALengthOn("main"), 2));
 
