@@ -558,7 +558,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public HashMap<String, JPanel> layoutCache = new HashMap<>();
     
     // Preferences
-    private static final Preferences prefs = Preferences.userNodeForPackage(TrainControlUI.class);
+    private static final Preferences prefs = Util.preferencesFor(TrainControlUI.class);
     private boolean conditionalRouteWarningShown = false;
     
     // Locomotive clipboard 
@@ -2453,7 +2453,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             try
             {
-                File existing = new File(TrainControlUI.DATA_FILE_NAME);
+                File existing = new File(Util.dataPath(TrainControlUI.DATA_FILE_NAME));
 
                 if (existing.exists())
                 {
@@ -2477,7 +2477,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Backups go into a dedicated folder (falling back to the current directory if it can't be created)
         String statePath = backup
             ? Util.getBackupPath(prefix + TrainControlUI.DATA_FILE_NAME)
-            : (prefix + TrainControlUI.DATA_FILE_NAME);
+            : Util.dataPath(prefix + TrainControlUI.DATA_FILE_NAME);
 
         // Staged and moved into place for the same reason as the locomotive database: this is the only
         // automatic save of the UI state, so a write interrupted part way used to leave nothing behind.
@@ -2828,7 +2828,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // finalizes the leaked stream before the exit save.  A short programmatic session does not,
         // and that was 2 of 2.
         try (java.io.FileInputStream file_in =
-                new java.io.FileInputStream(TrainControlUI.DATA_FILE_NAME);
+                new java.io.FileInputStream(Util.dataPath(TrainControlUI.DATA_FILE_NAME));
             ObjectInputStream obj_in = new ObjectInputStream(file_in))
         {
             // Read an object
@@ -2853,7 +2853,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // with no copy kept.  The locomotive database was given exactly this distinction and a
             // paragraph explaining why; this file sits beside it in the same folder, is written on the
             // same window close, and had neither.
-            this.uiStateLoadFailed = new File(TrainControlUI.DATA_FILE_NAME).exists();
+            this.uiStateLoadFailed = new File(Util.dataPath(TrainControlUI.DATA_FILE_NAME)).exists();
 
             this.model.logf(
                 this.uiStateLoadFailed ? "ui.errorBadUiDataFile" : "ui.infoUiInitializingDefaultData"
@@ -2863,7 +2863,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             // The same: a file written by another version reads as garbage, and saying so is no use
             // if the next exit destroys it anyway
-            this.uiStateLoadFailed = new File(TrainControlUI.DATA_FILE_NAME).exists();
+            this.uiStateLoadFailed = new File(Util.dataPath(TrainControlUI.DATA_FILE_NAME)).exists();
 
             this.model.logf(
                 "ui.errorBadUiDataFile"
@@ -4958,8 +4958,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private boolean isFirstLaunch()
     {
-        return isFirstLaunch(new File(TrainControlUI.DATA_FILE_NAME),
-            new File(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME));
+        return isFirstLaunch(new File(Util.dataPath(TrainControlUI.DATA_FILE_NAME)),
+            new File(Util.dataPath(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME)));
     }
 
     /**
@@ -22452,9 +22452,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // only a backup together.
                 java.util.Map<String, File> state = new java.util.LinkedHashMap<>();
 
-                state.put(TrainControlUI.DATA_FILE_NAME, new File(TrainControlUI.DATA_FILE_NAME));
+                state.put(TrainControlUI.DATA_FILE_NAME, new File(Util.dataPath(TrainControlUI.DATA_FILE_NAME)));
                 state.put(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME,
-                    new File(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME));
+                    new File(Util.dataPath(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME)));
 
                 // TrainControl's OWN routes, exported as JSON (FR-021).
                 //

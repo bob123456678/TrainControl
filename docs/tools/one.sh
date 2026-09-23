@@ -341,6 +341,17 @@ on_the_way_out()
     release_the_lock
 
     rm -rf "${BUILD:-}"
+
+    # AND THIS RUN'S OWN STATE, which nothing after it may read (see ISOLATED).  The node is the one
+    # `Util.preferencesFor` built under traincontrol-test-runs; MSYS_NO_PATHCONV so that /f reaches
+    # reg.exe as a switch rather than as a path.
+    rm -rf "${ISOLATED:-}"
+
+    if [ -n "${RUN_ID:-}" ]
+    then
+        MSYS_NO_PATHCONV=1 reg.exe delete "HKCU\\Software\\JavaSoft\\Prefs\\traincontrol-test-runs\\${RUN_ID}" /f \
+            >/dev/null 2>&1
+    fi
 }
 
 trap 'on_the_way_out; exit 130' INT TERM
@@ -389,6 +400,36 @@ JAVA="${TC_JAVA:-/c/Program Files/Java/jdk1.8.0_361/bin/java}"
 JAVA_FLAGS="${TC_JAVA_FLAGS:--Dtraincontrol.anyReceivePort=true}"
 
 JAVA_FLAGS="$JAVA_FLAGS ${TC_JAVA_HEAP:--Xmx512m}"
+
+# ------------------------------------------------------------------------------------------------
+# THIS RUN'S OWN STATE: copies of the locomotive database and the UI state, and a preference node of
+# its own.
+#
+# Adam, 2026-09-23: *"does my app really have to stay closed? I thought the battery got isolated
+# earlier"* - and it had not been.  Every test JVM read and wrote the working directory's LocDB.data
+# and UIState.data, and the machine-wide preference node his running application uses; LayoutSandbox
+# points that node's layout path at a sandbox for the length of a class, which his application would
+# read if it started meanwhile.  Test JVMs sharing that state with a live one threw points under a
+# real train on 2026-08-30.
+#
+# So each run copies the two data files into a folder of its own and names a preference node of its
+# own, and the application reads both from there when a run says so (`Util.dataPath`,
+# `Util.preferencesFor`; with neither property set it reads what it always read).  The node starts as
+# a copy of the real one, so a class sees the settings it always saw; nothing the run writes reaches
+# the real node or the real files.  Both are removed when the run ends.
+#
+# The short (8.3) form of the folder, because $JAVA_FLAGS is split on spaces.
+ISOLATED="$S/state-$RUN_ID"
+
+rm -rf "$ISOLATED"
+mkdir -p "$ISOLATED"
+
+for DATA in LocDB.data UIState.data
+do
+    if [ -f "$DATA" ]; then cp "$DATA" "$ISOLATED/"; fi
+done
+
+JAVA_FLAGS="$JAVA_FLAGS -Dtraincontrol.dataDir=$(cygpath -ws "$ISOLATED") -Dtraincontrol.preferences=$RUN_ID"
 
 # CAPTURED TO A FILE, NOT PIPED INTO head.
 #

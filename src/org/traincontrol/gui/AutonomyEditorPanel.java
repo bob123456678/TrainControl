@@ -207,7 +207,7 @@ public class AutonomyEditorPanel extends JPanel
      * configuration.
      */
     private static final java.util.prefs.Preferences VIEW_PREFS =
-        java.util.prefs.Preferences.userNodeForPackage(AutonomyEditorPanel.class);
+        org.traincontrol.util.Util.preferencesFor(AutonomyEditorPanel.class);
 
     private static final String PREF_DIRECTIONS = "autonomyEditorDirections";
     private static final String PREF_LENGTHS = "autonomyEditorLengths";

@@ -81,7 +81,7 @@ public class testFiftyLocomotiveMappingPages
         // rewrite exists to prevent.
         //
         // Two lines, and the sentence becomes true however this class dies.
-        storedWas = java.util.prefs.Preferences.userNodeForPackage(TrainControlUI.class)
+        storedWas = TrainControlUI.getPrefs()
             .getInt(TrainControlUI.LOC_MAPPING_PAGES_PREF, -1);
     }
 
@@ -109,7 +109,7 @@ public class testFiftyLocomotiveMappingPages
                 // what changed it.  `alwaysRun`, so a failed or mutated run undoes it too - which is
                 // the run that can have written it.
                 java.util.prefs.Preferences store =
-                    java.util.prefs.Preferences.userNodeForPackage(TrainControlUI.class);
+                    TrainControlUI.getPrefs();
 
                 if (storedWas < 0)
                 {

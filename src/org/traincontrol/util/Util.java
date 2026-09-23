@@ -84,6 +84,43 @@ public class Util
     public static final String LOC_ICON_FOLDER = "tc_loc_icons";
 
     /**
+     * The system property a test run names its own data folder with - see `dataPath`.
+     */
+    public static final String DATA_DIR_PROPERTY = "traincontrol.dataDir";
+
+    /**
+     * The system property a test run names its own preference node with - see `preferencesFor`.
+     */
+    public static final String PREFERENCES_PROPERTY = "traincontrol.preferences";
+
+    /**
+     * Where a test run's own preference nodes live, one per run, under the user root.
+     */
+    public static final String ISOLATED_PREFERENCES_ROOT = "traincontrol-test-runs";
+
+    /**
+     * Where one of the application's data files is: the working directory, as it always has been.
+     *
+     * @param name the file's name - `LocDB.data`, `UIState.data`, the backup folder
+     * @return its path
+     */
+    public static String dataPath(String name)
+    {
+        return name;
+    }
+
+    /**
+     * The preference node for a class's package: the user node, as it always has been.
+     *
+     * @param owner a class in the package
+     * @return the node
+     */
+    public static java.util.prefs.Preferences preferencesFor(Class<?> owner)
+    {
+        return java.util.prefs.Preferences.userNodeForPackage(owner);
+    }
+
+    /**
      * Returns the path a backup file should be written to.  Backups go into a dedicated subfolder
      * ({@link #BACKUP_FOLDER}), which is created if it does not exist.  If the folder cannot be
      * created, the original file name is returned so the backup falls back to the current directory.
@@ -92,7 +129,7 @@ public class Util
      */
     public static String getBackupPath(String fileName)
     {
-        File dir = new File(BACKUP_FOLDER);
+        File dir = new File(dataPath(BACKUP_FOLDER));
 
         if (dir.isDirectory() || dir.mkdirs())
         {

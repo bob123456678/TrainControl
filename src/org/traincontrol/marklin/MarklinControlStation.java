@@ -443,7 +443,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.logf("log.restoring");
 
         // Restore state
-        for (MarklinSimpleComponent c : this.restoreState(MarklinControlStation.DATA_FILE_NAME))
+        for (MarklinSimpleComponent c : this.restoreState(Util.dataPath(MarklinControlStation.DATA_FILE_NAME)))
         {            
             if (c.getLocType() != null)
             {
@@ -1800,7 +1800,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
             try
             {
-                File existing = new File(MarklinControlStation.DATA_FILE_NAME);
+                File existing = new File(Util.dataPath(MarklinControlStation.DATA_FILE_NAME));
 
                 if (existing.exists())
                 {
@@ -1824,7 +1824,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Backups go into a dedicated folder (falling back to the current directory if it can't be created)
         String path = backup
             ? Util.getBackupPath(prefix + MarklinControlStation.DATA_FILE_NAME)
-            : (prefix + MarklinControlStation.DATA_FILE_NAME);
+            : Util.dataPath(prefix + MarklinControlStation.DATA_FILE_NAME);
 
         // Staged through a sibling file and moved into place, so that dying part way through the write
         // leaves the previous database intact rather than a truncated one.  This is the only automatic

@@ -83,7 +83,7 @@ public class testARememberedNoneOpensWithTheCaptionsOff
      */
     private static java.util.prefs.Preferences prefs()
     {
-        return java.util.prefs.Preferences.userNodeForPackage(AutonomyEditorPanel.class);
+        return org.traincontrol.gui.TrainControlUI.getPrefs();
     }
 
     private static final String PREF_CAPTION_MODE = "autonomyEditorCaptionMode";

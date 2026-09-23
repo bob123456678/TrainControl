@@ -1272,8 +1272,7 @@ public class testDiagramLooksRight
         // Selecting below WRITES the preference, so a machine that had never set it ends up with it
         // set - and putting the old value back writes the default, which is not the same as leaving
         // it alone. The key lives in the panel's own node.
-        java.util.prefs.Preferences viewPrefs = java.util.prefs.Preferences.userNodeForPackage(
-            org.traincontrol.gui.AutonomyEditorPanel.class);
+        java.util.prefs.Preferences viewPrefs = org.traincontrol.gui.TrainControlUI.getPrefs();
 
         boolean modeStored = viewPrefs.get("autonomyEditorCaptionMode", null) != null;
 

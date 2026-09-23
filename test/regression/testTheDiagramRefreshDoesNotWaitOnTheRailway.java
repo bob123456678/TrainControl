@@ -395,7 +395,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     {
         // The setting off, or the rule short-circuits on its first line and nothing is measured.
         final java.util.prefs.Preferences prefs =
-            java.util.prefs.Preferences.userNodeForPackage(TrainControlUI.class);
+            TrainControlUI.getPrefs();
 
         final boolean was = prefs.getBoolean(TrainControlUI.SHOW_INACTIVE_LABELS_PREF,
             TrainControlUI.SHOW_INACTIVE_LABELS_DEFAULT);
