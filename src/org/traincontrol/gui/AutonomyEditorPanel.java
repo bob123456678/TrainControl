@@ -7006,7 +7006,15 @@ public class AutonomyEditorPanel extends JPanel
      */
     public String segmentLengthPrefill(TileKey sample, boolean wholeRun)
     {
-        return String.valueOf(wholeRun ? lengthShownFor(sample) : session.getStore().getTileLength(sample));
+        int measured = wholeRun ? lengthShownFor(sample) : session.getStore().getTileLength(sample);
+
+        // EMPTY WHERE NOTHING HAS BEEN SAID (GUI-B2).  A 0 submitted here is an answer - kept, and taken off every list
+        // of what still needs measuring - so a box that opened on "0" made OK, the default, write a deliberate answer
+        // nobody gave.  Mass Assign Lengths' own prompt opens empty for the same reason.  A square answered 0 opens on
+        // its answer, as a measured one opens on its length.
+        if (measured <= 0 && !session.getStore().isTileLengthAnswered(sample)) return "";
+
+        return String.valueOf(measured);
     }
 
     /**
