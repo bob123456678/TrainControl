@@ -729,10 +729,14 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     .append("\n");
             }
 
+            // FOR THE TIER THIS LIST IS IN (the REG4 lead, GUI3-C1): on Manual it offers routes picked by hand, so the
+            // reasons are the ones a hand-driven send meets, as the diagram's Why not Moving? gives them on Manual.
+            boolean byHand = !layout.isAutoRunning();
+
             // Whatever stops the train itself moving comes first and on its own.  When a locomotive
             // cannot start, a list of stations explains nothing - every one of them is unavailable for
             // the same reason, which is not about them.
-            String cannotStart = layout.explainCannotStart(locomotive);
+            String cannotStart = layout.explainCannotStart(locomotive, byHand);
 
             if (cannotStart != null)
             {
@@ -746,7 +750,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             // line would sit under the wrong heading for one opening of the window. Transient, and it
             // contradicted the reason this was built with a single barredFromAutonomy in the first
             // place: so that the reason and the group it is printed under cannot disagree.
-            Layout.Destinations destinations = layout.explainDestinationsGrouped(locomotive);
+            Layout.Destinations destinations = layout.explainDestinationsGrouped(locomotive, byHand);
 
             java.util.Map<String, String> reasons = destinations.getReasons();
             java.util.Set<String> barredPoints = destinations.getBarred();
@@ -782,7 +786,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                     .append("\n").toString();
             }
 
-            appendGroup(out, I18n.f("autolayout.ui.whyHeaderCandidates", choosable.size()), choosable);
+            // On Manual, the stations it cannot be sent to: autonomy's "could choose" is not the question (MT-434).
+            appendGroup(out, I18n.f(byHand ? "autolayout.ui.whyHeaderByHand" : "autolayout.ui.whyHeaderCandidates",
+                choosable.size()), choosable);
             appendGroup(out, I18n.f("autolayout.ui.whyHeaderBarred", barred.size()), barred);
 
             return out.toString();
@@ -894,12 +900,15 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
         try
         {
-            String cannotStart = layout.explainCannotStart(locomotive);
+            // FOR THE TIER THIS LIST IS IN (the REG4 lead): see `whyNotReport`.
+            boolean byHand = !layout.isAutoRunning();
+
+            String cannotStart = layout.explainCannotStart(locomotive, byHand);
 
             // WRAPPED (GUI4-C5): the sentences with a remedy run to two hundred characters, on one line otherwise.
             if (cannotStart != null) return AutonomyEditorPanel.wrapped(cannotStart);
 
-            java.util.Map<String, String> reasons = layout.explainDestinations(locomotive);
+            java.util.Map<String, String> reasons = layout.explainDestinations(locomotive, byHand);
 
             java.util.Map<String, String> byStation = new java.util.LinkedHashMap<>();
 

@@ -1904,6 +1904,13 @@ reason came from the route check, which refuses it too - AMV-C6). Switching the 
 last square again. `Layout.explainDestinations(Locomotive, boolean)`;
 `regression.testPathTypeRedrawsTheTestInTheEditor.testWhyNotMovingFollowsPathType`.
 
+**The locomotive list answers the same way** (the REG4 lead, 2026-09-24): its "No available paths" tooltip and its
+why-window have no Path Type of their own, so they answer for a train sent by hand whenever autonomy is not running
+- which is when the list offers routes picked by hand - and for autonomy while it runs. They gave autonomy's reasons
+on Manual until then: a train on a copy that is no station was told it could not be sent anywhere while the list
+offered it routes. `regression.testTheDestinationDoorsAgree.testEveryWhyNamesItsTier` holds every why-window under
+`gui/` to a tier.
+
 **And where the only way there is a lap, it says so** (Adam, 2026-09-15, AMR-B1). No route in any tier passes
 another copy of the square it starts at or the square it ends at: a square drawn as several Points is one piece of
 track, so such a route goes round a loop to where the train already was, or drives through its destination to reach
