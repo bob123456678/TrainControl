@@ -46,7 +46,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-468](#mt-468) | 2026-09-19 | Every screen still finds its text after 239 unused message keys were removed | fixed unvalidated | UIX-C4 |
 | [MT-477](#mt-477) | 2026-09-23 | The tail question lists RampDown once | fixed unvalidated | OB-276 |
 | [MT-479](#mt-479) | 2026-09-23 | An entry guard throws its signals red when a train arrives, and not when one passes | fixed unvalidated | FR-096 |
-| [MT-480](#mt-480) | 2026-09-23 | A train fits on the square it stands on, and TunnelLongPark takes three units | fixed unvalidated | OB-278 |
 | [MT-481](#mt-481) | 2026-09-23 | The orange line and the grey carry on across a route tile | fixed unvalidated | OB-279 |
 | [MT-482](#mt-482) | 2026-09-23 | The grey is only where the train is, and nothing past the switch | fixed unvalidated | OB-280 |
 | [MT-483](#mt-483) | 2026-09-23 | A cut train is pasted facing the way it would arrive | fixed unvalidated | OB-270 |
@@ -105,9 +104,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-540](#mt-540) | 2026-09-24 | Setting a home for a train standing elsewhere asks which way it should face | fixed unvalidated | MT-486, OB-282 |
 | [MT-541](#mt-541) | 2026-09-24 | Why Not Moving? redoes its answer when Path Type changes | fixed unvalidated | MT-439 |
 | [MT-542](#mt-542) | 2026-09-24 | Test a Path keeps its route when Path Type changes, and changes only the note | fixed unvalidated | MT-439 |
+| [MT-543](#mt-543) | 2026-09-24 | With Not known at BottomSecondary, the tail stops at switch 51 | fixed unvalidated | MT-477 |
 
-Everything else - 464 of 542 - needs nothing from you unless the area changes again:
-394 **fixed validated** and 70 **superseded**.
+Everything else - 465 of 543 - needs nothing from you unless the area changes again:
+395 **fixed validated** and 70 **superseded**.
 
 ---
 
@@ -24793,6 +24793,10 @@ Left as it was, and yours to decide (it is in the report): with no answer, or No
 
 **And a question for you,** separate from the run: with no answer or Not known, a fork right behind the platform still puts the tail on the first rail the walk finds - at BottomSecondary the turned one - where every other fork stops at the switch.  Should it stop at the switch there too?
 
+**Claude, 2026-09-24.**
+
+Adam, in conversation, 2026-09-24, answering the question above: *"MT-477 stop at the switch"*.  Built: with no answer, or Not known, the tail now stops at switch 51 - the squares both rails share are claimed, nothing past the switch.  Its own check is MT-543; this entry's list check ("To run now" above) is unchanged.
+
 ---
 
 <a id="mt-478"></a>
@@ -24907,7 +24911,7 @@ Done.  The sentence now wraps so that the one you see before any signal is paire
 
 ### MT-480 - 2026-09-23 - A train fits on the square it stands on, and TunnelLongPark takes three units
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-278
 
 **Written:** 2026-09-23
@@ -24955,6 +24959,10 @@ A train of 10 units or more would have 2014 in its list - but still would not be
 **Claude, 2026-09-24.**
 
 **Nothing new to run** - you reported that the parking works.  What is open is a question: did *"the last square the train passed"* mean the last sensor the front of the train passed on the way in?  If yes, this entry is done.
+
+**Claude, 2026-09-24.**
+
+Adam, in conversation, 2026-09-24, answering the question above: *"MT-480 yes"* - "the last square the train passed" meant the last sensor the front of the train passed on the way in, which is what was built.  With his Works of the run above, the entry is done.
 
 ---
 
@@ -26735,5 +26743,32 @@ autonomy editor."*
 
 - The route stays drawn throughout.
 - The note that autonomy will never choose TunnelLongPark goes on Manual and comes back on Auto.
+
+---
+
+<a id="mt-543"></a>
+
+### MT-543 - 2026-09-24 - With Not known at BottomSecondary, the tail stops at switch 51
+
+**Disposition:** fixed unvalidated
+**From:** MT-477
+
+**Written:** 2026-09-24
+
+**What was wrong.**  With no answer, or Not known, to the tail question, a fork right behind the platform put the tail on the first rail found - at BottomSecondary the turned one towards BottomCrossover - where every other fork stops it at the switch.  Your ruling of 2026-09-24: *"stop at the switch"*.
+
+**Steps**
+
+1. Note 75 407 DB's length, then set it to 4.
+2. Cut it (Control+X) and paste it at BottomSecondary with its tail towards RampDown.
+3. When asked which way its tail lies, choose Not known.
+4. Look at the orange behind it.
+5. Put its length back.
+
+**Expected**
+
+- Step 4: the orange runs from BottomSecondary back to switch 51 and stops there - on neither the rail up to RampDown nor the turned rail towards BottomCrossover.
+
+*What this is:* `core.testATailPastASwitchIsAskedAbout.testWithNoAnswerTheTailStopsAtTheSwitch`.
 
 ---
