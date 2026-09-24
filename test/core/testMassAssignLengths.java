@@ -2016,6 +2016,103 @@ public class testMassAssignLengths
     }
 
     /**
+     * The count stops where the berth rule does: at a permanent turnout, and at a crossing, as well as at a switch (TDA-C7).
+     *
+     * The rules the count stands for stop earlier than a switch.  The room behind a platform ends at `boundsTheRoom` -
+     * a switch or a permanent turnout (OB-233, *"a permanent turnout is still the last switch"*) - and the berth rule
+     * refuses as soon as a place it claims is on another road, which a crossing's square is.  Run on past either, the
+     * count added track beyond them and left quiet a berth whose longest train the rule refuses.
+     *
+     * MUTATION: stop the count at a switch only, and this fails.
+     *
+     * @throws IOException from the fixture
+     */
+    @Test
+    public void testTheCountStopsAtATurnoutOrACrossingAsTheRuleDoes() throws IOException
+    {
+        // A PERMANENT TURNOUT where the switch was: BottomMainPost's shape, and measured track beyond the turnout.
+        openBerthBehindALongerRun(componentType.CUSTOM_PERM_LEFT);
+
+        TileKey berth = key(7, 1);
+
+        session.setTileLength(berth, 1);
+        session.setTileLength(key(5, 1), 1);
+        session.setTileLength(key(4, 1), 1);
+        session.setTileLength(key(2, 1), 5);
+        session.setPointProperty(berth, "maxTrainLength", 4);
+
+        assertTrue(session.stationsWithAHalfMeasuredApproach().containsKey(berth), "a berth taking trains of 4, with 3"
+            + " measured before a permanent turnout, is not warned about - the count ran on past the turnout and counted"
+            + " the 5 beyond it, where the room walk stops (OB-233)");
+
+        // A CROSSING between the berth and its measured track: another road's square, which the berth rule refuses on.
+        openBerthBehindACrossing();
+
+        session.setTileLength(berth, 1);
+        session.setTileLength(key(4, 1), 3);
+        session.setPointProperty(berth, "maxTrainLength", 3);
+
+        assertTrue(session.stationsWithAHalfMeasuredApproach().containsKey(berth), "a berth taking trains of 3, with 1"
+            + " measured before a crossing, is not warned about - the count ran on past the crossing and counted the 3"
+            + " beyond it, and the berth rule refuses a three-unit train at the crossing");
+    }
+
+    /** The same berth with a permanent turnout, or a switch, at 3,1. */
+    private void openBerthBehindALongerRun(componentType atThree) throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 11, 4, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(atThree, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
+
+        if (atThree == componentType.SWITCH_LEFT) wire(page, 3, 1, 7);
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("Lengths");
+        session.setStation(key(7, 1), true);
+        session.setAutoDestination(key(7, 1), false);
+        session.rebuild();
+    }
+
+    /**
+     * 1,1 sensor - 2,1 - 3,1 switch - 4,1 - 5,1 crossing - 6,1 - 7,1 berth, the crossing's other road from a sensor at 5,0
+     * to one at 5,2.
+     */
+    private void openBerthBehindACrossing() throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 11, 4, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.CROSSING, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 5, 0, 1, 0, 8, 14, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 5, 2, 1, 0, 9, 15, accessoryDecoderType.MM2, null);
+
+        wire(page, 3, 1, 7);
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("Lengths");
+        session.setStation(key(7, 1), true);
+        session.setAutoDestination(key(7, 1), false);
+        session.rebuild();
+    }
+
+    /**
      * 1,1 sensor - 2,1 - 3,1 switch - 4,1 - 5,1 - 6,1 - 7,1 berth, with the switch's branch to a sensor at 3,0: a berth with
      * three plain squares between it and its switch.
      */
