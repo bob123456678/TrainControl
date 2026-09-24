@@ -92,6 +92,15 @@ public class GraphLocAssign extends javax.swing.JPanel
         org.traincontrol.automation.Layout running)
     {
         initComponents();
+
+        // THE LOCOMOTIVE MENU'S LENGTHS, NOT A LIST OF ITS OWN (OB-294).  The form writes 0 to 20 by hand, and the menu
+        // offers 0 to `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX` - so once that became forty, a longer train opened here
+        // showed the last entry, and OK saved it.  Replaced here rather than in the form, which is generated.
+        String[] lengths = new String[TrainControlUI.ROUTE_TRAIN_LENGTH_MAX + 1];
+
+        for (int i = 0; i < lengths.length; i++) lengths[i] = String.valueOf(i);
+
+        this.trainLength.setModel(new javax.swing.DefaultComboBoxModel<>(lengths));
         
         List<String> locs;
         if (newOnly)

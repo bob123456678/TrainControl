@@ -27541,7 +27541,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         Integer current = l.getTrainLength();
 
-        // THE SAME LIST THE AUTONOMY EDITOR OFFERS: 0 to 20 (Adam).
+        // THE SAME LIST THE AUTONOMY EDITOR OFFERS: 0 to `ROUTE_TRAIN_LENGTH_MAX` (Adam).
         //
         // It was a text box, and a text box can hold 400, or "twelve", or a minus sign - so it needed
         // parsing, a range check and two error dialogs to say what a list simply cannot express. The
@@ -27612,10 +27612,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * The longest train the length dropdowns offer.
      *
-     * Twenty, which is what the autonomy editor's Edit Locomotive view has always listed. Named rather
-     * than written twice, so the two dropdowns cannot come to disagree.
+     * Forty since Adam, 2026-09-24, OB-294: *"increase choosable train lengths up to 40 in the dropdown"* - twenty before,
+     * which is what the autonomy editor's Edit Locomotive view had always listed.  Named rather than written twice, so
+     * the two dropdowns cannot come to disagree: that view wrote its own list until OB-294 found it showing a longer
+     * train as twenty, and now reads this.
      */
-    public static final int ROUTE_TRAIN_LENGTH_MAX = 20;
+    public static final int ROUTE_TRAIN_LENGTH_MAX = 40;
 
     /**
      * Removes the local icon override, so the Central Station's own picture is shown again.
