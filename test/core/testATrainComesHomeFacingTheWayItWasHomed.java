@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 import org.testng.SkipException;
@@ -302,6 +303,77 @@ public class testATrainComesHomeFacingTheWayItWasHomed
             session.setRunningLayoutSource(null);
 
             layout.clearHomeLocomotives();
+
+            for (Point p : new ArrayList<>(layout.getPoints()))
+            {
+                if (p.getCurrentLocomotive() != null && OUR_TRAIN.equals(p.getCurrentLocomotive().getName()))
+                {
+                    layout.moveLocomotive(null, p.getName(), true);
+                }
+            }
+        }
+    }
+
+    /**
+     * A train the railway has somewhere else gets no facing from the setup's stale word for it (TDY2-C4).
+     *
+     * TDY-C2 made a home's facing come from the railway first.  But where the setup still has the train on this square
+     * and it has since driven off, the running layout finds it on no copy here and the setup's FACING - the heading of a
+     * train that is no longer here - was saved as the home's facing, and the editor did not ask, because it decided
+     * whether to ask from the setup.  Where the railway knows where the train is, the setup does not answer for it.
+     *
+     * MUTATION: let `homeFacingOf` fall back to the setup's facing for a train the railway has elsewhere and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testATrainThatHasDrivenOffGivesNoFacing() throws Exception
+    {
+        Point plain = layout.getPoint("BottomMainB (eastbound)");
+
+        assertTrue(plain != null && plain.isDestination(), "precondition: BottomMainB has no plain copy a train may"
+            + " stand on");
+
+        TileKey square = session.getStationIndex().squareOf(plain.getName());
+
+        assertNotNull(square, "precondition: BottomMainB is not a square of the setup");
+
+        // SOMEWHERE ELSE a train may stand, not a copy of this square.
+        Point elsewhere = null;
+
+        for (Point p : layout.getPoints())
+        {
+            if (p.isDestination() && p.getCurrentLocomotive() == null && !p.isSamePlaceAs(plain)
+                && !square.equals(session.getStationIndex().squareOf(p.getName())))
+            {
+                elsewhere = p;
+
+                break;
+            }
+        }
+
+        assertNotNull(elsewhere, "precondition: nowhere else on the railway for the train to stand");
+
+        session.setRunningLayoutSource(() -> layout);
+
+        try
+        {
+            // THE SETUP STILL SAYS IT STANDS HERE FACING EAST...
+            session.placeLocomotive(square, OUR_TRAIN);
+            session.setFacing(square, session.facingsFor(square).get(plain.getName()));
+
+            // ...AND ON THE RAILWAY IT HAS DRIVEN OFF, uncaptured.
+            assertTrue(layout.moveLocomotive(OUR_TRAIN, elsewhere.getName(), false), "could not stand the train on "
+                + elsewhere.getName());
+
+            assertNull(session.knownHomeFacing(square, OUR_TRAIN), "the train stands on " + elsewhere.getName() + ","
+                + " and a home at BottomMainB would be saved facing the way the setup last said it faced here - the"
+                + " heading of a train that is no longer here, and nobody asked (TDY2-C4)");
+        }
+        finally
+        {
+            session.placeLocomotive(square, null);
+            session.setRunningLayoutSource(null);
 
             for (Point p : new ArrayList<>(layout.getPoints()))
             {

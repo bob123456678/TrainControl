@@ -7415,6 +7415,26 @@ public class AutonomySession
     }
 
     /**
+     * The facing a home set here for this locomotive would be saved with, without asking anybody - or null when only the
+     * operator can say.
+     *
+     * @param tile the square
+     * @param locomotive the locomotive being homed there
+     * @return the side, or null
+     */
+    public Side knownHomeFacing(TileKey tile, String locomotive)
+    {
+        String facing = homeFacingOf(tile, locomotive);
+
+        for (Side each : Side.values())
+        {
+            if (each.name().equals(facing)) return each;
+        }
+
+        return null;
+    }
+
+    /**
      * The way a locomotive is facing on a square, if it is standing there - what its home there is set with (OB-282).
      *
      * @param tile the square
