@@ -476,6 +476,13 @@ public class AutonomySession
          * a guess it is known to be the other way round.
          */
         public final List<String> facingsNotHeld = new ArrayList<>();
+
+        /**
+         * The track the old file's one-way edges set running their way, where the diagram had nothing set by the
+         * operator (Adam, 2026-09-24: *"Carry the old file's directions onto the diagram - yes, to the extent
+         * possible."*), against the way each now runs.
+         */
+        public final Map<TileGraph.DirectionKey, Direction> directionsCarried = new LinkedHashMap<>();
         /**
          * Names written onto a square that had none.
          */

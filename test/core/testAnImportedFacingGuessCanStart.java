@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -310,6 +311,133 @@ public class testAnImportedFacingGuessCanStart
         finally
         {
             deleteQuietly(fresh);
+        }
+    }
+
+    /**
+     * The old file's one-way running is carried onto the diagram, so on a fresh upgrade every train can stand the way
+     * the file ran it (Adam, 2026-09-24: *"Carry the old file's directions onto the diagram - yes, to the extent
+     * possible."*).
+     *
+     * Without it the diagram's defaults decide: a switch lets trains out of its toe only, so TopMainR1Inter, reached
+     * from the north in the old graph through such a switch, could be arrived at from the east only - one copy, facing
+     * north - and the train the file ran east from there was stood facing north.
+     *
+     * MUTATION: carry nothing, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testTheOldDirectionsAreCarried() throws Exception
+    {
+        JSONObject legacy = legacyFile();
+
+        File fresh = freshUpgrade();
+
+        try
+        {
+            AutonomySession session = new AutonomySession(fresh);
+
+            session.open(support.LayoutSandbox.wiredPages(model));
+
+            session.getStore().createConfiguration("Directions carried", null);
+            session.getStore().setActiveConfiguration("Directions carried");
+            session.rebuild();
+
+            AutonomySession.LegacyImport imported = session.importLegacy(legacy);
+
+            assertFalse(imported.directionsCarried.isEmpty(), "the import set no track running the way the old file's"
+                + " one-way edges ran it");
+
+            TileKey inter = tileNamed(session, "TopMainR1Inter");
+
+            assertTrue(session.facingsFor(inter).containsValue(Side.E) && session.getFacing(inter) == Side.E,
+                "the old file ran the train on TopMainR1Inter east, and after the import it stands facing "
+                + session.getFacing(inter) + " among " + session.facingsFor(inter) + " - its directions were not"
+                + " carried onto the diagram");
+
+            assertTrue(imported.facingsNotHeld.isEmpty(), "with the old file's directions carried, a facing it gives"
+                + " still cannot be held: " + imported.facingsNotHeld);
+        }
+        finally
+        {
+            deleteQuietly(fresh);
+        }
+    }
+
+    /**
+     * A direction the operator set is kept, and where it keeps a train from standing the way the file ran it, the
+     * import says so (Adam: *"to the extent possible"*).
+     *
+     * The import fills gaps, like everything else it writes.  The square north of TopMainR1Inter, which the old file's
+     * edges run south, is set to run north beforehand: it stays so, and TopMainR1Inter - no longer arrived at from the
+     * north - cannot hold the east the file ran its train, which the import names.
+     *
+     * MUTATION: overwrite a direction the operator set, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testTheOperatorsOwnDirectionIsKept() throws Exception
+    {
+        JSONObject legacy = legacyFile();
+
+        File first = freshUpgrade();
+        File second = freshUpgrade();
+
+        try
+        {
+            AutonomySession probe = new AutonomySession(first);
+
+            probe.open(support.LayoutSandbox.wiredPages(model));
+            probe.getStore().createConfiguration("Directions carried", null);
+            probe.getStore().setActiveConfiguration("Directions carried");
+            probe.rebuild();
+
+            TileKey inter = tileNamed(probe, "TopMainR1Inter");
+            TileKey north = new TileKey(inter.getPage(), inter.getX(), inter.getY() - 1);
+
+            java.util.Map.Entry<org.traincontrol.automationui.TileGraph.DirectionKey,
+                org.traincontrol.automationui.TileGraph.Direction> carried = null;
+
+            for (java.util.Map.Entry<org.traincontrol.automationui.TileGraph.DirectionKey,
+                org.traincontrol.automationui.TileGraph.Direction> each
+                : new java.util.ArrayList<>(probe.importLegacy(legacy).directionsCarried.entrySet()))
+            {
+                if (north.equals(each.getKey().square())) carried = each;
+            }
+
+            assertNotNull(carried, "precondition: the old file's edges set no direction on " + north + ", north of"
+                + " TopMainR1Inter");
+
+            org.traincontrol.automationui.TileGraph.Direction theirs =
+                carried.getValue() == org.traincontrol.automationui.TileGraph.Direction.TOWARD_A
+                ? org.traincontrol.automationui.TileGraph.Direction.TOWARD_B
+                : org.traincontrol.automationui.TileGraph.Direction.TOWARD_A;
+
+            AutonomySession session = new AutonomySession(second);
+
+            session.open(support.LayoutSandbox.wiredPages(model));
+            session.getStore().createConfiguration("Directions carried", null);
+            session.getStore().setActiveConfiguration("Directions carried");
+            session.rebuild();
+
+            // THE OPERATOR'S OWN, set before the import.
+            session.setDirection(north, carried.getKey().getRouteId(), theirs);
+
+            AutonomySession.LegacyImport imported = session.importLegacy(legacy);
+
+            assertEquals(session.getStore().getTileDirection(north, carried.getKey().getRouteId()), theirs, "the import"
+                + " overwrote the direction the operator had set on " + north);
+
+            assertTrue(imported.facingsNotHeld.contains("TopMainR1Inter"), "with the way in from the north closed by the"
+                + " operator, TopMainR1Inter cannot hold the east the old file ran its train, and the import does not"
+                + " say so: " + imported.facingsNotHeld);
+        }
+        finally
+        {
+            deleteQuietly(first);
+            deleteQuietly(second);
         }
     }
 
