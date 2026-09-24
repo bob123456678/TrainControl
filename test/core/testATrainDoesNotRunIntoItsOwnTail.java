@@ -211,7 +211,8 @@ public class testATrainDoesNotRunIntoItsOwnTail
 
         Matcher m = Pattern.compile(regex.toString(), Pattern.DOTALL).matcher(reason);
 
-        return m.matches() ? Integer.valueOf(m.group(1)) : null;
+        // The sentence begins the reason; what is unmeasured on the way round may follow it (TDA-B1).
+        return m.lookingAt() ? Integer.valueOf(m.group(1)) : null;
     }
 
     /**

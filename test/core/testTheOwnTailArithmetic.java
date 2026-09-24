@@ -25,7 +25,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * begins 1 unit behind the head and B 3.
  *
  * MUTATION: judge a return whose way round has nothing measured on it, and the first claim fails; refuse at the first
- * return rather than the tightest, and the second does; leave the unmeasured squares out of the sentence, and the third.
+ * return rather than the tightest, and the second does; leave the unmeasured stretches out of the sentence, and the third.
  *
  * @author Adam
  */
@@ -108,8 +108,14 @@ public class testTheOwnTailArithmetic
         return e;
     }
 
-    /** The rule, asked of this route for a train of this length. */
+    /** The rule, asked of this one-edge route for a train of this length. */
     private static String ask(Edge route, int length) throws Exception
+    {
+        return ask(Arrays.asList(route), length);
+    }
+
+    /** The rule, asked of this route for a train of this length. */
+    private static String ask(List<Edge> route, int length) throws Exception
     {
         Method rule = Layout.class.getDeclaredMethod("whyItWouldMeetItsOwnTail", List.class, Locomotive.class, Map.class);
 
@@ -117,7 +123,7 @@ public class testTheOwnTailArithmetic
 
         train.setTrainLength(length);
 
-        return (String) rule.invoke(null, Arrays.asList(route), train, BODY);
+        return (String) rule.invoke(null, route, train, BODY);
     }
 
     /**
@@ -166,14 +172,26 @@ public class testTheOwnTailArithmetic
     }
 
     /**
-     * Where squares on the way round have no length, the refusal says how many, and that measuring them is the way past.
+     * Where a stretch of the way round has nothing measured on it, the refusal says how many, and that measuring them is
+     * the way past - and a stretch whose length is stored on one of its squares is not one of them.
+     *
+     * The grain is the stretch between two sensors, as lengths are given: on a fully measured railway most squares carry
+     * no length of their own, their stretch's being on one square of it, and counting squares told Adam's that 21 of its
+     * squares on the way round had none.
      *
      * @throws Exception from the rule
      */
     @Test
     public void testAPartlyMeasuredWayRoundSaysSo() throws Exception
     {
-        String said = ask(edge(Arrays.asList("OT:Q", "OT:R", "OT:S", "OT:B"), Arrays.asList(1, 0, 0, 0)), 20);
+        // THE CONTROL: every stretch measured, one of them on one square of two - nothing to measure.
+        String measured = ask(Arrays.asList(edge(Arrays.asList("OT:Q"), Arrays.asList(1)),
+            edge(Arrays.asList("OT:R", "OT:S"), Arrays.asList(0, 1)), edge(Arrays.asList("OT:B"), Arrays.asList(0))), 20);
+
+        assertNotNull(measured, "precondition: a twenty-unit train is not refused a measured way round of 2");
+
+        String said = ask(Arrays.asList(edge(Arrays.asList("OT:Q"), Arrays.asList(1)),
+            edge(Arrays.asList("OT:R", "OT:S"), Arrays.asList(0, 0)), edge(Arrays.asList("OT:B"), Arrays.asList(0))), 20);
 
         assertNotNull(said, "precondition: a twenty-unit train is not refused a way round of 1 measured square");
 
@@ -181,14 +199,17 @@ public class testTheOwnTailArithmetic
 
         try
         {
-            note = I18n.f("autolayout.errorOwnTailPartlyUnmeasured", 2);
+            note = I18n.f("autolayout.errorOwnTailPartlyUnmeasured", 1);
         }
         catch (java.util.MissingResourceException none)
         {
             note = null;
         }
 
-        assertTrue(note != null && said.contains(note), "the refusal does not say that two squares on the way round have"
+        assertTrue(note != null && said.contains(note), "the refusal does not say that one stretch of the way round has"
             + " no length, so the only way past it names is a shorter train: " + said);
+
+        assertFalse(measured.contains(I18n.f("autolayout.errorOwnTailPartlyUnmeasured", 1).substring(2)),
+            "a way round whose every stretch is measured was said to have one with no length: " + measured);
     }
 }

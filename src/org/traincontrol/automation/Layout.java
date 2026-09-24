@@ -10386,8 +10386,16 @@ public class Layout
      * length rule here reads a fit.
      *
      * **Only measured track binds**, as for every length rule here - *"only apply if lengths are specified"*.  A square
-     * with no length counts nothing, and a return with nothing measured on the way round is not judged.  Unmeasured
-     * squares within a measured way round make it shorter than it is, which refuses rather than permits.
+     * with no length counts nothing, and a return with nothing measured on the way round is not judged - THE WAY ROUND
+     * being the route the head drives between leaving the place and coming back to it, not the body in front of it
+     * (TDA-B1: judged by the body, a loop with no length on it was refused at every length, though it may be thirty
+     * units long).  Unmeasured squares within a measured way round make it shorter than it is, which refuses rather than
+     * permits - so the refusal says how many stretches of the way round have nothing measured on them, and that measuring
+     * them is the way past.
+     *
+     * **The tightest return is the one named** (TDA-C1).  A route that comes up behind the body meets it more than once,
+     * and a later return can allow less than an earlier one; the refusal's "a train of N units or shorter" has to be true
+     * of the whole route, so every return is asked and the smallest figure is the answer.
      *
      * **After a turn the body is ahead of the train**, and moves with it.  A train that turns - at a square it may turn
      * at on the way, or where it stands before it sets off, which is a route leaving over its own tail - drives back over
@@ -10418,6 +10426,15 @@ public class Layout
         // Where the tail must have reached, along the journey, before each place is free of the train again.
         Map<String, Integer> freeOnceTheTailPasses = new HashMap<>();
 
+        // And how far the ROUTE had run when the head left each place, and in which of its edges - the way round is what
+        // it runs from there (TDA-B1).  A place of the body was left before the journey began, in no edge (-1).
+        Map<String, Integer> routeRunWhenLeft = new HashMap<>();
+        Map<String, Integer> edgeWhenLeft = new HashMap<>();
+
+        // Which edges of the route have nothing measured on them - the grain lengths are given at, a stretch between two
+        // sensors; a square with no length inside a measured stretch is how a stretch's length is stored, not a gap.
+        List<Boolean> edgeUnmeasured = new ArrayList<>();
+
         // LEAVING OVER ITS OWN BODY: the first place the route goes to, other than the square the train stands on, is
         // one its body lies on - a train turned where it stands.  The first place only: a route that comes back round a
         // loop within one edge would otherwise be taken for one leaving over its body.
@@ -10440,12 +10457,19 @@ public class Layout
             for (Map.Entry<String, Integer> lying : reach.entrySet())
             {
                 freeOnceTheTailPasses.put(lying.getKey(), -lying.getValue());
+                routeRunWhenLeft.put(lying.getKey(), 0);
+                edgeWhenLeft.put(lying.getKey(), -1);
             }
         }
 
         int travelled = 0;
 
         String previous = null;
+
+        // THE TIGHTEST RETURN, and where, and how much of its way round has no length (TDA-C1).
+        Integer tightest = null;
+        Edge tightestOn = null;
+        int tightestUnmeasured = 0;
 
         for (int i = 0; i < path.size(); i++)
         {
@@ -10456,6 +10480,12 @@ public class Layout
 
             // A configuration that describes no places says nothing about where the train is.
             if (ids.size() != spans.size()) return null;
+
+            int edgeMeasured = 0;
+
+            for (Integer span : spans) edgeMeasured += span == null ? 0 : Math.max(0, span);
+
+            edgeUnmeasured.add(edgeMeasured <= 0);
 
             for (int at = 0; at < ids.size(); at++)
             {
@@ -10468,29 +10498,50 @@ public class Layout
 
                 Integer free = freeOnceTheTailPasses.get(place);
 
-                if (free != null)
+                // Judged only where the route has measured something since it left the place (TDA-B1).
+                if (free != null && travelled - routeRunWhenLeft.get(place) > 0)
                 {
                     int wayRound = travelled - free;
 
-                    if (wayRound > 0 && length > wayRound)
+                    if (tightest == null || wayRound < tightest)
                     {
-                        return I18n.f("autolayout.errorWouldMeetItsOwnTail", loc.getName(), placeNameOf(edge),
-                            wayRound, length);
+                        tightest = wayRound;
+                        tightestOn = edge;
+                        tightestUnmeasured = 0;
+
+                        // The stretches wholly between leaving the place and coming back to it.
+                        for (int k = edgeWhenLeft.get(place) + 1; k < i; k++)
+                        {
+                            if (edgeUnmeasured.get(k)) tightestUnmeasured++;
+                        }
                     }
                 }
 
                 travelled += spans.get(at) == null ? 0 : Math.max(0, spans.get(at));
 
                 freeOnceTheTailPasses.put(place, travelled);
+                routeRunWhenLeft.put(place, travelled);
+                edgeWhenLeft.put(place, i);
             }
 
             // A TURN ON THE WAY: the body is ahead of the train from here, and the question starts again.
             Point turn = edge.getEnd();
 
-            if (i + 1 < path.size() && turn != null && turn.isReversing()) freeOnceTheTailPasses.clear();
+            if (i + 1 < path.size() && turn != null && turn.isReversing())
+            {
+                freeOnceTheTailPasses.clear();
+                routeRunWhenLeft.clear();
+                edgeWhenLeft.clear();
+            }
         }
 
-        return null;
+        if (tightest == null || length <= tightest) return null;
+
+        String why = I18n.f("autolayout.errorWouldMeetItsOwnTail", loc.getName(), placeNameOf(tightestOn), tightest, length);
+
+        // AND WHAT IS NOT MEASURED ON THE WAY ROUND, which is the other way past: measured, it may be long enough.
+        return tightestUnmeasured > 0 ? why + " " + I18n.f("autolayout.errorOwnTailPartlyUnmeasured", tightestUnmeasured)
+            : why;
     }
 
     /**
