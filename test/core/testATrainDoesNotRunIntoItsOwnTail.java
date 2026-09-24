@@ -463,4 +463,71 @@ public class testATrainDoesNotRunIntoItsOwnTail
             atTunnel.setArrivedAlong(null);
         }
     }
+
+    /**
+     * Return Home plans no route the railway would refuse for the train's own tail.
+     *
+     * The planner re-implements the runtime's rules rather than asking `isPathClear`, which reads live sensors, so every
+     * rule the runtime gains it has to gain too - or it plans a first move the railway refuses, and the plan stops half
+     * way (OB-073).  Asked of its route search directly, as `testATurnedTrainIsNotSentIntoAnotherTail` asks its tail
+     * check.
+     *
+     * MUTATION: leave the own-tail question out of the planner's search, and this fails.
+     *
+     * @throws Exception from the reflection
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testReturnHomePlansNoRouteIntoItsOwnTail() throws Exception
+    {
+        java.lang.reflect.Method route = org.traincontrol.automation.HomeStaging.class.getDeclaredMethod("firstClearRoute",
+            Map.class, java.util.Set.class, Locomotive.class, Point.class, Point.class);
+
+        route.setAccessible(true);
+
+        java.lang.reflect.Field startField = org.traincontrol.automation.HomeStaging.class.getDeclaredField("start");
+
+        startField.setAccessible(true);
+
+        // THE CONTROL: four units is gone in time, and the planner finds a way.
+        standItAsArrived(4);
+
+        org.traincontrol.automation.HomeStaging staging = org.traincontrol.automation.HomeStaging.snapshot(layout);
+
+        Map<Point, Locomotive> start = (Map<Point, Locomotive>) startField.get(staging);
+
+        boolean anyPlanned = false;
+
+        for (Point end : lowerFront)
+        {
+            if (route.invoke(staging, start, new java.util.HashSet<String>(), train, atBottomSecondary, end) != null)
+            {
+                anyPlanned = true;
+            }
+        }
+
+        assertTrue(anyPlanned, "control: Return Home finds no way for a 4-unit train from BottomSecondary to LowerFront,"
+            + " so the claim below is not about the train's tail");
+
+        clearTheRailway();
+
+        // THE CASE: twenty units.
+        standItAsArrived(20);
+
+        staging = org.traincontrol.automation.HomeStaging.snapshot(layout);
+
+        start = (Map<Point, Locomotive>) startField.get(staging);
+
+        for (Point end : lowerFront)
+        {
+            List<Edge> planned = (List<Edge>) route.invoke(staging, start, new java.util.HashSet<String>(), train,
+                atBottomSecondary, end);
+
+            if (planned == null) continue;
+
+            assertNull(layout.whyItWouldMeetItsOwnTail(planned, train), "Return Home planned a 20-unit train from"
+                + " BottomSecondary to LowerFront round into its own tail, which the railway refuses at the first move: "
+                + planned);
+        }
+    }
 }
