@@ -1217,6 +1217,35 @@ when asking about the tail, instead of showing the list of points, highlight pos
 
 these show "no train can reach <point> from any other station....check the direction".  Update the error message to say that is marked for nothing to be able to pass, user to validate if intentional.
 
+### OB-293 - 2026-09-24 - missing tooltips
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-24 13:09  
+**Build:** commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+add brief tooltips on what entry guards and exit guards are to their items in the autonomy right click menu
+
+### FR-102 - 2026-09-24 - why not moving convenience
+
+**Kind:** feature request  
+**Raised from:** MT-516 (Why Not Moving? on Manual says a station that excludes the train will not take it)  
+**Filed:** 2026-09-24 13:46  
+**Build:** commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when the button is pressed an nothing is drawn yet, highlight stations w/ trains on the editor diagram so it's clear what the user can click on (consider greying out other things)
+
+### OB-294 - 2026-09-24 - routing edge case - critical
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-24 13:58  
+**Build:** commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+EN57-203 from bottomsecondary to lowerfront may run over its own tail. make sure the model factors in whether the train will  clear the area before it crosses over.  right now, If I set the train length to 20, is still allowed to go, even though it would likely hit its own tail.
+
+separately, increase choosable train lengths up to 40 in the dropdown.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1233,6 +1262,10 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-24 | OB-294 | bug | A train is not sent round a loop into its own tail: the head may come back to a place only once the tail has left it - every tier, both hand doors, and Return Home.  Train lengths go to 40 in both lists. | - | `MT-571`, `MT-572` |
+| 2026-09-24 | FR-102 | feature request | While Why not Moving? waits for its click, the squares with trains on them are outlined.  Greying everything else - the "consider" - is not done. | - | `MT-570` |
+| 2026-09-24 | OB-293 | bug | The exit- and entry-guard items say what each guard does. | - | `MT-569` |
+| 2026-09-24 | OB-235 | bug | One-Way Run is greyed, and disarmed, on a page left out, as Test Route and Why not Moving? are (MT-528's note). | - | `MT-568` |
 | 2026-09-24 | FR-100 | feature request | The tail question is asked on the diagram: its sensors lit, a click on one answers it; the list where a sensor is on another page. | - | `MT-565` |
 | 2026-09-24 | FR-099 | feature request | prettify usage graph - **for v3.1.0**, on Adam's word of 2026-09-24 (*"FR-099 for later (mark it as for v3.1.0)"*).  Picked up and not built. | pending | - |
 | 2026-09-24 | FR-101 | feature request | A station set to No - Nothing Can Pass is said to be, once, in place of the two reachability sentences. | - | `MT-562` |

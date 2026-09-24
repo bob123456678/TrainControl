@@ -49,48 +49,28 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-506](#mt-506) | 2026-09-24 | A route fired by its sensor skips only the switch under a train, and runs the rest | fixed unvalidated | MT-247 |
 | [MT-507](#mt-507) | 2026-09-24 | Cancel on a route that would switch track under a train cancels all of it, from either door | fixed unvalidated | MT-247 |
 | [MT-508](#mt-508) | 2026-09-24 | OK on a route that would switch track under a train fires all of it | fixed unvalidated | MT-247 |
-| [MT-509](#mt-509) | 2026-09-24 | Switching a platform's protecting signal to red by hand is not questioned | fixed unvalidated | MT-256 |
-| [MT-510](#mt-510) | 2026-09-24 | Switching a platform's protecting signal to green with a train there is asked about | fixed unvalidated | MT-256 |
-| [MT-511](#mt-511) | 2026-09-24 | Switching a protecting signal to green once the platform is empty is not questioned | fixed unvalidated | MT-256 |
 | [MT-512](#mt-512) | 2026-09-24 | On a layout with nothing set up, the Autonomy menu offers Import | fixed unvalidated | MT-380 |
 | [MT-513](#mt-513) | 2026-09-24 | Importing a setup onto a layout with fewer pages warns once, naming the missing pages | fixed unvalidated | MT-380 |
 | [MT-514](#mt-514) | 2026-09-24 | After that import, opening the autonomy editor asks nothing | fixed unvalidated | MT-380 |
-| [MT-515](#mt-515) | 2026-09-24 | A running train has one orange stretch, behind it, on the road it came in by | fixed unvalidated | MT-438, OB-242, OB-243 |
-| [MT-516](#mt-516) | 2026-09-24 | Why Not Moving? on Manual says a station that excludes the train will not take it | fixed unvalidated | MT-444 |
 | [MT-517](#mt-517) | 2026-09-24 | Why Not Moving? on Manual says a terminus refuses a train that cannot reverse | fixed unvalidated | MT-444 |
 | [MT-518](#mt-518) | 2026-09-24 | Clear All Max Train Lengths asks first, and No changes nothing | fixed unvalidated | MT-457 |
 | [MT-519](#mt-519) | 2026-09-24 | Clear All Max Train Lengths takes the maximum off every station on every page | fixed unvalidated | MT-457 |
 | [MT-520](#mt-520) | 2026-09-24 | Mass Assign Max Train Lengths asks each station with no maximum, and records the number | fixed unvalidated | MT-456 |
 | [MT-521](#mt-521) | 2026-09-24 | Mass Assign Max Train Lengths refuses 0 | fixed unvalidated | MT-456 |
-| [MT-522](#mt-522) | 2026-09-24 | Mass Assign Max Train Lengths' Skip leaves a station as it was | fixed unvalidated | MT-456 |
-| [MT-523](#mt-523) | 2026-09-24 | Escape ends Mass Assign Max Train Lengths and writes nothing | fixed unvalidated | MT-456 |
-| [MT-524](#mt-524) | 2026-09-24 | Mass Assign Lengths asks each piece with no length, and records what you type | fixed unvalidated | MT-454 |
-| [MT-525](#mt-525) | 2026-09-24 | Mass Assign Lengths refuses 0 | fixed unvalidated | MT-454 |
-| [MT-526](#mt-526) | 2026-09-24 | Mass Assign Lengths' Skip leaves a piece, and the next prompt opens where you left the last | fixed unvalidated | MT-454 |
-| [MT-527](#mt-527) | 2026-09-24 | Escape ends Mass Assign Lengths and writes nothing | fixed unvalidated | MT-454 |
-| [MT-528](#mt-528) | 2026-09-24 | Mass Assign Lengths is greyed on a page left out of autonomy | fixed unvalidated | MT-454 |
-| [MT-529](#mt-529) | 2026-09-24 | Mass Assign Lengths counts stretches, switches and crossings separately | fixed unvalidated | MT-459 |
 | [MT-530](#mt-530) | 2026-09-24 | Mass Assign Lengths asks for crossings on their own, and one answer sets them all | fixed unvalidated | MT-459 |
-| [MT-531](#mt-531) | 2026-09-24 | A function command on an MM2 locomotive offers only F0 to F4 | fixed unvalidated | MT-464 |
-| [MT-532](#mt-532) | 2026-09-24 | Cancel after Copy Customizations puts the target's own icons back on its buttons at once | fixed unvalidated | MT-466 |
 | [MT-533](#mt-533) | 2026-09-24 | The train-length prompt takes typing without a click | fixed unvalidated | MT-474 |
-| [MT-534](#mt-534) | 2026-09-24 | Bulk Tools is on the menu of an empty square and a text square | fixed unvalidated | MT-474 |
-| [MT-535](#mt-535) | 2026-09-24 | The orange covers the square a train stands on and every sensor it lies across | fixed unvalidated | MT-475 |
-| [MT-536](#mt-536) | 2026-09-24 | On a double curve the grey covers only the road the tail lies on | fixed unvalidated | MT-475, OB-280 |
-| [MT-537](#mt-537) | 2026-09-24 | Segment Length opens empty, and OK without a number records nothing | fixed unvalidated | MT-484, FR-097 |
-| [MT-539](#mt-539) | 2026-09-24 | Return Home brings a train back facing the way its home was set | fixed unvalidated | MT-486, OB-282 |
-| [MT-540](#mt-540) | 2026-09-24 | Setting a home for a train standing elsewhere asks which way it should face | fixed unvalidated | MT-486, OB-282 |
 | [MT-547](#mt-547) | 2026-09-24 | On a Central Station layout there is no Load Autonomy Configuration tab | fixed unvalidated | OB-254, MT-544 |
 | [MT-548](#mt-548) | 2026-09-24 | On a Central Station layout the Autonomy menu opens, and only the download and Documentation can be chosen | fixed unvalidated | OB-254, OB-093, MT-544 |
-| [MT-559](#mt-559) | 2026-09-24 | At a station autonomy may choose, a short run-in says a longer train may block the layout | fixed unvalidated | MT-555 |
-| [MT-561](#mt-561) | 2026-09-24 | A home on a parking berth every train turns at is not warned about | fixed unvalidated | MT-552 |
-| [MT-562](#mt-562) | 2026-09-24 | A station set to No - Nothing Can Pass says so, once | fixed unvalidated | FR-101 |
-| [MT-563](#mt-563) | 2026-09-24 | A straight put down between two pieces of track is turned to join them | fixed unvalidated | OB-292 |
-| [MT-564](#mt-564) | 2026-09-24 | No station on the railway is warned that it can refuse trains that would otherwise fit | fixed unvalidated | MT-552 |
-| [MT-565](#mt-565) | 2026-09-24 | The tail question is asked on the diagram | fixed unvalidated | FR-100 |
+| [MT-566](#mt-566) | 2026-09-24 | The locomotive train-length walk is never greyed, and counts | fixed unvalidated | MT-533 |
+| [MT-567](#mt-567) | 2026-09-24 | Train lengths and station maximum lengths are named apart | fixed unvalidated | MT-533 |
+| [MT-568](#mt-568) | 2026-09-24 | One-Way Run is greyed on a page left out of autonomy | fixed unvalidated | OB-235, MT-528 |
+| [MT-569](#mt-569) | 2026-09-24 | The guard items say what each guard does | fixed unvalidated | OB-293 |
+| [MT-570](#mt-570) | 2026-09-24 | Why not Moving? outlines the squares with trains while it waits | fixed unvalidated | FR-102, MT-516 |
+| [MT-571](#mt-571) | 2026-09-24 | A train is not sent round a loop into its own tail | fixed unvalidated | OB-294 |
+| [MT-572](#mt-572) | 2026-09-24 | Train lengths go to 40, in both lists | fixed unvalidated | OB-294 |
 
-Everything else - 504 of 565 - needs nothing from you unless the area changes again:
-428 **fixed validated** and 76 **superseded**.
+Everything else - 531 of 572 - needs nothing from you unless the area changes again:
+454 **fixed validated** and 77 **superseded**.
 
 ---
 
@@ -26097,7 +26077,7 @@ autonomy editor."*
 
 ### MT-509 - 2026-09-24 - Switching a platform's protecting signal to red by hand is not questioned
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-256
 
 **Written:** 2026-09-24
@@ -26115,13 +26095,21 @@ autonomy editor."*
 
 *What this is:* `core.testAutoLayout.testSwitchingAProtectingSignalByHandAsksOnlyOneWay`.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-510"></a>
 
 ### MT-510 - 2026-09-24 - Switching a platform's protecting signal to green with a train there is asked about
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-256
 
 **Written:** 2026-09-24
@@ -26141,13 +26129,21 @@ autonomy editor."*
 
 *What this is:* `core.testAutoLayout.testSwitchingAProtectingSignalByHandAsksOnlyOneWay`.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-511"></a>
 
 ### MT-511 - 2026-09-24 - Switching a protecting signal to green once the platform is empty is not questioned
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-256
 
 **Written:** 2026-09-24
@@ -26164,6 +26160,14 @@ autonomy editor."*
 - Nothing is asked; the signal goes green.
 
 *What this is:* `core.testAutoLayout.testSwitchingAProtectingSignalByHandAsksOnlyOneWay`.
+
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
 
 ---
 
@@ -26238,7 +26242,7 @@ autonomy editor."*
 
 ### MT-515 - 2026-09-24 - A running train has one orange stretch, behind it, on the road it came in by
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-438, OB-242, OB-243
 
 **Written:** 2026-09-24
@@ -26257,13 +26261,21 @@ autonomy editor."*
 
 *What this is:* `core.testARunningTrainHasOneTail`.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-516"></a>
 
 ### MT-516 - 2026-09-24 - Why Not Moving? on Manual says a station that excludes the train will not take it
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-444
 
 **Written:** 2026-09-24
@@ -26281,6 +26293,20 @@ autonomy editor."*
 
 - Step 2: the station is under "Stations the train cannot be sent to right now", saying it does not accept that train.
 - Step 3: the right-click menu does not offer that station.
+
+**Adam, 2026-09-24 (triage).** Works.
+
+Filed from this test: FR-102 (feature request - why not moving convenience).  They are in `issues.md` until they are picked up.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+**FR-102, filed from this test, is built** (2026-09-24) - MT-570.
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
 
 ---
 
@@ -26412,7 +26438,7 @@ autonomy editor."*
 
 ### MT-522 - 2026-09-24 - Mass Assign Max Train Lengths' Skip leaves a station as it was
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-456
 
 **Written:** 2026-09-24
@@ -26431,13 +26457,21 @@ autonomy editor."*
 
 - Step 5: it still has no maximum.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-523"></a>
 
 ### MT-523 - 2026-09-24 - Escape ends Mass Assign Max Train Lengths and writes nothing
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-456
 
 **Written:** 2026-09-24
@@ -26457,13 +26491,21 @@ autonomy editor."*
 - Step 3: the walk stops.
 - Step 4: the station still has no maximum.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-524"></a>
 
 ### MT-524 - 2026-09-24 - Mass Assign Lengths asks each piece with no length, and records what you type
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-454
 
 **Written:** 2026-09-24
@@ -26483,13 +26525,21 @@ autonomy editor."*
 - The prompt says which piece of how many and names both ends; the piece is outlined and scrolled into view.
 - Step 3: the squares of that piece add up to what you typed.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-525"></a>
 
 ### MT-525 - 2026-09-24 - Mass Assign Lengths refuses 0
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-454
 
 **Written:** 2026-09-24
@@ -26508,13 +26558,23 @@ autonomy editor."*
 
 - Step 3: it says 0 means no length and asks again; nothing is written.
 
+**Adam, 2026-09-24 (triage).** Could not run this.
+
+didn't we say 0=no length and that IS persisted as a different value than no data?
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+**Yes - and this entry is out of date because of it.**  Since OB-274 (your ruling of 2026-09-23) a 0 typed into Mass Assign Lengths is a deliberate *no length*, saved as 0 and kept apart from *not measured*; MT-476 checks exactly that and you validated it.  MT-525 was split from MT-454, which was written before that ruling, and its expected - 0 refused - is the old behaviour.  Superseded by MT-476; nothing to run.
+
 ---
 
 <a id="mt-526"></a>
 
 ### MT-526 - 2026-09-24 - Mass Assign Lengths' Skip leaves a piece, and the next prompt opens where you left the last
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-454
 
 **Written:** 2026-09-24
@@ -26533,13 +26593,21 @@ autonomy editor."*
 
 - Step 3: the piece keeps no length, and the next prompt opens where you dragged the first.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-527"></a>
 
 ### MT-527 - 2026-09-24 - Escape ends Mass Assign Lengths and writes nothing
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-454
 
 **Written:** 2026-09-24
@@ -26557,13 +26625,21 @@ autonomy editor."*
 
 - The walk stops and the piece still has no length.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-528"></a>
 
 ### MT-528 - 2026-09-24 - Mass Assign Lengths is greyed on a page left out of autonomy
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-454
 
 **Written:** 2026-09-24
@@ -26579,13 +26655,27 @@ autonomy editor."*
 
 - It is greyed, and its tooltip says the page is left out.
 
+**Adam, 2026-09-24 (triage).** Works, with notes.
+
+works, but one-way run isn't.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+**Your note is OB-235**, filed 2026-09-21 and now fixed: One-Way Run is greyed on a page left out, as its two siblings are - MT-568.
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.  Your note is OB-235 - see the comment above.
+
 ---
 
 <a id="mt-529"></a>
 
 ### MT-529 - 2026-09-24 - Mass Assign Lengths counts stretches, switches and crossings separately
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-459
 
 **Written:** 2026-09-24
@@ -26602,6 +26692,14 @@ autonomy editor."*
 **Expected**
 
 - Step 3: the tooltip gives three counts - stretches, switches and crossings.
+
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
 
 ---
 
@@ -26635,7 +26733,7 @@ autonomy editor."*
 
 ### MT-531 - 2026-09-24 - A function command on an MM2 locomotive offers only F0 to F4
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-464
 
 **Written:** 2026-09-24
@@ -26651,13 +26749,21 @@ autonomy editor."*
 
 - Only F0 to F4 are offered.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-532"></a>
 
 ### MT-532 - 2026-09-24 - Cancel after Copy Customizations puts the target's own icons back on its buttons at once
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-466
 
 **Written:** 2026-09-24
@@ -26673,6 +26779,14 @@ autonomy editor."*
 **Expected**
 
 - Its own functions and icons are back on its buttons straight away.
+
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
 
 ---
 
@@ -26700,13 +26814,23 @@ autonomy editor."*
 
 *What this is:* `ui.testTheLengthPromptHasTheKeyboard`.
 
+**Adam, 2026-09-24 (triage).** Could not run this.
+
+This option should never be greyed out completely (show the number of missing trains in parens).  and better disambiguate labels for "train lengths" from "max train lengths", since the latter deals with stations.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+**Your note is built** (2026-09-24): the item is never greyed and says how many are missing - MT-566 - and train lengths and station maxima are named apart - MT-567.  The steps above now run as written; the item is called Mass Assign Locomotive Train Lengths (2 missing)... with two trains at 0.
+
 ---
 
 <a id="mt-534"></a>
 
 ### MT-534 - 2026-09-24 - Bulk Tools is on the menu of an empty square and a text square
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-474
 
 **Written:** 2026-09-24
@@ -26724,13 +26848,21 @@ autonomy editor."*
 
 *What this is:* `ui.testBulkToolsHoldsTheWholeLayoutTools.testAnEmptySquaresMenuHasBulkTools`.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-535"></a>
 
 ### MT-535 - 2026-09-24 - The orange covers the square a train stands on and every sensor it lies across
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-475
 
 **Written:** 2026-09-24
@@ -26749,13 +26881,21 @@ autonomy editor."*
 - Step 3: orange on the station square and on every sensor the train lies across, stopping where its length ends.
 - Step 4: the orange pulls back at once.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-536"></a>
 
 ### MT-536 - 2026-09-24 - On a double curve the grey covers only the road the tail lies on
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-475, OB-280
 
 **Written:** 2026-09-24
@@ -26774,13 +26914,21 @@ autonomy editor."*
 
 *What this is:* `core.testTheGreyNamesTheRoadOnADoubleCurve`.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-537"></a>
 
 ### MT-537 - 2026-09-24 - Segment Length opens empty, and OK without a number records nothing
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-484, FR-097
 
 **Written:** 2026-09-24
@@ -26797,6 +26945,14 @@ autonomy editor."*
 
 - Step 1: the box is empty.
 - Step 2: the run is still highlighted as unmeasured.
+
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
 
 ---
 
@@ -26837,7 +26993,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-539 - 2026-09-24 - Return Home brings a train back facing the way its home was set
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-486, OB-282
 
 **Written:** 2026-09-24
@@ -26854,13 +27010,21 @@ Validated on your *Works* of 2026-09-24.
 
 - It comes back to BottomInner facing the way it faced in step 1.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-540"></a>
 
 ### MT-540 - 2026-09-24 - Setting a home for a train standing elsewhere asks which way it should face
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-486, OB-282
 
 **Written:** 2026-09-24
@@ -26876,6 +27040,14 @@ Validated on your *Works* of 2026-09-24.
 
 - You are asked which way the train should face there, offered only the ways it can.
 - Closing the question sets no home; answering sets it.
+
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
 
 ---
 
@@ -27534,7 +27706,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-559 - 2026-09-24 - At a station autonomy may choose, a short run-in says a longer train may block the layout
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-555
 
 **Written:** 2026-09-24
@@ -27550,6 +27722,14 @@ Validated on your *Works* of 2026-09-24.
 - BottomMainA, Tunnel, BottomInnerOtherside, LowerFront and TopMainR1Inter each say that a train longer than their run-in *stands across that switch while it is here, and may block other parts of the layout until it leaves* - none of them says *is refused*.
 
 *What this is:* `core.testAutonomyDiagramSession.testAPlatformIsToldALongTrainMayBlockAndABerthThatItIsRefused`, which also holds that a parking berth keeps *is refused*.
+
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
 
 ---
 
@@ -27585,7 +27765,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-561 - 2026-09-24 - A home on a parking berth every train turns at is not warned about
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-552
 
 **Written:** 2026-09-24
@@ -27602,13 +27782,21 @@ Validated on your *Works* of 2026-09-24.
 
 *What this is:* `core.testAutonomyDiagramSession.testAHomeOnAParkingBerthIsNotWarnedAboutTurning`; a station autonomy may choose keeps the warning.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-562"></a>
 
 ### MT-562 - 2026-09-24 - A station set to No - Nothing Can Pass says so, once
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-101
 
 **Written:** 2026-09-24
@@ -27626,13 +27814,21 @@ Validated on your *Works* of 2026-09-24.
 
 *What this is:* `core.testAutonomyDiagramSession.testAStationNothingCanPassIsSaidToBeClosed`.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-563"></a>
 
 ### MT-563 - 2026-09-24 - A straight put down between two pieces of track is turned to join them
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-292
 
 **Written:** 2026-09-24
@@ -27654,13 +27850,21 @@ Validated on your *Works* of 2026-09-24.
 
 *What this is:* `regression.testANewStraightJoinsTheTrackBesideIt`.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-564"></a>
 
 ### MT-564 - 2026-09-24 - No station on the railway is warned that it can refuse trains that would otherwise fit
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-552
 
 **Written:** 2026-09-24
@@ -27677,13 +27881,34 @@ Validated on your *Works* of 2026-09-24.
 
 *What this is:* `core.testMassAssignLengths.testASquareWithNoLengthBeforeTheSwitchDoesNotEndTheCount` and `core.testAutonomyDiagramSession.testABarredApproachIsNotJudgedAsHalfMeasured`; `...testTheHalfMeasuredWarningCountsTheSquares` holds the number in the sentence, which on your railway nothing now shows.
 
+**Adam, 2026-09-24 (triage).** Works, with notes.
+
+Works.  Let's deep dive if this measurement gap affected any other agreed upon logic.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+**The deep dive you asked for** (2026-09-24).  The question: did the count that stopped at the first square with no length - fixed here - have a twin anywhere else?  Every rule that counts track back from a station was read, then measured on a copy of your railway as it stands today.
+
+- The parking-berth rule, and the room behind a platform, both pass a square with no length for nothing and stop at the switch - the behaviour this entry brought the warning in line with.
+- The orange tail on the diagram, and the tail that blocks other trains, do the same.
+- The route in at a station autonomy may choose (FR-087) counts whole stretches between sensors: a square with no length inside a measured stretch counts nothing and the count goes on; a stretch with nothing measured on it ends the count, which can only refuse, never admit.
+- The tail question (FR-100) and today's own-tail rule (OB-294): where nothing is measured, nothing is judged.
+
+Measured on your railway: 28 approaches into parking berths - none refuses the station's own maximum, and none is warned.  16 run-ins shorter than their station's maximum - each has its notice, and at each the railway admits the longer train standing across the switch, as the notice says.  One exception, and it is not the gap: from TopR1ParkShort a 4-unit train is refused at TopMainR1Inter, because the whole route in from there measures 3 - the notice there says such a train "may block", and from that one berth it is refused instead (1 route of 67 into that station).  Nothing else found, and nothing changed.
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.  The deep dive you asked for is the comment above.
+
 ---
 
 <a id="mt-565"></a>
 
 ### MT-565 - 2026-09-24 - The tail question is asked on the diagram
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-100
 
 **Written:** 2026-09-24
@@ -27705,5 +27930,195 @@ Validated on your *Works* of 2026-09-24.
 - Step 4: the window closes and the lights go out; the tail stops at the switch, as Not known always has.
 
 *What this is:* `regression.testTheTailIsPickedOnTheDiagram`, which also holds that a question with a sensor on another page, or drawn nowhere, keeps the list.
+
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit d252fc3c, in English - build\classes, compiled 24 Sep 13:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
+---
+
+<a id="mt-566"></a>
+
+### MT-566 - 2026-09-24 - The locomotive train-length walk is never greyed, and counts
+
+**Disposition:** fixed unvalidated
+**From:** MT-533
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Adam, 2026-09-24, on MT-533: *"This option should never be greyed out completely (show the number of missing trains in parens)."*
+
+**Steps**
+
+1. Give every placed train a length, then in the autonomy editor open Bulk Tools.
+2. Choose Mass Assign Locomotive Train Lengths..., press Skip at the first prompt, then Cancel.
+3. Give one placed train length 0 in its locomotive menu, and open Bulk Tools again.
+4. Put that train's length back.
+
+**Expected**
+
+- Step 1: the item reads Mass Assign Locomotive Train Lengths (0 missing)... and is not greyed.  Its tooltip says every locomotive already has a length and this goes through them all.
+- Step 2: the prompt names the first locomotive, where it stands and the length it has, and offers Skip to keep it.  Skip leaves the length as it was.
+- Step 3: the item reads (1 missing).
+
+*What this is:* `core.testMassAssignLengths.testTheTrainWalkItemCountsAndIsNeverGreyed` and `testWithEveryTrainMeasuredTheWalkShowsEachAndSkipKeepsIt`.
+
+---
+
+<a id="mt-567"></a>
+
+### MT-567 - 2026-09-24 - Train lengths and station maximum lengths are named apart
+
+**Disposition:** fixed unvalidated
+**From:** MT-533
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Adam, 2026-09-24, on MT-533: *"better disambiguate labels for "train lengths" from "max train lengths", since the latter deals with stations."*
+
+**Steps**
+
+1. In the autonomy editor, open Bulk Tools and read the length items.
+
+**Expected**
+
+- The item about trains reads Mass Assign Locomotive Train Lengths (N missing)...; the two about stations read Mass Assign Station Max Train Lengths... and Clear All Station Max Train Lengths (N).
+
+*What this is:* `core.testMassAssignLengths.testTrainLengthsAndStationMaximaAreNamedApart`.
+
+---
+
+<a id="mt-568"></a>
+
+### MT-568 - 2026-09-24 - One-Way Run is greyed on a page left out of autonomy
+
+**Disposition:** fixed unvalidated
+**From:** OB-235, MT-528
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Adam, 2026-09-24, on MT-528: *"works, but one-way run isn't."*  Test Route and Why not Moving? were greyed on a page left out, and One-Way Run was not: its two clicks completed and the refusal blamed the track.
+
+**Steps**
+
+1. In the autonomy editor, go to 4 - Combined, which is left out of autonomy.
+2. Look at the One-Way Run button, then hover Bulk Tools > One-Way Run.
+3. Go back to 1 - Main, press One-Way Run, then switch to 4 - Combined before clicking anything.
+
+**Expected**
+
+- Step 2: both are greyed, and the Bulk Tools item's tooltip says the page is left out.
+- Step 3: the button is greyed and no longer pressed - nothing waits for a click on that page.
+
+*What this is:* `core.testMassAssignLengths.testOneWayRunIsGreyedOnAPageLeftOut`.
+
+---
+
+<a id="mt-569"></a>
+
+### MT-569 - 2026-09-24 - The guard items say what each guard does
+
+**Disposition:** fixed unvalidated
+**From:** OB-293
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Adam, 2026-09-24: *"add brief tooltips on what entry guards and exit guards are to their items in the autonomy right click menu"*.
+
+**Steps**
+
+1. In the autonomy editor, right-click a station and hover Exit Guard Signal..., then Entry Guard Signal....
+
+**Expected**
+
+- Exit Guard: signals held at red while this station is taken - a train standing here, or one on its way - and set to green again once it is free; only while trains are running.
+- Entry Guard: signals set to red when a train arrives here at the end of its journey, and set to green again only by the next route that needs them.
+
+*What this is:* `regression.testTheEditorSaysWhatItsToolsDo.testTheGuardItemsSayWhatTheGuardsDo`.
+
+---
+
+<a id="mt-570"></a>
+
+### MT-570 - 2026-09-24 - Why not Moving? outlines the squares with trains while it waits
+
+**Disposition:** fixed unvalidated
+**From:** FR-102, MT-516
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Adam, 2026-09-24: *"when the button is pressed an nothing is drawn yet, highlight stations w/ trains on the editor diagram so it's clear what the user can click on"*.  Greying everything else, which you said to consider, is not done: the outline alone marks what can be clicked, and the rest of the page stays readable.
+
+**Steps**
+
+1. In the autonomy editor, on a page with trains on it, press Why not Moving?.
+2. Click one of the outlined squares.
+
+**Expected**
+
+- Step 1: every square with a train on it is outlined, and no square without one.
+- Step 2: the answer is drawn as before, and the outlines go.
+
+*What this is:* `regression.testTheEditorSaysWhatItsToolsDo.testWhyNotMovingOutlinesTheTrains`.
+
+---
+
+<a id="mt-571"></a>
+
+### MT-571 - 2026-09-24 - A train is not sent round a loop into its own tail
+
+**Disposition:** fixed unvalidated
+**From:** OB-294
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Adam, 2026-09-24: *"EN57-203 from bottomsecondary to lowerfront may run over its own tail.  make sure the model factors in whether the train will clear the area before it crosses over."*  And: *"the check should pass if the train would be gone (i.e. if that one was only length 4, for example)."*  Every way from BottomSecondary to LowerFront leaves west, round by the tunnel, and comes back east along row 11 - over the track a train that came down RampDown is lying on.  Nine measured units separate leaving that track and coming back to it.
+
+**Steps**
+
+1. Set things up as for OB-294: LowerFront's size raised, EN57-203 standing at BottomSecondary having come down RampDown.
+2. Set EN57-203's length to 20 and send it to LowerFront the way you did for OB-294.
+3. Set its length to 10 and send it again.
+4. Set its length to 9 and send it again.
+5. Put its length and LowerFront's size back.
+
+**Expected**
+
+- Step 2: refused.  The message says EN57-203 (length 20) would run into its own tail on BottomMainAPre -> BottomCrossover, coming back after only 9 units, and that a train of 9 units or shorter is clear of it in time.
+- Step 3: refused the same way.
+- Step 4: it goes.
+
+*What this is:* `core.testATrainDoesNotRunIntoItsOwnTail`: 20 refused and 4 clear on the frozen railway, the refusal's figure true at the figure and false one past it, a train leaving over its own tail and a turn on the way not refused, and Return Home planning no such route - all red under their own mutations.  Measured on the frozen railway, no route between stations comes back to a train's own track in fewer than 9 units, so no train of 9 or less is refused by this anywhere.
+
+---
+
+<a id="mt-572"></a>
+
+### MT-572 - 2026-09-24 - Train lengths go to 40, in both lists
+
+**Disposition:** fixed unvalidated
+**From:** OB-294
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Adam, 2026-09-24: *"separately, increase choosable train lengths up to 40 in the dropdown."*  The Edit Locomotive window kept a 0 to 20 list of its own, so a longer train would have opened there as 20, and OK would have saved it.
+
+**Steps**
+
+1. Set a locomotive's train length from its locomotive menu, and scroll to the end of the list.
+2. Choose 40.
+3. Open that locomotive's Edit Locomotive window in the autonomy editor, look at its train length, and press OK.
+4. Put its length back.
+
+**Expected**
+
+- Step 1: the list runs 0 to 40.
+- Step 3: it shows 40, and after OK the locomotive is still 40 long.
+
+*What this is:* `regression.testAPlacedTrainRecordsWhereItCameFrom.testTheEditViewOffersEveryLengthTheMenuDoes`.
 
 ---
