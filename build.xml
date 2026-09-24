@@ -275,6 +275,7 @@
         <test-one-class class="testNoTwoShortcutsShareAKey"/>
         <test-one-class class="testAShortTrainDoesNotBlockTheWholeRun"/>
         <test-one-class class="testTheGreyNamesTheRoadOnADoubleCurve"/>
+        <test-one-class class="testTheLoaderDoesNotCallAStationANonStation"/>
         <test-one-class class="testABerthAndAPlatformJudgeAnOverhangDifferently"/>
         <test-one-class class="testAMayTurnStationIsNotATerminus"/>
         <test-one-class class="testTheArrivalHonoursTheAnswer"/>
