@@ -75,8 +75,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-492](#mt-492) | 2026-09-24 | Return Home finds a plan on a crowded railway | fixed unvalidated | OB-230, AMH-C1 |
 | [MT-493](#mt-493) | 2026-09-24 | A station's entry guard can never be its exit guard | fixed unvalidated | AUT-C2 |
 | [MT-494](#mt-494) | 2026-09-24 | After a run, the Facing menu turns the train that is there | fixed unvalidated | TDY4-C5 |
+| [MT-495](#mt-495) | 2026-09-24 | A train turned at Tunnel is not sent into a parked train's tail | fixed unvalidated | OB-285, AUT2-C2 |
 
-Everything else - 446 of 494 - needs nothing from you unless the area changes again:
+Everything else - 446 of 495 - needs nothing from you unless the area changes again:
 394 **fixed validated** and 52 **superseded**.
 
 ---
@@ -25289,5 +25290,40 @@ setup last had on a square rather than the one standing there, and choosing a di
 
 *What this is:* `regression.testTheFacingMenuIsAboutTheTrainThere`, on your frozen railway with the setup's train and
 the railway's train deliberately different.  That it reads right after a real run is what only you can check.
+
+---
+
+<a id="mt-495"></a>
+
+### MT-495 - 2026-09-24 - A train turned at Tunnel is not sent into a parked train's tail
+
+**Disposition:** fixed unvalidated
+**From:** OB-285, AUT2-C2
+
+**Written:** 2026-09-24
+
+**What was wrong.**  A train turned where it stands - reversed on the throttle, or turned with the Facing menu -
+leaves over its own tail, and the check for tails on its way out stopped at its own.  So another train's tail across
+the same points was not seen, and the turned train was cleared into it.  Your ruling of 2026-09-24: *"Add the
+refusal"*.
+
+**Steps**
+
+1. With autonomy stopped, give a train in TunnelRightPark a length of 3 in the locomotive window (the park allows 2,
+   so the tail sticks out across the points at column 7).  Place it there if it is not.
+2. Drive another train into Tunnel from the south, then reverse it on the throttle so it faces south.
+3. Right-click Tunnel on the track diagram and look for a route south towards BottomMainAPre, or try to send it
+   there.
+4. Put the first train's length back as it was, and try again.
+
+**Expected**
+
+- Step 3: no route south through those points is offered, or the send is refused and the log names the train in
+  TunnelRightPark as lying across the track.
+- Step 4: the route south is offered again.
+
+*What this is:* `core.testATurnedTrainIsNotSentIntoAnotherTail`, on the frozen copy of your railway: the railway and
+Return Home both refuse the turned train's way out while the parked train lies across it, and both let it go once
+that train has gone.  That the refusal reads right on screen is what only you can check.
 
 ---

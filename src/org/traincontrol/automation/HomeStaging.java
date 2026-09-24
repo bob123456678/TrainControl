@@ -1639,12 +1639,9 @@ public final class HomeStaging
 
         Locomotive direct = this.coveredAtStart.get(edge);
 
-        // THE MOVER'S OWN TAIL ON IT, and nothing else is asked - as `Layout.isPathClear` asks nothing else there, and a
-        // proof may be looser than the search it guards, never tighter.  (Whether the runtime should ask further is
-        // filed, not decided here.)
-        if (direct != null && direct.equals(mover)) return true;
-
-        if (direct != null) lyingAcross.add(direct);
+        // THE MOVER'S OWN TAIL IS NOT THE ANSWER, only not an obstacle (OB-285): the other trains on the same metal are
+        // still asked about, as `Layout.isPathClear` asks them since the same change.
+        if (direct != null && !direct.equals(mover)) lyingAcross.add(direct);
 
         // AND THE TRACK IT SHARES METAL WITH, which is where this actually bites (OB-184).
         //

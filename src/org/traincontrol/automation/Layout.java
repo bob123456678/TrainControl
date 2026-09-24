@@ -2690,6 +2690,14 @@ public class Layout
         {
             Locomotive lyingAcross = coveredTrack.get(e);
 
+            // ITS OWN TAIL IS NOT THE ANSWER, only not an obstacle (OB-285; Adam, 2026-09-24: "Add the refusal").  Taken
+            // as the answer, it ended the question: a train turned where it stands - reversed on the throttle, turned
+            // with the Facing menu or at a square trains may turn at - leaves over its own tail, so that tail is the
+            // first found on its way out, and another train's tail on the same stretch was never looked for.  Measured
+            // on Adam's railway: a train turned at Tunnel was cleared south through the points at column 7 with a train
+            // in TunnelRightPark lying across them - 10 such cases on 4 squares.  So the other two questions are asked.
+            if (lyingAcross != null && lyingAcross.equals(loc)) lyingAcross = null;
+
             // AND THE TRACK IT SHARES WITH SOMETHING COVERED.
             //
             // Adam, 2026-09-07: EN57-203 "is allowed to traverse a blocked/shaded switch (60) to get

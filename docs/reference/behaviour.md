@@ -1113,7 +1113,13 @@ The editor notice about turn-round squares with no length is a different questio
   path plus the square it arrives at, so only the arriving copy carries the square the train is on -
   and taking the other one left that square claimed by nobody, at some stations and not at others.
   Where there is no arriving copy - a square a train has been turned on - the other is still used.
-- A train never blocks itself — pulling forward off its own tail is how it leaves.
+- A train never blocks itself — pulling forward off its own tail is how it leaves. **But its own tail is not an
+  answer for anybody else's** (OB-285; Adam, 2026-09-24: *"Add the refusal"*). The check asked whose tail lay on each
+  piece of track and stopped at the first it found, so a train turned where it stands - reversed on the throttle,
+  turned with the Facing menu or at a square trains may turn at - found its own tail on its way out and looked no
+  further. On his railway a train turned at Tunnel was cleared south through the points at column 7 with a train in
+  TunnelRightPark lying across them; 10 such cases on 4 squares. Now the other trains are asked about there too, by
+  the railway and by Return Home alike. `core.testATurnedTrainIsNotSentIntoAnotherTail`.
 - **One tail per train, and a running train's starts at its head** (Adam, 2026-09-21, OB-243: *"the
   tail is certain at departure and shouldn't change.  You also know which way the train went ... Just
   unlock the rest of the diagram once the tail by length is far enough away"*). A locked path reserves
