@@ -519,6 +519,7 @@
         <test-one-class class="testCancelUndoesAutonomyEdits"/>
         <test-one-class class="testAPassingTrainMayStandAcrossThePoints"/>
         <test-one-class class="testTheTailCanBeGivenInTheEditor"/>
+        <test-one-class class="testTheFacingMenuIsAboutTheTrainThere"/>
         <test-one-class class="testPathTypeRedrawsTheTestInTheEditor"/>
         <test-one-class class="testTheWhyAnswerIsOnScreen"/>
         <test-one-class class="testTheMenusComeBackAtOneMoment"/>
