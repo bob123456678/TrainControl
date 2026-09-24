@@ -7,7 +7,9 @@ How a review round is run and recorded. Every rule below exists because it was b
 hundred and eight review documents were written between 26 July and 20 September 2026 and every one of
 them has been deleted - 143 on 2026-09-08 and 65 on 2026-09-21, alongside two for-Adam notes that were
 never reviews - once the catalogue was carrying
-what they found.
+what they found.  The five-lane review of 2026-09-23 wrote twenty more, in `docs/reviews-2026-09-23/`, over four
+rounds of fixes and validation, and they were deleted the same way in the commit that closed it; the counts below are
+of the two earlier deletions.
 
 **Where those numbers come from**, because a validation round re-derived them and got a different total
 (VD15-R2): `git log --diff-filter=D` counts **210 files** deleted from the review folders, 145 on
