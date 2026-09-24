@@ -1220,6 +1220,16 @@ public class AutonomyCompanionStore
         }
     }
 
+    /**
+     * Whether any direction has been set on this diagram - a fresh one has none, since a default is never stored.
+     *
+     * @return true once anybody has set one
+     */
+    public boolean hasTileDirections()
+    {
+        return !tileDirections.isEmpty();
+    }
+
     public Direction getTileDirection(TileKey tile, RouteId routeId)
     {
         String value = tileDirections.get(new DirectionKey(tile, routeId));

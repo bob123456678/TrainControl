@@ -750,7 +750,10 @@ public class AutonomySession
      * To the extent possible:
      *  - track the file ran both ways is left both ways, and so is a square two edges run over opposite ways;
      *  - an edge whose end is next by more than one side, or none, or across a link, is skipped for what it cannot say;
-     *  - and a direction the operator has set is never overwritten - the import fills gaps, as everything else here does.
+     *  - and ONLY ONTO A DIAGRAM NOBODY HAS SET A DIRECTION ON.  A default is stored as nothing, so filling the gaps of a
+     *    tuned diagram cannot tell track left running both ways on purpose from track nobody has looked at - on Adam's
+     *    own railway (118 set) it made 176 pieces one-way, 170 of them plain track he runs both ways, in the setup every
+     *    configuration shares.  There the pieces are only counted, for the log.
      * The facings are found afterwards, over the copies these directions make.
      *
      * @param oldEdges each edge as the squares of its two points (null for one this diagram does not draw)
@@ -815,6 +818,9 @@ public class AutonomySession
             }
         }
 
+        // A DIAGRAM WHOSE DIRECTIONS HAVE BEEN SET is left as it is, and what the file ran differently is counted.
+        boolean tuned = store.hasTileDirections();
+
         for (Map.Entry<TileGraph.DirectionKey, Direction> each : wanted.entrySet())
         {
             TileKey tile = each.getKey().square();
@@ -824,6 +830,13 @@ public class AutonomySession
             if (store.getTileDirection(tile, id) != null) continue;
 
             if (each.getValue() == graph.getDirection(tile, id)) continue;
+
+            if (tuned)
+            {
+                result.directionsNotCarried++;
+
+                continue;
+            }
 
             record(tile, id, each.getValue());
 

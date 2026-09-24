@@ -417,8 +417,8 @@ public class testAnImportedFacingGuessCanStart
      * A direction the operator set is kept, and where it keeps a train from standing the way the file ran it, the
      * import says so (Adam: *"to the extent possible"*; OB-270).
      *
-     * The import fills gaps, like everything else it writes.  Every piece of track the old file's edges run one way is
-     * set the other way round beforehand, by an operator who drew the railway backwards.  Every one stays so;
+     * Every piece of track the old file's edges run one way is set the other way round beforehand, by an operator who
+     * drew the railway backwards.  Every one stays so;
      * TopMainR1Inter, which the file entered from the north and left east, is now entered from the east only and cannot
      * hold the east the file ran its train; and the import names it.  With the old directions carried the fixture no
      * longer reaches that path by itself, so this is the claim that keeps it.

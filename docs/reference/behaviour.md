@@ -1875,10 +1875,13 @@ autonomy.json takes each train's facing from the side its point's one-way edges 
 arrive in only where they cannot say (REG3-C1, REG4-A1, REG4-C1). **The old file's directions are carried onto the
 diagram first** (Adam, 2026-09-24: *"Carry the old file's directions onto the diagram - yes, to the extent
 possible."*): each one-way edge sets the track it ran over running its way, as the editor's one-way run does; track run
-both ways stays both; a direction the operator set is never overwritten; and the log says how much was carried. Where
-the diagram still cannot hold the file's facing - an operator's own direction closing the way - no impossible facing
-is saved (OB-270): the train stands the way the square allows, and the import's log names the square, since that is
-the other way round from how it drives.
+both ways stays both; and the log says how much was carried. **Only onto a diagram nobody has set a direction on** -
+the fresh upgrade the ruling was for. A default is stored as nothing, so on a tuned diagram the import cannot tell
+track left running both ways on purpose from track nobody has looked at: on Adam's own railway it would have made 176
+pieces one-way, 170 of them plain track he runs both ways, and directions are shared by every configuration. There the
+diagram is left as it is and the log counts what the file ran differently. Where the diagram cannot hold the file's
+facing, no impossible facing is saved (OB-270): the train stands the way the square allows, and the import's log names
+the square, since that is the other way round from how it drives.
 
 **The flag is decided once**, and that is a fix rather than a tidy: it is emitted as both `station` and
 the terminus, and read twice the turn-round copy of a barred side came out as a terminus that is not a
