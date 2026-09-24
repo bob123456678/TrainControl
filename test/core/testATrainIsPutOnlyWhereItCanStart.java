@@ -643,6 +643,114 @@ public class testATrainIsPutOnlyWhereItCanStart
     }
 
     /** Stands the train on a copy of the square facing this way that it can start from, and says which. */
+    /**
+     * At a square every train must turn round at, a train facing the barred way is told to drive it off by hand or turn
+     * it round - not to open the side (GUI4-C3, Adam 2026-09-24: *"offer the other two remedies only"*).
+     *
+     * A terminus reached from two sides is an error (MT-361), whose own remedy is to close one of them - so "open that
+     * side" there sends the operator from one refusal into a loop.  BottomMainA made a compulsory turn, its east side
+     * still barred: the train turned to face east stands on the barred turning copy.
+     *
+     * MUTATION: offer the three remedies whatever the square, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAtACompulsoryTurnOpeningTheSideIsNotOffered() throws Exception
+    {
+        AutonomySession session = session();
+
+        TileKey mainA = square(session, "BottomMainA");
+
+        session.setPointProperty(mainA, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, Boolean.TRUE);
+
+        try
+        {
+            assertFalse(session.terminiWithTwoWaysIn().containsKey(mainA), "precondition: BottomMainA made a compulsory"
+                + " turn is already the terminus error, so its east side is not barred");
+
+            final Layout running = build(session);
+
+            session.setRunningLayoutSource(() -> running);
+
+            stoodFacing(session, running, mainA, Side.W);
+
+            session.placeLocomotive(mainA, PROBE);
+
+            session.flipFacing(PROBE, running);
+
+            Point standing = standingOn(running);
+
+            assertTrue(standing != null && running.isABarredCopyOfAStation(standing), "precondition: turned round at"
+                + " BottomMainA, the train does not stand on the copy trains may not arrive at: " + standing);
+
+            String said = running.explainCannotStart(model.getLocByName(PROBE));
+
+            assertEquals(said, org.traincontrol.util.I18n.f("autolayout.why.startFacingBarredMustTurn", "BottomMainA"),
+                "at a compulsory turn the train facing the barred way is offered opening that side, which raises the"
+                + " terminus error (GUI4-C3)");
+        }
+        finally
+        {
+            session.setPointProperty(mainA, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, null);
+        }
+    }
+
+    /**
+     * A placement keeps a heading a train can leave by, and turns only one it cannot (OB-284).
+     *
+     * Adam, 2026-09-24: *"this should check for barred departure directions, not arrival ones.  for barred arrival
+     * directions, keep the direction.  for barred departure directions, turn it to a way trains may arrive in"*.  At
+     * BottomMainA, arrivals from the east barred, a train facing west stands on a copy trains may not arrive at - and can
+     * leave by the west, so a paste, the editor's Place and the Place Locomotive dialog keep it facing west.  Made
+     * one-way eastward on its approach, the west copy has no way out: then the placement turns the train east, a way
+     * trains may arrive in.
+     *
+     * MUTATION: keep only headings trains may arrive in, as before, and the first half fails; keep any heading, and the
+     * second does.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAPlacementKeepsAHeadingItCanLeaveBy() throws Exception
+    {
+        AutonomySession session = session();
+
+        TileKey mainA = square(session, "BottomMainA");
+
+        Layout running = build(session);
+
+        String westbound = copyFacing(session, mainA, Side.W);
+
+        assertNotNull(westbound, "precondition: BottomMainA has no copy facing west");
+        assertFalse(running.getPoint(westbound).isDestination(), "precondition: trains may arrive at BottomMainA"
+            + " facing west, so nothing here is about a barred arrival");
+        assertFalse(running.getNeighbors(running.getPoint(westbound)).isEmpty(), "precondition: a train facing west"
+            + " at BottomMainA has no way out west");
+
+        assertEquals(AutonomySession.facingAfterAPaste(session.departableFacingsFor(mainA, running), Side.W, null),
+            Side.W, "a train facing west at BottomMainA, where trains may not arrive facing west and can leave by the"
+            + " west, is turned east by a placement (OB-284: \"for barred arrival directions, keep the direction\")");
+
+        // AND WITH NO WAY OUT WEST, turned to a way trains may arrive in.
+        assertTrue(session.setOneWayRun(square(session, "BottomMainAPre"), mainA) > 0, "precondition: no run from"
+            + " BottomMainAPre to BottomMainA to make one-way");
+
+        running = build(session);
+
+        String stillWestbound = copyFacing(session, mainA, Side.W);
+
+        assertTrue(stillWestbound == null || running.getNeighbors(running.getPoint(stillWestbound)).isEmpty(),
+            "precondition: made one-way toward BottomMainA, a train facing west there still has a way out");
+
+        Side placed = AutonomySession.facingAfterAPaste(session.departableFacingsFor(mainA, running), Side.W, null);
+
+        assertTrue(placed != Side.W, "a train facing west at BottomMainA, where no train can leave by the west, is"
+            + " left facing west by a placement (OB-284: \"for barred departure directions, turn it\")");
+        assertTrue(placed == null || session.homeFacingsFor(mainA).contains(placed), "turned, it faces " + placed
+            + ", which is not a way trains may arrive in (OB-284)");
+    }
+
     private static Point stoodFacing(AutonomySession session, Layout running, TileKey square, Side facing)
     {
         for (Map.Entry<String, Side> copy : session.facingsFor(square).entrySet())

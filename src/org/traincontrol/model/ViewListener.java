@@ -145,6 +145,25 @@ public interface ViewListener
      * @return how many routes were added
      */
     public int importRoutes(String json);
+
+    /**
+     * The same, turning automatic firing back on for the routes the file saved with it on, when the operator said so
+     * (REG2-C7).
+     *
+     * @param json the export
+     * @param armAsSaved whether a route saved armed arrives armed
+     * @return how many routes were added
+     */
+    public int importRoutes(String json, boolean armAsSaved);
+
+    /**
+     * The routes a route export saved with their automatic firing on, by name (REG2-C7) - what the import door asks
+     * about before anything is replaced.
+     *
+     * @param json the export
+     * @return their names, empty when there are none or the file cannot be read
+     */
+    public List<String> routesSavedArmed(String json);
     public List<Locomotive> getLocomotives();
     public void changeLocAddress(String locName, int newAddress, decoderType newDecoderType) throws Exception;
     public void sendPing(boolean force);

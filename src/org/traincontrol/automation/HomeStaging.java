@@ -54,6 +54,17 @@ public final class HomeStaging
     private static final int SEARCH_LIMIT = 50000;
 
     /**
+     * How heavily the second half of the search weighs the moves still needed against the moves made (OB-230).
+     *
+     * At 1 the search finds the shortest plan and, on a crowded railway, runs out of time finding it.  Weighted, it
+     * heads for arrangements with less left to do and may return a plan longer than the shortest - by at most this
+     * factor, since the estimate never overstates.  Measured on Adam's measured layout (2026-09-24): at 2, the six-train
+     * arrangement of `core.testReturnHomeFindsAPlanOnAFullRailway` was still not solved in fifteen seconds; at 5 it was,
+     * in ten moves and under five.
+     */
+    private static final int ANY_PLAN_WEIGHT = 5;
+
+    /**
      * Wall clock, because a state count cannot bound the time this takes.
      *
      * Expanding one state runs firstClearRoute once per locomotive per station, and each of those is a
@@ -64,12 +75,14 @@ public final class HomeStaging
      * NO_PLAN_FOUND already says "may still be possible", which is exactly the right claim to make when
      * the answer is cut short.  What was wrong was how long it took to say it.
      *
-     * **One budget for the whole search, shared out** (MFR-C2, MFV-B1).  A railway with no plan says so within this,
-     * not twice this - but not by letting the first search spend it all: A* from where the greedy pass stopped may use
-     * half, and A* from the start has what is left.  The retry exists for exactly the arrangement that exhausts the
-     * first search (OB-228: a train parked with no way out, its tail across another's road), so a shared deadline gave
-     * it no time on the one railway it was for.  When the greedy pass moved nothing there is one search, and it has the
-     * whole budget.
+     * **One budget for the whole search, shared out** (MFR-C2, MFV-B1, OB-230).  A railway with no plan says so within
+     * this, not twice this - but not by letting the first search spend it all.  A third looks for the SHORTEST plan
+     * from where the greedy pass stopped, a third for the shortest from the railway as it stands - the retry OB-228
+     * needs, for a train the greedy pass parked with no way out, its tail across another's road - and the last third
+     * for ANY plan from the railway as it stands, with the estimate weighted (`ANY_PLAN_WEIGHT`).  Halves, shortest then
+     * any, when the greedy pass moved nothing.  The last share is what finds a plan on a crowded railway where the
+     * shortest cannot be found in time: measured on Adam's measured layout, six trains came back NO_PLAN_FOUND at
+     * fifteen seconds and at a hundred and fifty (`core.testReturnHomeFindsAPlanOnAFullRailway`).
      */
     private static final long SEARCH_BUDGET_MS = 15000;
 
@@ -830,10 +843,14 @@ public final class HomeStaging
         // A* starts from the greedy pass's arrangement, so it inherits the routes that pass gave (OB-228).
         this.greedyMovedAlong = new java.util.HashMap<>(this.movedAlong);
 
-        // HALF FOR THIS SEARCH, when a retry from the start may follow it (MFV-B1).
-        long firstDeadline = this.searchStarted + (plan.isEmpty() ? SEARCH_BUDGET_MS : SEARCH_BUDGET_MS / 2);
+        // A SHARE OF THE BUDGET EACH (MFV-B1, OB-230): the shortest plan from where the greedy pass stopped, the shortest
+        // from the railway as it stands, then any plan.  Thirds when the greedy pass moved something; halves when it
+        // moved nothing, because then the first two would search from the same arrangement.
+        boolean retry = !plan.isEmpty();
 
-        List<Move> rest = astar(state, firstDeadline);
+        long share = SEARCH_BUDGET_MS / (retry ? 3 : 2);
+
+        List<Move> rest = astar(state, this.searchStarted + share, 1);
 
         if (rest != null)
         {
@@ -846,22 +863,35 @@ public final class HomeStaging
         // it meets the trains, and once the tails of moved trains are modelled a move it makes can be the one that
         // blocks the rest: it parks a train on a platform with no way out and leaves the tail across the run another
         // train needs, and no search from there can take it back.  So when nothing is found from the greedy
-        // arrangement, search again from the railway as it stands.  Nothing to retry when the greedy pass moved
-        // nothing - both searches would start from the same arrangement.
-        if (plan.isEmpty()) return null;
-
+        // arrangement, search again from the railway as it stands.
         this.greedyMovedAlong = new java.util.HashMap<>();
 
-        return astar(new LinkedHashMap<>(this.start), this.searchStarted + SEARCH_BUDGET_MS);
+        if (retry)
+        {
+            List<Move> fromTheStart = astar(new LinkedHashMap<>(this.start), this.searchStarted + 2 * share, 1);
+
+            if (fromTheStart != null) return fromTheStart;
+        }
+
+        // AND THEN FOR ANY PLAN, NOT THE SHORTEST (OB-230, Adam 2026-09-15: *"the whole point of the A* is to figure out
+        // how to rearrange other trains to park things when they belong"*).  On his measured railway six trains give
+        // some thirty-three onward moves an arrangement, and a search for the shortest plan examined 3,852 of them in
+        // fifteen seconds and found nothing - at ten times the budget, still nothing.  Weighted, the same search found a
+        // ten-move plan in under five.  A longer plan that brings everybody home is what the button is for; a shortest
+        // one is preferred wherever it can be had, which is the shares before this.  Not in place of the retry above:
+        // on the railway that retry exists for, the weighted search heads down sixty sidings and finds nothing in its
+        // time (`core.testReturnHomeKeepsClearOfTheTailsItLeaves`).
+        return astar(new LinkedHashMap<>(this.start), this.searchStarted + SEARCH_BUDGET_MS, ANY_PLAN_WEIGHT);
     }
 
     /**
-     * A* over configurations, with "locomotives not on their home" as the heuristic.
+     * A* over configurations, with `movesStillNeeded` as the heuristic, weighted by `weight`.
      *
-     * Admissible: every move relocates exactly one locomotive, so at least one move per misplaced one
-     * is needed.  Cheap, and enough to keep realistic layouts well inside the limit.
+     * Admissible: every move relocates exactly one locomotive, and the estimate counts only moves that cannot be
+     * avoided (OB-230).  It was the count of locomotives not on their home, which was not enough to keep a measured
+     * railway inside the budget.
      */
-    private List<Move> astar(Map<Point, Locomotive> from, long deadline)
+    private List<Move> astar(Map<Point, Locomotive> from, long deadline, int weight)
     {
         Map<String, Map<Point, Locomotive>> states = new HashMap<>();
         Map<String, Integer> cost = new HashMap<>();
@@ -881,7 +911,7 @@ public final class HomeStaging
         routesOf.put(startKey, startRoutes);
         states.put(startKey, from);
         cost.put(startKey, 0);
-        score.put(startKey, misplaced(from));
+        score.put(startKey, weight * movesStillNeeded(from));
 
         // Ordered on a precomputed f-score.  Computing it inside the comparator instead would rescan
         // every locomotive on every comparison - O(log n) comparisons per queue operation, each doing
@@ -894,9 +924,15 @@ public final class HomeStaging
         // letting polls return states that were not the cheapest.  Plans stayed valid - the closed set
         // makes revisits harmless - but the search spent its budget out of order, and NO_PLAN_FOUND is
         // precisely a statement about that budget.
-        PriorityQueue<Scored> open = new PriorityQueue<>((a, b) -> Integer.compare(a.score, b.score));
+        // AND TIES BROKEN TOWARDS THE GOAL (OB-230).  Many arrangements share a score, and among them the queue took
+        // whichever it held first - so the search spread across every equally promising order before going deeper
+        // into any, which is how a solvable arrangement spent its whole budget and came back NO_PLAN_FOUND.  Of two
+        // with the same score, the one with fewer moves still needed is the one further along.  The score is still
+        // what orders the queue, so a plan found is still one of the fewest moves.
+        PriorityQueue<Scored> open = new PriorityQueue<>((a, b) -> a.score != b.score
+            ? Integer.compare(a.score, b.score) : Integer.compare(a.stillNeeded, b.stillNeeded));
 
-        open.add(new Scored(startKey, score.get(startKey)));
+        open.add(new Scored(startKey, score.get(startKey), movesStillNeeded(from)));
 
         Set<String> closed = new HashSet<>();
         int examined = 0;
@@ -1032,11 +1068,13 @@ public final class HomeStaging
                     {
                         states.put(nextKey, next);
                         cost.put(nextKey, nextCost);
-                        score.put(nextKey, nextCost + misplaced(next));
+                        int stillNeeded = movesStillNeeded(next);
+
+                        score.put(nextKey, nextCost + weight * stillNeeded);
                         cameFrom.put(nextKey, currentKey);
                         arrivedBy.put(nextKey, new Move(l, path));
                         routesOf.put(nextKey, nextRoutes);
-                        open.add(new Scored(nextKey, score.get(nextKey)));
+                        open.add(new Scored(nextKey, score.get(nextKey), stillNeeded));
                     }
                 }
             }
@@ -1410,10 +1448,14 @@ public final class HomeStaging
         private final String key;
         private final int score;
 
-        private Scored(String key, int score)
+        /** The estimate alone, which breaks a tie between two equal scores (OB-230) */
+        private final int stillNeeded;
+
+        private Scored(String key, int score, int stillNeeded)
         {
             this.key = key;
             this.score = score;
+            this.stillNeeded = stillNeeded;
         }
     }
 
@@ -2637,6 +2679,76 @@ public final class HomeStaging
         if (at != null) state.remove(at);
 
         state.put(to, l);
+    }
+
+    /**
+     * The fewest moves that can still be needed from this arrangement - the A*'s estimate (OB-230).
+     *
+     * **Never more than the true number**, which is what keeps a plan found by the search one of the fewest moves.
+     * Three counts, each a move that cannot be avoided, and no move counted twice:
+     *
+     *  - every homed train away from home needs at least one - `misplaced`, which was the whole estimate;
+     *  - every HOMELESS train standing on the home of a train still away must move at least once, and `misplaced`
+     *    never counts a homeless train;
+     *  - every closed RING of trains each standing on the next one's home needs one more: the first to move cannot
+     *    go home, because another member of the ring is standing there.  A train stands on one square and a home
+     *    holds one train, so rings never share a member.
+     *
+     * Adam, deferring this until the railway was measured: *"I want to do the heuristic ... the whole point of the
+     * A* is to figure out how to rearrange other trains to park things when they belong."*  `misplaced` alone could
+     * not tell an arrangement where every train can drive home from one where they are wedged into each other, so
+     * the search spent its budget in breadth.
+     *
+     * @param state where the trains stand
+     * @return a lower bound on the moves still needed
+     */
+    private int movesStillNeeded(Map<Point, Locomotive> state)
+    {
+        int needed = misplaced(state);
+
+        // Who stands on the home of each homed train that is still away from it.
+        Map<Locomotive, Locomotive> onMyHome = new HashMap<>();
+        Set<Locomotive> homelessInTheWay = new HashSet<>();
+
+        for (Map.Entry<Locomotive, Point> homed : this.homes.entrySet())
+        {
+            Point at = locationOf(state, homed.getKey());
+
+            if (at == null || atHome(homed.getValue(), at)) continue;
+
+            for (Map.Entry<Point, Locomotive> standing : state.entrySet())
+            {
+                if (standing.getValue().equals(homed.getKey()) || !atHome(homed.getValue(), standing.getKey())) continue;
+
+                if (this.homes.get(standing.getValue()) == null) homelessInTheWay.add(standing.getValue());
+                else onMyHome.put(homed.getKey(), standing.getValue());
+            }
+        }
+
+        needed += homelessInTheWay.size();
+
+        // The rings: follow each train to whoever stands on its home, until the chain ends or closes.
+        Set<Locomotive> seen = new HashSet<>();
+
+        for (Locomotive start : onMyHome.keySet())
+        {
+            if (seen.contains(start)) continue;
+
+            List<Locomotive> chain = new ArrayList<>();
+            Locomotive at = start;
+
+            while (at != null && !seen.contains(at) && !chain.contains(at))
+            {
+                chain.add(at);
+                at = onMyHome.get(at);
+            }
+
+            if (at != null && chain.contains(at)) needed++;
+
+            seen.addAll(chain);
+        }
+
+        return needed;
     }
 
     /** Homed locomotives that are not on their home.  Free agents are never counted - they may end

@@ -250,6 +250,32 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
+     * Every placement door asks which headings a train can LEAVE by, not which it may arrive in (OB-284).
+     *
+     * Adam, 2026-09-24: *"this should check for barred departure directions, not arrival ones."*  The rule is claimed in
+     * `core.testATrainIsPutOnlyWhereItCanStart`; this is its three call sites - the extracted rule moves the bug to the
+     * call.
+     *
+     * MUTATION: have any door filter by `placeableFacingsFor` again, and this fails.
+     *
+     * @throws Exception reading the sources
+     */
+    @Test
+    public void testThePlacementDoorsKeepAHeadingATrainCanLeaveBy() throws Exception
+    {
+        for (String door : new String[] {"src/org/traincontrol/gui/TrainControlUI.java",
+            "src/org/traincontrol/gui/GraphLocAssign.java", "src/org/traincontrol/gui/AutonomyEditorPanel.java"})
+        {
+            String source = withoutComments(read(door));
+
+            assertFalse(source.contains("placeableFacingsFor("), door + " still chooses a placed train's heading among"
+                + " the ways trains may arrive in, which turns round a train that can leave the way it faces (OB-284)");
+            assertTrue(source.contains("departableFacingsFor("), door + " no longer asks which headings a train can"
+                + " leave by (OB-284)");
+        }
+    }
+
+    /**
      * Only the rebuild's put-back stands a train on a copy of a station trains may not arrive at (REG4-C3, TDY3-A1).
      *
      * `moveLocomotive`'s four-argument form accepts such a copy when its last argument is true, and the guard above

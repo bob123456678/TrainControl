@@ -1687,6 +1687,13 @@ not fight: the post-processor only ever sees what the focus owner did not want.
   station closed by one already parked, and Return Home answers `NO_PLAN_FOUND` — not `IMPOSSIBLE`,
   which names locomotives and asserts no arrangement exists. See §1.
 - It never asks the operator anything: the operator's decision was made when the homes were set.
+- **The shortest plan where it can be had, and some plan where it cannot** (OB-230, 2026-09-24). The fifteen-second
+  budget is shared: a third looks for the plan with the fewest moves from where the quick first pass left the trains,
+  a third for the fewest from where they stand (the retry for a first pass that boxed itself in), and if both find
+  nothing, the last third looks for any plan, weighing the moves still needed five times the moves made, so it may
+  return a longer plan than the shortest (halves, fewest then any, when the first pass moved nobody). Measured on Adam's measured layout: six trains, each with a way home, came
+  back `NO_PLAN_FOUND` at fifteen seconds and at a hundred and fifty with only the first kind of search; the second
+  found ten moves in under five. `core.testReturnHomeFindsAPlanOnAFullRailway`.
 - **A train that cannot reverse is turned on the way only to go home** (Adam, 2026-09-15, AMH-B1: *"this should
   only be allowed if the train is going to reverse into its berth on the next turn"*). Every leg of a plan ends
   with the train turned round if it stops at a terminus or a reversing point, so a plan may stop such a train on one
@@ -2019,7 +2026,13 @@ because every run records its arrival in the same place (`Layout.executePath`). 
 throws nothing.  **Nothing turns it green**: *"The next route sets it green, so that is out of scope."*  So it is a
 command on an event rather than an aspect, and nothing is remembered or undone.
 
-The two lists are separate and thrown at different moments; one signal may be on both.  Both are dropped with the
+The two lists are separate and thrown at different moments, and **one station's entry guard is never its exit
+guard** (AUT-C2, Adam 2026-09-24: *"make sure the entry guard can never be the same as the exit guard.  otherwise, it's
+up to the user to set it up right."*): the editor refuses the pairing and says why, both setters refuse it, and a file
+that carries it anyway is warned about.  Two stations may still share a signal.  A guard that no way into its station
+passes - walked back from the station to the last station on each approach - gets a notice in the editor (*"if the
+guard signal is not on a path leading to the chosen station, we can add notice"*); where the guards are is otherwise
+the operator's.  Both are dropped with the
 station when it stops being one, and a pairing whose signal tile has gone is dropped when the setup is reconciled and
 reported by the editor's gone-signal notice.
 
@@ -2030,6 +2043,12 @@ user can choose to do this when they are ready."*  So Routes then Import reads e
 flag and then overrides it: nothing in an imported file starts watching a sensor until the operator
 turns it on.  That is the one thing about an import which is deliberately not a faithful restoration of
 what the file says.
+
+**Unless the operator asks for it** (REG2-C7, Adam 2026-09-24: *"save the state in the file on export, and ask the
+user on import.  if they want them armed, arm them.  otherwise, don't."*).  The export writes each route's `auto`, and
+where the file holds any route saved armed, the import asks - before anything is replaced, No the default - whether to
+turn automatic firing back on for those.  A Yes arms exactly those, after every route is in, and only one with a
+sensor to watch; a No, or a file with none saved armed, imports them all off as before.
 
 It is also what makes the import safe.  Building a route ARMS it - a route with a sensor and its flag
 set parks a thread on that sensor as soon as it exists - so before this, a file that failed to parse

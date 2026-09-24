@@ -139,4 +139,71 @@ public class testAnImportSaysItsRoutesAreOff
             + " it was running while it was imported, just before the notice that the routes arrive off: it was"
             + " built armed and disarmed afterwards (REG2-C6).  Logged: " + logged);
     }
+
+    /**
+     * Asked, the import turns automatic firing back on for the routes the file saved with it on - and only those
+     * (REG2-C7).
+     *
+     * Adam, 2026-09-24: *"save the state in the file on export, and ask the user on import.  if they want them armed,
+     * arm them.  otherwise, don't."*  The export has always written each route's `auto`; the import threw it away, so a
+     * restored backup came back with every route off and nothing said which had been on.
+     *
+     * MUTATION: ignore the answer, or arm every route, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test(dependsOnMethods = "testAnImportSaysTheRoutesArriveOff")
+    public void testAnImportArmsWhatWasSavedArmedWhenAsked() throws Exception
+    {
+        JSONArray routes = new JSONArray();
+
+        for (int i = 0; i < 2; i++)
+        {
+            List<RouteCommand> commands = new ArrayList<>();
+            commands.add(RouteCommand.RouteCommandAccessory(303 + i, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, true));
+
+            MarklinRoute fixture = new MarklinRoute(model, "REG2-C7 probe " + i, 9840 + i, commands, 8880 + i,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+            JSONObject saved = fixture.toJSON();
+
+            saved.put("auto", i == 0);
+
+            routes.put(saved);
+        }
+
+        String file = new JSONObject().put("routes", routes).toString();
+
+        assertEquals(model.routesSavedArmed(file), Collections.singletonList("REG2-C7 probe 0"), "the routes the file"
+            + " saved armed are not the one it saved armed");
+
+        logged.clear();
+
+        int added = model.importRoutes(file, true);
+
+        assertEquals(added, 2, "precondition: the file's two routes were not both imported");
+
+        assertTrue(model.getRoute("REG2-C7 probe 0").isEnabled(), "asked to, the import did not turn automatic firing"
+            + " back on for the route the file saved with it on (REG2-C7)");
+
+        assertFalse(model.getRoute("REG2-C7 probe 1").isEnabled(), "the import turned automatic firing on for a route"
+            + " the file saved with it off");
+
+        // AND IT IS WATCHING ITS SENSOR, as a route armed by hand is - the monitor says so when it starts.
+        long until = System.currentTimeMillis() + 3000;
+
+        while (!logged.contains(I18n.f("route.running", "REG2-C7 probe 0")) && System.currentTimeMillis() < until)
+        {
+            Thread.sleep(50);
+        }
+
+        assertTrue(logged.contains(I18n.f("route.running", "REG2-C7 probe 0")), "the route turned back on is not"
+            + " watching its sensor.  Logged: " + logged);
+
+        // NOT ASKED, NOTHING IS ARMED - the rule of 2026-09-10 stands for a No.
+        model.importRoutes(file, false);
+
+        assertFalse(model.getRoute("REG2-C7 probe 0").isEnabled(), "answered No, the import still turned automatic"
+            + " firing on");
+    }
 }

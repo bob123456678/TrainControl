@@ -6619,6 +6619,15 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
+        // NOT THE STATION'S OTHER GUARD (AUT-C2, Adam 2026-09-24: *"make sure the entry guard can never be the same as
+        // the exit guard"*).  The store refuses it as well; this is where the operator is told why.
+        if (signalsOf(guard == Guard.ENTRY ? Guard.EXIT : Guard.ENTRY, station).contains(signal))
+        {
+            say(hint, I18n.f(guard == Guard.ENTRY ? "autosetup.ui.signalIsTheExitGuard"
+                : "autosetup.ui.signalIsTheEntryGuard", addressOf(signal), describeTile(station)));
+            return;
+        }
+
         paired.add(signal);
 
         if (guard == Guard.ENTRY) session.setEntrySignals(station, paired);

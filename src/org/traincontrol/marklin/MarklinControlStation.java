@@ -4158,14 +4158,69 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public int importRoutes(String json)
     {
+        return importRoutes(json, false);
+    }
+
+    /**
+     * The routes a route export saved with their automatic firing on, by name (REG2-C7).
+     *
+     * Read here rather than out of `parseRoutesFromJson`, which overwrites each route's `auto` before it builds it and
+     * must go on doing so (REG2-C6: a route built armed starts watching its sensor at once).
+     *
+     * @param json the export
+     * @return their names, empty when there are none or the file cannot be read
+     */
+    @Override
+    public List<String> routesSavedArmed(String json)
+    {
+        List<String> out = new ArrayList<>();
+
+        try
+        {
+            org.json.JSONArray routes = new org.json.JSONObject(json).optJSONArray("routes");
+
+            for (int i = 0; routes != null && i < routes.length(); i++)
+            {
+                org.json.JSONObject route = routes.optJSONObject(i);
+
+                if (route != null && route.optBoolean("auto", false) && !route.optString("name", "").isEmpty())
+                {
+                    out.add(route.optString("name"));
+                }
+            }
+        }
+        catch (org.json.JSONException unreadable)
+        {
+            // The import itself says why the file cannot be read; there is nothing to ask about.
+        }
+
+        return out;
+    }
+
+    /**
+     * Replaces existing route data with that from a JSON file, turning automatic firing back on for the routes the file
+     * saved with it on when the operator said so (REG2-C7).
+     *
+     * @param json the export
+     * @param armAsSaved whether a route saved armed arrives armed
+     * @return how many routes were added
+     */
+    @Override
+    public int importRoutes(String json, boolean armAsSaved)
+    {
         List<MarklinRoute> routes = this.parseRoutesFromJson(json);
 
-        // EVERY ROUTE HERE IS DISARMED, and stays that way - parseRoutesFromJson says why, and it is
-        // Adam's ruling: an imported file does not start driving the railway until the operator turns
-        // its routes on.  A file's `auto` flag is therefore overwritten before anything reads it - in
-        // parseRoutesFromJson, before each route is built (REG2-C6) - which is the one thing about an
-        // import that is not a faithful restoration of what the file says.  Reporting which routes were
-        // saved armed would have to read it there, first.
+        // Asked about before anything is replaced, and answered by the operator (REG2-C7, Adam 2026-09-24: *"save the
+        // state in the file on export, and ask the user on import.  if they want them armed, arm them.  otherwise,
+        // don't."*).
+        java.util.Set<String> savedArmed = armAsSaved
+            ? new java.util.HashSet<>(routesSavedArmed(json)) : java.util.Collections.<String>emptySet();
+
+        // EVERY ROUTE HERE IS BUILT DISARMED - parseRoutesFromJson says why (REG2-C6): a route built armed
+        // starts watching its sensor at once, before the old routes are gone.  Adam's rule of 2026-09-10 is
+        // that an imported file does not start driving the railway until the operator says so; since
+        // 2026-09-24 the door asks, and a Yes turns automatic firing back on below, after every route is in,
+        // for exactly the routes the file saved with it on (REG2-C7).
         this.logf("route.deletingExisting");
         for (MarklinRoute r : this.routeDB.getItems())
         {
@@ -4189,6 +4244,30 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
         }
 
+        // ARMED AFTER EVERY ROUTE IS IN, as Enable Auto Execution arms one (REG2-C7): the old routes are gone, so no
+        // two watch one sensor.  Only a route that has a sensor to watch, as the right-click item requires.
+        int rearmed = 0;
+
+        for (MarklinRoute route : routes)
+        {
+            if (!savedArmed.contains(route.getName()) || !route.hasS88() || this.getRoute(route.getName()) != route)
+            {
+                continue;
+            }
+
+            route.enable();
+            route.executeAutoRoute();
+
+            rearmed++;
+        }
+
+        if (rearmed > 0)
+        {
+            this.logf(IMPORTED_ROUTES_REARMED, added, rearmed);
+
+            return added;
+        }
+
         // AND SAID (REG-B3).  At 2.8.1 an import restored each route as it was saved, which is what the pair of
         // buttons was introduced for - backups.  Disarming them is Adam's rule; saying so is what stops a restored
         // backup from first being noticed when a train runs through a sensor that used to set a road.  The door
@@ -4203,6 +4282,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * What an import of routes says about them, with the count, then Bulk Enable, then the right-click item (REG-B3).
      */
     public static final String IMPORTED_ROUTES_NOTICE = "route.infoImportedArriveDisarmed";
+
+    /**
+     * What an import says when the operator asked for the routes saved armed to be armed again: the count, then how
+     * many were (REG2-C7).
+     */
+    public static final String IMPORTED_ROUTES_REARMED = "route.infoImportedRearmed";
         
     /**
      * Exports the locomotive database to a user-friendly CSV file for reference

@@ -220,6 +220,19 @@ public class AutonomyChecks
     public static final String NO_SIGNAL_PAIRED = "autosetup.ui.checkNoProtectingSignal";
 
     /**
+     * One signal as both guards of one station, which the setters refuse and a loaded file can still carry (AUT-C2).
+     * A WARNING: the setup runs, and neither guard means what it was paired for.
+     */
+    public static final String GUARD_IS_BOTH = "autosetup.ui.checkGuardIsBoth";
+
+    /**
+     * A guard no way into its station passes (AUT-C2, Adam 2026-09-24: *"if the guard signal is not on a path leading
+     * to the chosen station, we can add notice to the autonomy editor"*).  A NOTICE: the setup is the operator's to get
+     * right, and this is only a pointer.
+     */
+    public static final String GUARD_OFF_THE_WAY_IN = "autosetup.ui.checkGuardOffTheWayIn";
+
+    /**
      * A station no train can arrive at any more.
      *
      * Every way in barred, which the editor refuses to do but a diagram edit can arrive at from the
@@ -393,7 +406,8 @@ public class AutonomyChecks
         Map<TileKey, String> repeatedSensorPages, Map<TileKey, Integer> reversalsWithoutLength,
         Set<TileKey> notAutoDestinations,
         Map<TileKey, String> copiesWithNoWayOut, Map<TileKey, String> copiesWithNoWayIn,
-        Map<TileKey, String> copiesReachingNoStation)
+        Map<TileKey, String> copiesReachingNoStation,
+        Map<TileKey, List<String>> guardsOnBothLists, Map<TileKey, List<String>> guardsOffTheWayIn)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -441,6 +455,9 @@ public class AutonomyChecks
         findings.addAll(checkProtectingSignals(reducer, signalsGone));
 
         findings.addAll(checkStationsWithoutSignals(reducer, stationsWithoutSignal));
+
+        findings.addAll(checkGuards(guardsOnBothLists, GUARD_IS_BOTH, Severity.WARNING));
+        findings.addAll(checkGuards(guardsOffTheWayIn, GUARD_OFF_THE_WAY_IN, Severity.NOTICE));
 
         Collections.sort(findings, new java.util.Comparator<Finding>()
         {
@@ -729,6 +746,27 @@ public class AutonomyChecks
 
             findings.add(new Finding(Severity.WARNING, FACING_IMPOSSIBLE,
                 point == null ? String.valueOf(tile) : point.getName(), tile));
+        }
+
+        return findings;
+    }
+
+    /**
+     * One finding per station and signal (AUT-C2): the station is `{0}` and the signal's name `{1}`.
+     *
+     * @param guards the stations, against the names of their signals the finding is about
+     * @param key the message
+     * @param severity how loudly
+     */
+    private static List<Finding> checkGuards(Map<TileKey, List<String>> guards, String key, Severity severity)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        if (guards == null) return findings;
+
+        for (Map.Entry<TileKey, List<String>> station : guards.entrySet())
+        {
+            for (String signal : station.getValue()) findings.add(new Finding(severity, key, signal, station.getKey()));
         }
 
         return findings;

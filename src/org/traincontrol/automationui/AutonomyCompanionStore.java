@@ -347,8 +347,9 @@ public class AutonomyCompanionStore
             for (TileKey signal : signals)
             {
                 // De-duplicated here rather than in the picker, so that nothing else which writes this
-                // - an import, a restored snapshot - can leave one signal in the list twice
-                if (signal != null && !keys.contains(signal)) keys.add(signal);
+                // - an import, a restored snapshot - can leave one signal in the list twice.  And never the
+                // station's own entry guard (AUT-C2, below).
+                if (signal != null && !keys.contains(signal) && !onList(entrySignals, station, signal)) keys.add(signal);
             }
         }
 
@@ -415,11 +416,28 @@ public class AutonomyCompanionStore
         if (signals != null)
         {
             // De-duplicated here, as the protecting list is, so no writer can leave one signal in it twice.
-            for (TileKey signal : signals) if (signal != null && !keys.contains(signal)) keys.add(signal);
+            //
+            // AND NEVER THE STATION'S OWN EXIT GUARD (AUT-C2, Adam 2026-09-24: *"make sure the entry guard can never be
+            // the same as the exit guard.  otherwise, it's up to the user to set it up right."*).  One signal on both
+            // lists is thrown red on arrival and then set by the platform's occupancy, so neither guard means what it
+            // was paired for.  Refused in both setters, whichever came first; the editor says why, and a file that
+            // carries it anyway is warned about by the checks.
+            for (TileKey signal : signals)
+            {
+                if (signal != null && !keys.contains(signal) && !onList(stationSignals, station, signal)) keys.add(signal);
+            }
         }
 
         if (keys.isEmpty()) entrySignals.remove(station);
         else entrySignals.put(station, keys);
+    }
+
+    /** Whether a station's list in one of the two guard maps holds this signal (AUT-C2) */
+    private static boolean onList(Map<TileKey, List<TileKey>> guards, TileKey station, TileKey signal)
+    {
+        List<TileKey> listed = guards.get(station);
+
+        return listed != null && listed.contains(signal);
     }
 
     /**

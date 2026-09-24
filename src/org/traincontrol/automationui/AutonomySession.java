@@ -620,7 +620,9 @@ public class AutonomySession
      *   priority          how strongly autonomy prefers this destination
      *   speedMultiplier   the pace trains take through it
      *   excludedLocs      the locomotives this station will not accept
-     *   active            whether the railway may use the square at all.  Carried as given.
+     *   active            whether the railway may use the square at all.  Carried as given, except on a
+     *                     station, where `false` arrives as "on, and not a destination autonomy chooses"
+     *                     (REG-B1, below).
      *
      * **The build stopped ignoring `active` on a non-station on 2026-09-02** (`D24-B5`), and this line
      * used to give that as the reason for carrying it unfiltered (`DY3-C2`).  The reason now is the
@@ -635,10 +637,10 @@ public class AutonomySession
      * For the eighteen stations it is not (REG-B1): v2.8.1 let a hand-picked route END on a switched-off
      * station, and sixteen of them are reversing stations the import already marks parking, where
      * `active: false` was the old way of saying "autonomy stays out, I drive in by hand".  After the
-     * import nobody drives in; switching the station back on is the way past, and for those sixteen it
-     * is safe because parking already keeps autonomy out.  Whether the import should translate the flag
-     * rather than carry it is Adam's decision.  It is recorded here because the change was argued
-     * entirely from the editor's menu and this is the other door it came through.
+     * import nobody drives in; switching the station back on is the way past.  **Adam's ruling, 2026-09-24:** *"yes,
+     * translate as on but not auto destination."*  So on a station `active: false` is written as
+     * `autoDestination: false` and the switch is left on - what it meant at v2.8.1.  On any other point it is
+     * carried as given, which is what the six non-stations had at v2.8.1 too.
      */
     private static final List<String> CARRIED_SETTINGS =
         Arrays.asList("priority", "speedMultiplier", "excludedLocs", "active", "maxTrainLength");
@@ -975,6 +977,22 @@ public class AutonomySession
                         if ("maxTrainLength".equals(key) && value instanceof Number
                             && ((Number) value).intValue() <= 0)
                         {
+                            continue;
+                        }
+
+                        // A SWITCHED-OFF STATION ARRIVES ON, AND NOT ONE AUTONOMY CHOOSES (REG-B1, Adam 2026-09-24:
+                        // *"yes, translate as on but not auto destination."*).  At v2.8.1 it kept autonomy out and
+                        // still took a train sent by hand; carried as `active: false` it is a square nothing may pass
+                        // through or end on.  Gap-filled like the rest: a square that already says either is left.
+                        if ("active".equals(key) && Boolean.FALSE.equals(value) && point.optBoolean("station", false))
+                        {
+                            if (!extras.has(AutonomyBuilder.AUTO_DESTINATION))
+                            {
+                                extras.put(AutonomyBuilder.AUTO_DESTINATION, Boolean.FALSE);
+
+                                result.settings++;
+                            }
+
                             continue;
                         }
 
@@ -1677,6 +1695,12 @@ public class AutonomySession
         }
 
         return out;
+    }
+
+    /** STUB for OB-284's red claim: today's rule, the ways trains may arrive in. */
+    public Map<String, Side> departableFacingsFor(TileKey square, org.traincontrol.automation.Layout running)
+    {
+        return placeableFacingsFor(square, running);
     }
 
     /**
@@ -5788,7 +5812,129 @@ public class AutonomySession
             // event thread, every time somebody right-clicks a station".
             destinationCopiesWithNoWayOut(inspected, namesForInspection),
             destinationCopiesWithNoWayIn(inspected, namesForInspection),
-            destinationCopiesReachingNoStation(inspected, namesForInspection));
+            destinationCopiesReachingNoStation(inspected, namesForInspection),
+            // A station's two guards as one signal, and a guard no way into its station passes (AUT-C2).
+            guardsOnBothLists(), guardsOffTheWayIn());
+    }
+
+    /**
+     * Stations whose entry guard is also their exit guard, against those signals' names (AUT-C2).
+     *
+     * The setters refuse it; loading a setup does not go through them, so a file written before the rule, or by hand,
+     * can still carry it.
+     *
+     * @return station square to the names of the signals on both its lists
+     */
+    private Map<TileKey, List<String>> guardsOnBothLists()
+    {
+        Map<TileKey, List<String>> out = new LinkedHashMap<>();
+
+        if (graph == null) return out;
+
+        Map<TileKey, List<TileKey>> exits = store.getProtectingSignals();
+
+        for (Map.Entry<TileKey, List<TileKey>> entry : store.getEntrySignals().entrySet())
+        {
+            if (store.getExcludedPages().contains(entry.getKey().getPage()) || !exits.containsKey(entry.getKey())) continue;
+
+            for (TileKey signal : entry.getValue())
+            {
+                if (exits.get(entry.getKey()).contains(signal))
+                {
+                    out.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).add(signalName(signal));
+                }
+            }
+        }
+
+        return out;
+    }
+
+    /**
+     * Guards - entry or exit - that no way into their station passes, against those signals' names (AUT-C2).
+     *
+     * Adam, 2026-09-24: *"if the guard signal is not on a path leading to the chosen station, we can add notice to the
+     * autonomy editor."*  A signal whose tile has gone is `signalsThatAreGone`'s, not this; and a station on a page left
+     * out of autonomy is not in play.
+     *
+     * @return station square to the names of its guards off every way in
+     */
+    private Map<TileKey, List<String>> guardsOffTheWayIn()
+    {
+        Map<TileKey, List<String>> out = new LinkedHashMap<>();
+
+        if (graph == null || reducer == null) return out;
+
+        Map<TileKey, java.util.Set<TileKey>> guards = new LinkedHashMap<>();
+
+        for (Map<TileKey, List<TileKey>> list : Arrays.asList(store.getProtectingSignals(), store.getEntrySignals()))
+        {
+            for (Map.Entry<TileKey, List<TileKey>> entry : list.entrySet())
+            {
+                guards.computeIfAbsent(entry.getKey(), k -> new LinkedHashSet<>()).addAll(entry.getValue());
+            }
+        }
+
+        for (Map.Entry<TileKey, java.util.Set<TileKey>> station : guards.entrySet())
+        {
+            if (store.getExcludedPages().contains(station.getKey().getPage())) continue;
+
+            for (TileKey signal : station.getValue())
+            {
+                if (!graph.getTiles().containsKey(signal) || onAWayInto(station.getKey(), signal)) continue;
+
+                out.computeIfAbsent(station.getKey(), k -> new ArrayList<>()).add(signalName(signal));
+            }
+        }
+
+        return out;
+    }
+
+    /**
+     * Whether a signal lies on track a train reaching this station runs over since it last left a station (AUT-C2).
+     *
+     * Walked back along the reduced edges that arrive at the station, through the sensors between, and stopped at the
+     * first station on each way back - so a signal round a loop, on some other station's approach, is not "on the way
+     * in" merely because every track on a loop eventually leads everywhere.
+     *
+     * @param station the station's square
+     * @param signal the signal's square
+     * @return whether some way into the station passes it
+     */
+    private boolean onAWayInto(TileKey station, TileKey signal)
+    {
+        java.util.Deque<TileKey> toVisit = new java.util.ArrayDeque<>();
+        java.util.Set<TileKey> seen = new java.util.HashSet<>();
+
+        toVisit.add(station);
+        seen.add(station);
+
+        while (!toVisit.isEmpty())
+        {
+            TileKey at = toVisit.poll();
+
+            for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+            {
+                if (!at.equals(edge.getEnd())) continue;
+
+                for (GraphReducer.TileStep step : edge.getPath()) if (signal.equals(step.getTile())) return true;
+
+                GraphReducer.ReducedPoint before = reducer.getPoints().get(edge.getStart());
+
+                if (before != null && !before.isStation() && seen.add(edge.getStart())) toVisit.add(edge.getStart());
+            }
+        }
+
+        return false;
+    }
+
+    /** A signal's name as the diagram knows it, or its square's */
+    private String signalName(TileKey signal)
+    {
+        org.traincontrol.base.LayoutDiagramComponent component = graph == null ? null : graph.getTiles().get(signal);
+
+        if (component != null && component.getAccessory() != null) return component.getAccessory().getName();
+
+        return String.valueOf(signal);
     }
 
     /**

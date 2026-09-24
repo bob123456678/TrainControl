@@ -266,8 +266,9 @@ public class testReturnHomeKeepsClearOfTheTailsItLeaves
 
         HomeStaging.Plan plan = staging.plan();
 
-        // NOT VACUOUS: more than half the budget was read, so the greedy pass did not simply succeed and both searches ran.
-        assertTrue(now.get() > 7500, "precondition: the search read the clock for only " + now.get() + " ms, so the greedy"
+        // NOT VACUOUS: more than the first search's share was read - a third of the budget since OB-230 - so the greedy
+        // pass did not simply succeed and the retry from the start ran.
+        assertTrue(now.get() > 5000, "precondition: the search read the clock for only " + now.get() + " ms, so the greedy"
             + " pass brought everybody home and neither search ran - this claim is about the second one");
 
         assertEquals(plan.getOutcome(), HomeStaging.Outcome.READY,

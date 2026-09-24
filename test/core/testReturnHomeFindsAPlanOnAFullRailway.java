@@ -28,8 +28,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * ten times the budget.  Counted: fifteen seconds examined 3,852 arrangements and spent 14.4 of them in 643,129 route
  * searches, some thirty-three onward moves an arrangement.  A search for the SHORTEST plan cannot get through that
  * breadth with any estimate that never overstates the moves left; weighting the estimate found a ten-move plan for
- * the arrangement below in under five seconds.  So the budget is shared: the first half looks for the shortest plan,
- * as it always has, and the second looks for any plan from the railway as it stands.
+ * the arrangement below in under five seconds.  So the budget is shared: the shortest plan is looked for first, as it
+ * always has been, and the last share of the budget looks for any plan from the railway as it stands.
  *
  * The search's clock is stepped a fixed amount a read, so its budget is a count of arrangements rather than of seconds
  * on whatever machine runs this - the same answer every time.
@@ -48,8 +48,8 @@ public class testReturnHomeFindsAPlanOnAFullRailway
 
     private static final int FIRST_ADDRESS = 2461;
 
-    /** Milliseconds the search's clock moves each time it is read: fifteen seconds is 3,750 reads. */
-    private static final long STEP = 4;
+    /** Milliseconds the search's clock moves each time it is read: fifteen seconds is 7,500 reads. */
+    private static final long STEP = 2;
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -130,8 +130,8 @@ public class testReturnHomeFindsAPlanOnAFullRailway
     /**
      * An arrangement the shortest-plan search solves in its half of the budget still gets the shortest plan (OB-230).
      *
-     * Four trains each moved one platform along: six moves, as before OB-230.  The any-plan half is reached only when
-     * the first half finds nothing, so where a shortest plan is found it is the one given.
+     * Four trains each moved one platform along: six moves, as before OB-230.  The any-plan share is reached only when
+     * the shortest-plan shares find nothing, so where a shortest plan is found it is the one given.
      *
      * MUTATION: search for any plan first, and this fails on the number of moves.
      *

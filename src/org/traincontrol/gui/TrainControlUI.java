@@ -26075,20 +26075,47 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         final File chosen = fc.getSelectedFile();
 
-        this.importRoutesMenuItem.setEnabled(false);
-
         // Held rather than thrown, because the work half must not raise a dialog: that would be the
         // same violation one layer down.
         final Exception[] failed = new Exception[1];
         final int[] added = new int[1];
 
+        // READ HERE, AND ASKED ABOUT BEFORE ANYTHING IS REPLACED (REG2-C7, Adam 2026-09-24: *"save the state in the
+        // file on export, and ask the user on import.  if they want them armed, arm them.  otherwise, don't."*).  The
+        // question is a dialog, so it is asked on this thread; a file this cannot read is reported by the import below,
+        // exactly as before.
+        String read = null;
+
+        try
+        {
+            read = new String(Files.readAllBytes(Paths.get(chosen.getPath())));
+        }
+        catch (Exception unreadable)
+        {
+            failed[0] = unreadable;
+        }
+
+        final String json = read;
+
+        final java.util.List<String> savedArmed = json == null
+            ? java.util.Collections.<String>emptyList() : this.model.routesSavedArmed(json);
+
+        // No is the default: an import that starts nothing is the one that cannot surprise anybody (2026-09-10).
+        final boolean arm = !savedArmed.isEmpty() && JOptionPane.showOptionDialog(this,
+            I18n.f("route.ui.confirmRearmImported", savedArmed.size()), I18n.t("route.ui.confirmRearmImportedTitle"),
+            JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, YES_NO_OPTS, YES_NO_OPTS[1])
+            == JOptionPane.YES_OPTION;
+
+        this.importRoutesMenuItem.setEnabled(false);
+
         BusyDialog.run(this, I18n.t("ui.busySyncingWithCS"),
             () ->
             {
+                if (failed[0] != null) return;
+
                 try
                 {
-                    added[0] = this.model.importRoutes(new String(Files.readAllBytes(Paths.get(
-                        chosen.getPath()))));
+                    added[0] = this.model.importRoutes(json, arm);
 
                     prefs.put(LAST_USED_FOLDER, chosen.getParent());
 
@@ -26123,10 +26150,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     refreshRouteList();
 
                 // THE ROUTES ARRIVE OFF, and the door says so (REG-B3) - the log line alone is not where
-                // somebody restoring a backup is looking.
-                JOptionPane.showMessageDialog(this, I18n.f(
-                    org.traincontrol.marklin.MarklinControlStation.IMPORTED_ROUTES_NOTICE, added[0],
-                    I18n.t("ui.main.bulkEnable"), I18n.t("route.ui.menuEnableAutoExecution")));
+                // somebody restoring a backup is looking.  Or, asked, the ones saved armed come back armed (REG2-C7).
+                JOptionPane.showMessageDialog(this, arm
+                    ? I18n.f(org.traincontrol.marklin.MarklinControlStation.IMPORTED_ROUTES_REARMED, added[0],
+                        savedArmed.size())
+                    : I18n.f(org.traincontrol.marklin.MarklinControlStation.IMPORTED_ROUTES_NOTICE, added[0],
+                        I18n.t("ui.main.bulkEnable"), I18n.t("route.ui.menuEnableAutoExecution")));
             });
     }//GEN-LAST:event_importRoutesMenuItemActionPerformed
 
