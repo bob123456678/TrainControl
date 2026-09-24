@@ -98,12 +98,13 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-541](#mt-541) | 2026-09-24 | Why Not Moving? redoes its answer when Path Type changes | fixed unvalidated | MT-439 |
 | [MT-542](#mt-542) | 2026-09-24 | Test a Path keeps its route when Path Type changes, and changes only the note | fixed unvalidated | MT-439 |
 | [MT-543](#mt-543) | 2026-09-24 | With Not known at BottomSecondary, the tail stops at switch 51 | fixed unvalidated | MT-477 |
-| [MT-544](#mt-544) | 2026-09-24 | On a Central Station layout there is no autonomy tab, and the Autonomy menu says how to get one | fixed unvalidated | OB-254 |
 | [MT-545](#mt-545) | 2026-09-24 | Quitting does not change the autonomy.json beside TrainControl | fixed unvalidated | OB-254 |
 | [MT-546](#mt-546) | 2026-09-24 | Autonomy > Documentation opens the automation guide | fixed unvalidated | OB-254 |
+| [MT-547](#mt-547) | 2026-09-24 | On a Central Station layout there is no Load Autonomy Configuration tab | fixed unvalidated | OB-254, MT-544 |
+| [MT-548](#mt-548) | 2026-09-24 | On a Central Station layout the Autonomy menu opens, and only the download and Documentation can be chosen | fixed unvalidated | OB-254, OB-093, MT-544 |
 
-Everything else - 472 of 546 - needs nothing from you unless the area changes again:
-400 **fixed validated** and 72 **superseded**.
+Everything else - 473 of 548 - needs nothing from you unless the area changes again:
+400 **fixed validated** and 73 **superseded**.
 
 ---
 
@@ -26805,7 +26806,7 @@ autonomy editor."*
 
 ### MT-544 - 2026-09-24 - On a Central Station layout there is no autonomy tab, and the Autonomy menu says how to get one
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-254
 
 **Written:** 2026-09-24
@@ -26825,6 +26826,10 @@ autonomy editor."*
 - Step 3: the Autonomy menu is greyed, and its tooltip says autonomy needs a local copy of the track diagram and to use Layouts > Download to make one.
 
 *What this is:* `regression.testTheOldAutonomyTabIsGone.testACentralStationLayoutHasNoOldAutonomyTab`.
+
+**Claude, 2026-09-24.**
+
+**Superseded by MT-547 and MT-548**, one check each.  The same day you ruled on the Autonomy menu - *"Yes, open the autonomy menu with everything but those 2 greyed"* - so step 3's greyed menu no longer holds; MT-548 checks the menu as ruled, and MT-547 the tab, unchanged.  Nothing in the history above is withdrawn.
 
 ---
 
@@ -26875,5 +26880,56 @@ autonomy editor."*
 - Your browser opens the automation guide on GitHub (`Automation.md`).
 
 *What this is:* `regression.testTheAutonomyMenuLinksItsDocumentation`, which also holds that it can be chosen while an editor is open and greys everything else.
+
+---
+
+<a id="mt-547"></a>
+
+### MT-547 - 2026-09-24 - On a Central Station layout there is no Load Autonomy Configuration tab
+
+**Disposition:** fixed unvalidated
+**From:** OB-254, MT-544
+
+**Written:** 2026-09-24
+
+**What was wrong.**  The **Load Autonomy Configuration** tab - a JSON text box with Validate, Load and Export buttons - came back whenever TrainControl showed a layout read straight from the Central Station.  Adam, 2026-09-24: *"Remove it, require a local copy for autonomy."*  Split from MT-544, which checked this together with the Autonomy menu - and the menu half changed the same day (MT-548).
+
+**Steps**
+
+1. Layouts > **Switch to Central Station Layout**.
+2. Look along the row of tabs.
+3. Switch back to your own layout folder.
+
+**Expected**
+
+- Step 2: there is no **Load Autonomy Configuration** tab.
+
+*What this is:* `regression.testTheOldAutonomyTabIsGone.testACentralStationLayoutHasNoOldAutonomyTab`.
+
+---
+
+<a id="mt-548"></a>
+
+### MT-548 - 2026-09-24 - On a Central Station layout the Autonomy menu opens, and only the download and Documentation can be chosen
+
+**Disposition:** fixed unvalidated
+**From:** OB-254, OB-093, MT-544
+
+**Written:** 2026-09-24
+
+**What was wrong.**  On a Central Station layout the whole Autonomy menu was greyed, so its offer to download the layout (OB-093) could not be pressed, and neither could Documentation.  Adam, 2026-09-24: *"Yes, open the autonomy menu with everything but those 2 greyed."*
+
+**Steps**
+
+1. With the Central Station on, Layouts > **Switch to Central Station Layout**.
+2. Open the **Autonomy** menu, and look without choosing anything.
+3. Close the menu, and switch back to your own layout folder.
+
+**Expected**
+
+- Step 2: the menu opens.  **Autonomy needs a layout on this computer - download one from the Central Station...** can be chosen, and so can **Documentation**, the last item.
+- Nothing else in the menu can be chosen.
+
+*What this is:* `regression.testTheOldAutonomyTabIsGone.testTheAutonomyMenuOpensOnACentralStationLayout` and `testOnlyTheDownloadAndTheGuideCanBeChosenThere`.  The download itself is MT-177's step 4, validated on 2026-08-25.
 
 ---
