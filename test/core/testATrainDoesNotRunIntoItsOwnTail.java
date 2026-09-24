@@ -393,4 +393,74 @@ public class testATrainDoesNotRunIntoItsOwnTail
             atTunnel.setArrivedAlong(null);
         }
     }
+
+    /**
+     * A turn on the way is not a return to the train's own tail: after it the body is ahead, and drives back over the
+     * track it was lying on.
+     *
+     * Asked of the rule directly, because on the frozen railway the room rule refuses a train this long at RampDown,
+     * its one turning square with routes through it - the track behind RampDown measures a single unit.  The rule is
+     * asked by every door on its own terms, so what it says of a turn must hold whatever the room.
+     *
+     * MUTATION: judge the track after a turn against the track before it, and this fails.
+     *
+     * @throws Exception from the route search
+     */
+    @Test
+    public void testATurnOnTheWayIsNotAReturnToTheTail() throws Exception
+    {
+        Point atTunnel = layout.getPoint("Tunnel (southbound)");
+
+        assertNotNull(atTunnel, "precondition: the frozen railway has no southbound copy of Tunnel");
+
+        Edge fromTunnelPre = null;
+
+        for (Edge in : layout.getNeighborsAndIncoming(atTunnel))
+        {
+            if (in.getEnd() == atTunnel && in.getStart().getName().startsWith("TunnelPre")) fromTunnelPre = in;
+        }
+
+        assertNotNull(fromTunnelPre, "precondition: no rail comes into Tunnel's southbound copy from TunnelPre");
+
+        train.setTrainLength(5);
+
+        atTunnel.setLocomotive(train);
+        atTunnel.setArrivedFrom(layout.entrySideOf(fromTunnelPre, atTunnel));
+        atTunnel.setArrivedAlong(Arrays.asList(fromTunnelPre));
+
+        try
+        {
+            int turning = 0;
+
+            for (List<Edge> route : layout.debugPath(train, atTunnel, atBottomSecondary).keySet())
+            {
+                boolean turns = false;
+
+                for (int i = 0; i + 1 < route.size(); i++)
+                {
+                    if (route.get(i).getEnd().isReversing() && route.get(i).getEnd().getName().startsWith("RampDown"))
+                    {
+                        turns = true;
+                    }
+                }
+
+                if (!turns) continue;
+
+                turning++;
+
+                assertNull(layout.whyItWouldMeetItsOwnTail(route, train), "a 5-unit train turning at RampDown on its way"
+                    + " from Tunnel to BottomSecondary was refused for running into its own tail - after the turn its"
+                    + " body is ahead of it, and the track it drives back over is track it is leaving: " + route);
+            }
+
+            assertTrue(turning > 0, "precondition: no route from Tunnel to BottomSecondary turns at RampDown on the frozen"
+                + " railway");
+        }
+        finally
+        {
+            atTunnel.setLocomotive(null);
+            atTunnel.setArrivedFrom(null);
+            atTunnel.setArrivedAlong(null);
+        }
+    }
 }
