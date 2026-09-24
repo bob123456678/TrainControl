@@ -87,6 +87,8 @@ not fix it. Name the square.
 - `regression.testAPlacedTrainRecordsWhereItCameFrom`
 - `core.testAPasteDoesNotTurnTheTrainRound`
 - `core.testAStationsSizeIsAnAllowance`
+- `regression.testTheOrangeIsDrawnWhereTheTailStopsAtTheSwitch`
+- `regression.testAThrottleReversalIsFollowedFromItsEcho`
 - `core.testAPastedTrainKeepsItsDirection`
 - `core.testTheAutoTierScopeMatchesTheRuntime`
 - `core.testTheFrozenRailwayIsStillTheRailway`

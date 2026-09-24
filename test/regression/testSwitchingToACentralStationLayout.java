@@ -922,8 +922,9 @@ public class testSwitchingToACentralStationLayout
         // 56 the same day: regression.testTheOldAutonomyTabIsGone and regression.testTheAutonomyMenuLinksItsDocumentation
         // (OB-254), each opening a sandbox first, and ui.testAStartLoadsOnlyAGraphSomebodyAskedFor retired with the JSON
         // start-up load it was about.
-        assertEquals(checked, 56,
-            checked + " test classes were found to build a window, not the 56 there were when this "
+        // 57 the same day: regression.testTheVisibleElementsHeadingIsSpacedLikeTheOthers (OB-289), which opens a sandbox first.
+        assertEquals(checked, 57,
+            checked + " test classes were found to build a window, not the 57 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating - and "
             + "nothing else in this method is hidden by that any more, because the checks that "
