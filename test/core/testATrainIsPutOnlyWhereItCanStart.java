@@ -409,6 +409,73 @@ public class testATrainIsPutOnlyWhereItCanStart
     }
 
     /**
+     * A train put back after a rebuild goes onto a copy it can start from that faces its way, where the square has one
+     * (TDY4-B1, AUT4-B1).
+     *
+     * The put-back may stand a train on a copy of a station trains may not arrive at (TDY3-A1) - for a train that really
+     * faces a way only such a copy holds.  At a square trains may turn at, a turning copy facing the same way may be one
+     * trains may arrive at: BottomMainPost, with arrivals from the north barred, has its north-arrival copy and the
+     * south-arrival turning copy both facing south.  A train the railway had on the barred one - it stood there before the
+     * side was barred - was put back onto it, where autonomy never starts it and the sentence tells the operator to turn
+     * a train that already faces a way it can start.
+     *
+     * MUTATION: put the train back on the recorded copy whatever its twin, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAPutBackTakesAStartableCopyFacingItsWay() throws Exception
+    {
+        AutonomySession session = session();
+
+        TileKey post = square(session, "BottomMainPost");
+
+        final Layout running = build(session);
+
+        Point barred = null;
+        Point twin = null;
+
+        for (Map.Entry<String, Side> copy : session.facingsFor(post).entrySet())
+        {
+            Point point = running.getPoint(copy.getKey());
+
+            if (point == null || copy.getValue() != Side.S) continue;
+
+            if (point.isDestination()) twin = point;
+            else if (barred == null) barred = point;
+        }
+
+        assertTrue(barred != null && twin != null, "precondition: BottomMainPost has no barred copy and startable copy"
+            + " both facing south");
+
+        // STANDING ON THE BARRED ONE, as a train there before the side was barred does.
+        for (Point point : running.getPoints())
+        {
+            if (point.getCurrentLocomotive() != null && PROBE.equals(point.getCurrentLocomotive().getName()))
+            {
+                point.setLocomotive(null);
+            }
+        }
+
+        barred.setLocomotive(model.getLocByName(PROBE));
+
+        session.placeLocomotive(post, PROBE);
+        session.setFacing(post, Side.S);
+
+        java.util.Map<String, String[]> where = org.traincontrol.gui.TrainControlUI.whereTheTrainsAre(running);
+
+        Layout rebuilt = build(session);
+
+        org.traincontrol.gui.TrainControlUI.putTheTrainsBack(rebuilt, where, null);
+
+        Point after = standingOn(rebuilt);
+
+        assertTrue(after != null && after.getName().equals(twin.getName()), "the train facing south at BottomMainPost was"
+            + " put back on " + (after == null ? "nothing" : after.getName()) + " - " + twin.getName() + " faces south"
+            + " too and autonomy can start it there (TDY4-B1)");
+    }
+
+    /**
      * A home set for a train standing on a copy trains may not arrive at saves no facing no train can come home in
      * (GUI3-C2, AUT3-C2).
      *
@@ -491,6 +558,19 @@ public class testATrainIsPutOnlyWhereItCanStart
 
         assertEquals(running.explainCannotStart(train, true), null, "by hand a route may start from where the train"
             + " stands, and Why not Moving? on Manual still said it cannot be sent anywhere (GUI3-C1)");
+
+        // AND THE PAUSE IS AUTONOMY'S ALONE (GUI4-C2): nothing a hand send passes through reads it.
+        train.setAutonomyPaused(true);
+
+        try
+        {
+            assertEquals(running.explainCannotStart(train, true), null, "a paused train is told on Manual that it cannot"
+                + " be sent anywhere, and the right-click menu sends it (GUI4-C2)");
+        }
+        finally
+        {
+            train.setAutonomyPaused(false);
+        }
 
         // AND RETURN HOME'S SENTENCE, for a train whose home is elsewhere.
         String home = null;
