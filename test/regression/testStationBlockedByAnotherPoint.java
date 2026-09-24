@@ -233,15 +233,19 @@ public class testStationBlockedByAnotherPoint
     }
 
     /**
-     * Setting the station to pass through takes its restriction with it (AMS-B2).
+     * Setting the station to pass through keeps its restriction, and the build still applies it (Adam, 2026-09-24).
      *
-     * Demoting a station already sweeps its caption, its barred arrivals and its protecting signal.  Not this:
-     * the build emits the lock edges for any square with a restriction, station or not, so every route into the
-     * demoted square still locked every approach to the watched one - and the menu that clears a restriction is
-     * offered on stations only, so nothing but promoting the square again could take it off.
+     * *"do allow restrictions on non-stations, and let's not clear them when the type changes (essentially reverting
+     * the behavior).  I am not sure why that clearing went in - a simple info notice on restrictions (in the list for any
+     * type of station or non station) would be better."*  AMS-B2 took the restriction away on the reasoning that nothing
+     * could take it off a square that is not a station.  The item is under Advanced Parameters on every sensor square,
+     * and every restriction is now listed as a notice; so it stays, and so do the lock edges the build makes of it - a
+     * route into the square still waits on the watched one.
+     *
+     * MUTATION: clear the restriction in `AutonomySession.setStation` again, and this fails.
      */
     @Test
-    public void testDemotingTheStationTakesTheRestrictionWithIt() throws IOException
+    public void testDemotingTheStationKeepsTheRestriction() throws IOException
     {
         TileKey platform = new TileKey("main", 3, 1);
         TileKey yard = new TileKey("main", 3, 3);
@@ -255,12 +259,14 @@ public class testStationBlockedByAnotherPoint
 
         session.setStation(platform, false);
 
-        assertTrue(session.getStore().getBlockingPoints(platform).isEmpty(),
-            "the square is no longer a station and still carries 'unavailable while the yard is occupied' - the menu"
-            + " that clears it is offered on stations only, so it cannot be taken off (AMS-B2)");
+        assertEquals(session.getStore().getBlockingPoints(platform), Arrays.asList(yard), "the square was made pass-through"
+            + " and lost 'unavailable while the yard is occupied' - Adam, 2026-09-24: \"let's not clear them when the"
+            + " type changes\"");
 
         org.json.JSONArray edges =
             new org.json.JSONObject(session.buildConfigurationForInspection()).getJSONArray("edges");
+
+        boolean locked = false;
 
         for (int i = 0; i < edges.length(); i++)
         {
@@ -270,10 +276,60 @@ public class testStationBlockedByAnotherPoint
 
             for (int at = 0; at < locks.length(); at++)
             {
-                assertNotEquals(locks.getJSONObject(at).optString("end", null), "Abstellgleis",
-                    "a route into the demoted square still locks the approach to the yard (AMS-B2)");
+                if ("Abstellgleis".equals(locks.getJSONObject(at).optString("end", null))) locked = true;
             }
         }
+
+        assertTrue(locked, "the restriction is kept on the pass-through square and no route into it waits on the yard -"
+            + " kept and not applied");
+    }
+
+    /**
+     * Every restriction is listed as a notice, on a station and on a square that is not one (Adam, 2026-09-24).
+     *
+     * *"a simple info notice on restrictions (in the list for any type of station or non station) would be better."*
+     *
+     * MUTATION: leave the notice out of `AutonomyChecks.run`, or list it for stations only, and this fails.
+     *
+     * @throws IOException from the fixture
+     */
+    @Test
+    public void testEveryRestrictionIsListedAsANotice() throws IOException
+    {
+        TileKey platform = new TileKey("main", 3, 1);
+        TileKey yard = new TileKey("main", 3, 3);
+
+        open();
+
+        assertEquals(noticesAbout(platform), 0, "precondition: a notice about a restriction nobody has set");
+
+        session.getStore().setBlockingPoints(platform, Arrays.asList(yard));
+
+        assertEquals(noticesAbout(platform), 1, "a station unavailable while the yard is occupied is not listed as a"
+            + " notice - Adam, 2026-09-24: \"a simple info notice on restrictions\"");
+
+        session.setStation(platform, false);
+
+        assertEquals(noticesAbout(platform), 1, "a square that is not a station, unavailable while the yard is occupied,"
+            + " is not listed - \"in the list for any type of station or non station\"");
+    }
+
+    /** How many notices the setup's findings give about a restriction on this square. */
+    private int noticesAbout(TileKey square)
+    {
+        int seen = 0;
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if ("autosetup.ui.checkUnavailableWhileOccupied".equals(finding.getMessageKey())
+                && square.equals(finding.getTile())
+                && finding.getSeverity() == org.traincontrol.automationui.AutonomyChecks.Severity.NOTICE)
+            {
+                seen++;
+            }
+        }
+
+        return seen;
     }
 
     /**

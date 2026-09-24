@@ -101,6 +101,11 @@ public class testTheAutonomyMenuLinksItsDocumentation
 
         assertTrue(code.contains("Util.openUrl(TrainControlUI.README_URL)"), "the Documentation item does not open"
             + " TrainControlUI.README_URL, the guide the old tab's link opened");
+
+        // ON A THREAD OF ITS OWN (Adam, 2026-09-24, on MT-546: "can it get its own thread?").  Opening a browser is a
+        // call into Windows, and the event thread has nothing to wait for it about.
+        assertTrue(code.contains("new Thread(() -> Util.openUrl(TrainControlUI.README_URL)"), "the Documentation item"
+            + " opens the guide on the event thread - Adam, 2026-09-24: \"can it get its own thread?\"");
     }
 
     /**
