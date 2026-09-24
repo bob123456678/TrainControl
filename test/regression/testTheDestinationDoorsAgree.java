@@ -168,4 +168,70 @@ public class testTheDestinationDoorsAgree
                 + " Fields: " + java.util.Arrays.toString(options.getDeclaredFields()));
         }
     }
+
+    /**
+     * Every why-window names the tier it answers for, so on Manual none of them gives autonomy's reasons (REG4, GUI3-C1).
+     *
+     * `Layout.explainCannotStart`, `explainDestinations` and `explainDestinationsGrouped` each have a form that takes
+     * `byHand`, and the one-argument form answers for autonomy.  GUI3-C1 gave the diagram's Why not Moving? the tier
+     * (Adam, OB-225: *"in manual mode, I still get reasons like ... will never be chosen in autonomy"*); the locomotive
+     * list's "No available paths" tooltip and its why-window kept the one-argument form, so on Manual they still said a
+     * train on a copy that is no station cannot be sent anywhere - while the list offered it routes.
+     *
+     * A source census, the shape the first claim here uses: what is checked is that a door says which question it asks,
+     * and each tier's answers are tested where they live (`core.testWhyStuck`).  Every file under `gui/`, so a door
+     * added later is counted without being listed.
+     *
+     * MUTATION: give either call in `AutoLocomotiveStatus` its one-argument form back, and this names it.
+     *
+     * @throws Exception if the sources cannot be read
+     */
+    @Test
+    public void testEveryWhyNamesItsTier() throws Exception
+    {
+        java.util.List<String> untiered = new java.util.ArrayList<>();
+
+        int calls = 0;
+
+        try (java.util.stream.Stream<java.nio.file.Path> walk = Files.walk(Paths.get("src/org/traincontrol/gui")))
+        {
+            for (java.nio.file.Path file : (Iterable<java.nio.file.Path>) walk::iterator)
+            {
+                if (!file.toString().endsWith(".java")) continue;
+
+                String code = new String(Files.readAllBytes(file), StandardCharsets.UTF_8)
+                    .replaceAll("(?s)/[*].*?[*]/", " ").replaceAll("//[^\\r\\n]*", " ");
+
+                java.util.regex.Matcher call = java.util.regex.Pattern
+                    .compile("\\.(explainCannotStart|explainDestinationsGrouped|explainDestinations)\\(").matcher(code);
+
+                while (call.find())
+                {
+                    calls++;
+
+                    // The arguments, to the matching parenthesis: a comma at depth one is a second argument.
+                    int depth = 1;
+                    boolean second = false;
+
+                    for (int i = call.end(); i < code.length() && depth > 0; i++)
+                    {
+                        char c = code.charAt(i);
+
+                        if (c == '(') depth++;
+                        else if (c == ')') depth--;
+                        else if (c == ',' && depth == 1) second = true;
+                    }
+
+                    if (!second) untiered.add(file.getFileName() + ": " + call.group(1));
+                }
+            }
+        }
+
+        assertTrue(calls >= 6, "precondition: the census found " + calls + " calls to the three explain methods under"
+            + " gui/, fewer than the diagram's two and the locomotive list's four - it is not reading the doors");
+
+        assertTrue(untiered.isEmpty(), "a why-window asks autonomy's question whatever the Path Type, so on Manual it"
+            + " gives reasons that stop nothing a hand-driven send does (REG4, GUI3-C1; Adam, OB-225).  Name the tier -"
+            + " `!layout.isAutoRunning()` where the door has no Path Type of its own: " + untiered);
+    }
 }
