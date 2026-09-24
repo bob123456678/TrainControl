@@ -9559,6 +9559,11 @@ public class AutonomySession
             // berths, which is what the rule is for.
             if (isAutoDestination(square)) continue;
 
+            // THE LONGEST TRAIN IT TAKES, where it has one (OB-288).
+            Object stated = getPointProperty(square, "maxTrainLength");
+
+            int longest = stated instanceof Number ? ((Number) stated).intValue() : 0;
+
             // ONE APPROACH AT A TIME (OP2-B3).  The walk judges the approach a train arrives on, so a station with
             // one approach measured throughout and another with nothing measured is not half measured on either -
             // pooling them said it was, and counted squares from legs that are not in the same walk.
@@ -9592,6 +9597,32 @@ public class AutonomySession
 
                     // AN ANSWERED 0 IS NOT MISSING (Adam, 2026-09-23: "stop listing answered zeros as missing").
                     else if (!store.isTileLengthAnswered(tile)) unmeasured++;
+                }
+
+                // NOT WHERE THE BERTH HOLDS ITS LONGEST TRAIN BEFORE ANY HOLE (OB-288; Adam, 2026-09-24: "shows up on all
+                // berths, even though we have measured the s88 tile to match the berth max train size").  The walk
+                // spends from the berth backwards, its own square first (OB-278), and stops when the train is spent -
+                // so a train no longer than what is measured before the first unmeasured square never reaches it, and
+                // a berth that takes no longer train can refuse none for the hole.  Counted back as the walk counts: a
+                // square that takes no length is passed over, an answered 0 is track worth nothing, and an unanswered
+                // square is where the count ends.  With no longest train set, any train could reach the hole.
+                if (longest > 0 && anyMeasured && unmeasured > 0)
+                {
+                    int held = 0;
+
+                    for (int at = squares.size() - 1; at >= 0; at--)
+                    {
+                        TileKey tile = squares.get(at);
+
+                        if (getGraph() != null && takesNoLength(tile)) continue;
+
+                        int length = store.getTileLength(tile);
+
+                        if (length > 0) held += length;
+                        else if (!store.isTileLengthAnswered(tile)) break;
+                    }
+
+                    if (held >= longest) continue;
                 }
 
                 if (anyMeasured && unmeasured > worst) worst = unmeasured;
