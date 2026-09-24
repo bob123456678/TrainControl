@@ -1779,6 +1779,43 @@ public class testMassAssignLengths
     }
 
     /**
+     * A berth whose own measured squares hold its longest train is not warned about, whatever lies unmeasured behind
+     * them (OB-288).
+     *
+     * Adam, 2026-09-24: *"&lt;station&gt; can refuse trains that would otherwise fit shows up on all berths, even though
+     * we have measured the s88 tile to match the berth max train size.  likely an artifact from before we included the
+     * station length in the measurement."*  Since OB-278 the berth walk spends the berth's own square first, so a train
+     * the berth takes is spent there before it reaches anything unmeasured, and no refusal can come of the hole behind.
+     *
+     * @throws IOException from the fixture
+     */
+    @Test
+    public void testABerthThatHoldsItsLongestTrainIsNotWarnedAbout() throws IOException
+    {
+        openBerthBehindASwitch(key(5, 1));
+
+        // WHAT ADAM HAS: the berth's own square measured, the approach behind it not.
+        session.setTileLength(key(5, 1), 3);
+
+        assertTrue(session.stationsWithAHalfMeasuredApproach().containsKey(key(5, 1)),
+            "CONTROL: a berth measured on its own square with nothing behind, and no longest train, is not reported - so"
+            + " the claim below could pass by never firing at all");
+
+        assertTrue(session.assignMaxTrainLength(key(5, 1), 3), "precondition: the berth was not given a longest train");
+
+        assertFalse(session.stationsWithAHalfMeasuredApproach().containsKey(key(5, 1)),
+            "a berth whose own square measures 3, taking trains of 3 at most, is warned that it can refuse trains that"
+            + " would otherwise fit - no train it takes ever reaches an unmeasured square (OB-288)");
+
+        // AND ONE IT TAKES THAT IS LONGER THAN WHAT IS MEASURED IS STILL WARNED ABOUT: its fourth unit reaches the hole.
+        session.setPointProperty(key(5, 1), "maxTrainLength", 4);
+
+        assertTrue(session.stationsWithAHalfMeasuredApproach().containsKey(key(5, 1)),
+            "a berth taking trains of 4, with 3 measured before an unmeasured square, is no longer warned about - and a"
+            + " four-unit train is refused there for the hole in the measurements");
+    }
+
+    /**
      * 1,1 sensor - 2,1 - 3,1 - 4,1 station: a run of two plain squares between two sensors.
      */
     private void openARunOfTwoPlainSquares() throws IOException
