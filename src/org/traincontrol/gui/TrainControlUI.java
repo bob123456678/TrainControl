@@ -23928,10 +23928,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // editor means the diagram it is driving over is being changed underneath it.
         if (refuseWhileEditorOpen()) return;
 
-        // AND THE SAME QUESTION THOSE TWO ASK (GS-B1).  This is the run where it costs most: several
-        // trains move at once, so one of them with no train length hands back the track under itself
-        // while the others are being routed around it.
-        keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
+        // AND NOT OVER A SETUP WITH ERRORS (MT-263's rule, TDU-B1), as Start and every other door that moves trains.
+        String broken = whyAHandSendIsRefused();
+
+        if (broken != null)
+        {
+            JOptionPane.showMessageDialog(this, broken);
+
+            return;
+        }
 
         final Layout layout = this.model.getAutoLayout();
 
@@ -23951,6 +23956,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart"));
             return;
         }
+
+        // AND THE SAME QUESTION THE OTHER RUN DOORS ASK (GS-B1).  This is the run where it costs most: several trains
+        // move at once, so one of them with no train length hands back the track under itself while the others are being
+        // routed around it.  After the refusals above, not before them (TDU-C8, GUI-A1's rule): a refused press should
+        // change nothing, and this one writes the setting.
+        keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
 
         // THE CHEAP TRIAGE IS NOT ASKED HERE ANY MORE (OB-192, second round).
         //
@@ -26643,6 +26654,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Refused BEFORE the button is greyed, so a refusal cannot leave it dead.
         if (refuseWhileEditorOpen()) return;
 
+        // AND NOT OVER A SETUP WITH ERRORS (MT-263's rule, TDU-B1).  A timetable run drives over the railway the setup
+        // built, through the same dispatch as a hand send, and Start is refused on the same question - so this is too,
+        // in the setup's own words.
+        String broken = whyAHandSendIsRefused();
+
+        if (broken != null)
+        {
+            JOptionPane.showMessageDialog(this, broken);
+
+            return;
+        }
+
         this.executeTimetable.setEnabled(false);
 
         javax.swing.SwingUtilities.invokeLater(() ->
@@ -26849,7 +26872,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // The remedy is the file door's rather than the checkbox's, because it is the file door's
         // situation: the setting was chosen deliberately and the railway has changed under it since,
         // and there is nothing for the operator to answer.
-        keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
+        //
+        // ASKED BELOW, once the worker's refusals have passed (TDU-C8, GUI-A1's rule): a press refused for the power or
+        // for having no trains should change nothing, and the gate writes the setting.
 
         // Greyed here, on the EDT, before anything is dispatched.  The button used to stay live until
         // a worker thread several checks later got round to disabling it, and there are three ways to
@@ -26925,6 +26950,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     if (this.model.getAutoLayout().isValid() && !this.isAutonomyBusy())
                     {
+                        // THE ATOMIC ROUTES GATE, after every refusal (TDU-C8) and on the event thread, which the setting's
+                        // checkbox lives on.
+                        try
+                        {
+                            javax.swing.SwingUtilities.invokeAndWait(() -> keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack());
+                        }
+                        catch (InterruptedException | java.lang.reflect.InvocationTargetException gate)
+                        {
+                            this.model.log(gate);
+                        }
+
                         started.set(true);
 
                         new Thread( () ->
