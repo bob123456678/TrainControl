@@ -28,7 +28,8 @@ import org.traincontrol.base.LayoutDiagramComponent.componentType;
  * whatever LayoutDiagramComponent.getNumOrientations() allows for the type (1, 2 or 4) - asking for
  * orientation 3 of a STRAIGHT is a bug, not a rotation.
  *
- * The table below was verified tile by tile against the icon art (see docs/plans/portmap-verification.png).
+ * The table below was verified tile by tile against the icon art: `assets/automation/tile-ports.png` is drawn from
+ * it, over that art.
  *
  * It used to say "that script holds the same data; if this table changes, change it there too" - a
  * Python copy of the whole port map, kept in step by hand.  It went stale, as a copy kept in step by

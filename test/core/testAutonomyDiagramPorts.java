@@ -84,7 +84,7 @@ public class testAutonomyDiagramPorts
      * every edge in the layout would be wrong.
      *
      * These values were measured by applying the same transform to the icons and reading which sides the
-     * track touches (docs/plans/portmap-verification.py has the extraction).
+     * track touches (`docs/plans/portmap-verification.py` did the extraction; it is in git history at e5f77c9c^).
      */
     @Test
     public void testRotationDirectionMatchesTheRenderedArt()
@@ -554,7 +554,7 @@ public class testAutonomyDiagramPorts
     /**
      * The whole port table, every tile type at once.
      *
-     * This is `docs/plans/portmap-verification.py` brought into the suite (DD-C10). That script held
+     * This is `portmap-verification.py` (git history, e5f77c9c^) brought into the suite (DD-C10). That script held
      * the only complete statement of the port map anywhere - all twenty-eight tile types, their routes
      * and their branches - and drew a picture of it for a person to check against the artwork. The
      * trouble was how it stayed true: `TilePorts`'s javadoc instructed the reader to keep the Python

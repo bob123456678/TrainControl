@@ -57,7 +57,7 @@ TrackDiagramEditor.exe
 hs_err_pid*.log
 replay_pid*.log
 
-# Python bytecode from the parity harness scripts
+# Python bytecode - the triage app and the tools
 __pycache__/
 *.pyc
 

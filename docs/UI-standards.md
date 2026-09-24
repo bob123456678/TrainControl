@@ -19,8 +19,8 @@ line up down the left edge rather than the heading sitting proud of them.
 
 **`RouteEditorFrame`** is the hand-written screen built to this standard, and is the thing to copy
 rather than this table. (`GraphEdgeEdit` used to be the reference screen; it left the build on
-2026-08-21 and survives only as `docs/reference/GraphEdgeEdit.java.txt`, which is where the snippet
-below is preserved from.)
+2026-08-21 and survives only in git history - `docs/reference/GraphEdgeEdit.java.txt` at d8db4879 - which is
+where the snippet below is preserved from.)
 
 ```java
 label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13));   // labels

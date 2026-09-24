@@ -278,7 +278,8 @@ a turn at a may-reverse square, because the operator said no.
 
 **On the two copies.** Adam: *"having two copies seems like unnecessary complexity, I wonder if it can
 be done more easily by simply following the edges? Don’t implement until evaluating."* The evaluation
-is written, in [`two-copies-evaluation.md`](two-copies-evaluation.md), and nothing has been changed.
+is written - `docs/reference/two-copies-evaluation.md`, removed 2026-09-24 with the other finished assessments and
+in git history at 0a5dab2a - and nothing has been changed.
 
 Its headline said *"on this railway the split does not fire"* - every named square building to exactly
 one copy - **and that was measured on a diagram whose switches had no accessories, so the railway was
@@ -295,7 +296,7 @@ changes the recommendation is Adam's call and nothing has been done about it.**
 
 **The tripwire was cited four times before it was written** (found 2026-09-08).
 `testEverySquareOnThisLayoutBuildsToOneCopy` was named as the guard here, twice in
-`docs/reference/two-copies-evaluation.md`, and once in
+`docs/reference/two-copies-evaluation.md` (git history, 0a5dab2a), and once in
 `test/core/testTheAutoTierScopeMatchesTheRuntime.java`, and there was no such class or method anywhere
 under `test/`. `regression.testEveryCitationResolves` resolves review-finding ids and not test names,
 so nothing caught it - and the first thing the real test did when it was written was disagree with the

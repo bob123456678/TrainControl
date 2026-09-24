@@ -315,7 +315,7 @@ None of these change behaviour. They are the reason behaviour changes keep being
 
 All twenty-nine findings read against the code and ruled on: **fourteen fixed, twelve cancelled, six
 left with reasons, and one reclassified as a feature that had no tests.** Full disposition in
-[`package-sweeps.md`](package-sweeps.md).
+`docs/reference/package-sweeps.md`, removed 2026-09-24 and in git history at 2d910000.
 
 It was the least-known part of the backlog and it held the largest defect of the week — `C13`, filed
 as a route condition registering a phantom accessory and actually a call in the keyboard paint loop

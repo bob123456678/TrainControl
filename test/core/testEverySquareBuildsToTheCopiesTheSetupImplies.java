@@ -27,7 +27,7 @@ import org.traincontrol.marklin.file.CS2File;
 /**
  * How many Points each of Adam's squares becomes - the guard the two-copies decision rests on.
  *
- * `docs/reference/two-copies-evaluation.md` answers his question - *"having two copies seems like
+ * `docs/reference/two-copies-evaluation.md` (removed 2026-09-24; git history, 0a5dab2a) answers his question - *"having two copies seems like
  * unnecessary complexity, I wonder if it can be done more easily by simply following the edges?"* -
  * and its first reason for leaving the copies alone is a measurement: how much of that complexity the
  * railway actually carries today. That measurement had no guard. It was cited as
@@ -359,7 +359,8 @@ public class testEverySquareBuildsToTheCopiesTheSetupImplies
 
         assertEquals(split, SPLIT_SQUARES,
             split + " of " + SQUARES + " squares now build to more than one Point, and " + SPLIT_SQUARES
-            + " did when this was measured.  docs/reference/two-copies-evaluation.md is costed against"
+            + " did when this was measured.  docs/reference/two-copies-evaluation.md (git show"
+            + " 0a5dab2a:docs/reference/two-copies-evaluation.md) is costed against"
             + " that number - its first reason for keeping the two copies is \"it buys nothing on your"
             + " railway today\" - so re-read it before updating this line.  If the count went UP the"
             + " complexity is being paid on the railway rather than in the source, which is the day"

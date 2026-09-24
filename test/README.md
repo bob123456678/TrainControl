@@ -105,8 +105,7 @@ it was the *application*, launched from NetBeans at 02:19 and still open six hou
 own unfinished-edit snapshot. `battery.sh`'s warning says to check this first, and it is right:
 a running railway rewrites that folder as trains move, and no fingerprint can tell it from a test.
 A leftover application also holds the UDP port, which is what a `BindException` in a tool that does
-not pass `-Dtraincontrol.anyReceivePort=true` - the 2.8.1 jar in `docs/tools/parity/`, for one -
-actually means.
+not pass `-Dtraincontrol.anyReceivePort=true` actually means.
 
 ---
 
