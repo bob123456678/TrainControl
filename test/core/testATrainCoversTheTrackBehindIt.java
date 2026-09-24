@@ -797,6 +797,102 @@ public class testATrainCoversTheTrackBehindIt
     }
 
     /**
+     * The tail's first step takes the rail from the neighbour's plain copy, not from its turning twin (AUT3-C3).
+     *
+     * Rails arriving at a standing copy from a neighbour N come from the copies of N that face it: N's plain copy, and -
+     * where trains may turn at N - its turning copy, which arrived from this side.  Both come in by the same side, and the
+     * walk took whichever `getNeighborsAndIncoming` listed first, which sorts by name: a turning copy is named by the
+     * opposite heading plus ", reverse", so it came first whenever the plain heading was southbound or westbound.  From a
+     * turning copy every rail leads back, so the walk stopped there without claiming N's square or the road beyond it -
+     * measured on the blessed build at BottomMainA and BottomMainB, arriving past BottomMainPost.
+     *
+     * The twin is named to sort first; the control names it to sort last, which the walk always handled.
+     *
+     * MUTATION: take the first arriving rail again, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testTheFirstStepTakesThePlainCopyOverItsTurningTwin() throws Exception
+    {
+        assertTrue(claimsPastTheNeighbour("_twin" + (addresses++), " (zz, reverse)"), "control: with the turning twin"
+            + " sorting after the plain copy, a five-unit train does not claim the neighbour's square and the rail beyond"
+            + " it - the fixture is not the case");
+
+        assertTrue(claimsPastTheNeighbour("_twin" + (addresses++), " (northbound, reverse)"), "a train standing past a"
+            + " square trains may turn at claims neither that square nor the rail beyond it when the square's turning copy"
+            + " sorts before its plain one: the tail's first step took the rail from the turning copy, from which every"
+            + " rail leads back (AUT3-C3)");
+    }
+
+    /**
+     * M north of N, N north of D, and a five-unit train at D that came down from M through N's plain copy.
+     *
+     * @param tag unique to this layout
+     * @param twinSuffix the turning copy's name after the square's
+     * @return whether N's square and the rail from M are both claimed
+     * @throws Exception on a failure to build the fixture
+     */
+    private boolean claimsPastTheNeighbour(String tag, String twinSuffix) throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        Point m = point(layout, "TM" + tag, false);
+        Point plain = point(layout, "TN" + tag + " (southbound)", false);
+        Point twin = point(layout, "TN" + tag + twinSuffix, true);
+        Point d = point(layout, "TD" + tag, true);
+
+        // ONE SQUARE, TWO COPIES: the plain one, and the one a train turns round on - emitted as a terminus.
+        twin.setTerminus(true);
+
+        plain.setBlock("N" + tag);
+        twin.setBlock("N" + tag);
+
+        m.setX(0);
+        plain.setX(0);
+        twin.setX(0);
+        d.setX(0);
+
+        m.setY(0);
+        plain.setY(1);
+        twin.setY(1);
+        d.setY(2);
+
+        Edge fromM = layout.createEdge(m.getName(), plain.getName());
+        Edge fromPlain = layout.createEdge(plain.getName(), d.getName());
+        Edge fromTwin = layout.createEdge(twin.getName(), d.getName());
+
+        fromM.setPlaces(java.util.Arrays.asList("m1" + tag, "N" + tag), java.util.Arrays.asList(1, 1));
+        fromPlain.setPlaces(java.util.Arrays.asList("d1" + tag, "D" + tag), java.util.Arrays.asList(1, 1));
+        fromTwin.setPlaces(java.util.Arrays.asList("d1" + tag, "D" + tag), java.util.Arrays.asList(1, 1));
+
+        for (Edge e : java.util.Arrays.asList(fromM, fromPlain, fromTwin))
+        {
+            e.setLength(2);
+            e.setEntrySide("N");
+        }
+
+        Locomotive standing = model.getLocByName(model.getLocList().get(0));
+
+        standing.setTrainLength(5);
+
+        d.setLocomotive(standing);
+        d.setArrivedFrom("N");
+        d.setArrivedAlong(java.util.Arrays.asList(fromM, fromPlain));
+
+        try
+        {
+            Map<String, Locomotive> claimed = layout.placesCoveredByStandingTrains();
+
+            return claimed.get("N" + tag) == standing && claimed.get("m1" + tag) == standing;
+        }
+        finally
+        {
+            d.setLocomotive(null);
+        }
+    }
+
+    /**
      * A train with no recorded side, on a square emitted as one Point, spends that square first like every other
      * (TDY2-C5, OB-278).
      *
