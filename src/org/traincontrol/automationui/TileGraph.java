@@ -1734,6 +1734,69 @@ public class TileGraph
     }
 
     /**
+     * The squares from one square to another, leaving the first by one side, over the track as DRAWN and never past a
+     * stop on the way - `firstStopsLeaving`'s walk, with the route it took (Adam, 2026-09-24, carrying an old file's
+     * directions).
+     *
+     * @param from the square
+     * @param side the side to leave it by
+     * @param to the stop to reach
+     * @param stops the squares a walk ends at
+     * @return the squares from `from` to `to` inclusive, or null when `to` is not the first stop that way
+     */
+    public List<TileKey> pathLeaving(TileKey from, Side side, TileKey to, Set<TileKey> stops)
+    {
+        if (from == null || side == null || to == null || !tiles.containsKey(from)) return null;
+
+        boolean trackThatWay = false;
+
+        for (Route route : getRoutes(from).values())
+        {
+            if (route.touches(side)) trackThatWay = true;
+        }
+
+        Landing first = trackThatWay ? landing(from, side) : null;
+
+        if (first == null || !tiles.containsKey(first.getTile())) return null;
+
+        Map<String, Step> cameFrom = new HashMap<>();
+        java.util.ArrayDeque<Step> frontier = new java.util.ArrayDeque<>();
+
+        Step start = new Step(first.getTile(), first.getEntrySide());
+
+        cameFrom.put(start.key(), null);
+        frontier.add(start);
+
+        while (!frontier.isEmpty())
+        {
+            Step here = frontier.poll();
+
+            if (here.tile.equals(to))
+            {
+                List<TileKey> path = new ArrayList<>();
+
+                for (Step at = here; at != null; at = cameFrom.get(at.key())) path.add(0, at.tile);
+
+                path.add(0, from);
+
+                return path;
+            }
+
+            if (here.tile.equals(from) || (stops != null && stops.contains(here.tile))) continue;
+
+            for (Step next : continuations(here))
+            {
+                if (cameFrom.containsKey(next.key())) continue;
+
+                cameFrom.put(next.key(), here);
+                frontier.add(next);
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * One square of an undirected walk, remembered with the side it was entered by.
      */
     private static final class Step

@@ -1244,6 +1244,12 @@ public class AutonomyViewerPanel extends JPanel
                 ui.getModel().log(I18n.f("autosetup.ui.facingsNotHeld", String.join(", ", result.facingsNotHeld)));
             }
 
+            // AND THE OLD FILE'S ONE-WAY RUNNING, carried onto the diagram (Adam, 2026-09-24).
+            if (!result.directionsCarried.isEmpty() && ui.getModel() != null)
+            {
+                ui.getModel().log(I18n.f("autosetup.ui.directionsCarried", result.directionsCarried.size()));
+            }
+
             JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoLegacyImported",
                 result.matched, result.placed, result.reversing, result.settings,
                 result.skipped, result.unmatched.size()) + unmatched

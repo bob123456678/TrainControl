@@ -1857,10 +1857,13 @@ side (GUI3-C1, TDY4-C3). The rebuild's put-back stands it there again where no s
 TDY4-B1); a placement keeps it where the train can leave that way (OB-284); a home does not save such a facing
 (GUI3-C2); and an import of an old
 autonomy.json takes each train's facing from the side its point's one-way edges leave by, guessing one trains may
-arrive in only where they cannot say (REG3-C1, REG4-A1, REG4-C1). Where the diagram cannot hold the file's facing - a
-fresh upgrade's switches let trains out of their toe only - no impossible facing is saved (OB-270): the train stands
-the way the square allows, and the import's log names the square, since that is the other way round from how it
-drives.
+arrive in only where they cannot say (REG3-C1, REG4-A1, REG4-C1). **The old file's directions are carried onto the
+diagram first** (Adam, 2026-09-24: *"Carry the old file's directions onto the diagram - yes, to the extent
+possible."*): each one-way edge sets the track it ran over running its way, as the editor's one-way run does; track run
+both ways stays both; a direction the operator set is never overwritten; and the log says how much was carried. Where
+the diagram still cannot hold the file's facing - an operator's own direction closing the way - no impossible facing
+is saved (OB-270): the train stands the way the square allows, and the import's log names the square, since that is
+the other way round from how it drives.
 
 **The flag is decided once**, and that is a fix rather than a tidy: it is emitted as both `station` and
 the terminus, and read twice the turn-round copy of a barred side came out as a terminus that is not a

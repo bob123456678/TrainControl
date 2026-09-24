@@ -470,8 +470,8 @@ public class AutonomySession
         /**
          * The points whose trains the file ran a way no copy of the square holds on this diagram (REG4-A1).
          *
-         * A fresh upgrade's switches let trains out of their toe only, so a square the old graph was run through the
-         * other way can have one copy, facing the way the train does NOT drive.  No facing the square cannot hold is
+         * The old file's directions are carried onto the diagram first (`carryTheOldDirections`), but never over one the
+         * operator set, so a square can still have one copy, facing the way the train does NOT drive.  No facing the square cannot hold is
          * saved (Adam, OB-270), so the train is stood the only way the square allows - and named here, because unlike
          * a guess it is known to be the other way round.
          */
@@ -732,6 +732,102 @@ public class AutonomySession
     }
 
     /**
+     * Sets the track each of the old file's edges ran over running the way it ran (Adam, 2026-09-24: *"Carry the old
+     * file's directions onto the diagram - yes, to the extent possible."*).
+     *
+     * A 2.8.1 graph is one-way edges: a train on a point went only along the edges starting there.  The diagram has its
+     * own defaults - plain track both ways, a switch out of its toe only - which on a fresh upgrade can forbid the very
+     * way the old graph ran a train (TopMainR1Inter, reached from the north through a switch, became reachable from the
+     * east only).  So each edge is followed as its facing is (`sideTheEdgesLeaveBy`: the side from which its end is the
+     * next square the old graph had a point on) and the track between is set as the editor's one-way run sets it.
+     *
+     * To the extent possible:
+     *  - track the file ran both ways is left both ways, and so is a square two edges run over opposite ways;
+     *  - an edge whose end is next by more than one side, or none, or across a link, is skipped for what it cannot say;
+     *  - and a direction the operator has set is never overwritten - the import fills gaps, as everything else here does.
+     * The facings are found afterwards, over the copies these directions make.
+     *
+     * @param oldEdges each edge as the squares of its two points (null for one this diagram does not draw)
+     * @param pointSquares the squares the old graph had points on
+     * @param result where the directions set are recorded
+     */
+    private void carryTheOldDirections(List<TileKey[]> oldEdges, Set<TileKey> pointSquares, LegacyImport result)
+    {
+        if (graph == null) return;
+
+        Map<TileGraph.DirectionKey, Direction> wanted = new LinkedHashMap<>();
+
+        for (TileKey[] edge : oldEdges)
+        {
+            TileKey from = edge[0];
+            TileKey to = edge[1];
+
+            if (from == null || to == null || from.equals(to)) continue;
+
+            Side leaving = null;
+            boolean both = false;
+
+            for (Side side : Side.values())
+            {
+                if (!graph.firstStopsLeaving(from, side, pointSquares).contains(to)) continue;
+
+                if (leaving != null) both = true;
+
+                leaving = side;
+            }
+
+            if (leaving == null || both) continue;
+
+            List<TileKey> path = graph.pathLeaving(from, leaving, to, pointSquares);
+
+            if (path == null) continue;
+
+            // As `applyOneWay` does, between the two ends only.
+            for (int i = 1; i < path.size() - 1; i++)
+            {
+                TileKey tile = path.get(i);
+
+                Side cameFrom = graph.sideTowardNeighbour(tile, path.get(i - 1));
+                Side goingTo = graph.sideTowardNeighbour(tile, path.get(i + 1));
+
+                if (cameFrom == null || goingTo == null) continue;
+
+                for (Map.Entry<RouteId, Route> entry : graph.getRoutes(tile).entrySet())
+                {
+                    Route route = entry.getValue();
+
+                    if (!route.touches(cameFrom) || !route.touches(goingTo)) continue;
+
+                    TileGraph.DirectionKey key = new TileGraph.DirectionKey(tile, entry.getKey());
+
+                    Direction way = route.getA() == goingTo ? Direction.TOWARD_A : Direction.TOWARD_B;
+
+                    Direction had = wanted.get(key);
+
+                    wanted.put(key, had == null || had == way ? way : Direction.BOTH);
+                }
+            }
+        }
+
+        for (Map.Entry<TileGraph.DirectionKey, Direction> each : wanted.entrySet())
+        {
+            TileKey tile = each.getKey().square();
+            RouteId id = each.getKey().getRouteId();
+
+            // THE OPERATOR'S OWN IS KEPT: only a route the store holds no direction for is a gap.
+            if (store.getTileDirection(tile, id) != null) continue;
+
+            if (each.getValue() == graph.getDirection(tile, id)) continue;
+
+            record(tile, id, each.getValue());
+
+            result.directionsCarried.put(each.getKey(), each.getValue());
+        }
+
+        if (!result.directionsCarried.isEmpty()) touched();
+    }
+
+    /**
      * The one side of a square that every edge from a legacy point leaves by, or null where they leave by more than
      * one, where there is none, or where one cannot be followed on this diagram (REG4-A1).
      *
@@ -855,6 +951,9 @@ public class AutonomySession
 
         Map<String, List<TileKey>> edgesLeadTo = new java.util.HashMap<>();
 
+        // And each edge as the two squares it joins, for the directions it ran (Adam, 2026-09-24).
+        List<TileKey[]> oldEdges = new ArrayList<>();
+
         org.json.JSONArray edges = legacy.optJSONArray("edges");
 
         for (int i = 0; edges != null && i < edges.length(); i++)
@@ -865,6 +964,9 @@ public class AutonomySession
 
             edgesLeadTo.computeIfAbsent(edge.optString("start", ""), start -> new ArrayList<>())
                 .add(squareOfPoint.get(edge.optString("end", "")));
+
+            oldEdges.add(new TileKey[] {squareOfPoint.get(edge.optString("start", "")),
+                squareOfPoint.get(edge.optString("end", ""))});
         }
 
         // Where the walks from a square stop: the squares the old graph had points on (REG4-A1).
@@ -1093,6 +1195,9 @@ public class AutonomySession
 
             result.matched++;
         }
+
+        // THE OLD FILE'S DIRECTIONS FIRST, so the facings below are read over the copies they make.
+        carryTheOldDirections(oldEdges, pointSquares, result);
 
         findTheImportedFacings(facingToFind, edgesLeadTo, pointSquares, result);
 

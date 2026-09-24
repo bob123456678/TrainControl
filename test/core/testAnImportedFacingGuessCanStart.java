@@ -18,6 +18,8 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TileGraph.Direction;
+import org.traincontrol.automationui.TileGraph.DirectionKey;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -226,10 +228,12 @@ public class testAnImportedFacingGuessCanStart
      * arrived at from both sides by default, so the first copy the build makes faces south, and the import stood the
      * train facing south.
      *
-     * Where the diagram cannot hold the file's facing - TopMainR1Inter's edge leads east, and by default the switch
-     * above it lets no train arrive from the north, so its one copy faces north - no impossible facing is saved (OB-270),
-     * and the import names the square rather than calling it a guess.  Tunnel is not split on a fresh upgrade, so it
-     * has no facing to give.  (On Adam's own railway all three agree with the sides he bars, and hold the file's.)
+     * Where the diagram cannot hold the file's facing, no impossible facing is saved (OB-270) and the import names the
+     * square rather than calling it a guess.  Since the old file's directions are carried onto the diagram
+     * (`testTheOldDirectionsAreCarried`) this fixture no longer reaches that branch - TopMainR1Inter, which it used to,
+     * now holds the file's east - and `testTheOperatorsOwnDirectionIsKept` claims it.  Tunnel is not split on a fresh
+     * upgrade, so it has no facing to give.  (On Adam's own railway all three agree with the sides he bars, and hold
+     * the file's.)
      *
      * MUTATION: ignore the file's edges and guess, and this fails.
      *
@@ -367,11 +371,13 @@ public class testAnImportedFacingGuessCanStart
 
     /**
      * A direction the operator set is kept, and where it keeps a train from standing the way the file ran it, the
-     * import says so (Adam: *"to the extent possible"*).
+     * import says so (Adam: *"to the extent possible"*; OB-270).
      *
-     * The import fills gaps, like everything else it writes.  The square north of TopMainR1Inter, which the old file's
-     * edges run south, is set to run north beforehand: it stays so, and TopMainR1Inter - no longer arrived at from the
-     * north - cannot hold the east the file ran its train, which the import names.
+     * The import fills gaps, like everything else it writes.  Every piece of track the old file's edges run one way is
+     * set the other way round beforehand, by an operator who drew the railway backwards.  Every one stays so;
+     * TopMainR1Inter, which the file entered from the north and left east, is now entered from the east only and cannot
+     * hold the east the file ran its train; and the import names it.  With the old directions carried the fixture no
+     * longer reaches that path by itself, so this is the claim that keeps it.
      *
      * MUTATION: overwrite a direction the operator set, and this fails.
      *
@@ -395,25 +401,16 @@ public class testAnImportedFacingGuessCanStart
             probe.rebuild();
 
             TileKey inter = tileNamed(probe, "TopMainR1Inter");
-            TileKey north = new TileKey(inter.getPage(), inter.getX(), inter.getY() - 1);
 
-            java.util.Map.Entry<org.traincontrol.automationui.TileGraph.DirectionKey,
-                org.traincontrol.automationui.TileGraph.Direction> carried = null;
+            // Every road the file ran one way, the other way round.
+            Map<DirectionKey, Direction> theirs = new java.util.LinkedHashMap<>();
 
-            for (java.util.Map.Entry<org.traincontrol.automationui.TileGraph.DirectionKey,
-                org.traincontrol.automationui.TileGraph.Direction> each
-                : new java.util.ArrayList<>(probe.importLegacy(legacy).directionsCarried.entrySet()))
+            for (Map.Entry<DirectionKey, Direction> each : probe.importLegacy(legacy).directionsCarried.entrySet())
             {
-                if (north.equals(each.getKey().square())) carried = each;
+                if (each.getValue() == Direction.BOTH) continue;
+
+                theirs.put(each.getKey(), each.getValue() == Direction.TOWARD_A ? Direction.TOWARD_B : Direction.TOWARD_A);
             }
-
-            assertNotNull(carried, "precondition: the old file's edges set no direction on " + north + ", north of"
-                + " TopMainR1Inter");
-
-            org.traincontrol.automationui.TileGraph.Direction theirs =
-                carried.getValue() == org.traincontrol.automationui.TileGraph.Direction.TOWARD_A
-                ? org.traincontrol.automationui.TileGraph.Direction.TOWARD_B
-                : org.traincontrol.automationui.TileGraph.Direction.TOWARD_A;
 
             AutonomySession session = new AutonomySession(second);
 
@@ -422,17 +419,31 @@ public class testAnImportedFacingGuessCanStart
             session.getStore().setActiveConfiguration("Directions carried");
             session.rebuild();
 
-            // THE OPERATOR'S OWN, set before the import.
-            session.setDirection(north, carried.getKey().getRouteId(), theirs);
+            // THE OPERATOR'S OWN, set before the import.  One that is a square's default is stored as no decision at
+            // all, and so is nobody's to keep: left out.
+            for (Map.Entry<DirectionKey, Direction> each : theirs.entrySet())
+            {
+                session.setDirection(each.getKey().square(), each.getKey().getRouteId(), each.getValue());
+            }
+
+            theirs.keySet().removeIf(key -> session.getStore().getTileDirection(key.square(), key.getRouteId()) == null);
+
+            assertTrue(theirs.size() > 5, "precondition: the operator's backwards railway kept too few directions to"
+                + " stand for one: " + theirs);
 
             AutonomySession.LegacyImport imported = session.importLegacy(legacy);
 
-            assertEquals(session.getStore().getTileDirection(north, carried.getKey().getRouteId()), theirs, "the import"
-                + " overwrote the direction the operator had set on " + north);
+            for (Map.Entry<DirectionKey, Direction> each : theirs.entrySet())
+            {
+                assertEquals(session.getStore().getTileDirection(each.getKey().square(), each.getKey().getRouteId()),
+                    each.getValue(), "the import overwrote the direction the operator had set on " + each.getKey());
+            }
 
-            assertTrue(imported.facingsNotHeld.contains("TopMainR1Inter"), "with the way in from the north closed by the"
+            assertTrue(imported.facingsNotHeld.contains("TopMainR1Inter"), "with the railway drawn backwards by the"
                 + " operator, TopMainR1Inter cannot hold the east the old file ran its train, and the import does not"
-                + " say so: " + imported.facingsNotHeld);
+                + " say so: " + imported.facingsNotHeld + ".  Its copies: "
+                + session.facingsFor(inter) + ", standing " + session.getFacing(inter) + "; the next named squares by"
+                + " each side: " + nextByEachSide(session, inter));
         }
         finally
         {
