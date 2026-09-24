@@ -114,7 +114,7 @@ a refused press should not change a setting.
 
 | | |
 |---|---|
-| **Disposition** | Fixed - 1c855483 (claims 2e565b5e, red first): placement only on a copy trains may arrive at (`placeableFacingsFor`, `placementCopy`); baseline re-blessed |
+| **Disposition** | Fixed - 1c855483 (claims 2e565b5e, red first), reworked in 8370abb1: the first repair stood trains on copies facing the other way (TDY2-A1, AUT2-A1, GUI2-A1) |
 | **Where** | `AutonomyEditorPanel.java:5436-5439` (the editor's Place/Add to Autonomy door); `GraphLocAssign.java:263-265` (`commitAndRecord`, both Place/Edit Locomotive doors); consequence in `AutonomyBuilder.java:727-755` (`placementCopy`) |
 
 OB-270's second half (Adam, 2026-09-23: *"we shouldn't allow an impossible facing to be saved"*) is written into
@@ -284,7 +284,7 @@ the copy the train is put on is wrong.
 
 | | |
 |---|---|
-| **Disposition** | Fixed - ff129a4d: the 53 keys translated in all seven bundles, including the three reworded ones |
+| **Disposition** | Fixed - ff129a4d: 52 keys in all seven bundles, two of them reworded ones whose translation said what the English used to; the third reworded key, French validateConfigOpenGraphUI, was already right (GUI2-C5) |
 | **Where** | `src/org/traincontrol/resources/messages_{da,de,es,fr,it,nl,pl}.properties` |
 
 `testMessageBundles.testTranslationsMatchEnglishKeySet` checks that every language HAS every key, not that the
@@ -381,7 +381,7 @@ all eight bundles.
 
 | | |
 |---|---|
-| **Disposition** | Fixed - fd6341dd: the seven comments rewritten for OB-272's meaning |
+| **Disposition** | Fixed - fd6341dd, and the siblings it missed in 4132d260 (DCN2-C1) |
 | **Where** | `AutonomyEditorPanel.java:6752`, `:6767`, `:6786`, `:6798`, `:6860`, `:6889`; `LayoutEditor.java` `hideTextLabels` javadoc and the RGD-C3 paragraph in `toggleText` |
 
 Since `359e5346` the text switch is on for Labels Only and off for everything else, and Control+L in the autonomy

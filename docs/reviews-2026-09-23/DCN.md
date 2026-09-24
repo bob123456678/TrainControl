@@ -98,7 +98,7 @@ Consequence: none on the railway - it is unreachable. The cost is ~180 lines of 
 
 | | |
 |---|---|
-| **Disposition** | Fixed - fd6341dd, with GUI-C4 |
+| **Disposition** | Fixed - fd6341dd, and the comment it missed in 4132d260 (DCN2-C1) |
 | **Where** | `AutonomyEditorPanel.java:6856-6873`, `:6888-6893`, `:6899-6907`; `LayoutEditor.java:5186-5191`, `:5204-5209`, `:5230-5233` |
 
 359e5346 (2026-09-23, OB-272) made text labels a caption option of their own: the switch is ON for Labels Only and OFF for every other option (`applyCaptionMode`, `AutonomyEditorPanel.java:6812-6813`), captions are drawn by `isDrawingCaptions` independently of the switch (`:6817-6827`), and Control+L in the autonomy editor calls `cycleCaptionMode` instead of `toggleText` (`LayoutEditor.java:7196`). The method bodies were changed; their javadocs and the comments beside the calls were not:
@@ -139,7 +139,7 @@ MT-023 (`tests.md:2676`, fixed validated) likewise tells the operator to open "S
 
 | | |
 |---|---|
-| **Disposition** | Fixed - 4fb36b4b |
+| **Disposition** | Fixed - 4fb36b4b, and the two identifiers it missed in 4132d260 (DCN2-C8) |
 | **Where** | `docs/reference/viewer-editability.md:69-70` against `AutonomyEditorPanel.java:1674-1699` |
 
 The document says the `menuOnly` gate keeps two things out of the viewer: "**Signal Protecting This Station…**, and the caption items on a *track* square." Since FR-096 (a737360e) the same `if (isStation && !menuOnly)` block builds both the exit guard (`autosetup.ui.menuPairSignal` = "Exit Guard Signal...") and the new entry guard (`menuPairEntrySignal` = "Entry Guard Signal..."), so it is three, and the first no longer has the name quoted. The same table names two stores by identifiers that do not exist anywhere in `src/`: `portalDisabled` (`:62`; the store's key is `disabledLinks`) and `tileLength` (`:64`; `tileLengths`). A sweep of every backticked identifier in behaviour.md, open-questions.md and viewer-editability.md against `src/` found only these two (plus `SkipException`, a TestNG class, and the word `disposition`). Reading alone.  **Suggested fix:** "Three things ... Exit Guard Signal..., Entry Guard Signal..., and the caption items on a track square."; `disabledLinks`, `tileLengths`.
@@ -157,7 +157,7 @@ The first `## Not invariants — set these in code` (`:59-66`) says of lengths: 
 
 | | |
 |---|---|
-| **Disposition** | Fixed - 4fb36b4b |
+| **Disposition** | Fixed - 4fb36b4b, and the five sites it missed in 4132d260 (DCN2-C3) |
 | **Where** | `AutomationAPI.md:19, 228, 392-396, 413-415, 436, 476, 489, 507-511` |
 
 CMT-B3 (2026-09-01, fixed in 9f1b80c8) was "`AutomationAPI.md`'s 'Returning locomotives home' section instructs the reader to use a graph window that was deleted". That section is clean now; the rest of the file was not swept, and the banner at the top promises "TrainControl still reads it, and **everything here still works**":
@@ -225,7 +225,7 @@ open-questions.md, Part 1, Reversals: "**Open: one, and it is Adam's call rather
 
 | | |
 |---|---|
-| **Disposition** | Fixed - 997ac6d9: MT-470, 476 and 478 promoted; MT-475, 481, 482, 483 and 484 held with a comment naming the later commit on their path |
+| **Disposition** | Fixed - 997ac6d9, and MT-482's comment, which it missed, in b53439dc (DCN2-C9) |
 | **Where** | `docs/manual-tests/tests.md` ledger (`:28-72`); MT-470, 475, 476, 478, 481, 482, 483, 484 |
 
 Each of these ends with "**Adam, 2026-09-23 (triage).** Works." against commit 41bd1831, and nothing after it; each is still `fixed unvalidated` and on the generated ledger "where your attention is needed". The README's rule is that a test moves to fixed validated "only on Adam's word in the Comments", and it is there. b16eead2 recorded the feedback and 281c79de replied to the entries that came back with notes (467, 474, 477, 479, 480, 485) without touching the ones that came back clean. The only honest reason to hold one back is code changed after 41bd1831 in its area, and then the README wants that said in the entry: 195aa1f1 / 31aabbba (MT-477's tail change, after the run) plausibly bear on MT-475 and MT-482 (what the orange and the grey cover), but neither entry says so. The ledger's own history (`docs/manual-tests/README.md:109-112`: "31 rows that were no longer open and 8 whose disposition had drifted") is this failure. May simply be the coordinator's next step; recorded so it is not missed.  **Suggested fix:** promote the six whose area did not move after 41bd1831; for MT-475 and MT-482, either promote or add a dated comment naming 195aa1f1 and asking for a re-run.
@@ -241,22 +241,127 @@ Each of these ends with "**Adam, 2026-09-23 (triage).** Works." against commit 4
 
 ## D - not defects
 
-- **DCN-D1 - docs/reviews/README.md deletion counts reproduce.** `git log --diff-filter=D` over `docs/reviews` plus the three dated `docs/reviews-2026-09-*` folders gives 145 on 2026-09-08 and 44 + 7 + 8 + 6 = 65 on 2026-09-21, total 210, as README.md:13-14 says. The 11 deletions on 2026-08-22 are harness dumps (`1-derived-active.json` etc.) and `findings.md`, not reviews, so excluding them is right.
+### DCN-D1 - docs/reviews/README.md deletion counts reproduce
 
-- **DCN-D2 - Every backticked test name in the reference docs, the fixture READMEs and `test/README.md` resolves.** 141 names extracted from `behaviour.md`, `open-questions.md`, `UI-standards.md`, both READMEs under `docs/`, `Automation.md`, `AutomationAPI.md`, `test/README.md` and the four fixture READMEs; each `pkg.testClass` checked as a file and each `pkg.testClass.method` / bare method checked as a `void name(` definition. The one miss, `testEverySquareOnThisLayoutBuildsToOneCopy`, is cited by behaviour.md `:296-302` and two-copies-evaluation.md precisely to record that it never existed.
-- **DCN-D3 - behaviour.md §5d's door count holds.** "the **five dispatch doors** - Start, Execute Timetable, Return Home, and the two hand dispatches" plus "the **two load doors**": `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack` has exactly seven production callers - `startAutonomyActionPerformed`, `executeTimetableActionPerformed`, `requestReturnToHome`, `validateButtonActionPerformed` (TrainControlUI `:25561, :23100, :24618, :24297`), `AutoLocomotiveStatus:1159`, `LayoutRightclickAutonomyMenu:1376`, `AutonomyViewerPanel:822` - matching its own "SEVEN CALLERS" javadoc.
-- **DCN-D4 - behaviour.md §7c (FR-096, written today) matches the code.** The entry guard is thrown in `Layout.executePath` on the path's last Point only (`:8565-8570`, `throwEntryGuard`), with no `isRunning` gate but reachable only from a run; the exit guard is gated on `isRunning()` (`:9250`) and evaluated per signal (`refreshOneSignal`). Both lists are dropped when a square stops being a station (`AutonomySession.java:5744-5747`) and both are moved/forgotten by the same `ListMapKept` registry (`AutonomyCompanionStore.java:5053-5054`), so the "one signal on both lists" and "dropped with the station" sentences hold.
-- **DCN-D5 - Readme facts checked and right:** eight languages (`messages.properties` + seven); seven sidebar icons (`TAB_ICON_*`, `TrainControlUI.java:162-168`); `json-20260814.jar` and `flatlaf-3.7.2.jar` in `nbproject/project.properties`; `src/org/traincontrol/gui/resources/running_train.png` exists; the 50-page cap (`MAX_LOC_MAPPINGS`, applied to adding only - loading is uncapped, as the changelog says); "v2.8.1 reads only the first ten" (`NUM_LOC_MAPPINGS = 10` at `5f0a75e3`).
-- **DCN-D6 - Changelog fixes sampled and present:** "Pressing Stop while TrainControl is not connected now says so in the log" (`MarklinControlStation.exec`, `:2812-2820`); "a short message ... was read as an emergency stop" (`CS2Message.getSubCommand` returns -1 below five bytes, `:431-445`). Both are defects a user could hit.
-- **DCN-D7 - Two v2.7.4 changelog lines moved into v2.8.0 are deliberate** (b93cbf51, RGN-B3: "two changes were credited to a release that never had them").
-- **DCN-D8 - The generated ledger's totals are right:** 486 entries; 392 fixed validated, 51 superseded, 3 needs test, 40 fixed unvalidated, as `tests.md:74-75` says (but see DCN-C15 for eight of the 40).
-- **DCN-D9 - open-questions.md's Inbox count is right:** 64 = 37 OB + 27 FR in `issues.md`'s Inbox at HEAD. Its warning that many Inbox entries are already done ("Read the receipts, not the presence of an entry") is stated deliberately, so FR-061, FR-085, FR-089 etc. still sitting there is not a finding.
-- **DCN-D10 - The fixture READMEs' "Used by" lists match.** For `live-snapshot`, `single-switch` and `curve-into-platform`, every listed class uses the fixture, and every class that names the fixture outside a comment is listed (`regression.testEveryScenarioIsUsedAndSaysSo` guards this). `live-snapshot`'s pinned counts (122 reduced edges, 87 Points, 125 edges) match `testTheFrozenRailwayIsStillTheRailway:99-109`.
-- **DCN-D11 - AutomationAPI.md's API surface resolves:** every `name(` in it exists in `src/`, and every JSON key in its examples is read by the automation code. Its defects are the UI references in DCN-C9, not the API.
-- **DCN-D12 - UI-standards.md matches its reference screen:** `RouteEditorFrame` uses Segoe UI Semibold 13 / Segoe UI 14 / Segoe UI Bold 12 and `HEADING_BLUE = (0,0,155)` (`:869, :1227, :1236, :1260`).
-- **DCN-D13 - behaviour.md §1a's constants are right:** `YIELD_SECONDS = 30`, `NO_PATH_IDLE_MS = 250` (`Layout.java:79, 88`); the routing rule is stored with the configuration (`session.setGlobal`), as §1a says - the contradiction is in Automation.md (DCN-B1 item 4), not here.
-- **DCN-D14 - `test/README.md`'s per-folder counts are stale again (88/31/70/5 against 128/45/110/7), and that is already on record** as DOC-C1, MON-C20 and IND9X-D1. Not re-raised; the evidence of three recounts going stale suggests dropping the column rather than recounting it a fourth time.
-- **DCN-D15 - `Layout.lengthOf`'s "the floor only works because the units are small" still holds on the refrozen railway:** `live-snapshot`'s 158 tile lengths are 1 (140), 2 (14), 3 (3) and 4 (1), so a floor of 1 is the size of the smallest real square. Its "Only 18 of the 132 edges carry a recorded length" is history rather than a claim about today.
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+`git log --diff-filter=D` over `docs/reviews` plus the three dated `docs/reviews-2026-09-*` folders gives 145 on 2026-09-08 and 44 + 7 + 8 + 6 = 65 on 2026-09-21, total 210, as README.md:13-14 says. The 11 deletions on 2026-08-22 are harness dumps (`1-derived-active.json` etc.) and `findings.md`, not reviews, so excluding them is right.
+
+
+### DCN-D2 - Every backticked test name in the reference docs, the fixture READMEs and `test/README.md` resolves
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+141 names extracted from `behaviour.md`, `open-questions.md`, `UI-standards.md`, both READMEs under `docs/`, `Automation.md`, `AutomationAPI.md`, `test/README.md` and the four fixture READMEs; each `pkg.testClass` checked as a file and each `pkg.testClass.method` / bare method checked as a `void name(` definition. The one miss, `testEverySquareOnThisLayoutBuildsToOneCopy`, is cited by behaviour.md `:296-302` and two-copies-evaluation.md precisely to record that it never existed.
+
+### DCN-D3 - behaviour.md §5d's door count holds
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+"the **five dispatch doors** - Start, Execute Timetable, Return Home, and the two hand dispatches" plus "the **two load doors**": `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack` has exactly seven production callers - `startAutonomyActionPerformed`, `executeTimetableActionPerformed`, `requestReturnToHome`, `validateButtonActionPerformed` (TrainControlUI `:25561, :23100, :24618, :24297`), `AutoLocomotiveStatus:1159`, `LayoutRightclickAutonomyMenu:1376`, `AutonomyViewerPanel:822` - matching its own "SEVEN CALLERS" javadoc.
+
+### DCN-D4 - behaviour.md §7c (FR-096, written today) matches the code
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+The entry guard is thrown in `Layout.executePath` on the path's last Point only (`:8565-8570`, `throwEntryGuard`), with no `isRunning` gate but reachable only from a run; the exit guard is gated on `isRunning()` (`:9250`) and evaluated per signal (`refreshOneSignal`). Both lists are dropped when a square stops being a station (`AutonomySession.java:5744-5747`) and both are moved/forgotten by the same `ListMapKept` registry (`AutonomyCompanionStore.java:5053-5054`), so the "one signal on both lists" and "dropped with the station" sentences hold.
+
+### DCN-D5 - Readme facts checked and right:
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+eight languages (`messages.properties` + seven); seven sidebar icons (`TAB_ICON_*`, `TrainControlUI.java:162-168`); `json-20260814.jar` and `flatlaf-3.7.2.jar` in `nbproject/project.properties`; `src/org/traincontrol/gui/resources/running_train.png` exists; the 50-page cap (`MAX_LOC_MAPPINGS`, applied to adding only - loading is uncapped, as the changelog says); "v2.8.1 reads only the first ten" (`NUM_LOC_MAPPINGS = 10` at `5f0a75e3`).
+
+### DCN-D6 - Changelog fixes sampled and present:
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+"Pressing Stop while TrainControl is not connected now says so in the log" (`MarklinControlStation.exec`, `:2812-2820`); "a short message ... was read as an emergency stop" (`CS2Message.getSubCommand` returns -1 below five bytes, `:431-445`). Both are defects a user could hit.
+
+### DCN-D7 - Two v2.7.4 changelog lines moved into v2.8.0 are deliberate
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+(b93cbf51, RGN-B3: "two changes were credited to a release that never had them").
+
+### DCN-D8 - The generated ledger's totals are right:
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+486 entries; 392 fixed validated, 51 superseded, 3 needs test, 40 fixed unvalidated, as `tests.md:74-75` says (but see DCN-C15 for eight of the 40).
+
+### DCN-D9 - open-questions.md's Inbox count is right:
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+64 = 37 OB + 27 FR in `issues.md`'s Inbox at HEAD. Its warning that many Inbox entries are already done ("Read the receipts, not the presence of an entry") is stated deliberately, so FR-061, FR-085, FR-089 etc. still sitting there is not a finding.
+
+### DCN-D10 - The fixture READMEs' "Used by" lists match
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+For `live-snapshot`, `single-switch` and `curve-into-platform`, every listed class uses the fixture, and every class that names the fixture outside a comment is listed (`regression.testEveryScenarioIsUsedAndSaysSo` guards this). `live-snapshot`'s pinned counts (122 reduced edges, 87 Points, 125 edges) match `testTheFrozenRailwayIsStillTheRailway:99-109`.
+
+### DCN-D11 - AutomationAPI.md's API surface resolves:
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+every `name(` in it exists in `src/`, and every JSON key in its examples is read by the automation code. Its defects are the UI references in DCN-C9, not the API.
+
+### DCN-D12 - UI-standards.md matches its reference screen:
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+`RouteEditorFrame` uses Segoe UI Semibold 13 / Segoe UI 14 / Segoe UI Bold 12 and `HEADING_BLUE = (0,0,155)` (`:869, :1227, :1236, :1260`).
+
+### DCN-D13 - behaviour.md §1a's constants are right:
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+`YIELD_SECONDS = 30`, `NO_PATH_IDLE_MS = 250` (`Layout.java:79, 88`); the routing rule is stored with the configuration (`session.setGlobal`), as §1a says - the contradiction is in Automation.md (DCN-B1 item 4), not here.
+
+### DCN-D14 - `test/README.md`'s per-folder counts are stale again (88/31/70/5 against 128/45/110/7), and that is already on record
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+as DOC-C1, MON-C20 and IND9X-D1. Not re-raised; the evidence of three recounts going stale suggests dropping the column rather than recounting it a fourth time.
+
+### DCN-D15 - `Layout.lengthOf`'s "the floor only works because the units are small" still holds on the refrozen railway:
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+`live-snapshot`'s 158 tile lengths are 1 (140), 2 (14), 3 (3) and 4 (1), so a floor of 1 is the size of the smallest real square. Its "Only 18 of the 132 edges carry a recorded length" is history rather than a claim about today.
+
 
 ## What this pass did not cover
 

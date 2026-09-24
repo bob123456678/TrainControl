@@ -248,10 +248,28 @@ AUS-D8	2026-09-19-AUS-autonomy-editor-second-pass.md	Closed	-	**A walk skipped t
 AUS-D9	2026-09-19-AUS-autonomy-editor-second-pass.md	Closed	-	**The one-way tool cannot change the leg set on its own, so C3 needs the cycle click or the radio.** `setOneWayRun` writes `TOWARD_A`/`TOWARD_B` only
 AUT-B1	AUT.md	Closed	Fixed - ac5fe2f2 (claim 8873b0a4, red first): `Layout.anotherTailOn` - a standing tail blo	a standing train's tail never reaches the OTHER copies of the rail it lies on, so a train can be routed onto a turning copy under that tail
 AUT-B2	AUT.md	Closed	Fixed - ac5fe2f2, with TDY-B1 (the same defect)	a home "facing" accepts its turning twin, which faces the other way; OB-282 still brings a train home turned round at a may-turn square
-AUT-C1	AUT.md	Closed	Fixed - 5e2fbda5 (claim 0d060ffb, red first): asked again inside the monitor; the refused 	`isAlreadyUnderway` is asked outside the monitor that takes the claim, and the dispatch that loses the race deletes the winner's claim
+AUT-C1	AUT.md	Closed	Fixed - 5e2fbda5 (claim 0d060ffb, red first), completed in 8370abb1: the caller's removal 	`isAlreadyUnderway` is asked outside the monitor that takes the claim, and the dispatch that loses the race deletes the winner's claim
 AUT-C2	AUT.md	Open - Adam's decision	Open - Adam's decision: whether the entry guard should look at the routes commanding its s	the entry guard throws a signal red with no look at the routes that are commanding it green
 AUT-C3	AUT.md	Closed	Fixed - 6b7301fc (claim c7308e7c, red first): the standing square is spent off an arriving	a train re-stood onto the other arrival's copy after turning has its own square left unspent by the tail walk, so it claims one square further back th
 AUT-C4	AUT.md	Closed	Fixed - 3492e38c (claim 4ed14f85, red first): the fold skips sensor squares; javadoc corre	the route-tile fold rests on "no rule reads a route tile's length", which is false, and it may fold onto a sensor square
+AUT-D1	AUT.md	Closed	Closed - checked clean	OB-269's narrowing (`Edge.isRunOver`) holds
+AUT-D2	AUT.md	Closed	Closed - checked clean	same-direction copies of one reduced edge are safe at the running side
+AUT-D3	AUT.md	Closed	Closed - checked clean	the lock relation is by tile, not by accessory address, and that is enough on this railway
+AUT-D4	AUT.md	Closed	Closed - checked clean	the new model fields survive the file
+AUT-D5	AUT.md	Closed	Closed - checked clean	the "farthest sensor" prompt's walk agrees with OB-278
+AUT-D6	AUT.md	Closed	Closed - checked clean	`throwEntryGuard` is called outside every monitor
+AUT2-A1	AUT2.md	Closed	Fixed - 8370abb1 (claims 8346be65, red first), with TDY2-A1. The doors' one-placeable-copy	GUI-B1's repair makes the build stand a placed train on a copy facing another way than its recorded facing: the re-blessed baseline shows two trains t
+AUT2-C1	AUT2.md	Closed	Fixed - 8370abb1 (claim 8346be65, red first): the caller's removal is gone	AUT-C1's "removes only its own claim" compares routes by value, so the likeliest double dispatch (the same route twice) still deletes the winner's cla
+AUT2-C2	AUT2.md	Open	Open - for the next round: the planner and the runtime both settle on the first train foun	the planner blames the first train it finds on an edge and passes the edge if that train has moved, so an unmoved train's tail further along the same
+AUT2-C3	AUT2.md	Closed	Fixed - 4132d260	comments the round-1 fixes made false: four sites still say `unlockPath` reads `clearedEdges`, a claim's MUTATION note names a mutation that no longer
+AUT2-D1	AUT2.md	Closed	Closed - checked clean	AUT-B1 verified
+AUT2-D2	AUT2.md	Closed	Closed - checked clean	AUT-B2 verified
+AUT2-D3	AUT2.md	Closed	Closed - checked clean	AUT-C1's inner check verified
+AUT2-D4	AUT2.md	Closed	Closed - checked clean	AUT-C2's disposition is truthful
+AUT2-D5	AUT2.md	Closed	Closed - checked clean	AUT-C3 verified, second pass included
+AUT2-D6	AUT2.md	Closed	Closed - checked clean	AUT-C4 verified
+AUT2-D7	AUT2.md	Closed	Closed - checked clean	GUI-A1's `releasedEarly` mirrors `clearedEdges` everywhere it should
+AUT2-D8	AUT2.md	Closed	Closed - checked clean	the rest of the autonomy diff
 AUT9-B1	AUT-autonomy-review.md	Closed	-	A battery test reads the operator's LIVE railway and is RED right now because a train moved
 AUT9-B2	AUT-autonomy-review.md	Closed	-	The shared-metal covered-track refusal is a live anti-collision rule with no red-on-mutation test
 AUT9-C1	AUT-autonomy-review.md	Closed	-	`maxActiveTrains` (the concurrency cap) is enforced only under `isAutoRunning`, and is in no reference doc
@@ -494,16 +512,54 @@ DCN-C11	DCN.md	Closed	Fixed - 4fb36b4b	The v3.0.0 changelog has no line for five
 DCN-C12	DCN.md	Closed	Fixed - fd6341dd: the two counts corrected, and the two orphaned javadocs reattached (ratc	Three comments whose counts or "every" no longer hold: the page-index writer, `carriesAHome`, and the orphan-javadoc test's "sat"
 DCN-C13	DCN.md	Closed	Fixed - 4fb36b4b	behaviour.md §1a, written today, says the per-rule routing explanations "are still not shown anywhere, which is OB-163"; OB-163 was fixed on 2026-08-3
 DCN-C14	DCN.md	Closed	Fixed - 997ac6d9: filed as its own Inbox entry, open-questions.md repointed	open-questions.md says the one open reversal question is recorded on OB-190 in the Inbox; today's Inbox clear-out removed OB-190's body, and its recei
-DCN-C15	DCN.md	Closed	Fixed - 997ac6d9: MT-470, 476 and 478 promoted; MT-475, 481, 482, 483 and 484 held with a 	Eight MT entries carry Adam's "Works." of 2026-09-23 and are still "fixed unvalidated", so the ledger asks him for them again
+DCN-C15	DCN.md	Closed	Fixed - 997ac6d9, and MT-482's comment, which it missed, in b53439dc (DCN2-C9)	Eight MT entries carry Adam's "Works." of 2026-09-23 and are still "fixed unvalidated", so the ledger asks him for them again
 DCN-C16	DCN.md	Closed	Fixed - 997ac6d9: a dated comment on MT-475 saying which bullets MT-482 replaced	MT-475's Expected was rewritten in place when MT-482 replaced its grey step, against the append-only rule, and its last bullet still states the replac
 DCN-C2	DCN.md	Closed	Fixed - 4fb36b4b	Readme "Layout editor" shortcut list describes 2.8.1's Escape and Control+L, and omits eight keys added since
 DCN-C3	DCN.md	Open - Adam's decision	Open - Adam's decision: removing about 180 lines of unreachable whole-column/row move code	The whole-column / whole-row move has had no caller since 2026-08-19, and four javadocs and one test still describe it as a live gesture
-DCN-C4	DCN.md	Closed	Fixed - fd6341dd, with GUI-C4	OB-272 (this morning) changed what the text switch means; six comments on both sides of it still state the old rule
+DCN-C4	DCN.md	Closed	Fixed - fd6341dd, and the comment it missed in 4132d260 (DCN2-C1)	OB-272 (this morning) changed what the text switch means; six comments on both sides of it still state the old rule
 DCN-C5	DCN.md	Closed	Fixed - 4fb36b4b	behaviour.md "The autonomy editor's keyboard doors": "Four shortcuts" is five, "all three" is neither, and the caption order is given two ways
 DCN-C6	DCN.md	Closed	Fixed - 997ac6d9: dated comments on MT-293 and MT-023	MT-293 (fixed validated) expects Control+L to go Parked Locs -> None -> Parked Locs; since OB-272 it goes Parked Locs -> Homes, and nothing on the ent
-DCN-C7	DCN.md	Closed	Fixed - 4fb36b4b	viewer-editability.md: "Two things the editor keeps to itself ... Signal Protecting This Station" - it is three things and the item has a new name
+DCN-C7	DCN.md	Closed	Fixed - 4fb36b4b, and the two identifiers it missed in 4132d260 (DCN2-C8)	viewer-editability.md: "Two things the editor keeps to itself ... Signal Protecting This Station" - it is three things and the item has a new name
 DCN-C8	DCN.md	Closed	Fixed - 4fb36b4b	live-snapshot README has two "Not invariants" sections that give opposite advice about reading the lengths
-DCN-C9	DCN.md	Closed	Fixed - 4fb36b4b	AutomationAPI.md: CMT-B3 took the deleted graph window out of one section; six siblings still send the reader to it, and one teaches the retired `Poin
+DCN-C9	DCN.md	Closed	Fixed - 4fb36b4b, and the five sites it missed in 4132d260 (DCN2-C3)	AutomationAPI.md: CMT-B3 took the deleted graph window out of one section; six siblings still send the reader to it, and one teaches the retired `Poin
+DCN-D1	DCN.md	Closed	Closed - checked clean	docs/reviews/README.md deletion counts reproduce
+DCN-D10	DCN.md	Closed	Closed - checked clean	The fixture READMEs' "Used by" lists match
+DCN-D11	DCN.md	Closed	Closed - checked clean	AutomationAPI.md's API surface resolves:
+DCN-D12	DCN.md	Closed	Closed - checked clean	UI-standards.md matches its reference screen:
+DCN-D13	DCN.md	Closed	Closed - checked clean	behaviour.md §1a's constants are right:
+DCN-D14	DCN.md	Closed	Closed - checked clean	`test/README.md`'s per-folder counts are stale again (88/31/70/5 against 128/45/110/7), and that is already on record
+DCN-D15	DCN.md	Closed	Closed - checked clean	`Layout.lengthOf`'s "the floor only works because the units are small" still holds on the refrozen railway:
+DCN-D2	DCN.md	Closed	Closed - checked clean	Every backticked test name in the reference docs, the fixture READMEs and `test/README.md` resolves
+DCN-D3	DCN.md	Closed	Closed - checked clean	behaviour.md §5d's door count holds
+DCN-D4	DCN.md	Closed	Closed - checked clean	behaviour.md §7c (FR-096, written today) matches the code
+DCN-D5	DCN.md	Closed	Closed - checked clean	Readme facts checked and right:
+DCN-D6	DCN.md	Closed	Closed - checked clean	Changelog fixes sampled and present:
+DCN-D7	DCN.md	Closed	Closed - checked clean	Two v2.7.4 changelog lines moved into v2.8.0 are deliberate
+DCN-D8	DCN.md	Closed	Closed - checked clean	The generated ledger's totals are right:
+DCN-D9	DCN.md	Closed	Closed - checked clean	open-questions.md's Inbox count is right:
+DCN2-C1	DCN2.md	Closed	Fixed - 4132d260	DCN-C4 is marked Fixed, but its fourth comment was not touched, and four more comments in the same two files still state FR-061's text switch
+DCN2-C10	DCN2.md	Closed	Fixed - the catalogue commit that follows 91daff27: every D finding written as a bullet is	The catalogue took the round's findings from headings, so the 34 D findings three lanes wrote as bullets are not in the store
+DCN2-C11	DCN2.md	Closed	Fixed - 4132d260	Small inaccuracies in the round's other new text
+DCN2-C2	DCN2.md	Closed	Fixed - 4132d260	GUI-A1's round-1 repair made three comments in `Layout.java` false: they say `unlockPath` reads `clearedEdges` and has a "non-atomic branch"
+DCN2-C3	DCN2.md	Closed	Fixed - 4132d260	DCN-C9 is marked Fixed, but five of the AutomationAPI.md sites it named are unchanged, and the graph window's colour legend sits above the new banner
+DCN2-C4	DCN2.md	Closed	Fixed - 8370abb1 (the control's name, :459) and 4132d260	REG-B1's documentation half: the reference page still promises a hand-picked route may finish on a switched-off station, and the new changelog line na
+DCN2-C5	DCN2.md	Closed	Fixed - 8370abb1	REG-C3 is marked Fixed in `4fb36b4b` for Automation.md's prerequisite, and the prerequisite was not changed
+DCN2-C6	DCN2.md	Closed	Fixed - 4132d260	The round's new sentence about `Point:` labels says one typed today is shown as plain text; on a local layout it is taken over into a caption the next
+DCN2-C7	DCN2.md	Closed	Fixed - 4132d260	Automation.md's rewritten homes paragraph keeps "exactly what Return Locomotives Home would move", which the caption cannot promise for a home held to
+DCN2-C8	DCN2.md	Closed	Fixed - 4132d260	DCN-C7 is marked Fixed, but the two identifiers it named are still in viewer-editability.md, and the new "Three things" is itself one short
+DCN2-C9	DCN2.md	Closed	Fixed - b53439dc	DCN-C15 says MT-482 was held with a comment naming the later commits; MT-482 has no comment, and MT-293 was left fixed validated while its new comment
+DCN2-D1	DCN2.md	Closed	-	DCN-B1 items 3, 4 and 5 verified; items 1 and 2 are fixed in substance (see C6 and C7 for the sentences added with them)
+DCN2-D10	DCN2.md	Closed	-	The 53 translations of `ff129a4d` say what the English says
+DCN2-D11	DCN2.md	Closed	-	The round's other new comments checked and accurate
+DCN2-D12	DCN2.md	Closed	-	The counts in behaviour.md and open-questions.md match the store
+DCN2-D2	DCN2.md	Closed	-	DCN-B2 verified in all five places, and no sibling is left
+DCN2-D3	DCN2.md	Closed	-	DCN-C1 verified
+DCN2-D4	DCN2.md	Closed	-	DCN-C2 verified against the handler
+DCN2-D5	DCN2.md	Closed	-	DCN-C5, DCN-C8 and DCN-C13 verified
+DCN2-D6	DCN2.md	Closed	-	DCN-C12 verified, including the ratchet's numbers
+DCN2-D7	DCN2.md	Closed	-	DCN-C14 verified
+DCN2-D8	DCN2.md	Closed	-	DCN-C15's three promotions and DCN-C16 verified
+DCN2-D9	DCN2.md	Closed	-	DCN-C3 is recorded as Adam's decision in the document and the store
 DD-A1	2026-08-22-duplication-and-design.md	Open	Open	the automationui chain
 DD-A1	2026-09-22-GS-backlog.md	Open	**cannot be settled**	(listed in a table, no section of its own)
 DD-A2	2026-08-22-duplication-and-design.md	Closed	Closed `ae94421a` - 34 classes added, `ant test` runs 75	`Layout.java` and `HomeStaging`
@@ -1074,13 +1130,13 @@ GST-C5	2026-09-22-GS-threading.md	Open	`createPoint`/`createEdge` are the unsync
 GST-C6	2026-09-22-GS-threading.md	Open	`getInvalidReason()` has no callers; the javadoc describes a surface nothing implements	`getInvalidReason()` has no callers, and its javadoc describes a surface nothing implements
 GST-C7	2026-09-22-GS-threading.md	Open	Open	quitting while autonomy is running skips the exit capture of the session's placements in silence, and autosetup.log.placementsNotSaved already exists 
 GUI-A1	GUI.md	Closed	Fixed - 0be2bbe4 (claim 5d871f6d, red first), second pass 919e0dc8 (claim b6d08239, red ag	the Atomic Routes gate switches atomic mode on in the middle of a run, and the run's unlock then gives back track it already gave back
-GUI-B1	GUI.md	Closed	Fixed - 1c855483 (claims 2e565b5e, red first): placement only on a copy trains may arrive 	the placement doors other than the paste still save a facing only a barred copy holds, and the next build stands the train on that copy, where autonom
+GUI-B1	GUI.md	Closed	Fixed - 1c855483 (claims 2e565b5e, red first), reworked in 8370abb1: the first repair stoo	the placement doors other than the paste still save a facing only a barred copy holds, and the next build stands the train on that copy, where autonom
 GUI-B2	GUI.md	Closed	Fixed - 55959c9c (claim 41589728, red first): Segment Length opens empty where nothing has	Segment Length opens on an unmeasured square showing "0", so pressing OK untouched now records a deliberate 0
 GUI-B3	GUI.md	Closed	Fixed - 1c855483: the dialog commits onto the copy it records	OB-270 was fixed at the paste and not at "Place Locomotive At...": the dialog still puts the train on whichever copy came first and records a differen
-GUI-C1	GUI.md	Closed	Fixed - ff129a4d: the 53 keys translated in all seven bundles, including the three reworde	fifty messages added since v2.8.1 are English in all seven translations, and three reworded ones kept their old translation
+GUI-C1	GUI.md	Closed	Fixed - ff129a4d: 52 keys in all seven bundles, two of them reworded ones whose translatio	fifty messages added since v2.8.1 are English in all seven translations, and three reworded ones kept their old translation
 GUI-C2	GUI.md	Closed	Fixed - e2223851 (claim d64023cb, red first): `unshaded` clears the tooltip	the route editor's "+" row wears the refusal tooltip of the row above it
 GUI-C3	GUI.md	Closed	Fixed - 59fdb67d, with TDY-C3	MT-477 reworded the tail question in the dialog and not in the editor, whose heading now sits over "not reached" answers
-GUI-C4	GUI.md	Closed	Fixed - fd6341dd: the seven comments rewritten for OB-272's meaning	OB-272 changed what the text switch means; six comments still say None is the text switch turned off
+GUI-C4	GUI.md	Closed	Fixed - fd6341dd, and the siblings it missed in 4132d260 (DCN2-C1)	OB-272 changed what the text switch means; six comments still say None is the text switch turned off
 GUI-C5	GUI.md	Closed	Fixed - e2223851 (claims d64023cb, red first): `LayoutDiagramComponent.answersToAccessoryA	Highlight on Diagram matches an accessory by one address and no protocol, so a three-way's second decoder and a same-numbered DCC/MM2 pair answer wron
 GUI-C6	GUI.md	Closed	Fixed - fd6341dd: the catch comment, the dead argument, and the dead `hasRememberedBounds`	small stale sentences and a dead argument
 GUI-C7	GUI.md	Closed	Fixed - e2223851 (claim d64023cb, red first): both questions name the square by its base n	the two questions a paste asks at a may-reverse square name the square by an internal copy name that already states a direction
@@ -1091,6 +1147,19 @@ GUI-D3	GUI.md	Closed	Closed - checked clean today; one latent gap in the guard's
 GUI-D4	GUI.md	Closed	Closed - checked clean	dialogs off the event thread, and dismissals read as answers
 GUI-D5	GUI.md	Closed	Closed - not reachable as far as the builder's copies go	the paste's facing question offers every copy's heading rather than the placeable ones
 GUI-D6	GUI.md	Closed	Closed - checked clean	MT-467's "the lock says the station carried it"
+GUI2-A1	GUI2.md	Closed	Fixed - 8370abb1 (claims 8346be65, red first), with TDY2-A1	since GUI-B1, turning a train to face the way only a barred copy faces is written to the setup but no longer followed on the railway, so autonomy can
+GUI2-B1	GUI2.md	Closed	Fixed - 8370abb1 (claim 8346be65, red first): with no facing recorded the build asks start	`placementCopy` still returns copy 0 when the setup has no facing, so a train placed without one is stood on a barred copy - GUI-B1's consequence thro
+GUI2-C1	GUI2.md	Closed	Fixed - 4132d260	three comments in `Layout` still say `unlockPath` reads `clearedEdges`, and `setAtomicRoutes`'s new javadoc claims more than the unlock does
+GUI2-C2	GUI2.md	Open	Open - for the next round: a mutation of the recording line decides whether a real-path cl	nothing pins the write GUI-A1's repair depends on: every claim seeds `releasedEarly` by reflection
+GUI2-C3	GUI2.md	Closed	Fixed - 91daff27: 506 values, only diacritics changed (checked by mapping each back to ASC	about 160 translated values added since v2.8.1 spell their accented letters in ASCII, and the round-1 tooltip edit made two of them mix both spellings
+GUI2-C4	GUI2.md	Open	Open - for the next round: cosmetic, rare	the three-way clause makes Highlight on Diagram wash one three-way in both colours when a route commands one of its decoders and checks the other
+GUI2-C5	GUI2.md	Closed	Fixed - 4132d260 (the opener); GUI-C1's disposition corrected	small
+GUI2-D1	GUI2.md	Closed	Closed - verified	GUI-A1: verified, in every case the task named
+GUI2-D2	GUI2.md	Closed	Closed - verified	GUI-C5: every protocol a route command can carry is the enum a tile carries, and both read "missing" as MM2
+GUI2-D3	GUI2.md	Closed	Closed - verified	GUI-C7: both questions, and the third door, name the square by its base name
+GUI2-D4	GUI2.md	Closed	Closed - verified	GUI-C8: opening the autonomy editor with another editor open is safe in every state
+GUI2-D5	GUI2.md	Closed	Closed - verified	GUI-B2, GUI-B3, the B1 doors other than GUI2-A1/B1, GUI-C2, C3, C4, C6: verified
+GUI2-D6	GUI2.md	Closed	Closed - verified	GUI-C1: the 52 changed keys are clean in all seven bundles, and use each bundle's own words
 GUX-B1	2026-09-19-GUX-main-interface-second-pass.md	Closed	fixed 2026-09-19 - howTheRouteMoved, and the Save asks before overwriting	the route editor does not know its route has changed underneath it, and its Save either fails with no way out or silently undoes the change
 GUX-C1	2026-09-19-GUX-main-interface-second-pass.md	Closed	fixed 2026-09-19 - all four listeners read the modifiers, numbers off the key handler	the speed buttons promise Control and Alt behaviour they do not have - UIX-C5's twin, one row up
 GUX-C2	2026-09-19-GUX-main-interface-second-pass.md	Closed	fixed 2026-09-19 - the tooltip now says sensors are captured and throttled	the capture-target tooltip says s88 feedback is not captured; it has been, on purpose, since 2026-08-22
@@ -1802,7 +1871,7 @@ REG-B2	REG.md	Closed	Fixed - e2223851 (claims d64023cb, red first): the start-up
 REG-B3	REG.md	Closed	Fixed - e2223851 (claim d64023cb, red first): the import logs and shows how many routes ar	Import Routes now switches every imported route off, and nothing says so - not the import, not the changelog
 REG-C1	REG.md	Closed	Fixed - 4fb36b4b: a changelog sentence	a 2.8.1 railway that ran with Atomic Routes off now runs with them on after every load, and the changelog does not say so
 REG-C2	REG.md	Closed	Fixed - 4fb36b4b	two sentences in the changelog's Routes block describe controls that are not what or where they say
-REG-C3	REG.md	Closed	Fixed - 4fb36b4b (Automation.md's prerequisite) and e2223851 (claim d64023cb, red first: t	autonomy on a diagram read from the Central Station is gone, and the user guide's prerequisite still reads as if it works
+REG-C3	REG.md	Closed	Fixed - e2223851 (claim d64023cb, red first: the right-click Start); Automation.md's prere	autonomy on a diagram read from the Central Station is gone, and the user guide's prerequisite still reads as if it works
 REG-D1	REG.md	Closed	-	`LocDB.data` still round-trips with 2.8.1 in both directions
 REG-D10	REG.md	Closed	-	smaller changes that looked like losses and are not
 REG-D2	REG.md	Closed	-	route JSON: the same keys written and read at both revisions
@@ -1813,6 +1882,25 @@ REG-D6	REG.md	Closed	-	keyboard and menus
 REG-D7	REG.md	Closed	-	earlier regression findings marked fixed, re-checked at HEAD
 REG-D8	REG.md	Closed	-	the bundled libraries still run on Java 8
 REG-D9	REG.md	Closed	-	Central Station traffic: the changes found are fixes
+REG2-C1	REG2.md	Closed	Fixed - 8370abb1	REG-C3's documentation half was never made: the user guide's prerequisite is unchanged, and the finding is closed
+REG2-C2	REG2.md	Closed	Fixed - 8370abb1 (claim 8346be65, red first)	on a Central Station layout the greyed Start item now tells the user to wait for their trains
+REG2-C3	REG2.md	Open - Adam's decision	Partly fixed - the changelog line (8370abb1). Open - Adam's decision: whether an untouched	the auto-load box shows ticked and does nothing on the JSON arm for every user who never touched it; ticking it takes two clicks
+REG2-C4	REG2.md	Closed	Fixed - 8370abb1	the changelog names a control that does not exist: "untick Automatic Destination"
+REG2-C5	REG2.md	Closed	Fixed - 8370abb1, and AutomationAPI.md's two siblings in 4132d260	`AutomationAPI.md` still promises that inactive points can be reached by hand
+REG2-C6	REG2.md	Closed	Fixed - 8370abb1 (claim 8346be65, red first): an imported route is built unarmed	an import still announces every route the file saved armed as "running", just before the notice says they are off
+REG2-C7	REG2.md	Open - Adam's decision	Open - Adam's decision: whether an import should restore each route's saved firing, or at 	the file's per-route arming is read and thrown away unreported, so the notice's remedy cannot restore a backup as it was
+REG2-D1	REG2.md	Closed	-	REG-B2 verified: every kind of user traced through the start-up arm
+REG2-D10	REG2.md	Closed	-	the notice's placement in the door
+REG2-D11	REG2.md	Closed	-	Escape in the editor, as the changelog now documents it
+REG2-D12	REG2.md	Closed	-	no sibling import door
+REG2-D2	REG2.md	Closed	-	REG-B3 verified: the count, every implementer and caller, and the eight bundles
+REG2-D3	REG2.md	Closed	-	REG-B1's partial fix: what it says is done is done
+REG2-D4	REG2.md	Closed	-	REG-C3's code half verified
+REG2-D5	REG2.md	Closed	-	REG-C1 and REG-C2 verified against the code
+REG2-D6	REG2.md	Closed	-	the rest of the changelog lines `4fb36b4b` added
+REG2-D7	REG2.md	Closed	-	today's other changes owe no changelog line to a 2.8.1 user
+REG2-D8	REG2.md	Closed	-	the test-run isolation leaves the application's files and node exactly where they were
+REG2-D9	REG2.md	Closed	-	`hasRememberedBounds` was dead
 REG6-A1	REG6-regressions-2026-09-06.md	Closed	Open	a manual send is offered "keep direction" at squares the path turns the train at, and the default drives it off the path
 REG6-A2	REG6-regressions-2026-09-06.md	Closed	Open	the deferred post-run facing flip lands on the square the train left, not the one it is on
 REG6-B1	REG6-regressions-2026-09-06.md	Closed	Open	the prompt's answer is discarded whenever the journey ends at a terminus
@@ -2608,9 +2696,40 @@ TDR-C9	2026-09-14-TDR-ten-day-review.md	Closed	Fixed	Return Home's plan lines st
 TDY-B1	TDY.md	Closed	Fixed - ac5fe2f2 (claim 8873b0a4, red first): a home held to a facing is home only on a co	Return Home counts the turning twin as home, and the turning twin faces the other way: at a may-reverse home a train can still come home turned round
 TDY-B2	TDY.md	Closed	Fixed - a67452cd: the half-measured notice walks the berth's own square	OB-278 says the half-measured notice now counts the berth's own square; it never looks at it, so the one half-measured state OB-278 creates is not war
 TDY-C1	TDY.md	Closed	Fixed - ce8983ce (claim 273727eb, red first): the pre-check asks `homeCopiesOf`	The IMPOSSIBLE pre-check still asks about any copy of the home square, while the goal now needs the home's arrival
-TDY-C2	TDY.md	Closed	Fixed - 919e0dc8 (claim cdedb3fc, red first): the facing is read from the running layout f	A home's facing is read from the setup only, the reading CONF-B1 fixed in `facingOf` for exactly this staleness
+TDY-C2	TDY.md	Closed	Fixed - 919e0dc8 (claim cdedb3fc, red first), and its third case in 1facc0c2 (TDY2-C4)	A home's facing is read from the setup only, the reading CONF-B1 fixed in `facingOf` for exactly this staleness
 TDY-C3	TDY.md	Closed	Fixed - 59fdb67d: the editor's tail pick uses MT-477's heading and wording, eight bundles	The editor's tail pick still says "click the farthest sensor the tail has crossed" while it now outlines sensors the tail has not reached
 TDY-C4	TDY.md	Closed	Fixed - 59fdb67d: the cut claim cuts from the westbound copy where there is one	OB-270's claim pins the old code's variable and leaves the new one's unasserted
+TDY-D1	TDY.md	Closed	Closed - checked clean	OB-278's three walks agree
+TDY-D10	TDY.md	Closed	Closed - checked clean	Bundles
+TDY-D11	TDY.md	Closed	Closed - checked clean	MT-479
+TDY-D12	TDY.md	Closed	Closed - checked clean	MT-477's new arithmetic agrees with the walk after OB-278
+TDY-D13	TDY.md	Closed	Closed - checked clean	FR-096's entry guard
+TDY-D2	TDY.md	Closed	Closed - checked clean	OB-279's decoder is the encoder's inverse
+TDY-D3	TDY.md	Closed	Closed - checked clean	OB-280: every path routing refuses touches a grey square
+TDY-D4	TDY.md	Closed	Closed - checked clean	The new fields survive their round trips
+TDY-D5	TDY.md	Closed	Closed - checked clean	MT-467's lock is a sound stand-in for "the station carried it"
+TDY-D6	TDY.md	Closed	Closed - checked clean	OB-269 (`12d74ad5`) narrows only the proxy case
+TDY-D7	TDY.md	Closed	Closed - checked clean	OB-281's fold is idempotent and in memory
+TDY-D8	TDY.md	Closed	Closed - checked clean	OB-270's clipboard state has one life
+TDY-D9	TDY.md	Closed	Closed - checked clean	testTheWashIsNoLongerThanTheTrain.testATrainOfLengthOneCoversOneSquare's new control asks the model (ui.isTrackCovere
+TDY2-A1	TDY2.md	Closed	Fixed - 8370abb1 (claims 8346be65, red first): placementCopy and copyFacing never choose a	Since GUI-B1, a train turned round (by the throttle or the Facing menu) at a square whose other facing only a barred copy holds stays on the copy faci
+TDY2-C1	TDY2.md	Closed	Fixed - 4132d260	Layout.setHomeLocomotive still says Return Home brings a train back "to it or its turning twin", the rule TDY-B1 removed
+TDY2-C2	TDY2.md	Closed	Fixed - 4132d260	The half-measured notice's javadoc still says the berth rule declines to judge a berth measured on its own square - the premise TDY-B2's fix reverses
+TDY2-C3	TDY2.md	Closed	Fixed - 4132d260	Two comments in executePath's failure handler still say unlockPath reads clearedEdges
+TDY2-C4	TDY2.md	Closed	Fixed - 1facc0c2 (claim 9c85db2a, red first): homeFacingOf never falls back to the setup f	TDY-C2 is fixed for the case it led with; its third case is not, because the editor still decides whether to ask from the setup
+TDY2-C5	TDY2.md	Closed	Fixed - 8370abb1 (claim 8346be65, red first): the fork rule takes the rail arriving at the	AUT-C3's second pass spends the standing square only on a split square, so a built single-copy square whose first hop runs away from it still leaves i
+TDY2-C6	TDY2.md	Closed	Fixed - 8370abb1 (claim 8346be65, red first), with AUT2-C1	AUT-C1's "this call's own claim only" is `takingPath.remove(loc, path)`, which is equality, and a duplicate dispatch on the same route has an equal pa
+TDY2-D1	TDY2.md	Closed	Closed - checked clean	TDY-B1 verified
+TDY2-D10	TDY2.md	Closed	Closed - checked clean	`releasedEarly` and the careful road
+TDY2-D11	TDY2.md	Closed	Closed - checked clean	TDY-C2's leading case verified
+TDY2-D2	TDY2.md	Closed	Closed - checked clean	TDY-B2 verified
+TDY2-D3	TDY2.md	Closed	Closed - checked clean	TDY-C1 verified
+TDY2-D4	TDY2.md	Closed	Closed - checked clean	TDY-C3 verified
+TDY2-D5	TDY2.md	Closed	Closed - checked clean	TDY-C4 verified
+TDY2-D6	TDY2.md	Closed	Closed - checked clean	`12ed2faa` (AUT-C3 second pass) verified for AUT-C3's own case
+TDY2-D7	TDY2.md	Closed	Closed - checked clean	`b4b061e0` is complete
+TDY2-D8	TDY2.md	Closed	Closed - checked clean	Test-run isolation leaves the application unchanged when the two properties are absent
+TDY2-D9	TDY2.md	Closed	Closed - checked clean	AUT-B1's place rule refuses nothing a clear road should pass
 TLR-A1	2026-09-15-TLR-tail-feature-review.md	Closed	Fixed	a turned train's tail stops at the junction again
 TLR-A1	2026-09-15-TLV-fix-validation.md	Closed	Confirmed fixed	Either half of the fix (pass order, by-place test) alone turns its claim green; neither is pinned on its own. Recorded.
 TLR-A2	2026-09-15-TLR-tail-feature-review.md	Closed	Fixed	a departed train's tail comes back from a split square's other copies

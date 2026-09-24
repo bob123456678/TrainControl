@@ -98,7 +98,7 @@ OB-282 narrowed the goal (`atHome`) for a home with a fixed facing, but its sibl
 
 | | |
 |---|---|
-| **Disposition** | Fixed - 919e0dc8 (claim cdedb3fc, red first): the facing is read from the running layout first |
+| **Disposition** | Fixed - 919e0dc8 (claim cdedb3fc, red first), and its third case in 1facc0c2 (TDY2-C4) |
 | **Where** | `AutonomySession.java` `writeHome` / `homeFacingOf` (~7290-7320); `AutonomyEditorPanel.java:5101` (`picked.equals(locomotiveAt(tile))`) |
 
 OB-282's rule is "Direction it is facing when home is set".  `homeFacingOf(tile, locomotive)` answers it from the setup alone: the square's `loc` and its `FACING` property.  `AutonomySession.facingOf(String, Layout)` was given a running-layout-first reading (CONF-B1) because "the setup names the square a train SET OFF FROM until `captureFromLayout` writes the arrival back", and its javadoc calls shipping the same defect in a sibling "`fix-one-site-sweep-the-siblings` almost verbatim".  The home door is that sibling: after a run that turned the train at this square (a may-reverse square, or a terminus), and before a capture, the setup's `FACING` is the pre-run heading, and the home is saved facing the way the train no longer faces.  Two smaller edges of the same reading: where the setup has the train here but no `FACING` recorded, the home silently becomes the square (no question is asked, because `locomotiveAt(tile)` - also the setup - says the train is here); and where the train has since driven here but the setup does not know yet, the operator is asked a question the railway could answer.  Whether the editor door is reachable before a capture depends on which doors capture first (the editor's open does; I did not establish whether the running diagram's square menu does), so this rests on reading.  **Verification request:** on a built session with a train placed at a may-reverse station facing E in the setup, move that train on the running layout onto the square's W-facing copy without capturing, then `session.setHome(tile, train)` and read `HOME_FACING`: `E` proves, `W` refutes.  **Suggested fix:** take the facing from `facingOf(locomotive, running)` when a running layout is at hand, as the paste doors do.
@@ -123,19 +123,110 @@ The fix walks from `cutFrom` - the Point the train stood on when cut - and the c
 
 ## D - not defects
 
-- **TDY-D1 - OB-278's three walks agree.**  `walkOneTail` spends the arriving copy's last place (the standing square) first on the first hop, the hop budget is `chargedHere` so the two budgets cannot drift, `spendableAllowance` / `atRest` are gone with no caller left (`git grep` finds no `allowance` arithmetic in src); `whyABerthCannotHoldIt` now counts the berth in `anyMeasured` and in the walk; `walkBackFrom` spends `store.getTileLength(at)` once, after the first `next` is found, which the covered first edge guarantees whenever the Layout walk claimed anything.  `TailCrossedPrompt` already spent whole edges including the standing square.  `measuredRouteIn` / the room rule always counted it.  The MUTATION lines of `testTheSquareWithTheSensorConsumesItsLength`, `testTheBerthTakesWhatItMeasures` and `testTheOrangeStopsWhereTheTrainDoes` would each turn red as stated (reasoned from the 2 + 1 fixture).  The one miss is the editor notice (B2).
-- **TDY-D2 - OB-279's decoder is the encoder's inverse.**  `Side` has four values, so `transparentRouteId`'s change from `* 4` to `* Side.values().length` writes the same ids; `transparentRouteOf` rejects state != 0 and index < 100, which no port-map index reaches.  The only other index-into-port-map reader (`TileGraph.java:1466-1473`) already refuses index >= 100.
-- **TDY-D3 - OB-280: every path routing refuses touches a grey square.**  `isPathClear` refuses by covered-edge identity as well as by claimed places, and the grey shows only places; but a covered edge's end place (the square the walk turned at, or the standing square) is always claimed, so any path over a covered edge, either direction, starts or ends on a grey square.  `locationsOf` returns exactly one id per step, so the `places.size() != path.size() + 1` skip in `routesBlockedByStandingTrains` never fires on a built reduction.  A whole-square place yields an empty road set, which `theRoadToFade` reads as "fade the whole tile", as the javadoc says.
-- **TDY-D4 - The new fields survive their round trips.**  `Edge.answeredPlaces`: written by `Edge.toJSON` only where true, read in `Layout.fromJSON` inside the all-or-nothing `whole` branch, never copied anywhere else (no Edge copy constructor; `setPlaces`' only src caller is that same `fromJSON` branch, which sets the answers beside it).  `Point.homeFacingFixed` / `copyArrival`: written by `Point.toJSON`, read in `parseAuto` onto the same Point (`homeAt` is `layout.getPoint(point.getString("name"))`), cleared with the home in `setHomeLoc(null)`; Point has no copy constructor.  Capture carries `HOME_FACING` only from a copy the running layout holds fixed and drops it with the home.  The setup's `HOME_FACING` is excluded from the copy passthrough in the build (`AutonomyBuilder.java:1075`).
-- **TDY-D5 - MT-467's lock is a sound stand-in for "the station carried it".**  Only the sync import sets it (`MarklinControlStation.java:1554`, after clearing every lock at `:1499`); `editRoute` carries it across its delete-and-re-add (X8-B5, `:2065-2085`); `MarklinRoute` is `Serializable` with `locked` not transient, so it survives a restart.  Delete and Change Route ID are offered only on unlocked routes (`RightClickRouteMenu.java:139`), so at those doors the new test reduces to the id range for the new id, which is the stated intent.
-- **TDY-D6 - OB-269 (`12d74ad5`) narrows only the proxy case.**  A candidate edge that shares rail with a running edge is still refused both ways: its own `occupancy` (raised through the running edge's `lockEdges`) by `isOccupied`, and the running edge in its `lockEdges` by `isRunOver`.  The exact reverse rail, which `deriveLocks` never pairs, is refused by place; the own-train exemption applies to that loop only, matching what `isLockHeld` did before.  Reading only - the commit's own mutation record covers execution.
-- **TDY-D7 - OB-281's fold is idempotent and in memory.**  `open()` folds after `rebuild()`, rebuilds again if anything moved, then sets `dirty = false`; a reopen before a save folds the same units again from disk, a reopen after one finds nothing.  MT-485 says "in memory until the setup is saved", which is what the code does.  behaviour.md 5a says no length rule reads a route tile's length; `GraphReducer.lengthOf` / `sumLength` in fact read any stored length, route tiles included - but after the fold none holds one, and no UI door can give one (every door asks `isIgnored`, which is true of transparent tiles), so nothing behaves differently.
-- **TDY-D8 - OB-270's clipboard state has one life.**  `cutFrom` is set with `cutLocomotive` on a cut and cleared with it on a successful paste and when the locomotive is deleted or renamed (`TrainControlUI.java:7298-7302`, `:21422-21430`); a dismissed question keeps both, so the next paste walks again.  It is a name, so a rebuild between cut and paste finds the new Point or falls back to the cut heading.  The paste's may-reverse question still offers `facingsFor` (every copy) while the record and copy choice now use `placeableFacings`; on both frozen railways every may-reverse square keeps both headings on destination copies even with one arrival barred (plain copy one way, turning copy the other), so the wider offer cannot pick an unplaceable heading there.
-- **TDY-D9 - `testTheWashIsNoLongerThanTheTrain.testATrainOfLengthOneCoversOneSquare`'s new control asks the model (`ui.isTrackCovered`) where the old one painted the label, so its message ("would pass equally well with the wash switched off") overclaims - but `testTheSquareTheTrainStandsOnIsOrange` in the same class paints that square, so nothing is left unchecked.
-- **TDY-D10 - Bundles.**  All eight `messages*.properties` are pure ASCII, and each gained exactly the same 27 keys today.  No stale "Signal Protecting This Station" / "Entry Guard Signals..." label is left in src, bundles or docs outside history paragraphs.
-- **TDY-D11 - MT-479.**  `show.run()` runs after `headingWidth[0]` is set, so the first paint is wrapped; `wrappedAt` escapes the three HTML characters; the exit guard's short sentence falls back to the buttons' width, as the javadoc says.
-- **TDY-D12 - MT-477's new arithmetic agrees with the walk after OB-278.**  `reachOf` spends a rail from its end place, which at the first junction is the standing square and further back is the junction square the previous hop did not charge (an edge's length is its path plus its END), so nothing is charged twice.  An unreached choice records `[hop, ...]`, which the tail walk follows at the first hop (`roadBackAtTheFirstHop`) and at forks (`cameFromAlong`) and then stops for want of length.
-- **TDY-D13 - FR-096's entry guard** is thrown only where `executePath` records the arrival, after `setArrivedAlong`, i.e. on a journey's last Point; a passed square is never `arrived`.  It commands through `Accessory.setState` like the exit guard; the exit guard's aspect memo re-reads `acc.isRed()` before trusting itself, so a shared accessory cannot leave the memo stale.
+### TDY-D1 - OB-278's three walks agree
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+`walkOneTail` spends the arriving copy's last place (the standing square) first on the first hop, the hop budget is `chargedHere` so the two budgets cannot drift, `spendableAllowance` / `atRest` are gone with no caller left (`git grep` finds no `allowance` arithmetic in src); `whyABerthCannotHoldIt` now counts the berth in `anyMeasured` and in the walk; `walkBackFrom` spends `store.getTileLength(at)` once, after the first `next` is found, which the covered first edge guarantees whenever the Layout walk claimed anything.  `TailCrossedPrompt` already spent whole edges including the standing square.  `measuredRouteIn` / the room rule always counted it.  The MUTATION lines of `testTheSquareWithTheSensorConsumesItsLength`, `testTheBerthTakesWhatItMeasures` and `testTheOrangeStopsWhereTheTrainDoes` would each turn red as stated (reasoned from the 2 + 1 fixture).  The one miss is the editor notice (B2).
+
+### TDY-D2 - OB-279's decoder is the encoder's inverse
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+`Side` has four values, so `transparentRouteId`'s change from `* 4` to `* Side.values().length` writes the same ids; `transparentRouteOf` rejects state != 0 and index < 100, which no port-map index reaches.  The only other index-into-port-map reader (`TileGraph.java:1466-1473`) already refuses index >= 100.
+
+### TDY-D3 - OB-280: every path routing refuses touches a grey square
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+`isPathClear` refuses by covered-edge identity as well as by claimed places, and the grey shows only places; but a covered edge's end place (the square the walk turned at, or the standing square) is always claimed, so any path over a covered edge, either direction, starts or ends on a grey square.  `locationsOf` returns exactly one id per step, so the `places.size() != path.size() + 1` skip in `routesBlockedByStandingTrains` never fires on a built reduction.  A whole-square place yields an empty road set, which `theRoadToFade` reads as "fade the whole tile", as the javadoc says.
+
+### TDY-D4 - The new fields survive their round trips
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+`Edge.answeredPlaces`: written by `Edge.toJSON` only where true, read in `Layout.fromJSON` inside the all-or-nothing `whole` branch, never copied anywhere else (no Edge copy constructor; `setPlaces`' only src caller is that same `fromJSON` branch, which sets the answers beside it).  `Point.homeFacingFixed` / `copyArrival`: written by `Point.toJSON`, read in `parseAuto` onto the same Point (`homeAt` is `layout.getPoint(point.getString("name"))`), cleared with the home in `setHomeLoc(null)`; Point has no copy constructor.  Capture carries `HOME_FACING` only from a copy the running layout holds fixed and drops it with the home.  The setup's `HOME_FACING` is excluded from the copy passthrough in the build (`AutonomyBuilder.java:1075`).
+
+### TDY-D5 - MT-467's lock is a sound stand-in for "the station carried it"
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+Only the sync import sets it (`MarklinControlStation.java:1554`, after clearing every lock at `:1499`); `editRoute` carries it across its delete-and-re-add (X8-B5, `:2065-2085`); `MarklinRoute` is `Serializable` with `locked` not transient, so it survives a restart.  Delete and Change Route ID are offered only on unlocked routes (`RightClickRouteMenu.java:139`), so at those doors the new test reduces to the id range for the new id, which is the stated intent.
+
+### TDY-D6 - OB-269 (`12d74ad5`) narrows only the proxy case
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+A candidate edge that shares rail with a running edge is still refused both ways: its own `occupancy` (raised through the running edge's `lockEdges`) by `isOccupied`, and the running edge in its `lockEdges` by `isRunOver`.  The exact reverse rail, which `deriveLocks` never pairs, is refused by place; the own-train exemption applies to that loop only, matching what `isLockHeld` did before.  Reading only - the commit's own mutation record covers execution.
+
+### TDY-D7 - OB-281's fold is idempotent and in memory
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+`open()` folds after `rebuild()`, rebuilds again if anything moved, then sets `dirty = false`; a reopen before a save folds the same units again from disk, a reopen after one finds nothing.  MT-485 says "in memory until the setup is saved", which is what the code does.  behaviour.md 5a says no length rule reads a route tile's length; `GraphReducer.lengthOf` / `sumLength` in fact read any stored length, route tiles included - but after the fold none holds one, and no UI door can give one (every door asks `isIgnored`, which is true of transparent tiles), so nothing behaves differently.
+
+### TDY-D8 - OB-270's clipboard state has one life
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+`cutFrom` is set with `cutLocomotive` on a cut and cleared with it on a successful paste and when the locomotive is deleted or renamed (`TrainControlUI.java:7298-7302`, `:21422-21430`); a dismissed question keeps both, so the next paste walks again.  It is a name, so a rebuild between cut and paste finds the new Point or falls back to the cut heading.  The paste's may-reverse question still offers `facingsFor` (every copy) while the record and copy choice now use `placeableFacings`; on both frozen railways every may-reverse square keeps both headings on destination copies even with one arrival barred (plain copy one way, turning copy the other), so the wider offer cannot pick an unplaceable heading there.
+
+### TDY-D9 - testTheWashIsNoLongerThanTheTrain.testATrainOfLengthOneCoversOneSquare's new control asks the model (ui.isTrackCovere
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+`testTheWashIsNoLongerThanTheTrain.testATrainOfLengthOneCoversOneSquare`'s new control asks the model (`ui.isTrackCovered`) where the old one painted the label, so its message ("would pass equally well with the wash switched off") overclaims - but `testTheSquareTheTrainStandsOnIsOrange` in the same class paints that square, so nothing is left unchecked.
+
+### TDY-D10 - Bundles
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+All eight `messages*.properties` are pure ASCII, and each gained exactly the same 27 keys today.  No stale "Signal Protecting This Station" / "Entry Guard Signals..." label is left in src, bundles or docs outside history paragraphs.
+
+### TDY-D11 - MT-479
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+`show.run()` runs after `headingWidth[0]` is set, so the first paint is wrapped; `wrappedAt` escapes the three HTML characters; the exit guard's short sentence falls back to the buttons' width, as the javadoc says.
+
+### TDY-D12 - MT-477's new arithmetic agrees with the walk after OB-278
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+`reachOf` spends a rail from its end place, which at the first junction is the standing square and further back is the junction square the previous hop did not charge (an edge's length is its path plus its END), so nothing is charged twice.  An unreached choice records `[hop, ...]`, which the tail walk follows at the first hop (`roadBackAtTheFirstHop`) and at forks (`cameFromAlong`) and then stops for want of length.
+
+### TDY-D13 - FR-096's entry guard
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+is thrown only where `executePath` records the arrival, after `setArrivedAlong`, i.e. on a journey's last Point; a passed square is never `arrived`.  It commands through `Accessory.setState` like the exit guard; the exit guard's aspect memo re-reads `acc.isRed()` before trusting itself, so a shared accessory cannot leave the memo stale.
+
 
 ## What this pass did not cover
 

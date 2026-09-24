@@ -78,7 +78,7 @@ Rests on reading.  **Verification request (needs execution):** model on `core.te
 
 | | |
 |---|---|
-| **Disposition** | Fixed - 5e2fbda5 (claim 0d060ffb, red first): asked again inside the monitor; the refused dispatch removes only its own claim |
+| **Disposition** | Fixed - 5e2fbda5 (claim 0d060ffb, red first), completed in 8370abb1: the caller's removal compared by value (AUT2-C1) |
 | **Where** | `Layout.java:7973` (the check), `Layout.java:3657-3669` (the claim), `Layout.java:8040` (the removal) |
 
 `executePathInternal` asks `isAlreadyUnderway(loc)` at `:7973`, unsynchronized, and the claim it guards (`takingPath.put(loc, path)`) is taken later inside `configureAndLockPath`'s `synchronized (this)`.  `configureAndLockPath` itself says why that shape is wrong, about the cap: *"Claimed HERE, in the same monitor that just did the counting.  Anywhere later and the check and the claim can be pulled apart by another thread doing its own check in between"* (`:3666-3668`).  The window is wide exactly when another train's `configureAndLockPath` holds the monitor (seconds - a sleep per accessory): two dispatches of train A (the Auto tab double-click and the right-click menu, the pair `isAlreadyUnderway`'s javadoc names) both pass `:7973` and queue on the monitor.
@@ -124,12 +124,54 @@ One case where it is not neutral: `trackBesideARouteTile` can return a SENSOR sq
 
 ## D - not defects
 
-- **AUT-D1 - OB-269's narrowing (`Edge.isRunOver`) holds.**  Traced every writer: `runOver` moves only in `setOccupied`/`setUnoccupied`, which also move `occupancy`, so the two stay balanced through the lock loop, `handleMisconfiguredPath`, the non-atomic early release (`Layout.java:8381`, `setUnoccupied`) and `unlockPath` (whose lock-partner-only branch uses `setLockedEdgeUnoccupied`, which never touched `runOver`).  Both orderings of an asymmetric lock still refuse (write side through `occupancy`, read side through `isRunOver`), and the FR-001 restriction half narrows to "a route actually arriving at the watched square", which is what FR-001 describes.  The place-based reverse-rail loop also catches a reverse pair on a DIFFERENT leg between the same two squares, which `deriveLocks` skips (`GraphReducer.java:1452` compares tile start/end only).  The self-exemption (`railHeldByThisTrain`) cannot hide another train's claim: two trains cannot both run over one edge.
-- **AUT-D2 - same-direction copies of one reduced edge are safe at the running side.**  `X (from W) -> Y` and `X (from E, reverse) -> Y` are not each other's lock edges, but both end on the same copy (or a copy in the same block) of `Y`, which the running train has reserved, so `Edge.isOccupied(loc, true)` refuses the twin.  The hole in AUT-B1 exists only where the copies end on a square nobody is standing on - under a tail.
-- **AUT-D3 - the lock relation is by tile, not by accessory address, and that is enough on this railway.**  Two turnout tiles on one decoder address are independent track to `deriveLocks`, and `isPathClear`'s configuration preview only checks one path against itself.  But a real crossover pair on one address is safe (every route that would disagree about the address shares one of the two turnout tiles), and the two active pages carry no duplicated TURNOUT address - only signals (`162` on 1 - Main; `232`, `176`, `74` on 2 - Bottom), which routes only ever command GREEN.  Checked by parsing the frozen `gleisbilder`.
-- **AUT-D4 - the new model fields survive the file.**  `Edge.toJSON` writes `places` (with `answered`), `entrySide`, `roomAtTheEnd`, and `Layout.fromJSON` reads all three; `Point.toJSON` writes `entrySignal`, `homeFacingFixed`, `copyArrival` and `fromJSON` reads them (`Layout.java:11162-11177`, `11265-11281`).  Capture writes `homeFacing` only for a home the running layout holds to its copy, and the merge removes a stale one (`AutonomySession.java:4777-4779`, `4857-4863`).
-- **AUT-D5 - the "farthest sensor" prompt's walk agrees with OB-278.**  `TailCrossedPrompt.back` spends `hop.getLength()`, which includes the arriving square, from the first hop (the standing square) onwards, and walks only arriving rails, so no square is charged twice - the PRW-C3 double-charge cannot arise there.
-- **AUT-D6 - `throwEntryGuard` is called outside every monitor** (`Layout.java:8570`, before the `synchronized (activeLocomotives)` at `:8676`), so the OB-192 accessory-repaint deadlock cannot come back through it.
+### AUT-D1 - OB-269's narrowing (`Edge.isRunOver`) holds
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+Traced every writer: `runOver` moves only in `setOccupied`/`setUnoccupied`, which also move `occupancy`, so the two stay balanced through the lock loop, `handleMisconfiguredPath`, the non-atomic early release (`Layout.java:8381`, `setUnoccupied`) and `unlockPath` (whose lock-partner-only branch uses `setLockedEdgeUnoccupied`, which never touched `runOver`).  Both orderings of an asymmetric lock still refuse (write side through `occupancy`, read side through `isRunOver`), and the FR-001 restriction half narrows to "a route actually arriving at the watched square", which is what FR-001 describes.  The place-based reverse-rail loop also catches a reverse pair on a DIFFERENT leg between the same two squares, which `deriveLocks` skips (`GraphReducer.java:1452` compares tile start/end only).  The self-exemption (`railHeldByThisTrain`) cannot hide another train's claim: two trains cannot both run over one edge.
+
+### AUT-D2 - same-direction copies of one reduced edge are safe at the running side
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+`X (from W) -> Y` and `X (from E, reverse) -> Y` are not each other's lock edges, but both end on the same copy (or a copy in the same block) of `Y`, which the running train has reserved, so `Edge.isOccupied(loc, true)` refuses the twin.  The hole in AUT-B1 exists only where the copies end on a square nobody is standing on - under a tail.
+
+### AUT-D3 - the lock relation is by tile, not by accessory address, and that is enough on this railway
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+Two turnout tiles on one decoder address are independent track to `deriveLocks`, and `isPathClear`'s configuration preview only checks one path against itself.  But a real crossover pair on one address is safe (every route that would disagree about the address shares one of the two turnout tiles), and the two active pages carry no duplicated TURNOUT address - only signals (`162` on 1 - Main; `232`, `176`, `74` on 2 - Bottom), which routes only ever command GREEN.  Checked by parsing the frozen `gleisbilder`.
+
+### AUT-D4 - the new model fields survive the file
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+`Edge.toJSON` writes `places` (with `answered`), `entrySide`, `roomAtTheEnd`, and `Layout.fromJSON` reads all three; `Point.toJSON` writes `entrySignal`, `homeFacingFixed`, `copyArrival` and `fromJSON` reads them (`Layout.java:11162-11177`, `11265-11281`).  Capture writes `homeFacing` only for a home the running layout holds to its copy, and the merge removes a stale one (`AutonomySession.java:4777-4779`, `4857-4863`).
+
+### AUT-D5 - the "farthest sensor" prompt's walk agrees with OB-278
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+`TailCrossedPrompt.back` spends `hop.getLength()`, which includes the arriving square, from the first hop (the standing square) onwards, and walks only arriving rails, so no square is charged twice - the PRW-C3 double-charge cannot arise there.
+
+### AUT-D6 - `throwEntryGuard` is called outside every monitor
+
+| | |
+|---|---|
+| **Disposition** | Closed - checked clean |
+
+(`Layout.java:8570`, before the `synchronized (activeLocomotives)` at `:8676`), so the OB-192 accessory-repaint deadlock cannot come back through it.
+
 
 ## What this pass did not cover
 
