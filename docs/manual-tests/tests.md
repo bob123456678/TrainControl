@@ -31,9 +31,7 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-291](#mt-291) | 2026-09-07 | The Grid tooltip, in a language you read | needs test | FR-057 (split from MT-274) |
 | [MT-298](#mt-298) | 2026-09-07 | A second import fills gaps and does not overwrite | fixed unvalidated | IPR-A1 (split from MT-243) |
 | [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
-| [MT-437](#mt-437) | 2026-09-15 | What the measured route in holds, and which tier is bound by it | needs test | FR-087 |
 | [MT-468](#mt-468) | 2026-09-19 | Every screen still finds its text after 239 unused message keys were removed | fixed unvalidated | UIX-C4 |
-| [MT-488](#mt-488) | 2026-09-23 | A train reversed on the throttle where one direction is barred | fixed unvalidated | TDY2-A1, GUI2-A1, AUT2-A1, TDY3-A1, TDY3-A2, GUI3-C1, AUT3-B1, TDY3-C1, TDY4-C3 |
 | [MT-491](#mt-491) | 2026-09-23 | An old autonomy.json's trains face the way the old version ran them | fixed unvalidated | REG4-A1, REG4-C1 |
 | [MT-492](#mt-492) | 2026-09-24 | Return Home finds a plan on a crowded railway | fixed unvalidated | OB-230, AMH-C1 |
 | [MT-494](#mt-494) | 2026-09-24 | After a run, the Facing menu turns the train that is there | fixed unvalidated | TDY4-C5 |
@@ -92,10 +90,14 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-550](#mt-550) | 2026-09-24 | A train sent by hand is refused while the setup has errors | fixed unvalidated | MT-263 |
 | [MT-551](#mt-551) | 2026-09-24 | In simulation, Preferences > Debug > Echo Sent Commands is offered and remembered | fixed unvalidated | MT-488 |
 | [MT-552](#mt-552) | 2026-09-24 | A parking berth whose own square holds its longest train is not warned about | fixed unvalidated | OB-288 |
-| [MT-553](#mt-553) | 2026-09-24 | Under Visible Elements, the autonomy editor has the gap every other heading has | fixed unvalidated | OB-289 |
+| [MT-554](#mt-554) | 2026-09-24 | A square made pass-through keeps Unavailable While Occupied | fixed unvalidated | MT-443 |
+| [MT-555](#mt-555) | 2026-09-24 | Every Unavailable While Occupied is listed as a notice, station or not | fixed unvalidated | MT-443 |
+| [MT-556](#mt-556) | 2026-09-24 | Autonomy > Documentation opens the guide off the event thread | fixed unvalidated | MT-546 |
+| [MT-557](#mt-557) | 2026-09-24 | A tail question with one answer is not asked | fixed unvalidated | MT-437 |
+| [MT-558](#mt-558) | 2026-09-24 | A station made pass-through and back has its Maximum Train Length again | fixed unvalidated | OB-291 |
 
-Everything else - 487 of 553 - needs nothing from you unless the area changes again:
-414 **fixed validated** and 73 **superseded**.
+Everything else - 490 of 558 - needs nothing from you unless the area changes again:
+416 **fixed validated** and 74 **superseded**.
 
 ---
 
@@ -22742,7 +22744,7 @@ Works, and the tooltip you pointed at is shorter. Fifteen of the longest tooltip
 
 ### MT-437 - 2026-09-15 - What the measured route in holds, and which tier is bound by it
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-087
 
 **Written:** 2026-09-15
@@ -22849,6 +22851,22 @@ Works, except that at length 5, it still can't go from tunnel to bottommainA, ev
 **Claude, 2026-09-24.**
 
 **Not reproduced - one question** (2026-09-24).  On your current files a five-unit train at Tunnel (southbound) is offered BottomMainA: the measured route in is 7, and it already counts BottomMainA's own square (Tunnel to BottomMainAPre 2, BottomMainAPre to BottomMainA 5 with its 1).  Six is refused only by BottomMainA's own Max Train Length, 5.  With 19,12 unmeasured again - 5 before BottomMainA, 6 with it, which is what you describe - five is still offered.  So the rule is already inclusive, and something else refused you.  What did the refusal say - Why Not Moving?'s line for it, or the log?  (Stood on Tunnel's northbound copy, the reason is that the only route doubles back, not length.)
+
+**Adam, 2026-09-24 (triage).** Works, with notes.
+
+Works as is, but a few notes: when a tail question comes up and there is only one option (len 4 on tunnel), it should auto select that option.  Also, when we set 75 407 DB to len 7, it is still allowed to go to bottommainA even though the measured allowance there is 6.  going to bottommaina shouldn't be possible in full autonomy (note I increased bottommainA's max train length to 7, I will decrease it later after we are done testing).
+
+*Run against commit 2baafd8a, in English - build\classes, compiled 24 Sep 10:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+**Both notes** (2026-09-24).  **The one-entry question** is answered for you now: a list with one entry takes it and shows nothing (MT-557).  At Tunnel from the north, TunnelPre's rail and 12,7's share every square back to the switch at 11,5, which measures 0, and so does 11,6 after it - so four units end one square short of the switch and have also reached TunnelPre by the whole-rail count, and TunnelPre was all there was to offer.
+
+**Length 7 to BottomMainA: left as it is, on your answer** (2026-09-24).  The code counts the room as 7, and 7 is what this entry says it is - the two legs: Tunnel to BottomMainAPre 2 (7,11's 1 and BottomMainAPre's own 1; switch 7,12 and signal 8,12 have no length, which counts as 0 in a leg that has some), BottomMainAPre to BottomMainA 5.  Your 6 stopped at BottomMainAPre; the seventh unit is 7,11, up the Tunnel line past switch 7,12, where a train may stand at a station autonomy chooses (your MT-431 ruling).  Asked whether the room should stop at the station before, you chose to keep it: *"For 437, c, lets leave it as is.  Good point"* - Max Train Length stays the autonomy gate, so BottomMainA is closed to seven again once you set its maximum back.
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.  Your two notes are answered above: the first is built (MT-557), the second is a question.
 
 ---
 
@@ -23117,7 +23135,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-443 - 2026-09-15 - Making a square no longer a station takes Unavailable While Occupied with it
 
-**Disposition:** fixed validated
+**Disposition:** superseded
 **From:** AMS-B2
 
 **Written:** 2026-09-15
@@ -23152,6 +23170,10 @@ This test passes, but what happens when we re-add the restriction when it's a no
 **Claude, 2026-09-24.**
 
 Validated on your *Works* of 2026-09-24.
+
+**Claude, 2026-09-24.**
+
+**Reversed on your word** (2026-09-24): *"do allow restrictions on non-stations, and let's not clear them when the type changes"*.  My answer above was wrong on one point: Unavailable While Occupied is under Advanced Parameters, which every sensor square has, station or not - so it could always be put on a square that is not a station, and taken off there.  Now it is kept when a station is made pass-through (MT-554), and every one is listed as a notice (MT-555).  On a square that is not a station it is applied as far as it can be: every route into the square waits while the watched square is occupied.  The other half - not chosen as somewhere to go - does not arise, since autonomy never chooses such a square.  Superseded by MT-554 and MT-555.
 
 ---
 
@@ -25416,7 +25438,7 @@ Superseded by MT-496 and MT-497 (one test each), because your ruling on REG2-C7 
 
 ### MT-488 - 2026-09-23 - A train reversed on the throttle where one direction is barred
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** TDY2-A1, GUI2-A1, AUT2-A1, TDY3-A1, TDY3-A2, GUI3-C1, AUT3-B1, TDY3-C1, TDY4-C3
 
 **Written:** 2026-09-23
@@ -25458,6 +25480,14 @@ reversing it on the throttle has no effect on autonomy.  when no autonomy or man
 **Claude, 2026-09-24.**
 
 **To run now: tick Preferences > Debug > Echo Sent Commands first** (2026-09-24).  The window turns a train from the direction MESSAGE a Central Station sends back for every command, and a simulation sent nothing back - so in simulation the throttle had no effect, while on the railway it does.  Your answer: *"we can just require the test to echo packets"*, and then the switch (MT-551).  `regression.testAThrottleReversalIsFollowedFromItsEcho` holds the whole path.  The Facing menu sends no direction command, so it already does not change the throttle.
+
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit 2baafd8a, in English - build\classes, compiled 24 Sep 10:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
 
 ---
 
@@ -27038,6 +27068,10 @@ Works, but are we calling this on EDT?
 
 Validated on your *Works* of 2026-09-24.
 
+**Claude, 2026-09-24.**
+
+**Its own thread** (2026-09-24), as you asked: *"can it get its own thread?"*  The About box and the update check still open the browser on the event thread; say if you want them moved too.  MT-556 checks the guide still opens.
+
 ---
 
 <a id="mt-547"></a>
@@ -27114,6 +27148,10 @@ Validated on your *Works* of 2026-09-24.
 
 *What this is:* `regression.testTheOrangeIsDrawnWhereTheTailStopsAtTheSwitch`.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit 2baafd8a, in English - build\classes, compiled 24 Sep 10:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-550"></a>
@@ -27141,6 +27179,10 @@ Validated on your *Works* of 2026-09-24.
 
 *What this is:* `regression.testAHandSendIsRefusedWhileTheSetupIsBroken`.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit 2baafd8a, in English - build\classes, compiled 24 Sep 10:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-551"></a>
@@ -27167,6 +27209,10 @@ Validated on your *Works* of 2026-09-24.
 
 *What this is:* `regression.testTheDebugMenuSwitchesTheEcho`.  With it ticked, MT-488 can be run as written in a simulation.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit 2baafd8a, in English - build\classes, compiled 24 Sep 10:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-552"></a>
@@ -27190,13 +27236,19 @@ Validated on your *Works* of 2026-09-24.
 
 *What this is:* `core.testMassAssignLengths.testABerthThatHoldsItsLongestTrainIsNotWarnedAbout`.  On your files the list went from 18 berths to those 3.
 
+**Adam, 2026-09-24 (triage).** Works, with notes.
+
+RampDown and BottomMainPost should not have the "refuse trains that would otherwise fit" warning as worded, since both sides are measured (and moreover, they only accept arrivals from one side).  Also, the "every train has to turn around" warning for TopMainR0Park is moot since it is a parking berth.  Non-reversible trains can still be backed in there.
+
+*Run against commit 2baafd8a, in English - build\classes, compiled 24 Sep 10:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-553"></a>
 
 ### MT-553 - 2026-09-24 - Under Visible Elements, the autonomy editor has the gap every other heading has
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-289
 
 **Written:** 2026-09-24
@@ -27213,5 +27265,140 @@ Validated on your *Works* of 2026-09-24.
 - The first box under the heading is the same distance below it in both.
 
 *What this is:* `regression.testTheVisibleElementsHeadingIsSpacedLikeTheOthers`.
+
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit 2baafd8a, in English - build\classes, compiled 24 Sep 10:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
+---
+
+<a id="mt-554"></a>
+
+### MT-554 - 2026-09-24 - A square made pass-through keeps Unavailable While Occupied
+
+**Disposition:** fixed unvalidated
+**From:** MT-443
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Making a station pass-through took its Unavailable While Occupied away with it (AMS-B2).  Adam, 2026-09-24: *"do allow restrictions on non-stations, and let's not clear them when the type changes (essentially reverting the behavior)."*
+
+**Steps**
+
+1. Open the autonomy editor.  Right-click TunnelCenterPark, open Advanced Parameters, choose Unavailable While Occupied, tick TunnelLeftPark and press OK.
+2. Right-click TunnelCenterPark and choose Station > No - Trains Can Only Pass Through.
+3. Right-click it again and open Advanced Parameters.
+4. Put it back: Station > Yes - Trains Can Stop Here, then Unavailable While Occupied, untick TunnelLeftPark, OK.
+
+**Expected**
+
+- Step 3: the item reads *Unavailable While Occupied (1)*, and choosing it shows TunnelLeftPark still ticked.
+
+*What this is:* `regression.testStationBlockedByAnotherPoint.testDemotingTheStationKeepsTheRestriction`, which also holds that the built railway still makes every route into the square wait on the watched one.
+
+---
+
+<a id="mt-555"></a>
+
+### MT-555 - 2026-09-24 - Every Unavailable While Occupied is listed as a notice, station or not
+
+**Disposition:** fixed unvalidated
+**From:** MT-443
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Nothing in the list of things to look at said a square was held back by another - and once a restriction can stay on a square that is not a station, it is easy to forget.  Adam, 2026-09-24: *"a simple info notice on restrictions (in the list for any type of station or non station) would be better."*
+
+**Steps**
+
+1. Open the autonomy editor.  Right-click TunnelCenterPark, open Advanced Parameters, choose Unavailable While Occupied, tick TunnelLeftPark and press OK.
+2. Read the list of things to look at, under *Worth tidying*.
+3. Right-click TunnelCenterPark, choose Station > No - Trains Can Only Pass Through, and read the list again.
+4. Put it back: Station > Yes - Trains Can Stop Here, then Unavailable While Occupied, untick TunnelLeftPark, OK.
+
+**Expected**
+
+- Steps 2 and 3: under *Worth tidying*, once, a line saying TunnelCenterPark is unavailable while TunnelLeftPark is occupied.
+- Step 4: the notice is gone.
+
+*What this is:* `regression.testStationBlockedByAnotherPoint.testEveryRestrictionIsListedAsANotice`.
+
+---
+
+<a id="mt-556"></a>
+
+### MT-556 - 2026-09-24 - Autonomy > Documentation opens the guide off the event thread
+
+**Disposition:** fixed unvalidated
+**From:** MT-546
+
+**Written:** 2026-09-24
+
+**What was wrong.**  The Documentation item opened the browser on the event thread.  Adam, 2026-09-24, on MT-546: *"can it get its own thread?"*
+
+**Steps**
+
+1. Choose Autonomy > Documentation.
+
+**Expected**
+
+- Your browser opens the automation guide on GitHub (`Automation.md`), as before.
+
+*What this is:* `regression.testTheAutonomyMenuLinksItsDocumentation`.  Nothing on screen tells the threads apart; this is that the guide still opens now that a thread of its own opens it.
+
+---
+
+<a id="mt-557"></a>
+
+### MT-557 - 2026-09-24 - A tail question with one answer is not asked
+
+**Disposition:** fixed unvalidated
+**From:** MT-437
+
+**Written:** 2026-09-24
+
+**What was wrong.**  A train placed where its tail may lie past a junction is asked which sensor it last crossed.  At Tunnel, a four-unit train from the north was asked with one entry on the list, TunnelPre.  Adam, 2026-09-24: *"when a tail question comes up and there is only one option (len 4 on tunnel), it should auto select that option."*
+
+**Steps**
+
+1. Give 75 407 DB a length of 4 and place it on Tunnel, southbound, as you did for MT-437.
+2. Give it a length of 5 and place it there again.
+
+**Expected**
+
+- Step 1: no question about the tail - the train is simply placed.
+- Step 2: the question is asked, offering TunnelPre and the sensor at 12,7, as before.
+
+*What this is:* `core.testATailPastASwitchIsAskedAbout.testAQuestionWithOneChoiceTakesItWithoutAsking`, and `...testAQuestionWithTwoChoicesIsStillAsked` for step 2.
+
+---
+
+<a id="mt-558"></a>
+
+### MT-558 - 2026-09-24 - A station made pass-through and back has its Maximum Train Length again
+
+**Disposition:** fixed unvalidated
+**From:** OB-291
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Making a station pass-through took its Maximum Train Length away (SET-C2), so making it a station again left it taking trains of any length.  Adam, 2026-09-24: *"make max train length be remembered if a station is changed to a non-station, and then restored if it is changed back to a station.  don't modify the behavior of this attribute: it is still to be ignored for non-stations."*
+
+**Steps**
+
+1. Open the autonomy editor.  Right-click TunnelCenterPark and open Station: it reads *Maximum Train Length (2)*.  On the same menu, open Bulk Tools and note the number on *Clear All Max Train Lengths*.
+2. Choose Station > No - Trains Can Only Pass Through.  Right-click it again and open Bulk Tools.
+3. Choose Station > Yes - Trains Can Stop Here, and open Station again.
+
+**Expected**
+
+- Step 2: *Clear All Max Train Lengths* counts one fewer than in step 1 - the kept maximum is not counted while the square is not a station.
+- Step 3: *Maximum Train Length (2)*, as before.
+
+*What this is:* `core.testMassAssignLengths.testADemotedStationRemembersItsMaximumTrainLength`; `...testARememberedMaximumDoesNotStartTheLengthNotices` holds that it starts no notices while it is ignored.
 
 ---

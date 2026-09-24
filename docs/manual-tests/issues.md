@@ -1172,6 +1172,24 @@ there is slightly too much spacing/padding below "visible elements" in autonomy 
 
 in the CURRENT setup, 75 407 DB gets no orange line at bottommaina.  it did earlier
 
+### OB-291 - 2026-09-24 - max train length forgotten if station demoted
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-24 10:24  
+**Build:** commit 2baafd8a, in English - build\classes, compiled 24 Sep 10:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+make max train length be remembered if a station is changed to a non-station, and then restored if it is changed back to a station.  don't modify the behavior of this attribute: it is still to be ignored for non-stations.
+
+### FR-099 - 2026-09-24 - prettify usage graph
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-24 10:46  
+**Build:** commit 2baafd8a, in English - build\classes, compiled 24 Sep 10:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+usage graph uses basic/ugly graphics.  Keep current functionality, but make it look nicer.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1188,6 +1206,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-24 | OB-291 | bug | A station made pass-through keeps its maximum train length and has it back when made a station again; while it is not one, the maximum is ignored - not counted by Clear All, and starting no notices. | - | `MT-558` |
 | 2026-09-24 | OB-290 | bug | Found: the orange was drawn only from covered edges, and a tail that stops where the rails part behind its platform - any train with no road, which a restart or an edit leaves every train - covers none.  Such a train is now drawn from the places it claims. | - | `MT-549` |
 | 2026-09-24 | OB-289 | bug | The gap between Text Labels and Grid stayed when the autonomy editor hid Text Labels; it goes with the box now. | - | `MT-553` |
 | 2026-09-24 | OB-288 | bug | A berth whose measured track before any unmeasured square holds its longest train is no longer warned about - no train it takes reaches the hole.  On Adam's files, 18 berths down to 3. | - | `MT-552` |
