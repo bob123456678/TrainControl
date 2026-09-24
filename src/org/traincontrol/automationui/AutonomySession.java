@@ -7455,6 +7455,8 @@ public class AutonomySession
         // it stands on in the running layout IS its facing.
         org.traincontrol.automation.Layout running = runningLayout == null ? null : runningLayout.get();
 
+        boolean onTheRailway = false;
+
         if (running != null && getStationIndex() != null)
         {
             for (org.traincontrol.automation.Point point : running.getPoints())
@@ -7464,6 +7466,8 @@ public class AutonomySession
                     continue;
                 }
 
+                onTheRailway = true;
+
                 if (!tile.equals(getStationIndex().squareOf(point.getName()))) continue;
 
                 Side onThisCopy = facingsFor(tile).get(point.getName());
@@ -7471,6 +7475,11 @@ public class AutonomySession
                 if (onThisCopy != null) return onThisCopy.name();
             }
         }
+
+        // STANDING ELSEWHERE ON THE RAILWAY, whatever the setup still says (TDY2-C4).  The setup names this square until
+        // a capture writes the move back, and its FACING is then the heading of a train that is no longer here - so
+        // where the railway knows where the train is, the setup does not answer for it, and the editor asks.
+        if (onTheRailway) return null;
 
         if (!locomotive.equals(standing)) return null;
 

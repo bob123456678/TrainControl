@@ -5098,7 +5098,11 @@ public class AutonomyEditorPanel extends JPanel
         // question sets no home - the rule every question this door asks already follows.
         org.traincontrol.automationui.TilePorts.Side facing = null;
 
-        if (picked != null && !picked.equals(locomotiveAt(tile)))
+        // ASKED EXACTLY WHEN THE SESSION HAS NO ANSWER (TDY2-C4).  This asked whenever the SETUP did not put the train
+        // here, while the answer comes from the railway first: a train the setup had elsewhere but that stands here was
+        // asked about for nothing, and one the setup still had here after it drove off was given the setup's stale
+        // facing without a question.
+        if (picked != null && session.knownHomeFacing(tile, picked) == null)
         {
             java.util.Set<org.traincontrol.automationui.TilePorts.Side> canHold = session.homeFacingsFor(tile);
 
