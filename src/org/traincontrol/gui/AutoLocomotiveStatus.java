@@ -1080,6 +1080,17 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                         return;
                     }
 
+                    // NOT WHILE THE SETUP HAS ERRORS, any more than autonomy starts (MT-263; Adam, 2026-09-24: "trains can
+                    // still be moved manually ... which should throw an error instead").  The same question Start is
+                    // refused on, asked here and at the diagram's right-click destinations.
+                    String broken = this.parent.whyAHandSendIsRefused();
+
+                    if (broken != null)
+                    {
+                        JOptionPane.showMessageDialog(this, broken);
+                        return;
+                    }
+
                     // Ensure there are no automatic routes
                     /* for (String routeName : this.control.getRouteList())
                     {

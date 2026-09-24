@@ -1311,6 +1311,18 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     return;
                 }
 
+                // NOT WHILE THE SETUP HAS ERRORS, any more than autonomy starts (MT-263; Adam, 2026-09-24: "trains can
+                // still be moved manually ... which should throw an error instead").  The question Start is refused
+                // on, asked at both hand doors - this one and the Auto tab's list of paths.
+                String broken = ui.whyAHandSendIsRefused();
+
+                if (broken != null)
+                {
+                    JOptionPane.showMessageDialog(this, broken);
+
+                    return;
+                }
+
                 // AND THE ONE REFUSAL THIS DOOR CAN EXPLAIN (MT-262).
                 //
                 // Adam, 2026-09-05, on a four-unit train being sent into two units of track: **"there

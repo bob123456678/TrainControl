@@ -23733,6 +23733,43 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Why a train may not be sent by hand right now, or null when it may (MT-263).
+     *
+     * Adam, 2026-09-24: *"Start autonomy doesn't run autonomy, as expected - I get an error message saying errors must
+     * first be fixed.  Good.  But trains can still be moved manually via both the track diagram viewer and the
+     * autonomy tab, which should throw an error instead."*  A hand send runs over the railway the same setup built, so
+     * it is refused on the question Start is refused on - `autonomyHasErrors` - and both hand doors ask it before the
+     * reversal question, so nothing is asked about a journey that is going to be refused.
+     *
+     * @return the sentence to show, or null
+     */
+    public String whyAHandSendIsRefused()
+    {
+        if (!autonomyHasErrors()) return null;
+
+        org.traincontrol.automationui.AutonomySession asked = getAutonomySession();
+
+        return whyAHandSendIsRefused(autonomyErrorCount(), asked == null ? 0 : asked.blockingProblemCount());
+    }
+
+    /**
+     * The words for a refused hand send: the setup's own - *"This setup cannot be used yet"*, with however many things
+     * there are to deal with - and never Start's, which say AUTONOMY cannot start and would be about the wrong button.
+     *
+     * Through the Start rule rather than beside it, so each sentence is still chosen in one place: the error findings
+     * where there are any, since those are what the editor lists, and otherwise the problems that stop the setup
+     * being built.
+     *
+     * @param errors how many error findings the setup has
+     * @param blocking how many problems would stop it being built
+     * @return the sentence, already translated
+     */
+    public static String whyAHandSendIsRefused(int errors, int blocking)
+    {
+        return whyAutonomyWillNotStart(0, errors > 0 ? errors : blocking, true);
+    }
+
+    /**
      * How many blocking findings the loaded setup has, or zero when there is nothing to ask.
      *
      * The number, for saying WHAT is wrong - not the question that decides (TS3-B6).
