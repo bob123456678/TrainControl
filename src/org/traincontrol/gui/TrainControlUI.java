@@ -2039,10 +2039,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Unticks Startup -> Load Autonomy after a legacy autonomy.json has been imported (REG2-C3).
+     * Unticks Startup -> Load Autonomy after a legacy autonomy.json has been imported, every time (REG2-C3).
+     *
+     * The box is one preference for the whole install.  It shows ticked to anybody who never touched it, and on a layout
+     * with only the old graph it loaded nothing until it had been set by hand, so what it showed and what it did
+     * disagreed for every upgrading user.  Adam, 2026-09-24, choosing among the resets: *"Set the setting to unchecked
+     * when importing a legacy json file, each time.  Simple to track and implement."*  So after an import the box says
+     * what the next start will do - load nothing - and ticking it is one click that means what it shows.  The import's
+     * log says so.
      */
     public void autoLoadOffAfterLegacyImport()
     {
+        prefs.putBoolean(AUTO_LOAD_AUTONOMY, false);
+
+        if (this.AutoLoadAutonomyMenuItem != null) this.AutoLoadAutonomyMenuItem.setSelected(false);
+
+        if (this.model != null) this.model.log(I18n.f("autosetup.ui.autoLoadOffAfterImport",
+            I18n.t("ui.main.toolbar.startup"), I18n.t("ui.main.toolbar.loadAutonomy")));
     }
     
     /**

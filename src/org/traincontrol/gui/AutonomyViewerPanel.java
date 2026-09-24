@@ -1184,6 +1184,9 @@ public class AutonomyViewerPanel extends JPanel
 
             save();
 
+            // AND LOAD AUTONOMY UNTICKED, every time (REG2-C3; Adam, 2026-09-24) - see the method.
+            ui.autoLoadOffAfterLegacyImport();
+
             String unmatched = result.unmatched.isEmpty()
                 ? "" : "\n\n" + String.join(", ", result.unmatched);
 

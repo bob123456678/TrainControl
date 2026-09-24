@@ -25157,7 +25157,7 @@ those two and is not a step here.
 ### MT-491 - 2026-09-23 - An old autonomy.json's trains face the way the old version ran them
 
 **Disposition:** fixed unvalidated
-**From:** REG4-A1, REG4-C1, REG-B1
+**From:** REG4-A1, REG4-C1, REG-B1, REG2-C3
 
 **Written:** 2026-09-23; expectations added 2026-09-24 for your rulings on switched-off stations and the old file's
 directions (not yet run)
@@ -25187,6 +25187,9 @@ train runs: a train there went only along the edges that start at its point.  On
 - In the imported configuration, the stations the old file had switched off - ParkingTrack4 to ParkingTrack12 among
   them - are on, but not ones autonomy chooses (your ruling on REG-B1: *"translate as on but not auto destination"*).
   A train can be sent to one by hand.
+- The log says Startup > Load Autonomy has been unticked, and the menu shows it unticked (your ruling on REG2-C3:
+  *"Set the setting to unchecked when importing a legacy json file, each time"*).  **Tick it again afterwards** if you
+  want your own setup loaded when TrainControl starts - the setting is shared by every layout.
 
 *What this is:* `core.testAnImportedFacingGuessCanStart`: on a fresh upgrade of the frozen railway the four trains face
 the way the old file ran them (the 2-8-4 at TopMainR1 north), the old file's one-way running is carried onto a fresh

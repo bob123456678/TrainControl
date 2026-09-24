@@ -1969,7 +1969,7 @@ REG-D8	REG.md	Closed	-	the bundled libraries still run on Java 8
 REG-D9	REG.md	Closed	-	Central Station traffic: the changes found are fixes
 REG2-C1	REG2.md	Closed	Fixed - 8370abb1	REG-C3's documentation half was never made: the user guide's prerequisite is unchanged, and the finding is closed
 REG2-C2	REG2.md	Closed	Fixed - 8370abb1 (claim 8346be65, red first)	on a Central Station layout the greyed Start item now tells the user to wait for their trains
-REG2-C3	REG2.md	Open - Adam's decision	Partly fixed - the changelog line (8370abb1). Open - Adam's decision: whether an untouched	the auto-load box shows ticked and does nothing on the JSON arm for every user who never touched it; ticking it takes two clicks
+REG2-C3	REG2.md	Closed	Fixed - the changelog line (8370abb1), and on Adam's ruling of 2026-09-24 ("Set the settin	the auto-load box shows ticked and does nothing on the JSON arm for every user who never touched it; ticking it takes two clicks
 REG2-C4	REG2.md	Closed	Fixed - 8370abb1	the changelog names a control that does not exist: "untick Automatic Destination"
 REG2-C5	REG2.md	Closed	Fixed - 8370abb1, and AutomationAPI.md's two siblings in 4132d260	`AutomationAPI.md` still promises that inactive points can be reached by hand
 REG2-C6	REG2.md	Closed	Fixed - 8370abb1 (claim 8346be65, red first): an imported route is built unarmed	an import still announces every route the file saved armed as "running", just before the notice says they are off
