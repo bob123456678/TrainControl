@@ -9,7 +9,6 @@
 /.gitignore
 /store/
 /Oles kreds/
-/resources_test/
 
 # Runtime state snapshots and timestamped backups (root only; test/*.data stays tracked)
 /LocDB*.data
