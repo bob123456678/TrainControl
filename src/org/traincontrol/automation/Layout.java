@@ -11399,6 +11399,9 @@ public class Layout
             }    
         }
            
+        // The trains placed on a copy that is no station, warned about once every copy is read (GUI4-C5).
+        List<String[]> placedOffAStation = new ArrayList<>();
+
         // Add points
         points.forEach(pnt ->
         { 
@@ -11909,13 +11912,11 @@ public class Layout
                             // accepts such a terminus now, and only autonomy's own choice refuses),
                             // so the railway behaves differently and nothing says why.
 
-                            // Only throw a warning if this is not a station
+                            // Only throw a warning if this is not a station - after the loop, where the
+                            // square's other copies have been read (GUI4-C5).
                             if (!point.optBoolean("station", false))
                             {
-                                control.logf(
-                                    "autolayout.warnLocomotivePlacedOnNonStation",
-                                    loc
-                                );
+                                placedOffAStation.add(new String[] {loc, point.getString("name")});
                             }
 
                             // De-conflict with other multi-units
@@ -12061,6 +12062,20 @@ public class Layout
                 }
             }
         });
+
+        // NOT FOR A COPY OF A STATION (GUI4-C5).  Since 8370abb1 a train can stand on a copy of a station square trains may
+        // not arrive at - reversed on the throttle at BottomMainA, arrivals from the east barred - and the build records it
+        // there.  "Placed on a non-station" called that station a non-station on every load, the noun GUI3-C1 took out of
+        // the other two sentences, and Why not Moving? already says what is wrong.  Written inside the loop, the warning
+        // could not tell the two apart: the square's other copies were not read yet.
+        for (String[] placed : placedOffAStation)
+        {
+            Point on = layout.getPoint(placed[1]);
+
+            if (on != null && (layout.isABarredCopyOfAStation(on) || layout.startableTwinOf(on) != null)) continue;
+
+            control.logf("autolayout.warnLocomotivePlacedOnNonStation", placed[0]);
+        }
 
         // Add edges
         edges.forEach(edg -> 
