@@ -105,35 +105,6 @@ public class testDeleteAndInsertKeepTheSetup
             "the square the track left is still a station, so the setup now says there are two");
     }
 
-    /**
-     * And the planner the editor uses agrees about what an insert touches.
-     *
-     * `planBulkLine` is "a function of coordinates rather than of labels, so that it can be checked
-     * without a window". A line MOVED reports both its moves and the squares it lands on; a line COPIED
-     * reports only the landings, because two squares cannot both be one station.
-     */
-    @Test
-    public void testThePlannerReportsBothHalvesOfAMove()
-    {
-        java.util.Set<Integer> occupied = new java.util.LinkedHashSet<>(Arrays.asList(0, 1, 2));
-
-        org.traincontrol.gui.LayoutEditor.BulkPlan moved =
-            org.traincontrol.gui.LayoutEditor.planBulkLine("main", true, 1, 2, 3, occupied, true);
-
-        assertEquals(moved.moves.size(), 3, "a moved line moves every occupied square: " + moved.moves);
-        assertEquals(moved.builtOver.size(), 3, "and lands on every square of the target line");
-
-        org.traincontrol.gui.LayoutEditor.BulkPlan copied =
-            org.traincontrol.gui.LayoutEditor.planBulkLine("main", true, 1, 2, 3, occupied, false);
-
-        assertTrue(copied.moves.isEmpty(),
-            "a COPIED line must move nothing - two squares cannot both be one station");
-
-        assertEquals(copied.builtOver.size(), 3,
-            "but the line being copied onto is still built over, and letting that data sit there is "
-            + "how a copied column ends up carrying somebody else's station names");
-    }
-
     // ------------------------------------------------------------------------------------------
 
     /**

@@ -2942,9 +2942,9 @@ public class AutonomyCompanionStore
      * Squares that have been built over, whose setup is therefore about track that is gone.
      *
      * moveTiles does this for the squares a move LANDS on, and for a long time that was the only way a
-     * square could be overwritten.  A column or a row is bulk-replaced instead: the tiles that were
-     * there are deleted and other tiles are written in their place, so the same thing happens to
-     * twenty squares at once and nothing was telling the setup about any of them.
+     * square could be overwritten.  A paste, a copied tile and a palette drop write new tiles over
+     * what was there instead, so the same thing happens - to a whole pasted block at once - and
+     * nothing was telling the setup about any of them.
      *
      * @param tiles the squares whose setup is to be forgotten
      */

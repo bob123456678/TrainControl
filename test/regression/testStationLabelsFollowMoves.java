@@ -16,7 +16,6 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
-import org.traincontrol.gui.LayoutEditor;
 
 /**
  * A station's NAME survives being moved, wherever it is moved to.
@@ -249,8 +248,8 @@ public class testStationLabelsFollowMoves
         store.setPointName(at(2, 3), "Platform3");
         store.setCaption(at(7, 3), at(2, 3));
 
-        LayoutEditor.BulkPlan plan =
-            LayoutEditor.planBulkLine(PAGE, true, 2, 7, 6, occupied(3), true);
+        support.TileLine plan =
+            support.TileLine.of(PAGE, true, 2, 7, 6, occupied(3), true);
 
         store.moveTiles(plan.moves, plan.builtOver);
 
@@ -272,8 +271,8 @@ public class testStationLabelsFollowMoves
         store.setStation(at(2, 3), true);
         store.setCaption(at(7, 3), at(9, 9));
 
-        LayoutEditor.BulkPlan plan =
-            LayoutEditor.planBulkLine(PAGE, true, 2, 7, 6, occupied(3), true);
+        support.TileLine plan =
+            support.TileLine.of(PAGE, true, 2, 7, 6, occupied(3), true);
 
         store.moveTiles(plan.moves, plan.builtOver);
 
@@ -306,8 +305,8 @@ public class testStationLabelsFollowMoves
         // lands on it comes from (2, 8), which is not the station it names
         store.setCaption(at(7, 8), at(2, 3));
 
-        LayoutEditor.BulkPlan plan =
-            LayoutEditor.planBulkLine(PAGE, true, 2, 7, 10, occupied(3, 8), true);
+        support.TileLine plan =
+            support.TileLine.of(PAGE, true, 2, 7, 10, occupied(3, 8), true);
 
         store.moveTiles(plan.moves, plan.builtOver);
 

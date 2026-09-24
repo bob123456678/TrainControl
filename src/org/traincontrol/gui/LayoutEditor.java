@@ -46,7 +46,6 @@ import org.traincontrol.util.I18n;
 public class LayoutEditor extends PositionAwareJFrame
 {
     public static enum tool {MOVE, COPY};
-    public static enum bulk {ROW, COL};
 
     // Max rows or columns
     public static final int MAX_SIZE = 60;
@@ -942,7 +941,7 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             if (this.hasToolFlag())
             {
-                this.executeTool(label, null);
+                this.executeTool(label);
             }
         }
     }
@@ -1561,7 +1560,7 @@ public class LayoutEditor extends PositionAwareJFrame
             }
 
             // Snap to grid logic
-            executeTool(target, null);
+            executeTool(target);
         }
     }
     
@@ -2214,7 +2213,7 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             if (this.hasToolFlag())
             {
-                executeTool(label, null);
+                executeTool(label);
                 
                 // Propagate the hover event.  Should be done for BUTTON3 at minimum
                 receiveMoveEvent(e, label);
@@ -2237,156 +2236,17 @@ public class LayoutEditor extends PositionAwareJFrame
         
     /**
      * Executes the currently active tool
-     * @param label 
-     * @param bulkFlag 
+     *
+     * It had a whole-column and a whole-row mode, reached from two right-click items that multi-select replaced on
+     * 2026-08-19 (6f60b118); the modes stayed a month with no caller and were removed with DCN-C3.
+     *
+     * @param label where the tool is used
      */
-    synchronized public void executeTool(LayoutLabel label, bulk bulkFlag)
-    {     
+    synchronized public void executeTool(LayoutLabel label)
+    {
         this.snapshotLayout();
-        
-        if (bulkFlag == bulk.COL)
-        {
-            int startCol = this.lastX;
-            int destCol = this.getX(label);
-            
-            boolean isMove = (this.toolFlag == tool.MOVE);
 
-            if (startCol != -1 && destCol != -1 && startCol != destCol)
-            {
-                List<LayoutLabel> destColumn = grid.getColumn(destCol);
-                List<LayoutLabel> sourceColumn = grid.getColumn(startCol);
-
-                // Which squares in the column carry track, noted BEFORE any of it is deleted
-                java.util.Set<Integer> occupied = new java.util.LinkedHashSet<>();
-
-                pauseRepaint = true;
-
-                try
-                {   
-                    // Clear existing tiles.  Quietly: applyBulkPlan below tells the setup about this
-                    // whole line at once, and knows which of these squares are being vacated rather
-                    // than destroyed - which a delete on its own cannot know.
-                    for (LayoutLabel l : destColumn)
-                    {
-                        if (l.getComponent() != null) this.delete(l, false);
-                    }
-                    
-                    for (int i = 0; i < sourceColumn.size(); i++)
-                    {
-                        LayoutLabel sourceLabel = sourceColumn.get(i);
-                        LayoutLabel destLabel = destColumn.get(i);
-                        this.lastX = startCol;
-                        this.lastY = i;
-                        this.lastComponent = sourceLabel.getComponent();
-
-                        if (this.lastComponent != null)
-                        {
-                            occupied.add(i);
-
-                            // Quietly: applyBulkPlan below tells the setup about this whole line at
-                            // once, and knows which squares are arriving rather than being destroyed
-                            execCopy(destLabel, false, false);
-                        }
-
-                        // Tool will get reset
-                        //this.toolFlag = tool.COPY;
-                    }
-                    
-                    for (LayoutLabel l : sourceColumn)
-                    {
-                        if (isMove && l.getComponent() != null) this.delete(l, false);
-                    }      
-                }
-                finally
-                {
-                    pauseRepaint = false;
-                }
-
-                // And the setup follows the column.
-                //
-                // execCopy carries it for a single tile, but only on a MOVE - and this passes false,
-                // because a bulk move copies the whole line first and deletes the source line
-                // afterwards rather than tile by tile.  So a column that was moved took its track and
-                // left behind everything autonomy knew about it: the stations, the names, the lengths,
-                // the facings, the link pairings, the switched-off links.  All of it stayed on the
-                // column the track had walked away from, where the next reconcile - finding a station
-                // on a square with no sensor - threw it away for good.
-                //
-                // Adam found it as links coming unpaired, which is the half of it that shows: a pairing
-                // is mutual, so the partner is left pointing at a square that is now bare.
-                applyBulkPlan(planBulkLine(layout.getName(), true, startCol, destCol,
-                    sourceColumn.size(), occupied, isMove));
-
-                this.resetClipboard();
-                refreshGrid();
-            }
-        }
-        else if (bulkFlag == bulk.ROW)
-        {
-            int startRow = this.lastY;
-            int destRow = this.getY(label);
-
-            boolean isMove = (this.toolFlag == tool.MOVE);
-            
-            if (startRow != -1 && destRow != -1 && startRow != destRow)
-            {
-                List<LayoutLabel> destinationRow = grid.getRow(destRow);
-                List<LayoutLabel> sourceRow = grid.getRow(startRow);
-
-                java.util.Set<Integer> occupied = new java.util.LinkedHashSet<>();
-
-                pauseRepaint = true;
-
-                try
-                {
-                    // Clear existing tiles - quietly, see the column above
-                    for (LayoutLabel l : destinationRow)
-                    {
-                        if (l.getComponent() != null) this.delete(l, false);
-                    }
-                    
-                    for (int i = 0; i < sourceRow.size(); i++)
-                    {
-                        LayoutLabel sourceLabel = sourceRow.get(i);
-                        LayoutLabel destLabel = destinationRow.get(i);
-                        this.lastX = i;
-                        this.lastY = startRow;
-                        this.lastComponent = sourceLabel.getComponent();
-
-                        if (this.lastComponent != null)
-                        {
-                            occupied.add(i);
-
-                            // Quietly - see the column above
-                            execCopy(destLabel, false, false);
-                        }
-
-                        //this.toolFlag = tool.COPY;
-                    }
-                    
-                    for (LayoutLabel l : sourceRow)
-                    {
-                        if (isMove && l.getComponent() != null) this.delete(l, false);
-                    }
-                    
-                }
-                finally
-                {
-                    pauseRepaint = false;
-                }
-
-                // The setup follows the row - see the column above for what was being lost.
-                applyBulkPlan(planBulkLine(layout.getName(), false, startRow, destRow,
-                    sourceRow.size(), occupied, isMove));
-
-                this.resetClipboard(); // this will only allow us to copy the row/col once.  if we don't want to do this, we need to manually put the original tile back on the clipboard, and specify the tool
-                refreshGrid();
-            }
-        }
-        else
-        {
-            execCopy(label, toolFlag == tool.MOVE);
-        }
+        execCopy(label, toolFlag == tool.MOVE);
         
         // Tile is on the main diagram- update borders
         if (lastX != -1 || lastY != -1)
@@ -2395,87 +2255,6 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
     
-    /**
-     * What a whole-column or whole-row replacement does to the setup.
-     *
-     * Two separate things, and the difference between them is the whole point:
-     *
-     *   - the squares being BUILT OVER.  The line is cleared and other tiles are written into it, so
-     *     whatever the setup said about those squares is about track that is gone.  Reconcile cannot
-     *     find these on its own: it drops setup from squares that are now EMPTY, and one of these is
-     *     not empty, it is occupied by something else.
-     *   - the squares being VACATED, when this is a move.  Their setup travels to where their track
-     *     went, exactly as it does for a single dragged tile.
-     *
-     * A copy has only the first sort.  Two squares cannot both be one station, so nothing travels -
-     * but the line being copied onto is still being built over, and letting that data sit there was
-     * how a copied column ended up carrying somebody else's station names.
-     *
-     * A function of coordinates rather than of labels, so that it can be checked without a window:
-     * see testLayoutEditorBulkEdits, which walks the combinations.
-     *
-     * @param page the page being edited
-     * @param column true for a column, false for a row
-     * @param from the line being taken
-     * @param to the line being written over
-     * @param span how many squares long the line is
-     * @param occupied indices along the source line that carry track
-     * @param move whether the source line is being emptied
-     * @return the plan, possibly empty, never null
-     */
-    public static BulkPlan planBulkLine(String page, boolean column, int from, int to, int span,
-        java.util.Set<Integer> occupied, boolean move)
-    {
-        BulkPlan plan = new BulkPlan();
-
-        if (page == null || from == to || from < 0 || to < 0 || span <= 0) return plan;
-
-        for (int i = 0; i < span; i++)
-        {
-            org.traincontrol.automationui.TileGraph.TileKey source = column ? new org.traincontrol.automationui.TileGraph.TileKey(page, from, i) : new org.traincontrol.automationui.TileGraph.TileKey(page, i, from);
-
-            org.traincontrol.automationui.TileGraph.TileKey dest = column ? new org.traincontrol.automationui.TileGraph.TileKey(page, to, i) : new org.traincontrol.automationui.TileGraph.TileKey(page, i, to);
-
-            plan.builtOver.add(dest);
-
-            if (move && occupied != null && occupied.contains(i)) plan.moves.put(source, dest);
-        }
-
-        return plan;
-    }
-
-    /**
-     * The two halves of a bulk edit, kept apart so that each can be checked on its own.
-     *
-     * Public so that the rule can be tested without a window - see testLayoutEditorBulkEdits.  The
-     * editor is a JFrame that wants a running TrainControlUI behind it, and a rule that can only be
-     * checked by building one is a rule that does not get checked.
-     */
-    public static final class BulkPlan
-    {
-        public final java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey> moves = new java.util.LinkedHashMap<>();
-
-        public final java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> builtOver = new java.util.LinkedHashSet<>();
-
-    }
-
-    /**
-     * Tells the setup what the diagram just did.
-     */
-    private void applyBulkPlan(BulkPlan plan)
-    {
-        if (plan == null || (plan.moves.isEmpty() && plan.builtOver.isEmpty())) return;
-
-        org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
-
-        if (autonomy == null) return;
-
-        // One call, both halves.  Which squares are only passing through, and what order the two
-        // halves have to happen in, are the store's business - see AutonomyCompanionStore.moveTiles.
-        // Working that out here is what this path got wrong the first time.
-        if (autonomy.moveTiles(plan.moves, plan.builtOver)) rememberAutonomy(autonomy);
-    }
-
     /**
      * Tells the setup that these squares have been built over - once, for the whole gesture.
      *
@@ -2487,8 +2266,8 @@ public class LayoutEditor extends PositionAwareJFrame
      * thread, with repainting suppressed so nothing on screen moves while it happens.  The layout
      * folder is under OneDrive here, so each write may also wake a sync client.
      *
-     * The shape is the one applyBulkPlan already used: collect, tell once, and save only if anything
-     * actually changed.  moveSelection and the four shift operations do the same for their gestures.
+     * The shape moveSelection and the four shift operations use for their gestures: collect, tell once, and save
+     * only if anything actually changed.
      *
      * @param builtOver the squares whose track has been replaced
      */
@@ -2509,25 +2288,6 @@ public class LayoutEditor extends PositionAwareJFrame
      * @param move
      */
     synchronized private void execCopy(LayoutLabel destLabel, boolean move)
-    {
-        execCopy(destLabel, move, true);
-    }
-
-    /**
-     * @param tellAutonomy false when the CALLER is going to tell the setup what happened
-     *
-     * The same flag delete(LayoutLabel, boolean) carries, and for the same reason - which is why it is
-     * here at all.  When delete was given it, this method was left as it was, and it is called from the
-     * same two bulk loops: so a column move cleared its line quietly and then announced every landing
-     * square LOUDLY, one at a time, with no moves map.
-     *
-     * That is not merely wasteful.  A landing square announced with no moves map cannot be told apart
-     * from a square being built over by something unrelated, so the rule that spares a station's label
-     * when the station itself is what lands on it - see AutonomyCompanionStore.forgetSquares - cannot
-     * apply, and the label is dropped a moment before applyBulkPlan would have carried it.  The bulk
-     * path lost station names again, by a third route, from the fix for the second one.
-     */
-    synchronized private void execCopy(LayoutLabel destLabel, boolean move, boolean tellAutonomy)
     {        
         try
         {
@@ -2567,7 +2327,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // Dropping a tile from the palette onto a set-up station used to replace the sensor and
             // leave the station, its name, its length and its facings behind, describing a sensor that
             // was no longer there - and reconcile cannot find that, because the square is not empty.
-            if (!move && tellAutonomy)
+            if (!move)
             {
                 org.traincontrol.automationui.AutonomySession landing = parent.getAutonomySession();
 
@@ -3624,7 +3384,6 @@ public class LayoutEditor extends PositionAwareJFrame
      *        the paste that follows carries the setup to wherever the block lands - and where
      *        forgetting the captions here destroys the one part of it that is drawn on the diagram,
      *        because forgetCaptionsAt deletes the caption on the square AND every caption naming it.
-     *        The four bulk row and column movers pass false for the same reason.
      * @return true if anything was picked to delete
      */
     synchronized public boolean deleteSelection(boolean tellAutonomy)
@@ -3745,12 +3504,13 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * @param tellAutonomy false when the CALLER is going to tell the setup what happened
      *
-     * A bulk column or row move deletes the line it is vacating, one square at a time, and then tells
-     * the setup that the whole line moved.  If each of those deletes had already announced itself, the
-     * announcement would be wrong: it says the track is gone, and the track is not gone, it is one
-     * column to the right.  The captions were the visible half of that - every station name on a moved
-     * column was thrown away by the clearing loop moments before the thing that would have carried it
-     * ran - and it is why this parameter exists rather than the callers reaching past delete().
+     * A cut empties its squares one at a time, and the paste that follows tells the setup where the block
+     * went (deleteSelection).  If each of those deletes had already announced itself, the announcement
+     * would be wrong: it says the track is gone, and the track is on its way somewhere else.  The captions
+     * are the visible half of that - forgetCaptionsAt deletes the caption on the square and every caption
+     * naming it, which the paste cannot bring back - and it is why this parameter exists rather than the
+     * callers reaching past delete().  It was written for the whole-row and whole-column moves, removed
+     * with DCN-C3.
      */
     synchronized public void delete(LayoutLabel label, boolean tellAutonomy)
     {
@@ -7428,7 +7188,7 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
                 }
                 else if (this.hasToolFlag() && getLastHoveredLabel() != null)
                 {
-                    this.executeTool(getLastHoveredLabel(), null);
+                    this.executeTool(getLastHoveredLabel());
                 }
             }
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X)

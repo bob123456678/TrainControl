@@ -17,7 +17,11 @@ import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.gui.LayoutEditor;
 
 /**
- * Moving or copying a whole column or row on the diagram, and what happens to the setup underneath it.
+ * Moving or copying a whole line of squares at once, and what happens to the setup underneath it.
+ *
+ * The editor's own whole-column and whole-row gesture was replaced by multi-select on 2026-08-19 and its code
+ * removed with DCN-C3.  Dragging or pasting a selected column asks the store the same thing, through
+ * `moveTiles`, so the lines here are built by `support.TileLine`.
  *
  * Adam moved a column in the layout editor and his links came unpaired.  The cause was that a bulk
  * edit is not built out of single-tile moves: it copies the whole line into place with the move flag
@@ -38,9 +42,8 @@ import org.traincontrol.gui.LayoutEditor;
  *   - what is VACATED travels, on a move, and stays put on a copy
  *   - what is BUILT OVER is forgotten, on a move and on a copy alike
  *
- * These run against the rule and the store rather than against the editor, which is a window wanting a
- * whole running TrainControlUI behind it.  What that leaves uncovered is the single line in
- * executeTool that calls planBulkLine at all - see the note at the bottom of this file.
+ * These run against the store rather than against the editor, which is a window wanting a whole running
+ * TrainControlUI behind it.
  */
 public class testLayoutEditorBulkEdits
 {
@@ -243,42 +246,6 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * An empty square on the source line moves nothing, and invents nothing.
-     */
-    @Test
-    public void testEmptySquaresOnTheLineCarryNothing()
-    {
-        LayoutEditor.BulkPlan plan = plan(true, 5, 9, 8, occupied(3), true);
-
-        assertEquals(plan.moves.size(), 1,
-            "every square on the column was moved, including the ones with no track on them - which "
-            + "would carry a blank square's setup over the top of a real one");
-
-        assertTrue(plan.moves.containsKey(at(5, 3)), "the one occupied square is not the one that moved");
-    }
-
-    /**
-     * Every square of the destination line is forgotten, occupied or not.
-     *
-     * A destination square whose source was empty has its tile DELETED and nothing put back, so its
-     * setup is about track that is gone just as much as the overwritten ones are.
-     */
-    @Test
-    public void testTheWholeDestinationLineIsForgottenNotOnlyTheOverwrittenPart()
-    {
-        LayoutEditor.BulkPlan plan = plan(true, 5, 9, 8, occupied(3), true);
-
-        assertEquals(plan.builtOver.size(), 8,
-            "only part of the destination column is being let go of - the squares whose source was "
-            + "empty keep their setup, and their track has gone");
-
-        for (int y = 0; y < 8; y++)
-        {
-            assertTrue(plan.builtOver.contains(at(9, y)), "row " + y + " of the destination was missed");
-        }
-    }
-
-    /**
      * A square that is both landed on and vacated keeps what it is taking with it.
      *
      * Cannot arise for a column moved onto a different column, and is silent data loss the day some
@@ -299,7 +266,7 @@ public class testLayoutEditorBulkEdits
         store.setStation(at(6, 3), true);
         store.setPointName(at(6, 3), "BuiltOver");
 
-        LayoutEditor.BulkPlan plan = new LayoutEditor.BulkPlan();
+        support.TileLine plan = new support.TileLine();
 
         plan.moves.put(at(5, 3), at(6, 3));
         plan.builtOver.add(at(6, 3));
@@ -310,21 +277,6 @@ public class testLayoutEditorBulkEdits
         assertEquals(store.getPointName(at(6, 3)), "Travelling",
             "the square whose setup was on its way somewhere else was emptied before it left, which "
             + "throws away the thing the move exists to carry");
-    }
-
-    /**
-     * Moving a line onto itself does nothing at all.
-     */
-    @Test
-    public void testALineMovedOntoItselfIsNotAnEdit()
-    {
-        LayoutEditor.BulkPlan plan = plan(true, 5, 5, 8, occupied(3), true);
-
-        assertTrue(plan.moves.isEmpty(), "a column moved onto itself produced moves");
-
-        assertTrue(plan.builtOver.isEmpty(),
-            "a column moved onto itself is about to forget its own setup, which deletes the line "
-            + "rather than moving it");
     }
 
     /**
@@ -636,10 +588,9 @@ public class testLayoutEditorBulkEdits
     /**
      * One set-up square, a real editor over it, a gesture, and a look at what the setup says after.
      *
-     * The same wiring as testTheRealColumnMoveGestureCarriesTheStation - a LayoutEditor that never
-     * shows itself and an AutonomySession in a temp folder, joined through the reflectively-set
-     * TrainControlUI field, so the call sites under test are the real ones. Factored out because two
-     * tests need it and a third copy of forty lines of wiring is where the drift starts.
+     * A LayoutEditor that never shows itself and an AutonomySession in a temp folder, joined through the
+     * reflectively-set TrainControlUI field, so the call sites under test are the real ones. Factored out
+     * because two tests need it, and a second copy of forty lines of wiring is where the drift starts.
      *
      * @param folder a name for the temp autonomy folder, so a failure says which test left it
      * @param gesture what to do to the editor, run on the event thread
@@ -785,175 +736,19 @@ public class testLayoutEditorBulkEdits
         }
     }
 
-    /**
-     * The real gesture - cut a column, drop it on another one - carries the station with it.
-     *
-     * Every test above hands `planBulkLine`'s arguments, or its result, straight to the assertions.
-     * Adam's report came through `LayoutEditor.executeTool`'s COL branch, which builds those same
-     * arguments itself from `layout.getName()`, the column a drag started on, the column it ended on,
-     * and whether it was a drag or a paste - and nothing anywhere in the suite ever calls it; grepping
-     * `test/` for `planBulkLine` finds only tests, here and in testDeleteAndInsertKeepTheSetup and
-     * testStationLabelsFollowMoves, that build the call themselves.
-     *
-     * A LayoutEditor that never shows itself and an AutonomySession in a temp folder, wired to each
-     * other the way the running application wires the real ones - through TrainControlUI.
-     * getAutonomySession(), reflectively pointed at this session instead of whatever the sandboxed
-     * fixture would otherwise build - so the call site under test is the actual one, not a stand-in.
-     *
-     * MUTATION this catches: swap the endpoints at the COL branch's call -
-     * `planBulkLine(layout.getName(), true, destCol, startCol, sourceColumn.size(), occupied, isMove)`
-     * - and the station this test sets on the source column arrives nowhere: moveTiles is told the
-     * setup travelled from the empty destination to the square the drag started on, so BOTH squares
-     * end up with nothing, and the assertion that the destination now holds it fails. Passing
-     * `!isMove` has the same effect by a different route: the diagram's track still moves - execCopy
-     * and delete do not consult this argument - but `moves` is never populated, so the station is
-     * left behind, unnamed, on the bare square the track just vacated.
-     */
-    @Test
-    public void testTheRealColumnMoveGestureCarriesTheStation() throws Exception
-    {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the editor is a window");
-        }
-
-        support.LayoutSandbox sandbox = null;
-        org.traincontrol.marklin.MarklinControlStation model = null;
-        final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
-        final org.traincontrol.gui.LayoutEditor[] editor = new org.traincontrol.gui.LayoutEditor[1];
-
-        try
-        {
-            // Before the model, not just before the window (OB-111) - constructing a TrainControlUI
-            // reads the layout-path preference, and without the sandbox it is Adam's own railway.
-            sandbox = support.LayoutSandbox.open();
-
-            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
-
-            final org.traincontrol.marklin.MarklinControlStation finalModel = model;
-
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    ui[0] = new org.traincontrol.gui.TrainControlUI();
-                    ui[0].setViewListener(finalModel, new java.util.concurrent.CountDownLatch(1));
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-            });
-
-            // Our own page, in our own temp folder - not "1 - Main", so this cannot be confused with
-            // the sandboxed fixture and does not depend on what it happens to contain.
-            java.io.File autonomyFolder =
-                java.nio.file.Files.createTempDirectory("tc-bulk-gesture").toFile();
-
-            AutonomySession session = new AutonomySession(autonomyFolder);
-
-            LayoutDiagram diagram = new LayoutDiagram("Bulk Page", 21, 16, null, null);
-
-            int startCol = 5;
-            int destCol = 15;
-
-            diagram.addComponent(componentType.FEEDBACK, startCol, 3, 0, 0, 1, 1,
-                accessoryDecoderType.MM2, null);
-
-            // Every square counts towards the bounds, not only the one with track on it - otherwise
-            // checkBounds ties the diagram's extent to that single square and the grid built from it
-            // is too narrow to reach column 15 at all (see LayoutDiagram.checkBounds).
-            diagram.setEdit(true);
-            diagram.checkBounds();
-
-            session.open(Arrays.asList(diagram));
-
-            session.getStore().setStation(at(diagram.getName(), startCol, 3), true);
-            session.getStore().setPointName(at(diagram.getName(), startCol, 3),
-                "Moved Along The Column");
-
-            // getAutonomySession() only ever builds a session when the field is still null - pointed
-            // here at ours instead, so the editor's real call site writes to the session this test can
-            // see rather than to whatever the sandboxed fixture would otherwise produce.
-            java.lang.reflect.Field sessionField =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
-            sessionField.setAccessible(true);
-            sessionField.set(ui[0], session);
-
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-                editor[0] = new org.traincontrol.gui.LayoutEditor(diagram, 30, ui[0], 0));
-
-            java.lang.reflect.Method drawGrid =
-                org.traincontrol.gui.LayoutEditor.class.getDeclaredMethod("drawGrid");
-            drawGrid.setAccessible(true);
-
-            java.lang.reflect.Field gridField =
-                org.traincontrol.gui.LayoutEditor.class.getDeclaredField("grid");
-            gridField.setAccessible(true);
-
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    // Builds the grid the constructor leaves for the first paint to ask for.
-                    drawGrid.invoke(editor[0]);
-
-                    org.traincontrol.gui.LayoutGrid grid =
-                        (org.traincontrol.gui.LayoutGrid) gridField.get(editor[0]);
-
-                    org.traincontrol.gui.LayoutLabel source = grid.getValueAt(startCol, 0);
-                    org.traincontrol.gui.LayoutLabel dest = grid.getValueAt(destCol, 0);
-
-                    // The real gesture, in the real order: pick the column up, then drop it on
-                    // another one - see LayoutEditor's mouse handling, which calls these two the
-                    // same way.
-                    editor[0].initCopy(source, null, true);
-                    editor[0].executeTool(dest, org.traincontrol.gui.LayoutEditor.bulk.COL);
-                }
-                catch (ReflectiveOperationException e)
-                {
-                    throw new RuntimeException(e);
-                }
-            });
-
-            assertTrue(session.getStore().isStation(at(diagram.getName(), destCol, 3)),
-                "the station did not arrive on the column it was dropped on through the real editor "
-                + "gesture - testAMovedColumnTakesItsSetupWithIt proves the RULE carries it correctly, "
-                + "so the gap is in the call that feeds the rule its arguments");
-
-            assertEquals(session.getStore().getPointName(at(diagram.getName(), destCol, 3)),
-                "Moved Along The Column", "it arrived unnamed");
-
-            assertFalse(session.getStore().isStation(at(diagram.getName(), startCol, 3)),
-                "the square the column moved away from is still a station");
-        }
-        finally
-        {
-            if (editor[0] != null)
-            {
-                javax.swing.SwingUtilities.invokeAndWait(() -> editor[0].dispose());
-            }
-
-            if (model != null) model.stop();
-
-            if (sandbox != null) sandbox.close();
-        }
-    }
-
     // ----------------------------------------------------------------------------------------
-    // What the editor does with the plan, in the same order, so that the two calls are exercised
-    // together.  applyBulkPlan adds only the null checks and the save - see LayoutEditor.
+    // What a line moved at once asks of the store: one call, both halves.
     // ----------------------------------------------------------------------------------------
 
-    private static void apply(AutonomyCompanionStore store, LayoutEditor.BulkPlan plan)
+    private static void apply(AutonomyCompanionStore store, support.TileLine plan)
     {
         store.moveTiles(plan.moves, plan.builtOver);
     }
 
-    private static LayoutEditor.BulkPlan plan(boolean column, int from, int to, int span,
+    private static support.TileLine plan(boolean column, int from, int to, int span,
         Set<Integer> occupied, boolean move)
     {
-        return LayoutEditor.planBulkLine(PAGE, column, from, to, span, occupied, move);
+        return support.TileLine.of(PAGE, column, from, to, span, occupied, move);
     }
 
     private static Set<Integer> occupied(Integer... indices)

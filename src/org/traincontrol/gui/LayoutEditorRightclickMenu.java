@@ -52,7 +52,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 }
                 else
                 {
-                    edit.executeTool(label, null);
+                    edit.executeTool(label);
                 }
             }
             catch (Exception e)
