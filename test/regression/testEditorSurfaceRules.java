@@ -3310,7 +3310,8 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * The Facing menu ticks nothing where nothing says which way the train faces (GUI3-C4).
+     * The Facing menu ticks nothing where nothing says which way the train faces (GUI3-C4) - except on a square that
+     * holds one facing, where every copy faces that way and the facing IS known (DCN4-C3).
      *
      * It ticked the first facing, as "the one a placement with no recorded facing actually gets" - which stopped being
      * so when the build began standing such a train on a copy it can start from (GUI2-B1): at BottomMainA that faces the
@@ -3329,6 +3330,29 @@ public class testEditorSurfaceRules
 
         assertFalse(panel.contains("facing == facings.get(0)"), "the Facing menu ticks the first facing when nothing"
             + " says which way the train faces - the build no longer stands it that way (GUI3-C4)");
+    }
+
+    /**
+     * Why not Moving? asks the start question of the tier it is showing (GUI4-D1).
+     *
+     * `Layout.explainCannotStart(loc, byHand)` is claimed on its own, and the editor's one call to it is what makes it
+     * reach the operator: reverted to the one-argument form, a train on Manual is told autonomy's reasons again - the
+     * shape OB-225 was - and every claim on the rule stays green.
+     *
+     * MUTATION: call the one-argument form from `composeWhy` and this fails.
+     *
+     * @throws Exception reading the source
+     */
+    @Test
+    public void testWhyNotMovingAsksTheTierItShows() throws Exception
+    {
+        String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/AutonomyEditorPanel.java")), java.nio.charset.StandardCharsets.UTF_8));
+
+        assertTrue(panel.contains("explainCannotStart(standing, byHand)"), "Why not Moving? no longer asks the start"
+            + " question of the tier it shows, so on Manual it gives autonomy's reasons (OB-225, GUI3-C1)");
+        assertFalse(panel.contains("explainCannotStart(standing)"), "Why not Moving? asks autonomy's start question"
+            + " whatever the tier (OB-225, GUI3-C1)");
     }
 
     /**

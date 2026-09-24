@@ -129,8 +129,9 @@ public class testFacingFollowsTheTrack
      * The straights are here for the same reason a control is: on `1 - Main:0,3` the two rules agree,
      * and a table containing only curves would not notice a change that broke straights.  `6,1` is
      * reachable from both ends and so offers both facings, in the order the arrival sides are visited
-     * (N, E, S, W) - which is load-bearing, because the FIRST answer is the facing a placement with
-     * nothing recorded on it actually gets.
+     * (N, E, S, W) - which is load-bearing, because on a square with no side barred the FIRST answer is
+     * the facing a placement with nothing recorded on it gets (`startableCopy` takes the first copy
+     * trains may arrive at, DCN4-C2).
      *
      * Mutation this must fail: in `AutonomySession.onwardFrom`, offer every end of every route
      * regardless of which side the train arrived by - `if (route.getA() != null) out.add(route.getA());

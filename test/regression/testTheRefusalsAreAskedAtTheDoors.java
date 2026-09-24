@@ -250,6 +250,70 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
+     * Only the rebuild's put-back stands a train on a copy of a station trains may not arrive at (REG4-C3, TDY3-A1).
+     *
+     * `moveLocomotive`'s four-argument form accepts such a copy when its last argument is true, and the guard above
+     * counts calls without reading their arguments - a door passing `true` would still read as refusing.  A placement
+     * is somebody choosing where a train goes, and none may choose a copy autonomy will not start; the put-back is the
+     * railway saying where a train already is.
+     *
+     * MUTATION: pass true from the paste door and this fails.
+     *
+     * @throws Exception reading the sources
+     */
+    @Test
+    public void testOnlyThePutBackAcceptsABarredCopy() throws Exception
+    {
+        List<String> found = new ArrayList<>();
+
+        List<java.nio.file.Path> sources = new ArrayList<>();
+
+        try (java.util.stream.Stream<java.nio.file.Path> walk = java.nio.file.Files.walk(java.nio.file.Paths.get("src")))
+        {
+            walk.filter(p -> p.toString().endsWith(".java")).forEach(sources::add);
+        }
+
+        for (java.nio.file.Path path : sources)
+        {
+            String source = withoutComments(read(path.toString().replace('\\', '/')));
+
+            for (int at = source.indexOf("moveLocomotive("); at >= 0; at = source.indexOf("moveLocomotive(", at + 1))
+            {
+                int depth = 0;
+                int end = at + "moveLocomotive(".length() - 1;
+                int commas = 0;
+                int lastComma = -1;
+
+                for (; end < source.length(); end++)
+                {
+                    char c = source.charAt(end);
+
+                    if (c == '(') depth++;
+                    else if (c == ')' && --depth == 0) break;
+                    else if (c == ',' && depth == 1)
+                    {
+                        commas++;
+                        lastComma = end;
+                    }
+                }
+
+                if (commas != 3) continue;
+
+                String last = source.substring(lastComma + 1, end).trim();
+
+                // The declaration's own parameter, and every call that passes false, refuse.
+                if (last.startsWith("boolean ") || "false".equals(last)) continue;
+
+                found.add(path.getFileName() + ": " + source.substring(at, end + 1));
+            }
+        }
+
+        assertEquals(found.toString(), "[TrainControlUI.java: moveLocomotive(was.getKey(), back.getName(), false, true)]",
+            "a door other than the rebuild's put-back may stand a train on a copy of a station trains may not arrive at"
+            + " (REG4-C3): " + found);
+    }
+
+    /**
      * How many `moveLocomotive` calls in this source have their answer tested.
      *
      * Counted rather than pattern-matched on the whole call, because the call spans lines in two of

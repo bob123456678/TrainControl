@@ -473,6 +473,12 @@ public class testATrainIsPutOnlyWhereItCanStart
         assertTrue(after != null && after.getName().equals(twin.getName()), "the train facing south at BottomMainPost was"
             + " put back on " + (after == null ? "nothing" : after.getName()) + " - " + twin.getName() + " faces south"
             + " too and autonomy can start it there (TDY4-B1)");
+
+        // AND THE BARRED ONE IS NOT CALLED BARRED (AUT4-B1): a train facing south can arrive at BottomMainPost, so
+        // telling one stood on that copy to turn round would be false.
+        assertFalse(rebuilt.isABarredCopyOfAStation(rebuilt.getPoint(barred.getName())), "BottomMainPost's south-facing"
+            + " copy trains may not arrive at counts as barred, though its turning twin faces south and is a station -"
+            + " a train stood there would be told to turn round (AUT4-B1)");
     }
 
     /**

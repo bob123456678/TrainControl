@@ -1677,6 +1677,63 @@ public class TileGraph
     }
 
     /**
+     * The first of some squares reached by leaving a square through one side, over the track as DRAWN - whichever way
+     * trains may run on it - and never past one of them (REG4-A1).
+     *
+     * An old autonomy.json joins each of its points to the next ones along the track, so this is where one of its edges
+     * could lead from a square by that side.  A shortest walk to the edge's end cannot answer that: round a loop the far
+     * end is reached both ways, and the shorter may be the way the train never went.
+     *
+     * @param from the square
+     * @param side the side to leave it by
+     * @param stops the squares a walk ends at
+     * @return the stops reached, empty when none is or the square has no track by that side
+     */
+    public Set<TileKey> firstStopsLeaving(TileKey from, Side side, Set<TileKey> stops)
+    {
+        Set<TileKey> reached = new LinkedHashSet<>();
+
+        if (from == null || side == null || stops == null || !tiles.containsKey(from)) return reached;
+
+        boolean trackThatWay = false;
+
+        for (Route route : getRoutes(from).values())
+        {
+            if (route.touches(side)) trackThatWay = true;
+        }
+
+        Landing first = trackThatWay ? landing(from, side) : null;
+
+        if (first == null || !tiles.containsKey(first.getTile())) return reached;
+
+        Set<String> seen = new java.util.HashSet<>();
+        java.util.ArrayDeque<Step> frontier = new java.util.ArrayDeque<>();
+
+        frontier.add(new Step(first.getTile(), first.getEntrySide()));
+
+        while (!frontier.isEmpty())
+        {
+            Step here = frontier.poll();
+
+            if (!seen.add(here.key())) continue;
+
+            // Back at the square it left, round a loop: that says nothing about this side.
+            if (here.tile.equals(from)) continue;
+
+            if (stops.contains(here.tile))
+            {
+                reached.add(here.tile);
+
+                continue;
+            }
+
+            frontier.addAll(continuations(here));
+        }
+
+        return reached;
+    }
+
+    /**
      * One square of an undirected walk, remembered with the side it was entered by.
      */
     private static final class Step

@@ -223,7 +223,12 @@ public class testAnImportedFacingGuessCanStart
      * 2.8.1 user meets the diagram - plain track both ways, a switch by default out of its toe only.  TopMainR1's one
      * legacy edge leads north, to TopMainPost, and 2.8.1 drove the 2-8-4 standing there no other way; but the square is
      * arrived at from both sides by default, so the first copy the build makes faces south, and the import stood the
-     * train facing south.  The file's other three placements lead the way their first copies face.
+     * train facing south.
+     *
+     * Where the diagram cannot hold the file's facing - TopMainR1Inter's edge leads east, and by default the switch
+     * above it lets no train arrive from the north, so its one copy faces north - no impossible facing is saved (OB-270),
+     * and the import names the square rather than calling it a guess.  Tunnel is not split on a fresh upgrade, so it
+     * has no facing to give.  (On Adam's own railway all three agree with the sides he bars, and hold the file's.)
      *
      * MUTATION: ignore the file's edges and guess, and this fails.
      *
@@ -268,18 +273,68 @@ public class testAnImportedFacingGuessCanStart
 
                 assertNotNull(tile, "precondition: the frozen railway has no " + each.getKey());
 
+                // NOT SPLIT: one Point, with no facing to give (Tunnel, on a fresh upgrade).
+                if (session.facingsFor(tile).isEmpty())
+                {
+                    assertTrue(session.getFacing(tile) == null && !imported.facingsNotHeld.contains(each.getKey()),
+                        "the import gave " + each.getKey() + ", a square not split into copies, a facing or a report: "
+                        + session.getFacing(tile) + ", " + imported.facingsNotHeld);
+
+                    continue;
+                }
+
+                if (!session.facingsFor(tile).containsValue(each.getValue()))
+                {
+                    assertTrue(imported.facingsNotHeld.contains(each.getKey()), "the 2.8.1 file ran the train on "
+                        + each.getKey() + " " + each.getValue() + ", which no copy of the square holds on a fresh upgrade,"
+                        + " and the import does not say so: " + imported.facingsNotHeld + ".  Its copies: "
+                        + session.facingsFor(tile) + "; the next named squares by each side: "
+                        + nextByEachSide(session, tile) + "; guessed: " + imported.facingsInvented);
+
+                    continue;
+                }
+
                 assertTrue(each.getValue() == session.getFacing(tile), "the train the 2.8.1 file stands on "
                     + each.getKey() + " was imported facing " + session.getFacing(tile) + ", and the file's edges from"
-                    + " there all lead " + each.getValue() + " - the only way 2.8.1 drove it (REG4-A1)");
+                    + " there all lead " + each.getValue() + " - the only way 2.8.1 drove it (REG4-A1).  Its copies: "
+                    + session.facingsFor(tile) + "; the next named squares by each side: " + nextByEachSide(session, tile)
+                    + "; guessed: " + imported.facingsInvented);
             }
 
             assertTrue(imported.facingsInvented == 0, "every facing the file states was read, and the import still says"
                 + " it guessed " + imported.facingsInvented);
+
+            assertTrue(session.getFacing(r1) == Side.N, "precondition of the claim's point: TopMainR1 holds the file's"
+                + " facing on a fresh upgrade, and was not checked above");
         }
         finally
         {
             deleteQuietly(fresh);
         }
+    }
+
+    /**
+     * For a failure message: the named squares a walk leaving each side of a square meets first.
+     */
+    private static String nextByEachSide(AutonomySession session, TileKey tile)
+    {
+        java.util.Set<TileKey> named = new java.util.LinkedHashSet<>(session.getStore().getNamedTiles());
+
+        StringBuilder out = new StringBuilder();
+
+        for (Side side : Side.values())
+        {
+            List<String> names = new ArrayList<>();
+
+            for (TileKey next : session.getGraph().firstStopsLeaving(tile, side, named))
+            {
+                names.add(session.getStore().getPointName(next));
+            }
+
+            out.append(side).append('=').append(names).append(' ');
+        }
+
+        return out.toString().trim();
     }
 
     private static JSONObject legacyFile() throws Exception

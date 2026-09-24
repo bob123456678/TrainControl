@@ -637,16 +637,6 @@ public class AutonomyBuilder
     }
 
     /**
-     * Which copy of a split square a placed locomotive stands on.
-     *
-     * A train facing east was reached from the west, so the copy that holds it is the one whose arrival
-     * side is the opposite of its facing.  With nothing authored the first copy is used, which is a
-     * guess - and the only wrong thing it can do is send the train off the way it came on its first
-     * move, which is why the editor offers the choice on any square where there is one to make.
-     *
-     * @return the index into nodes, always a valid one
-     */
-    /**
      * Which copy of a split square a HOME belongs on.
      *
      * A home is a property of the square - "this locomotive lives here" - but the running model hangs
@@ -724,6 +714,17 @@ public class AutonomyBuilder
      */
     private static final String HOME = "home";
 
+    /**
+     * Which copy of a split square a placed locomotive stands on.
+     *
+     * A train facing east was reached from the west, so the copy that holds it is the one whose arrival
+     * side is the opposite of its facing.  With nothing authored, `startableCopy` chooses: the first copy
+     * trains may arrive at (GUI2-B1, TDY4-C1).  That is a guess - and the only wrong thing it can do is
+     * send the train off the way it came on its first move, which is why the editor offers the choice on
+     * any square where there is one to make.
+     *
+     * @return the index into nodes, always a valid one
+     */
     private int placementCopy(List<Node> nodes, JSONObject extras)
     {
         // NOTHING SAYS WHICH WAY IT FACES: somewhere it can start (GUI2-B1), not copy zero.

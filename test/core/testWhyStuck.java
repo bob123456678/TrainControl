@@ -395,7 +395,7 @@ public class testWhyStuck
     }
 
     /**
-     * The four reasons that are about the train rather than any destination.
+     * The five reasons that are about the train rather than any destination.
      */
     @Test
     public void testALocomotiveOffTheGraphIsToldSo() throws Exception

@@ -458,14 +458,24 @@ public class AutonomySession
     {
 
         /**
-         * How many placements had a facing chosen for them because the file could not state one
-         * (ACC-C4).
+         * How many placements had a facing chosen for them because the file did not state one (ACC-C4).
          *
-         * The old format has no facing, and a split square needs one - so the import picks the first
-         * legal way round.  It is a guess, it is corrected by the first real run's capture and by the
-         * editor, and before this it was made silently AND at random.
+         * The file states one where every edge from the train's point leaves the square by one side (REG4-A1).
+         * Elsewhere a split square still needs one, so the import picks a way trains may arrive in.  It is a guess,
+         * corrected in the autonomy editor and by the first real run's capture, and before ACC-C4 it was made silently
+         * AND at random.
          */
         public int facingsInvented;
+
+        /**
+         * The points whose trains the file ran a way no copy of the square holds on this diagram (REG4-A1).
+         *
+         * A fresh upgrade's switches let trains out of their toe only, so a square the old graph was run through the
+         * other way can have one copy, facing the way the train does NOT drive.  No facing the square cannot hold is
+         * saved (Adam, OB-270), so the train is stood the only way the square allows - and named here, because unlike
+         * a guess it is known to be the other way round.
+         */
+        public final List<String> facingsNotHeld = new ArrayList<>();
         /**
          * Names written onto a square that had none.
          */
@@ -639,6 +649,131 @@ public class AutonomySession
     }
 
     /**
+     * Which way each imported train faces: the way the file ran it, and a guess only where the file cannot say.
+     *
+     * READ FROM THE FILE FIRST (REG4-A1).  The old graph had one Point per sensor and no facing field, and this used to
+     * say that the file therefore cannot state a facing.  It can, for almost every point: 2.8.1 sent a train only along
+     * the edges that start at its point, and never commanded a direction except to turn round, so where every one of
+     * them leaves the square by one side, the train drives out that way.  Eighty-eight of the ninety edges in Adam's
+     * frozen file have no reverse twin.  Guessing instead stood a train facing south at TopMainR1, whose one edge leads
+     * north - a path locked south for a train whose decoder drives it north.
+     *
+     * AFTER THE LOOP (REG4-C1).  A legacy terminus or reversing point is marked "must turn round" further down the same
+     * point's import, and a square trains must turn at has only turning copies, which face the other way from its
+     * plain ones.  Asked inside the loop, a facing was checked against copies the build would no longer make.
+     *
+     * THE GUESS, where the file cannot say - no edge, edges both ways, or an end this diagram does not draw.  A way
+     * trains may arrive in, first (REG3-C1): the build honours a recorded facing even where only a copy trains may not
+     * arrive at holds it, since the copy IS the direction, so a guess of such a facing stood the imported train where
+     * autonomy will not start it.  The first copy's only where the square has none.  Deterministic rather than random
+     * (ACC-C4), so two imports of one file agree; counted, so the log can say how many were guessed.
+     *
+     * A facing the file states and no copy holds - the diagram does not let a train arrive the way it would have to -
+     * is not saved (Adam, OB-270: *"we shouldn't allow an impossible facing to be saved"*): the train is stood the way
+     * the square allows, and named in `facingsNotHeld` rather than counted as a guess, since it is known to be the
+     * other way round from how the train drives.
+     *
+     * @param facingToFind the placed trains with no facing yet, by square and legacy point name
+     * @param edgesLeadTo each legacy point's edges, by the square each ends on (null: not on this diagram)
+     * @param pointSquares the squares the old graph had points on
+     * @param result where the guesses are counted
+     */
+    private void findTheImportedFacings(Map<TileKey, String> facingToFind, Map<String, List<TileKey>> edgesLeadTo,
+        Set<TileKey> pointSquares, LegacyImport result)
+    {
+        for (Map.Entry<TileKey, String> each : facingToFind.entrySet())
+        {
+            TileKey tile = each.getKey();
+
+            java.util.List<Side> ways = new ArrayList<>(facingsFor(tile).values());
+
+            Side ran = sideTheEdgesLeaveBy(tile, edgesLeadTo.get(each.getValue()), pointSquares);
+
+            if (ran != null && ways.contains(ran))
+            {
+                setFacing(tile, ran);
+
+                continue;
+            }
+
+            java.util.Set<Side> mayArrive = homeFacingsFor(tile);
+
+            Side guess = null;
+
+            for (Side way : ways)
+            {
+                if (mayArrive.contains(way))
+                {
+                    guess = way;
+
+                    break;
+                }
+            }
+
+            if (guess == null && !ways.isEmpty()) guess = ways.get(0);
+
+            if (guess != null)
+            {
+                setFacing(tile, guess);
+
+                if (ran != null) result.facingsNotHeld.add(each.getValue());
+                else result.facingsInvented++;
+            }
+        }
+    }
+
+    /**
+     * The one side of a square that every edge from a legacy point leaves by, or null where they leave by more than
+     * one, where there is none, or where one cannot be followed on this diagram (REG4-A1).
+     *
+     * An old edge joins a point to the next ones along the track, so the side it leaves by is the side from which its
+     * end is the next square the old graph had a point on - asked of each side, not of the shortest walk, which round
+     * a loop can reach the end the other way.  Followed over the track as drawn, whichever way trains may run on it
+     * now: the question is where the file sent the train, not whether the diagram still lets it.  An edge that ends on
+     * the same square - a station and its approach guard share a sensor - says nothing about a side; one whose end is
+     * next by both sides, or by neither, cannot say.
+     *
+     * @param tile the square the train stands on
+     * @param ends the squares the point's edges end on, null for one this diagram does not draw
+     * @param pointSquares the squares the old graph had points on
+     * @return the side, or null
+     */
+    private Side sideTheEdgesLeaveBy(TileKey tile, List<TileKey> ends, Set<TileKey> pointSquares)
+    {
+        if (tile == null || ends == null || graph == null) return null;
+
+        Map<Side, Set<TileKey>> nextBy = new LinkedHashMap<>();
+
+        for (Side side : Side.values()) nextBy.put(side, graph.firstStopsLeaving(tile, side, pointSquares));
+
+        Side only = null;
+
+        for (TileKey end : ends)
+        {
+            if (end == null) return null;
+
+            if (end.equals(tile)) continue;
+
+            Side side = null;
+
+            for (Map.Entry<Side, Set<TileKey>> by : nextBy.entrySet())
+            {
+                if (!by.getValue().contains(end)) continue;
+
+                if (side != null) return null;
+
+                side = by.getKey();
+            }
+
+            if (side == null || (only != null && only != side)) return null;
+
+            only = side;
+        }
+
+        return only;
+    }
+
+    /**
      * @param legacy the parsed autonomy.json
      * @param knownLocomotives the names the locomotive database holds, or null not to check
      * @return what was matched, placed, marked, carried and refused
@@ -692,6 +827,45 @@ public class AutonomySession
         }
 
         for (Integer sensor : ambiguous) bySensor.remove(sensor);
+
+        // WHERE EACH POINT'S EDGES LEAD (REG4-A1).  A 2.8.1 graph states direction as one-way edges - a train on a
+        // point goes only along the edges that start there - so they say which way a train standing there drives.
+        // The squares they end on, by the same sensor match as the points; null for an end this diagram does not draw.
+        Map<String, TileKey> squareOfPoint = new java.util.HashMap<>();
+
+        for (int i = 0; i < points.length(); i++)
+        {
+            org.json.JSONObject point = points.optJSONObject(i);
+
+            if (point == null) continue;
+
+            int sensor = point.optInt("s88", 0);
+
+            squareOfPoint.put(point.optString("name", ""), sensor > 0 ? bySensor.get(sensor) : null);
+        }
+
+        Map<String, List<TileKey>> edgesLeadTo = new java.util.HashMap<>();
+
+        org.json.JSONArray edges = legacy.optJSONArray("edges");
+
+        for (int i = 0; edges != null && i < edges.length(); i++)
+        {
+            org.json.JSONObject edge = edges.optJSONObject(i);
+
+            if (edge == null) continue;
+
+            edgesLeadTo.computeIfAbsent(edge.optString("start", ""), start -> new ArrayList<>())
+                .add(squareOfPoint.get(edge.optString("end", "")));
+        }
+
+        // Where the walks from a square stop: the squares the old graph had points on (REG4-A1).
+        Set<TileKey> pointSquares = new LinkedHashSet<>(squareOfPoint.values());
+
+        pointSquares.remove(null);
+
+        // The trains this import placed and whose facing it has still to find, by square and point name.  Decided
+        // after the loop, over the finished setup (REG4-C1).
+        Map<TileKey, String> facingToFind = new LinkedHashMap<>();
 
         for (int i = 0; i < points.length(); i++)
         {
@@ -762,68 +936,9 @@ public class AutonomySession
                             extras.put(AutonomyBuilder.LOCOMOTIVE,
                                 new org.json.JSONObject(standing.toString()));
 
-                            // And which way it is pointing, which the file cannot say (ACC-C4).
-                            //
-                            // This sentence read "chosen at random from this square's copies" until
-                            // 2026-09-04, and stayed that way for six lines after the randomness went
-                            // - the lead sentence contradicting the code under it, which is the
-                            // version of a stale comment that costs (OPV-C3).
-                            //
-                            // The old graph had one Point per sensor and no notion of facing, so the
-                            // file cannot say - and without one every imported locomotive lands on
-                            // whichever copy the build walked in by first, which on a real layout
-                            // means a yard full of trains all facing the same arbitrary way.
-                            //
-                            // THE FIRST ONE, NOT A RANDOM ONE.
-                            //
-                            // This read `ways.get(new Random().nextInt(ways.size()))`.  The old
-                            // format genuinely cannot state a facing, so something has to be chosen -
-                            // but choosing it by dice meant two imports of the same file could place
-                            // the same train pointing opposite ways, and nothing told the operator a
-                            // choice had been made at all.
-                            //
-                            // Deterministic is strictly better here: it is no more likely to be right,
-                            // and it makes an import reproducible, which is what lets somebody compare
-                            // two runs of it and see that nothing else moved.
-                            //
-                            // Not legality-checked, unlike placing one by hand on the diagram: that
-                            // asks the RUNNING graph which copies can be left, and during an import
-                            // there is no running graph to ask.  A copy that cannot be left is
-                            // reported by the checks, which is the same answer arrived at later.
-                            //
-                            // A WAY TRAINS MAY ARRIVE, FIRST (REG3-C1).  The build honours a recorded facing even where
-                            // only a copy trains may not arrive at holds it - the copy IS the direction, for a train that
-                            // really faces that way - so a guess of such a facing stood the imported train where autonomy
-                            // will not start it.  A guess is not a fact: the first facing trains may arrive in, and the
-                            // first copy's only where the square has none.
-                            if (getFacing(tile) == null)
-                            {
-                                java.util.List<Side> ways =
-                                    new ArrayList<>(facingsFor(tile).values());
-
-                                java.util.Set<Side> mayArrive = homeFacingsFor(tile);
-
-                                Side guess = null;
-
-                                for (Side way : ways)
-                                {
-                                    if (mayArrive.contains(way))
-                                    {
-                                        guess = way;
-
-                                        break;
-                                    }
-                                }
-
-                                if (guess == null && !ways.isEmpty()) guess = ways.get(0);
-
-                                if (guess != null)
-                                {
-                                    setFacing(tile, guess);
-
-                                    result.facingsInvented++;
-                                }
-                            }
+                            // And which way it is pointing - found after the loop, over the finished
+                            // setup (REG4-C1): see `findTheImportedFacings`.
+                            if (getFacing(tile) == null) facingToFind.put(tile, name);
 
                             result.placed++;
                         }
@@ -953,6 +1068,8 @@ public class AutonomySession
 
             result.matched++;
         }
+
+        findTheImportedFacings(facingToFind, edgesLeadTo, pointSquares, result);
 
         // AND THE SETTINGS ABOVE THE POINTS (RGN-A1).
         //
@@ -1530,8 +1647,9 @@ public class AutonomySession
      * Each copy of a square a train may be put down on, with the way it faces (OB-270, GUI-B1).
      *
      * `facingsFor` names every copy, and a square's copies are not all destinations: a copy trains may not arrive at is
-     * built as no station, and a train stood there is one autonomy will not start - *"It is standing on {0}, which is
-     * not a station."*  So a heading only such a copy holds is one no placement may give (Adam, 2026-09-23: *"we
+     * built as no station, and a train stood there is one autonomy will not start - it is told that trains may not
+     * arrive there facing its way (`autolayout.why.startFacingBarred`).  So a heading only such a copy holds is one no
+     * placement may give (Adam, 2026-09-23: *"we
      * shouldn't allow an impossible facing to be saved"*).  One method for every door that puts a train down and records
      * which way it faces - the paste, the editor's Place, the Place Locomotive dialog - where there were three spellings
      * and two of them without the test.
@@ -1621,23 +1739,25 @@ public class AutonomySession
     }
 
     /**
-     * The way a locomotive faces on a square, read off the copy the running layout has it on - or null when the railway
-     * does not have it there.
+     * The way one named locomotive faces on a square, read off the copy the running layout has it on - or null when the
+     * railway does not have it there.  `facingOnTheRailway`'s question for a particular train, asked of the same index.
      *
      * @param tile the square
      * @param locomotive the locomotive
      * @param running the running layout, or null
      * @return the side, or null
      */
-    private Side facingOnTheRailway(TileKey tile, String locomotive, org.traincontrol.automation.Layout running)
+    private Side facingOfTrainOnTheRailway(TileKey tile, String locomotive, org.traincontrol.automation.Layout running)
     {
-        if (running == null || locomotive == null || getStationIndex() == null) return null;
+        if (tile == null || running == null || locomotive == null || getStationIndex() == null) return null;
 
-        for (org.traincontrol.automation.Point point : running.getPoints())
+        for (String name : getStationIndex().pointNamesAt(tile))
         {
-            if (point.getCurrentLocomotive() == null || !locomotive.equals(point.getCurrentLocomotive().getName())) continue;
+            org.traincontrol.automation.Point copy = running.getPoint(name);
 
-            if (tile.equals(getStationIndex().squareOf(point.getName()))) return facingsFor(tile).get(point.getName());
+            if (copy == null || copy.getCurrentLocomotive() == null) continue;
+
+            if (locomotive.equals(copy.getCurrentLocomotive().getName())) return getStationIndex().facingsAt(tile).get(name);
         }
 
         return null;
@@ -1749,7 +1869,8 @@ public class AutonomySession
      * Faces a train the way it came in, because the railway has just turned it round there (REV9-A1).
      *
      * **The answer is absolute, and that is the whole point of it.**  `flipFacing` is relative - it
-     * takes what the setup has recorded for the square and writes the other choice - and the drain in
+     * takes the facing it finds for the square and writes the other choice.  Since TDY3-A2 that is the
+     * copy the railway has the train on, where it has one; it was the setup's record, and the drain in
      * `TrainControlUI.reconcileFacingWhenIdle` used it at the one moment that record cannot be
      * trusted.  behaviour.md 6a states the reason as a rule: *"a run moves trains, where they ended up
      * lives only in the running layout, and nothing writes it back to the setup when the run ends"* -
@@ -1845,9 +1966,10 @@ public class AutonomySession
      * `facingChoices`, which already knows the geometry - so the new facing is "the other choice",
      * never a direction this square has no track in.
      *
-     * **Left alone where the answer is not obvious**: a locomotive that is not placed, a square with no
-     * recorded facing, and a square offering other than two facings - where "the other one" does not
-     * mean anything. Those are reported by returning null rather than guessed at.
+     * **Left alone where the answer is not obvious**: a locomotive that is not placed, a square where
+     * neither the railway nor the setup says which way it faces, and a square offering other than two
+     * facings - where "the other one" does not mean anything. Those are reported by returning null
+     * rather than guessed at.
      *
      * **AND THE RUNNING LAYOUT, on Adam's ruling of 2026-09-06** (`DIR-B3`): *"flipFacing should also
      * update the running layout."*
@@ -1934,7 +2056,7 @@ public class AutonomySession
             // facing.  The setup's FACING is the heading it set off with until a capture writes the arrival back, so after
             // a run it is absent - and the reversal was dropped - or another train's - and the flip went the wrong way
             // while the log said it was followed.  The setup answers only where the railway does not know.
-            Side recorded = facingOnTheRailway(tile, locomotive, running);
+            Side recorded = facingOfTrainOnTheRailway(tile, locomotive, running);
 
             if (recorded == null) recorded = getFacing(tile);
 
@@ -6185,10 +6307,11 @@ public class AutonomySession
      * author for one rule (DR-B6).  A square the door declines to split offers no facing at all, which
      * is right: the build emits it whole, with no facing recorded on it to offer.
      *
-     * Ordered the way the builder orders its copies, because it IS the builder's order now - so the
-     * first answer is the one a placement with no recorded facing actually gets.  That used to be a
-     * claim about two methods agreeing, held up by a sentence and by
-     * `testTheCheckerAgreesWithTheBuild`; there is one method now.
+     * Ordered the way the builder orders its copies, because it IS the builder's order now.  The first
+     * answer is NOT what a placement with no recorded facing gets: that is `startableCopy`'s choice, the
+     * first copy trains may arrive at (GUI2-B1, TDY4-C1).  The order used to be a claim about two
+     * methods agreeing, held up by a sentence and by `testTheCheckerAgreesWithTheBuild`; there is one
+     * method now.
      *
      * @param tile
      * @return the possible facings, empty when nothing reaches the square and a single entry - which
@@ -7402,7 +7525,8 @@ public class AutonomySession
      *
      * @param tile the square to make home
      * @param locomotive the locomotive, or null to clear this square's home
-     * @param facing the way it should face there, or null to take the facing of the train standing there, if any
+     * @param facing the way it should face there, or null to take the facing of the train standing there, where a train
+     *        may be brought home in it (`knownHomeFacing`)
      */
     public void setHome(TileKey tile, String locomotive, Side facing)
     {
@@ -7492,7 +7616,8 @@ public class AutonomySession
     }
 
     /**
-     * The way a locomotive is facing on a square, if it is standing there - what its home there is set with (OB-282).
+     * The way a locomotive is facing on a square, if it is standing there (OB-282).  `knownHomeFacing` keeps it where a
+     * train may be brought home in it, and that is what its home there is set with.
      *
      * @param tile the square
      * @param locomotive the locomotive being homed there, or null

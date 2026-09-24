@@ -713,8 +713,8 @@ public class AutonomyChecks
     /**
      * A train recorded facing a way its square cannot hold.
      *
-     * The build has to put it somewhere, so it uses the first copy of the square - which may point the
-     * other way, and the train appears to have turned round on its own.  Nothing here can work out
+     * The build has to put it somewhere, so it uses the first copy trains may arrive at (`startableCopy`) -
+     * which may point the other way, and the train appears to have turned round on its own.  Nothing here can work out
      * which way it really points; only the operator can, and until now nothing told them to look.
      */
     private static List<Finding> checkFacings(GraphReducer reducer, Set<TileKey> facingsImpossible)

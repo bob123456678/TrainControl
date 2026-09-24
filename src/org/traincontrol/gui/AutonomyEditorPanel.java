@@ -3770,8 +3770,9 @@ public class AutonomyEditorPanel extends JPanel
             facingMenu.add(radio(facingGroup,
                 I18n.t("autosetup.ui.facing" + facing.name()), "autosetup.ui.hintFacing",
                 // NOTHING TICKED WHERE NOTHING IS KNOWN (GUI3-C4): with no facing recorded and none on the railway,
-                // the build stands the train on a copy it can start from, which need not be the first facing.
-                recorded != null && facing == recorded,
+                // the build stands the train on a copy it can start from, which need not be the first facing.  Where
+                // the square holds one facing, that one IS known - the only copy is where the train stands (DCN4-C3).
+                recorded != null ? facing == recorded : facings.size() == 1,
                 // The redraw is in radio() itself now (TD-1), which is where every one of these
                 // answers gets it. OB-039 fixed it here, on the one radio that had been reported, and
                 // left the station and turning radios beside it still telling nobody.
@@ -5095,8 +5096,8 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        // WHICH WAY IT SHOULD FACE THERE, where it is not standing there to say (Adam, 2026-09-23, OB-282: *"prompt the
-        // user for the direction"*).  Only the facings a train may be brought home in are offered, and a dismissed
+        // WHICH WAY IT SHOULD FACE THERE, where no train stands there facing a way it may be brought home in (Adam,
+        // 2026-09-23, OB-282: *"prompt the user for the direction"*).  Only the facings a train may be brought home in are offered, and a dismissed
         // question sets no home - the rule every question this door asks already follows.
         org.traincontrol.automationui.TilePorts.Side facing = null;
 

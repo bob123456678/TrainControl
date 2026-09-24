@@ -6475,6 +6475,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (back == null) continue;
 
+                // A STATION COPY FACING THE SAME WAY, where the recorded one is barred and the square has one
+                // (TDY4-B1, AUT4-B1) - a turning copy at a square trains may turn at.  The train faces the same way
+                // there, and autonomy can start it.
+                org.traincontrol.automation.Point twin = built.startableTwinOf(back);
+
+                if (twin != null) back = twin;
+
                 // THE RAILWAY WINS, UNLESS THIS TRAIN'S PLACEMENT IS THE EDIT (D2-A1 / W7-A1).
                 //
                 // Adam's OB-183 ruling is the default and is stated at the call site: **where a train
@@ -6495,7 +6502,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         // EXCEPT A BARRED COPY OF A STATION (TDY3-A1): a train reversed there on the throttle, or turned by
                         // the Facing menu, stands on that copy because it IS its direction.  Refused, the model kept it where
                         // the setup last had it - somewhere it is not, and free to be dispatched from there.
-                        if (!built.moveLocomotive(was.getKey(), was.getValue()[0], false, true)) continue;
+                        if (!built.moveLocomotive(was.getKey(), back.getName(), false, true)) continue;
                     }
 
                     // The arrival side goes back with the train: `Point.setLocomotive` clears it
@@ -7494,7 +7501,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                         // THE WAY IT CAME IN, NOT THE OTHER OF WHAT THE SETUP REMEMBERS (REV9-A1).
                         //
-                        // This used to call `flipFacing`, which pivots on `getFacing(tile)` - the
+                        // This used to call `flipFacing`, which then pivoted on `getFacing(tile)` - the
                         // SETUP's stored facing for the arrival square.  behaviour.md 6a says that
                         // record is stale at exactly this moment, as a rule: a run moves trains and
                         // nothing writes where they ended up back to the setup.  So the pivot was
@@ -8220,8 +8227,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Each copy of a square a train may be put down on, with the way it faces (OB-270).
      *
      * `facingsFor` names every copy, and a square's copies are not all destinations: a copy trains may not arrive at
-     * is one no placement door chooses (a train can come to stand there only by turning where it is), so a heading only
-     * such a copy holds is one no placement gives.
+     * is one no placement door chooses (a train stands there only by being there already - turned where it is,
+     * standing when the side was barred, or put back so by a rebuild), so a heading only such a copy holds is one no
+     * placement gives.
      * Choosing and recording over these alone is what keeps the paste from saving a facing the train is not standing
      * in - Adam: *"we shouldn't allow an impossible facing to be saved."*
      *

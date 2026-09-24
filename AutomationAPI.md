@@ -450,7 +450,7 @@ A value of 0 for `maxTrainLength` is default, and disables length restrictions. 
 If `atomicRoutes` is set to `false`, edges will be unlocked as the active train passes them, rather than at the end of each path.  
 This may make operation more fun/fast-paced, as new routes will start earlier, at the expense of a more complex graph configuration.
 To ensure that potential collisions are avoided, each edge must be configured with a length.  
-Edges will only be unlocked once the cumulative traversed edge length exceeds the current train's length.  In the application, since v3.0.0, Atomic Routes stays on while any edge autonomy runs over, or any train, has no length, so an unmeasured edge cannot cause an instant unlock there.  A program driving `Layout` directly sets `atomicRoutes` itself, and with it off an edge of length 0 still unlocks at once.
+Edges will only be unlocked once the cumulative traversed edge length exceeds the current train's length.  In the application, since v3.0.0, Atomic Routes stays on while any edge autonomy runs over, or any train, has no length, so an unmeasured edge cannot cause an instant unlock there.  A program driving `Layout` directly sets `atomicRoutes` itself, and with it off, a path on which no edge has a length, or a train with no length, still unlocks each edge as soon as the train has passed it; on a partly measured path an unmeasured edge counts nothing, so it is held until the measured track run since covers the train's length, or the path ends.
 Note that lock edges, which should be used for any overlapping/crossing tracks, will never be unlocked early.
 
 ## Path selection logic

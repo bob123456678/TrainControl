@@ -4932,25 +4932,24 @@ public class Layout
     {
         if (!byHand) return explainCannotStart(loc);
 
-        // BY HAND, ONLY WHAT STOPS ANY ROUTE (GUI3-C1).  A route picked by hand may start from a copy that is no station
-        // and from a square switched off (`isPathClear` fences those behind `isAutoRunning`), so those two reasons are
-        // autonomy's and not the operator's - Adam, OB-225: "in manual mode, I still get reasons like ... will never be
-        // chosen in autonomy".
+        // BY HAND, ONLY WHAT STOPS A HAND ROUTE (GUI3-C1).  A route picked by hand may start from a copy that is no station
+        // and from a square switched off while autonomy is not running - `isPathClear` fences those two rules behind
+        // `isAutoRunning` - so then they are autonomy's reasons and not the operator's (Adam, OB-225: "in manual mode, I
+        // still get reasons like ... will never be chosen in autonomy").  While autonomy runs they are the hand's too
+        // (AUT4-C1).  The pause is autonomy's alone: nothing a hand send passes through reads it (GUI4-C2).
         if (loc == null) return null;
-
-        if (loc.isAutonomyPaused()) return I18n.t("autolayout.why.paused");
 
         if (this.getLocomotiveLocation(loc) == null) return I18n.t("autolayout.why.notOnGraph");
 
-        return null;
+        return this.isAutoRunning() ? whyTheStartIsRefused(loc) : null;
     }
 
     /**
      * Why this locomotive cannot leave at all, or null when it can.
      *
-     * The four reasons that have nothing to do with any particular destination: they are about the
-     * train and the square it is standing on, and while one of them holds no destination is worth
-     * asking about.
+     * The five reasons that have nothing to do with any particular destination - paused, off the graph,
+     * facing a way trains may not arrive, not a station, switched off: they are about the train and the
+     * square it is standing on, and while one of them holds no destination is worth asking about.
      *
      * @param loc the locomotive
      * @return the reason, ready to show, or null when the train is free to be given a route
@@ -4961,6 +4960,17 @@ public class Layout
 
         if (loc.isAutonomyPaused()) return I18n.t("autolayout.why.paused");
 
+        return whyTheStartIsRefused(loc);
+    }
+
+    /**
+     * The start rules alone - where the train is, and what the square it stands on allows - without the pause.
+     *
+     * @param loc the locomotive
+     * @return the reason, or null
+     */
+    private String whyTheStartIsRefused(Locomotive loc)
+    {
         Point at = this.getLocomotiveLocation(loc);
 
         if (at == null) return I18n.t("autolayout.why.notOnGraph");
@@ -7948,7 +7958,8 @@ public class Layout
                 // release below, which is where the ordinary path clears it and where it has to be (VD10-A1).
                 //
                 // `unlockPath` reads `releasedEarly` to know which edges the tail already gave up as it
-                // passed them - on both of its roads, which it chooses by whether there are any (GUI-A1).
+                // passed them - on both of its roads, which it chooses by whether there are any and, where
+                // there are none, by the setting (GUI-A1, DCN4-C1).
                 // Emptying it first makes that lookup null, so every one of those edges is released a
                 // SECOND time and its lock edges with it - and the cost is written out at the lookup
                 // itself: "the second release would take away a claim somebody else made in between".
@@ -9014,7 +9025,7 @@ public class Layout
 
     /**
      * Whether a Point is a copy of a station square that trains may not arrive at - another copy of the same square is a
-     * station (TDY3-A1).
+     * station (TDY3-A1), and none of those faces this one's way (TDY4-B1).
      *
      * @param point the Point
      * @return true for such a copy
@@ -9022,6 +9033,10 @@ public class Layout
     public boolean isABarredCopyOfAStation(Point point)
     {
         if (point == null || point.isDestination()) return false;
+
+        // AND NO STATION COPY FACES THIS ONE'S WAY (TDY4-B1, AUT4-B1): where one does - a turning copy at a square trains
+        // may turn at - the train facing this way can stand where autonomy starts it, and `startableTwinOf` names it.
+        if (startableTwinOf(point) != null) return false;
 
         for (Point other : this.points.values())
         {
@@ -9032,7 +9047,31 @@ public class Layout
     }
 
     /**
-     * The same, and able to stand a train back on a copy of a station square trains may not arrive at (TDY3-A1).
+     * A copy of the same square that is a station and faces the same way as this one, or null (TDY4-B1, AUT4-B1).
+     *
+     * @param point a copy trains may not arrive at
+     * @return a copy a train facing the same way may stand on and be started from, or null
+     */
+    public Point startableTwinOf(Point point)
+    {
+        if (point == null || point.isDestination() || point.getCopyFacing() == null) return null;
+
+        for (Point other : this.points.values())
+        {
+            if (other != point && other.isDestination() && other.isSamePlaceAs(point)
+                && point.getCopyFacing().equals(other.getCopyFacing()))
+            {
+                return other;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Moves a locomotive to a station, as `moveLocomotive(String, String, boolean)` does - and, when
+     * `evenOntoABarredCopy`, also onto a copy of a station square trains may not arrive at, where no station copy of
+     * the square faces the same way (TDY3-A1, TDY4-B1, REG4-C3).
      *
      * A placement refuses a copy that is no station - nobody should put a train where autonomy cannot start it.  But a
      * train can be THERE: reversed on the throttle, or turned by the Facing menu, at a square whose other facing only such
@@ -10657,8 +10696,8 @@ public class Layout
      *
      * **A run that the setting changes under is unlocked by what it did** (GUI-A1).  A path releases its
      * edges under one setting and `unlockPath` finishes under the other; `unlockPath` decides how to give
-     * track back by whether that run gave any back early - the edges `releasedEarly` records - not by the
-     * setting at its end.  So neither direction gives an edge back twice: false-to-true
+     * track back by whether that run gave any back early - the edges `releasedEarly` records - and, where it
+     * gave none, by the setting at its end (DCN4-C1).  So neither direction gives an edge back twice: false-to-true
      * mid-run (the Atomic Routes gate's write, reached while trains run) stops further early releases and
      * the unlock skips the ones already made; true-to-false starts them, and the same record covers them.
      * That is about giving back twice.  True-to-false can still leave one edge held (GUI2-C1): one the tail

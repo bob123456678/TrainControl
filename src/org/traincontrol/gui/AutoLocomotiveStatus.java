@@ -896,7 +896,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         {
             String cannotStart = layout.explainCannotStart(locomotive);
 
-            if (cannotStart != null) return cannotStart;
+            // WRAPPED (GUI4-C5): the sentences with a remedy run to two hundred characters, on one line otherwise.
+            if (cannotStart != null) return AutonomyEditorPanel.wrapped(cannotStart);
 
             java.util.Map<String, String> reasons = layout.explainDestinations(locomotive);
 

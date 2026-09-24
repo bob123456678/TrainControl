@@ -1224,16 +1224,24 @@ public class AutonomyViewerPanel extends JPanel
 
             // AND THE FACINGS THAT WERE GUESSED (ACC-C4).
             //
-            // The old format cannot state which way a train faces, so a placement landing on a split
-            // square has one chosen for it.  That is unavoidable and it is a guess, and it used to be
-            // made silently - so a train pointing the wrong way after an import looked like a defect
-            // rather than the one thing the file could not tell us.
+            // The old format states which way a train faces only through its one-way edges (REG4-A1), so
+            // where they cannot say - no edge, or edges both ways - a placement landing on a split square
+            // has one chosen for it.  That is a guess, and it used to be made silently - so a train
+            // pointing the wrong way after an import looked like a defect rather than the one thing the
+            // file could not tell us.
             //
             // In the log rather than the dialog, like the list above: the dialog is already a
             // paragraph, and this is something to read once and then check on the diagram.
             if (result.facingsInvented > 0 && ui.getModel() != null)
             {
                 ui.getModel().log(I18n.f("autosetup.ui.facingsGuessed", result.facingsInvented));
+            }
+
+            // AND THE ONES THE FILE STATES AND THIS DIAGRAM CANNOT HOLD (REG4-A1), by name: stood the only way their
+            // square allows, which is the other way round from how they drive.
+            if (!result.facingsNotHeld.isEmpty() && ui.getModel() != null)
+            {
+                ui.getModel().log(I18n.f("autosetup.ui.facingsNotHeld", String.join(", ", result.facingsNotHeld)));
             }
 
             JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoLegacyImported",
