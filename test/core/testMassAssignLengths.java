@@ -2030,23 +2030,24 @@ public class testMassAssignLengths
     @Test
     public void testTheCountStopsAtATurnoutOrACrossingAsTheRuleDoes() throws IOException
     {
-        // A PERMANENT TURNOUT where the switch was: BottomMainPost's shape, and measured track beyond the turnout.
-        openBerthBehindALongerRun(componentType.CUSTOM_PERM_LEFT);
+        // A PERMANENT TURNOUT between a berth and measured track.  The turnout lets trains run from 7,1 to 1,1 only, so the
+        // berth is 1,1: its own square 1, 2,1 with no length, the turnout, and 5 on 4,1 beyond it.
+        TileKey atTheTurnout = key(1, 1);
 
-        TileKey berth = key(7, 1);
+        openBerthBehindALongerRun(componentType.CUSTOM_PERM_LEFT, atTheTurnout);
 
-        session.setTileLength(berth, 1);
-        session.setTileLength(key(5, 1), 1);
-        session.setTileLength(key(4, 1), 1);
-        session.setTileLength(key(2, 1), 5);
-        session.setPointProperty(berth, "maxTrainLength", 4);
+        session.setTileLength(atTheTurnout, 1);
+        session.setTileLength(key(4, 1), 5);
+        session.setPointProperty(atTheTurnout, "maxTrainLength", 2);
 
-        assertTrue(session.stationsWithAHalfMeasuredApproach().containsKey(berth), "a berth taking trains of 4, with 3"
-            + " measured before a permanent turnout, is not warned about - the count ran on past the turnout and counted"
-            + " the 5 beyond it, where the room walk stops (OB-233)");
+        assertTrue(session.stationsWithAHalfMeasuredApproach().containsKey(atTheTurnout), "a berth taking trains of 2,"
+            + " with 1 measured before a permanent turnout, is not warned about - the count ran on past the turnout and"
+            + " counted the 5 beyond it, where the room walk stops (OB-233)");
 
         // A CROSSING between the berth and its measured track: another road's square, which the berth rule refuses on.
         openBerthBehindACrossing();
+
+        TileKey berth = key(7, 1);
 
         session.setTileLength(berth, 1);
         session.setTileLength(key(4, 1), 3);
@@ -2057,8 +2058,8 @@ public class testMassAssignLengths
             + " beyond it, and the berth rule refuses a three-unit train at the crossing");
     }
 
-    /** The same berth with a permanent turnout, or a switch, at 3,1. */
-    private void openBerthBehindALongerRun(componentType atThree) throws IOException
+    /** The same run with a permanent turnout, or a switch, at 3,1, and the berth where asked. */
+    private void openBerthBehindALongerRun(componentType atThree, TileKey berth) throws IOException
     {
         LayoutDiagram page = new LayoutDiagram("main", 11, 4, null, null);
 
@@ -2077,8 +2078,8 @@ public class testMassAssignLengths
 
         session.open(Arrays.asList(page));
         session.initialize("Lengths");
-        session.setStation(key(7, 1), true);
-        session.setAutoDestination(key(7, 1), false);
+        session.setStation(berth, true);
+        session.setAutoDestination(berth, false);
         session.rebuild();
     }
 
@@ -2106,7 +2107,7 @@ public class testMassAssignLengths
         page.setPageId("1");
 
         session.open(Arrays.asList(page));
-        session.initialize("Lengths");
+        session.initialize("Crossing");
         session.setStation(key(7, 1), true);
         session.setAutoDestination(key(7, 1), false);
         session.rebuild();

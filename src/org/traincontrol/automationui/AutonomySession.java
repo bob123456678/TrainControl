@@ -3877,6 +3877,25 @@ public class AutonomySession
         return component != null && component.isSwitch();
     }
 
+    /**
+     * Whether a berth's room ends at this square: a switch, a permanent turnout, or a crossing (TDA-C7).
+     *
+     * The room walk ends at a switch or a permanent turnout (`GraphReducer.boundsTheRoom`, OB-233), and the berth rule
+     * refuses a train whose spending reaches a place another road runs over - which a crossing's square is.
+     *
+     * @param tile a square
+     * @return true where the berth's measured room ends
+     */
+    private boolean endsTheBerthsRoom(TileKey tile)
+    {
+        org.traincontrol.base.LayoutDiagramComponent component = getGraph().getTiles().get(tile);
+
+        if (component == null) return false;
+
+        return component.isSwitch() || TileGraph.isPermanentTurnout(component.getType())
+            || component.getType() == org.traincontrol.base.LayoutDiagramComponent.componentType.CROSSING;
+    }
+
     /** By page, then row, then column - pages compared as text, which is how they are named. */
     private int compareSquares(TileKey x, TileKey y)
     {
@@ -9584,10 +9603,11 @@ public class AutonomySession
      * is measured, the berth's own square included (PRW-B1, and since OB-278 the berth's square counts).  One measured
      * square is enough to make it
      * judge, and it then walks backwards CLAIMING each place before spending the train's length on it - so an
-     * unmeasured square, worth 0, is claimed for nothing and the train still has its whole length left when the walk
-     * runs out of places.  A one-unit train is refused as surely as a nine-unit one, and the refusal quotes the road
-     * rather than the hole in the measurements.  It is the refusing direction of a ruled rounding, so it is right;
-     * it is just not something anybody would guess at from the outside.
+     * unmeasured square, worth 0, is claimed for nothing, and a train whose length is not spent on the measured squares
+     * before the switch reaches it and is refused, quoting the road rather than the hole in the measurements.  Since
+     * OB-278 the berth's own square is spent first, so a train short enough to be spent there is not refused - which is
+     * why the count below asks about the station's longest train (OB-288, MT-552).  It is the refusing direction of a
+     * ruled rounding, so it is right; it is just not something anybody would guess at from the outside.
      *
      * **Which state is ordinary.**  Mass Assign Lengths gives every switch on a page one length in a step of its
      * own, and MT-454's steps reach it by skipping pieces - so "switches measured, some pieces still at 0" is what
@@ -9678,7 +9698,9 @@ public class AutonomySession
 
                         if (getGraph() != null && takesNoLength(tile)) continue;
 
-                        if (getGraph() != null && isSwitchSquare(tile)) break;
+                        // WHERE THE RULE STOPS (TDA-C7): a switch, a permanent turnout - the room walk's `boundsTheRoom`,
+                        // OB-233 - or a crossing, whose square is another road's and which the berth rule refuses on.
+                        if (getGraph() != null && endsTheBerthsRoom(tile)) break;
 
                         held += Math.max(0, store.getTileLength(tile));
                     }
