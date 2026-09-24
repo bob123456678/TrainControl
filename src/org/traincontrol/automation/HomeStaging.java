@@ -1126,6 +1126,17 @@ public final class HomeStaging
         // home is already home (`atHome`), so this never keeps a train from home.
         if (from.getBlock() != null && from.getBlock().equals(to.getBlock())) return null;
 
+        // ITS OWN BODY AS IT STANDS HERE, for the own-tail question below (OB-294): the road this plan moved it along
+        // where it has moved it, and what the railway records where it has not - the two bodies the runtime would walk.
+        List<Edge> cameAlong = this.movedAlong.get(loc);
+
+        if (cameAlong != null && (cameAlong.isEmpty() || !from.isSamePlaceAs(cameAlong.get(cameAlong.size() - 1).getEnd())))
+        {
+            cameAlong = null;
+        }
+
+        final Map<String, Integer> ownBody = this.layout == null ? null : this.layout.bodyOfATrainAt(from, loc, cameAlong);
+
         // The origin is exempt from every other test here - that is what stops the moving train's own
         // sensor blocking its own departure - but not from these two.  isPathClear applies its
         // inactive-point rule to every edge start including the first, and staging executes with
@@ -1302,6 +1313,13 @@ public final class HomeStaging
                 // the train - closes off the only route that could have backed it in.
                 List<Edge> route = new LinkedList<>(current.route);
                 route.add(e);
+
+                // AND NOT ROUND A LOOP INTO ITS OWN TAIL (Adam, 2026-09-24, OB-294), as `Layout.isPathClear` asks it - the
+                // one rule, not a copy.  A plan that left it out sent a 20-unit train from BottomSecondary round by the
+                // tunnel and back over its own tail, a first move the railway refuses.  Prefix-closed, like the room rule
+                // below: the question stops at the first return, so no extension of a route that meets the tail can clear
+                // it, and pruning here loses nothing.
+                if (Layout.whyItWouldMeetItsOwnTail(route, loc, ownBody) != null) continue;
 
                 // ROOM IS ASKED BEFORE THE ARRIVAL IS RECORDED (WK3-B2, D3F-B1, RT3-B1).
                 //

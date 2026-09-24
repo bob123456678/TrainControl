@@ -10249,13 +10249,43 @@ public class Layout
 
             if (standing != start && !standing.isSamePlaceAs(start)) continue;
 
-            walkOneTail(standing, loc, standing.getArrivedFrom(), standing.getArrivedAlong(),
-                new LinkedHashMap<Edge, Locomotive>(), new LinkedHashMap<String, Locomotive>(), reach);
+            reach = bodyOfATrainAt(standing, loc, null);
 
             break;
         }
 
         return whyItWouldMeetItsOwnTail(path, loc, reach);
+    }
+
+    /**
+     * Where a train's body lies as it stands at a Point, with how far behind the head each place begins (OB-294).
+     *
+     * The road it came along where one is given - Return Home's plan knows the road of a train it has moved, as
+     * `edgesATailWouldCover` takes it - and otherwise what the Point records, as every standing train is walked.
+     *
+     * @param standing where the train stands
+     * @param loc the train
+     * @param road the route it came along in a plan, or null for what the Point records
+     * @return each place its body lies on, and how far behind the head that place begins
+     */
+    Map<String, Integer> bodyOfATrainAt(Point standing, Locomotive loc, List<Edge> road)
+    {
+        Map<String, Integer> reach = new LinkedHashMap<>();
+
+        if (standing == null || loc == null || loc.getTrainLength() == null || loc.getTrainLength() <= 0) return reach;
+
+        if (road != null && !road.isEmpty())
+        {
+            walkOneTail(standing, loc, entrySideOf(road.get(road.size() - 1), standing), road,
+                new LinkedHashMap<Edge, Locomotive>(), new LinkedHashMap<String, Locomotive>(), reach);
+        }
+        else
+        {
+            walkOneTail(standing, loc, standing.getArrivedFrom(), standing.getArrivedAlong(),
+                new LinkedHashMap<Edge, Locomotive>(), new LinkedHashMap<String, Locomotive>(), reach);
+        }
+
+        return reach;
     }
 
     /**
@@ -10305,6 +10335,9 @@ public class Layout
         }
 
         int length = loc.getTrainLength();
+
+        // Indexed below, and the planner hands in linked lists.
+        if (!(path instanceof java.util.RandomAccess)) path = new ArrayList<>(path);
 
         // Where the tail must have reached, along the journey, before each place is free of the train again.
         Map<String, Integer> freeOnceTheTailPasses = new HashMap<>();
