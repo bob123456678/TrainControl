@@ -5971,7 +5971,42 @@ public class AutonomySession
             destinationCopiesWithNoWayIn(inspected, namesForInspection),
             destinationCopiesReachingNoStation(inspected, namesForInspection),
             // A station's two guards as one signal, and a guard no way into its station passes (AUT-C2).
-            guardsOnBothLists(), guardsOffTheWayIn());
+            guardsOnBothLists(), guardsOffTheWayIn(),
+            // Every square unavailable while another is occupied, station or not (Adam, 2026-09-24).
+            restrictionsToList());
+    }
+
+    /**
+     * Every square held back while another is occupied, against the names of what it watches (Adam, 2026-09-24: *"a
+     * simple info notice on restrictions (in the list for any type of station or non station)"*).
+     *
+     * Not on an excluded page, as the guards' notices are not: nothing there is built.
+     *
+     * @return the restricted squares, each against its watched squares' names
+     */
+    private Map<TileKey, String> restrictionsToList()
+    {
+        Map<TileKey, String> out = new LinkedHashMap<>();
+
+        if (store == null) return out;
+
+        for (Map.Entry<TileKey, List<TileKey>> held : store.getBlockingPoints().entrySet())
+        {
+            if (store.getExcludedPages().contains(held.getKey().getPage())) continue;
+
+            List<String> names = new ArrayList<>();
+
+            for (TileKey watched : held.getValue())
+            {
+                String name = getStationIndex() == null ? null : getStationIndex().nameOf(watched);
+
+                names.add(name == null ? String.valueOf(watched) : name);
+            }
+
+            out.put(held.getKey(), String.join(", ", names));
+        }
+
+        return out;
     }
 
     /**
@@ -6333,10 +6368,11 @@ public class AutonomySession
         // And its entry guard (FR-096), for the same reason: nothing arrives at a plain point.
         if (!station) store.setEntrySignals(tile, null);
 
-        // And being unavailable while another square is occupied (AMS-B2).  Unlike the arrival bar it is NOT inert
-        // on a square that is no longer a station - the build locks every route into it against the watched square -
-        // and the menu that clears it is offered on stations only, so left behind nothing could take it off.
-        if (!station) store.setBlockingPoints(tile, null);
+        // NOT being unavailable while another square is occupied (Adam, 2026-09-24, reversing AMS-B2: "do allow
+        // restrictions on non-stations, and let's not clear them when the type changes").  It stays in force on a square
+        // that is not a station - the build locks every route into it against the watched square - and it is taken off
+        // where it was put on, under Advanced Parameters, which every sensor square has.  The findings list names it
+        // whatever the square is (UNAVAILABLE_WHILE_OCCUPIED).
 
         touched();
     }

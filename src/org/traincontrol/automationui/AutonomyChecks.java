@@ -233,6 +233,14 @@ public class AutonomyChecks
     public static final String GUARD_OFF_THE_WAY_IN = "autosetup.ui.checkGuardOffTheWayIn";
 
     /**
+     * A square unavailable while another is occupied, station or not (Adam, 2026-09-24: *"a simple info notice on
+     * restrictions (in the list for any type of station or non station) would be better"*).  A NOTICE: the restriction
+     * is the operator's own setting, and this says where it is - it is kept when a station is made pass-through, and on
+     * such a square it is otherwise easy to forget.
+     */
+    public static final String UNAVAILABLE_WHILE_OCCUPIED = "autosetup.ui.checkUnavailableWhileOccupied";
+
+    /**
      * A station no train can arrive at any more.
      *
      * Every way in barred, which the editor refuses to do but a diagram edit can arrive at from the
@@ -407,7 +415,8 @@ public class AutonomyChecks
         Set<TileKey> notAutoDestinations,
         Map<TileKey, String> copiesWithNoWayOut, Map<TileKey, String> copiesWithNoWayIn,
         Map<TileKey, String> copiesReachingNoStation,
-        Map<TileKey, List<String>> guardsOnBothLists, Map<TileKey, List<String>> guardsOffTheWayIn)
+        Map<TileKey, List<String>> guardsOnBothLists, Map<TileKey, List<String>> guardsOffTheWayIn,
+        Map<TileKey, String> restrictions)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -458,6 +467,15 @@ public class AutonomyChecks
 
         findings.addAll(checkGuards(guardsOnBothLists, GUARD_IS_BOTH, Severity.WARNING));
         findings.addAll(checkGuards(guardsOffTheWayIn, GUARD_OFF_THE_WAY_IN, Severity.NOTICE));
+
+        // Every restriction, where it is: the square is `{0}`, what it watches `{1}`.
+        if (restrictions != null)
+        {
+            for (Map.Entry<TileKey, String> held : restrictions.entrySet())
+            {
+                findings.add(new Finding(Severity.NOTICE, UNAVAILABLE_WHILE_OCCUPIED, held.getValue(), held.getKey()));
+            }
+        }
 
         Collections.sort(findings, new java.util.Comparator<Finding>()
         {

@@ -193,7 +193,10 @@ public class AutonomyMenu extends JMenu
 
         JMenuItem documentation = new JMenuItem(I18n.t("ui.main.documentation"));
 
-        documentation.addActionListener(e -> Util.openUrl(TrainControlUI.README_URL));
+        // ON A THREAD OF ITS OWN (Adam, 2026-09-24, on MT-546: "can it get its own thread?").  Opening a browser is a
+        // call into Windows, and the event thread has nothing to wait for it about.
+        documentation.addActionListener(e -> new Thread(() -> Util.openUrl(TrainControlUI.README_URL),
+            "open the automation guide").start());
 
         add(documentation);
 
