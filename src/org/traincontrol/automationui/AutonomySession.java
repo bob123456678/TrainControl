@@ -483,6 +483,12 @@ public class AutonomySession
          * possible."*), against the way each now runs.
          */
         public final Map<TileGraph.DirectionKey, Direction> directionsCarried = new LinkedHashMap<>();
+
+        /**
+         * The pieces of track the old file ran one way and this diagram does not, left as the diagram has them because
+         * its directions have already been set (2026-09-24).
+         */
+        public int directionsNotCarried = 0;
         /**
          * Names written onto a square that had none.
          */

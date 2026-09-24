@@ -370,6 +370,50 @@ public class testAnImportedFacingGuessCanStart
     }
 
     /**
+     * Onto a diagram whose directions have been set, nothing is carried - it is counted, and the diagram is left as it
+     * is (2026-09-24).
+     *
+     * A direction left at its default is stored as nothing, so filling the gaps cannot tell track the operator left
+     * running both ways on purpose from track nobody has looked at.  On Adam's own railway - 118 directions set - the
+     * gap-fill made 176 pieces of track one-way, 170 of them plain track he runs both ways, in `setup.json`, which every
+     * configuration shares: importing an old file into a new configuration, as MT-491 does, would have changed the
+     * railway under all of them.  The upgrade Adam ruled on is a fresh diagram, which has none set.
+     *
+     * MUTATION: carry onto a diagram whose directions have been set, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testATunedDiagramGetsNoDirectionsCarried() throws Exception
+    {
+        JSONObject legacy = legacyFile();
+
+        AutonomySession session = new AutonomySession(sandbox.getFolder());
+
+        session.open(support.LayoutSandbox.wiredPages(model));
+        session.getStore().createConfiguration("Onto a tuned diagram", null);
+        session.getStore().setActiveConfiguration("Onto a tuned diagram");
+        session.rebuild();
+
+        String before = directionsHeld(session);
+
+        assertTrue(before.length() > 20, "precondition: the frozen railway has no directions set, so it is not a tuned"
+            + " diagram: " + before);
+
+        AutonomySession.LegacyImport imported = session.importLegacy(legacy);
+
+        assertTrue(imported.directionsCarried.isEmpty(), "an import onto a diagram whose directions have been set made "
+            + imported.directionsCarried.size() + " pieces of track run the old file's way - track the operator may have"
+            + " left running both ways on purpose, in the setup every configuration shares");
+
+        assertEquals(directionsHeld(session), before, "the import changed the directions of a diagram whose directions"
+            + " had been set");
+
+        assertTrue(imported.directionsNotCarried > 0, "the old file runs track one way that this diagram does not, and"
+            + " the import does not count it, so the log cannot say so");
+    }
+
+    /**
      * A direction the operator set is kept, and where it keeps a train from standing the way the file ran it, the
      * import says so (Adam: *"to the extent possible"*; OB-270).
      *
@@ -450,6 +494,14 @@ public class testAnImportedFacingGuessCanStart
             deleteQuietly(first);
             deleteQuietly(second);
         }
+    }
+
+    /**
+     * The directions the setup holds, as the setup's snapshot writes them - shared by every configuration.
+     */
+    private static String directionsHeld(AutonomySession session)
+    {
+        return String.valueOf(session.snapshotSetup().getJSONObject("shared").opt("tileDirections"));
     }
 
     /**
