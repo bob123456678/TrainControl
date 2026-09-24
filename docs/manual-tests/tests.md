@@ -27,25 +27,13 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-244](#mt-244) | 2026-08-31 | The Auto tab on a layout that has only an autonomy.json | fixed unvalidated | RGN-A2 |
 | [MT-263](#mt-263) | 2026-09-03 | The three refusals, when the graph will not build | fixed unvalidated | V31-C1, V32-C1, DY3-C7 |
 | [MT-291](#mt-291) | 2026-09-07 | The Grid tooltip, in a language you read | needs test | FR-057 (split from MT-274) |
 | [MT-298](#mt-298) | 2026-09-07 | A second import fills gaps and does not overwrite | fixed unvalidated | IPR-A1 (split from MT-243) |
 | [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
 | [MT-437](#mt-437) | 2026-09-15 | What the measured route in holds, and which tier is bound by it | needs test | FR-087 |
-| [MT-442](#mt-442) | 2026-09-15 | Why Not Moving? says a terminus is in the way, not that no track leads there | fixed unvalidated | PTR-B1 (OB-229) |
-| [MT-443](#mt-443) | 2026-09-15 | Making a square no longer a station takes Unavailable While Occupied with it | fixed unvalidated | AMS-B2 |
-| [MT-447](#mt-447) | 2026-09-15 | Unavailable While Occupied naming a station on an excluded page does not stop autonomy loading | fixed unvalidated | AMG-B1 |
-| [MT-467](#mt-467) | 2026-09-19 | Turning a local route's automatic execution on or off does not wait for the Central Station | fixed unvalidated | GUX-C5 |
 | [MT-468](#mt-468) | 2026-09-19 | Every screen still finds its text after 239 unused message keys were removed | fixed unvalidated | UIX-C4 |
-| [MT-477](#mt-477) | 2026-09-23 | The tail question lists RampDown once | fixed unvalidated | OB-276 |
-| [MT-479](#mt-479) | 2026-09-23 | An entry guard throws its signals red when a train arrives, and not when one passes | fixed unvalidated | FR-096 |
-| [MT-481](#mt-481) | 2026-09-23 | The orange line and the grey carry on across a route tile | fixed unvalidated | OB-279 |
-| [MT-482](#mt-482) | 2026-09-23 | The grey is only where the train is, and nothing past the switch | fixed unvalidated | OB-280 |
-| [MT-483](#mt-483) | 2026-09-23 | A cut train is pasted facing the way it would arrive | fixed unvalidated | OB-270 |
 | [MT-488](#mt-488) | 2026-09-23 | A train reversed on the throttle where one direction is barred | fixed unvalidated | TDY2-A1, GUI2-A1, AUT2-A1, TDY3-A1, TDY3-A2, GUI3-C1, AUT3-B1, TDY3-C1, TDY4-C3 |
-| [MT-489](#mt-489) | 2026-09-23 | The questions at a may-reverse square name the square, not a direction | fixed unvalidated | GUI-C7 |
-| [MT-490](#mt-490) | 2026-09-23 | "Page is left out" brings an open editor forward | fixed unvalidated | GUI-C8 |
 | [MT-491](#mt-491) | 2026-09-23 | An old autonomy.json's trains face the way the old version ran them | fixed unvalidated | REG4-A1, REG4-C1 |
 | [MT-492](#mt-492) | 2026-09-24 | Return Home finds a plan on a crowded railway | fixed unvalidated | OB-230, AMH-C1 |
 | [MT-494](#mt-494) | 2026-09-24 | After a run, the Facing menu turns the train that is there | fixed unvalidated | TDY4-C5 |
@@ -96,15 +84,18 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-539](#mt-539) | 2026-09-24 | Return Home brings a train back facing the way its home was set | fixed unvalidated | MT-486, OB-282 |
 | [MT-540](#mt-540) | 2026-09-24 | Setting a home for a train standing elsewhere asks which way it should face | fixed unvalidated | MT-486, OB-282 |
 | [MT-541](#mt-541) | 2026-09-24 | Why Not Moving? redoes its answer when Path Type changes | fixed unvalidated | MT-439 |
-| [MT-542](#mt-542) | 2026-09-24 | Test a Path keeps its route when Path Type changes, and changes only the note | fixed unvalidated | MT-439 |
 | [MT-543](#mt-543) | 2026-09-24 | With Not known at BottomSecondary, the tail stops at switch 51 | fixed unvalidated | MT-477 |
 | [MT-545](#mt-545) | 2026-09-24 | Quitting does not change the autonomy.json beside TrainControl | fixed unvalidated | OB-254 |
-| [MT-546](#mt-546) | 2026-09-24 | Autonomy > Documentation opens the automation guide | fixed unvalidated | OB-254 |
 | [MT-547](#mt-547) | 2026-09-24 | On a Central Station layout there is no Load Autonomy Configuration tab | fixed unvalidated | OB-254, MT-544 |
 | [MT-548](#mt-548) | 2026-09-24 | On a Central Station layout the Autonomy menu opens, and only the download and Documentation can be chosen | fixed unvalidated | OB-254, OB-093, MT-544 |
+| [MT-549](#mt-549) | 2026-09-24 | After a restart, 75 407 DB at BottomMainA is drawn in orange | fixed unvalidated | OB-290 |
+| [MT-550](#mt-550) | 2026-09-24 | A train sent by hand is refused while the setup has errors | fixed unvalidated | MT-263 |
+| [MT-551](#mt-551) | 2026-09-24 | In simulation, Preferences > Debug > Echo Sent Commands is offered and remembered | fixed unvalidated | MT-488 |
+| [MT-552](#mt-552) | 2026-09-24 | A parking berth whose own square holds its longest train is not warned about | fixed unvalidated | OB-288 |
+| [MT-553](#mt-553) | 2026-09-24 | Under Visible Elements, the autonomy editor has the gap every other heading has | fixed unvalidated | OB-289 |
 
-Everything else - 473 of 548 - needs nothing from you unless the area changes again:
-400 **fixed validated** and 73 **superseded**.
+Everything else - 487 of 553 - needs nothing from you unless the area changes again:
+414 **fixed validated** and 73 **superseded**.
 
 ---
 
@@ -251,6 +242,10 @@ Automated, as you asked twice over. `regression.testTheRefusalToStartSaysWhichTh
 Start autonomy doesn't run autonomy, as expected- I get an error message saying errors must first be fixed. Good.  But trains can still be moved manually via both the track diagram viewer and the autonomy tab, which should throw an error instead.
 
 *Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+**The Start half is as you found it; the hand half is built** (2026-09-24).  You confirmed Start is refused with the errors named.  Both hand doors - the track diagram's right-click destinations and the Auto tab's paths - now ask the question Start asks and refuse with the setup's own message.  That is MT-550.
 
 ---
 
@@ -14020,7 +14015,7 @@ be enforced by the field itself, because a Point holds one home; two copies are 
 
 ### MT-244 - 2026-08-31 - The Auto tab on a layout that has only an autonomy.json
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RGN-A2
 **Written:** 2026-08-31
 
@@ -14120,6 +14115,10 @@ Adam, 2026-09-13: *"The tab should stay shut until they import."*
 **Adam, 2026-09-24 (triage).** Works.
 
 *Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
 
 ---
 
@@ -22847,6 +22846,10 @@ Works, except that at length 5, it still can't go from tunnel to bottommainA, ev
 
 *Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-24.**
+
+**Not reproduced - one question** (2026-09-24).  On your current files a five-unit train at Tunnel (southbound) is offered BottomMainA: the measured route in is 7, and it already counts BottomMainA's own square (Tunnel to BottomMainAPre 2, BottomMainAPre to BottomMainA 5 with its 1).  Six is refused only by BottomMainA's own Max Train Length, 5.  With 19,12 unmeasured again - 5 before BottomMainA, 6 with it, which is what you describe - five is still offered.  So the rule is already inclusive, and something else refused you.  What did the refusal say - Why Not Moving?'s line for it, or the log?  (Stood on Tunnel's northbound copy, the reason is that the only route doubles back, not length.)
+
 ---
 
 <a id="mt-438"></a>
@@ -23066,7 +23069,7 @@ From the agreement check in your MT-335 log: *"planner allows 75 407 DB -> Botto
 
 ### MT-442 - 2026-09-15 - Why Not Moving? says a terminus is in the way, not that no track leads there
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** PTR-B1 (OB-229)
 
 **Written:** 2026-09-15
@@ -23104,13 +23107,17 @@ Found by the review of the OB-229 fix.  Since the route search stopped going thr
 
 *Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-443"></a>
 
 ### MT-443 - 2026-09-15 - Making a square no longer a station takes Unavailable While Occupied with it
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** AMS-B2
 
 **Written:** 2026-09-15
@@ -23137,6 +23144,14 @@ Found by the wide autonomy review.  A station can be set unavailable while anoth
 This test passes, but what happens when we re-add the restriction when it's a non-station, does it get enforced?
 
 *Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+**Answer** (2026-09-24).  It cannot be re-added from the editor: Unavailable While Occupied is offered only on a station, and making a square not a station takes it away.  The only way a non-station could carry one is a setup saved before this fix, and yours has none.  If one did, half of it would apply - routes THROUGH the square would wait on the watched square - and the other half never would, since a non-station is never a destination.  Say if you want the build to ignore one on a non-station outright.
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
 
 ---
 
@@ -23264,7 +23279,7 @@ Adam, in conversation, 2026-09-24, asked what verdict these five needed and was 
 
 ### MT-447 - 2026-09-15 - Unavailable While Occupied naming a station on an excluded page does not stop autonomy loading
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** AMG-B1
 
 **Written:** 2026-09-15
@@ -23288,6 +23303,10 @@ Found by the wide autonomy review.  The **Unavailable While Occupied...** list o
 **Adam, 2026-09-24 (triage).** Works.
 
 *Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
 
 ---
 
@@ -24158,7 +24177,7 @@ Superseded by MT-532 - one test each, so each gets its own verdict (your rule of
 
 ### MT-467 - 2026-09-19 - Turning a local route's automatic execution on or off does not wait for the Central Station
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** GUX-C5
 
 **Written:** 2026-09-19
@@ -24208,6 +24227,10 @@ What says a route came from the station is its lock: only a sync sets it, to exa
 **Adam, 2026-09-24 (triage).** Works.
 
 *Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
 
 ---
 
@@ -24792,7 +24815,7 @@ Promoted on your *Works* of 2026-09-23. Nothing Mass Assign Lengths does changed
 
 ### MT-477 - 2026-09-23 - The tail question lists RampDown once
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-276
 
 **Written:** 2026-09-23
@@ -24860,6 +24883,10 @@ Adam, in conversation, 2026-09-24, answering the question above: *"MT-477 stop a
 
 *Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-478"></a>
@@ -24909,7 +24936,7 @@ Promoted on your *Works* of 2026-09-23. Only comments changed in this area after
 
 ### MT-479 - 2026-09-23 - An entry guard throws its signals red when a train arrives, and not when one passes
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-096
 
 **Written:** 2026-09-23
@@ -24971,6 +24998,10 @@ Done.  The sentence now wraps so that the one you see before any signal is paire
 **Adam, 2026-09-24 (triage).** Works.
 
 *Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
 
 ---
 
@@ -25037,7 +25068,7 @@ Adam, in conversation, 2026-09-24, answering the question above: *"MT-480 yes"* 
 
 ### MT-481 - 2026-09-23 - The orange line and the grey carry on across a route tile
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-279
 
 **Written:** 2026-09-23
@@ -25086,13 +25117,17 @@ Held at fixed unvalidated although you said *Works*: after your run the tail wal
 
 *Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.  The orange changed after your run in one case only - a train that covers no edge (OB-290) - which this entry does not stand on.
+
 ---
 
 <a id="mt-482"></a>
 
 ### MT-482 - 2026-09-23 - The grey is only where the train is, and nothing past the switch
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-280
 
 **Written:** 2026-09-23
@@ -25134,13 +25169,17 @@ A correction to the comment above: the square a train stands on is spent first o
 
 *Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.  The orange changed after your run in one case only - a train that covers no edge (OB-290) - and the grey this entry is about did not.
+
 ---
 
 <a id="mt-483"></a>
 
 ### MT-483 - 2026-09-23 - A cut train is pasted facing the way it would arrive
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-270
 
 **Written:** 2026-09-23
@@ -25184,6 +25223,10 @@ Held at fixed unvalidated although you said *Works*: after your run, where a tra
 **Adam, 2026-09-24 (triage).** Works.
 
 *Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
 
 ---
 
@@ -25412,13 +25455,17 @@ reversing it on the throttle has no effect on autonomy.  when no autonomy or man
 
 *Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-24.**
+
+**To run now: tick Preferences > Debug > Echo Sent Commands first** (2026-09-24).  The window turns a train from the direction MESSAGE a Central Station sends back for every command, and a simulation sent nothing back - so in simulation the throttle had no effect, while on the railway it does.  Your answer: *"we can just require the test to echo packets"*, and then the switch (MT-551).  `regression.testAThrottleReversalIsFollowedFromItsEcho` holds the whole path.  The Facing menu sends no direction command, so it already does not change the throttle.
+
 ---
 
 <a id="mt-489"></a>
 
 ### MT-489 - 2026-09-23 - The questions at a may-reverse square name the square, not a direction
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** GUI-C7
 
 **Written:** 2026-09-23
@@ -25440,13 +25487,17 @@ both questions named the square with a direction already in it - "BottomMainB (e
 
 *Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-490"></a>
 
 ### MT-490 - 2026-09-23 - "Page is left out" brings an open editor forward
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** GUI-C8
 
 **Written:** 2026-09-23
@@ -25470,6 +25521,10 @@ those two and is not a step here.
 **Adam, 2026-09-24 (triage).** Works.
 
 *Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
 
 ---
 
@@ -26824,7 +26879,7 @@ autonomy editor."*
 
 ### MT-542 - 2026-09-24 - Test a Path keeps its route when Path Type changes, and changes only the note
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-439
 
 **Written:** 2026-09-24
@@ -26846,6 +26901,10 @@ autonomy editor."*
 Filed from this test: OB-288 (bug - erronous autonomy editor warning).  They are in `issues.md` until they are picked up.
 
 *Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
 
 ---
 
@@ -26879,6 +26938,10 @@ Filed from this test: OB-288 (bug - erronous autonomy editor warning).  They are
 With not known, there is no orange tail.  The tiles up to the switch are greyed out, as expected.
 
 *Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+**The missing orange is OB-290, fixed** (2026-09-24).  With Not known the tail's claim stops at switch 51 as places and covers no edge, and the orange was drawn only from covered edges - so the grey went down and the orange did not.  Run the steps again as written: the orange should now run back to switch 51.
 
 ---
 
@@ -26943,7 +27006,7 @@ With not known, there is no orange tail.  The tiles up to the switch are greyed 
 
 ### MT-546 - 2026-09-24 - Autonomy > Documentation opens the automation guide
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-254
 
 **Written:** 2026-09-24
@@ -26966,6 +27029,14 @@ With not known, there is no orange tail.  The tiles up to the switch are greyed 
 Works, but are we calling this on EDT?
 
 *Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+**Answer** (2026-09-24).  Yes, on the event thread: the menu's action calls `Desktop.browse`, which hands the address to Windows and returns, and does not take the railway's lock - so it cannot hold the window behind a running train.  The About box and the update check open the browser the same way.  Say if you want all of them moved to a thread of their own.
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
 
 ---
 
@@ -27017,5 +27088,130 @@ Works, but are we calling this on EDT?
 - Nothing else in the menu can be chosen.
 
 *What this is:* `regression.testTheOldAutonomyTabIsGone.testTheAutonomyMenuOpensOnACentralStationLayout` and `testOnlyTheDownloadAndTheGuideCanBeChosenThere`.  The download itself is MT-177's step 4, validated on 2026-08-25.
+
+---
+
+<a id="mt-549"></a>
+
+### MT-549 - 2026-09-24 - After a restart, 75 407 DB at BottomMainA is drawn in orange
+
+**Disposition:** fixed unvalidated
+**From:** OB-290
+
+**Written:** 2026-09-24
+
+**What was wrong.**  A train with no road into its platform - re-stood by a restart or an edit, or answered Not known - whose platform has more than one rail in from its side has its tail claimed up to the switch where they part (MT-477), and was greyed there but drawn nowhere in orange: the orange was drawn only from whole covered edges.  Adam, 2026-09-24: *"in the CURRENT setup, 75 407 DB gets no orange line at bottommaina.  it did earlier"*, and *"the line is still not there after an app reboot"*.
+
+**Steps**
+
+1. With 75 407 DB standing at BottomMainA as it is now, quit TrainControl and start it again.
+2. Look at BottomMainA and the track west of it.
+
+**Expected**
+
+- An orange line on BottomMainA and back along the row towards BottomMainAPre, over the squares that are greyed.
+- Nothing orange along two legs of a switch at once.
+
+*What this is:* `regression.testTheOrangeIsDrawnWhereTheTailStopsAtTheSwitch`.
+
+---
+
+<a id="mt-550"></a>
+
+### MT-550 - 2026-09-24 - A train sent by hand is refused while the setup has errors
+
+**Disposition:** fixed unvalidated
+**From:** MT-263
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Start was refused while the setup had errors, and a train could still be sent by hand from the track diagram and from the Auto tab.  Adam, 2026-09-24: *"trains can still be moved manually via both the track diagram viewer and the autonomy tab, which should throw an error instead."*
+
+**Steps**
+
+1. In the autonomy editor, go to 4 - Combined and untick Exclude Page - it repeats the other pages' sensors, so the setup will not build.  Close the editor.
+2. Right-click a train on the track diagram and choose a station to send it to.
+3. On the Auto tab, double-click one of a train's paths.
+4. Tick Exclude Page on 4 - Combined again.
+
+**Expected**
+
+- Steps 2 and 3: a message saying the setup cannot be used yet and how many things have to be dealt with first, and the train does not move.
+- Neither message says autonomy cannot start.
+
+*What this is:* `regression.testAHandSendIsRefusedWhileTheSetupIsBroken`.
+
+---
+
+<a id="mt-551"></a>
+
+### MT-551 - 2026-09-24 - In simulation, Preferences > Debug > Echo Sent Commands is offered and remembered
+
+**Disposition:** fixed unvalidated
+**From:** MT-488
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Echoing - a simulation answering every command as a Central Station would - was a constant, changed by recompiling.  Adam, 2026-09-24: *"a preference option (only when in debug+simulate mode) to turn on and off echoing"*, *"under a debug heading"*, *"a non-bold heading with a submenu that has the options"*.
+
+**Steps**
+
+1. Launch TrainControl from the triage app (simulate + debug) and open Preferences.
+2. Open Debug and tick Echo Sent Commands.
+3. Quit, launch it the same way again, and open Preferences > Debug.
+
+**Expected**
+
+- Step 1: Debug is the last item on Preferences, in ordinary type, and opens a submenu.
+- Step 3: Echo Sent Commands is still ticked.
+
+*What this is:* `regression.testTheDebugMenuSwitchesTheEcho`.  With it ticked, MT-488 can be run as written in a simulation.
+
+---
+
+<a id="mt-552"></a>
+
+### MT-552 - 2026-09-24 - A parking berth whose own square holds its longest train is not warned about
+
+**Disposition:** fixed unvalidated
+**From:** OB-288
+
+**Written:** 2026-09-24
+
+**What was wrong.**  *"<station> can refuse trains that would otherwise fit"* was listed for nearly every parking berth, measured on its own square to the longest train it takes: a warning written before a berth's own square counted (OB-278).  Adam, 2026-09-24: *"shows up on all berths, even though we have measured the s88 tile to match the berth max train size."*
+
+**Steps**
+
+1. Open the autonomy editor and read the list of things to look at.
+
+**Expected**
+
+- *can refuse trains that would otherwise fit* is listed for RampDown, BottomMainPost and LowerParkingOuter only - each measured 1 on its own square, taking trains of 3 or 4, with unmeasured track behind - and for no other berth.
+
+*What this is:* `core.testMassAssignLengths.testABerthThatHoldsItsLongestTrainIsNotWarnedAbout`.  On your files the list went from 18 berths to those 3.
+
+---
+
+<a id="mt-553"></a>
+
+### MT-553 - 2026-09-24 - Under Visible Elements, the autonomy editor has the gap every other heading has
+
+**Disposition:** fixed unvalidated
+**From:** OB-289
+
+**Written:** 2026-09-24
+
+**What was wrong.**  In the autonomy editor the first control under Visible Elements sat twice as far below it as under any other heading: the gap between Text Labels and Grid stayed when Text Labels was hidden.  Adam, 2026-09-24: *"slightly too much spacing/padding below visible elements in autonomy editor.  make it be consistent with other labels"*.
+
+**Steps**
+
+1. Open the autonomy editor and look under Visible Elements.
+2. Close it, open the track diagram editor, and look under Visible Elements there.
+
+**Expected**
+
+- The first box under the heading is the same distance below it in both.
+
+*What this is:* `regression.testTheVisibleElementsHeadingIsSpacedLikeTheOthers`.
 
 ---
