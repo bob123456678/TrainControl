@@ -93,13 +93,15 @@ public class testTheRefusalsAreAskedAtTheDoors
             + "refusal posts its dialog rather than showing it"},
         {"doSync", AUTONOMY,
             "a Central Station sync replaces the databases underneath a running railway"},
-        {"openAutonomyEditorIfItCan", EDITOR,
-            "the excluded-page label on the diagram opens the editor directly, so it needs the same "
-            + "refusal the menu item it stands for is greyed out by"},
+        // NOT the excluded-page label (`openAutonomyEditorIfItCan`), since GUI-C8: it opens the editor, and opening
+        // with an editor already open is not refused anywhere - `openLayoutEditor` brings that window forward, which
+        // is what the Edit item it stands for does (`whyAutonomyEditorCannotOpen` returns null for an open editor).
+        // Asking the refusal first showed "Close the editor first" in exactly the state the Edit item handles.
         {"refreshAutonomyPrompt", EDITOR,
             "the banner is a single button drawn before the state it guards against is entered, so it "
-            + "cannot grey itself the way the menu does - and it asks TWICE, once per action, which "
-            + "is why the count below is of call sites inside these doors rather than of doors"},
+            + "cannot grey itself the way the menu does - its Load button asks (loading saves the setup "
+            + "under an open editor); its Fix Setup button opens the editor, which brings an open one "
+            + "forward, and asks nothing since GUI-C8"},
     };
 
     /**
