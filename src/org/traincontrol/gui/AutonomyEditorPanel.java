@@ -810,9 +810,9 @@ public class AutonomyEditorPanel extends JPanel
         showParkedTrains.setFocusable(false);
         showHomeLocomotives.setFocusable(false);
 
-        // Seeded from what was restored, so Control+L comes back to the mode this window opened with
-        // rather than to the default (RGD-C3).  The listener below is added after this and does not
-        // fire for the restore.
+        // Seeded from what was restored, so the text switch turned off from Labels Only comes back to
+        // the mode this window opened with rather than to the default (RGD-C3, OB-272).  The listener
+        // below is added after this and does not fire for the restore.
         if (isACaptionMode(captions.getSelectedIndex()))
         {
             lastNamedCaptionMode = captions.getSelectedIndex();
@@ -6866,7 +6866,9 @@ public class AutonomyEditorPanel extends JPanel
      *
      * The Text Labels checkbox is hidden in autonomy mode because the dropdown shows its state: Labels
      * Only IS that switch turned on (OB-272).  Control+L steps the dropdown there (`cycleCaptionMode`)
-     * rather than flipping the switch, so this is the answer to anything else that flips it.  Written
+     * rather than flipping the switch, and `applyCaptionMode`'s own flips arrive already agreeing - so no
+     * caller in the autonomy editor reaches the re-selection below today; it is kept as the answer to
+     * anything that flips the switch on its own (DCN2-C1).  Written
      * under FR-061, when None was the switch turned off and Control+L still flipped it: pressing it with
      * "Parked Locs" selected made every caption vanish under a control still saying Parked, which is
      * OB-174's symptom ("indistinguishable from a control that does not work").

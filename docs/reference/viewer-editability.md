@@ -59,16 +59,17 @@ of them captures the running layout first** — see "What it costs", below.
 | Advanced ▸ Excluded Locomotives | `excludedLocs` |
 | Advanced ▸ Unavailable While Occupied | `blockedByPoints` (FR-001) |
 | Trains May Depart… ▸ side checkboxes, per-branch radios, Every Branch | arm open/shut; exits through `annotationsChanged`, which rebuilds the railway but redraws only the arrows (OB-185) |
-| Autonomy Uses This Link | `portalDisabled` — a missing edge in the graph |
+| Autonomy Uses This Link | `disabledLinks` — a missing edge in the graph |
 | Pair with a Link… / Unpair This Link / Name… | portal pairing and naming |
-| **Segment Length…** | `tileLength` — feeds the berth-length and reversal guards |
+| **Segment Length…** | `tileLengths` — feeds the berth-length and reversal guards |
 | Bulk Tools ▸ Clear All Locomotives | **every** placement in the setup |
 | Bulk Tools ▸ Clear All Home Locomotives | every `home` |
 | Show a Station Name Here… / Stop Showing *station* | a caption (on a text square only; the editor also offers it on a track square) |
 
-Three things the editor keeps to itself, because `menuOnly` gates them: **Exit Guard Signal…** and
-**Entry Guard Signal…** (the first was called *Signal Protecting This Station…* until 2026-09-23), and
-the caption items on a *track* square.
+Four things the editor keeps to itself, because `menuOnly` gates them: **Exit Guard Signal…** and
+**Entry Guard Signal…** (the first was called *Signal Protecting This Station…* until 2026-09-23), the
+caption items on a *track* square, and **Pick on the diagram…** in the tail menu - clicking is the
+editor's, and the viewer's menu has no grid to be clicked on.
 
 ### B. Items outside that submenu — the viewer's own
 

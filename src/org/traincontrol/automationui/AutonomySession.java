@@ -8898,7 +8898,8 @@ public class AutonomySession
      * walk spends real lengths and admits a train that fits.  Half measured is the trap.
      *
      * **Why half measured refuses everything.**  `Layout.whyABerthCannotHoldIt` declines to judge only when NOTHING
-     * on the approach but the berth's own square is measured (PRW-B1).  One measured square is enough to make it
+     * is measured, the berth's own square included (PRW-B1, and since OB-278 the berth's square counts).  One measured
+     * square is enough to make it
      * judge, and it then walks backwards CLAIMING each place before spending the train's length on it - so an
      * unmeasured square, worth 0, is claimed for nothing and the train still has its whole length left when the walk
      * runs out of places.  A one-unit train is refused as surely as a nine-unit one, and the refusal quotes the road

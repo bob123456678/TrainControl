@@ -125,7 +125,7 @@ Useful for testing, individual accessories can be directly controlled via their 
 
 **Full Autonomy**
 
-Set up on the track diagram ([user guide](Automation.md)), or via a [JSON configuration file](AutomationAPI.md) that can be built using the UI, represent your layout as a graph and enable complete automation of trains using just S88 sensors and an initial list of locomotive locations.  TrainControl will automatically keep track of where each train is located at any given time.  You can pick destinations for specific trains, or let the system continuously execute random routes.  All state is auto-saved on exit.
+Set up on the track diagram ([user guide](Automation.md)) - an older [JSON configuration file](AutomationAPI.md) can be imported from the autonomy menu - represent your layoutas a graph and enable complete automation of trains using just S88 sensors and an initial list of locomotive locations.  TrainControl will automatically keep track of where each train is located at any given time.  You can pick destinations for specific trains, or let the system continuously execute random routes.  All state is auto-saved on exit.
 
 ![Autonomy control panel in TrainControl, used to start fully autonomous train operation](assets/ui_autonomy.png?raw=true)
 
@@ -376,8 +376,8 @@ Tab icons provided by Freepik.
             - Track with no recorded length now counts as one sensor's worth, so the shortest-track and longest-track rules give different answers on a railway where most sections are unmeasured.
             - A station can be paired with signals, which are set to red while a train is standing at that station and back to green once it leaves - "Exit Guard Signal" on the station's right-click menu.  Pick each signal by clicking it on the diagram, or by typing its address.
             - A station can also have entry guard signals, set to red when a train arrives there at the end of its journey - "Entry Guard Signal" on the same menu.  The next route that needs one sets it green again.
-            - The autonomy editor's Bulk Tools menu can walk a page asking for each length that is missing - the track, each station's longest train, and each train's own length - and can clear every track length, or every station's longest train, at once.
-            - A switched-off station can no longer be sent to by hand, nor driven through: switched off now means nothing uses it.  To keep a parking track reachable by hand but out of autonomy's choices, leave it switched on and untick Can Be Chosen in Full Autonomy on its right-click menu.
+            - The autonomy editor's Bulk Tools menu can walk a page asking for each missing track length and each station's missing longest train, and walk every train autonomy would run that has no length of its own - andcan clear every track length, or every station's longest train, at once.
+            - A switched-off station can no longer be sent to by hand, nor driven through - switched off now means nothing may be sent to it or through it, though a train already standing on one can still be driven away.To keep a parking track reachable by hand but out of autonomy's choices, leave it switched on and untick Can Be Chosen in Full Autonomy on its right-click menu.
             - Atomic Routes stays switched on while any track autonomy runs over, or any train, has no length recorded, because releasing track behind a train depends on knowing how long both are.  It can be switched off once everything is measured.
             - Stations can say which directions trains are allowed to arrive from, and one-way travel restrictions are now drawn on the ordinary track diagram as well as in the editor.
             - A running train draws its route along the track, following the rails through curves and switches: red for the track ahead of it, green for the track it has already covered, and arrows showing which way it is going.

@@ -1607,10 +1607,11 @@ public class LayoutEditor extends PositionAwareJFrame
 
         // AND THE TEXT LABELS BOX, which the autonomy caption choice subsumes (FR-061).
         //
-        // Its None option IS this switch turned off, so showing both would be two controls for one
-        // decision - and the one that is only a switch cannot express the other three options. Hidden
-        // rather than removed: it belongs to the generated form, it is the plain editor's control, and
-        // Control+L still reaches it in both.
+        // Its Labels Only option IS this switch turned on (OB-272; under FR-061 None was it turned
+        // off), so showing both would be two controls for one decision - and the one that is only a
+        // switch cannot express the other four options.  Hidden rather than removed: it belongs to the
+        // generated form, and it is the plain editor's control.  Control+L reaches it only there; in
+        // the autonomy editor Control+L steps the caption dropdown (`cycleCaptionMode`).
         if (this.showTextCheckbox != null) this.showTextCheckbox.setVisible(session == null);
 
         if (session == null)
@@ -1852,9 +1853,9 @@ public class LayoutEditor extends PositionAwareJFrame
                 //
                 // It replaces two tick boxes and the form's own Text Labels switch, which were not
                 // independent: ticking either box while the text was off changed nothing anybody could
-                // see, so each box turned the text on for you (OB-174). Four options that exclude one
-                // another cannot be in a state that needs correcting, which is what "fully address it"
-                // means here.
+                // see, so each box turned the text on for you (OB-174). Options that exclude one another -
+                // five since OB-272 added Labels Only - cannot be in a state that needs correcting, which is
+                // what "fully address it" means here.
                 //
                 // In the window's own heading style, copied off jLabel1 rather than restated, like the
                 // Track Directions heading below it.
@@ -5185,10 +5186,10 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * Turns the diagram's text labels on, leaving them on if they already are (OB-174).
      *
-     * `toggleText` flips, which is the wrong verb for a caller that needs them ON: the autonomy
-     * editor's caption switches decide what a caption SAYS, and with the text hidden they change
-     * nothing the operator can see.  A flip there would turn the text OFF for somebody who already
-     * had it on.
+     * `toggleText` flips, which is the wrong verb for a caller that needs them ON.  The autonomy
+     * editor calls this for Labels Only, which IS the switch turned on (OB-272); the captions no
+     * longer depend on it - the grid asks the caption dropdown for those.  A flip there would turn
+     * the text OFF for somebody who already had it on.
      *
      * Idempotent, and it does not touch the flag when nothing needs to change - so it costs no grid
      * rebuild in the ordinary case.
@@ -5201,7 +5202,8 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * Hides the captions, idempotently - the other half of the pair (FR-061).
+     * Hides the writing on the diagram, idempotently - the other half of the pair (FR-061).  The
+     * station captions stay: since OB-272 the caption dropdown draws them, whatever this switch says.
      *
      * The autonomy editor calls it for every caption option but Labels Only, which is the switch
      * turned on (OB-272; under FR-061 it was None alone). Written as a twin of

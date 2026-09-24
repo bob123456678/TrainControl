@@ -2249,8 +2249,8 @@ public class testAutoLayout
     /**
      * A failure does not release an edge the tail had already given up (VD10-A1).
      *
-     * `unlockPath`'s non-atomic branch reads `clearedEdges` to know which edges the tail released as it
-     * passed them, so that it does not release them again. The comment at that lookup says what a
+     * `unlockPath` reads `releasedEarly` (since GUI-A1; `clearedEdges` before it) to know which edges the tail
+     * released as it passed them, so that it does not release them again.The comment at that lookup says what a
      * second release costs: *"the second release would take away a claim somebody else made in
      * between"* - the edge comes free under a train that locked it after the tail went by, and its
      * lock edges with it.
@@ -2264,7 +2264,8 @@ public class testAutoLayout
      * what is under test is whether the map is still populated when `unlockPath` runs, and seeding it
      * asks exactly that and nothing else.
      *
-     * MUTATION: moving `clearedEdges.remove(loc)` back above the release fails this.
+     * MUTATION: moving `releasedEarly.remove(loc)` back above the release fails this (it was `clearedEdges` until
+     * GUI-A1 moved what the unlock reads).
      */
     @Test
     public void testAFailureDoesNotReleaseAnEdgeTheTailAlreadyGaveUp() throws Exception
@@ -2399,7 +2400,7 @@ public class testAutoLayout
 
         assertEquals(occupancy.getInt(second), atTheMoment[0],
             "the failure released a throat this locomotive had already given up, taking away the "
-            + "claim another train made after the tail went by.  unlockPath reads clearedEdges to "
+            + "claim another train made after the tail went by.  unlockPath reads releasedEarly to "
             + "know which edges not to release twice, and the handler had emptied that map fifty "
             + "lines earlier - so the lookup was null and every early-released edge went again, "
             + "lock edges included.  The ordinary ending clears the map AFTER the release, which is "

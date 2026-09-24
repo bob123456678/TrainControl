@@ -1449,7 +1449,7 @@ public class LayoutGrid
                                 //
                                 // While this was a tick box layered over station names, falling
                                 // through to the station name was right - the box added an answer
-                                // rather than replacing one. As one of four options that exclude each
+                                // rather than replacing one. As one of five options that exclude each
                                 // other it is wrong: a mode that quietly shows another mode's content
                                 // is indistinguishable from a control that does not work, which is how
                                 // it was reported.

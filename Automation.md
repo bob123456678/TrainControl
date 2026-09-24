@@ -197,7 +197,7 @@ While autonomy is running the diagram shows you what is happening, and it is wor
 
 **A train's route is drawn along the track.** Red for the track ahead of it, green for the track it has already covered, black arrows for which way it is going. The line follows the track through curves and switches rather than cutting across them, so it reads as a route rather than as an overlay.
 
-**Station names are shown on the diagram.** In the autonomy editor, right-click a square beside a station and choose **Show a Station Name Here...** (or press Control+N over it). The caption dropdown then chooses what every such name shows: the station, the locomotive parked there, or its home locomotive. A text label typed as `Point:StationName` in an older version is taken over the first time the setup opens; one typed today is shown as plain text.
+**Station names are shown on the diagram.** In the autonomy editor, right-click a square beside a station and choose **Show a Station Name Here...** (or press Control+N over it). The caption dropdown then chooses what every such name shows: the station, the locomotive parked there, or its home locomotive. A text label typed as `Point:StationName` that names a station the setup knows is taken over as a caption whenever the setup opens - one from an older version the first time, one typed today in the track editor the next time the setup is rebuilt - and any other stays plain text.
 
 **A signal paired with a station** goes red while a train is standing there, and green again once it leaves. Pair one by right-clicking the station and picking the signal — either by clicking it on the diagram, or by typing its address.
 
@@ -223,7 +223,7 @@ When more than one route will do, TrainControl has to choose. The **Routing Logi
 | Over the longest track | The scenic route |
 | Across the fewest sensors | Fewest reporting points on the way |
 | Across the most sensors | The busiest-looking route |
-| Whichever station has gone longest without a train | For a layout with a favourite loop, so the far corner still gets visited. Station priority still applies first |
+| Least recently visited | For a layout with a favourite loop, so the far corner still gets visited. Station priority still applies first |
 | Weighing station priority against distance | The one rule that crosses priorities: a near ordinary station can beat a distant important one |
 
 The "most" and "longest" settings exist for a layout that should look busy rather than efficient. On a small layout they are the difference between a train shuttling back and forth and a train that appears to be going somewhere.
@@ -256,7 +256,7 @@ Getting everyone home is rarely as simple as driving each train to its own stati
 
 Trains must be stopped first, so use `Gracefully Stop Autonomy` if autonomy is running. If no arrangement can be found you are told so and nothing moves.
 
-To see the homes on the diagram, set the caption dropdown to **Homes**: each station caption then names its home locomotive, in black when that locomotive is standing there and in white on dark grey when it is somewhere else. The white ones are exactly what `Return Locomotives Home` would move.
+To see the homes on the diagram, set the caption dropdown to **Homes**: each station caption then names its home locomotive, in black when that locomotive is standing there and in white on dark grey when it is somewhere else. `Return Locomotives Home` moves every white one - and also a train standing on its own home turned round, where the home was set facing a way, which the caption, comparing names only, draws in black.
 
 ---
 

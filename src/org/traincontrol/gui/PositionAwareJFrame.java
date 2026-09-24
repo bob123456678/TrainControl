@@ -195,8 +195,8 @@ public class PositionAwareJFrame extends JFrame
         this.thisWindowIndex = thisWindowIndex;
     }
 
-/**
-     * The area a window can actually occupy on the screen it is on - the screen minus its taskbar.
+    /**
+     * The area a window can actually occupyon the screen it is on - the screen minus its taskbar.
      *
      * @return the usable bounds
      */

@@ -999,7 +999,7 @@ a train of any length, row by row, and asks each one's maximum - the walk refuse
 NEGATIVE is refused at the single door as well (SET-B1): `Layout.fromJSON` will not load a configuration
 carrying one, and the bulk clear counts any non-zero maximum so that one already stored can be taken off.  **Clear All Track Lengths** (FR-069)
 and **Clear All Max Train Lengths** (FR-092) each take their setting off every page after a confirmation that says how
-many.  The two WALKS - lengths and maxima - share one prompt: the number box has the keyboard focus, Enter submits,
+many.  The three WALKS - track lengths, station maxima and train lengths - share one prompt:the number box has the keyboard focus, Enter submits,
 Skip leaves the square as it was, Cancel or Escape stops, and the prompt opens where the last one was left
 until a new round is started.  The number box is asked for by name whenever the prompt gains the keyboard (Adam,
 2026-09-23, MT-474: *"make sure the text field is focused by default"*).  The two clears ask once, in a confirmation.
@@ -1497,7 +1497,8 @@ of the edge, and how long the train is.
   its platforms and nowhere else is in this state for most of its paths.
 - **A train whose length is 0**, which is what `Locomotive.trainLength` holds until somebody sets it.
   `behind >= trainLength` is then true the first time every edge is asked about, so the whole railway
-  is handed back under the train however well the track is measured.
+  is handed back under the train however well the track is measured.  **Mass Assign Train Lengths** on
+  Bulk Tools (§5b, FR-094) asks every train autonomy would run that has none.
 
 In either state the edge behind a moving train is released while the train is still lying across it,
 and the next dispatch is routed onto occupied track.  **So the railway is not allowed to run

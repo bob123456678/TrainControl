@@ -6,8 +6,8 @@
 > setting the autonomy configuration holds.
 >
 > The JSON graph described below is **deprecated** as an authoring format.  TrainControl still reads
-> it, and everything here still works, but a layout built today is built on the diagram - the graph is
-> derived from it.  The settings are the same settings either way, so the reference sections at the
+> it, and the settings below still apply, but the graph window this page describes was removed in
+> v3.0.0: a layout built today is built on the diagram, and the graph is derived from it.The settings are the same settings either way, so the reference sections at the
 > bottom of this page apply to both.
 
 
@@ -225,7 +225,7 @@ Moreover, to make it easier to create graphs, all state associated with graphs (
 
 The following example JSON corresponds to the above code/layout and edge locking.
 
-To get started, paste the JSON in TrainControl's "Autonomy" tab, then click on "Validate Configuration & Open Graph UI".  Any errors (such as non-existing edges or missing points) will be shown in the log.  You can also click on "Initialize New Configuration" and let the program load the sample JSON for you.
+To get started, paste the JSON in TrainControl's "Autonomy" tab, then click on "Validate Configuration".Any errors (such as non-existing edges or missing points) will be shown in the log.  You can also click on "Initialize New Configuration" and let the program load the sample JSON for you.
 
 If there are no errors, autonomous operation can be activated by clicking on "Start Autonomous Operation".  
 Locomotives will then continue running per the specified layout until stopped via "Graceful Stop", or reset by the former button.  Graceful Stop is recommended, as this way the state will automatically be saved when you exit the program.   Chosen paths will be shown in the log.
@@ -366,7 +366,9 @@ Details on advanced configuration parameters can be found at the end of this doc
 
 ```
 
-When the "Validate JSON" button is pressed, if the layout is valid, a visual representation will also be shown.  This visualization is updated in real time as the paths execute.
+> **The graph window this section describes was removed in v3.0.0.** Its colours and shapes are kept here for anybody reading an older `autonomy.json`; on the track diagram a running train's route is drawn along the track instead (see [Automation.md](Automation.md)).
+
+When the "Validate JSON" button was pressed, if the layout was valid, a visual representation was also shown, updated in real time as the paths executed.
 
 Edge colors:
 * Red - path is executing along this edge, edges not yet reached by the incoming train
@@ -379,7 +381,7 @@ Point colors:
 * Blue - no active route.  Label indicates if locomotive is stationed.
 * Red - active route - locomotive soon to pass through
 * Green - active route - locomotive has passed through
-* Orange - point is disabled (inactive).  Autonomous routes will never start/stop/pass through this point. (From v2.0.0)  A route you pick yourself is treated differently at the two ends: it may start from a disabled point, and may finish on one, but may never pass through one.  So disabling a station keeps autonomy away from it without putting it beyond your own reach, while disabling a point you only ever drive across takes it out of service completely.
+* Orange - point is disabled (inactive).  Autonomous routes will never start/stop/pass through this point. (From v2.0.0)  Since v3.0.0 a route you pick yourself may not pass through one or finish on one either; only a train already standing on one may still be driven away from it.  (Until then a route you picked could finish on a disabled point, which kept a disabled station within your own reach.)  Disabling a point youonly ever drive across takes it out of service completely.
 
 Point shapes and sizes work together: the SHAPE says whether trains turn here, the SIZE says whether it is a station (large) or a passing point that is not a station (small - trains pass through these while operating between stations; locomotives manually placed here will not be automatically run).
 
@@ -412,7 +414,7 @@ The three tiers differ, and it is worth knowing which is which:
 
 Separately, a train can be refused for being too long to back in, when the approach has recorded lengths whose total is shorter than the train.
 
-**How much has to be measured is currently unreliable, and is being reviewed.**  The intention is that every segment of the approach must have a length before anything is judged.  What actually happens on a diagram-derived layout is that a segment counts as measured if *any one* of the tiles it spans has a length, and the total then leaves out the rest - so the guard can refuse a train that would have fitted.  Do not rely on either reading until this is settled.
+**What counts as measured** was settled on 2026-09-06; the rule is written out in [behaviour.md](docs/reference/behaviour.md), section 5b.
 Terminus stations must have a separate set of directed outgoing edges (without cycles) that only reconnect with the main line after the train has passed through a reversing loop.
 
 If using the Java API, `Point.setTerminus` and `Locomotive.setReversible` correspond to the JSON settings above.
@@ -435,7 +437,7 @@ This applies to reversing **stations** only.  A reversing point that is not a st
 
 TrainControl's graph model can be used to automate layouts with complex designs and tons of switches. A more advanced example (automation JSON plus CS2 layout files) can be found in [cs2_sample_layout](cs2_sample_layout/config/)
 
-Everything described below is set in the autonomy editor on the track diagram since v3.0.0, by right-clicking a square; the JSON keys are what an older `autonomy.json` carries. 
+Since v3.0.0 most of what is described below is set in the autonomy editor on the track diagram - a station's settings by right-clicking its square, the rest in the autonomy settings; the JSON keys are what an older `autonomy.json` carries. 
 
 ## Train lengths and non-atomic routes
 
@@ -446,7 +448,7 @@ A value of 0 for `maxTrainLength` is default, and disables length restrictions. 
 If `atomicRoutes` is set to `false`, edges will be unlocked as the active train passes them, rather than at the end of each path.  
 This may make operation more fun/fast-paced, as new routes will start earlier, at the expense of a more complex graph configuration.
 To ensure that potential collisions are avoided, each edge must be configured with a length.  
-Edges will only be unlocked once the cumulative traversed edge length exceeds the current train's length.  A length value of 0 for any edge disables this functionality and will result in instant unlocks.
+Edges will only be unlocked once the cumulative traversed edge length exceeds the current train's length.  Since v3.0.0 `atomicRoutes` stays on while any edge autonomy runs over, or any train, has no length, so an unmeasured edge can no longer cause an instant unlock.
 Note that lock edges, which should be used for any overlapping/crossing tracks, will never be unlocked early.
 
 ## Path selection logic
@@ -475,20 +477,20 @@ However, if you want to avoid turning on the fuctions on departure / turning off
 
 Unless the `speed` is specified within the `loc` array, each locomotive's preferred speed will be used (as set in the TrainControl UI).  If neither is set, the program will revert to `defaultLocSpeed`.
 The optional `arrivalFunc` and `departureFunc` function numbers will be toggled when the locomotive is about to reach its destination and about to depart, respectively.  All these settings can be changed
-by right-clicking on any point within the graph UI.
+by right-clicking a station's square in the autonomy editor.
 
 ## Timetables  (v2.1.0+)
 
 TrainControl provides a timetable feature which can be accessed from within the autonomy tab.  This features allows the capture and subsequent execution of a predetermined sequence of (valid) paths by specific locomotives.  Timetables are stored in the autonomy JSON file and can thus be saved for later use.
 
-To record a timetable path, a valid graph must be loaded.  Then, press the `Capture Locomotive Commands` button and either start autonomous operation, or issue semi-autonomous locomotive commands manually.  Note that in the latter case, you should ensure that all required points are marked as active, since inactive points can be traversed in semi-autonomous mode, but not in timetable/fully autonomous mode.  Once you are finished, press the capture button again to un-toggle, and then begin execution by pressing `Execute Timetable`.  It is recommended to have locomotives end where they started.  This way, timetables can be continuously executed.  The `Graceful Stop` button can be used to safely pause timetable execution.
+To record a timetable path, a valid graph must be loaded.  Then, press the `Capture Locomotive Commands` button and either start autonomous operation, or issue semi-autonomous locomotive commands manually.  Note that in the latter case, you should ensure that all required points are marked as active, since inactive points cannot be passed through or sent to in either mode.Once you are finished, press the capture button again to un-toggle, and then begin execution by pressing `Execute Timetable`.  It is recommended to have locomotives end where they started.  This way, timetables can be continuously executed.  The `Graceful Stop` button can be used to safely pause timetable execution.
 
 The time between paths will be recorded and replayed.  Timetables can also be built programmatically via `Layout.setTimetable`.
 
 ## Locomotive exclusions (v2.1.5+)
 
 You can prevent locomotives from stopping at a given station by adding them to the list within the 
-`excludedLocs` JSON key on any `Point`.  This can also be set by right-clicking the station in the graph UI. Note that exclusions on stations only apply in fully autonomous operation, so locomotives can still be directed to these stations in semi-autonomous operation, and they can still pass through them.  
+`excludedLocs` JSON key on any `Point`.  This can also be set by right-clicking the station's square in the autonomy editor.Note that exclusions on stations only apply in fully autonomous operation, so locomotives can still be directed to these stations in semi-autonomous operation, and they can still pass through them.  
 
 However, if you set an exclusion on a non-station, the excluded locomotives will never be able to traverse such points on any path.
 
@@ -508,7 +510,7 @@ The allowed range is 0.1-2.0, with 1.0 (no change to the speed) being the defaul
 
 ## Displaying locomotive locations on track diagrams (v2.4.9+)
 
-> **Superseded in v3.0.0.** Station names are now placed with **Show a Station Name Here...** in the autonomy editor; a `Point:` label from an older version is taken over the first time the setup opens, and one typed today is shown as plain text.
+> **Superseded in v3.0.0.** Station names are now placed with **Show a Station Name Here...** in the autonomy editor; a `Point:` label that names a station the setup knows is taken over as a caption whenever the setup opens - one from an older version the first time, one typed today in the track editor the next time the setup is rebuilt - and any other stays plain text.
 
 If you want locomotives to also show up on the track diagram (not just in the graph UI) as they move around, simply create a text label with the value `"Point:StationName"`, where StationName corresponds to the name of the point at that location.  If a locomotive is present at that point, its name will be shown in the label.
 

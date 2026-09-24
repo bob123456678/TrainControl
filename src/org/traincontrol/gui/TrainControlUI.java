@@ -9732,7 +9732,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * ticked it.  So an upgrading user who never had was sent there on every start: with no `autonomy.json`, a modal
      * Blank / Sample chooser during start-up and a validation error after a cancel, again on every start; with a
      * 2.8.1 file, its route activations applied before anybody asked, which switches off every s88 route the file
-     * does not list.  The legacy import refuses those two keys for exactly that reason.
+     * does not list.  The legacy import refuses those two keys - `activateRoutes` and `activateRouteIDs` - for
+     * exactly that reason.
      *
      * So the JSON arm keeps 2.8.1's terms: somebody ticked the box, and there is a graph to load.  The configuration
      * arm keeps the new default.  The box still SHOWS ticked for somebody who never touched it, which is true of the

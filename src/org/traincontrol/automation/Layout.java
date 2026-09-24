@@ -1409,8 +1409,8 @@ public class Layout
         p.setHomeLoc(loc);
 
         // THE COPY IS THE FACING, and the operator chose this one (Adam, 2026-09-23, OB-282: *"it should accomplish the
-        // facing"*).  A home named here is a home on this copy; Return Home brings its locomotive back to it or its
-        // turning twin.
+        // facing"*).  A home named here is a home on this copy; Return Home brings its locomotive back to a copy of the
+        // square facing the way this one faces - not its turning twin, which faces the other way (TDY-B1).
         p.setHomeFacingFixed(loc != null);
 
         this.rebuildHomeStations();
@@ -2505,7 +2505,8 @@ public class Layout
             // `TunnelPre -> Tunnel`.
             //
             // The covered set has known this since VAL8-A1 / REG7-B3, which found the same asymmetry
-            // one layer up and fixed it by covering both directions; the lock counter never learned it.
+            // one layer up and fixed it by covering both directions - on a built graph by place since
+            // AUT-B1 (`anotherTailOn`); the lock counter never learned it.
             //
             // FOUND BY PLACE, NOT BY NAME, and the first version of this got it wrong.  The two
             // directions of one rail run between different COPIES of the two squares, because facing
@@ -7500,6 +7501,11 @@ public class Layout
             // more than the railway did, which is the worst way round for the two to disagree.
             //
             // Every fixture in the tail tests was a one-way chain, which is why this went unseen.
+            //
+            // ON A BUILT GRAPH THIS LOOP SELDOM MATCHES (AUT2-C3): the two directions of a rail there usually run between
+            // different COPIES of its squares, because facing is one-way edges, so no edge ends where this one starts and
+            // starts where it ends.  The reverse rail is refused by place instead - `anotherTailOn` (AUT-B1).  This loop
+            // covers it where both directions join the same two Points, as on a hand-written graph.
             covered.put(segment, loc);
 
             for (Edge sameRail : this.edges.values())
@@ -7906,15 +7912,16 @@ public class Layout
                 //  - It does not swallow the path's own locks either, but it no longer LEAVES them - see
                 //    the release below, which is Adam's ruling of 2026-09-03 and replaces the argument
                 //    that used to stand here.
-                // clearedEdges is NOT cleared here - it is cleared after the release below, which is
-                // where the ordinary path clears it and where it has to be (VD10-A1).
+                // releasedEarly (and clearedEdges beside it) is NOT cleared here - it is cleared after the
+                // release below, which is where the ordinary path clears it and where it has to be (VD10-A1).
                 //
-                // `unlockPath`'s non-atomic branch reads that map to know which edges the tail already
-                // gave up as it passed them.  Emptying it first makes that lookup null, so every one of
-                // those edges is released a SECOND time and its lock edges with it - and the cost is
-                // written out at the lookup itself: "the second release would take away a claim
-                // somebody else made in between".  `atomicRoutes` is false on the operator's own
-                // configuration, so this is the live branch rather than the theoretical one.
+                // `unlockPath` reads `releasedEarly` to know which edges the tail already gave up as it
+                // passed them - on both of its roads, which it chooses by whether there are any (GUI-A1).
+                // Emptying it first makes that lookup null, so every one of those edges is released a
+                // SECOND time and its lock edges with it - and the cost is written out at the lookup
+                // itself: "the second release would take away a claim somebody else made in between".
+                // `atomicRoutes` is false on the operator's own configuration, so this is the live case
+                // rather than the theoretical one.  (`clearedEdges` is what `getActiveAccs` reads.)
                 // WHETHER THIS LOCOMOTIVE EVER GOT ITS PATH, read BEFORE the removal below (ACC-A1).
                 //
                 // A locomotive joins `activeLocomotives` only after `configureAndLockPath` has
@@ -7999,8 +8006,8 @@ public class Layout
                 // Released the same way a finished path is released: same lock, and now the same
                 // ORDER, which is the half the first version of this got wrong (VD10-A1).
                 //
-                // `unlockPath` consults `clearedEdges` for the edges the tail gave up early, so it has
-                // to run while that map still has them - exactly as `executePathInternal`'s ordinary
+                // `unlockPath` consults `releasedEarly` for the edges the tail gave up early (GUI-A1), so it
+                // has to run while that map still has them - exactly as `executePathInternal`'s ordinary
                 // ending does.  The clear follows it here for the same reason it follows it there.
                 //
                 // THE TRAIN ITSELF IS STOPPED FIRST (VD10-B1).
@@ -8509,9 +8516,9 @@ public class Layout
                             //
                             // NOT "with atomicRoutes on, which is what Adam runs", which this said
                             // (VD10-C15, repaired by VD11-C1): his active configuration carries
-                            // `"atomicRoutes": false`, so the non-atomic branch of `unlockPath` - the one
-                            // that reads this map - is the branch his railway actually takes.  That is the
-                            // premise `VD10-A1` turned on.
+                            // `"atomicRoutes": false`, so early releases - which `unlockPath` reads back out
+                            // of `releasedEarly`, recorded beside this set (GUI-A1) - are what his railway
+                            // actually does.  That is the premise `VD10-A1` turned on.
                             if (!tailHasProvablyPassed(pathIsUnmeasured, waiting[1],
                                 loc.getTrainLength()))
                             {
@@ -10583,6 +10590,10 @@ public class Layout
      * setting at its end.  So neither direction gives an edge back twice or leaves one held: false-to-true
      * mid-run (the Atomic Routes gate's write, reached while trains run) stops further early releases and
      * the unlock skips the ones already made; true-to-false starts them, and the same record covers them.
+     * That is about giving back twice.  True-to-false can still leave one edge held (GUI2-C1): one the tail
+     * cleared while the run was atomic is dropped from the wait list unreleased, and if another train then
+     * takes its end Point the unlock's careful road leaves it - the cost `SVN-C17` describes, unreachable
+     * while the checkbox refuses a change mid-run.
      *
      * The interface still refuses the checkbox while `isAutoLayoutRunning()` (SVN-C17), which is a
      * statement about what an operator should be able to do mid-run rather than about safety.  Written
