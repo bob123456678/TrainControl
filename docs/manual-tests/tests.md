@@ -69,7 +69,7 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-486](#mt-486) | 2026-09-23 | Return Home brings a train back facing the way its home was set | fixed unvalidated | OB-282 |
 
 Everything else - 446 of 486 - needs nothing from you unless the area changes again:
-395 **fixed validated** and 51 **superseded**.
+394 **fixed validated** and 52 **superseded**.
 
 ---
 
@@ -2736,6 +2736,10 @@ ironwork moved.
 **Claude, 2026-09-23.**
 
 Renamed since (DCN-C6): the item this entry opens is now called Exit Guard Signal... - it was Signal Protecting This Station - on your word of 2026-09-22 ("add Signal at the end"). Nothing else this entry does has changed.
+
+**Claude, 2026-09-23.**
+
+A correction to the comment above (DCN2-C9): the rename to Exit Guard Signal was your word of 2026-09-23, not 2026-09-22.
 
 ---
 <a id="mt-024"></a>
@@ -16485,7 +16489,7 @@ Fixed, and the mechanism is the one your report names exactly - the dropdown is 
 
 ### MT-293 - 2026-09-07 - Control+L moves the caption dropdown with it
 
-**Disposition:** fixed validated
+**Disposition:** superseded
 **From:** RGD-C3 (split from MT-275)
 
 **Written:** 2026-09-07
@@ -16538,6 +16542,10 @@ Filed, both of them. *"TopMainR2 still shows two labels"* is **OB-193**, which s
 **Claude, 2026-09-23.**
 
 Overtaken on 2026-09-23 by OB-272 (DCN-C6). Control+L in the autonomy editor now steps the caption dropdown through its five options - Station Names, Parked Locs, Homes, None, Labels Only - rather than switching the text off and on, so from Parked Locs the first press gives Homes, not None. The Text Labels box is still hidden there, but it now belongs to Labels Only. MT-478 tests the new behaviour and you validated it on 2026-09-23; this entry's Expected describes the old one, so it should not be re-run as written.
+
+**Claude, 2026-09-23.**
+
+Superseded by MT-478 (DCN2-C9): OB-272 made Control+L in the autonomy editor step the caption dropdown through its five options, which MT-478 tests and you validated on 2026-09-23.  This entry's Expected describes the text switch before that.
 
 ---
 
@@ -24822,6 +24830,10 @@ grey) - each red on the whole-edge grey.
 **Adam, 2026-09-23 (triage).** Works.
 
 *Run against commit 41bd1831, build\classes, compiled 23 Sep 11:45 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-23.**
+
+Held at fixed unvalidated although you said *Works*, and the note meant for this entry on 2026-09-23 landed only on its neighbours (DCN2-C9): after your run the tail walk changed - 195aa1f1 (a tail past a switch is asked which way it lies, MT-477), 6b7301fc and 12ed2faa (the square a train stands on is spent first on every kind of square) - and that decides which squares the train lies on, so what is grey.  A re-run on the current build is all it needs.
 
 ---
 
