@@ -1105,6 +1105,14 @@ its message still says *"re-measure before assuming either way"*.
 
 Adam's call rather than a defect, carried until now only on OB-190's Inbox body, which the certified-entries clear-out of 2026-09-23 removed (DCN-C14). A journey that passes a compulsory-turn square is turned there, invisibly to the operator, so at a may-reverse destination the answer "Yes - keep the current direction" can leave the train net-reversed: measured 2026-09-08, keep ends backward and reverse ends forward. Section 3 of behaviour.md promises the opposite. The question: should keep and reverse be measured against the way the train set off, or against the way it arrives?
 
+### OB-284 - 2026-09-23 - A paste or Place where the train's heading is one only a barred copy holds turns it round
+
+**Kind:** bug  
+**Raised from:** OB-270  
+**Filed:** 2026-09-23  
+
+Adam's call.  At a square where trains may not arrive from one side - BottomMainA, arrivals from the east barred - a train can face the barred way: reversed there on the throttle, or turned by the Facing menu, it now stands on the copy facing that way (the copy is the direction; 8370abb1).  But a paste, the editor's Place and the Place Locomotive dialog choose only among facings a train may arrive in (OB-270: 'we shouldn't allow an impossible facing to be saved'), so the same train cut and pasted back onto the same square is turned round - against OB-270's other half, 'no train should inadvertently change direction when pasted'.  The question: should a placement keep a heading only a barred copy holds (the train then stands where autonomy will not start it, and says why), or keep choosing a way trains may arrive in?  (AUT2-A1's second half, AUT3-B2, DCN3-B1.)
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

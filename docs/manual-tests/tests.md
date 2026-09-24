@@ -24835,6 +24835,10 @@ grey) - each red on the whole-edge grey.
 
 Held at fixed unvalidated although you said *Works*, and the note meant for this entry on 2026-09-23 landed only on its neighbours (DCN2-C9): after your run the tail walk changed - 195aa1f1 (a tail past a switch is asked which way it lies, MT-477), 6b7301fc and 12ed2faa (the square a train stands on is spent first on every kind of square) - and that decides which squares the train lies on, so what is grey.  A re-run on the current build is all it needs.
 
+**Claude, 2026-09-23.**
+
+A correction to the comment above: the square a train stands on is spent first on every kind of square since 8370abb1, not 12ed2faa - 12ed2faa was the repair to 6b7301fc on hand-written graphs (DCN3-C7).
+
 ---
 
 <a id="mt-483"></a>
@@ -25005,5 +25009,111 @@ that does, or a bar lifted for the test.
 BottomMainA's east bar lifted: homed westbound, it comes back westbound) and `core.testAutonomyDiagramSession` (the home
 remembers its facing through a build and a capture, and no impossible facing is saved) - each red under its own
 mutation.  The question in step 3 is what only you can check.
+
+---
+
+### MT-487 - 2026-09-23 - Importing routes says they arrive switched off
+
+**Disposition:** fixed unvalidated
+**From:** REG-B3, REG2-C6
+
+**Written:** 2026-09-23
+
+**What was wrong.**  Routes read with Import Routes arrive with their automatic firing off, whatever the file says -
+your ruling of 2026-09-10 - and nothing said so.  Somebody restoring a backup found out when a train ran through a
+sensor that used to set a road.
+
+**Steps**
+
+1. Routes -> Export, and save the file somewhere.
+2. Routes -> Import, and pick that file.
+
+**Expected**
+
+- A message says how many routes were imported, that their automatic firing is off until you turn it on, and names the
+  two ways to do it - Enable Auto Execution on a route's right-click menu, and Bulk Enable.
+- The log has no "Route ... is running" line for the imported routes, and none of them fires automatically until you
+  turn it on.
+
+*What this is:* `core.testAnImportSaysItsRoutesAreOff` (the notice, and no route armed on the way in).  The message on
+screen is what only you can check.
+
+---
+
+### MT-488 - 2026-09-23 - A train reversed on the throttle where one direction is barred
+
+**Disposition:** fixed unvalidated
+**From:** TDY2-A1, GUI2-A1, AUT2-A1
+
+**Written:** 2026-09-23
+
+**What was wrong.**  At a square where trains may not arrive from one side - BottomMainA, with arrivals from the east
+barred - a train reversed on the throttle was recorded as reversed but left standing the old way round in the model, and
+the next route was locked in the direction it no longer drives.
+
+**Steps**
+
+1. With autonomy stopped, stand a train at BottomMainA facing east (75 407 DB is there now).
+2. Reverse it on the throttle.
+3. Look at the routes offered for it by hand, and at Why not Moving? for it.
+4. Reverse it again.
+
+**Expected**
+
+- Step 2: the diagram shows it facing west.
+- Step 3: the routes offered by hand lead west, the way it now faces - none east.  Autonomy will not choose it, and Why
+  not Moving? says it faces the way trains may not arrive at BottomMainA, and to turn it round or open that side under
+  Trains May Arrive...; on Manual, Why not Moving? does not say it cannot be sent.
+- Step 4: it faces east again and autonomy can start it as before.
+
+The same is true of the autonomy editor's Facing menu: choosing west there stands the train facing west.
+
+*What this is:* `core.testATrainIsPutOnlyWhereItCanStart` (the throttle, the Facing menu and the build on your frozen
+railway), red under its mutations.  Whether the diagram and the refusal read right is what only you can check.
+
+---
+
+### MT-489 - 2026-09-23 - The questions at a may-reverse square name the square, not a direction
+
+**Disposition:** fixed unvalidated
+**From:** GUI-C7
+
+**Written:** 2026-09-23
+
+**What was wrong.**  Pasting a train onto a square it may turn at asks which way it came in and which way it faces, and
+both questions named the square with a direction already in it - "BottomMainB (eastbound)".
+
+**Steps**
+
+1. Cut a train, and paste it onto BottomMainB (or any square trains may turn at).
+
+**Expected**
+
+- Each question names the square as the diagram does - "BottomMainB" - with no direction after it.
+
+*What this is:* `ui.testAPastedTrainFacesTheWayTheOperatorChose` (both questions' wording).
+
+---
+
+### MT-490 - 2026-09-23 - "Page is left out" and Fix Setup bring an open editor forward
+
+**Disposition:** fixed unvalidated
+**From:** GUI-C8
+
+**Written:** 2026-09-23
+
+**What was wrong.**  With an editor already open, clicking the "page is left out" label on the diagram - or Fix Setup
+on the banner - said "Close the editor first", where the Edit item it stands for brings the open editor forward.
+
+**Steps**
+
+1. Open the track editor or the autonomy editor, and put the main window in front of it.
+2. On a page autonomy leaves out, click the label saying so.
+
+**Expected**
+
+- The open editor comes to the front; no message.
+
+*What this is:* `regression.testEditorSurfaceRules` and `regression.testTheRefusalsAreAskedAtTheDoors`.
 
 ---
