@@ -7702,7 +7702,10 @@ public class testAutonomyDiagramSession
 
         session.rebuild();
 
-        assertTrue(unreachable(session.check()).contains(middle),
+        // SAID IN ITS OWN WORDS SINCE FR-101 (Adam, 2026-09-24): *"Update the error message to say that is marked for
+        // nothing to be able to pass"* - the closed station is named as closed rather than as unreachable, which it
+        // also is.
+        assertEquals(findingsAbout(org.traincontrol.automationui.AutonomyChecks.STATION_CLOSED, middle), 1,
             "a station switched out of service is still offered as somewhere to send a train.  "
             + "Inactive means nothing can pass - the runtime refuses it as a destination at every "
             + "door now, so offering it is a destination the railway will refuse.  Findings: "

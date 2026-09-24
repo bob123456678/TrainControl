@@ -173,6 +173,14 @@ public class AutonomyChecks
 
     public static final String STATION_REACHES_NOTHING = "autosetup.ui.checkStationReachesNothing";
     public static final String STATION_UNREACHABLE = "autosetup.ui.checkStationUnreachable";
+
+    /**
+     * A station set to No - Nothing Can Pass (FR-101).  Adam, 2026-09-24: *"these show 'no train can reach &lt;point&gt; from
+     * any other station....check the direction'.  Update the error message to say that is marked for nothing to be able
+     * to pass, user to validate if intentional."*  Said once, in place of the two reachability sentences, which were
+     * true and sent the reader to the directions for a square switched out on purpose.
+     */
+    public static final String STATION_CLOSED = "autosetup.ui.checkStationClosed";
     public static final String TERMINUS_STRANDED = "autosetup.ui.checkTerminusStranded";
     public static final String POINT_ISOLATED = "autosetup.ui.checkPointIsolated";
     public static final String RUN_CLOSED_BOTH_WAYS = "autosetup.ui.checkRunClosedBothWays";
@@ -332,6 +340,16 @@ public class AutonomyChecks
     public static final String RUN_IN_SHORTER_THAN_THE_BERTH = "autosetup.ui.checkRunInShorterThanTheBerth";
 
     /**
+     * The same finding at a station autonomy may choose, where the train is not refused (MT-555).
+     *
+     * Adam, 2026-09-24: *"so a train longer than x is refused" - "so a train longer than x may block other parts of the
+     * layout..."*.  `Layout.whyTooLongForThisRoute` refuses a train longer than the run-in at a parking berth, and at a
+     * station autonomy may choose admits it as far as the measured route in holds (FR-087): it stands across the switch
+     * and closes the railway behind it until it leaves.  One sentence could only be true of one of them.
+     */
+    public static final String RUN_IN_SHORTER_THAN_THE_PLATFORM = "autosetup.ui.checkRunInShorterThanThePlatform";
+
+    /**
      * The other end of the same sum: a station that will take a train of any length (FR-046).
      *
      * Said separately because the two are set in different places by different people - the length on
@@ -424,7 +442,7 @@ public class AutonomyChecks
 
         findings.addAll(checkDuplicateLocomotives(placedLocomotives));
         findings.addAll(checkLengths(reducer, withoutTrainLength, withoutMaxLength, shortRunIns,
-            halfMeasured, placedLocomotives));
+            halfMeasured, placedLocomotives, notAutoDestinations));
         findings.addAll(checkRepeatedSensorPages(repeatedSensorPages));
         findings.addAll(checkTermini(reducer, terminiWithTwoWaysIn));
 
@@ -456,7 +474,7 @@ public class AutonomyChecks
         findings.addAll(checkStationLabels(reducer, labelledStations));
         findings.addAll(checkIsolatedPoints(reducer));
         findings.addAll(checkClosedRuns(graph, reducer));
-        findings.addAll(checkHomesThatNeedReversing(reducer, homes, mustTurn));
+        findings.addAll(checkHomesThatNeedReversing(reducer, homes, mustTurn, notAutoDestinations));
         findings.addAll(checkReversalsWithoutLength(reducer, reversalsWithoutLength));
         findings.addAll(checkBadCopies(copiesWithNoWayOut, COPY_NO_WAY_OUT));
         findings.addAll(checkBadCopies(copiesWithNoWayIn, COPY_NO_WAY_IN));
@@ -930,11 +948,15 @@ public class AutonomyChecks
      * real place, and a home there is a reasonable thing to want.  It is said out loud so the
      * limitation is read here rather than discovered at the end of a session.
      *
+     * **Not at a parking berth** (MT-552; Adam, 2026-09-24, of TopMainR0Park: *"moot since it is a parking berth.
+     * Non-reversible trains can still be backed in there."*).
+     *
      * @param homes the squares carrying an authored home
      * @param mustTurn the squares where turning round is compulsory
+     * @param notAutoDestinations the stations autonomy never chooses - the parking berths
      */
     private static List<Finding> checkHomesThatNeedReversing(GraphReducer reducer,
-        Set<TileKey> homes, Set<TileKey> mustTurn)
+        Set<TileKey> homes, Set<TileKey> mustTurn, Set<TileKey> notAutoDestinations)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -943,6 +965,8 @@ public class AutonomyChecks
         for (TileKey tile : homes)
         {
             if (!mustTurn.contains(tile)) continue;
+
+            if (notAutoDestinations != null && notAutoDestinations.contains(tile)) continue;
 
             ReducedPoint point = reducer.getPoints().get(tile);
 
@@ -1065,7 +1089,7 @@ public class AutonomyChecks
      */
     private static List<Finding> checkLengths(GraphReducer reducer, Set<TileKey> withoutTrainLength,
         Set<TileKey> withoutMaxLength, Map<TileKey, int[]> shortRunIns,
-        Map<TileKey, Integer> halfMeasured, Map<TileKey, String> placed)
+        Map<TileKey, Integer> halfMeasured, Map<TileKey, String> placed, Set<TileKey> notAutoDestinations)
     {
         List<Finding> findings = new ArrayList<>();
 
@@ -1113,7 +1137,11 @@ public class AutonomyChecks
                 GraphReducer.ReducedPoint point =
                     reducer == null ? null : reducer.getPoints().get(station.getKey());
 
-                findings.add(new Finding(Severity.NOTICE, RUN_IN_SHORTER_THAN_THE_BERTH,
+                // REFUSED AT A BERTH, STANDING ACROSS THE SWITCH AT A PLATFORM (MT-555): the sentence says which.
+                boolean berth = notAutoDestinations != null && notAutoDestinations.contains(station.getKey());
+
+                findings.add(new Finding(Severity.NOTICE,
+                    berth ? RUN_IN_SHORTER_THAN_THE_BERTH : RUN_IN_SHORTER_THAN_THE_PLATFORM,
                     point == null ? String.valueOf(station.getKey()) : point.getName(),
                     station.getKey(), station.getValue()[0], station.getValue()[1]));
             }
@@ -1342,8 +1370,19 @@ public class AutonomyChecks
                 reducer.reachableTiles(station.getTile(), mayTurn, mustTurn, barred, closed));
         }
 
+        // A STATION NOTHING CAN PASS IS SAID TO BE, and left out of the two sentences below (FR-101).
         for (ReducedPoint station : stations)
         {
+            if (closed != null && closed.contains(station.getTile()))
+            {
+                findings.add(new Finding(Severity.WARNING, STATION_CLOSED, station.getName(), station.getTile()));
+            }
+        }
+
+        for (ReducedPoint station : stations)
+        {
+            if (closed != null && closed.contains(station.getTile())) continue;
+
             Set<TileKey> reachable = reach.get(station.getTile());
 
             boolean reachesAStation = false;
@@ -1374,6 +1413,8 @@ public class AutonomyChecks
         // and the other direction: a station nothing can reach can never be a destination
         for (ReducedPoint station : stations)
         {
+            if (closed != null && closed.contains(station.getTile())) continue;
+
             boolean reachable = false;
 
             for (ReducedPoint other : stations)

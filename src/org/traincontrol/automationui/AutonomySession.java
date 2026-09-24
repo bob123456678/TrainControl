@@ -3288,6 +3288,11 @@ public class AutonomySession
             {
                 if (!arriving.getEnd().equals(tile)) continue;
 
+                // NOT A SIDE NO TRAIN ARRIVES BY (MT-552; Adam, 2026-09-24, of RampDown and BottomMainPost: *"they only
+                // accept arrivals from one side"*).  A barred side is an approach no train uses, so nothing about its
+                // track can refuse one - and the walk the rule stands for never starts from it.
+                if (getBarredArrivals(tile).contains(arriving.getEntrySide())) continue;
+
                 anApproachExists = true;
 
                 // AN ANSWERED 0 IS NOT MISSING (Adam, 2026-09-23: "stop listing answered zeros as missing").  The
@@ -9622,6 +9627,11 @@ public class AutonomySession
             {
                 if (!arriving.getEnd().equals(square)) continue;
 
+                // NOT A SIDE NO TRAIN ARRIVES BY (MT-552; Adam, 2026-09-24, of RampDown and BottomMainPost: *"they only
+                // accept arrivals from one side"*).  A barred side is an approach no train uses, so nothing about its
+                // track can refuse one - and the walk the rule stands for never starts from it.
+                if (getBarredArrivals(square).contains(arriving.getEntrySide())) continue;
+
                 boolean anyMeasured = false;
                 int unmeasured = 0;
 
@@ -9735,6 +9745,11 @@ public class AutonomySession
             for (GraphReducer.ReducedEdge arriving : reducer.getEdges())
             {
                 if (!arriving.getEnd().equals(square)) continue;
+
+                // NOT A SIDE NO TRAIN ARRIVES BY (MT-552; Adam, 2026-09-24, of RampDown and BottomMainPost: *"they only
+                // accept arrivals from one side"*).  A barred side is an approach no train uses, so nothing about its
+                // track can refuse one - and the walk the rule stands for never starts from it.
+                if (getBarredArrivals(square).contains(arriving.getEntrySide())) continue;
 
                 int room = arriving.getRoomAtTheEnd();
 
