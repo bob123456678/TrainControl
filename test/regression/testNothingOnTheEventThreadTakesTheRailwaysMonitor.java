@@ -223,6 +223,10 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "OFF THE EVENT THREAD: reached only from TrainControlUI.workOutCoveredTrack, on"
             + " CoveredTrackRenderer - the covered set's sibling, asked in the same pass");
 
+        ALLOWED.put("AutonomySession.java#drawTheTrainsThatCoverNoEdge",
+            "OFF THE EVENT THREAD: private, and called only from routesCoveredByStandingTrains above, on"
+            + " CoveredTrackRenderer (OB-290)");
+
         // ------------------------------------------------------------ on the event thread, and why
 
         ALLOWED.put("AutoLocomotiveStatus.java#updateState",
