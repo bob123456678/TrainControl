@@ -1613,6 +1613,9 @@ public class LayoutEditor extends PositionAwareJFrame
         // the autonomy editor Control+L steps the caption dropdown (`cycleCaptionMode`).
         if (this.showTextCheckbox != null) this.showTextCheckbox.setVisible(session == null);
 
+        // And the gap under it, which is its own (OB-289).
+        if (this.gapUnderTextLabels != null) this.gapUnderTextLabels.setVisible(session == null);
+
         if (session == null)
         {
             if (autonomyPanel != null)
@@ -3970,11 +3973,25 @@ public class LayoutEditor extends PositionAwareJFrame
         showGridCheckbox.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
 
         column.add(this.showTextCheckbox);
-        column.add(javax.swing.Box.createVerticalStrut(HEADING_GAP));
+
+        gapUnderTextLabels = javax.swing.Box.createVerticalStrut(HEADING_GAP);
+        gapUnderTextLabels.setVisible(this.showTextCheckbox.isVisible());
+
+        column.add(gapUnderTextLabels);
         column.add(showGridCheckbox);
     }
 
     private javax.swing.JCheckBox showGridCheckbox;
+
+    /**
+     * The gap between Text Labels and Grid, which goes with Text Labels (OB-289).
+     *
+     * The autonomy editor hides Text Labels, which its caption choice replaces (FR-061), and the gap left standing
+     * put itself at the top of the column - twice the space under Visible Elements that every other heading has under
+     * it.  Adam, 2026-09-24: *"slightly too much spacing/padding below "visible elements" in autonomy editor.  make it
+     * be consistent with other labels"*.
+     */
+    private java.awt.Component gapUnderTextLabels;
 
     /**
      * Whether the editor draws its grey grid.
