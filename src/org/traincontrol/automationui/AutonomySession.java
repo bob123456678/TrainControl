@@ -790,14 +790,36 @@ public class AutonomySession
                             // asks the RUNNING graph which copies can be left, and during an import
                             // there is no running graph to ask.  A copy that cannot be left is
                             // reported by the checks, which is the same answer arrived at later.
+                            //
+                            // A WAY TRAINS MAY ARRIVE, FIRST (REG3-C1).  The build honours a recorded facing even where
+                            // only a copy trains may not arrive at holds it - the copy IS the direction, for a train that
+                            // really faces that way - so a guess of such a facing stood the imported train where autonomy
+                            // will not start it.  A guess is not a fact: the first facing trains may arrive in, and the
+                            // first copy's only where the square has none.
                             if (getFacing(tile) == null)
                             {
                                 java.util.List<Side> ways =
                                     new ArrayList<>(facingsFor(tile).values());
 
-                                if (!ways.isEmpty())
+                                java.util.Set<Side> mayArrive = homeFacingsFor(tile);
+
+                                Side guess = null;
+
+                                for (Side way : ways)
                                 {
-                                    setFacing(tile, ways.get(0));
+                                    if (mayArrive.contains(way))
+                                    {
+                                        guess = way;
+
+                                        break;
+                                    }
+                                }
+
+                                if (guess == null && !ways.isEmpty()) guess = ways.get(0);
+
+                                if (guess != null)
+                                {
+                                    setFacing(tile, guess);
 
                                     result.facingsInvented++;
                                 }
@@ -1599,6 +1621,29 @@ public class AutonomySession
     }
 
     /**
+     * The way a locomotive faces on a square, read off the copy the running layout has it on - or null when the railway
+     * does not have it there.
+     *
+     * @param tile the square
+     * @param locomotive the locomotive
+     * @param running the running layout, or null
+     * @return the side, or null
+     */
+    private Side facingOnTheRailway(TileKey tile, String locomotive, org.traincontrol.automation.Layout running)
+    {
+        if (running == null || locomotive == null || getStationIndex() == null) return null;
+
+        for (org.traincontrol.automation.Point point : running.getPoints())
+        {
+            if (point.getCurrentLocomotive() == null || !locomotive.equals(point.getCurrentLocomotive().getName())) continue;
+
+            if (tile.equals(getStationIndex().squareOf(point.getName()))) return facingsFor(tile).get(point.getName());
+        }
+
+        return null;
+    }
+
+    /**
      * Stands a locomotive on the copy of its square that faces a given way (`DIR-B3`).
      *
      * A square is several Points once it is split - one per facing a train can hold there - and the
@@ -1885,8 +1930,13 @@ public class AutonomySession
 
         for (final TileKey tile : candidates)
         {
+            // THE WAY IT FACES ON THE RAILWAY, where it stands there (TDY3-A2, AUT3-A1): the copy it is on IS its
+            // facing.  The setup's FACING is the heading it set off with until a capture writes the arrival back, so after
+            // a run it is absent - and the reversal was dropped - or another train's - and the flip went the wrong way
+            // while the log said it was followed.  The setup answers only where the railway does not know.
+            Side recorded = facingOnTheRailway(tile, locomotive, running);
 
-            Side recorded = getFacing(tile);
+            if (recorded == null) recorded = getFacing(tile);
 
             List<Side> choices = facingChoices(tile);
 
@@ -7408,10 +7458,13 @@ public class AutonomySession
 
         writePointProperty(tile, "home", locomotive);
 
-        // AND THE WAY IT IS FACING, where it is standing here (OB-282) - the facing Return Home brings it back in.  Only
-        // the facing the train standing here has, which is a copy a train stands on, so no impossible facing is saved;
-        // a home given to a train standing elsewhere is the square, whichever copy.
-        writePointProperty(tile, AutonomyBuilder.HOME_FACING, homeFacingOf(tile, locomotive));
+        // AND THE WAY IT IS FACING, where it is standing here (OB-282) - the facing Return Home brings it back in.  Only a
+        // facing a train may be brought home in (GUI3-C2): a train can stand facing the way trains may not arrive - reversed
+        // on the throttle there - and that facing is one no Return Home can reach, so it is not saved.  A home given to a
+        // train standing elsewhere is the square, whichever copy.
+        Side facing = knownHomeFacing(tile, locomotive);
+
+        writePointProperty(tile, AutonomyBuilder.HOME_FACING, facing == null ? null : facing.name());
     }
 
     /**
@@ -7426,9 +7479,12 @@ public class AutonomySession
     {
         String facing = homeFacingOf(tile, locomotive);
 
+        if (facing == null) return null;
+
         for (Side each : Side.values())
         {
-            if (each.name().equals(facing)) return each;
+            // ONLY ONE A TRAIN MAY BE BROUGHT HOME IN (GUI3-C2) - see `writeHome`.
+            if (each.name().equals(facing)) return homeFacingsFor(tile).contains(each) ? each : null;
         }
 
         return null;

@@ -4930,7 +4930,19 @@ public class Layout
      */
     public String explainCannotStart(Locomotive loc, boolean byHand)
     {
-        return explainCannotStart(loc);
+        if (!byHand) return explainCannotStart(loc);
+
+        // BY HAND, ONLY WHAT STOPS ANY ROUTE (GUI3-C1).  A route picked by hand may start from a copy that is no station
+        // and from a square switched off (`isPathClear` fences those behind `isAutoRunning`), so those two reasons are
+        // autonomy's and not the operator's - Adam, OB-225: "in manual mode, I still get reasons like ... will never be
+        // chosen in autonomy".
+        if (loc == null) return null;
+
+        if (loc.isAutonomyPaused()) return I18n.t("autolayout.why.paused");
+
+        if (this.getLocomotiveLocation(loc) == null) return I18n.t("autolayout.why.notOnGraph");
+
+        return null;
     }
 
     /**
@@ -4953,9 +4965,17 @@ public class Layout
 
         if (at == null) return I18n.t("autolayout.why.notOnGraph");
 
-        if (!at.isDestination()) return I18n.f("autolayout.why.startNotStation", at.getName());
+        // FACING THE WAY TRAINS MAY NOT ARRIVE, AT A STATION (GUI3-C1): named as the square, with what to do - turn it
+        // round, or open that side.  It was "standing on BottomMainA (westbound), which is not a station": the copy's
+        // name, a station called not one, and no way out.
+        if (isABarredCopyOfAStation(at))
+        {
+            return I18n.f("autolayout.why.startFacingBarred", placeNameOf(at), I18n.t("autosetup.ui.menuArrivalsGroup"));
+        }
 
-        if (!at.isActive()) return I18n.f("autolayout.why.startInactive", at.getName());
+        if (!at.isDestination()) return I18n.f("autolayout.why.startNotStation", placeNameOf(at));
+
+        if (!at.isActive()) return I18n.f("autolayout.why.startInactive", placeNameOf(at));
 
         return null;
     }
@@ -8989,6 +9009,45 @@ public class Layout
      */
     synchronized public boolean moveLocomotive(String locomotive, String targetPoint, boolean purge)
     {
+        return moveLocomotive(locomotive, targetPoint, purge, false);
+    }
+
+    /**
+     * Whether a Point is a copy of a station square that trains may not arrive at - another copy of the same square is a
+     * station (TDY3-A1).
+     *
+     * @param point the Point
+     * @return true for such a copy
+     */
+    public boolean isABarredCopyOfAStation(Point point)
+    {
+        if (point == null || point.isDestination()) return false;
+
+        for (Point other : this.points.values())
+        {
+            if (other != point && other.isDestination() && other.isSamePlaceAs(point)) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * The same, and able to stand a train back on a copy of a station square trains may not arrive at (TDY3-A1).
+     *
+     * A placement refuses a copy that is no station - nobody should put a train where autonomy cannot start it.  But a
+     * train can be THERE: reversed on the throttle, or turned by the Facing menu, at a square whose other facing only such
+     * a copy holds - the copy is its direction.  Putting the railway's trains back after a rebuild has to be able to
+     * stand it there again, or the model keeps it where the setup last had it while it stands somewhere else.
+     *
+     * @param locomotive the locomotive
+     * @param targetPoint the Point
+     * @param purge as the three-argument form
+     * @param evenOntoABarredCopy whether a copy of a station square trains may not arrive at is accepted
+     * @return whether it was placed
+     */
+    synchronized public boolean moveLocomotive(String locomotive, String targetPoint, boolean purge,
+        boolean evenOntoABarredCopy)
+    {
         boolean result = false;
         
         if (this.isRunning())
@@ -9045,8 +9104,8 @@ public class Layout
                 return result;
             }
 
-            // Can only place loc on a station
-            if (!target.isDestination())
+            // Can only place loc on a station - or put one back on a barred copy of one (TDY3-A1)
+            if (!target.isDestination() && !(evenOntoABarredCopy && isABarredCopyOfAStation(target)))
             {
                 this.control.logf(
                     "autolayout.errorPointIsNotStation",

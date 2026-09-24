@@ -3769,7 +3769,9 @@ public class AutonomyEditorPanel extends JPanel
         {
             facingMenu.add(radio(facingGroup,
                 I18n.t("autosetup.ui.facing" + facing.name()), "autosetup.ui.hintFacing",
-                recorded == null ? facing == facings.get(0) : facing == recorded,
+                // NOTHING TICKED WHERE NOTHING IS KNOWN (GUI3-C4): with no facing recorded and none on the railway,
+                // the build stands the train on a copy it can start from, which need not be the first facing.
+                recorded != null && facing == recorded,
                 // The redraw is in radio() itself now (TD-1), which is where every one of these
                 // answers gets it. OB-039 fixed it here, on the one radio that had been reported, and
                 // left the station and turning radios beside it still telling nobody.
@@ -7885,7 +7887,8 @@ public class AutonomyEditorPanel extends JPanel
         java.util.Map<TileKey, java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>>
             drawn = new java.util.LinkedHashMap<>();
 
-        String cannotStart = layout.explainCannotStart(standing);
+        // FOR THE TIER ASKED (GUI3-C1): by hand, only what stops a route of any kind.
+        String cannotStart = layout.explainCannotStart(standing, byHand);
 
         if (cannotStart != null)
         {

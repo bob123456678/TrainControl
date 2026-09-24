@@ -1943,7 +1943,14 @@ public final class HomeStaging
             out.add(I18n.f("autolayout.whyHomeStartOutOfService", Layout.placeNameOf(from)));
         }
 
-        if (!from.isDestination())
+        // FACING THE WAY TRAINS MAY NOT ARRIVE, AT A STATION (AUT3-B1): said so, with what to do.  "Place it on a station
+        // first" sent the operator to put it back on the same square, where a placement turns it round.
+        if (this.layout.isABarredCopyOfAStation(from))
+        {
+            out.add(I18n.f("autolayout.whyHomeStartFacingBarred", Layout.placeNameOf(from),
+                I18n.t("autosetup.ui.menuArrivalsGroup")));
+        }
+        else if (!from.isDestination())
         {
             out.add(I18n.f("autolayout.whyHomeStartNotAStation", Layout.placeNameOf(from)));
         }

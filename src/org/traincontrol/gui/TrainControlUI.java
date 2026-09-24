@@ -6491,7 +6491,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         // destination - a station demoted with the train still on it - and says so in the log.
                         // The side and road below were written onto the square regardless: a tail with no train,
                         // read by the tail walk and by the next capture.
-                        if (!built.moveLocomotive(was.getKey(), was.getValue()[0], false)) continue;
+                        //
+                        // EXCEPT A BARRED COPY OF A STATION (TDY3-A1): a train reversed there on the throttle, or turned by
+                        // the Facing menu, stands on that copy because it IS its direction.  Refused, the model kept it where
+                        // the setup last had it - somewhere it is not, and free to be dispatched from there.
+                        if (!built.moveLocomotive(was.getKey(), was.getValue()[0], false, true)) continue;
                     }
 
                     // The arrival side goes back with the train: `Point.setLocomotive` clears it
