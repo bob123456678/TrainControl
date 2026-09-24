@@ -4095,8 +4095,14 @@ public class testAutonomyDiagramSession
         assertEquals(session.getPointProperty(tile, "speedMultiplier"), 0.75,
             "the speed multiplier did not come across");
 
-        assertEquals(session.getPointProperty(tile, "active"), Boolean.FALSE,
-            "the station's switch did not come across");
+        // A SWITCHED-OFF STATION ARRIVES ON, AND NOT ONE AUTONOMY CHOOSES (REG-B1, Adam 2026-09-24: "translate as on but
+        // not auto destination").  At v2.8.1 it kept autonomy out and still took a train sent by hand; carried as
+        // `active: false` it became a square nothing may pass through or end on.
+        assertEquals(session.getPointProperty(tile, "active"), null,
+            "a station the 2.8.1 file switched off arrived switched off, so no train may be sent there by hand");
+
+        assertFalse(session.isAutoDestination(tile), "a station the 2.8.1 file switched off arrived as one autonomy"
+            + " chooses, which is what switching it off kept it from");
 
         org.json.JSONArray carried = (org.json.JSONArray) session.getPointProperty(tile, "excludedLocs");
 
@@ -6558,6 +6564,140 @@ public class testAutonomyDiagramSession
     /**
      * A run of track with a station at one end and two signals beside it.
      */
+    /**
+     * A station's entry guard is never its exit guard, whichever is set first (AUT-C2).
+     *
+     * Adam, 2026-09-24: *"make sure the entry guard can never be the same as the exit guard.  otherwise, it's up to the
+     * user to set it up right."*  One signal on both lists is thrown red on arrival and then set by the platform's
+     * occupancy, so neither guard means what it was paired for.
+     *
+     * MUTATION: let the setters take a signal the other list holds, and this fails.
+     */
+    @Test
+    public void testAStationsEntryGuardIsNeverItsExitGuard() throws Exception
+    {
+        session.open(Arrays.asList(pageWithTwoSignals()));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey first = new TileKey("main", 2, 1);
+        TileKey second = new TileKey("main", 3, 1);
+
+        session.setStation(station, true);
+        session.setProtectingSignals(station, Arrays.asList(first));
+        session.setEntrySignals(station, Arrays.asList(first, second));
+
+        assertEquals(session.getEntrySignals(station), Arrays.asList(second), "the station's exit guard was paired as"
+            + " its entry guard too (AUT-C2)");
+
+        session.setProtectingSignals(station, Arrays.asList(first, second));
+
+        assertEquals(session.getProtectingSignals(station), Arrays.asList(first), "the station's entry guard was paired"
+            + " as its exit guard too (AUT-C2)");
+    }
+
+    /**
+     * A file that carries one signal on both lists anyway is warned about (AUT-C2).
+     *
+     * Loading a setup does not go through the setters, so a file written before the rule - or by hand - can still hold
+     * it.  The editor says so rather than letting it run.
+     *
+     * MUTATION: drop the check, and this fails.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testAGuardOnBothListsIsWarnedAbout() throws Exception
+    {
+        session.open(Arrays.asList(pageWithTwoSignals()));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey signal = new TileKey("main", 2, 1);
+
+        session.setStation(station, true);
+        session.setProtectingSignals(station, Arrays.asList(signal));
+
+        // AS A LOADED FILE HAS IT, past the setter.
+        java.lang.reflect.Field field = org.traincontrol.automationui.AutonomyCompanionStore.class.getDeclaredField("entrySignals");
+        field.setAccessible(true);
+        ((java.util.Map<TileKey, java.util.List<TileKey>>) field.get(session.getStore()))
+            .put(station, new java.util.ArrayList<>(Arrays.asList(signal)));
+
+        boolean warned = false;
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if ("autosetup.ui.checkGuardIsBoth".equals(finding.getMessageKey()))
+            {
+                warned = true;
+
+                assertEquals(finding.getSeverity(), org.traincontrol.automationui.AutonomyChecks.Severity.WARNING,
+                    "a signal guarding both ways into and out of one station is not a warning");
+            }
+        }
+
+        assertTrue(warned, "a setup with one signal as a station's entry guard and its exit guard is not warned about"
+            + " (AUT-C2)");
+    }
+
+    /**
+     * A guard no way into its station passes is noticed, and one on the approach is not (AUT-C2).
+     *
+     * Adam: *"if the guard signal is not on a path leading to the chosen station, we can add notice to the autonomy
+     * editor."*  The approach is the track a train runs from the last station it could have stopped at.
+     *
+     * MUTATION: call every guard on the way in, and the first half fails; call none, and the second does.
+     */
+    @Test
+    public void testAGuardOffTheWayInIsNoticed() throws Exception
+    {
+        session.open(Arrays.asList(pageWithAGuardOffTheLine()));
+
+        TileKey station = new TileKey("main", 1, 1);
+
+        session.setStation(station, true);
+
+        session.setEntrySignals(station, Arrays.asList(new TileKey("main", 2, 3)));
+
+        assertTrue(noticesAGuardOffTheWayIn(session), "an entry guard on track no train reaching the station runs over"
+            + " is not noticed (AUT-C2)");
+
+        session.setEntrySignals(station, Arrays.asList(new TileKey("main", 2, 1)));
+
+        assertFalse(noticesAGuardOffTheWayIn(session), "an entry guard on the station's own approach is noticed as"
+            + " off the way in");
+
+        session.setEntrySignals(station, null);
+        session.setProtectingSignals(station, Arrays.asList(new TileKey("main", 2, 3)));
+
+        assertTrue(noticesAGuardOffTheWayIn(session), "an exit guard on track no train reaching the station runs over"
+            + " is not noticed (AUT-C2)");
+    }
+
+    private static boolean noticesAGuardOffTheWayIn(AutonomySession session)
+    {
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if ("autosetup.ui.checkGuardOffTheWayIn".equals(finding.getMessageKey())) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * The two-signal line, and a second line beside it carrying a signal of its own.
+     */
+    private LayoutDiagram pageWithAGuardOffTheLine() throws IOException
+    {
+        LayoutDiagram page = pageWithTwoSignals();
+
+        page.addComponent(componentType.FEEDBACK, 1, 3, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.SIGNAL, 2, 3, 0, 0, 23, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 3, 0, 0, 8, 14, accessoryDecoderType.MM2, null);
+
+        wire(page, 2, 3, 23);
+
+        return page;
+    }
+
     private LayoutDiagram pageWithTwoSignals() throws IOException
     {
         File pages = new File(layout, "config/gleisbilder");
