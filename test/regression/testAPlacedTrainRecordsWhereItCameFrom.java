@@ -478,6 +478,36 @@ public class testAPlacedTrainRecordsWhereItCameFrom
     }
 
     /**
+     * The Edit Locomotive view offers every length the locomotive menu does, up to forty (OB-294).
+     *
+     * Adam, 2026-09-24: *"separately, increase choosable train lengths up to 40 in the dropdown."*  The two lists are one
+     * question, and this one wrote its own 0 to 20 while the menu read `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX` - so a
+     * train longer than its last entry opened here showing that entry, and OK saved it.
+     *
+     * MUTATION: leave the limit at 20, or write this list out by hand again, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheEditViewOffersEveryLengthTheMenuDoes() throws Exception
+    {
+        assertEquals(TrainControlUI.ROUTE_TRAIN_LENGTH_MAX, 40, "the longest train the length lists offer is not forty -"
+            + " Adam, OB-294: \"increase choosable train lengths up to 40 in the dropdown\"");
+
+        if (junction == null) throw new SkipException("no square here has two ways in");
+
+        Point point = putTheTrainOn(junctionPoint);
+
+        train.setTrainLength(TrainControlUI.ROUTE_TRAIN_LENGTH_MAX);
+
+        GraphLocAssign edit = dialogOn(point);
+
+        assertEquals(edit.getTrainLength(), Integer.valueOf(TrainControlUI.ROUTE_TRAIN_LENGTH_MAX), "a train of "
+            + TrainControlUI.ROUTE_TRAIN_LENGTH_MAX + " units - the longest the locomotive menu offers - opened in the Edit"
+            + " Locomotive view as " + edit.getTrainLength() + ", which OK would save");
+    }
+
+    /**
      * The arrival-side combo as the operator would see it, found in what the dialog actually shows.
      *
      * Searched through the wrapper rather than read off a field: the form itself carries four combos
