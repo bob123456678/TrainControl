@@ -33,7 +33,7 @@ None.  Weighed: C1.  It is GUI2-B1's consequence (graded B there) reached throug
 
 | | |
 |---|---|
-| **Disposition** | Fixed - 4be3798a (claim d65df6cb, red first): the import guesses the first facing trains may arrive in |
+| **Disposition** | Fixed - 4be3798a (claim d65df6cb, red first): the import guesses the first facing trains may arrive in; asked over the finished setup, and only where the file cannot say, in 6cb11933 (REG4-C1, REG4-A1) |
 | **Where** | `AutonomySession.java:789-803` (the import's invented facing); `AutonomyBuilder.java:727-777` (`placementCopy`, the new fallback at `:759-776`), `:790-803` (`startableCopy`); `messages.properties:1486` (`autosetup.ui.facingsGuessed`); `AutonomyViewerPanel.java:1234-1236` |
 
 This is the task's question - what a 2.8.1 file's import does with a train whose facing only a barred copy holds - and the answer is that the import can *create* that train.
@@ -71,7 +71,7 @@ This is the task's question - what a 2.8.1 file's import does with a train whose
 
 | | |
 |---|---|
-| **Disposition** | Fixed - 031a7ddb |
+| **Disposition** | Fixed - 031a7ddb; the API page's sentence corrected in 6cb11933 (REG4-C2, DCN4-C4) |
 | **Where** | `AutomationAPI.md:451` (written in `4132d260` for DCN2-C3); `TrainControlUI.java:6129-6167` (the gate); `Layout.java:10605-10608` (`setAtomicRoutes`), `:4900-4920` (`tailHasProvablyPassed`), `:8304-8313` |
 
 The page is "Automating your layout: the programmatic route" - "driving TrainControl from Java" with `Layout` (`AutomationAPI.md:1-4`, `:17-19`).  Its non-atomic section now reads:

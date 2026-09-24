@@ -106,7 +106,7 @@ Each is a replaced span whose trailing space or line break was dropped: `layouta
 
 | | |
 |---|---|
-| **Disposition** | Fixed - 031a7ddb |
+| **Disposition** | Fixed - 031a7ddb, and the second edit in 6cb11933 (DCN4-C1) |
 | **Where** | `Layout.java:10587-10595` (`setAtomicRoutes`); `:7918-7920`; against `:4083-4093` (`unlockPath`) |
 
 GUI2-C1's fix appended a correction and kept the sentence it corrects: *"So neither direction gives an edge back twice **or leaves one held** ... That is about giving back twice.  **True-to-false can still leave one edge held** (GUI2-C1)"*.  The reader is told both.  And the paragraph's premise - *"`unlockPath` decides how to give track back by whether that run gave any back early ... **not by the setting at its end**"* - is half the condition: the atomic road is `this.atomicRoutes && heldItAll` (`:4093`), so a run that gave nothing back early takes the careful road when the setting is off at its end - which is the road GUI2-C1's own case goes down.  The failure handler's new comment (`:7918-7920`, *"on both of its roads, which it chooses by whether there are any"*) repeats the half.  Unreachable today (the checkbox refuses mid-run), so a sentence, as GUI2-C1 said.  Reading only.  **Suggested fix:** delete "or leaves one held"; "decides by whether that run gave any back early and, where it gave none, by the setting".

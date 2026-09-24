@@ -311,7 +311,7 @@ facing S.
 
 | | |
 |---|---|
-| **Disposition** | Fixed - 031a7ddb |
+| **Disposition** | Fixed - 031a7ddb, and the last two sentences in 6cb11933 (TDY4-C1) |
 | **Where** | as listed |
 
 - `TrainControlUI.java:7433-7434` (`copyFacing`): *"The session's rule, which every door that puts a train down asks
