@@ -132,7 +132,7 @@ public class testAnUnlockGivesBackOnlyWhatItHolds
      *
      * MUTATION: read the cleared set as what was given back - at the road choice and at the skip, as the first repair
      * did - and this fails.  At the road choice alone the two roads differ only where another train holds an end Point
-     * of an atomic run, which the lock rules refuse, so that half has no claim (round 4's mutation run, GUI-A1b).
+     * of an atomic run, which the lock rules refuse, so that half has no claim (found by round 4's mutation run).
      *
      * @throws Exception from reflection or the fixture
      */

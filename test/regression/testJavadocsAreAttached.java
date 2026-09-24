@@ -53,7 +53,9 @@ public class testJavadocsAreAttached
     // conditionCount, which is the method it was written for.
     // 90 -> 88 on 2026-09-23: DCN-C12, the two this header names - Layout.locomotiveInBlock and
     // AutonomyCompanionStore.moveTiles - reattached to the members they were written for.
-    private static final int ALLOWED = 88;
+    // 88 -> 87 on 2026-09-24: TDY4-C1, AutonomyBuilder's placementCopy javadoc - left above homeCopy's when that
+    // was inserted - moved onto placementCopy.
+    private static final int ALLOWED = 87;
 
     /**
      * WHICH files carry the orphans, not just how many (VAL-C8).
@@ -66,7 +68,7 @@ public class testJavadocsAreAttached
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "automation" + File.separator + "Layout.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "automationui" + File.separator + "AutonomyBuilder.java (6)",
+            + "automationui" + File.separator + "AutonomyBuilder.java (5)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "automationui" + File.separator + "AutonomyChecks.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
