@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -1620,6 +1621,12 @@ public final class HomeStaging
      * would refuse routes that are genuinely clear, and Adam's standing preference is no check over an
      * over-strict one. Where the train has not moved, the record is exactly true.
      *
+     * **EVERY TRAIN LYING ACROSS IT, not the first found** (AUT2-C2).  This settled on one train from the three sources
+     * below and asked only whether that one had moved, so an edge two start tails lay across passed as soon as the
+     * first-found train had gone, while the second still lay there - and the runtime, which walks the tails as they
+     * are now, refused the leg: a plan that stops half way (OB-073).  The runtime may stop at the first, because any one
+     * refuses; this has to ask them all.
+     *
      * @param edge the edge being entered
      * @param mover the locomotive being routed
      * @param state the arrangement being considered
@@ -1628,7 +1635,16 @@ public final class HomeStaging
     private boolean passesTheTailsOfTrainsThatHaveNotMoved(Edge edge, Locomotive mover,
         Map<Point, Locomotive> state)
     {
-        Locomotive lyingAcross = this.coveredAtStart.get(edge);
+        Set<Locomotive> lyingAcross = new LinkedHashSet<>();
+
+        Locomotive direct = this.coveredAtStart.get(edge);
+
+        // THE MOVER'S OWN TAIL ON IT, and nothing else is asked - as `Layout.isPathClear` asks nothing else there, and a
+        // proof may be looser than the search it guards, never tighter.  (Whether the runtime should ask further is
+        // filed, not decided here.)
+        if (direct != null && direct.equals(mover)) return true;
+
+        if (direct != null) lyingAcross.add(direct);
 
         // AND THE TRACK IT SHARES METAL WITH, which is where this actually bites (OB-184).
         //
@@ -1643,56 +1659,69 @@ public final class HomeStaging
         // sharing a tile is mutual, while the builder's one-directional travel restrictions live in the
         // same collection and must not be swept (RGD-B2). The same rule asked the same way, because a
         // planner that asks a different question offers plans the runtime refuses.
-        if (lyingAcross == null)
+        for (Edge sharing : edge.getLockEdges())
         {
-            for (Edge sharing : edge.getLockEdges())
+            Locomotive onShared = this.coveredAtStart.get(sharing);
+
+            if (onShared == null || onShared.equals(mover)) continue;
+
+            if (!sharing.getLockEdges().contains(edge)) continue;
+
+            // AND ONLY OVER THE PART OF IT THE TRAIN IS ACTUALLY LYING ON (PRW-B2, OB-207).
+            //
+            // The runtime narrowed this to places on 2026-09-12 and the planner did not follow,
+            // so a plan declared impossible what the railway would have carried out - OB-207's own
+            // scenario, `Tunnel -> BottomMainA` past a one-unit tail twelve tiles away, was still
+            // IMPOSSIBLE to Return Home.  That is the direction this class must never take: "a
+            // proof may be looser than the search it guards, never tighter."
+            //
+            // `Layout.tailLiesOn` rather than a copy of it - the same method `isPathClear` asks,
+            // the pattern `Point.heldBackBy` sets for FR-001 - and the same fallback: both sides
+            // must be described in places or nothing is narrowed, so a configuration written
+            // before 3.0.0 keeps the whole-edge answer it always had.
+            if (!edge.getPlaceIds().isEmpty() && !sharing.getPlaceIds().isEmpty()
+                && !Layout.tailLiesOn(edge, onShared, this.placesCoveredAtStart))
             {
-                Locomotive onShared = this.coveredAtStart.get(sharing);
-
-                if (onShared == null || onShared.equals(mover)) continue;
-
-                if (!sharing.getLockEdges().contains(edge)) continue;
-
-                // AND ONLY OVER THE PART OF IT THE TRAIN IS ACTUALLY LYING ON (PRW-B2, OB-207).
-                //
-                // The runtime narrowed this to places on 2026-09-12 and the planner did not follow,
-                // so a plan declared impossible what the railway would have carried out - OB-207's own
-                // scenario, `Tunnel -> BottomMainA` past a one-unit tail twelve tiles away, was still
-                // IMPOSSIBLE to Return Home.  That is the direction this class must never take: "a
-                // proof may be looser than the search it guards, never tighter."
-                //
-                // `Layout.tailLiesOn` rather than a copy of it - the same method `isPathClear` asks,
-                // the pattern `Point.heldBackBy` sets for FR-001 - and the same fallback: both sides
-                // must be described in places or nothing is narrowed, so a configuration written
-                // before 3.0.0 keeps the whole-edge answer it always had.
-                if (!edge.getPlaceIds().isEmpty() && !sharing.getPlaceIds().isEmpty()
-                    && !Layout.tailLiesOn(edge, onShared, this.placesCoveredAtStart))
-                {
-                    continue;
-                }
-
-                lyingAcross = onShared;
-
-                break;
+                continue;
             }
+
+            lyingAcross.add(onShared);
         }
 
         // AND EVERY OTHER COPY OF THE SAME METAL, as `Layout.isPathClear` asks it (AUT-B1): the rail into a turning copy
         // runs over the places of the rail into its plain twin, and is no lock partner of it.
-        if (lyingAcross == null) lyingAcross = Layout.anotherTailOn(edge, mover, this.placesCoveredAtStart);
+        lyingAcross.addAll(Layout.tailsOn(edge, mover, this.placesCoveredAtStart));
 
-        if (lyingAcross == null || lyingAcross.equals(mover)) return true;
+        lyingAcross.remove(mover);
 
-        // Still where it was?  Its tail is where it was too.
-        for (Map.Entry<Point, Locomotive> was : this.start.entrySet())
+        for (Locomotive train : lyingAcross)
         {
-            if (!lyingAcross.equals(was.getValue())) continue;
-
-            return !lyingAcross.equals(state.get(was.getKey()));
+            if (stillWhereItStarted(train, state)) return false;
         }
 
-        // Covering track without a starting station of its own - nothing to compare, so nothing claimed.
         return true;
+    }
+
+    /**
+     * Whether a train is still on the station it started at, so its tail is where it was too (OB-184).
+     *
+     * A train covering track without a starting station of its own has nothing to compare, and counts as moved: nothing
+     * is claimed for it.
+     *
+     * @param train the train
+     * @param state the arrangement being considered
+     * @return true while it has not moved
+     */
+    private boolean stillWhereItStarted(Locomotive train, Map<Point, Locomotive> state)
+    {
+        for (Map.Entry<Point, Locomotive> was : this.start.entrySet())
+        {
+            if (!train.equals(was.getValue())) continue;
+
+            return train.equals(state.get(was.getKey()));
+        }
+
+        return false;
     }
 
     /**

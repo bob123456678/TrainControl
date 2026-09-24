@@ -7809,6 +7809,31 @@ public class Layout
     }
 
     /**
+     * EVERY train, other than the one being routed, whose tail lies over metal this edge runs on (AUT2-C2).
+     *
+     * `anotherTailOn` answers whether there is one, which is all the runtime asks - it refuses on any.  The planner asks
+     * whether each has MOVED, and a question about the first one found passed an edge a second still lay across.
+     *
+     * @param edge the edge being asked about
+     * @param mover the locomotive being routed, whose own tail never blocks it
+     * @param claimed the places standing trains' tails reach, from `walkStandingTrains`
+     * @return the trains lying there, in the edge's place order - empty when none is
+     */
+    static Set<Locomotive> tailsOn(Edge edge, Locomotive mover, Map<String, Locomotive> claimed)
+    {
+        Set<Locomotive> out = new LinkedHashSet<>();
+
+        for (String place : edge.getPlaceIds())
+        {
+            Locomotive on = claimed.get(place);
+
+            if (on != null && !on.equals(mover)) out.add(on);
+        }
+
+        return out;
+    }
+
+    /**
      * Whether a named locomotive's tail lies over any of the metal this edge runs on (OB-207).
      *
      * @param edge the edge being asked about

@@ -916,8 +916,9 @@ public class testSwitchingToACentralStationLayout
         // 50 on 2026-09-20: the declined setup edit (MT-267, MT-326), which opens a sandbox first too.
         // 51 on 2026-09-23: ui.testTheLengthPromptHasTheKeyboard (MT-474), which opens a sandbox first.
         // 52 the same day: ui.testAStartLoadsOnlyAGraphSomebodyAskedFor (REG-B2), which opens a sandbox first.
-        assertEquals(checked, 52,
-            checked + " test classes were found to build a window, not the 52 there were when this "
+        // 53 on 2026-09-24: regression.testTheFacingMenuIsAboutTheTrainThere (TDY4-C5), which opens a sandbox first.
+        assertEquals(checked, 53,
+            checked + " test classes were found to build a window, not the 53 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating - and "
             + "nothing else in this method is hidden by that any more, because the checks that "

@@ -1723,7 +1723,9 @@ not fight: the post-processor only ever sees what the focus owner did not want.
   stayed blocked"*). A train the plan has moved stands at the end of the route the plan gave it, having come in by
   that route's last rail and along that route - what an arrival records - so its tail is walked by the runtime's own
   code (`Layout.walkOneTail`, asked through `edgesATailWouldCover`) and no later move is routed over it. A train
-  that has not moved is judged by the tail it has on the railway, as before (OB-184). Making every move it can, in
+  that has not moved is judged by the tail it has on the railway, as before (OB-184) - **every such train on a piece of
+  track, not the first one found** (AUT2-C2, 2026-09-24): track two tails lay across stays shut until both trains have
+  moved, as the railway, which sees the tails as they are, would keep it. Making every move it can, in
   the order it meets the trains, can now leave a tail across the run another train needs, so when the search from
   that arrangement finds nothing it searches again from the start.
   `core.testReturnHomeKeepsClearOfTheTailsItLeaves`.

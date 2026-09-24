@@ -261,8 +261,10 @@ public class testHomeStaging
             "the planner's check of the tails its own moves leave does not ask by place, so it plans onto a copy of"
             + " the rail the runtime refuses (AUT-B1)");
 
-        assertTrue(planner.contains("lyingAcross = Layout.anotherTailOn(edge, mover, this.placesCoveredAtStart);"),
-            "the planner's check of the tails of trains that have not moved does not ask by place (AUT-B1)");
+        // EVERY TRAIN on those places, not the first (AUT2-C2): `tailsOn` rather than `anotherTailOn`.
+        assertTrue(planner.contains("lyingAcross.addAll(Layout.tailsOn(edge, mover, this.placesCoveredAtStart));"),
+            "the planner's check of the tails of trains that have not moved does not ask by place, for every train"
+            + " lying there (AUT-B1, AUT2-C2)");
     }    /**
      * And a placement that DOES carry a value still applies it.
      *
