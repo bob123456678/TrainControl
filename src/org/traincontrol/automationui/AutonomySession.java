@@ -1540,19 +1540,24 @@ public class AutonomySession
     }
 
     /**
-     * The copy of a square a train facing this way stands on - one it may be put down on, preferring one that does not
-     * turn it (MT-368, MT-394, GUI-B1).
+     * The copy of a square a train facing this way stands on - one trains may arrive at where there is one, preferring
+     * one that does not turn it (MT-368, MT-394, GUI-B1, TDY2-A1).
      *
      * More than one copy can face the same way (a plain copy and its turning twin); the plain one is where a train could
-     * have come to rest facing so.  A copy trains may not arrive at is never the answer: measured on BottomMainB, the
-     * plain westbound copy is no station and the only copy a train can stand on facing west is the turning one - and at
-     * BottomMainPost the FIRST copy facing south is one no train may arrive at, which is where the Facing door and the
-     * idle drain after a turn used to put the train.
+     * have come to rest facing so.  A copy trains may arrive at comes first: measured on BottomMainB, the plain westbound
+     * copy is no station and the only station copy facing west is the turning one - and at BottomMainPost the
+     * FIRST copy facing south is one no train may arrive at, which is where the Facing door and the idle drain after a
+     * turn used to put the train.
+     *
+     * **But where no such copy faces that way, one that faces it anyway** (TDY2-A1, GUI2-A1).  The copy IS the
+     * direction: a train reversed on the throttle, or told by the Facing menu which way it really points, stood on a copy
+     * facing the other way is dispatched along a route locked one way while its decoder drives it the other.  On a copy
+     * autonomy cannot start from it is refused with a sentence saying why.
      *
      * @param square the square
      * @param facing the heading asked for
      * @param running the running layout
-     * @return that copy on the running layout, or null when no copy a train may stand on faces that way
+     * @return that copy on the running layout, or null when no copy of the square faces that way
      */
     public org.traincontrol.automation.Point copyFacing(TileKey square, Side facing,
         org.traincontrol.automation.Layout running)
@@ -1562,6 +1567,22 @@ public class AutonomySession
         org.traincontrol.automation.Point turning = null;
 
         for (Map.Entry<String, Side> copy : placeableFacingsFor(square, running).entrySet())
+        {
+            if (copy.getValue() != facing) continue;
+
+            org.traincontrol.automation.Point candidate = running.getPoint(copy.getKey());
+
+            if (candidate == null) continue;
+
+            if (!candidate.isTerminus() && !candidate.isReversing()) return candidate;
+
+            if (turning == null) turning = candidate;
+        }
+
+        if (turning != null) return turning;
+
+        // NONE A TRAIN MAY ARRIVE AT FACES THAT WAY: any copy that does, the plain one first (TDY2-A1).
+        for (Map.Entry<String, Side> copy : facingsFor(square).entrySet())
         {
             if (copy.getValue() != facing) continue;
 
@@ -1606,10 +1627,11 @@ public class AutonomySession
 
         org.traincontrol.base.Locomotive train = null;
 
-        // A COPY IT MAY BE STOOD ON, facing that way (GUI-B1).  This took the first copy facing that way, and at
-        // BottomMainPost - which trains may turn at, with arrivals from the north barred - the first copy facing south is
-        // one no train may arrive at: a train that came in from the south and turned was moved onto it by the idle drain,
-        // with no gesture at all, and autonomy would not start it from there.
+        // A COPY FACING THAT WAY, one trains may arrive at first (GUI-B1).  This took the first copy facing that way, and
+        // at BottomMainPost - which trains may turn at, with arrivals from the north barred - the first copy facing south
+        // is one no train may arrive at: a train that came in from the south and turned was moved onto it by the idle
+        // drain, and autonomy would not start it from there.  But never a copy facing another way (TDY2-A1): where only a
+        // barred copy faces that way, that is where the train goes - `copyFacing` says why.
         org.traincontrol.automation.Point onto = copyFacing(tile, facing, running);
 
         org.traincontrol.automation.Point from = null;

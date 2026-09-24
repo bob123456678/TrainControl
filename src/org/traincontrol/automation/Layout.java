@@ -3689,8 +3689,8 @@ public class Layout
             // below, inside it, which can be seconds later while another train throws its accessories.  Two dispatches
             // of one train in that window both passed the outer check and queued here; where their routes shared no
             // track, both locked and two threads drove one train.  Asked in the same monitor as the claim, the second
-            // is refused.  Returned before anything is taken, so the caller's clean-up has nothing of this call's to
-            // remove - it removes only a claim that is this call's own (see `executePathInternal`).
+            // is refused.  Returned before anything is taken, so there is nothing of this call's for anybody to clean up
+            // - and `executePathInternal` removes nothing when this refuses (AUT2-C1).
             if (this.isAlreadyUnderway(loc))
             {
                 this.control.logf("autolayout.errorLocomotiveBusy", loc.getName());
@@ -7409,6 +7409,29 @@ public class Layout
                 }
 
                 if (neighbours.size() != 1) break;
+
+                // AT THE SQUARE IT STANDS ON, THE RAIL THAT ARRIVES THERE (TDY2-C5), as the side rule above takes it
+                // (SVZ-B1).  The loop kept the first rail it met to the one neighbour, and `getNeighborsAndIncoming` lists
+                // the rails LEAVING a Point first - whose places begin after the square the train stands on, so the square
+                // was neither claimed nor spent.  The AUT-C3 read below spends it off an arriving rail only where the
+                // square has a block, which the build writes only on a split square; on a square emitted once - a dead
+                // end's turning copy among them - the tail reached one square further back than the train lies.  The rail
+                // arriving here ends with the square, so it is read from the end and the square is spent first.
+                if (here == standingHere && segment != null && segment.getEnd() != here)
+                {
+                    Point towards = segment.getStart() == here ? segment.getEnd() : segment.getStart();
+
+                    for (Edge candidate : back)
+                    {
+                        if (candidate.getEnd() == here && candidate.getStart() != null
+                            && candidate.getStart().isSamePlaceAs(towards))
+                        {
+                            segment = candidate;
+
+                            break;
+                        }
+                    }
+                }
             }
 
             // THE SQUARE IT STANDS ON, WHERE THE RAIL TAKEN DOES NOT ARRIVE AT IT (AUT-C3).
@@ -8193,14 +8216,13 @@ public class Layout
             // configureAndLockPath has already logged the reason (path occupied, or a validation failure
             // that stopped the loco and released its locks) - do not run the locomotive.
             //
-            // The claim is dropped here as well as on the paths that set this, because a claim that
-            // outlives its path lowers the cap for the rest of the session - a leak that makes the
-            // railway quieter and quieter with nothing to say why.
-            //
-            // THIS CALL'S OWN CLAIM ONLY (AUT-C1).  A dispatch refused because the train is already claiming another
-            // route took nothing, and `remove(loc)` removed the WINNER's claim - leaving the train in neither map while
-            // it was still validating, so a third dispatch was let through and the cap undercounted.
-            this.takingPath.remove(loc, path);
+            // NOTHING TO DROP HERE (AUT-C1, AUT2-C1).  Every refusal inside `configureAndLockPath` either took nothing -
+            // the train already under way, the path not clear - or drops its own claim before it returns, so a claim
+            // cannot outlive its path through this door.  This used to remove the claim too, and that could only ever
+            // remove ANOTHER dispatch's: a duplicate refused because the train was already claiming a route removed the
+            // winner's, leaving the train in neither map while it was still locking - a third dispatch let through, the cap
+            // undercounted.  Removing only "its own" by `remove(loc, path)` did not help, because two dispatches of the
+            // same route carry equal paths.
             return false;
         }
         else

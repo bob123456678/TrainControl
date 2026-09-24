@@ -25,7 +25,7 @@ If you want to drive TrainControl from Java instead, or you need the reference f
 
 **Feedback sensors.** This is the only hardware requirement, and it is not optional: TrainControl knows where a train is because a sensor told it. One S88 contact per station is the minimum. Three is much better — before the stopping point, at it, and after it — because that is what lets a train slow down as it arrives rather than stopping dead on the contact.
 
-**A track diagram.** Either downloaded from your Central Station or drawn in TrainControl's own editor. Automation is set up on this diagram, so if your diagram does not yet match your railway, start there.
+**A track diagram stored on this computer.** Either downloaded from your Central Station with **Layouts → Download Central Station Layout Files**, or drawn in TrainControl's own editor. A diagram read from the Central Station each time TrainControl starts cannot carry an autonomy setup, so download it first. Automation is set up on this diagram, so if your diagram does not yet match your railway, start there.
 
 **Locomotives with addresses that work.** If you cannot drive a locomotive by hand from TrainControl, automation will not be able to either.
 

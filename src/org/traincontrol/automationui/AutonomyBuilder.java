@@ -726,11 +726,12 @@ public class AutonomyBuilder
 
     private int placementCopy(List<Node> nodes, JSONObject extras)
     {
-        if (extras == null || !extras.has(FACING)) return 0;
+        // NOTHING SAYS WHICH WAY IT FACES: somewhere it can start (GUI2-B1), not copy zero.
+        if (extras == null || !extras.has(FACING)) return startableCopy(nodes);
 
         TilePorts.Side facing = side(extras.optString(FACING, null));
 
-        if (facing == null) return 0;
+        if (facing == null) return startableCopy(nodes);
 
         // Matched on the FACING each copy stands for, not on its arrival side.  Those differ on a
         // turning copy - it is pointing back at the side it came in by - so comparing arrival sides
@@ -738,9 +739,8 @@ public class AutonomyBuilder
         // through to the first, and put the locomotive on the copy pointing the opposite way.  On a dead
         // end that copy is the one with no way out; elsewhere its first move is the backwards edge this
         // whole split exists to forbid.  Either way the next capture then wrote the wrong facing back.
-        // ONLY A COPY TRAINS MAY ARRIVE AT (GUI-B1), as `homeCopy` asks at every step.  A copy that is not is built as no
-        // station, and a train stood there is one autonomy will not start - so a facing only such a copy holds, saved by a
-        // door or by an older setup, put the train where nothing could move it.
+        // AMONG THE COPIES FACING THAT WAY, ONE TRAINS MAY ARRIVE AT FIRST (GUI-B1), as `homeCopy` asks.  A copy that is
+        // not is built as no station, and a train stood there is one autonomy will not start.
         for (int copy = 0; copy < nodes.size(); copy++)
         {
             // the plain copy in preference to the turning one: a train standing at a place it MAY turn
@@ -756,7 +756,39 @@ public class AutonomyBuilder
             if (facingOf(nodes.get(copy)) == facing && arrivalAllowed(nodes.get(copy))) return copy;
         }
 
-        // AND WHERE NO COPY TRAINS MAY ARRIVE AT FACES THAT WAY, one they may - the facing is one no train can stand in.
+        // AND WHERE NONE OF THOSE FACES THAT WAY, A COPY THAT FACES IT ANYWAY (TDY2-A1, AUT2-A1).  The copy IS the
+        // direction - the runtime never commands one, it only reverses at a turning square - so a train stood on a copy
+        // facing the other way is dispatched along a route locked one way while its decoder drives it the other, and the
+        // next capture writes the wrong facing over the operator's.  A barred arrival bars STOPPING there, not standing
+        // there: a train reversed on the throttle, or already standing when the side was barred, faces that way.  Stood
+        // on a copy autonomy cannot start from, it is refused with a sentence that says why; GUI-B1's first repair stood
+        // it on a copy trains may arrive at whatever way that copy faced, which turned it round in silence.
+        for (int copy = 0; copy < nodes.size(); copy++)
+        {
+            if (facingOf(nodes.get(copy)) == facing && !nodes.get(copy).reverse) return copy;
+        }
+
+        for (int copy = 0; copy < nodes.size(); copy++)
+        {
+            if (facingOf(nodes.get(copy)) == facing) return copy;
+        }
+
+        return startableCopy(nodes);
+    }
+
+    /**
+     * Where a train goes when nothing says which way it faces, or no copy faces the way something says (GUI2-B1).
+     *
+     * A copy trains may arrive at, the plain one first - the one guess autonomy can start, which is what `homeCopy` falls
+     * back to as well.  Copies are emitted N, E, S, W, so "copy zero", which this used to be, was the copy arriving by
+     * the north or east side whether or not trains may arrive there: at BottomMainA and BottomMainPost, a copy that is no
+     * station.
+     *
+     * @param nodes the copies this square was emitted as
+     * @return the index of the copy to stand the train on
+     */
+    private int startableCopy(List<Node> nodes)
+    {
         for (int copy = 0; copy < nodes.size(); copy++)
         {
             if (!nodes.get(copy).reverse && arrivalAllowed(nodes.get(copy))) return copy;

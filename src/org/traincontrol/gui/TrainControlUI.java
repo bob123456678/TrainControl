@@ -24573,6 +24573,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public String whyAutonomyWillNotStart()
     {
+        // OVER A CENTRAL STATION LAYOUT, THE GUARD'S OWN FIRST REASON (REG2-C2).  `refuseAutonomyStartWhileBroken` asks
+        // `isRemoteLayout` before anything about the setup, and `canStartAutonomy` asks it too - so the greyed item
+        // this sentence explains is greyed for that, and the rule below, which knows only the setup, answered "wait
+        // for the trains".
+        if (isRemoteLayout()) return I18n.t("autosetup.ui.menuNoSetupPossible");
+
         org.traincontrol.automationui.AutonomySession asked = getAutonomySession();
 
         return whyAutonomyWillNotStart(autonomyErrorCount(),

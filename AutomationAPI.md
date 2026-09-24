@@ -456,7 +456,7 @@ Paths are selected at random from among the possible stations reachable by any g
     - A path with conflicting accessory commands will never be chosen 
     - You can specify an optional integer `priority` for any station.  Stations with higher priorities will always be chosen over ones with a lower priority unless they are occupied.
 
-You can optionally mark any point as inactive (`"active" : false`).  Automatically chosen paths will never include inactive points.  However, they can still be accessed in semi-autonomous (point-to-point) operation.
+You can optionally mark any point as inactive (`"active" : false`).  Automatically chosen paths will never include inactive points.  Since v3.0.0 a path chosen by hand may not pass through or end at one either; a train standing on an inactive point can still be driven away from it.
 
 ## Pace of operation
 

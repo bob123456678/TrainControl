@@ -4131,21 +4131,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // fired both, throwing different commands at the same turnouts - where the import changed the
         // route, which is the reason to import one.
         //
-        // Both go away by disarming at the point of construction, and the operator decides when a
-        // freshly imported file starts driving the railway.  The disable is the statement AFTER the
-        // constructor and before anything else, which is the whole of the guarantee - there is no window
-        // to reason about because there are no statements in it.
-        //
-        // disable() is enough: the monitor tests `enabled` after every feedback wait and returns.  The
-        // thread stays parked until the sensor next fires and then exits, which is the same shape
-        // newRoute relies on when it refuses a duplicate.
+        // Both go away by BUILDING IT UNARMED, and the operator decides when a freshly imported file
+        // starts driving the railway.  The file's `auto` is overwritten with false before construction, so
+        // `executeAutoRoute` starts no monitor at all: there is no thread to disarm and no moment in which
+        // one is watching.  Until 2026-09-23 the route was built armed and disabled on the next statement,
+        // and the monitor it had started stayed parked on its sensor until the next pulse - harmless, since
+        // it tests `enabled` before firing, but it logged "Route X is running..." for every route the file
+        // had saved armed, just before the notice that every route arrives off (REG2-C6).
         for (int i = 0; i < dataArray.length(); i++)
         {
-            MarklinRoute route = MarklinRoute.fromJSON(dataArray.getJSONObject(i), this);
+            JSONObject entry = dataArray.getJSONObject(i);
 
-            route.disable();
+            entry.put("auto", false);
 
-            routes.add(route);
+            routes.add(MarklinRoute.fromJSON(entry, this));
         }
 
         return routes;
