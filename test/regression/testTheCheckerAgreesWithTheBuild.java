@@ -257,6 +257,21 @@ public class testTheCheckerAgreesWithTheBuild
             if (!reachable) unreached.add(station);
         }
 
+        // A STATION NOTHING CAN PASS IS SAID TO BE CLOSED, NOT UNREACHABLE (FR-101; Adam, 2026-09-24: *"Update the error
+        // message to say that is marked for nothing to be able to pass, user to validate if intentional"*).  Nothing
+        // reaches a square nothing can pass, so the walk finds every one of them unreached; the checker says so once, as
+        // closed, in place of the reachability sentences.  So they are compared under their own sentence, and the rest
+        // under this one.  Fifteen of this fixture's stations are closed.
+        Set<TileKey> closed = closedAmong(reach.keySet());
+
+        assertTrue(unreached.containsAll(closed), "a station nothing can pass was reached on the built graph: " + closed
+            + " against " + unreached);
+
+        assertEquals(reported(AutonomyChecks.STATION_CLOSED).toString(), closed.toString(),
+            "the checker does not say, once each, that the stations nothing can pass are closed (FR-101)");
+
+        unreached.removeAll(closed);
+
         assertEquals(reported(AutonomyChecks.STATION_UNREACHABLE).toString(), unreached.toString(),
             "the checker and the build disagree about which stations nothing can reach.  A station "
                 + "the checker calls reachable and the built graph cannot route to is a destination "
@@ -320,6 +335,9 @@ public class testTheCheckerAgreesWithTheBuild
             + "layout has changed.  Delete the exemption rather than moving it");
 
         stranded.remove(exempt);
+
+        // A closed station is said to be closed, and nothing else (FR-101) - see the claim above.
+        stranded.removeAll(closedAmong(reach.keySet()));
 
         Set<TileKey> reported = reported(AutonomyChecks.STATION_REACHES_NOTHING);
         reported.addAll(reported(AutonomyChecks.TERMINUS_STRANDED));
@@ -709,6 +727,24 @@ public class testTheCheckerAgreesWithTheBuild
         }
 
         return squares;
+    }
+
+    /**
+     * The stations set to No - Nothing Can Pass, among these (FR-101).
+     *
+     * @param stations the stations the walk examined
+     * @return those the setup shuts
+     */
+    private static Set<TileKey> closedAmong(Set<TileKey> stations)
+    {
+        Set<TileKey> out = new TreeSet<>(BY_KEY);
+
+        for (TileKey station : stations)
+        {
+            if (session.shutTiles().contains(station)) out.add(station);
+        }
+
+        return out;
     }
 
     /**

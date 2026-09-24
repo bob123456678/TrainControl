@@ -197,6 +197,15 @@ public class testPathTypeRedrawsTheTestInTheEditor
 
         assertNotNull(standing, "precondition: no train stands on a station square of " + PAGE);
 
+        // NOT THE LENGTH THE REAL DATABASE GIVES IT.  The frozen railway places its trains, and their lengths are read
+        // from the locomotive database on this machine: on 2026-09-24 Adam set EN57-203 to 20 units for OB-294, it fitted
+        // nowhere on either tier, and this failed on "0 against 0" - about his database, not about Path Type.  So the
+        // train asked about has no length while it is asked, and has its own back afterwards.
+        final org.traincontrol.base.Locomotive train = trainOn(standing);
+        final Integer lengthWas = train == null ? null : train.getTrainLength();
+
+        if (train != null) train.setTrainLength(0);
+
         final LayoutEditor[] built = new LayoutEditor[1];
 
         try
@@ -263,6 +272,8 @@ public class testPathTypeRedrawsTheTestInTheEditor
         }
         finally
         {
+            if (train != null) train.setTrainLength(lengthWas == null ? 0 : lengthWas);
+
             if (built[0] != null)
             {
                 final LayoutEditor closing = built[0];
@@ -288,6 +299,24 @@ public class testPathTypeRedrawsTheTestInTheEditor
             TileKey square = index.squareOf(point.getName());
 
             if (square != null && PAGE.equals(square.getPage())) return square;
+        }
+
+        return null;
+    }
+
+    /** The train the railway has standing on this square, or null. */
+    private static org.traincontrol.base.Locomotive trainOn(TileKey square)
+    {
+        org.traincontrol.automation.Layout layout = model.getAutoLayout();
+
+        if (layout == null) return null;
+
+        for (org.traincontrol.automation.Point point : layout.getPoints())
+        {
+            if (point.getCurrentLocomotive() != null && square.equals(session.getStationIndex().squareOf(point.getName())))
+            {
+                return point.getCurrentLocomotive();
+            }
         }
 
         return null;
