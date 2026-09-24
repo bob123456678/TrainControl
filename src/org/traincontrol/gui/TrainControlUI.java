@@ -3629,17 +3629,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private AutonomyMenu autonomyMenu;
 
     /**
-     * Whether the autonomy menu can do anything, asked in one place (OB-202).
+     * Whether the autonomy menu can be opened, asked in one place (OB-202).
      *
-     * Three conditions, and each of them has already been a defect on its own:
+     * Two conditions, and each of them has already been a defect on its own:
      *
      *   - a layout, asked of `isLayoutLoaded` rather than of the list, because UXR-C17 found this
      *     question being asked live at eighteen places that each caught a different moment of a
      *     rebuild;
-     *   - a LOCAL one, because a setup lives in files beside the diagram and a diagram read straight
-     *     from the Central Station has nowhere to keep one;
      *   - not while the connecting notice still holds the bar, which is OB-187 - Adam's *"the menu
      *     options ungrey at different times"*.
+     *
+     * **NOT WHETHER THE LAYOUT IS LOCAL, any more** (Adam, 2026-09-24: *"open the autonomy menu with
+     * everything but those 2 greyed"*).  A diagram read straight from the Central Station has nowhere to
+     * keep a setup, and the menu was greyed whole there - which put its offer to download the layout
+     * (OB-093) and its Documentation where nobody could press them.  It opens now, onto those two and a greyed sentence; whether autonomy can be USED is still
+     * `canUseAutonomy`, and every autonomy action asks that.
      *
      * Here rather than in `AutonomyMenu` because the menu is not the only thing that asks now: the
      * placeholder that holds its slot during start-up asks the same question, and two copies of it
@@ -3649,12 +3653,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public boolean autonomyMenuIsUsable()
     {
-        return getModel() != null && isLayoutLoaded() && canUseAutonomy()
-            && !menusAreHeldByTheNotice();
+        return getModel() != null && isLayoutLoaded() && !menusAreHeldByTheNotice();
     }
 
     /**
-     * Why the autonomy menu is switched off, as a sentence, or null when it is not.
+     * Why autonomy cannot be used here, as a sentence for the autonomy menu's tooltip, or null when it can.
+     *
+     * On a Central Station layout the menu opens anyway (`autonomyMenuIsUsable`), and this is what says why nothing in
+     * it but the download and the guide can be chosen.
      *
      * Disabled rather than hidden, with the reason on the tooltip: a menu that vanishes teaches
      * nothing, and *"why is there no autonomy menu"* is a harder question than *"what do I do first"*.
@@ -3674,7 +3680,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Brings whatever is currently standing in the autonomy slot into line with the answer above.
      *
      * **Two things can be in that slot** and only one of them exists at a time: `autonomyTopMenu` while
-     * the window is starting up, and the real `AutonomyMenu` once there is a session to build it from.
+     * the window is starting up, and the real `AutonomyMenu` once `mountAutonomyControls` has built it.
      * Everything that used to ask the menu to refresh itself asks this instead, so the placeholder is
      * not left saying something the menu would not.
      */
@@ -3827,13 +3833,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private DiagramMonitorDriver diagramMonitorDriver;
 
     /**
-     * Wires up the autonomy controls for the layout that is open: the Layout menu's own additions, and - for a layout
-     * stored on this computer - the Autonomy menu and the page menus that act on its setup.
+     * Wires up the autonomy controls for the layout that is open: the Layout menu's own additions and the Autonomy
+     * menu for every layout, and - for a layout stored on this computer - the page menus that act on its setup.
      *
-     * A layout with no local copy gets no autonomy at all (OB-254; Adam, 2026-09-24: *"Remove it, require a local
-     * copy for autonomy."*).  The old Load Autonomy Configuration tab, a JSON window that used to come back here for
-     * such a layout, has been deleted from the window; the Autonomy menu is greyed there and its tooltip says to use
-     * Layouts > Download.
+     * A layout with no local copy gets no autonomy setup (OB-254; Adam, 2026-09-24: *"Remove it, require a local copy
+     * for autonomy."*).  The old Load Autonomy Configuration tab, a JSON window that used to come back here for such a
+     * layout, has been deleted from the window; the Autonomy menu opens there onto the offer to download the layout
+     * and Documentation, and nothing else in it can be chosen.
      */
     public void mountAutonomyControls()
     {
@@ -3869,8 +3875,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             });
         }
 
-        // NO LOCAL COPY, NO AUTONOMY (OB-254).  The old JSON tab used to come back here, as a second autonomy system
-        // with a file of its own; it is gone from the window, and nothing replaces it for a Central Station layout.
+        // THE AUTONOMY MENU, FOR EVERY LAYOUT, and above the return below (Adam, 2026-09-24: "open the autonomy
+        // menu with everything but those 2 greyed").  On a layout with no local copy it opens onto the offer to
+        // download one (OB-093) and Documentation.  Built only after the return, it never existed for a window that
+        // started on a Central Station layout: the form's placeholder kept the slot, greyed, and neither could be
+        // pressed.
+        mountAutonomyMenu();
+
+        // NO LOCAL COPY, NO SETUP (OB-254).  The old JSON tab used to come back here, as a second autonomy system with
+        // a file of its own; it is gone from the window, and the menu above is what such a layout gets.
         if (session == null) return;
 
         if (autonomyViewerPanel == null)
@@ -3878,10 +3891,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             autonomyViewerPanel = new AutonomyViewerPanel(session, this);
         }
 
-        // Built but not shown.  Everything it does is on the Autonomy menu now; the object stays as the
-        // place those actions live, because they are a few hundred lines of dialogs and file handling
+        // Built but not shown.  Everything it does is on the Autonomy menu, mounted above; the object stays
+        // as the place those actions live, because they are a few hundred lines of dialogs and file handling
         // that gain nothing from being copied into a menu class.
-        mountAutonomyMenu();
 
         addCombinePagesItem();
 
@@ -9969,8 +9981,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // The list above holds what `greyTheMenus` took, and the autonomy menu may not be on it: the
         // real menu is created and added by `mountAutonomyControls`, from `setViewListener`, which runs
         // while the notice is up.  It is asked here rather than added to the list because its answer is
-        // a rule about the layout, and enabling it blindly would switch it on for a Central Station
-        // diagram that cannot hold a setup at all.
+        // a rule of its own - a layout to act on - and enabling it blindly would switch it on with none.
         //
         // `refreshAutonomyAnchor` rather than the menu directly (OB-202): until the swap happens it is
         // the PLACEHOLDER standing in that slot, and it was greyed by the walk above like every other
@@ -15952,8 +15963,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             autoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(locCommandPanels, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 592, Short.MAX_VALUE)
         );
-
-        locCommandPanels.getAccessibleContext().setAccessibleName(bundle.getString("ui.main.autoConfig")); // NOI18N
 
         KeyboardTab.addTab("Auto", autoPanel);
 

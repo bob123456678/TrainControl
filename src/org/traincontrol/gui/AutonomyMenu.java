@@ -78,13 +78,13 @@ public class AutonomyMenu extends JMenu
     public final void refreshEnabled()
     {
         // THE QUESTION LIVES ON THE WINDOW NOW (OB-202), because this menu is no longer the only
-        // thing that asks it: `autonomyTopMenu` holds this slot until there is a session to build a
-        // real menu from, and it has to be greyed for the same reasons and say the same sentence.  Two
-        // copies of a three-part condition is two answers waiting to disagree.
+        // thing that asks it: `autonomyTopMenu` holds this slot until start-up builds this menu, and it
+        // has to be greyed for the same reasons and say the same sentence.  Two copies of one condition
+        // is two answers waiting to disagree.
         //
-        // What the three parts are, and why each is there, is at `TrainControlUI.autonomyMenuIsUsable`
-        // - a layout (UXR-C17), a LOCAL one, and not while the connecting notice holds the bar
-        // (OB-187).
+        // What the parts are, and why each is there, is at `TrainControlUI.autonomyMenuIsUsable` - a
+        // layout (UXR-C17), and not while the connecting notice holds the bar (OB-187).  Not a LOCAL
+        // one: on a Central Station layout the menu opens onto the download and the guide (2026-09-24).
         setEnabled(ui.autonomyMenuIsUsable());
 
         setToolTipText(AutonomyEditorPanel.wrapped(ui.whyAutonomyIsUnavailable()));
