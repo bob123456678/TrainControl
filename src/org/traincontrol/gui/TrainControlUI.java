@@ -2037,6 +2037,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         return prefs;
     }
+
+    /**
+     * Unticks Startup -> Load Autonomy after a legacy autonomy.json has been imported (REG2-C3).
+     */
+    public void autoLoadOffAfterLegacyImport()
+    {
+    }
     
     /**
      * Returns the key code corresponding to the currently selected locomotive button
