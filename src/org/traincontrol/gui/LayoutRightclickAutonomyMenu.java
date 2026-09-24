@@ -1372,6 +1372,16 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     return;
                 }
 
+                // AND ROUND A LOOP INTO ITS OWN TAIL (OB-294), by the same test: the loop is not shorter in a minute.
+                String ownTail = ui.getModel().getAutoLayout().whyItWouldMeetItsOwnTail(path, locomotive);
+
+                if (ownTail != null)
+                {
+                    JOptionPane.showMessageDialog(this, ownTail);
+
+                    return;
+                }
+
                 // ASKED HERE, ON THE EVENT THREAD, BEFORE ANYTHING IS DISPATCHED (Adam,
                 // 2026-09-06): "make it be on departure itself, that way there is no dispatch prior
                 // to user input."

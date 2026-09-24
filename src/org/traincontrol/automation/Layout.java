@@ -2856,6 +2856,18 @@ public class Layout
             return false;
         }
 
+        // AND NOT ROUND A LOOP INTO ITS OWN TAIL (Adam, 2026-09-24, OB-294: "make sure the model factors in whether the
+        // train will clear the area before it crosses over").  The standing-train checks above pass a train's own tail -
+        // a train never blocks itself while it leads away from it - and this is the case where the route comes back.
+        String ownTail = whyItWouldMeetItsOwnTail(path, loc);
+
+        if (ownTail != null)
+        {
+            logPathError(loc, path, logFailures, ownTail);
+
+            return false;
+        }
+
         // A station held back while another point has a train STANDING on it (FR-001).
         //
         // The other half of this setting is built into the configuration as lock edges, which ask
@@ -5632,11 +5644,14 @@ public class Layout
 
                 String foulsARoad = tooLong == null ? whyABerthCannotHoldIt(path, loc) : null;
 
+                // AND THE THIRD: round a loop into its own tail (OB-294), as physical as the other two.
+                String ownTail = tooLong == null && foulsARoad == null ? whyItWouldMeetItsOwnTail(path, loc) : null;
+
                 // A route it fits down whose berth can hold it is a route the operator can be sent
                 // along, so there is nothing to report whatever the others say.
-                if (tooLong == null && foulsARoad == null) return null;
+                if (tooLong == null && foulsARoad == null && ownTail == null) return null;
 
-                why = tooLong != null ? tooLong : foulsARoad;
+                why = tooLong != null ? tooLong : foulsARoad != null ? foulsARoad : ownTail;
 
             } while (path != null);
         }
@@ -7290,6 +7305,27 @@ public class Layout
     private void walkOneTail(Point standing, Locomotive loc, String arrivedFrom, List<Edge> arrivedAlong,
         Map<Edge, Locomotive> covered, Map<String, Locomotive> places)
     {
+        walkOneTail(standing, loc, arrivedFrom, arrivedAlong, covered, places, null);
+    }
+
+    /**
+     * The same walk, also saying how far behind the head each claimed place begins (OB-294).
+     *
+     * Recorded as each place is claimed, which is before its length is spent - so the figure is the length of the body
+     * between the head and the near end of that place, by the walk's own arithmetic rather than a second one.  Asked by
+     * `whyItWouldMeetItsOwnTail`, which needs to know when the tail will have left each place.
+     *
+     * @param standing the Point the train stands on
+     * @param loc the train
+     * @param arrivedFrom the side it came in by, or null
+     * @param arrivedAlong the road it came along, or null
+     * @param covered filled with every covered edge and this train
+     * @param places filled with every claimed place and this train
+     * @param reach filled with each claimed place and how far behind the head it begins, or null when not wanted
+     */
+    private void walkOneTail(Point standing, Locomotive loc, String arrivedFrom, List<Edge> arrivedAlong,
+        Map<Edge, Locomotive> covered, Map<String, Locomotive> places, Map<String, Integer> reach)
+    {
         int remaining = loc.getTrainLength();
 
         final Point standingHere = standing;
@@ -7430,7 +7466,7 @@ public class Layout
                         if (cameInBy != null && arrivedFrom.equalsIgnoreCase(cameInBy)) arrivingBySide.add(candidate);
                     }
 
-                    if (claimUpToWhereTheRailsPart(arrivingBySide, loc, places, spent, remaining)) break;
+                    if (claimUpToWhereTheRailsPart(arrivingBySide, loc, places, spent, remaining, reach)) break;
                 }
 
                 // Recorded, but naming a side no track leaves by - a stale value after an edit.
@@ -7577,6 +7613,8 @@ public class Layout
 
                     if (!isTheSquareOf(own, here)) continue;
 
+                    reachedAt(reach, own, loc.getTrainLength() - remaining);
+
                     places.put(own, loc);
 
                     if (spent.add(own)) remaining -= Math.max(0, inSpans.get(inSpans.size() - 1));
@@ -7659,6 +7697,8 @@ public class Layout
                 for (int step = 0; step < ids.size(); step++)
                 {
                     int at = fromTheEnd ? ids.size() - 1 - step : step;
+
+                    reachedAt(reach, ids.get(at), loc.getTrainLength() - left);
 
                     places.put(ids.get(at), loc);
 
@@ -9130,10 +9170,11 @@ public class Layout
      * @param places where the claims are written
      * @param spent the squares already charged
      * @param remaining the train's length still to spend
+     * @param reach filled with how far behind the head each claimed place begins, or null (OB-294)
      * @return true where the rails part and the shared squares were claimed - the walk stops there
      */
     private static boolean claimUpToWhereTheRailsPart(List<Edge> rails, Locomotive loc, Map<String, Locomotive> places,
-        Set<String> spent, int remaining)
+        Set<String> spent, int remaining, Map<String, Integer> reach)
     {
         Set<List<String>> roads = new LinkedHashSet<>();
 
@@ -9164,12 +9205,26 @@ public class Layout
                 if (road.size() <= step || !road.get(road.size() - 1 - step).equals(place)) return true;
             }
 
+            reachedAt(reach, place, loc.getTrainLength() - left);
+
             places.put(place, loc);
 
             if (spent.add(place)) left -= Math.max(0, spans.get(at));
         }
 
         return true;
+    }
+
+    /**
+     * Records how far behind the head a claimed place begins, the first time it is claimed (OB-294).
+     *
+     * @param reach where it is written, or null when nobody asked
+     * @param place the place claimed
+     * @param behindTheHead the body spent before it
+     */
+    private static void reachedAt(Map<String, Integer> reach, String place, int behindTheHead)
+    {
+        if (reach != null && !reach.containsKey(place)) reach.put(place, behindTheHead);
     }
 
     /**
@@ -10158,6 +10213,172 @@ public class Layout
                     ? why + " " + I18n.f("autolayout.errorBerthApproachPartlyUnmeasured", unmeasured)
                     : why;
             }
+        }
+
+        return null;
+    }
+
+    /**
+     * Why this train would run into its own tail on this route, or null when it would not (OB-294).
+     *
+     * The train's body as it stands - walked by `walkOneTail`, the walk that claims the track behind every standing
+     * train, so the body this judges is the one the rest of the railway sees - and then `whyItWouldMeetItsOwnTail` below.
+     *
+     * Not `synchronized`, like `isPathClear`, which asks it: the manual doors ask it on the event thread, and the event
+     * thread taking this monitor is how OB-192 froze the window (see `getEdges`).
+     *
+     * @param path the route, in order, starting where the train stands
+     * @param loc the train
+     * @return the refusal, already translated, or null
+     */
+    public String whyItWouldMeetItsOwnTail(List<Edge> path, Locomotive loc)
+    {
+        if (path == null || path.isEmpty() || loc == null || loc.getTrainLength() == null || loc.getTrainLength() <= 0)
+        {
+            return null;
+        }
+
+        Point start = path.get(0).getStart();
+
+        Map<String, Integer> reach = new LinkedHashMap<>();
+
+        // Where it stands: the route's first square, on whichever copy of it holds the train.
+        for (Point standing : this.points.values())
+        {
+            if (start == null || !loc.equals(standing.getCurrentLocomotive())) continue;
+
+            if (standing != start && !standing.isSamePlaceAs(start)) continue;
+
+            walkOneTail(standing, loc, standing.getArrivedFrom(), standing.getArrivedAlong(),
+                new LinkedHashMap<Edge, Locomotive>(), new LinkedHashMap<String, Locomotive>(), reach);
+
+            break;
+        }
+
+        return whyItWouldMeetItsOwnTail(path, loc, reach);
+    }
+
+    /**
+     * Why this train would run into its own tail on this route, given where its body lies before it moves (OB-294).
+     *
+     * Adam, 2026-09-24: *"EN57-203 from bottomsecondary to lowerfront may run over its own tail.  make sure the model
+     * factors in whether the train will clear the area before it crosses over."*  And what must still go: *"the check
+     * should pass if the train would be gone (i.e. if that one was only length 4, for example)."*
+     *
+     * **A train never blocks itself** everywhere else (behaviour.md 5c), and rightly while the route leads away: its tail
+     * is behind it, and pulling forward off it is how a train leaves a berth.  A route that comes back round a loop to
+     * track the body still lies on is the case that does not hold, and nothing asked it.  On his railway every way from
+     * BottomSecondary to LowerFront leaves west, round by the tunnel, and returns east along row 11 - where a train that
+     * came down RampDown is lying.
+     *
+     * **The rule: the head may come back to a place only once the tail has left it.**  Distances are measured along the
+     * journey from where the head stands, and the tail is always the train's length behind the head.  A place the body
+     * lies on at the start is left when the tail passes the end of it nearer the head, which is `reach` behind the start;
+     * a place the route has run over is left when the tail passes the end the head went out by.  The track run between
+     * leaving a place and coming back to it is the longest train that clears it in time - so a train longer than that is
+     * refused, and the refusal names the figure.  One exactly that long is clear as the head arrives, which is how every
+     * length rule here reads a fit.
+     *
+     * **Only measured track binds**, as for every length rule here - *"only apply if lengths are specified"*.  A square
+     * with no length counts nothing, and a return with nothing measured on the way round is not judged.  Unmeasured
+     * squares within a measured way round make it shorter than it is, which refuses rather than permits.
+     *
+     * **After a turn the body is ahead of the train**, and moves with it.  A train that turns - at a square it may turn
+     * at on the way, or where it stands before it sets off, which is a route leaving over its own tail - drives back over
+     * the track its body lies on, and that is no collision.  So the question starts again after every turn with nothing
+     * behind; the room rule in `whyTooLongForThisRoute` is what keeps a turning train on the track it came in by.
+     *
+     * By place, the relation the tail claims use: the two roads through a crossing share their square and meet here,
+     * and an overpass's two levels do not.
+     *
+     * @param path the route, in order, starting where the train stands
+     * @param loc the train
+     * @param reach where its body lies before it moves: each place its tail claims, and how far behind the head that
+     *        place begins - empty when nothing is known
+     * @return the refusal, already translated, or null
+     */
+    static String whyItWouldMeetItsOwnTail(List<Edge> path, Locomotive loc, Map<String, Integer> reach)
+    {
+        if (path == null || path.isEmpty() || loc == null || loc.getTrainLength() == null || loc.getTrainLength() <= 0)
+        {
+            return null;
+        }
+
+        int length = loc.getTrainLength();
+
+        // Where the tail must have reached, along the journey, before each place is free of the train again.
+        Map<String, Integer> freeOnceTheTailPasses = new HashMap<>();
+
+        // LEAVING OVER ITS OWN BODY: the first place the route goes to, other than the square the train stands on, is
+        // one its body lies on - a train turned where it stands.  The first place only: a route that comes back round a
+        // loop within one edge would otherwise be taken for one leaving over its body.
+        String firstOut = null;
+
+        for (String place : path.get(0).getPlaceIds())
+        {
+            if (!isTheSquareOf(place, path.get(0).getStart()))
+            {
+                firstOut = place;
+
+                break;
+            }
+        }
+
+        boolean leavesOverItsBody = reach != null && firstOut != null && reach.containsKey(firstOut);
+
+        if (reach != null && !leavesOverItsBody)
+        {
+            for (Map.Entry<String, Integer> lying : reach.entrySet())
+            {
+                freeOnceTheTailPasses.put(lying.getKey(), -lying.getValue());
+            }
+        }
+
+        int travelled = 0;
+
+        String previous = null;
+
+        for (int i = 0; i < path.size(); i++)
+        {
+            Edge edge = path.get(i);
+
+            List<String> ids = edge.getPlaceIds();
+            List<Integer> spans = edge.getPlaceLengths();
+
+            // A configuration that describes no places says nothing about where the train is.
+            if (ids.size() != spans.size()) return null;
+
+            for (int at = 0; at < ids.size(); at++)
+            {
+                String place = ids.get(at);
+
+                // The same square twice in a row is one hop ending where the next begins, not a return to it.
+                if (place.equals(previous)) continue;
+
+                previous = place;
+
+                Integer free = freeOnceTheTailPasses.get(place);
+
+                if (free != null)
+                {
+                    int wayRound = travelled - free;
+
+                    if (wayRound > 0 && length > wayRound)
+                    {
+                        return I18n.f("autolayout.errorWouldMeetItsOwnTail", loc.getName(), placeNameOf(edge),
+                            wayRound, length);
+                    }
+                }
+
+                travelled += spans.get(at) == null ? 0 : Math.max(0, spans.get(at));
+
+                freeOnceTheTailPasses.put(place, travelled);
+            }
+
+            // A TURN ON THE WAY: the body is ahead of the train from here, and the question starts again.
+            Point turn = edge.getEnd();
+
+            if (i + 1 < path.size() && turn != null && turn.isReversing()) freeOnceTheTailPasses.clear();
         }
 
         return null;

@@ -1159,6 +1159,17 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                         return;
                     }
 
+                    // AND ROUND A LOOP INTO ITS OWN TAIL (OB-294) - the third standing refusal with a sentence, asked
+                    // of the railway for the same reason as the two above.
+                    String ownTail = this.layout.whyItWouldMeetItsOwnTail(chosen, locomotive);
+
+                    if (ownTail != null)
+                    {
+                        JOptionPane.showMessageDialog(this, ownTail);
+
+                        return;
+                    }
+
                     // ASKED HERE, ON THE EVENT THREAD, BEFORE THE THREAD BELOW STARTS (Adam,
                     // 2026-09-06): "make it be on departure itself, that way there is no dispatch
                     // prior to user input."
