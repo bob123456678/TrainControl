@@ -1233,6 +1233,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-24 | FR-100 | feature request | The tail question is asked on the diagram: its sensors lit, a click on one answers it; the list where a sensor is on another page. | - | `MT-565` |
 | 2026-09-24 | FR-099 | feature request | prettify usage graph - **for v3.1.0**, on Adam's word of 2026-09-24 (*"FR-099 for later (mark it as for v3.1.0)"*).  Picked up and not built. | pending | - |
 | 2026-09-24 | FR-101 | feature request | A station set to No - Nothing Can Pass is said to be, once, in place of the two reachability sentences. | - | `MT-562` |
 | 2026-09-24 | OB-292 | bug | A straight put down between two pieces of track is turned to join them. | - | `MT-563` |

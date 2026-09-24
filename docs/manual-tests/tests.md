@@ -87,8 +87,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-562](#mt-562) | 2026-09-24 | A station set to No - Nothing Can Pass says so, once | fixed unvalidated | FR-101 |
 | [MT-563](#mt-563) | 2026-09-24 | A straight put down between two pieces of track is turned to join them | fixed unvalidated | OB-292 |
 | [MT-564](#mt-564) | 2026-09-24 | No station on the railway is warned that it can refuse trains that would otherwise fit | fixed unvalidated | MT-552 |
+| [MT-565](#mt-565) | 2026-09-24 | The tail question is asked on the diagram | fixed unvalidated | FR-100 |
 
-Everything else - 504 of 564 - needs nothing from you unless the area changes again:
+Everything else - 504 of 565 - needs nothing from you unless the area changes again:
 428 **fixed validated** and 76 **superseded**.
 
 ---
@@ -27489,6 +27490,10 @@ Filed from this test: FR-100 (feature request - where is the tail visual selecti
 
 Validated on your *Works* of 2026-09-24.
 
+**Claude, 2026-09-24.**
+
+**FR-100 is built** (2026-09-24) - MT-565.
+
 ---
 
 <a id="mt-558"></a>
@@ -27671,5 +27676,34 @@ Validated on your *Works* of 2026-09-24.
 - No station is said to *refuse trains that would otherwise fit* - not RampDown, BottomMainPost or LowerParkingOuter.
 
 *What this is:* `core.testMassAssignLengths.testASquareWithNoLengthBeforeTheSwitchDoesNotEndTheCount` and `core.testAutonomyDiagramSession.testABarredApproachIsNotJudgedAsHalfMeasured`; `...testTheHalfMeasuredWarningCountsTheSquares` holds the number in the sentence, which on your railway nothing now shows.
+
+---
+
+<a id="mt-565"></a>
+
+### MT-565 - 2026-09-24 - The tail question is asked on the diagram
+
+**Disposition:** fixed unvalidated
+**From:** FR-100
+
+**Written:** 2026-09-24
+
+**What was wrong.**  A train placed where its tail may lie past a junction was asked which sensor it last crossed from a list.  Adam, 2026-09-24: *"instead of showing the list of points, highlight possible squares on the diagram and ask the user to click one.  only show the list if there are options on another page."*
+
+**Steps**
+
+1. Give 75 407 DB a length of 5 and place it on Tunnel, southbound, as you did for MT-437.
+2. Click TunnelPre on the diagram.
+3. Place it there again, and this time click a sensor that is not lit.
+4. Press Not known in the small window.
+
+**Expected**
+
+- Step 1: TunnelPre and the sensor at 12,7 are lit on the diagram, and a small window near the top asks which the tail has crossed, with Not known and Cancel.  No list.
+- Step 2: the window closes, the lights go out, and the tail is drawn back towards TunnelPre.
+- Step 3: the sensor you clicked does not change; the two are lit again and the window is still waiting.
+- Step 4: the window closes and the lights go out; the tail stops at the switch, as Not known always has.
+
+*What this is:* `regression.testTheTailIsPickedOnTheDiagram`, which also holds that a question with a sensor on another page, or drawn nowhere, keeps the list.
 
 ---
