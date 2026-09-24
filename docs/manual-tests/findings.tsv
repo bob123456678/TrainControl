@@ -174,7 +174,14 @@ AR-13	2026-08-22-adam-round.md	Closed	Done - a white six-armed star in the middl
 AR-14	2026-08-22-adam-round.md	Closed	Done, in the running diagram's black-on-white style	Populate the `[---]` labels with the train's name
 AR-15	2026-08-22-adam-round.md	Closed	Fixed	Unchecking "show autonomy" does not hide the station labels
 AR-16	2026-08-22-adam-round.md	Closed	Not done - see the last section	, and the wiring gap: what is actually left
+AR-17	2026-08-22 hands-on round (no document)	Closed	Recorded as MT-026 - see it.	Shift Up and Shift Left at the edges
+AR-18	2026-08-22 hands-on round (no document)	Closed	Recorded as MT-029 - see it.	The command table's marks
+AR-19	2026-08-22 hands-on round (no document)	Closed	Recorded as MT-030 - see it.	A route holding a signal command
 AR-2	2026-08-22-adam-round.md	Closed	Removed - the item now appears only to EDIT a train that is there	Place Locomotive is redundant in the autonomy editor
+AR-20	2026-08-22 hands-on round (no document)	Closed	Recorded as MT-037 - see it.	An automatic route says nothing about its trigger
+AR-21	2026-08-22 hands-on round (no document)	Closed	Recorded as MT-038 - see it.	An unreadable UIState.data is kept
+AR-22	2026-08-22 hands-on round (no document)	Closed	Recorded as MT-039 - see it.	A page named with a slash
+AR-23	2026-08-22 hands-on round (no document)	Closed	Recorded as MT-040 - see it.	A page the folder does not hold
 AR-3	2026-08-22-adam-round.md	Closed	Fixed - it was added again on every mount	"Combine Linked Pages" appears in the menu dozens of times
 AR-4	2026-08-22-adam-round.md	Closed	Fixed - wrapped	Its tooltip is too wide
 AR-5	2026-08-22-adam-round.md	Closed	Done	Split "Modify Current Layout" into Manage Pages, and add "Edit Layout Page..." listing the pages
@@ -1502,6 +1509,12 @@ LE-C9	2026-08-30-layout-editor-review.md	Closed	fixed	the menu assertions could 
 LE-D1	2026-08-30-layout-editor-review.md	Closed	-	`placedLocomotives` was the only unfiltered reader, and it is now filtered
 LE-D2	2026-08-30-layout-editor-review.md	Closed	-	the twins sweep for A1, B1 and C2 came back clean
 LE-D3	2026-08-30-layout-editor-review.md	Closed	-	the original save complaint was not reproduced, and its "didn't save" half is unexplained
+LR-1	2026-08-26 last-reviewer pass (no document)	Closed	Receipt in issues.md, became MT-201.	Closing TrainControl with the track editor open and answering Discard half-discarded the edit
+LR-2	2026-08-26 last-reviewer pass (no document)	Closed	Receipt in issues.md, became MT-202.	The route conflict question named the wrong reason, and the refusal was logged before it was one
+LR-3	2026-08-26 last-reviewer pass (no document)	Closed	Receipt in issues.md, became MT-197.	A placeholder station and a named one came out the same colour on the pill, under a comment saying they did not
+LR-4	2026-08-26 last-reviewer pass (no document)	Closed	Receipt in issues.md, became MT-197.	Two trains on one platform still drew brackets inside the pill
+LR-5	2026-08-26 last-reviewer pass (no document)	Closed	Receipt in issues.md, state: fixed validated.	The first-dispatch signal sweep asked the counter again instead of remembering it had been first
+LR-6	2026-08-26 last-reviewer pass (no document)	Closed	Receipt in issues.md, state: fixed validated.	A comment describing behaviour that changed under it, and the dead half of the condition beside it
 LT-A1	2026-08-21-layout-test-feedback.md	Closed	Fixed - it was the station LABEL, which resolves to no Point	Ctrl+X / Ctrl+V over a diagram square does nothing - the keys act on the locomotive buttons instead
 LT-A2	2026-08-21-layout-test-feedback.md	Closed	Fixed - the capture pruned by Point, not by tile	A tile moved off the graph loses its station AND its locomotive, and cannot be made a station again
 LT-A3	2026-08-21-layout-test-feedback.md	Closed	Fixed - same prune as A2; confirmed by Adam on a re-run	Dragging a selection LEFT removes the locomotive
@@ -4077,7 +4090,6 @@ X8V-D7	X8V-validation.md	Closed	it does	the lock restore lands on the route the 
 X8V-D8	X8V-validation.md	Closed	untested, and correct	`addBareKey`'s underscore filter is what stops `_type=_bareKeys` reaching the file, and nothing tests it
 X8V-D9	X8V-validation.md	Closed	all four true	the four comment-only findings say true things
 # DEAD - cited, no finding behind them
-AR-19	-	-	-	-
 FCR-B3	-	-	-	-
 IND-M1	-	-	-	-
 IND-M4	-	-	-	-

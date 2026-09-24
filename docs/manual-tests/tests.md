@@ -28,57 +28,86 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-244](#mt-244) | 2026-08-31 | The Auto tab on a layout that has only an autonomy.json | fixed unvalidated | RGN-A2 |
-| [MT-247](#mt-247) | 2026-09-01 | A refused route still cuts the power at the two human doors | fixed unvalidated | FX2-2, SVN-A4 |
-| [MT-256](#mt-256) | 2026-09-02 | Switching a signal by hand while a train stands at its platform | fixed unvalidated | SVN-B16, WK3-B1 |
 | [MT-263](#mt-263) | 2026-09-03 | The three refusals, when the graph will not build | fixed unvalidated | V31-C1, V32-C1, DY3-C7 |
 | [MT-267](#mt-267) | 2026-09-04 | A setup edit made the instant autonomy starts | fixed unvalidated | VD11-C8 |
 | [MT-291](#mt-291) | 2026-09-07 | The Grid tooltip, in a language you read | needs test | FR-057 (split from MT-274) |
 | [MT-298](#mt-298) | 2026-09-07 | A second import fills gaps and does not overwrite | fixed unvalidated | IPR-A1 (split from MT-243) |
 | [MT-326](#mt-326) | 2026-09-07 | A declined setup edit survives quitting (a race, not a mode) | fixed unvalidated | ACC-B3 (split from MT-269) |
-| [MT-380](#mt-380) | 2026-09-13 | Autonomy can be set up by importing, from the menu, with nothing set up yet | fixed unvalidated | FR-007 |
 | [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
 | [MT-437](#mt-437) | 2026-09-15 | What the measured route in holds, and which tier is bound by it | needs test | FR-087 |
-| [MT-438](#mt-438) | 2026-09-15 | The tail question: a sensor at exactly the length, roads a train can drive, and a default | fixed unvalidated | OB-226, OB-227, FR-088 |
-| [MT-439](#mt-439) | 2026-09-15 | Why Not Moving? and Test a Path both follow Path Type | fixed unvalidated | OB-225 |
 | [MT-442](#mt-442) | 2026-09-15 | Why Not Moving? says a terminus is in the way, not that no track leads there | fixed unvalidated | PTR-B1 (OB-229) |
 | [MT-443](#mt-443) | 2026-09-15 | Making a square no longer a station takes Unavailable While Occupied with it | fixed unvalidated | AMS-B2 |
-| [MT-444](#mt-444) | 2026-09-15 | Why Not Moving? on Manual gives a reason for a station the right-click menu leaves out | fixed unvalidated | AMR-B2 (OB-225) |
 | [MT-446](#mt-446) | 2026-09-15 | After an edit declined at the start of a run, where the trains are is saved again | fixed unvalidated | AMS-B1 (MT-267) |
 | [MT-447](#mt-447) | 2026-09-15 | Unavailable While Occupied naming a station on an excluded page does not stop autonomy loading | fixed unvalidated | AMG-B1 |
 | [MT-450](#mt-450) | 2026-09-15 | Return Home is not stopped by the sensor under a standing train's tail | fixed unvalidated | AMH-B2 |
 | [MT-452](#mt-452) | 2026-09-16 | Loading a configuration that names a train you no longer have keeps the rest of it | fixed unvalidated | AMR-C3 |
 | [MT-453](#mt-453) | 2026-09-16 | A lock naming track that is not in the file is dropped, and the log says so loudly | fixed unvalidated | AMR-C3 |
-| [MT-454](#mt-454) | 2026-09-16 | Mass Assign Lengths walks every piece of track on the page that has no length, then its switches | fixed unvalidated | FR-089 |
-| [MT-456](#mt-456) | 2026-09-17 | Mass Assign Max Train Lengths walks every station on the page that has no maximum | fixed unvalidated | FR-091 |
-| [MT-457](#mt-457) | 2026-09-17 | Clear All Max Train Lengths takes the maximum off every station on every page | fixed unvalidated | FR-092 |
-| [MT-459](#mt-459) | 2026-09-19 | Mass Assign Lengths asks for crossings on their own, and each road counts them once | fixed unvalidated | SET-B2 |
-| [MT-464](#mt-464) | 2026-09-19 | A locomotive cannot be deleted or renamed while a route that drives it is running, and the route finishes | fixed unvalidated | CS3-B1 |
-| [MT-466](#mt-466) | 2026-09-19 | Cancel on the function editor undoes a Copy Customizations | fixed unvalidated | GUX-C3 |
 | [MT-467](#mt-467) | 2026-09-19 | Turning a local route's automatic execution on or off does not wait for the Central Station | fixed unvalidated | GUX-C5 |
 | [MT-468](#mt-468) | 2026-09-19 | Every screen still finds its text after 239 unused message keys were removed | fixed unvalidated | UIX-C4 |
-| [MT-474](#mt-474) | 2026-09-23 | Mass Assign Train Lengths asks each train that has no length | fixed unvalidated | FR-094 |
-| [MT-475](#mt-475) | 2026-09-23 | The orange is where the train is, sensors included; the grey is what it blocks | fixed unvalidated | OB-277, OB-208 |
 | [MT-477](#mt-477) | 2026-09-23 | The tail question lists RampDown once | fixed unvalidated | OB-276 |
 | [MT-479](#mt-479) | 2026-09-23 | An entry guard throws its signals red when a train arrives, and not when one passes | fixed unvalidated | FR-096 |
 | [MT-480](#mt-480) | 2026-09-23 | A train fits on the square it stands on, and TunnelLongPark takes three units | fixed unvalidated | OB-278 |
 | [MT-481](#mt-481) | 2026-09-23 | The orange line and the grey carry on across a route tile | fixed unvalidated | OB-279 |
 | [MT-482](#mt-482) | 2026-09-23 | The grey is only where the train is, and nothing past the switch | fixed unvalidated | OB-280 |
 | [MT-483](#mt-483) | 2026-09-23 | A cut train is pasted facing the way it would arrive | fixed unvalidated | OB-270 |
-| [MT-484](#mt-484) | 2026-09-23 | Segment Length takes a 0 as an answer, and has a Clear button | fixed unvalidated | FR-097 |
 | [MT-485](#mt-485) | 2026-09-23 | The five route tiles' lengths are folded into the track beside them | fixed unvalidated | OB-281 |
-| [MT-486](#mt-486) | 2026-09-23 | Return Home brings a train back facing the way its home was set | fixed unvalidated | OB-282 |
-| [MT-487](#mt-487) | 2026-09-23 | Importing routes says they arrive switched off | fixed unvalidated | REG-B3, REG2-C6, REG2-C7 |
-| [MT-488](#mt-488) | 2026-09-23 | A train reversed on the throttle where one direction is barred | fixed unvalidated | TDY2-A1, GUI2-A1, AUT2-A1, TDY3-A1, TDY3-A2, GUI3-C1, AUT3-B1, TDY3-C1, TDY4-C3, OB-284, GUI4-C5, the REG4 |
+| [MT-488](#mt-488) | 2026-09-23 | A train reversed on the throttle where one direction is barred | fixed unvalidated | TDY2-A1, GUI2-A1, AUT2-A1, TDY3-A1, TDY3-A2, GUI3-C1, AUT3-B1, TDY3-C1, TDY4-C3 |
 | [MT-489](#mt-489) | 2026-09-23 | The questions at a may-reverse square name the square, not a direction | fixed unvalidated | GUI-C7 |
 | [MT-490](#mt-490) | 2026-09-23 | "Page is left out" brings an open editor forward | fixed unvalidated | GUI-C8 |
-| [MT-491](#mt-491) | 2026-09-23 | An old autonomy.json's trains face the way the old version ran them | fixed unvalidated | REG4-A1, REG4-C1, REG-B1 |
+| [MT-491](#mt-491) | 2026-09-23 | An old autonomy.json's trains face the way the old version ran them | fixed unvalidated | REG4-A1, REG4-C1 |
 | [MT-492](#mt-492) | 2026-09-24 | Return Home finds a plan on a crowded railway | fixed unvalidated | OB-230, AMH-C1 |
-| [MT-493](#mt-493) | 2026-09-24 | A station's entry guard can never be its exit guard | fixed unvalidated | AUT-C2 |
 | [MT-494](#mt-494) | 2026-09-24 | After a run, the Facing menu turns the train that is there | fixed unvalidated | TDY4-C5 |
 | [MT-495](#mt-495) | 2026-09-24 | A train turned at Tunnel is not sent into a parked train's tail | fixed unvalidated | OB-285, AUT2-C2 |
+| [MT-496](#mt-496) | 2026-09-24 | Importing routes and answering No leaves every route's automatic firing off | fixed unvalidated | REG2-C7, MT-487 |
+| [MT-497](#mt-497) | 2026-09-24 | Importing routes and answering Yes turns automatic firing back on for the routes saved with it | fixed unvalidated | REG2-C7, MT-487 |
+| [MT-498](#mt-498) | 2026-09-24 | A train facing west at BottomMainA still faces west after it is cut and pasted back | fixed unvalidated | OB-284 |
+| [MT-499](#mt-499) | 2026-09-24 | With autonomy stopped, the locomotive list gives the reasons for a train sent by hand | fixed unvalidated | the REG4 lead of the 2026-09-23 review |
+| [MT-500](#mt-500) | 2026-09-24 | Starting TrainControl with a train facing west at BottomMainA logs no "placed on a non-station" | fixed unvalidated | GUI4-C5 |
+| [MT-501](#mt-501) | 2026-09-24 | Importing an old autonomy.json leaves your diagram's directions as they are | fixed unvalidated | REG4-A1, the directions ruling of 2026-09-24 |
+| [MT-502](#mt-502) | 2026-09-24 | A station an old autonomy.json switched off arrives as one trains can stop at, not chosen by autonomy | fixed unvalidated | REG-B1 |
+| [MT-503](#mt-503) | 2026-09-24 | Importing an old autonomy.json unticks Load Autonomy | fixed unvalidated | REG2-C3 |
+| [MT-504](#mt-504) | 2026-09-24 | A station's exit guard cannot also be made its entry guard | fixed unvalidated | AUT-C2, MT-493 |
+| [MT-505](#mt-505) | 2026-09-24 | A guard signal that no way into its station passes is noticed | fixed unvalidated | AUT-C2, MT-493 |
+| [MT-506](#mt-506) | 2026-09-24 | A route fired by its sensor skips only the switch under a train, and runs the rest | fixed unvalidated | MT-247 |
+| [MT-507](#mt-507) | 2026-09-24 | Cancel on a route that would switch track under a train cancels all of it, from either door | fixed unvalidated | MT-247 |
+| [MT-508](#mt-508) | 2026-09-24 | OK on a route that would switch track under a train fires all of it | fixed unvalidated | MT-247 |
+| [MT-509](#mt-509) | 2026-09-24 | Switching a platform's protecting signal to red by hand is not questioned | fixed unvalidated | MT-256 |
+| [MT-510](#mt-510) | 2026-09-24 | Switching a platform's protecting signal to green with a train there is asked about | fixed unvalidated | MT-256 |
+| [MT-511](#mt-511) | 2026-09-24 | Switching a protecting signal to green once the platform is empty is not questioned | fixed unvalidated | MT-256 |
+| [MT-512](#mt-512) | 2026-09-24 | On a layout with nothing set up, the Autonomy menu offers Import | fixed unvalidated | MT-380 |
+| [MT-513](#mt-513) | 2026-09-24 | Importing a setup onto a layout with fewer pages warns once, naming the missing pages | fixed unvalidated | MT-380 |
+| [MT-514](#mt-514) | 2026-09-24 | After that import, opening the autonomy editor asks nothing | fixed unvalidated | MT-380 |
+| [MT-515](#mt-515) | 2026-09-24 | A running train has one orange stretch, behind it, on the road it came in by | fixed unvalidated | MT-438, OB-242, OB-243 |
+| [MT-516](#mt-516) | 2026-09-24 | Why Not Moving? on Manual says a station that excludes the train will not take it | fixed unvalidated | MT-444 |
+| [MT-517](#mt-517) | 2026-09-24 | Why Not Moving? on Manual says a terminus refuses a train that cannot reverse | fixed unvalidated | MT-444 |
+| [MT-518](#mt-518) | 2026-09-24 | Clear All Max Train Lengths asks first, and No changes nothing | fixed unvalidated | MT-457 |
+| [MT-519](#mt-519) | 2026-09-24 | Clear All Max Train Lengths takes the maximum off every station on every page | fixed unvalidated | MT-457 |
+| [MT-520](#mt-520) | 2026-09-24 | Mass Assign Max Train Lengths asks each station with no maximum, and records the number | fixed unvalidated | MT-456 |
+| [MT-521](#mt-521) | 2026-09-24 | Mass Assign Max Train Lengths refuses 0 | fixed unvalidated | MT-456 |
+| [MT-522](#mt-522) | 2026-09-24 | Mass Assign Max Train Lengths' Skip leaves a station as it was | fixed unvalidated | MT-456 |
+| [MT-523](#mt-523) | 2026-09-24 | Escape ends Mass Assign Max Train Lengths and writes nothing | fixed unvalidated | MT-456 |
+| [MT-524](#mt-524) | 2026-09-24 | Mass Assign Lengths asks each piece with no length, and records what you type | fixed unvalidated | MT-454 |
+| [MT-525](#mt-525) | 2026-09-24 | Mass Assign Lengths refuses 0 | fixed unvalidated | MT-454 |
+| [MT-526](#mt-526) | 2026-09-24 | Mass Assign Lengths' Skip leaves a piece, and the next prompt opens where you left the last | fixed unvalidated | MT-454 |
+| [MT-527](#mt-527) | 2026-09-24 | Escape ends Mass Assign Lengths and writes nothing | fixed unvalidated | MT-454 |
+| [MT-528](#mt-528) | 2026-09-24 | Mass Assign Lengths is greyed on a page left out of autonomy | fixed unvalidated | MT-454 |
+| [MT-529](#mt-529) | 2026-09-24 | Mass Assign Lengths counts stretches, switches and crossings separately | fixed unvalidated | MT-459 |
+| [MT-530](#mt-530) | 2026-09-24 | Mass Assign Lengths asks for crossings on their own, and one answer sets them all | fixed unvalidated | MT-459 |
+| [MT-531](#mt-531) | 2026-09-24 | A function command on an MM2 locomotive offers only F0 to F4 | fixed unvalidated | MT-464 |
+| [MT-532](#mt-532) | 2026-09-24 | Cancel after Copy Customizations puts the target's own icons back on its buttons at once | fixed unvalidated | MT-466 |
+| [MT-533](#mt-533) | 2026-09-24 | The train-length prompt takes typing without a click | fixed unvalidated | MT-474 |
+| [MT-534](#mt-534) | 2026-09-24 | Bulk Tools is on the menu of an empty square and a text square | fixed unvalidated | MT-474 |
+| [MT-535](#mt-535) | 2026-09-24 | The orange covers the square a train stands on and every sensor it lies across | fixed unvalidated | MT-475 |
+| [MT-536](#mt-536) | 2026-09-24 | On a double curve the grey covers only the road the tail lies on | fixed unvalidated | MT-475, OB-280 |
+| [MT-537](#mt-537) | 2026-09-24 | Segment Length opens empty, and OK without a number records nothing | fixed unvalidated | MT-484, FR-097 |
+| [MT-538](#mt-538) | 2026-09-24 | Segment Length's 0 counts as an answer, and Clear takes it away | fixed unvalidated | MT-484, FR-097 |
+| [MT-539](#mt-539) | 2026-09-24 | Return Home brings a train back facing the way its home was set | fixed unvalidated | MT-486, OB-282 |
+| [MT-540](#mt-540) | 2026-09-24 | Setting a home for a train standing elsewhere asks which way it should face | fixed unvalidated | MT-486, OB-282 |
+| [MT-541](#mt-541) | 2026-09-24 | Why Not Moving? redoes its answer when Path Type changes | fixed unvalidated | MT-439 |
+| [MT-542](#mt-542) | 2026-09-24 | Test a Path keeps its route when Path Type changes, and changes only the note | fixed unvalidated | MT-439 |
 
-Everything else - 446 of 495 - needs nothing from you unless the area changes again:
-394 **fixed validated** and 52 **superseded**.
+Everything else - 464 of 542 - needs nothing from you unless the area changes again:
+394 **fixed validated** and 70 **superseded**.
 
 ---
 
@@ -208,6 +237,17 @@ gestures:** that the greyed item really is greyed, and that pressing Start reall
 Automated, as you asked twice over. `regression.testTheRefusalToStartSaysWhichThing` holds the rule all three doors now share, and it found two of them still wrong: the greyed Start item's tooltip and the scripting API's exception chose their wording from the error count alone, so with three blocking problems - where that count is zero, because nothing turned the problem into a finding - both read "one thing has to be dealt with first". That is your step 5, red at two of the three doors. The wording and the counting live in one place now, and the test reads the three call sites so it cannot drift back.
 
 **What is left for your hands:** steps 2 and 3 as gestures - that the greyed item really is greyed, and that pressing Start really shows that sentence. The words themselves are pinned.
+
+**Claude, 2026-09-24.**
+
+**To run now:**
+
+1. In the autonomy editor, go to 4 - Combined and untick Exclude Page - it repeats the other pages' sensors, so the graph will not build.
+2. Right-click a station on the track diagram and hover the greyed Start.
+3. Press Start from the Autonomy menu.
+4. Tick Exclude Page on 4 - Combined again.
+
+**Expect:** Start is greyed; the tooltip and the Start message both say one thing has to be dealt with first and point at the count along the top of the diagram; neither says to wait for the trains to stop.  Steps 4 and 5 of the original are automated; skip them.
 
 ---
 
@@ -405,6 +445,10 @@ Automated, with MT-326. Your step 2 said this is deliberately hard to hit and yo
 `regression.testADeclinedSetupEditSaysSoAndSurvivesTheExit.testTheRefusedRebuildSaysSo` asserts the sentence is logged when a rebuild is refused because the railway is busy, and its two siblings are the controls: the courtesy door says nothing, and an ordinary rebuild says nothing.
 
 **What is left for your hands:** step 4 - that editing the setup with autonomy running normally does not give you a second message on top of the warning you already get.
+
+**Claude, 2026-09-24.**
+
+**Nothing is left for your hands.**  The last note asked for step 1 - editing the setup with autonomy running - but the editor cannot be opened during a run (OB-047): Edit says "Cannot edit auto layout while running." and nothing opens, so the ordinary case this checks cannot happen.  The race itself, and its silence on an ordinary rebuild, are held by `regression.testADeclinedSetupEditSaysSoAndSurvivesTheExit`.  Mark it Works, or say if you want the refusal checked by hand.
 
 ---
 
@@ -14051,6 +14095,17 @@ Adam, 2026-09-13: *"The tab should stay shut until they import."*
 
 *Covered by* `regression.testTheRoutingChoiceSurvivesTheUpgrade.testTheAutoTabStaysShutWithALegacyAutonomyJson`, which is the RGN-A2 claim **inverted** rather than deleted, carrying both of your rulings so the record shows which replaced which.
 
+**Claude, 2026-09-24.**
+
+**To run now** (the 2026-09-13 version; the older steps above it are superseded):
+
+1. Move aside the `autonomy.json` in the folder TrainControl runs from, and put `docs/manual-tests/files/MT-244-layout-without-autonomy-setup/autonomy.json` in its place.
+2. Choose that folder's `layout/` as the local layout, with Load Autonomy ticked, and start TrainControl.
+3. Look at the Auto tab, then the log.
+4. Quit, and put your own `autonomy.json` back.
+
+**Expect:** the Auto tab is greyed, and the log does not say an autonomy layout was loaded or is running.
+
 ---
 
 <a id="mt-245"></a>
@@ -14262,7 +14317,7 @@ Home item lights up, close the application, reopen it and check the home is stil
 
 ### MT-247 - 2026-09-01 - A refused route still cuts the power at the two human doors
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** FX2-2, SVN-A4
 
 **Written:** 2026-09-01
@@ -14314,6 +14369,10 @@ route - so one turnout under a train silently dropped every other turnout.
 **Claude, 2026-09-08.**
 
 `execRoute` read your ruling as being about the whole accessory GROUP: it asked once, before the loop, for the FIRST held command, then skipped every accessory. One turnout under a train dropped every other turnout in the route. Each accessory is asked about immediately before it goes out now, and only the held one is skipped. The emergency-stop carve-out is untouched. Commit `c22c9d90`, and the rule is written down in behaviour.md section 7a. **To re-test:** a route with a switch under a train and other switches elsewhere - the others should throw.
+
+**Claude, 2026-09-24.**
+
+Superseded by MT-506, MT-507, MT-508 - one test each, so each gets its own verdict (your rule of 2026-09-07).  Nothing in the history above is withdrawn.
 
 ---
 
@@ -14825,7 +14884,7 @@ see MT-257.
 
 ### MT-256 - 2026-09-02 - Switching a signal by hand while a train stands at its platform
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** SVN-B16, WK3-B1
 
 **Written:** 2026-09-02
@@ -14888,6 +14947,10 @@ Both halves mutation-confirmed: dropping the direction fails one assertion, drop
 fails another.
 
 *Run against commit 409d4ce8, build\classes, compiled 05 Sep 23:25 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Superseded by MT-509, MT-510, MT-511 - one test each, so each gets its own verdict (your rule of 2026-09-07).  Nothing in the history above is withdrawn.
 
 ---
 
@@ -16762,6 +16825,10 @@ It took two goes to make it mean anything: the first fixture picked a square the
 
 **What is left for your hands:** step 1 as a gesture - that the Autonomy menu's import item reaches this at all.
 
+**Claude, 2026-09-24.**
+
+**To run now:** as written, with step 2 being: change one station's Maximum Train Length by hand - the setting the automated test uses.  **Expect:** the import works, and after the second import your changed maximum is still there.
+
 ---
 
 <a id="mt-299"></a>
@@ -17816,6 +17883,10 @@ Automated, with MT-267, and your objection was right: the entry was badly writte
 `regression.testADeclinedSetupEditSaysSoAndSurvivesTheExit` reaches the state without racing anything: `isAutonomyBusy()` answers true for a staging flow as well as a running layout, so the consequence can be asserted directly. It holds all three cases - the refused rebuild records itself so the exit save is skipped, a close carrying no edit records nothing (OPV-C5), and an ordinary rebuild records nothing at all. Removing the record makes it red.
 
 **What is left for your hands:** nothing that a railway is needed for.
+
+**Claude, 2026-09-24.**
+
+**Nothing to run.**  It is automated and green - `regression.testADeclinedSetupEditSaysSoAndSurvivesTheExit`, in today's battery - and your note of 2026-09-12 asked for it to be closed once it was.  Mark it Works to close it.
 
 ---
 
@@ -20656,7 +20727,7 @@ FR-006, built 2026-08-22. Reconstructed from the receipt: this entry is written 
 
 ### MT-380 - 2026-09-13 - Autonomy can be set up by importing, from the menu, with nothing set up yet
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** FR-007
 
 **Written:** 2026-09-13
@@ -20735,6 +20806,10 @@ that case, so it is not a separate entry.
 matched by NAME rather than number, and an import made with no page loaded - which the comments below
 record. A verdict from before those is not a verdict about this build, and the steps it now carries
 name a layout that did not exist when he ran it.
+
+**Claude, 2026-09-24.**
+
+Superseded by MT-512, MT-513, MT-514 - one test each, so each gets its own verdict (your rule of 2026-09-07).  Nothing in the history above is withdrawn.
 
 ---
 
@@ -21648,6 +21723,10 @@ Your note on MT-170: *"if the user confirms the CS download, we should also down
 Beside the ordinary layout files, the CS3's own files are there too - `CS3_mags.json` and the CS3 route file.
 
 #### Comments
+
+**Claude, 2026-09-24.**
+
+**To run now:** as written.  **Expect:** `CS3_mags.json` and the CS3's route file beside the ordinary layout files.  No fix is recorded since MT-170 found them missing, so a failure here is still news.
 
 ---
 
@@ -22732,13 +22811,24 @@ Your ruling, 2026-09-21: reading (a) - 'let's go for the 9-12 ruling, since the 
 
 CORRECTION, and two of them are mine. (1) The step 4 I wrote this morning was wrong: I read your run as though a train ONE UNIT PAST the measured total had been offered and chosen. It had not - the total was 4 and you ran 3 and 4, one under it and exactly it. A train longer than the measured route in is refused at every tier, by one predicate (theApproachItselfHoldsIt is length <= measuredRouteIn), and regression.testAPassingTrainMayStandAcrossThePoints pins it: a route in of 3 admits three units and refuses four, naming the station. Step 4 now expects that refusal, and the entry names the two gates separately - the measured route in is the room, and a station's Max Train Length is the gate you set when you want autonomy kept out of a station the room rule would otherwise allow. The sentence saying the approach geometry no longer gates autonomy is gone; it does. (2) I moved this entry to fixed validated on my own reading of your ruling, which the README forbids in as many words - validated is your word and only yours, and your only verdict here is Does not work. It is back to needs test, so it stays on the ledger until you have run the corrected step 4. Found by an Opus validation of the last two days (VD12).
 
+**Claude, 2026-09-24.**
+
+**To run now** - only the corrected step 4 is open:
+
+1. Right-click along the run and add up the two legs Tunnel to BottomMainAPre and BottomMainAPre to BottomMainA (4 on 2026-09-21).
+2. Set 75 407 DB to that total plus one, and stand it at Tunnel - note its length first.
+3. Right-click it and look for BottomMainA.
+4. Put its length back.
+
+**Expect:** BottomMainA is refused, and the refusal names it.  Autonomy asks the same rule, so it is not checked separately.
+
 ---
 
 <a id="mt-438"></a>
 
 ### MT-438 - 2026-09-15 - The tail question: a sensor at exactly the length, roads a train can drive, and a default
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-226, OB-227, FR-088
 
 **Written:** 2026-09-15
@@ -22838,13 +22928,17 @@ FOUND, and both of your objections are one fault. Four roads LEAVE BottomMainAPr
 
 FIXED, on your ruling, and it turned out to be one defect rather than the three I had been circling. Your sentence - the tail is certain at departure, you know which way the train went, just unlock the rest once the tail by length is far enough away - dissolved the ambiguity instead of managing it, and it pointed at machinery that already exists: tailHasProvablyPassed, behind greater than or equal to trainLength, which this railway already uses to hand an edge back as the head pulls away. Why there were ever several roads to guess between: a locked path RESERVES every point on it, through Point.reserve, which deliberately does not sweep - that reservation is what holds a junction behind the train against a second train reaching it another way. So while a run is going the locomotive is the occupant of several Points at once, and walkStandingTrains ran a tail from every one of them: one anchored at the destination it had not reached, another at a square it left ten minutes ago, each picking its road from whatever arrival side that Point happened to carry. On your railway four roads leave BottomMainAPre on side E and the first of them in list order turns up at switches 100 and 99 - so a phantom claim there painted exactly the six tiles in your screenshot, while the road the train really drove went unclaimed. That is both of your observations and the persistence too: the mark was not stale, it was being recomputed correctly from a reservation, which is why refreshing never cleared it. walkStandingTrains now walks ONE tail per locomotive, and for a running one it anchors at the head - its last reported milestone - and follows the part of its path it has already driven, spending the train's length back along that road and stopping. Held by core.testARunningTrainHasOneTail: a real run through a junction with the sensors thrown by hand, asked while the path is locked, with a one-unit train so that any claim beyond one leg can only come from a second anchor. The road it drove is claimed, the other road into the junction is not, the leg two back is not, and the leg ahead is not claimed as a tail either. The mutation - walk every holder again, drop the head anchor - reddens two of the three. Twenty-nine classes around the tail, the room rules, the diagram marks and testAutoLayout are green. What is worth your checking when you next run: a train part-way through a run should now show exactly one orange stretch, behind it, on the road it came in along.
 
+**Claude, 2026-09-24.**
+
+Superseded by MT-515 - one test each, so each gets its own verdict (your rule of 2026-09-07).  Nothing in the history above is withdrawn.
+
 ---
 
 <a id="mt-439"></a>
 
 ### MT-439 - 2026-09-15 - Why Not Moving? and Test a Path both follow Path Type
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-225
 
 **Written:** 2026-09-15
@@ -22868,6 +22962,10 @@ Your note on MT-434: *"Does not work.  Changes don't happen when switching, and 
 *What this is:* OB-225, replacing MT-434.  `regression.testPathTypeRedrawsTheTestInTheEditor` - both claims drive the real editor on the frozen railway; the Why one was seen red first; commit `7a484ea9`.
 
 #### Comments
+
+**Claude, 2026-09-24.**
+
+Superseded by MT-541, MT-542 - one test each, so each gets its own verdict (your rule of 2026-09-07).  Nothing in the history above is withdrawn.
 
 ---
 
@@ -22967,6 +23065,16 @@ Found by the review of the OB-229 fix.  Since the route search stopped going thr
 
 #### Comments
 
+**Claude, 2026-09-24.**
+
+**To run now:**
+
+1. Stand a train at BottomInner.
+2. In the autonomy editor, set Path Type to Manual, choose Why Not Moving? and click the train.
+3. Find TunnelLongPark, TunnelLeftPark, TunnelCenterPark, TunnelRightPark and ParkingTrack11 in the answer.
+
+**Expect:** each that is refused says it contains an intermediate terminus station; none says no track route leads there.  Skip the original's optional step.
+
 ---
 
 <a id="mt-443"></a>
@@ -23001,7 +23109,7 @@ Found by the wide autonomy review.  A station can be set unavailable while anoth
 
 ### MT-444 - 2026-09-15 - Why Not Moving? on Manual gives a reason for a station the right-click menu leaves out
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** AMR-B2 (OB-225)
 
 **Written:** 2026-09-15
@@ -23023,6 +23131,10 @@ Found by the wide autonomy review.  On **Manual**, Why Not Moving? answers for a
 *What this is:* AMR-B2.  `core.testWhyStuck.testByHandAStationTheMenuDoesNotOfferSaysWhy`.  Seen red first (8818d8cd); fixed in 64169b0b.
 
 #### Comments
+
+**Claude, 2026-09-24.**
+
+Superseded by MT-516, MT-517 - one test each, so each gets its own verdict (your rule of 2026-09-07).  Nothing in the history above is withdrawn.
 
 ---
 
@@ -23102,6 +23214,10 @@ controls beside it, so the sentence it logs is pinned without you.
 **What is left for your hands is step 1 only** - that editing the setup with autonomy running normally
 gives you the warning you already get and **no second message on top of it**. That is a negative and it
 takes a minute. Nothing else in this entry needs the race to be hit.
+
+**Claude, 2026-09-24.**
+
+**Nothing is left for your hands** - the same as MT-267: the step the last note asked for cannot happen, because the editor cannot be opened during a run, and the race is held by `regression.testADeclinedSetupEditSaysSoAndSurvivesTheExit.testTheRefusedRebuildSaysSo`.  Mark it Works.
 
 ---
 
@@ -23224,6 +23340,10 @@ Found by the wide autonomy review, and your answer on how your detection behaves
 
 #### Comments
 
+**Claude, 2026-09-24.**
+
+**Nothing you can run as written:** it needs a train whose tail lies over a sensor that another train's only way home crosses, and no such arrangement is named - I cannot name one from here without building it.  The rule is held by `core.testHomeStaging.testASensorHeldByAStandingTrainsTailIsNotBlocked`.  Mark it Works on that, or tell me to find an arrangement on your railway.
+
 ---
 <a id="mt-451"></a>
 
@@ -23320,6 +23440,10 @@ Found by the wide autonomy review, and your ruling on it: *"drop the train and k
 
 #### Comments
 
+**Claude, 2026-09-24.**
+
+**To run now:** as written, but copy `autonomy.json` from the folder TrainControl runs from to somewhere safe first, and put it back after you quit - the exit writes over it.
+
 ---
 <a id="mt-453"></a>
 
@@ -23351,12 +23475,16 @@ Found by the wide autonomy review, and your ruling on it: *"drop the lock edge w
 
 #### Comments
 
+**Claude, 2026-09-24.**
+
+**To run now:** as written, but copy `autonomy.json` from the folder TrainControl runs from to somewhere safe first, and put it back after you quit - the exit writes over it.
+
 ---
 <a id="mt-454"></a>
 
 ### MT-454 - 2026-09-16 - Mass Assign Lengths walks every piece of track on the page that has no length, then its switches
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** FR-089
 
 **Written:** 2026-09-16
@@ -23389,6 +23517,10 @@ Rewritten the same day after review MAL, to your rulings *"Every leg, cut at swi
 *What this is:* FR-089, and review MAL (B1 to B4, C2, C3, C8).  `core.testMassAssignLengths` - twelve claims, eleven seen red first against the first version, and six mutations each caught.
 
 #### Comments
+
+**Claude, 2026-09-24.**
+
+Superseded by MT-524, MT-525, MT-526, MT-527, MT-528 - one test each, so each gets its own verdict (your rule of 2026-09-07).  Nothing in the history above is withdrawn.
 
 ---
 
@@ -23437,7 +23569,7 @@ Rewritten the same day after review MAL.  Your request: *"a display option to st
 
 ### MT-456 - 2026-09-17 - Mass Assign Max Train Lengths walks every station on the page that has no maximum
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** FR-091
 
 **Written:** 2026-09-17
@@ -23468,13 +23600,17 @@ Your request: *"add a similar feature to walk stations that don't have a max len
 
 #### Comments
 
+**Claude, 2026-09-24.**
+
+Superseded by MT-520, MT-521, MT-522, MT-523 - one test each, so each gets its own verdict (your rule of 2026-09-07).  Nothing in the history above is withdrawn.
+
 ---
 
 <a id="mt-457"></a>
 
 ### MT-457 - 2026-09-17 - Clear All Max Train Lengths takes the maximum off every station on every page
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** FR-092
 
 **Written:** 2026-09-17
@@ -23501,6 +23637,10 @@ Your request: *"Add a right click menu open to clear all max station train lengt
 *What this is:* FR-092.  `core.testMassAssignLengths` - two claims on a two-page railway, and five mutations each caught.
 
 #### Comments
+
+**Claude, 2026-09-24.**
+
+Superseded by MT-518, MT-519 - one test each, so each gets its own verdict (your rule of 2026-09-07).  Nothing in the history above is withdrawn.
 
 ---
 
@@ -23546,7 +23686,7 @@ From the 2026-09-19 review round (SET-B1), fixed the same day.  Typing a negativ
 
 ### MT-459 - 2026-09-19 - Mass Assign Lengths asks for crossings on their own, and each road counts them once
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** SET-B2
 
 **Written:** 2026-09-19
@@ -23571,6 +23711,10 @@ Your ruling of 2026-09-19: *"For crossings: if its length is set, count that len
 *What this is:* review finding SET-B2, fixed 2026-09-19 with a test seen failing first and a mutation for each half.
 
 #### Comments
+
+**Claude, 2026-09-24.**
+
+Superseded by MT-529, MT-530 - one test each, so each gets its own verdict (your rule of 2026-09-07).  Nothing in the history above is withdrawn.
 
 ---
 
@@ -23765,7 +23909,7 @@ Filed from this test: OB-269 (bug - excessive lock edges).  They are in `issues.
 
 ### MT-464 - 2026-09-19 - A locomotive cannot be deleted or renamed while a route that drives it is running, and the route finishes
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** CS3-B1
 
 **Written:** 2026-09-19
@@ -23828,6 +23972,10 @@ refusal test usually misses - the route **finishes**, running the list it began 
 that changed underneath it. The last of those is what `CS3-B1` was really about: three of eight
 turnouts thrown and the rest never sent.
 
+**Claude, 2026-09-24.**
+
+Superseded by MT-531 - one test each, so each gets its own verdict (your rule of 2026-09-07).  Nothing in the history above is withdrawn.
+
 ---
 
 <a id="mt-465"></a>
@@ -23878,7 +24026,7 @@ Closed on your verdict: the four buttons now read the click the way the keyboard
 
 ### MT-466 - 2026-09-19 - Cancel on the function editor undoes a Copy Customizations
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** GUX-C3
 
 **Written:** 2026-09-19
@@ -23945,6 +24093,10 @@ opened, which is a dirty flag it does not keep today. It is filed rather than ru
 greyed-out Apply that is wrong in the OTHER direction - greyed while there IS something to apply -
 loses work silently, and that is worse than the button being pressable when it need not be.
 
+**Claude, 2026-09-24.**
+
+Superseded by MT-532 - one test each, so each gets its own verdict (your rule of 2026-09-07).  Nothing in the history above is withdrawn.
+
 ---
 
 <a id="mt-467"></a>
@@ -23994,6 +24146,10 @@ What says a route came from the station is its lock: only a sync sets it, to exa
 
 `ui.testYourOwnRoutesToggleWithoutASync` - single and bulk, each with a station route as the control - was red first, and is red again under each of three mutations.  Steps 1 to 4 are worth running again; step 5 still needs a route from the station.
 
+**Claude, 2026-09-24.**
+
+**To run now:** steps 1 to 4 only.  **Expect:** no spinner and no wait, one route or many, and the list shows the new state.  Step 5 needed a route from the station, and the last note does not ask for it again.
+
 ---
 
 <a id="mt-468"></a>
@@ -24024,6 +24180,10 @@ From the 2026-09-19 review round, finished the next day.  Keys in all eight lang
 *What this is:* review finding UIX-C4, fixed 2026-09-19; testEveryMessageKeyIsAskedFor recomputes the dead set on every run.
 
 #### Comments
+
+**Claude, 2026-09-24.**
+
+**To run now:** visit Locomotives, Routes, the track diagram, the layout editor and the autonomy editor; open add locomotive, edit functions, edit route, diagram export and Bulk Tools > Mass Assign Lengths...; then switch to German and do the same, then one more language, then back.  **Expect:** every label, button, menu item and tooltip is a sentence - no key names like `route.ui.x`, nothing blank, no missing-resource errors.
 
 ---
 
@@ -24389,7 +24549,7 @@ touch, which is the grain the reduction has used for them since AUR-B1.  Held by
 
 ### MT-474 - 2026-09-23 - Mass Assign Train Lengths asks each train that has no length
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** FR-094
 
 **Written:** 2026-09-23
@@ -24454,13 +24614,17 @@ Both done, one with a caveat.
 
 **The focus** I could not make fail.  A new test opens the real editor window with two of your trains unmeasured, starts the walk from the Bulk Tools item - once by the item itself, once through the right-click menu's own click handling, which takes the menu down first - and finds the number field focused on the first train, after 0 is refused, and on the second train (`ui.testTheLengthPromptHasTheKeyboard`).  So the prompt now asks for the field by name whenever it gains the keyboard, rather than leaving it to Swing's focus order, but I cannot show that this changes what you saw.  If it still happens, please say which prompt - the first, the one after a refused number, or a later train - and whether that train was on the page you were looking at.
 
+**Claude, 2026-09-24.**
+
+Superseded by MT-533, MT-534 - one test each, so each gets its own verdict (your rule of 2026-09-07).  Nothing in the history above is withdrawn.
+
 ---
 
 <a id="mt-475"></a>
 
 ### MT-475 - 2026-09-23 - The orange is where the train is, sensors included; the grey is what it blocks
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-277, OB-208
 
 **Written:** 2026-09-23
@@ -24505,6 +24669,10 @@ mutation.  No claim draws a double curve yet - step 4 is the only check of that 
 **Claude, 2026-09-23.**
 
 Two notes. (1) Step 3 was edited in place on 2026-09-23 when MT-482 replaced the grey rule, which this file's rules do not allow; the text stays as it is from here on. What MT-482 replaced: the grey no longer carries on to the next sensor, it covers only the squares the train lies on - so the title's "the grey is what it blocks" and the last Expected bullet ("the grey covers the stretches it still reaches") describe the old rule; read them as MT-482 says (DCN-C16). (2) Held at fixed unvalidated although you said *Works*: after your run the tail walk changed twice - 195aa1f1 (a tail past a switch is asked which way it lies, MT-477) and 6b7301fc (a train turned round on a square spends the square it stands on first) - and both decide where the orange ends. A re-run on the current build is all it needs.
+
+**Claude, 2026-09-24.**
+
+Superseded by MT-535, MT-536 - one test each, so each gets its own verdict (your rule of 2026-09-07).  Nothing in the history above is withdrawn.
 
 ---
 
@@ -24615,6 +24783,16 @@ Now the question is put wherever the tail has passed the switch its roads part a
 
 Left as it was, and yours to decide (it is in the report): with no answer, or Not known, a fork right behind the platform still puts the tail on the first rail the walk finds - at BottomSecondary the turned one - where every other fork stops at the switch.
 
+**Claude, 2026-09-24.**
+
+**To run now** - the expectations changed with the 2026-09-23 fix:
+
+1. Stand 75 407 DB at BottomSecondary with its tail towards RampDown, at length 2, then 3, then 4 - cutting and pasting it each time.  Note its length first and put it back after.
+
+**Expect:** at 2, nothing is asked; at 3, "towards RampDown" and "towards BottomCrossover (not reached)"; at 4, RampDown chosen to start with, and "towards BottomCrossover"; RampDown once in each list.
+
+**And a question for you,** separate from the run: with no answer or Not known, a fork right behind the platform still puts the tail on the first rail the walk finds - at BottomSecondary the turned one - where every other fork stops at the switch.  Should it stop at the switch there too?
+
 ---
 
 <a id="mt-478"></a>
@@ -24713,6 +24891,16 @@ Done.  The sentence now wraps so that the one you see before any signal is paire
 
 `ui.testTheGuardWindowIsNotTooWide` opens the real window for both guards: the entry window was 1123 pixels wide for a 1085-pixel sentence.  Red first, and red under two mutations - no wrapping, and wrapping as narrow as a tooltip.
 
+**Claude, 2026-09-24.**
+
+**To run now** - only the window's width is open:
+
+1. In the autonomy editor, right-click a station > Entry Guard Signal...
+2. Look at the window, then pair a signal.
+3. The same with Exit Guard Signal...
+
+**Expect:** the sentence wraps, the window is not too wide, and it does not widen when the first signal is paired.
+
 ---
 
 <a id="mt-480"></a>
@@ -24764,6 +24952,10 @@ Nothing to fix here, I think - here is why.  At BottomMainPost facing south, hav
 
 A train of 10 units or more would have 2014 in its list - but still would not be asked, because with one road every answer describes the same track.  If by "the last square the train passed" you meant the last sensor the FRONT passed on the way in, say so: that is a different question from the one this prompt asks.
 
+**Claude, 2026-09-24.**
+
+**Nothing new to run** - you reported that the parking works.  What is open is a question: did *"the last square the train passed"* mean the last sensor the front of the train passed on the way in?  If yes, this entry is done.
+
 ---
 
 <a id="mt-481"></a>
@@ -24803,6 +24995,17 @@ tile on your railway) - each red under its own mutation.
 **Claude, 2026-09-23.**
 
 Held at fixed unvalidated although you said *Works*: after your run the tail walk changed (195aa1f1, MT-477; 6b7301fc) and so did the route-tile fold (3492e38c: a route tile's old length is never moved onto a sensor square). Either can move where the orange ends by a square. A re-run on the current build is all it needs.
+
+**Claude, 2026-09-24.**
+
+**To run now:**
+
+1. Stand a train at BottomInner, northbound.
+2. Raise its length until its tail lies back across 1 - Main 15,10, the route tile - note its length first.
+3. Look at the orange and the grey there.
+4. Put the length back.
+
+**Expect:** both run unbroken through 15,10, as on the track either side.
 
 ---
 
@@ -24891,13 +25094,17 @@ taken away.
 
 Held at fixed unvalidated although you said *Works*: after your run, where a train may be put changed (1c855483: only on a copy trains may arrive at) and a cut now takes the westbound copy where a square has one (59fdb67d). Both are on this entry's path. A re-run on the current build is all it needs.
 
+**Claude, 2026-09-24.**
+
+**To run now:** as written - BottomSecondary facing west, cut, and paste on BottomMainA.  **Expect:** it faces east.  Since OB-284 a paste can keep a westbound heading at BottomMainA, so facing east is now the paste's own choice, not the only one the square allows.
+
 ---
 
 <a id="mt-484"></a>
 
 ### MT-484 - 2026-09-23 - Segment Length takes a 0 as an answer, and has a Clear button
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** FR-097
 
 **Written:** 2026-09-23
@@ -24930,6 +25137,10 @@ TunnelLongPark approach) - each red under its own mutation, seven in all.  The b
 **Claude, 2026-09-23.**
 
 Held at fixed unvalidated although you said *Works*: after your run, what Segment Length opens with changed (55959c9c). On a run with no length and no answer it now opens empty, so OK without typing records nothing rather than a 0. Typing 0 is still an answer, and Clear is unchanged. A re-run on the current build is all it needs.
+
+**Claude, 2026-09-24.**
+
+Superseded by MT-537, MT-538 - one test each, so each gets its own verdict (your rule of 2026-09-07).  Nothing in the history above is withdrawn.
 
 ---
 
@@ -24982,13 +25193,17 @@ You do not need to run it: your own saved setup shows it happened.  Read from cs
 
 The layout's lengths add up to 181 units before and after.  If that is enough, mark it as working.  The steps asked you to read a length on each square, which the editor does not show square by square - my mistake.
 
+**Claude, 2026-09-24.**
+
+**Nothing to run.**  Its steps ask you to read per-square lengths, which the editor does not show.  The five folds were checked against your saved setup and are listed in the 2026-09-23 note above; if that is enough, mark it Works.
+
 ---
 
 <a id="mt-486"></a>
 
 ### MT-486 - 2026-09-23 - Return Home brings a train back facing the way its home was set
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-282
 
 **Written:** 2026-09-23
@@ -25019,41 +25234,47 @@ BottomMainA's east bar lifted: homed westbound, it comes back westbound) and `co
 remembers its facing through a build and a capture, and no impossible facing is saved) - each red under its own
 mutation.  The question in step 3 is what only you can check.
 
+**Claude, 2026-09-24.**
+
+Superseded by MT-539, MT-540 - one test each, so each gets its own verdict (your rule of 2026-09-07).  Nothing in the history above is withdrawn.
+
 ---
 
 <a id="mt-487"></a>
 
 ### MT-487 - 2026-09-23 - Importing routes says they arrive switched off
 
-**Disposition:** fixed unvalidated
-**From:** REG-B3, REG2-C6, REG2-C7
+**Disposition:** superseded
+**From:** REG-B3, REG2-C6
 
-**Written:** 2026-09-23; **rewritten 2026-09-24** for your ruling on REG2-C7: *"save the state in the file on export,
-and ask the user on import.  if they want them armed, arm them.  otherwise, don't."*  Not yet run in either form.
+**Written:** 2026-09-23
 
-**What was wrong.**  Routes read with Import Routes arrived with their automatic firing off, whatever the file said,
-and nothing said so - or which had been on.  Somebody restoring a backup found out when a train ran through a sensor
-that used to set a road.
+**What was wrong.**  Routes read with Import Routes arrive with their automatic firing off, whatever the file says -
+your ruling of 2026-09-10 - and nothing said so.  Somebody restoring a backup found out when a train ran through a
+sensor that used to set a road.
 
 **Steps**
 
-1. Turn automatic firing on for one route that has a sensor condition, if none has it on - right-click it, Enable Auto
-   Execution.
+1. Note which routes have their automatic firing on now: the import switches it off on every route, and nothing lists
+   which were on (REG2-C7, still open).  If none has, turn it on for one route that has a sensor condition - right-click
+   it, Enable Auto Execution - so step 3 has something to switch off.
 2. Routes -> Export, and save the file somewhere.
-3. Routes -> Import, pick that file, and answer **No** when asked whether to turn automatic firing on again.
-4. Routes -> Import the same file again, and this time answer **Yes**.
+3. Routes -> Import, and pick that file.
+4. Turn automatic firing back on for the routes you noted in step 1.
 
 **Expected**
 
-- Step 3: the question names the routes saved with their firing on, and No is the default.  After No, a message says
-  how many routes were imported, that their automatic firing is off until you turn it on, and names the two ways to do
-  it - Enable Auto Execution on a route's right-click menu, and Bulk Enable.  None of them fires automatically, and the
-  log has no "Route ... is running" line for any of them.
-- Step 4: the message says automatic firing is on again for the routes saved with it on, and those - only those - are
-  armed again.
+- A message says how many routes were imported, that their automatic firing is off until you turn it on, and names the
+  two ways to do it - Enable Auto Execution on a route's right-click menu, and Bulk Enable.
+- Between steps 3 and 4, the log has no "Route ... is running" line for the route armed in step 1 or any other, and
+  none of them fires automatically until you turn it on.
 
-*What this is:* `core.testAnImportSaysItsRoutesAreOff` (the notice, no route armed on the way in unless asked, and the
-routes saved armed armed again when asked).  The question and the messages on screen are what only you can check.
+*What this is:* `core.testAnImportSaysItsRoutesAreOff` (the notice, and no route armed on the way in).  The message on
+screen is what only you can check.
+
+**Claude, 2026-09-24.**
+
+Superseded by MT-496 and MT-497 (one test each), because your ruling on REG2-C7 changed what an import does: it now asks.
 
 ---
 
@@ -25062,10 +25283,9 @@ routes saved armed armed again when asked).  The question and the messages on sc
 ### MT-488 - 2026-09-23 - A train reversed on the throttle where one direction is barred
 
 **Disposition:** fixed unvalidated
-**From:** TDY2-A1, GUI2-A1, AUT2-A1, TDY3-A1, TDY3-A2, GUI3-C1, AUT3-B1, TDY3-C1, TDY4-C3, OB-284, GUI4-C5, the REG4
-lead
+**From:** TDY2-A1, GUI2-A1, AUT2-A1, TDY3-A1, TDY3-A2, GUI3-C1, AUT3-B1, TDY3-C1, TDY4-C3
 
-**Written:** 2026-09-23; steps 5 to 7 added 2026-09-24 (not yet run)
+**Written:** 2026-09-23
 
 **What was wrong.**  At a square where trains may not arrive from one side - BottomMainA, with arrivals from the east
 barred - a train reversed on the throttle was recorded as reversed but left standing the old way round in the model, and
@@ -25077,9 +25297,6 @@ the next route was locked in the direction it no longer drives.
 2. Reverse it on the throttle.
 3. Look at the routes offered for it by hand, and at Why not Moving? for it.
 4. Reverse it again.
-5. Reverse it once more so it faces west, then cut it (Control+X) and paste it back onto BottomMainA.
-6. In the Autonomy tab's locomotive list, click its destination label for the list of reasons.
-7. Close TrainControl and open it again, with the train still facing west at BottomMainA.
 
 **Expected**
 
@@ -25088,16 +25305,15 @@ the next route was locked in the direction it no longer drives.
   not Moving? says trains may not arrive at BottomMainA facing the way it faces, and to drive it off by hand, turn it
   round, or open that side under Trains May Arrive...; on Manual, Why not Moving? does not say it cannot be sent.
 - Step 4: it faces east again and autonomy can start it as before.
-- Step 5: after the paste it still faces west - a paste does not turn a train round where it can leave the way it
-  faces (your ruling on OB-284: *"for barred arrival directions, keep the direction"*).
-- Step 6: with autonomy stopped, the list gives the reasons for a train sent by hand, as Why not Moving? on Manual
-  does - it does not say the train cannot be sent anywhere.
-- Step 7: the log written while the setup loads has no line saying it was "placed on a non-station".
 
 The same is true of the autonomy editor's Facing menu: choosing west there stands the train facing west.
 
 *What this is:* `core.testATrainIsPutOnlyWhereItCanStart` (the throttle, the Facing menu and the build on your frozen
 railway), red under its mutations.  Whether the diagram and the refusal read right is what only you can check.
+
+**Claude, 2026-09-24.**
+
+The steps above are as written on 2026-09-23.  What 2026-09-24 added is in entries of their own: the paste (MT-498), the locomotive list on Manual (MT-499) and the start-up log (MT-500).
 
 ---
 
@@ -25157,10 +25373,9 @@ those two and is not a step here.
 ### MT-491 - 2026-09-23 - An old autonomy.json's trains face the way the old version ran them
 
 **Disposition:** fixed unvalidated
-**From:** REG4-A1, REG4-C1, REG-B1, REG2-C3
+**From:** REG4-A1, REG4-C1
 
-**Written:** 2026-09-23; expectations added 2026-09-24 for your rulings on switched-off stations and the old file's
-directions (not yet run)
+**Written:** 2026-09-23
 
 **What was wrong.**  Importing an autonomy.json from an older version chose which way each train faces - the first
 way trains may arrive at its square - and said in the log that it had guessed.  The old file does say which way each
@@ -25180,24 +25395,16 @@ train runs: a train there went only along the edges that start at its point.  On
 - The import's message says it placed 4 locomotives.
 - The log has no line saying trains "had the way they face chosen for them", and none beginning "The old file ran the
   trains at" - the file says which way all four ran, and your railway's directions let each stand that way round.
-- The log says how many pieces of track the old file ran one way that this diagram does not (176 on the frozen copy of
-  your railway), and that they were left as the diagram has them.  **Your diagram's directions are not changed** -
-  they are shared by every configuration, and an import carries the old file's directions only onto a diagram nobody
-  has set a direction on.
-- In the imported configuration, the stations the old file had switched off - ParkingTrack4 to ParkingTrack12 among
-  them - are on, but not ones autonomy chooses (your ruling on REG-B1: *"translate as on but not auto destination"*).
-  A train can be sent to one by hand.
-- The log says Startup > Load Autonomy has been unticked, and the menu shows it unticked (your ruling on REG2-C3:
-  *"Set the setting to unchecked when importing a legacy json file, each time"*).  **Tick it again afterwards** if you
-  want your own setup loaded when TrainControl starts - the setting is shared by every layout.
 
 *What this is:* `core.testAnImportedFacingGuessCanStart`: on a fresh upgrade of the frozen railway the four trains face
-the way the old file ran them (the 2-8-4 at TopMainR1 north), the old file's one-way running is carried onto a fresh
-diagram and not onto yours, and where the file cannot say, the guess is made over the finished setup;
-`core.testAutonomyDiagramSession` for the switched-off stations.  The log lines are what only you can see.
+the way the old file ran them (the 2-8-4 at TopMainR1 north), and where the file cannot say, the guess is made over
+the finished setup.  The log line is what only you can see.
+
+**Claude, 2026-09-24.**
+
+Running this import now also unticks Preferences > Startup > Load Autonomy - tick it again afterwards if you use it (MT-503).  What else 2026-09-24 added is in entries of their own: your directions left alone (MT-501) and switched-off stations (MT-502).
 
 ---
-
 <a id="mt-492"></a>
 
 ### MT-492 - 2026-09-24 - Return Home finds a plan on a crowded railway
@@ -25229,13 +25436,17 @@ trains came home in a second or two.
 could not find before - and an easy arrangement still gets its shortest plan.  Whether it finds one on your railway as
 it is today, in the time you are willing to wait, is what only you can check.
 
+**Claude, 2026-09-24.**
+
+**To run now:** steps 1 to 3.  Skip the four-train check in the Expected.
+
 ---
 
 <a id="mt-493"></a>
 
 ### MT-493 - 2026-09-24 - A station's entry guard can never be its exit guard
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** AUT-C2
 
 **Written:** 2026-09-24
@@ -25263,6 +25474,10 @@ a path leading to the chosen station, we can add notice to the autonomy editor."
 
 *What this is:* `core.testAutonomyDiagramSession` (the refusal both ways, the warning for a file that already has one
 signal on both lists, and the notice).  The messages on screen are what only you can check.
+
+**Claude, 2026-09-24.**
+
+Superseded by MT-504 and MT-505 - it checked two things under one verdict.
 
 ---
 
@@ -25293,6 +25508,10 @@ setup last had on a square rather than the one standing there, and choosing a di
 
 *What this is:* `regression.testTheFacingMenuIsAboutTheTrainThere`, on your frozen railway with the setup's train and
 the railway's train deliberately different.  That it reads right after a real run is what only you can check.
+
+**Claude, 2026-09-24.**
+
+**To run now:** before starting autonomy, note which train stands at BottomInner, which trains reach from both sides; run autonomy until a different train stops there; stop autonomy, right-click BottomInner, open "... Is Facing" and choose the direction not ticked.  **Expect:** the menu is titled with the train there now; that train turns; the earlier one does not move.
 
 ---
 
@@ -25328,5 +25547,1193 @@ refusal"*.
 *What this is:* `core.testATurnedTrainIsNotSentIntoAnotherTail`, on the frozen copy of your railway: the railway and
 Return Home both refuse the turned train's way out while the parked train lies across it, and both let it go once
 that train has gone.  That the refusal reads right on screen is what only you can check.
+
+**Claude, 2026-09-24.**
+
+**To run now:** in step 3, right-click the turned train on the track diagram and look for BottomMainAPre.  **Expect:** not offered while the train in TunnelRightPark is 3 units; offered again once its length is back.
+
+---
+
+<a id="mt-496"></a>
+
+### MT-496 - 2026-09-24 - Importing routes and answering No leaves every route's automatic firing off
+
+**Disposition:** fixed unvalidated
+**From:** REG2-C7, MT-487
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Routes read with Import Routes arrived with their automatic firing off whatever the file said,
+and nothing said which had been on.  Your ruling of 2026-09-24: *"save the state in the file on export, and ask the
+user on import.  if they want them armed, arm them.  otherwise, don't."*  This entry is the No answer; MT-497 is Yes.
+
+**Steps**
+
+1. If no route has its automatic firing on, right-click one that has a sensor condition and choose Enable Auto
+   Execution.
+2. Routes > Export, and save the file.
+3. Routes > Import, and choose that file.
+4. Answer **No** to the question.
+
+**Expected**
+
+- The question names the route from step 1, and No is the default button.
+- After No, a message says the routes were imported with automatic firing off, and none of them fires by itself.
+
+*What this is:* `core.testAnImportSaysItsRoutesAreOff`.  The question and the message on screen are what only you
+can check.
+
+---
+
+<a id="mt-497"></a>
+
+### MT-497 - 2026-09-24 - Importing routes and answering Yes turns automatic firing back on for the routes saved with it
+
+**Disposition:** fixed unvalidated
+**From:** REG2-C7, MT-487
+
+**Written:** 2026-09-24
+
+**What was wrong.**  As MT-496: an import could not bring back the automatic firing a backup was saved with.  This
+entry is the Yes answer.
+
+**Steps**
+
+1. Note which routes have their automatic firing on.  If none has, right-click one that has a sensor condition and
+   choose Enable Auto Execution.
+2. Routes > Export, and save the file.
+3. Routes > Import, and choose that file.
+4. Answer **Yes** to the question.
+
+**Expected**
+
+- A message says automatic firing is on again for the routes saved with it on.
+- Exactly the routes you noted in step 1 have automatic firing on, and no others.
+
+*What this is:* `core.testAnImportSaysItsRoutesAreOff.testAnImportArmsWhatWasSavedArmedWhenAsked`.
+
+---
+
+<a id="mt-498"></a>
+
+### MT-498 - 2026-09-24 - A train facing west at BottomMainA still faces west after it is cut and pasted back
+
+**Disposition:** fixed unvalidated
+**From:** OB-284
+
+**Written:** 2026-09-24
+
+**What was wrong.**  A paste chose only ways trains may arrive in, so a train facing the barred way at BottomMainA
+was turned round when it was cut and pasted back.  Your ruling of 2026-09-24: *"for barred arrival directions, keep
+the direction."*
+
+**Steps**
+
+1. With autonomy stopped, stand a train at BottomMainA facing west - reverse it on the throttle if it faces east.
+2. Click it on the track diagram and press Control+X.
+3. Click BottomMainA and press Control+V.
+
+**Expected**
+
+- The train is back at BottomMainA, still facing west.
+
+*What this is:* `core.testATrainIsPutOnlyWhereItCanStart.testAPlacementKeepsAHeadingItCanLeaveBy`.
+
+---
+
+<a id="mt-499"></a>
+
+### MT-499 - 2026-09-24 - With autonomy stopped, the locomotive list gives the reasons for a train sent by hand
+
+**Disposition:** fixed unvalidated
+**From:** the REG4 lead of the 2026-09-23 review
+
+**Written:** 2026-09-24
+
+**What was wrong.**  The Autonomy tab's locomotive list explained a train's destinations with autonomy's reasons
+even while autonomy was stopped, so it could say a train could not be sent anywhere while offering it routes.
+
+**Steps**
+
+1. With autonomy stopped, stand a train at BottomMainA facing west - reverse it on the throttle if it faces east.
+2. In the Autonomy tab's locomotive list, click that train's destination label to open its list of reasons.
+
+**Expected**
+
+- The list does not open with "Trains may not arrive at BottomMainA facing the way this one faces" - that is a reason
+  autonomy has, and a train sent by hand is not stopped by it.
+- Any station it cannot be sent to is listed under "Stations the train cannot be sent to right now".
+
+*What this is:* `regression.testTheDestinationDoorsAgree.testEveryWhyNamesItsTier`.
+
+---
+
+<a id="mt-500"></a>
+
+### MT-500 - 2026-09-24 - Starting TrainControl with a train facing west at BottomMainA logs no "placed on a non-station"
+
+**Disposition:** fixed unvalidated
+**From:** GUI4-C5
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Loading a setup logged "placed on a non-station and will not be run automatically" for a train
+standing on the barred copy of a station - calling BottomMainA, a station, a non-station.
+
+**Steps**
+
+1. Stand a train at BottomMainA facing west - reverse it on the throttle if it faces east.
+2. Close TrainControl and start it again.
+3. Read the log written while it starts.
+
+**Expected**
+
+- No line says that train was "placed on a non-station".
+
+*What this is:* `core.testTheLoaderDoesNotCallAStationANonStation`.
+
+---
+
+<a id="mt-501"></a>
+
+### MT-501 - 2026-09-24 - Importing an old autonomy.json leaves your diagram's directions as they are
+
+**Disposition:** fixed unvalidated
+**From:** REG4-A1, the directions ruling of 2026-09-24
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Nothing yet - this checks a limit set on your ruling *"Carry the old file's directions onto the
+diagram - yes, to the extent possible."*  On a copy of your railway, carrying them would have made 176 pieces of
+track one-way, most of it plain track you run both ways, and directions are shared by every configuration.  So they
+are carried only onto a diagram nobody has set a direction on, and yours is left alone.
+
+**Steps**
+
+1. Import `docs/manual-tests/files/MT-491-autonomy-2.7.4c.json` from the Autonomy menu, into a new configuration, as MT-491 does.
+2. Read the log.
+3. Look at the track between BottomMainAPre and BottomMainA on the diagram.
+4. Switch back to your own configuration and delete the imported one.  Then tick Preferences > Startup > Load Autonomy again if you use it - every import unticks it (MT-503).
+
+**Expected**
+
+- Step 2: the log says how many pieces of track the old file ran one way that this diagram does not (176 on the
+  frozen copy of your railway), and that they were left as the diagram has them.
+- Step 3: it runs both ways, as before the import.
+
+*What this is:* `core.testAnImportedFacingGuessCanStart.testATunedDiagramGetsNoDirectionsCarried`.
+
+---
+
+<a id="mt-502"></a>
+
+### MT-502 - 2026-09-24 - A station an old autonomy.json switched off arrives as one trains can stop at, not chosen by autonomy
+
+**Disposition:** fixed unvalidated
+**From:** REG-B1
+
+**Written:** 2026-09-24
+
+**What was wrong.**  A station a 2.8.1 file had switched off arrived switched off, so nothing could be sent to it by
+hand either.  Your ruling of 2026-09-24: *"translate as on but not auto destination."*
+
+**Steps**
+
+1. Import `docs/manual-tests/files/MT-491-autonomy-2.7.4c.json` from the Autonomy menu, into a new configuration, as MT-491 does.
+2. In the autonomy editor, right-click ParkingTrack7 and open its Station menu.
+3. Switch back to your own configuration and delete the imported one.  Then tick Preferences > Startup > Load Autonomy again if you use it - every import unticks it (MT-503).
+
+**Expected**
+
+- Step 2: "Yes - Trains Can Stop Here" is ticked, and "Can Be Chosen in Full Autonomy" is not.
+
+*What this is:* `core.testAutonomyDiagramSession.testALegacyImportCarriesThePerPointSettings`.
+
+---
+
+<a id="mt-503"></a>
+
+### MT-503 - 2026-09-24 - Importing an old autonomy.json unticks Load Autonomy
+
+**Disposition:** fixed unvalidated
+**From:** REG2-C3
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Load Autonomy showed ticked to anybody who had never touched it, and on a layout with only the
+old autonomy.json it loaded nothing until it had been set by hand.  Your ruling of 2026-09-24: *"Set the setting to
+unchecked when importing a legacy json file, each time."*
+
+**Steps**
+
+1. Make sure Preferences > Startup > Load Autonomy is ticked.
+2. Import `docs/manual-tests/files/MT-491-autonomy-2.7.4c.json` from the Autonomy menu, into a new configuration, as MT-491 does.
+3. Open Preferences > Startup again, and read the log.
+4. Switch back to your own configuration and delete the imported one.  Then tick Preferences > Startup > Load Autonomy again if you use it - every import unticks it (MT-503).
+
+**Expected**
+
+- Step 3: Load Autonomy is unticked, and the log says it was unticked and that ticking it loads the setup when
+  TrainControl starts.
+
+*What this is:* `regression.testALegacyImportUnticksLoadAutonomy`.
+
+---
+
+<a id="mt-504"></a>
+
+### MT-504 - 2026-09-24 - A station's exit guard cannot also be made its entry guard
+
+**Disposition:** fixed unvalidated
+**From:** AUT-C2, MT-493
+
+**Written:** 2026-09-24
+
+**What was wrong.**  One signal could be both the entry guard and the exit guard of a station, and the two throw it
+opposite ways at the same moment.  Your ruling of 2026-09-24: *"just make sure the entry guard can never be the same
+as the exit guard."*
+
+**Steps**
+
+1. In the autonomy editor, right-click a station that has an Exit Guard Signal.
+2. Choose Entry Guard Signal..., and pick the signal that is already its exit guard.
+
+**Expected**
+
+- It is refused, with a message saying the signal is already the station's exit guard and one signal cannot guard
+  both the way in and the way out.
+
+*What this is:* `core.testAutonomyDiagramSession.testAStationsEntryGuardIsNeverItsExitGuard`.
+
+---
+
+<a id="mt-505"></a>
+
+### MT-505 - 2026-09-24 - A guard signal that no way into its station passes is noticed
+
+**Disposition:** fixed unvalidated
+**From:** AUT-C2, MT-493
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Nothing said when a station's guard signal was one no train arriving there passes.  Your ruling
+of 2026-09-24: *"if the guard signal is not on a path leading to the chosen station, we can add notice to the
+autonomy editor."*
+
+**Steps**
+
+1. In the autonomy editor, right-click a station, choose Entry Guard Signal..., and pick a signal on another line -
+   one no train passes on its way into that station.
+2. Look at the editor's Configuration errors and warnings list.
+3. Take that signal off the station again.
+
+**Expected**
+
+- Step 2: a notice says the signal guards the station but no way into it passes it, and to check it is the signal
+  you meant.  It is a notice, not an error: the setup still saves and runs.
+
+*What this is:* `core.testAutonomyDiagramSession.testAGuardOffTheWayInIsNoticed`.
+
+---
+
+<a id="mt-506"></a>
+
+### MT-506 - 2026-09-24 - A route fired by its sensor skips only the switch under a train, and runs the rest
+
+**Disposition:** fixed unvalidated
+**From:** MT-247
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-247 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. Set up: A route with three things in it: a switch a train can stand on (A), another switch somewhere else (B), and an emergency stop.  A train standing on switch A with its path locked - start autonomy and let a train take a route over it, or park one at a protected platform.
+2. Give the route an s88 trigger.
+3. With the train still on switch A, set that sensor.
+4. Read the log.
+
+**Expected**
+
+- No question is asked.
+- Switch A is not thrown; switch B is; the power goes off.
+- The log names switch A as held back.
+
+*What this is:* The rule is in behaviour.md 7a; this is the half that needs a sensor.
+
+---
+
+<a id="mt-507"></a>
+
+### MT-507 - 2026-09-24 - Cancel on a route that would switch track under a train cancels all of it, from either door
+
+**Disposition:** fixed unvalidated
+**From:** MT-247
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-247 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. Set up: A route with three things in it: a switch a train can stand on (A), another switch somewhere else (B), and an emergency stop.  A train standing on switch A with its path locked - start autonomy and let a train take a route over it, or park one at a protected platform.
+2. Fire the route from the route list, read the question and press Cancel.
+3. Fire it from its tile on the track diagram, and press Cancel.
+
+**Expected**
+
+- Both doors ask the same question - that the route would switch track a train is on, and whether to run it anyway.
+- After each Cancel nothing has run: no switch thrown, the power still on.
+
+---
+
+<a id="mt-508"></a>
+
+### MT-508 - 2026-09-24 - OK on a route that would switch track under a train fires all of it
+
+**Disposition:** fixed unvalidated
+**From:** MT-247
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-247 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. Set up: A route with three things in it: a switch a train can stand on (A), another switch somewhere else (B), and an emergency stop.  A train standing on switch A with its path locked - start autonomy and let a train take a route over it, or park one at a protected platform.
+2. Fire the route from the route list and press OK.
+
+**Expected**
+
+- Every command runs: switch A and switch B are thrown, and the power goes off.
+
+---
+
+<a id="mt-509"></a>
+
+### MT-509 - 2026-09-24 - Switching a platform's protecting signal to red by hand is not questioned
+
+**Disposition:** fixed unvalidated
+**From:** MT-256
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-256 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. With autonomy running, a train standing at BottomMainA, whose protecting signals are Signal 40 and Signal 87.
+2. Click Signal 40 on the track diagram so it goes red.
+
+**Expected**
+
+- Nothing is asked; the signal goes red.
+
+*What this is:* `core.testAutoLayout.testSwitchingAProtectingSignalByHandAsksOnlyOneWay`.
+
+---
+
+<a id="mt-510"></a>
+
+### MT-510 - 2026-09-24 - Switching a platform's protecting signal to green with a train there is asked about
+
+**Disposition:** fixed unvalidated
+**From:** MT-256
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-256 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. With autonomy running, a train standing at BottomMainA, whose protecting signals are Signal 40 and Signal 87.  Signal 40 red.
+2. Click Signal 40 so it would go green.
+3. Press Cancel.
+
+**Expected**
+
+- You are asked whether to switch it anyway.
+- After Cancel the signal is still red.
+
+*What this is:* `core.testAutoLayout.testSwitchingAProtectingSignalByHandAsksOnlyOneWay`.
+
+---
+
+<a id="mt-511"></a>
+
+### MT-511 - 2026-09-24 - Switching a protecting signal to green once the platform is empty is not questioned
+
+**Disposition:** fixed unvalidated
+**From:** MT-256
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-256 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. With autonomy running and Signal 40 red, move the train away from BottomMainA.
+2. Click Signal 40 so it goes green.
+
+**Expected**
+
+- Nothing is asked; the signal goes green.
+
+*What this is:* `core.testAutoLayout.testSwitchingAProtectingSignalByHandAsksOnlyOneWay`.
+
+---
+
+<a id="mt-512"></a>
+
+### MT-512 - 2026-09-24 - On a layout with nothing set up, the Autonomy menu offers Import
+
+**Disposition:** fixed unvalidated
+**From:** MT-380
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-380 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. On your own railway, Autonomy > Export, and save the file.  Then choose `docs/manual-tests/files/MT-380-one-page-layout/layout` as the local layout.  Choose your own layout again when done.
+2. Open the Autonomy menu.
+
+**Expected**
+
+- Import... is there and can be chosen.
+
+---
+
+<a id="mt-513"></a>
+
+### MT-513 - 2026-09-24 - Importing a setup onto a layout with fewer pages warns once, naming the missing pages
+
+**Disposition:** fixed unvalidated
+**From:** MT-380
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-380 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. On your own railway, Autonomy > Export, and save the file.  Then choose `docs/manual-tests/files/MT-380-one-page-layout/layout` as the local layout.  Choose your own layout again when done.
+2. Autonomy > Import..., and choose the file you exported.
+
+**Expected**
+
+- One warning, naming the four pages this layout does not have.
+
+---
+
+<a id="mt-514"></a>
+
+### MT-514 - 2026-09-24 - After that import, opening the autonomy editor asks nothing
+
+**Disposition:** fixed unvalidated
+**From:** MT-380
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-380 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. On your own railway, Autonomy > Export, and save the file.  Then choose `docs/manual-tests/files/MT-380-one-page-layout/layout` as the local layout.  Choose your own layout again when done.
+2. Import the file you exported, as above.
+3. Open the autonomy editor, close it, and open it again.
+
+**Expected**
+
+- No message saying the setup was left alone, at either opening.
+
+---
+
+<a id="mt-515"></a>
+
+### MT-515 - 2026-09-24 - A running train has one orange stretch, behind it, on the road it came in by
+
+**Disposition:** fixed unvalidated
+**From:** MT-438, OB-242, OB-243
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-438 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.  The sensor list and the orange at a fork are MT-477's and OB-239's, and are not repeated here.
+
+**Steps**
+
+1. Start autonomy, or send one train by hand.
+2. Watch the track around that train while it runs.
+
+**Expected**
+
+- Exactly one orange stretch per train, behind it, on the road it came in by.
+- Nothing orange ahead of it, and nothing left at a junction it passed earlier.
+
+*What this is:* `core.testARunningTrainHasOneTail`.
+
+---
+
+<a id="mt-516"></a>
+
+### MT-516 - 2026-09-24 - Why Not Moving? on Manual says a station that excludes the train will not take it
+
+**Disposition:** fixed unvalidated
+**From:** MT-444
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-444 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. In the autonomy editor, add a train to the Excluded Locomotives of a station it could otherwise reach.
+2. Set Path Type to Manual, choose Why Not Moving? and click the train.
+3. Right-click the train on the track diagram.
+4. Take the train off that station's Excluded Locomotives again.
+
+**Expected**
+
+- Step 2: the station is under "Stations the train cannot be sent to right now", saying it does not accept that train.
+- Step 3: the right-click menu does not offer that station.
+
+---
+
+<a id="mt-517"></a>
+
+### MT-517 - 2026-09-24 - Why Not Moving? on Manual says a terminus refuses a train that cannot reverse
+
+**Disposition:** fixed unvalidated
+**From:** MT-444
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-444 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. Stand EN57-947, which cannot reverse, at BottomSecondary.
+2. In the autonomy editor, set Path Type to Manual, choose Why Not Moving? and click it.
+3. Right-click it on the track diagram.
+
+**Expected**
+
+- Step 2: BottomMainC is under "Stations the train cannot be sent to right now", saying a terminus is not allowed because the train is not reversible.
+- Step 3: the right-click menu does not offer BottomMainC.
+
+---
+
+<a id="mt-518"></a>
+
+### MT-518 - 2026-09-24 - Clear All Max Train Lengths asks first, and No changes nothing
+
+**Disposition:** fixed unvalidated
+**From:** MT-457
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-457 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. Close TrainControl and copy your layout folder's `config/autonomy` folder somewhere safe - this entry changes lengths on your real railway, and copying it back is how they come back.
+2. In the autonomy editor, Bulk Tools > Clear All Max Train Lengths.
+3. Answer No.
+4. Right-click two stations that had a maximum and look at their Station menu.
+
+**Expected**
+
+- Step 4: both still show their maximum.
+
+---
+
+<a id="mt-519"></a>
+
+### MT-519 - 2026-09-24 - Clear All Max Train Lengths takes the maximum off every station on every page
+
+**Disposition:** fixed unvalidated
+**From:** MT-457
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-457 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. Close TrainControl and copy your layout folder's `config/autonomy` folder somewhere safe - this entry changes lengths on your real railway, and copying it back is how they come back.
+2. In the autonomy editor, note the number in Bulk Tools > Clear All Max Train Lengths (N).
+3. Choose it, and answer Yes.
+4. Right-click a station on 1 - Main and one on 2 - Bottom.
+5. Leave it cleared if you are going on to MT-520 to MT-523; otherwise close TrainControl and copy the `config/autonomy` folder you saved back over the one in your layout folder.
+
+**Expected**
+
+- Step 3: the hint line says how many were cleared - the N from step 2.
+- Step 4: both stations show Maximum Train Length (any).
+
+---
+
+<a id="mt-520"></a>
+
+### MT-520 - 2026-09-24 - Mass Assign Max Train Lengths asks each station with no maximum, and records the number
+
+**Disposition:** fixed unvalidated
+**From:** MT-456
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-456 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. Run MT-519 first, so every station has no maximum - or set up as it does - and open the autonomy editor on 1 - Main.
+2. Bulk Tools > Mass Assign Max Train Lengths...
+3. Without clicking the box, type a number and press Enter.
+4. Press Escape to end the walk.
+5. Right-click the station it asked about.
+
+**Expected**
+
+- The prompt names the station and says which of how many it is, and the station is outlined.
+- Step 5: its Station menu shows the number you typed.
+
+---
+
+<a id="mt-521"></a>
+
+### MT-521 - 2026-09-24 - Mass Assign Max Train Lengths refuses 0
+
+**Disposition:** fixed unvalidated
+**From:** MT-456
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-456 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. Run MT-519 first, so every station has no maximum - or set up as it does - and open the autonomy editor on 1 - Main.
+2. Bulk Tools > Mass Assign Max Train Lengths...
+3. Type 0 and press OK.
+4. Press Escape.
+
+**Expected**
+
+- Step 3: it says 0 means any length and asks again; nothing is written.
+
+---
+
+<a id="mt-522"></a>
+
+### MT-522 - 2026-09-24 - Mass Assign Max Train Lengths' Skip leaves a station as it was
+
+**Disposition:** fixed unvalidated
+**From:** MT-456
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-456 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. Run MT-519 first, so every station has no maximum - or set up as it does - and open the autonomy editor on 1 - Main.
+2. Bulk Tools > Mass Assign Max Train Lengths...
+3. Press Skip.
+4. Press Escape.
+5. Right-click the station it skipped.
+
+**Expected**
+
+- Step 5: it still has no maximum.
+
+---
+
+<a id="mt-523"></a>
+
+### MT-523 - 2026-09-24 - Escape ends Mass Assign Max Train Lengths and writes nothing
+
+**Disposition:** fixed unvalidated
+**From:** MT-456
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-456 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. Run MT-519 first, so every station has no maximum - or set up as it does - and open the autonomy editor on 1 - Main.
+2. Bulk Tools > Mass Assign Max Train Lengths...
+3. Type a number, then press Escape instead of OK.
+4. Right-click that station.
+5. Close TrainControl and copy the `config/autonomy` folder you saved back over the one in your layout folder.
+
+**Expected**
+
+- Step 3: the walk stops.
+- Step 4: the station still has no maximum.
+
+---
+
+<a id="mt-524"></a>
+
+### MT-524 - 2026-09-24 - Mass Assign Lengths asks each piece with no length, and records what you type
+
+**Disposition:** fixed unvalidated
+**From:** MT-454
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-454 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. Close TrainControl and copy your layout folder's `config/autonomy` folder somewhere safe - this entry changes lengths on your real railway, and copying it back is how they come back.  Then in the autonomy editor on 1 - Main, Bulk Tools > Clear All Track Lengths, and tick Track Lengths.
+2. Bulk Tools > Mass Assign Lengths...
+3. Without clicking the box, type a length and press Enter.
+4. Press Escape.
+5. Close TrainControl and copy the `config/autonomy` folder you saved back over the one in your layout folder.
+
+**Expected**
+
+- The prompt says which piece of how many and names both ends; the piece is outlined and scrolled into view.
+- Step 3: the squares of that piece add up to what you typed.
+
+---
+
+<a id="mt-525"></a>
+
+### MT-525 - 2026-09-24 - Mass Assign Lengths refuses 0
+
+**Disposition:** fixed unvalidated
+**From:** MT-454
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-454 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. Close TrainControl and copy your layout folder's `config/autonomy` folder somewhere safe - this entry changes lengths on your real railway, and copying it back is how they come back.  Then in the autonomy editor on 1 - Main, Bulk Tools > Clear All Track Lengths, and tick Track Lengths.
+2. Bulk Tools > Mass Assign Lengths...
+3. Type 0 and press OK.
+4. Press Escape.
+5. Close TrainControl and copy the `config/autonomy` folder you saved back over the one in your layout folder.
+
+**Expected**
+
+- Step 3: it says 0 means no length and asks again; nothing is written.
+
+---
+
+<a id="mt-526"></a>
+
+### MT-526 - 2026-09-24 - Mass Assign Lengths' Skip leaves a piece, and the next prompt opens where you left the last
+
+**Disposition:** fixed unvalidated
+**From:** MT-454
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-454 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. Close TrainControl and copy your layout folder's `config/autonomy` folder somewhere safe - this entry changes lengths on your real railway, and copying it back is how they come back.  Then in the autonomy editor on 1 - Main, Bulk Tools > Clear All Track Lengths, and tick Track Lengths.
+2. Bulk Tools > Mass Assign Lengths...
+3. Drag the prompt off the diagram, then press Skip.
+4. Press Escape at the next prompt.
+5. Close TrainControl and copy the `config/autonomy` folder you saved back over the one in your layout folder.
+
+**Expected**
+
+- Step 3: the piece keeps no length, and the next prompt opens where you dragged the first.
+
+---
+
+<a id="mt-527"></a>
+
+### MT-527 - 2026-09-24 - Escape ends Mass Assign Lengths and writes nothing
+
+**Disposition:** fixed unvalidated
+**From:** MT-454
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-454 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. Close TrainControl and copy your layout folder's `config/autonomy` folder somewhere safe - this entry changes lengths on your real railway, and copying it back is how they come back.  Then in the autonomy editor on 1 - Main, Bulk Tools > Clear All Track Lengths, and tick Track Lengths.
+2. Bulk Tools > Mass Assign Lengths...
+3. Type a length, then press Escape instead of OK.
+4. Close TrainControl and copy the `config/autonomy` folder you saved back over the one in your layout folder.
+
+**Expected**
+
+- The walk stops and the piece still has no length.
+
+---
+
+<a id="mt-528"></a>
+
+### MT-528 - 2026-09-24 - Mass Assign Lengths is greyed on a page left out of autonomy
+
+**Disposition:** fixed unvalidated
+**From:** MT-454
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-454 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. In the autonomy editor, go to 4 - Combined, which is left out of autonomy.
+2. Hover Bulk Tools > Mass Assign Lengths...
+
+**Expected**
+
+- It is greyed, and its tooltip says the page is left out.
+
+---
+
+<a id="mt-529"></a>
+
+### MT-529 - 2026-09-24 - Mass Assign Lengths counts stretches, switches and crossings separately
+
+**Disposition:** fixed unvalidated
+**From:** MT-459
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-459 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. Close TrainControl and copy your layout folder's `config/autonomy` folder somewhere safe - this entry changes lengths on your real railway, and copying it back is how they come back.  Then in the autonomy editor on 1 - Main, Bulk Tools > Clear All Track Lengths, and tick Track Lengths.
+2. Tick Unmeasured Track.
+3. Hover Bulk Tools > Mass Assign Lengths...
+4. Close TrainControl and copy the `config/autonomy` folder you saved back over the one in your layout folder.
+
+**Expected**
+
+- Step 3: the tooltip gives three counts - stretches, switches and crossings.
+
+---
+
+<a id="mt-530"></a>
+
+### MT-530 - 2026-09-24 - Mass Assign Lengths asks for crossings on their own, and one answer sets them all
+
+**Disposition:** fixed unvalidated
+**From:** MT-459
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-459 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. Close TrainControl and copy your layout folder's `config/autonomy` folder somewhere safe - this entry changes lengths on your real railway, and copying it back is how they come back.  Then in the autonomy editor on 2 - Bottom, Bulk Tools > Clear All Track Lengths.
+2. Bulk Tools > Mass Assign Lengths..., and press Skip until the crossing prompt.
+3. Type one length and press OK.
+4. Press Escape.
+5. Close TrainControl and copy the `config/autonomy` folder you saved back over the one in your layout folder.
+
+**Expected**
+
+- Step 3: every crossing on the page takes that length and loses its highlight.
+- No stretch prompt before it included a crossing.
+
+---
+
+<a id="mt-531"></a>
+
+### MT-531 - 2026-09-24 - A function command on an MM2 locomotive offers only F0 to F4
+
+**Disposition:** fixed unvalidated
+**From:** MT-464
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-464 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.  The refusal to delete or rename a locomotive while a route drives it is being made an automated test, as you asked on 2026-09-22 (OB-287).
+
+**Steps**
+
+1. In the route editor, add a command, set its kind to Function and its target to an MM2 locomotive.
+2. Open the function-number cell.
+
+**Expected**
+
+- Only F0 to F4 are offered.
+
+---
+
+<a id="mt-532"></a>
+
+### MT-532 - 2026-09-24 - Cancel after Copy Customizations puts the target's own icons back on its buttons at once
+
+**Disposition:** fixed unvalidated
+**From:** MT-466
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-466 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.  Your run of 2026-09-22 found the undo right and the repaint missing; the repaint is what changed.  The Apply button you asked about is FR-098.
+
+**Steps**
+
+1. Right-click a locomotive whose F0 has a custom icon, and choose Copy.
+2. On a different locomotive, right-click a function button > Edit, press Copy customizations from..., then Cancel.
+3. Look at that locomotive's function buttons, touching nothing else.
+
+**Expected**
+
+- Its own functions and icons are back on its buttons straight away.
+
+---
+
+<a id="mt-533"></a>
+
+### MT-533 - 2026-09-24 - The train-length prompt takes typing without a click
+
+**Disposition:** fixed unvalidated
+**From:** MT-474
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-474 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. Give two placed trains length 0, and note their lengths first.
+2. In the autonomy editor, Bulk Tools > Mass Assign Train Lengths...
+3. Without clicking: type 0 and press OK; then type 3 and press Enter; then type at the second train's prompt.
+4. Put both lengths back.
+
+**Expected**
+
+- Every time, the digits land in the box.  If not, say which prompt, and whether that train was on the page shown.
+
+*What this is:* `ui.testTheLengthPromptHasTheKeyboard`.
+
+---
+
+<a id="mt-534"></a>
+
+### MT-534 - 2026-09-24 - Bulk Tools is on the menu of an empty square and a text square
+
+**Disposition:** fixed unvalidated
+**From:** MT-474
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-474 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. In the autonomy editor, right-click an empty square.
+2. Right-click a square with text on it.
+
+**Expected**
+
+- Both menus end with Bulk Tools, behind a divider.
+
+*What this is:* `ui.testBulkToolsHoldsTheWholeLayoutTools.testAnEmptySquaresMenuHasBulkTools`.
+
+---
+
+<a id="mt-535"></a>
+
+### MT-535 - 2026-09-24 - The orange covers the square a train stands on and every sensor it lies across
+
+**Disposition:** fixed unvalidated
+**From:** MT-475
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-475 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.  The grey half is MT-482's.
+
+**Steps**
+
+1. In the track diagram viewer, with nothing running, pick a train at a station whose track behind it is measured.
+2. Give it a length that reaches back past a sensor.
+3. Look at its station square and the sensors behind it.
+4. Make it one unit shorter, and put it back after.
+
+**Expected**
+
+- Step 3: orange on the station square and on every sensor the train lies across, stopping where its length ends.
+- Step 4: the orange pulls back at once.
+
+---
+
+<a id="mt-536"></a>
+
+### MT-536 - 2026-09-24 - On a double curve the grey covers only the road the tail lies on
+
+**Disposition:** fixed unvalidated
+**From:** MT-475, OB-280
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-475 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. Stand a train in ParkingTrack7 (2 - Bottom), come in from the west, and give it length 2; note its length first.
+2. Look at the double curve just west of it, at 2 - Bottom 15,5.
+3. Put the length back.
+
+**Expected**
+
+- Step 2: only the curve from ParkingTrack7 round to the south is grey; the other curve on that square, towards ParkingTrack8, is not.
+
+*What this is:* `core.testTheGreyNamesTheRoadOnADoubleCurve`.
+
+---
+
+<a id="mt-537"></a>
+
+### MT-537 - 2026-09-24 - Segment Length opens empty, and OK without a number records nothing
+
+**Disposition:** fixed unvalidated
+**From:** MT-484, FR-097
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-484 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. Close TrainControl and copy your layout folder's `config/autonomy` folder somewhere safe - this entry changes lengths on your real railway, and copying it back is how they come back.  Then in the autonomy editor, Bulk Tools > Clear All Track Lengths, tick Unmeasured Track, right-click a highlighted run and choose Segment Length...
+2. Press OK without typing.
+3. Close TrainControl and copy the `config/autonomy` folder you saved back over the one in your layout folder.
+
+**Expected**
+
+- Step 1: the box is empty.
+- Step 2: the run is still highlighted as unmeasured.
+
+---
+
+<a id="mt-538"></a>
+
+### MT-538 - 2026-09-24 - Segment Length's 0 counts as an answer, and Clear takes it away
+
+**Disposition:** fixed unvalidated
+**From:** MT-484, FR-097
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-484 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. Close TrainControl and copy your layout folder's `config/autonomy` folder somewhere safe - this entry changes lengths on your real railway, and copying it back is how they come back.  Then in the autonomy editor, Bulk Tools > Clear All Track Lengths, and tick Unmeasured Track.
+2. Right-click a highlighted run, Segment Length..., type 0, OK.
+3. Right-click it again, Segment Length..., press Clear.
+4. Close TrainControl and copy the `config/autonomy` folder you saved back over the one in your layout folder.
+
+**Expected**
+
+- Step 2: the run is no longer highlighted.
+- Step 3: it is highlighted again.
+
+---
+
+<a id="mt-539"></a>
+
+### MT-539 - 2026-09-24 - Return Home brings a train back facing the way its home was set
+
+**Disposition:** fixed unvalidated
+**From:** MT-486, OB-282
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-486 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. Stand a train at BottomInner, which holds both facings, and make it that train's home - note which way it faces.
+2. Send it somewhere else.
+3. Press Return Home.
+
+**Expected**
+
+- It comes back to BottomInner facing the way it faced in step 1.
+
+---
+
+<a id="mt-540"></a>
+
+### MT-540 - 2026-09-24 - Setting a home for a train standing elsewhere asks which way it should face
+
+**Disposition:** fixed unvalidated
+**From:** MT-486, OB-282
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-486 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. In the autonomy editor, right-click BottomInner and set it as the home of a train that is standing somewhere else.
+2. Close the question without answering, then do step 1 again and answer it.
+
+**Expected**
+
+- You are asked which way the train should face there, offered only the ways it can.
+- Closing the question sets no home; answering sets it.
+
+---
+
+<a id="mt-541"></a>
+
+### MT-541 - 2026-09-24 - Why Not Moving? redoes its answer when Path Type changes
+
+**Disposition:** fixed unvalidated
+**From:** MT-439
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-439 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. In the autonomy editor, set Path Type to Auto, choose Why Not Moving? and click a train.
+2. Switch Path Type to Manual, clicking nothing else.
+3. Switch back to Auto.
+
+**Expected**
+
+- Step 1: TunnelLongPark is among the stations autonomy will never choose.
+- Step 2: the answer redoes itself, and nothing says "will never choose".
+- Step 3: autonomy's answer is back.
+
+*What this is:* `regression.testPathTypeRedrawsTheTestInTheEditor.testWhyNotMovingFollowsPathType`.
+
+---
+
+<a id="mt-542"></a>
+
+### MT-542 - 2026-09-24 - Test a Path keeps its route when Path Type changes, and changes only the note
+
+**Disposition:** fixed unvalidated
+**From:** MT-439
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Split from MT-439 so that it checks one thing (Adam, 2026-09-07: *"make each MT be one test"*).  What was wrong, and the history, are there.
+
+**Steps**
+
+1. In the autonomy editor, choose Test a Path, click an ordinary station and then TunnelLongPark.
+2. Switch Path Type to Manual, and back to Auto.
+
+**Expected**
+
+- The route stays drawn throughout.
+- The note that autonomy will never choose TunnelLongPark goes on Manual and comes back on Auto.
 
 ---

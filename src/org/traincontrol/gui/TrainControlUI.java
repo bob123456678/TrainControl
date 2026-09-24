@@ -2531,7 +2531,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // When the running layout came from the diagram, what was changed while it ran - placements,
         // homes, settings - is lifted back into the configuration it came from, so it is what loads next
-        // time.  The legacy autosave below still runs too; autonomy.json doubles as a readable backup.
+        // time.  autonomy.json is not written for a layout stored on this computer at all (OB-254, below).
         //
         // Not on backup: backups run this method from their own thread, and the session is an event
         // thread object - and "Backup data" silently rewriting the active configuration would surprise
@@ -2616,7 +2616,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // user's named points with generated coordinates on every clean exit, silently, and took the
         // ground-truth baseline with it.  The companion store is the source of truth in that case and
         // autonomy.json must be left exactly as it is.
-        if (this.activeDiagramConfiguration == null
+        //
+        // AND NEVER FOR A LAYOUT STORED ON THIS COMPUTER (OB-254; Adam, 2026-09-24: "We should only write to the new
+        // save format in the layout folder, IMO.").  Asking whether a configuration was LOADED left a gap: a local
+        // layout started with Load Autonomy unticked - as every legacy import leaves it (REG2-C3) - has none loaded,
+        // and the old file was written back on exit.  Such a layout keeps its autonomy in the layout folder; only a
+        // Central Station layout, which cannot hold a setup, still has the old window and its file.
+        if (!this.isLocalLayout()
                 && this.autosave.isSelected() && this.model.hasAutoLayout()
                 && this.model.getAutoLayout().isValid()
                 && !this.model.getAutoLayout().getPoints().isEmpty())
@@ -2647,9 +2653,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         }
         
-        // Same reason: with a diagram configuration loaded, whatever is in the text area is either
-        // stale or derived, and either way it is not what belongs in autonomy.json.
-        if (this.activeDiagramConfiguration == null && !this.autonomyJSON.getText().trim().equals(""))
+        // Same reason: on a layout stored on this computer, whatever is in the text area is either stale or derived,
+        // and either way it is not what belongs in autonomy.json (OB-254).
+        if (!this.isLocalLayout() && !this.autonomyJSON.getText().trim().equals(""))
         {
             // Backups go into a dedicated folder (falling back to the current directory if it can't be created)
             String autonomyPath = backup

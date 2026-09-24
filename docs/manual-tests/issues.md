@@ -1129,6 +1129,22 @@ Found while fixing AUT2-C2, and filed rather than changed, because it makes the 
 
 Cosmetic, rare, and deferred rather than worked: claiming it needs a three-way on a test diagram and the route editor open over it, which no fixture has yet.  A route that commands one of a three-way's two decoders and has a condition on the other lights the one tile in both colours - commanded and checked - and counts it twice, because the rule that a tile both commanded and checked is drawn as commanded is applied per address, and since GUI-C5 a three-way answers to two.  The fix is to decide it per tile in `TrainControlUI.lightWhere` (commanded first), or to fold a three-way's two addresses together before the rule in `RouteEditorFrame`.
 
+### FR-098 - 2026-09-24 - Grey out Apply in Customize Function Icons when there is nothing to apply
+
+**Kind:** feature request  
+**Raised from:** MT-466  
+**Filed:** 2026-09-24  
+
+Adam, on MT-466, 2026-09-22: *"there is no cancel button if you go to manage locomotive -> customize function icons, only apply- and closing without clicking on apply still persists the functions here.  That's OK, but just make sure apply is greyed out if there is nothing to apply."*  MT-466's note of the same day said this was filed; it was not, and the 2026-09-24 pass over the waiting tests found it missing.  It needs the dialog to know whether anything has changed since it opened, a flag it does not keep - and greying Apply while there IS something to apply would lose work, so it is to be done with a test for both directions.
+
+### OB-287 - 2026-09-24 - MT-464's automated test was asked for and only half built: the refusal to delete or rename a locomotive a running route drives
+
+**Kind:** bug  
+**Raised from:** MT-464  
+**Filed:** 2026-09-24  
+
+Adam, on MT-464, 2026-09-22: *"make an automated test for this"*.  `core.testAdvancedRoutes` holds the half about the route finishing its commands (CS3-B1).  The refusal itself - `TrainControlUI.refuseWhileARouteDrivesIt`, at both the delete and the rename door, naming the route - has no test.  Found by the 2026-09-24 pass over the waiting tests; MT-531 is the part of MT-464 still for his hands.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1145,9 +1161,12 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-22 | OB-254 | bug | Adam, 2026-09-24: *"We should only write to the new save format in the layout folder, IMO.  And I can delete the checkbox from the UI entirely when we are ready."*  A layout stored on this computer never has autonomy.json written, whether or not a configuration is loaded; only a Central Station layout, which cannot hold a setup, keeps the old window and its file.  The hidden auto-save checkbox is Adam's to delete in the GUI builder.  `regression.testALocalLayoutNeverWritesAutonomyJson`. | fixed unvalidated | - |
+| 2026-09-21 | OB-247 | bug | Adam, 2026-09-24: *"look it up, though likely these are defunct review findings."*  They were not findings at all: AR-17 to AR-23 were ids given to items of his second hands-on round when the manual-test file was made (27261d16), and LR-1 to LR-6 the six of a 2026-08-26 review reported without a document.  Each now has a catalogue row naming the entry that is its only record, so every citation resolves; AR-19 left the dead-citation roll (44). | fixed unvalidated | - |
+| 2026-09-21 | FR-093 | feature request | Adam, 2026-09-24: *"I thought we got this through the 'more destinations' option? Then we are OK."*  Checked: the right-click menu puts every destination autonomy would never choose in its own More Destinations submenu (FR-058).  Answered, no change. | declined | - |
 | 2026-09-24 | OB-285 | bug | Adam, 2026-09-24: *"Add the refusal"*.  A train's own tail no longer ends the check for other trains' tails on its way out, on the railway (`Layout.isPathClear`) or in Return Home's planner: the train turned at Tunnel is refused its way south while a train in TunnelRightPark lies across the points.  `core.testATurnedTrainIsNotSentIntoAnotherTail`. | - | `MT-495` |
 | 2026-09-15 | OB-230 | bug | Adam, 2026-09-24: *"now that I have a measured layout, we should do OB-230"*.  Return Home's estimate counts the moves still needed - each train not home, and each train standing on another's home - and a weighted search takes over when the shortest plan cannot be found in time.  Six trains on his frozen railway now come home in ten moves; four still get the shortest plan.  `core.testReturnHomeFindsAPlanOnAFullRailway`. | - | `MT-492` |
-| 2026-09-23 | OB-284 | bug | Adam, 2026-09-24: *"this should check for barred departure directions, not arrival ones.  for barred arrival directions, keep the direction.  for barred departure directions, turn it to a way trains may arrive in"*.  A paste, the editor's Place and the Place Locomotive dialog keep a heading the train can leave by (`AutonomySession.departableFacingsFor`), and turn only one it cannot. | - | `MT-488` |
+| 2026-09-23 | OB-284 | bug | Adam, 2026-09-24: *"this should check for barred departure directions, not arrival ones.  for barred arrival directions, keep the direction.  for barred departure directions, turn it to a way trains may arrive in"*.  A paste, the editor's Place and the Place Locomotive dialog keep a heading the train can leave by (`AutonomySession.departableFacingsFor`), and turn only one it cannot. | - | `MT-498` |
 | 2026-09-23 | OB-283 | bug | Adam, 2026-09-24: *"if it's a compulsory turn, turn it in the forced direction."*  Answered, no change: the code already turned trains at a compulsory turn on the way, and keep and reverse are measured on arrival.  `behaviour.md` section 3 said the opposite and is corrected. | declined | - |
 | 2026-09-23 | OB-282 | bug | Found by the refreeze: the pinned Return Home arrangement brought a train homed westbound on BottomMainA back eastbound, because the planner counted any copy of the home square as home (MT-165).  Adam: *"yes, it should accomplish the facing"*.  A home now keeps the facing it was set with - asked for a train standing elsewhere - and Return Home brings the train back on that copy or its turning twin. | - | `MT-486` |
 | 2026-09-23 | OB-281 | bug | Five route tiles held a length of 1 from before OB-273, which nothing reads, so each piece measured a unit less.  Adam: *"Fold them, they were likely auto set during the mass assignment run."*  Opening a setup moves a route tile's length onto the track beside it. | - | `MT-485` |
