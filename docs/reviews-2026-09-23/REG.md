@@ -180,7 +180,7 @@ Reading only.  **Fix:** "Every route in the Routes tab now has a play button ...
 
 | | |
 |---|---|
-| **Disposition** | Fixed - e2223851 (claim d64023cb, red first: the right-click Start); Automation.md's prerequisite in 8370abb1 - 4fb36b4b, named here before, did not change it (REG2-C1, DCN2-C5) |
+| **Disposition** | Fixed - e2223851 (claim d64023cb, red first: the right-click Start); Automation.md's prerequisite in 8370abb1 and Readme.md:128 in 4132d260 - 4fb36b4b, named here before, did not change them (REG2-C1, DCN2-C5) |
 | **Where** | `TrainControlUI.java:4276-4324` (`refreshAutonomyTabState`), `Automation.md:28`, `Readme.md:128` |
 
 At 2.8.1 the autonomy graph was independent of where the track diagram came from, so a user whose diagram was read straight from the Central Station (the default for a CS3 Track Board, `Readme.md:89`) could run autonomy from `autonomy.json`.  At HEAD the Auto tab is greyed unless the layout is local: `setAutoTabEnabled(valid && loaded && isLocalLayout())` (`:4323`), deliberately, since `OB-104`.  `RGN-A2` recorded this half as "deliberate ... still a 2.7.4c capability that is gone, and it has no changelog line" and was closed on the other half.

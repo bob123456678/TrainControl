@@ -258,7 +258,7 @@ AUT-D3	AUT.md	Closed	Closed - checked clean	the lock relation is by tile, not by
 AUT-D4	AUT.md	Closed	Closed - checked clean	the new model fields survive the file
 AUT-D5	AUT.md	Closed	Closed - checked clean	the "farthest sensor" prompt's walk agrees with OB-278
 AUT-D6	AUT.md	Closed	Closed - checked clean	`throwEntryGuard` is called outside every monitor
-AUT2-A1	AUT2.md	Closed	Fixed - 8370abb1 (claims 8346be65, red first), with TDY2-A1. The doors' one-placeable-copy	GUI-B1's repair makes the build stand a placed train on a copy facing another way than its recorded facing: the re-blessed baseline shows two trains t
+AUT2-A1	AUT2.md	Open - Adam's decision	Partly fixed - 8370abb1 (claims 8346be65, red first), with TDY2-A1: the build, the throttl	GUI-B1's repair makes the build stand a placed train on a copy facing another way than its recorded facing: the re-blessed baseline shows two trains t
 AUT2-C1	AUT2.md	Closed	Fixed - 8370abb1 (claim 8346be65, red first): the caller's removal is gone	AUT-C1's "removes only its own claim" compares routes by value, so the likeliest double dispatch (the same route twice) still deletes the winner's cla
 AUT2-C2	AUT2.md	Open	Open - for the next round: the planner and the runtime both settle on the first train foun	the planner blames the first train it finds on an edge and passes the edge if that train has moved, so an unmoved train's tail further along the same
 AUT2-C3	AUT2.md	Closed	Fixed - 4132d260	comments the round-1 fixes made false: four sites still say `unlockPath` reads `clearedEdges`, a claim's MUTATION note names a mutation that no longer
@@ -270,6 +270,19 @@ AUT2-D5	AUT2.md	Closed	Closed - checked clean	AUT-C3 verified, second pass inclu
 AUT2-D6	AUT2.md	Closed	Closed - checked clean	AUT-C4 verified
 AUT2-D7	AUT2.md	Closed	Closed - checked clean	GUI-A1's `releasedEarly` mirrors `clearedEdges` everywhere it should
 AUT2-D8	AUT2.md	Closed	Closed - checked clean	the rest of the autonomy diff
+AUT3-A1	AUT3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first), with TDY3-A2	the throttle's direction-follow still pivots on the setup's stored facing, which after any run is missing or another train's, so a reversal made after
+AUT3-B1	AUT3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first): Return Home and Why not Moving? say the trai	a train stood on a barred copy by `8370abb1` is refused with sentences that call its station "not a station": Return Home refuses the whole railway sa
+AUT3-B2	AUT3.md	Open - Adam's decision	Open - Adam's decision: filed as OB-284 (9a9a8564), and AUT2-A1's row now says so	AUT2-A1's door half, "kept ... and recorded for Adam", now contradicts the rule `8370abb1` adopted, and it was not recorded: the store row is Closed,
+AUT3-C1	AUT3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first)	on Manual, Why Not Moving? answers "cannot be sent anywhere ... autonomy will not start it" for a train on a barred copy, while the right-click menu o
+AUT3-C2	AUT3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first)	a home set for a train standing on a barred copy is saved with that copy's facing, which OB-282 calls impossible; `writeHome`'s "so no impossible faci
+AUT3-C3	AUT3.md	Open	Open - for a follow-up: older than this review; the tail walk's first arriving rail is cho	the tail walk's first hop takes the first ARRIVING rail by name, which at a may-turn neighbour is its turning twin whenever that sorts first; the walk
+AUT3-D1	AUT3.md	Closed	Closed - checked clean	TDY2-A1 / GUI2-A1 / AUT2-A1 (the build, the throttle and the Facing menu keep the copy facing the record) verified
+AUT3-D2	AUT3.md	Closed	Closed - checked clean	the runtime meets a train on a copy that is not a destination, and handles it everywhere the task named
+AUT3-D3	AUT3.md	Closed	Closed - checked clean	GUI2-B1 verified
+AUT3-D4	AUT3.md	Closed	Closed - checked clean	AUT2-C1 / TDY2-C6 verified: no claim can outlive its path
+AUT3-D5	AUT3.md	Closed	Closed - checked clean	TDY2-C5's claim is red for the right reason; the swap does not change a built graph's tails, and its measurement follows the rail the side rule alread
+AUT3-D6	AUT3.md	Closed	Closed - checked clean	TDY2-C4 verified
+AUT3-D7	AUT3.md	Closed	Closed - checked clean	AUT2-C3's comments verified, and the rest of the range
 AUT9-B1	AUT-autonomy-review.md	Closed	-	A battery test reads the operator's LIVE railway and is RED right now because a train moved
 AUT9-B2	AUT-autonomy-review.md	Closed	-	The shared-metal covered-track refusal is a live anti-collision rule with no red-on-mutation test
 AUT9-C1	AUT-autonomy-review.md	Closed	-	`maxActiveTrains` (the concurrency cap) is enforced only under `isAutoRunning`, and is in no reference doc
@@ -543,7 +556,7 @@ DCN2-C11	DCN2.md	Closed	Fixed - 4132d260	Small inaccuracies in the round's other
 DCN2-C2	DCN2.md	Closed	Fixed - 4132d260	GUI-A1's round-1 repair made three comments in `Layout.java` false: they say `unlockPath` reads `clearedEdges` and has a "non-atomic branch"
 DCN2-C3	DCN2.md	Closed	Fixed - 4132d260	DCN-C9 is marked Fixed, but five of the AutomationAPI.md sites it named are unchanged, and the graph window's colour legend sits above the new banner
 DCN2-C4	DCN2.md	Closed	Fixed - 8370abb1 (the control's name, :459) and 4132d260	REG-B1's documentation half: the reference page still promises a hand-picked route may finish on a switched-off station, and the new changelog line na
-DCN2-C5	DCN2.md	Closed	Fixed - 8370abb1	REG-C3 is marked Fixed in `4fb36b4b` for Automation.md's prerequisite, and the prerequisite was not changed
+DCN2-C5	DCN2.md	Closed	Fixed - 8370abb1 (Automation.md:28) and 4132d260 (Readme.md:128)	REG-C3 is marked Fixed in `4fb36b4b` for Automation.md's prerequisite, and the prerequisite was not changed
 DCN2-C6	DCN2.md	Closed	Fixed - 4132d260	The round's new sentence about `Point:` labels says one typed today is shown as plain text; on a local layout it is taken over into a caption the next
 DCN2-C7	DCN2.md	Closed	Fixed - 4132d260	Automation.md's rewritten homes paragraph keeps "exactly what Return Locomotives Home would move", which the caption cannot promise for a home held to
 DCN2-C8	DCN2.md	Closed	Fixed - 4132d260	DCN-C7 is marked Fixed, but the two identifiers it named are still in viewer-editability.md, and the new "Three things" is itself one short
@@ -560,6 +573,25 @@ DCN2-D6	DCN2.md	Closed	-	DCN-C12 verified, including the ratchet's numbers
 DCN2-D7	DCN2.md	Closed	-	DCN-C14 verified
 DCN2-D8	DCN2.md	Closed	-	DCN-C15's three promotions and DCN-C16 verified
 DCN2-D9	DCN2.md	Closed	-	DCN-C3 is recorded as Adam's decision in the document and the store
+DCN3-B1	DCN3.md	Open - Adam's decision	Fixed (the record) - 9a9a8564 and 031a7ddb: OB-284 filed, behaviour.md points at it, AUT2-	Round 2 left two placement rules that disagree about a facing only a barred copy holds, and the one decision that would settle it is catalogued Closed
+DCN3-C1	DCN3.md	Closed	Fixed - 031a7ddb	GUI-B1's round-1 wording survives beside the round-2 rewrite: four places still say a train is never put on a copy trains may not arrive at, one of th
+DCN3-C2	DCN3.md	Closed	Fixed - 031a7ddb	GUI2-B1 made "falls through to copy 0" false, and eleven present-tense sentences still give it as the mechanism - three of them in failure messages
+DCN3-C3	DCN3.md	Closed	Fixed - d65df6cb, with TDY3-C3	The placement class's MUTATION note promises a `placementCopy` claim the round removed: GUI-B1's build-side preference is no longer pinned there
+DCN3-C4	DCN3.md	Closed	Fixed - 031a7ddb, with REG3-C4	The round's text commits joined words across twelve line breaks: `layoutas`, `youonly`, `andcan`, `occupyon`, and eight sentences run together
+DCN3-C5	DCN3.md	Closed	Fixed - 031a7ddb	`setAtomicRoutes`' javadoc now says both that neither direction leaves an edge held and that one direction can, and that the road is not chosen by the
+DCN3-C6	DCN3.md	Closed	Fixed - 4be3798a, with GUI3-C1	The sentence round 2 relies on to explain a train it stands on a barred copy tells the operator that his station is not a station, by the copy's name
+DCN3-C7	DCN3.md	Closed	Fixed - 9a9a8564 (MT-482) and the round-3 catalogue commit (the two D titles; REG-C3 and D	Three small record inaccuracies: MT-482's hold comment credits the wrong commit, two converted D titles were cut mid-word, and REG-C3 / DCN2-C5 do not
+DCN3-D1	DCN3.md	Closed	Closed - checked clean	TDY2-A1 / GUI2-A1 / AUT2-A1, the build and the two follow doors: the round-2 comments say what the code does
+DCN3-D10	DCN3.md	Closed	Closed - checked clean	`264f2a73`'s new comment matches the door
+DCN3-D11	DCN3.md	Closed	Closed - checked clean	The paste's may-turn prompt offers every copy's facing, and that cannot offer a barred-only one in practice
+DCN3-D2	DCN3.md	Closed	Closed - checked clean	TDY2-C4 (`1facc0c2`): the new comments match the four cases the editor meets
+DCN3-D3	DCN3.md	Closed	Closed - checked clean	The other code comments of `8370abb1` checked
+DCN3-D4	DCN3.md	Closed	Closed - checked clean	The comment fixes of `4132d260`, site by site
+DCN3-D5	DCN3.md	Closed	Closed - checked clean	The user documents' round-2 sentences checked against the code
+DCN3-D6	DCN3.md	Closed	Closed - checked clean	DCN2-C7's rewrite: "moves every white one" holds, and the setup-versus-railway half is narrow
+DCN3-D7	DCN3.md	Closed	Closed - checked clean	The tracker commit `b53439dc`, apart from MT-482's attribution (C7)
+DCN3-D8	DCN3.md	Closed	Closed - checked clean	The catalogue commit `2f4448b6`: counts, statuses, and the D conversion
+DCN3-D9	DCN3.md	Closed	Closed - checked clean	`91daff27` (GUI2-C3): 506 values, every change an added diacritic, and the context-dependent ones read right
 DD-A1	2026-08-22-duplication-and-design.md	Open	Open	the automationui chain
 DD-A1	2026-09-22-GS-backlog.md	Open	**cannot be settled**	(listed in a table, no section of its own)
 DD-A2	2026-08-22-duplication-and-design.md	Closed	Closed `ae94421a` - 34 classes added, `ant test` runs 75	`Layout.java` and `HomeStaging`
@@ -1160,6 +1192,19 @@ GUI2-D3	GUI2.md	Closed	Closed - verified	GUI-C7: both questions, and the third d
 GUI2-D4	GUI2.md	Closed	Closed - verified	GUI-C8: opening the autonomy editor with another editor open is safe in every state
 GUI2-D5	GUI2.md	Closed	Closed - verified	GUI-B2, GUI-B3, the B1 doors other than GUI2-A1/B1, GUI-C2, C3, C4, C6: verified
 GUI2-D6	GUI2.md	Closed	Closed - verified	GUI-C1: the 52 changed keys are clean in all seven bundles, and use each bundle's own words
+GUI3-C1	GUI3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first)	the sentence `8370abb1` relies on to say why the train will not start names the builder's copy, calls a station "not a station", offers no remedy - an
+GUI3-C2	GUI3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first)	a train homed while it stands on a barred copy is saved with a home facing no train can be brought back in: `writeHome`'s "a copy a train stands on, s
+GUI3-C3	GUI3.md	Closed	Fixed - 031a7ddb	one accent `91daff27` added is wrong: Spanish "la estación qué elija"
+GUI3-C4	GUI3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first)	GUI2-B1's sibling: with nothing saying which way a train faces, the Facing menu still ticks the first facing - "the one a placement with no recorded f
+GUI3-C5	GUI3.md	Closed	Fixed - 031a7ddb	small
+GUI3-D1	GUI3.md	Closed	Closed - verified	GUI2-A1 / TDY2-A1 (`8370abb1`): verified - the Facing menu and the throttle now move the train onto a copy facing the chosen way, and every surface ag
+GUI3-D2	GUI3.md	Closed	Closed - verified	GUI2-B1 (`8370abb1`): verified
+GUI3-D3	GUI3.md	Closed	Closed - verified	`264f2a73`: the premise the door-refusal guard now states is true on every road into `openLayoutEditor`
+GUI3-D4	GUI3.md	Closed	Closed - verified, one consequence of `8370abb1` filed as GUI3-C2	TDY2-C4 (`1facc0c2`): the home door asks exactly when the session has no answer, and not where it should not
+GUI3-D5	GUI3.md	Closed	Closed - verified, one wrong accent filed as GUI3-C3	GUI2-C3 (`91daff27`): 505 of 506 accent restorations are right, and nothing else in any value moved
+GUI3-D6	GUI3.md	Closed	Closed - verified, one typo filed in GUI3-C5	`4132d260`'s interface comments match the code
+GUI3-D7	GUI3.md	Closed	Closed - verified	REG2-C2's interface line
+GUI3-D8	GUI3.md	Closed	Closed - verified	GUI2-C1, GUI2-C5 and the two left open: dispositions truthful
 GUX-B1	2026-09-19-GUX-main-interface-second-pass.md	Closed	fixed 2026-09-19 - howTheRouteMoved, and the Save asks before overwriting	the route editor does not know its route has changed underneath it, and its Save either fails with no way out or silently undoes the change
 GUX-C1	2026-09-19-GUX-main-interface-second-pass.md	Closed	fixed 2026-09-19 - all four listeners read the modifiers, numbers off the key handler	the speed buttons promise Control and Alt behaviour they do not have - UIX-C5's twin, one row up
 GUX-C2	2026-09-19-GUX-main-interface-second-pass.md	Closed	fixed 2026-09-19 - the tooltip now says sensors are captured and throttled	the capture-target tooltip says s88 feedback is not captured; it has been, on purpose, since 2026-08-22
@@ -1901,6 +1946,25 @@ REG2-D6	REG2.md	Closed	-	the rest of the changelog lines `4fb36b4b` added
 REG2-D7	REG2.md	Closed	-	today's other changes owe no changelog line to a 2.8.1 user
 REG2-D8	REG2.md	Closed	-	the test-run isolation leaves the application's files and node exactly where they were
 REG2-D9	REG2.md	Closed	-	`hasRememberedBounds` was dead
+REG3-C1	REG3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first): the import guesses the first facing trains m	the legacy import's copy-zero facing is now honoured onto a barred copy: an imported train can be stood where autonomy will not start it, and the log
+REG3-C2	REG3.md	Closed	Fixed - 031a7ddb	`AutomationAPI.md` now promises the programmatic route something only the window enforces: "an unmeasured edge can no longer cause an instant unlock"
+REG3-C3	REG3.md	Closed	Fixed - 031a7ddb	`AutomationAPI.md`'s "Running ... via TrainControl UI" still gives paste, Validate, Start as the way in; at v3.0.0 that tab exists only where autonomy
+REG3-C4	REG3.md	Closed	Fixed - 031a7ddb, and the edit helper that made the joins	twelve fused words and sentences in the round's text edits
+REG3-C5	REG3.md	Closed	Fixed - 031a7ddb	comments the REG2-C2 and REG2-C6 fixes made incomplete
+REG3-D1	REG3.md	Closed	-	REG2-C6 verified: an imported route is built unarmed, and nothing else reads the file's `auto`
+REG3-D10	REG3.md	Closed	-	AUT2-C1's claim removal leaks nothing, on either path
+REG3-D11	REG3.md	Closed	-	`4132d260` changes no code
+REG3-D12	REG3.md	Closed	-	TDY2-C4 (`9c85db2a`, `1facc0c2`) owes a 2.8.1 user nothing
+REG3-D13	REG3.md	Closed	-	the round's catalogue matches REG2
+REG3-D14	REG3.md	Closed	-	the other round-2 text claims checked
+REG3-D2	REG3.md	Closed	-	REG2-C2 verified at every caller of `whyAutonomyWillNotStart`
+REG3-D3	REG3.md	Closed	-	REG2-C1 verified
+REG3-D4	REG3.md	Closed	-	REG2-C4 verified
+REG3-D5	REG3.md	Closed	-	REG2-C5 verified, with its two siblings
+REG3-D6	REG3.md	Closed	-	REG2-C3's changelog line is true; the rest is Adam's, stated as a decision
+REG3-D7	REG3.md	Closed	-	REG2-C7's disposition is accurate
+REG3-D8	REG3.md	Closed	-	`91daff27` changes no value a 2.8.1 user had
+REG3-D9	REG3.md	Closed	-	the facing change, for everyone else who upgrades
 REG6-A1	REG6-regressions-2026-09-06.md	Closed	Open	a manual send is offered "keep direction" at squares the path turns the train at, and the default drives it off the path
 REG6-A2	REG6-regressions-2026-09-06.md	Closed	Open	the deferred post-run facing flip lands on the square the train left, not the one it is on
 REG6-B1	REG6-regressions-2026-09-06.md	Closed	Open	the prompt's answer is discarded whenever the journey ends at a terminus
@@ -2703,7 +2767,7 @@ TDY-D1	TDY.md	Closed	Closed - checked clean	OB-278's three walks agree
 TDY-D10	TDY.md	Closed	Closed - checked clean	Bundles
 TDY-D11	TDY.md	Closed	Closed - checked clean	MT-479
 TDY-D12	TDY.md	Closed	Closed - checked clean	MT-477's new arithmetic agrees with the walk after OB-278
-TDY-D13	TDY.md	Closed	Closed - checked clean	FR-096's entry guard
+TDY-D13	TDY.md	Closed	Closed - checked clean	FR-096's entry guard is thrown only on a journey's last Point
 TDY-D2	TDY.md	Closed	Closed - checked clean	OB-279's decoder is the encoder's inverse
 TDY-D3	TDY.md	Closed	Closed - checked clean	OB-280: every path routing refuses touches a grey square
 TDY-D4	TDY.md	Closed	Closed - checked clean	The new fields survive their round trips
@@ -2711,7 +2775,7 @@ TDY-D5	TDY.md	Closed	Closed - checked clean	MT-467's lock is a sound stand-in fo
 TDY-D6	TDY.md	Closed	Closed - checked clean	OB-269 (`12d74ad5`) narrows only the proxy case
 TDY-D7	TDY.md	Closed	Closed - checked clean	OB-281's fold is idempotent and in memory
 TDY-D8	TDY.md	Closed	Closed - checked clean	OB-270's clipboard state has one life
-TDY-D9	TDY.md	Closed	Closed - checked clean	testTheWashIsNoLongerThanTheTrain.testATrainOfLengthOneCoversOneSquare's new control asks the model (ui.isTrackCovere
+TDY-D9	TDY.md	Closed	Closed - checked clean	The wash test's new control asks the model rather than the label, and its message overclaims
 TDY2-A1	TDY2.md	Closed	Fixed - 8370abb1 (claims 8346be65, red first): placementCopy and copyFacing never choose a	Since GUI-B1, a train turned round (by the throttle or the Facing menu) at a square whose other facing only a barred copy holds stays on the copy faci
 TDY2-C1	TDY2.md	Closed	Fixed - 4132d260	Layout.setHomeLocomotive still says Return Home brings a train back "to it or its turning twin", the rule TDY-B1 removed
 TDY2-C2	TDY2.md	Closed	Fixed - 4132d260	The half-measured notice's javadoc still says the berth rule declines to judge a berth measured on its own square - the premise TDY-B2's fix reverses
@@ -2730,6 +2794,24 @@ TDY2-D6	TDY2.md	Closed	Closed - checked clean	`12ed2faa` (AUT-C3 second pass) ve
 TDY2-D7	TDY2.md	Closed	Closed - checked clean	`b4b061e0` is complete
 TDY2-D8	TDY2.md	Closed	Closed - checked clean	Test-run isolation leaves the application unchanged when the two properties are absent
 TDY2-D9	TDY2.md	Closed	Closed - checked clean	AUT-B1's place rule refuses nothing a clear road should pass
+TDY3-A1	TDY3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first): putTheTrainsBack may stand a train back on a	A train the throttle has stood on a copy trains may not arrive at is not carried across the next uncaptured rebuild: `putTheTrainsBack` re-places it w
+TDY3-A2	TDY3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first): flipFacing reads the railway first	The throttle's direction-follow flips the setup's record of the square, not the heading of the copy the train stands on; after a run that record is no
+TDY3-B1	TDY3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first), with REG3-C1	A legacy import invents the first copy's facing, and since `8370abb1` the build honours an invented facing that only a copy trains may not arrive at h
+TDY3-B2	TDY3.md	Open - Adam's decision	Partly fixed - the sentences say why and what to do (4be3798a, claim d65df6cb). Open - Ada	The sentences that refuse a train on a copy trains may not arrive at do not say why, and the remedy Return Home gives turns the model round: every pla
+TDY3-C1	TDY3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first)	Why Not Moving? with Path Type Manual answers "autonomy will not start it from there" for a train on a non-station copy, which a hand send leaves from
+TDY3-C2	TDY3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first)	A home set for a train standing on a copy trains may not arrive at saves a facing no train can be brought home in, which `writeHome` says cannot happe
+TDY3-C3	TDY3.md	Closed	Fixed - d65df6cb: the claim, proven by its mutation in the round's mutation run	Nothing pins the build's preference for a copy trains may arrive at among copies facing the recorded way, and the claim class's MUTATION note says it
+TDY3-C4	TDY3.md	Closed	Fixed - 031a7ddb	Comments and one document `8370abb1` made false: `copyFacing` no longer refuses a barred copy, and a placement with no facing no longer gets the first
+TDY3-D1	TDY3.md	Closed	Closed - checked clean	TDY2-A1 verified: the build, the throttle's follow and the Facing menu all keep the recorded facing, in every case TDY2 named
+TDY3-D10	TDY3.md	Closed	Closed - checked clean	The rest of the range
+TDY3-D2	TDY3.md	Closed	Closed - checked clean	The blessed baseline is back byte for byte
+TDY3-D3	TDY3.md	Closed	Closed - checked clean	TDY2-C5 verified, and the fork-rule change alters no tail on the frozen railway
+TDY3-D4	TDY3.md	Closed	Closed - checked clean	TDY2-C6 / AUT2-C1 verified
+TDY3-D5	TDY3.md	Closed	Closed - checked clean	TDY2-C4 verified
+TDY3-D6	TDY3.md	Closed	Closed - checked clean	TDY2-C1, C2 and C3 verified
+TDY3-D7	TDY3.md	Closed	Closed - checked clean	The other doors a barred-copy train meets: checked, and what they do
+TDY3-D8	TDY3.md	Closed	Closed - checked clean	GUI2-B1's path and `startableCopy`
+TDY3-D9	TDY3.md	Closed	Closed - checked clean	`91daff27` changes diacritics only
 TLR-A1	2026-09-15-TLR-tail-feature-review.md	Closed	Fixed	a turned train's tail stops at the junction again
 TLR-A1	2026-09-15-TLV-fix-validation.md	Closed	Confirmed fixed	Either half of the fix (pass order, by-place test) alone turns its claim green; neither is pinned on its own. Recorded.
 TLR-A2	2026-09-15-TLR-tail-feature-review.md	Closed	Fixed	a departed train's tail comes back from a split square's other copies

@@ -187,7 +187,7 @@ A candidate edge that shares rail with a running edge is still refused both ways
 
 `cutFrom` is set with `cutLocomotive` on a cut and cleared with it on a successful paste and when the locomotive is deleted or renamed (`TrainControlUI.java:7298-7302`, `:21422-21430`); a dismissed question keeps both, so the next paste walks again.  It is a name, so a rebuild between cut and paste finds the new Point or falls back to the cut heading.  The paste's may-reverse question still offers `facingsFor` (every copy) while the record and copy choice now use `placeableFacings`; on both frozen railways every may-reverse square keeps both headings on destination copies even with one arrival barred (plain copy one way, turning copy the other), so the wider offer cannot pick an unplaceable heading there.
 
-### TDY-D9 - testTheWashIsNoLongerThanTheTrain.testATrainOfLengthOneCoversOneSquare's new control asks the model (ui.isTrackCovere
+### TDY-D9 - The wash test's new control asks the model rather than the label, and its message overclaims
 
 | | |
 |---|---|
@@ -219,7 +219,7 @@ All eight `messages*.properties` are pure ASCII, and each gained exactly the sam
 
 `reachOf` spends a rail from its end place, which at the first junction is the standing square and further back is the junction square the previous hop did not charge (an edge's length is its path plus its END), so nothing is charged twice.  An unreached choice records `[hop, ...]`, which the tail walk follows at the first hop (`roadBackAtTheFirstHop`) and at forks (`cameFromAlong`) and then stops for want of length.
 
-### TDY-D13 - FR-096's entry guard
+### TDY-D13 - FR-096's entry guard is thrown only on a journey's last Point
 
 | | |
 |---|---|

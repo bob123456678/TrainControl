@@ -14,7 +14,7 @@
 
 | | |
 |---|---|
-| **Disposition** | Fixed - 8370abb1 (claims 8346be65, red first), with TDY2-A1.  The doors' one-placeable-copy rule (facingAfterAPaste fed placeableFacingsFor) is kept - it is OB-270's 'no impossible facing is saved' - and recorded for Adam |
+| **Disposition** | Partly fixed - 8370abb1 (claims 8346be65, red first), with TDY2-A1: the build, the throttle and the Facing menu.  Open - Adam's decision: the doors' one-placeable-copy rule, OB-284 (AUT3-B2, DCN3-B1) |
 | **Where** | `AutonomyBuilder.java:759-770` (`placementCopy`'s two new fallbacks, `1c855483`); `AutonomySession.java:7021-7023` (`facingAfterAPaste`'s one-copy branch, now fed `placeableFacingsFor` at `GraphLocAssign.java:238`, `:287` and `AutonomyEditorPanel.java:5441`); `test/baseline/configuration.json` (re-blessed in `1c855483`); `test/core/testATrainIsPutOnlyWhereItCanStart.java:80-104` |
 
 **What changed.**  Before `1c855483`, `placementCopy` put a placed train on the copy facing its recorded `facing` (the plain copy before the turning one), and fell back to copy 0 only when NO copy faced that way.  GUI-B1 added `arrivalAllowed` to both facing loops, and then two new fallbacks:

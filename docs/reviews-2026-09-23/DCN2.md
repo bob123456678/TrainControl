@@ -104,7 +104,7 @@ Reading only.  **Suggested fix:** correct the three AutomationAPI.md sentences t
 
 | | |
 |---|---|
-| **Disposition** | Fixed - 8370abb1 |
+| **Disposition** | Fixed - 8370abb1 (Automation.md:28) and 4132d260 (Readme.md:128) |
 | **Where** | `Automation.md:28`; `Readme.md:128`; `docs/reviews-2026-09-23/REG.md:183` |
 
 REG-C3's disposition: "Fixed - 4fb36b4b (Automation.md's prerequisite) and e2223851 (...)".  `git log -- Automation.md` shows `4fb36b4b` as the only round-1 commit to touch the file, and its ten changed lines are 166, 190, 200, 214, the routing table, 229 and 257 - not 28, which still reads "**A track diagram.** Either downloaded from your Central Station or drawn in TrainControl's own editor", the sentence REG-C3 said reads as if a Central Station diagram works.  `Readme.md:128` (also in REG-C3's Where) still offers "a JSON configuration file that can be built using the UI".  The code half (`canStartAutonomy` asks `isRemoteLayout`, `e2223851`) is in.  Outside DCN's lane but inside this validator's range (every documentation sentence of the round), and the store has REG-C3 Closed on it.  **Suggested fix:** REG-C3's own - "a copy on this computer (Layouts -> Download Central Station Layout Files)" at `:28` - and correct the disposition.
