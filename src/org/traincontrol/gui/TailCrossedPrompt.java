@@ -351,6 +351,12 @@ public class TailCrossedPrompt
     {
         if (choices == null || choices.isEmpty()) return new Reply(false, null);
 
+        // ONE CHOICE IS THE ANSWER, and nothing is shown (Adam, 2026-09-24, on MT-437: *"when a tail question comes up
+        // and there is only one option (len 4 on tunnel), it should auto select that option"*; and on MT-477, *"since
+        // there is only one choice, it should be auto selected without a prompt"*).  Before the test seam, as the
+        // operator is: nobody is asked.
+        if (choices.size() == 1) return new Reply(true, choices.get(0));
+
         if (answeredByATest != null)
         {
             if (NOT_KNOWN.equals(answeredByATest)) return new Reply(true, null);
