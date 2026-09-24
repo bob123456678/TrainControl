@@ -2286,6 +2286,80 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
+     * Which way round a straight put down on a square should lie so that it joins the track beside it (OB-292).
+     *
+     * The way it is held, if that joins track at both ends or if no way round does; otherwise the way round that does.
+     * A neighbour joins where any of its roads, in any position of its points, reaches the edge the two squares share -
+     * the same port table the autonomy graph is built from, so a straight laid this way is one the graph runs over.
+     * Only a plain STRAIGHT: a switch or a sensor is turned on purpose, and turning one for the operator would be a
+     * decision about the railway rather than about a piece of track.
+     *
+     * @param layout the page
+     * @param placing the tile about to be put down
+     * @param x its column
+     * @param y its row
+     * @return the orientation to put it down in
+     */
+    static int orientationThatJoins(org.traincontrol.base.LayoutDiagram layout, LayoutDiagramComponent placing, int x,
+        int y)
+    {
+        int held = placing.getOrientation();
+
+        if (layout == null || placing.getType() != LayoutDiagramComponent.componentType.STRAIGHT) return held;
+
+        if (joinsAtBothEnds(layout, placing.getType(), held, x, y)) return held;
+
+        for (int way = 0; way < LayoutDiagramComponent.getNumOrientations(placing.getType()); way++)
+        {
+            if (way != held && joinsAtBothEnds(layout, placing.getType(), way, x, y)) return way;
+        }
+
+        return held;
+    }
+
+    /** Whether a tile of this type, this way round, on this square, meets track at both ends of one of its roads. */
+    private static boolean joinsAtBothEnds(org.traincontrol.base.LayoutDiagram layout,
+        LayoutDiagramComponent.componentType type, int orientation, int x, int y)
+    {
+        for (org.traincontrol.automationui.TilePorts.Route road
+            : org.traincontrol.automationui.TilePorts.ports(type, orientation, 0))
+        {
+            if (road.getA() == road.getB()) continue;
+
+            if (meetsTrack(layout, x, y, road.getA()) && meetsTrack(layout, x, y, road.getB())) return true;
+        }
+
+        return false;
+    }
+
+    /** Whether the square beside this one, on this side, has a road that reaches the edge between them. */
+    private static boolean meetsTrack(org.traincontrol.base.LayoutDiagram layout, int x, int y,
+        org.traincontrol.automationui.TilePorts.Side side)
+    {
+        int nx = x + (side == org.traincontrol.automationui.TilePorts.Side.E ? 1
+            : side == org.traincontrol.automationui.TilePorts.Side.W ? -1 : 0);
+        int ny = y + (side == org.traincontrol.automationui.TilePorts.Side.S ? 1
+            : side == org.traincontrol.automationui.TilePorts.Side.N ? -1 : 0);
+
+        LayoutDiagramComponent beside = layout.getComponent(nx, ny);
+
+        if (beside == null) return false;
+
+        org.traincontrol.automationui.TilePorts.Side back = side.opposite();
+
+        for (int state = 0; state < org.traincontrol.automationui.TilePorts.getStateCount(beside.getType()); state++)
+        {
+            for (org.traincontrol.automationui.TilePorts.Route road
+                : org.traincontrol.automationui.TilePorts.ports(beside.getType(), beside.getOrientation(), state))
+            {
+                if (road.touches(back)) return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Copies lastComponent on the clipboard to the location designated by destLabel
      * @param destLabel
      * @param move
@@ -2298,6 +2372,15 @@ public class LayoutEditor extends PositionAwareJFrame
             LayoutDiagramComponent newComponent = new LayoutDiagramComponent(lastComponent);
             newComponent.setX(getX(destLabel));
             newComponent.setY(getY(destLabel));
+
+            // A STRAIGHT PUT DOWN BETWEEN TWO PIECES OF TRACK LIES ALONG THEM (OB-292; Adam, 2026-09-24: *"when new
+            // straight tracks are placed ... and they would connect two other tracks, they are automatically oriented
+            // to connect rather than not."*).  A move keeps the way the tile was: it is the same piece of track.
+            if (!move)
+            {
+                newComponent.setOrientation(orientationThatJoins(layout, newComponent,
+                    getX(destLabel), getY(destLabel)));
+            }
 
             if (newComponent.isText() && this.layout.getEditHideText())
             {
