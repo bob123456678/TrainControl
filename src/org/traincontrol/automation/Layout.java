@@ -7409,6 +7409,30 @@ public class Layout
                 // No arriving rail from a plain copy: the first arriving rail, as before, over one running away.
                 if (arriving != null) segment = arriving;
 
+                // NO ROAD, AND THE RAILS BY THAT SIDE PART BEHIND THE PLATFORM: STOP AT THE SWITCH (MT-477; Adam, 2026-09-24:
+                // "stop at the switch").  Every other fork stops the tail where the roads part - his rule of 2026-09-07,
+                // "end locking at the switch" - but a fork inside the first rail was never met as one: with no road to
+                // follow, the side rule took the first rail by that side and laid the tail up it, claiming track the train
+                // may not be on and none of the rail it may be on.  At BottomSecondary, answered Not known, a four-unit
+                // tail went up the turned rail from BottomCrossover.  So the squares every such rail shares are claimed, up
+                // to and including the switch, and the walk stops there.
+                if (roadBack == null)
+                {
+                    // Every rail arriving by that side - gathered apart from the loop above, which stops at the first.
+                    List<Edge> arrivingBySide = new ArrayList<>();
+
+                    for (Edge candidate : back)
+                    {
+                        if (candidate.getEnd() != here || candidate.getStart() == null) continue;
+
+                        String cameInBy = entrySideOf(candidate, here);
+
+                        if (cameInBy != null && arrivedFrom.equalsIgnoreCase(cameInBy)) arrivingBySide.add(candidate);
+                    }
+
+                    if (claimUpToWhereTheRailsPart(arrivingBySide, loc, places, spent, remaining)) break;
+                }
+
                 // Recorded, but naming a side no track leaves by - a stale value after an edit.
                 // Nothing can be said, and guessing would block the wrong rail.
                 if (segment == null) break;
@@ -9091,6 +9115,61 @@ public class Layout
     synchronized public boolean moveLocomotive(String locomotive, String targetPoint, boolean purge)
     {
         return moveLocomotive(locomotive, targetPoint, purge, false);
+    }
+
+    /**
+     * Claims the squares every rail shares from the platform back to where they part, when they do part (MT-477).
+     *
+     * Read from the platform end, as the walk reads an arriving rail: a place is claimed before its length is spent, so
+     * a tail that just reaches the switch claims it.  Rails over the same squares - two copies of one neighbour - are
+     * one road, not a fork, and an unmeasured rail says nothing, as the walk's measurement rule has it: both leave the
+     * walk to its ordinary course.
+     *
+     * @param rails the rails arriving at the platform by the recorded side
+     * @param loc the train
+     * @param places where the claims are written
+     * @param spent the squares already charged
+     * @param remaining the train's length still to spend
+     * @return true where the rails part and the shared squares were claimed - the walk stops there
+     */
+    private static boolean claimUpToWhereTheRailsPart(List<Edge> rails, Locomotive loc, Map<String, Locomotive> places,
+        Set<String> spent, int remaining)
+    {
+        Set<List<String>> roads = new LinkedHashSet<>();
+
+        for (Edge rail : rails)
+        {
+            List<String> ids = rail.getPlaceIds();
+
+            if (ids.isEmpty() || ids.size() != rail.getPlaceLengths().size() || rail.getLength() <= 0) return false;
+
+            roads.add(ids);
+        }
+
+        if (roads.size() < 2) return false;
+
+        List<String> ids = rails.get(0).getPlaceIds();
+        List<Integer> spans = rails.get(0).getPlaceLengths();
+
+        int left = remaining;
+
+        for (int step = 0; step < ids.size() && left > 0; step++)
+        {
+            int at = ids.size() - 1 - step;
+
+            String place = ids.get(at);
+
+            for (List<String> road : roads)
+            {
+                if (road.size() <= step || !road.get(road.size() - 1 - step).equals(place)) return true;
+            }
+
+            places.put(place, loc);
+
+            if (spent.add(place)) left -= Math.max(0, spans.get(at));
+        }
+
+        return true;
     }
 
     /**

@@ -1113,6 +1113,12 @@ The editor notice about turn-round squares with no length is a different questio
   path plus the square it arrives at, so only the arriving copy carries the square the train is on -
   and taking the other one left that square claimed by nobody, at some stations and not at others.
   Where there is no arriving copy - a square a train has been turned on - the other is still used.
+- **With no road to follow, a fork right behind the platform stops the tail at the switch** (Adam, 2026-09-24, on
+  MT-477: *"stop at the switch"*), as every other fork does under his rule of 2026-09-07. Where the rails arriving by
+  the recorded side part before the train's length is spent - at BottomSecondary, the straight rail from RampDown and
+  the turned one from BottomCrossover, at switch 51 - and the train was placed with no answer, or Not known, the
+  squares they share are claimed up to and including the switch, and nothing past it. It used to take the first rail
+  by that side and lay the tail up it. `core.testATailPastASwitchIsAskedAbout.testWithNoAnswerTheTailStopsAtTheSwitch`.
 - A train never blocks itself — pulling forward off its own tail is how it leaves. **But its own tail is not an
   answer for anybody else's** (OB-285; Adam, 2026-09-24: *"Add the refusal"*). The check asked whose tail lay on each
   piece of track and stopped at the first it found, so a train turned where it stands - reversed on the throttle,
