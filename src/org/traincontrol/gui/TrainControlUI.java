@@ -8117,6 +8117,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // undo anything until the question moved earlier.
             String tail = tailAtTheLanding;
 
+            // AND EVERY OTHER PART OF THE LANDING, READ NOW (TDU-B2).  Since FR-100 the tail question below waits on the
+            // diagram with the window live, and a second Control+V in that wait runs this door again and writes these
+            // fields for its own train.  Read after the question, the first train's road, side and facing were the
+            // second's.
+            final java.util.List<org.traincontrol.automation.Edge> roadBefore = roadBeforeTheLanding;
+            final boolean sameSquareAsBefore = tile.equals(squareBeforeTheLanding);
+            final String sideBefore = sideBeforeTheLanding;
+            final org.traincontrol.automationui.TilePorts.Side facingChosen = facingChosenAtTheLanding;
+            final org.traincontrol.automationui.TilePorts.Side facingFound = facingAtTheLanding;
+
             session.setArrivedFrom(tile, tail);
 
             // AND THE RAILWAY, NOT ONLY THE SETUP (VAL8-A2, REG7-B1 - found by both reviewers).
@@ -8133,14 +8143,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // AND HOW FAR BACK ITS TAIL REACHES, asked where the answer matters (Adam, 2026-09-14).
             org.traincontrol.gui.TailCrossedPrompt.Answer answer = org.traincontrol.gui.TailCrossedPrompt.askAfterPlacement(
                 this.model.getAutoLayout(), point, tail, point.getCurrentLocomotive().getTrainLength(),
-                point.getCurrentLocomotive().getName(), this, session::baseNameOf, roadBeforeTheLanding);
+                point.getCurrentLocomotive().getName(), this, session::baseNameOf, roadBefore);
 
             // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY (TLR-C5, TLV-A1, TLW-A1).  Not Known forgets a road; no
             // question, or a closed one, keeps the road the train had where it is still on the same square with the same
             // side - read from the running layout, which a run has told and the setup has not - and both stores are
             // written so they agree, including on another copy of the square the paste moved it onto.
-            java.util.List<org.traincontrol.automation.Edge> road = answer.roadToRecord(roadBeforeTheLanding,
-                tile.equals(squareBeforeTheLanding), sideBeforeTheLanding, tail);
+            java.util.List<org.traincontrol.automation.Edge> road = answer.roadToRecord(roadBefore, sameSquareAsBefore,
+                sideBefore, tail);
 
             session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(road));
             point.setArrivedAlong(road);
@@ -8159,9 +8169,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // own.
             // OVER THE COPIES A TRAIN MAY STAND ON (OB-270; Adam, 2026-09-23: *"we shouldn't allow an impossible
             // facing to be saved"*) - the copies the paste itself chose among, so the record and the copy agree.
-            session.setFacing(tile, facingChosenAtTheLanding != null ? facingChosenAtTheLanding
+            session.setFacing(tile, facingChosen != null ? facingChosen
                 : org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
-                    placeableFacings(tile), facingAtTheLanding, point.getName()));
+                    placeableFacings(tile), facingFound, point.getName()));
         }
 
         try

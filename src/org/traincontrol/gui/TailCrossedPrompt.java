@@ -532,10 +532,32 @@ public class TailCrossedPrompt
      */
     public static boolean takesTheClick(LayoutLabel label)
     {
+        return takesTheClick(label, 1);
+    }
+
+    /**
+     * The same, knowing which click of a run this is - so the rest of a double-click on the sensor that answered is the
+     * question's too (TDU-B3).
+     *
+     * The first click answers and takes the question down; the second arrives with nothing waiting and would reach the
+     * sensor's own click, which flips it - announced as a real sensor change, which an armed route acts on.  Asking to
+     * "click it on the diagram" makes a double-click a natural answer.
+     *
+     * @param label the tile clicked
+     * @param clickCount the click's count in its run, from the mouse event
+     * @return whether the click was the question's
+     */
+    public static boolean takesTheClick(LayoutLabel label, int clickCount)
+    {
         DiagramPick pick = armed;
 
-        return pick != null && pick.clicked(label);
+        if (pick != null) return pick.clicked(label);
+
+        return clickCount > 1 && label != null && label == answeredBy;
     }
+
+    /** The tile whose click last answered a question, for the rest of its double-click (TDU-B3). */
+    private static volatile LayoutLabel answeredBy;
 
     /**
      * One tail question put on the diagram: its sensors lit, a small window saying what to do, and the answer handed back
@@ -576,6 +598,11 @@ public class TailCrossedPrompt
             if (!(parent instanceof TrainControlUI) || armed != null) return null;
 
             TrainControlUI ui = (TrainControlUI) parent;
+
+            // NOT WITH AN EDITOR OPEN (TDU-C1).  The autonomy editor's Place door asks from the main window too, and its own
+            // squares are lit with the main window's but do not take the click; the small window goes to the top of a
+            // main window the editor covers.  The list is asked where the operator is working.
+            if (ui.isLayoutEditorOpen()) return null;
 
             org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
 
@@ -713,6 +740,8 @@ public class TailCrossedPrompt
 
                 if (here.size() == 1)
                 {
+                    answeredBy = label;
+
                     finish(new Reply(true, here.get(0)));
 
                     return true;
@@ -722,7 +751,12 @@ public class TailCrossedPrompt
                 // waiting for a click.
                 Reply narrowed = reply(prompt, train, station, here, -1);
 
-                if (narrowed.answered) finish(narrowed);
+                if (narrowed.answered)
+                {
+                    answeredBy = label;
+
+                    finish(narrowed);
+                }
 
                 return true;
             }

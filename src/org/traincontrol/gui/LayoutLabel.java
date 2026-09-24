@@ -327,7 +327,7 @@ public final class LayoutLabel extends JLabel
                                // A TAIL QUESTION WAITING ON THE DIAGRAM TAKES THE CLICK (FR-100; Adam, 2026-09-24:
                                // "piggyback off the highlight feature and s88 click events").  Asked before the sensor
                                // is flipped, so answering the question does not also fake an occupancy change.
-                               if (TailCrossedPrompt.takesTheClick(LayoutLabel.this)) return;
+                               if (TailCrossedPrompt.takesTheClick(LayoutLabel.this, e.getClickCount())) return;
 
                                component.execSwitching();
 
