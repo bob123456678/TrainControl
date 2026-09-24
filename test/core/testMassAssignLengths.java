@@ -2159,16 +2159,21 @@ public class testMassAssignLengths
     }
 
     /**
-     * A square that stops being a station keeps no maximum train length (SET-C2).
+     * A square that stops being a station remembers its maximum train length, and has it again when it is made a station
+     * again (Adam, 2026-09-24, OB-291).
      *
-     * The setting is offered only inside the station menu and read only of a square a journey ends at, so on a
-     * square that is not a station it decides nothing - but the bulk clear counts every point carrying one, and
-     * said "on {0} stations" about squares no menu would ever show one on.
+     * *"make max train length be remembered if a station is changed to a non-station, and then restored if it is changed
+     * back to a station.  don't modify the behavior of this attribute: it is still to be ignored for non-stations."*
+     * SET-C2 took it off on the way down, because the bulk clear counted every square carrying one and said "on {0}
+     * stations" about squares that are not.  It is kept now, and the count still asks about stations only.
+     *
+     * MUTATION: clear the maximum in `AutonomySession.setStation` again, or count every square that carries one, and this
+     * fails.
      *
      * @throws IOException from the fixture
      */
     @Test
-    public void testADemotedStationKeepsNoMaximumTrainLength() throws IOException
+    public void testADemotedStationRemembersItsMaximumTrainLength() throws IOException
     {
         openBerthBehindASwitch(key(5, 1));
 
@@ -2178,10 +2183,98 @@ public class testMassAssignLengths
 
         session.setStation(key(5, 1), false);
 
-        assertTrue(session.tilesWithAMaxTrainLength().isEmpty(),
-            "a square that is no longer a station still carries a maximum, and the bulk clear counts it as a station");
+        assertEquals(session.getPointProperty(key(5, 1), "maxTrainLength"), 8, "the square was made pass-through and lost"
+            + " its maximum of 8 - Adam, OB-291: \"make max train length be remembered if a station is changed to a"
+            + " non-station\"");
 
-        assertNull(session.getPointProperty(key(5, 1), "maxTrainLength"));
+        assertTrue(session.tilesWithAMaxTrainLength().isEmpty(), "a square that is no longer a station is counted by"
+            + " Clear All Max Train Lengths, which says \"on {0} stations\" (SET-C2) - \"it is still to be ignored for"
+            + " non-stations\"");
+
+        session.setStation(key(5, 1), true);
+
+        assertEquals(session.tilesWithAMaxTrainLength(), Arrays.asList(key(5, 1)), "made a station again, the square does"
+            + " not have its maximum back - Adam, OB-291: \"and then restored if it is changed back to a station\"");
+    }
+
+    /**
+     * A NEGATIVE maximum is counted by the bulk clear on any square, station or not (SET-B1 kept with OB-291).
+     *
+     * `Layout.fromJSON` refuses a maximum below 0 on any point and invalidates the whole configuration, so a remembered
+     * one on a square that is not a station still stops the railway loading - and the bulk clear is the door that takes
+     * one off.  Counting stations only would grey it on the very setting that is stopping the railway.
+     *
+     * MUTATION: count stations only, negatives included, and this fails.
+     *
+     * @throws IOException from the fixture
+     */
+    @Test
+    public void testANegativeMaximumOnADemotedStationCanStillBeCleared() throws IOException
+    {
+        openBerthBehindASwitch(key(5, 1));
+
+        session.setPointProperty(key(5, 1), "maxTrainLength", -1);
+
+        session.setStation(key(5, 1), false);
+
+        assertEquals(session.getPointProperty(key(5, 1), "maxTrainLength"), -1, "precondition: the negative was not kept");
+
+        assertEquals(session.tilesWithAMaxTrainLength(), Arrays.asList(key(5, 1)), "a negative maximum on a square that"
+            + " is not a station stops the railway loading, and Clear All Max Train Lengths does not offer to clear it");
+
+        assertEquals(session.clearEveryMaxTrainLength(), 1);
+
+        assertNull(session.getPointProperty(key(5, 1), "maxTrainLength"), "the bulk clear left the negative in place");
+    }
+
+    /**
+     * A maximum remembered on a square that is not a station does not make the railway one that models lengths (OB-291).
+     *
+     * *"No max train length"* is listed for every station only on a railway that models lengths somewhere - a measured
+     * track, a train with a length, or a station with a maximum (REL-C2).  A maximum on a square that is not a station
+     * decides nothing, and Adam: *"it is still to be ignored for non-stations"*.  So on a railway that models nothing
+     * else, a demoted station's remembered maximum must not start the notice on every other station.
+     *
+     * The control first: with the maximum on a station, the other station IS listed, so the fixture can say it.
+     *
+     * MUTATION: let `modelsAnyLength` read a maximum off any square, and this fails.
+     *
+     * @throws IOException from the fixture
+     */
+    @Test
+    public void testARememberedMaximumDoesNotStartTheLengthNotices() throws IOException
+    {
+        openBerthBehindASwitch(key(5, 1));
+
+        session.setStation(key(1, 1), true);
+
+        session.setPointProperty(key(5, 1), "maxTrainLength", 8);
+
+        assertEquals(noMaximumNoticesAbout(key(1, 1)), 1, "precondition: with a station carrying a maximum, the other"
+            + " station is not listed as having none, so this fixture cannot show the notice at all");
+
+        session.setStation(key(5, 1), false);
+
+        assertEquals(noMaximumNoticesAbout(key(1, 1)), 0, "the only maximum on the railway is remembered on a square that"
+            + " is no longer a station, and it still makes the railway one that models lengths: 1,1 is listed as having"
+            + " none - Adam, OB-291: \"it is still to be ignored for non-stations\"");
+    }
+
+    /** How many "no max train length" findings the setup gives about this square. */
+    private int noMaximumNoticesAbout(TileKey square)
+    {
+        int seen = 0;
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (org.traincontrol.automationui.AutonomyChecks.NO_MAX_TRAIN_LENGTH.equals(finding.getMessageKey())
+                && square.equals(finding.getTile()))
+            {
+                seen++;
+            }
+        }
+
+        return seen;
     }
 
     /**
