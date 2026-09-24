@@ -200,7 +200,14 @@ public class TailCrossedPrompt
 
         List<Choice> choices = choicesFor(layout, at, arrivedFrom, trainLength, shown);
 
-        Reply reply = reply(parent, train, shownName(shown, at), choices, preselectedIndex(choices, recorded));
+        // ON THE DIAGRAM WHERE IT CAN BE (FR-100; Adam, 2026-09-24: *"instead of showing the list of points, highlight
+        // possible squares on the diagram and ask the user to click one.  only show the list if there are options on
+        // another page."*).  Not for one choice, which is answered without asking, nor for a test's answer.
+        DiagramPick pick = choices.size() > 1 && answeredByATest == null
+            ? DiagramPick.of(parent, at, choices, train, shownName(shown, at)) : null;
+
+        Reply reply = pick != null ? pick.ask()
+            : reply(parent, train, shownName(shown, at), choices, preselectedIndex(choices, recorded));
 
         return reply.answered ? new Answer(true, reply.choice == null ? null : reply.choice.getRoad()) : Answer.NOT_ASKED;
     }
@@ -478,6 +485,278 @@ public class TailCrossedPrompt
     public static String namesOf(List<Edge> road)
     {
         return Layout.namesOfRoad(road);
+    }
+
+    // ---------------------------------------------------------------- on the diagram (FR-100)
+
+    /**
+     * Whether the question goes on the diagram rather than into a list (FR-100).
+     *
+     * Adam, 2026-09-24: *"only show the list if there are options on another page."*  So every choice's sensor is on the
+     * page the train stands on, and drawn somewhere it can be clicked - the main window, or a page of it opened on its
+     * own.
+     *
+     * @param train the square the train stands on
+     * @param squares each choice's sensor square
+     * @param drawn whether a square is drawn where it can be clicked
+     * @return whether to put the question on the diagram
+     */
+    public static boolean putsTheQuestionOnTheDiagram(org.traincontrol.automationui.TileGraph.TileKey train,
+        java.util.Collection<org.traincontrol.automationui.TileGraph.TileKey> squares,
+        java.util.function.Predicate<org.traincontrol.automationui.TileGraph.TileKey> drawn)
+    {
+        if (train == null || squares == null || squares.isEmpty() || drawn == null) return false;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey square : squares)
+        {
+            if (square == null || !java.util.Objects.equals(square.getPage(), train.getPage())) return false;
+
+            if (!drawn.test(square)) return false;
+        }
+
+        return true;
+    }
+
+    /** The question waiting on the diagram for its click, or null (FR-100). */
+    private static volatile DiagramPick armed;
+
+    /**
+     * A click on a sensor of the main diagram, offered first to a tail question waiting there (FR-100).
+     *
+     * Called by an s88 tile's left click before it does anything else.  While a question waits, every such click is
+     * the question's: one on a lit sensor answers it, and one on any other lights them again rather than flipping a
+     * sensor the operator did not mean to flip.
+     *
+     * @param label the tile clicked
+     * @return whether the click was the question's
+     */
+    public static boolean takesTheClick(LayoutLabel label)
+    {
+        DiagramPick pick = armed;
+
+        return pick != null && pick.clicked(label);
+    }
+
+    /**
+     * One tail question put on the diagram: its sensors lit, a small window saying what to do, and the answer handed back
+     * when a lit sensor is clicked, Not Known is pressed, or it is closed.
+     *
+     * Waits as a modal dialog waits, so the door that asked carries on with the answer exactly as it did with the list:
+     * on the event thread through a secondary loop, which keeps the window live to be clicked; off it, on a latch.
+     */
+    private static final class DiagramPick
+    {
+        /** Long enough for anyone to find the squares; the pick ends the highlight itself as soon as it is answered. */
+        private static final int HOLD_MS = 30 * 60 * 1000;
+
+        private final TrainControlUI ui;
+        private final Map<org.traincontrol.automationui.TileGraph.TileKey, List<Choice>> bySquare;
+        private final String train;
+        private final String station;
+
+        private javax.swing.JDialog prompt;
+        private java.util.function.Consumer<Reply> done;
+        private boolean finished;
+
+        private DiagramPick(TrainControlUI ui, Map<org.traincontrol.automationui.TileGraph.TileKey, List<Choice>> bySquare,
+            String train, String station)
+        {
+            this.ui = ui;
+            this.bySquare = bySquare;
+            this.train = train;
+            this.station = station;
+        }
+
+        /**
+         * The pick for these choices, or null where the list is the answer: not asked from the main window, a question
+         * already waiting, a sensor with no square, or one on another page or not drawn.
+         */
+        static DiagramPick of(Component parent, Point at, List<Choice> choices, String train, String station)
+        {
+            if (!(parent instanceof TrainControlUI) || armed != null) return null;
+
+            TrainControlUI ui = (TrainControlUI) parent;
+
+            org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+
+            if (session == null || session.getStationIndex() == null) return null;
+
+            Map<org.traincontrol.automationui.TileGraph.TileKey, List<Choice>> bySquare = new LinkedHashMap<>();
+
+            for (Choice choice : choices)
+            {
+                org.traincontrol.automationui.TileGraph.TileKey square =
+                    session.getStationIndex().squareOf(choice.getFarthest());
+
+                if (square == null) return null;
+
+                bySquare.computeIfAbsent(square, k -> new ArrayList<>()).add(choice);
+            }
+
+            if (!putsTheQuestionOnTheDiagram(session.getStationIndex().squareOf(at), bySquare.keySet(),
+                square -> !ui.getDiagramTileRegistry().labelsFor(square).isEmpty()))
+            {
+                return null;
+            }
+
+            return new DiagramPick(ui, bySquare, train, station);
+        }
+
+        /** Puts the question up and waits for it. */
+        Reply ask()
+        {
+            final Reply[] out = {null};
+
+            if (javax.swing.SwingUtilities.isEventDispatchThread())
+            {
+                java.awt.SecondaryLoop loop =
+                    java.awt.Toolkit.getDefaultToolkit().getSystemEventQueue().createSecondaryLoop();
+
+                arm(reply ->
+                {
+                    out[0] = reply;
+                    loop.exit();
+                });
+
+                loop.enter();
+            }
+            else
+            {
+                java.util.concurrent.CountDownLatch answered = new java.util.concurrent.CountDownLatch(1);
+
+                try
+                {
+                    javax.swing.SwingUtilities.invokeAndWait(() -> arm(reply ->
+                    {
+                        out[0] = reply;
+                        answered.countDown();
+                    }));
+
+                    answered.await();
+                }
+                catch (Exception stopped)
+                {
+                    // Nothing answered: the question is taken down, and no answer stands.
+                    javax.swing.SwingUtilities.invokeLater(() -> finish(new Reply(false, null)));
+                }
+            }
+
+            return out[0] == null ? new Reply(false, null) : out[0];
+        }
+
+        private void arm(java.util.function.Consumer<Reply> then)
+        {
+            done = then;
+            armed = this;
+
+            light(true);
+
+            javax.swing.JPanel panel = new javax.swing.JPanel(new java.awt.BorderLayout(0, 10));
+
+            panel.setBorder(javax.swing.BorderFactory.createEmptyBorder(12, 14, 12, 14));
+
+            panel.add(new javax.swing.JLabel("<html><div style='width:320px'>"
+                + escape(I18n.f("autosetup.ui.promptTailCrossedOnTheDiagram", train, station)).replace("\n", "<br>")
+                + "</div></html>"), java.awt.BorderLayout.CENTER);
+
+            javax.swing.JButton notKnown = new javax.swing.JButton(I18n.t("autosetup.ui.tailCrossedNotKnown"));
+            javax.swing.JButton cancel = new javax.swing.JButton(I18n.t("ui.cancel"));
+
+            // NOT KNOWN IS AN ANSWER, a closed question is none (TLW-C2) - the list's two ways out, kept.
+            notKnown.addActionListener(e -> finish(new Reply(true, null)));
+            cancel.addActionListener(e -> finish(new Reply(false, null)));
+
+            javax.swing.JPanel buttons = new javax.swing.JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 6, 0));
+
+            buttons.add(notKnown);
+            buttons.add(cancel);
+
+            panel.add(buttons, java.awt.BorderLayout.SOUTH);
+
+            prompt = new javax.swing.JDialog(ui, I18n.t("autolayout.ui.askArrivalSideTitle"), false);
+
+            prompt.setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
+            prompt.addWindowListener(new java.awt.event.WindowAdapter()
+            {
+                @Override
+                public void windowClosing(java.awt.event.WindowEvent e)
+                {
+                    finish(new Reply(false, null));
+                }
+            });
+
+            prompt.getRootPane().registerKeyboardAction(e -> finish(new Reply(false, null)),
+                javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0),
+                javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW);
+
+            prompt.setContentPane(panel);
+            prompt.pack();
+
+            // AT THE TOP OF THE WINDOW, not over the middle of the diagram where the squares to click are.
+            prompt.setLocation(ui.getX() + Math.max(0, (ui.getWidth() - prompt.getWidth()) / 2), ui.getY() + 60);
+
+            prompt.setVisible(true);
+        }
+
+        /** A click on the diagram: the question's answer if it is on a lit sensor, and the question's either way. */
+        boolean clicked(LayoutLabel label)
+        {
+            if (finished) return false;
+
+            for (Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, List<Choice>> at : bySquare.entrySet())
+            {
+                if (!ui.getDiagramTileRegistry().labelsFor(at.getKey()).contains(label)) continue;
+
+                List<Choice> here = at.getValue();
+
+                if (here.size() == 1)
+                {
+                    finish(new Reply(true, here.get(0)));
+
+                    return true;
+                }
+
+                // TWO ROADS TO ONE SENSOR: the list, narrowed to them - as the editor's click does.  Closed, it keeps
+                // waiting for a click.
+                Reply narrowed = reply(prompt, train, station, here, -1);
+
+                if (narrowed.answered) finish(narrowed);
+
+                return true;
+            }
+
+            // Not one of them: the lit squares again, to say where to click.
+            light(true);
+
+            return true;
+        }
+
+        private void finish(Reply reply)
+        {
+            if (finished) return;
+
+            finished = true;
+
+            if (armed == this) armed = null;
+
+            light(false);
+
+            if (prompt != null) prompt.dispose();
+
+            if (done != null) done.accept(reply);
+        }
+
+        private void light(boolean on)
+        {
+            for (org.traincontrol.automationui.TileGraph.TileKey square : bySquare.keySet())
+            {
+                for (LayoutLabel label : ui.getDiagramTileRegistry().labelsFor(square))
+                {
+                    if (on) label.flashHighlight(org.traincontrol.util.ImageUtil.HIGHLIGHT, HOLD_MS);
+                    else label.endFlash();
+                }
+            }
+        }
     }
 
     // ---------------------------------------------------------------- the walk

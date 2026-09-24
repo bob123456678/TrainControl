@@ -80,6 +80,34 @@ public class testTheTailIsPickedOnTheDiagram
         if (sandbox != null) sandbox.close();
     }
 
+    /**
+     * The list, not the diagram, where a choice's sensor is on another page or is not drawn (FR-100).
+     *
+     * Adam: *"only show the list if there are options on another page."*  Not drawn is the same case seen from the
+     * window: a square nobody can see cannot be clicked.
+     *
+     * MUTATION: drop either half of `putsTheQuestionOnTheDiagram`, and this fails.
+     */
+    @Test
+    public void testAChoiceOnAnotherPageOrNotDrawnKeepsTheList()
+    {
+        TileKey train = new TileKey("1 - Main", 5, 5);
+        TileKey near = new TileKey("1 - Main", 2, 2);
+        TileKey far = new TileKey("2 - Bottom", 3, 3);
+
+        assertTrue(TailCrossedPrompt.putsTheQuestionOnTheDiagram(train, java.util.Arrays.asList(near,
+            new TileKey("1 - Main", 7, 5)), square -> true), "precondition: two sensors on the train's own page, both"
+            + " drawn, are not put on the diagram");
+
+        assertFalse(TailCrossedPrompt.putsTheQuestionOnTheDiagram(train, java.util.Arrays.asList(near, far),
+            square -> true), "a question with one of its sensors on another page was put on the diagram - Adam, FR-100:"
+            + " \"only show the list if there are options on another page\"");
+
+        assertFalse(TailCrossedPrompt.putsTheQuestionOnTheDiagram(train, java.util.Arrays.asList(near,
+            new TileKey("1 - Main", 7, 5)), square -> !square.equals(near)), "a question with a sensor that is drawn"
+            + " nowhere was put on the diagram, where it cannot be clicked");
+    }
+
     @Test
     public void testAClickOnALitSensorAnswersTheQuestion() throws Exception
     {
