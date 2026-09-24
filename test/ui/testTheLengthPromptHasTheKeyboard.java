@@ -381,7 +381,12 @@ public class testTheLengthPromptHasTheKeyboard
             {
                 javax.swing.JMenuItem item = bulk.getItem(i);
 
-                if (item != null && I18n.t(key).equals(item.getText())) found[0] = item;
+                // The train walk BY ITS NAME, since its text carries the count (MT-533), as the menu lookup below does.
+                if (item != null && (I18n.t(key).equals(item.getText())
+                    || TRAINS.equals(key) && "massAssignTrainLengths".equals(item.getName())))
+                {
+                    found[0] = item;
+                }
             }
         });
 

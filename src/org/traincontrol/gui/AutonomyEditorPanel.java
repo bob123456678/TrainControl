@@ -1687,6 +1687,10 @@ public class AutonomyEditorPanel extends JPanel
                             signalAddresses(paired)),
                     () -> pairProtectingSignal(target));
 
+                // WHAT THE GUARD DOES (OB-293; Adam, 2026-09-24: *"add brief tooltips on what entry guards and exit guards
+                // are"*) - said as the runtime does it, `Layout.refreshProtectingSignal`.
+                signalItem.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipExitGuard")));
+
                 // THE ENTRY GUARD, the same dialog on the other list (FR-096), and labelled the same way.
                 java.util.List<TileKey> guarding = session.getEntrySignals(target);
 
@@ -1697,6 +1701,9 @@ public class AutonomyEditorPanel extends JPanel
                             ? "autosetup.ui.menuPairedEntrySignal" : "autosetup.ui.menuPairedEntrySignals",
                             signalAddresses(guarding)),
                     () -> pairGuardSignals(Guard.ENTRY, target));
+
+                // And this one's, as `Layout.throwEntryGuard` does it (OB-293).
+                entryItem.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipEntryGuard")));
             }
 
 
@@ -2251,6 +2258,13 @@ public class AutonomyEditorPanel extends JPanel
 
                 oneWay.setToolTipText(oneWayButton.getToolTipText());
 
+                // GREYED ON A PAGE LEFT OUT, as Mass Assign Lengths below it is (OB-235, MT-528).
+                if (session != null && session.getStore().getExcludedPages().contains(page))
+                {
+                    oneWay.setEnabled(false);
+                    oneWay.setToolTipText(wrapped(I18n.t("autosetup.ui.infoPageLeftOutNothingToMeasure")));
+                }
+
                 bulk.add(oneWay);
             }
 
@@ -2315,10 +2329,13 @@ public class AutonomyEditorPanel extends JPanel
             // a page - so a page left out does not change it.
             int trainsToMeasure = trainLengthDoor().trainsWithoutALength().size();
 
-            javax.swing.JMenuItem massAssignTrains =
-                item(I18n.t("autosetup.ui.menuMassAssignTrainLengths"), () -> massAssignTrainLengths());
+            // NEVER GREYED, AND THE COUNT IN ITS LABEL (Adam, 2026-09-24, on MT-533: *"This option should never be greyed
+            // out completely (show the number of missing trains in parens)"*).  With none missing, the walk goes through
+            // every train with the length it has.  Named, because its text changes with the count.
+            javax.swing.JMenuItem massAssignTrains = item(
+                I18n.f("autosetup.ui.menuMassAssignTrainLengthsCounted", trainsToMeasure), () -> massAssignTrainLengths());
 
-            massAssignTrains.setEnabled(trainsToMeasure > 0);
+            massAssignTrains.setName("massAssignTrainLengths");
 
             massAssignTrains.setToolTipText(wrapped(trainsToMeasure > 0
                 ? I18n.f("autosetup.ui.tooltipMassAssignTrainLengths", trainsToMeasure)
@@ -7107,6 +7124,38 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * Whether Why Not Moving is waiting for its click and this square has a train on it to ask about (FR-102).
+     *
+     * Adam, 2026-09-24: *"when the button is pressed an nothing is drawn yet, highlight stations w/ trains on the editor
+     * diagram so it's clear what the user can click on"*.  The train as the running railway has it where there is one -
+     * a run moves trains the setup has not been told about - and as the setup places it otherwise.
+     *
+     * @param tile the square
+     * @return whether to outline it
+     */
+    private boolean whyWaitsOn(TileKey tile)
+    {
+        if (tool != Tool.WHY || lastWhyTile != null || tile == null) return false;
+
+        org.traincontrol.automation.Layout now = runningLayout == null ? null : runningLayout.get();
+
+        if (now != null && session.getStationIndex() != null)
+        {
+            for (org.traincontrol.automation.Point point : now.getPoints())
+            {
+                if (point.getCurrentLocomotive() != null && tile.equals(session.getStationIndex().squareOf(point)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        return session.getLocomotiveNameAt(tile) != null;
+    }
+
+    /**
      * A tile on the diagram was clicked while autonomy mode is on.
      *
      * @param tile which square
@@ -7158,6 +7207,14 @@ public class AutonomyEditorPanel extends JPanel
         if (tool == Tool.ONE_WAY && oneWayFrom == null)
         {
             if (needsTheGrid(tile)) return;
+
+            // NOT ON A SQUARE AUTONOMY TAKES NO NOTICE OF (OB-235): the tool's clicks came before that question.
+            if (isIgnored(tile))
+            {
+                say(hint, I18n.t("autosetup.ui.infoTileIgnored"));
+
+                return;
+            }
 
             oneWayFrom = tile;
 
@@ -8852,7 +8909,7 @@ public class AutonomyEditorPanel extends JPanel
         // address names the signal but does not say where it is, and where it is is the thing somebody
         // checking a pairing actually wants to know.
         boolean outlined = selection.contains(tile) || tile.equals(testFrom)
-            || highlightedSignals.contains(tile);
+            || highlightedSignals.contains(tile) || whyWaitsOn(tile);
 
         // In the arrivals view every station shows every side it has, so the setting can be READ -
         // an unrestricted station drawing nothing is right on the running diagram and useless in the
@@ -9437,6 +9494,21 @@ public class AutonomyEditorPanel extends JPanel
         if (testButton != null) testButton.setEnabled(!ignored);
         if (whyButton != null) whyButton.setEnabled(!ignored);
 
+        // AND ONE-WAY RUN, the third of them (OB-235; Adam, 2026-09-24, on MT-528: *"works, but one-way run isn't"*): a
+        // run closed one way on a page nothing is built from closes nothing.  Put down if it was armed when the page
+        // was left out - here rather than through cancelPendingGesture, which refreshes.
+        if (oneWayButton != null)
+        {
+            oneWayButton.setEnabled(!ignored);
+
+            if (ignored && tool == Tool.ONE_WAY)
+            {
+                tool = Tool.NONE;
+                oneWayFrom = null;
+                oneWayButton.setSelected(false);
+            }
+        }
+
         findingsModel.clear();
         findingTiles.clear();
         findingSeverity.clear();
@@ -9979,9 +10051,15 @@ public class AutonomyEditorPanel extends JPanel
 
         java.util.List<String> trains = door.trainsWithoutALength();
 
+        // EVERY TRAIN WHEN NONE IS MISSING A LENGTH (MT-533): the item is never greyed, and this is what it offers then -
+        // each train with the length it has, which Skip keeps.
+        java.util.Map<String, Integer> known = trains.isEmpty() ? door.trainLengths() : null;
+
+        if (known != null) trains = new java.util.ArrayList<>(known.keySet());
+
         if (trains.isEmpty())
         {
-            say(hint, I18n.t("autosetup.ui.infoEveryTrainHasALength"));
+            say(hint, I18n.t("autosetup.ui.infoNoTrainToMeasure"));
 
             return;
         }
@@ -9990,8 +10068,9 @@ public class AutonomyEditorPanel extends JPanel
         {
             String train = trains.get(i);
 
-            // Asked again, as the other walks ask: a list made before the walk began is not trusted.
-            if (!door.trainsWithoutALength().contains(train)) continue;
+            // Asked again, as the other walks ask: a list made before the walk began is not trusted.  Not when going
+            // through every train, where one with a length is the point.
+            if (known == null && !door.trainsWithoutALength().contains(train)) continue;
 
             TileKey standing = squareOfTrain(train);
 
@@ -10005,10 +10084,16 @@ public class AutonomyEditorPanel extends JPanel
                 refresh();
             }
 
-            String question = standing == null
-                ? I18n.f("autosetup.ui.promptMassAssignTrainLengthNotPlaced", i + 1, trains.size(), train)
-                : I18n.f("autosetup.ui.promptMassAssignTrainLength", i + 1, trains.size(), train,
-                    nameForPrompt(standing));
+            String question = known != null
+                ? standing == null
+                    ? I18n.f("autosetup.ui.promptMassAssignTrainLengthKnownNotPlaced", i + 1, trains.size(), train,
+                        known.get(train))
+                    : I18n.f("autosetup.ui.promptMassAssignTrainLengthKnown", i + 1, trains.size(), train,
+                        nameForPrompt(standing), known.get(train))
+                : standing == null
+                    ? I18n.f("autosetup.ui.promptMassAssignTrainLengthNotPlaced", i + 1, trains.size(), train)
+                    : I18n.f("autosetup.ui.promptMassAssignTrainLength", i + 1, trains.size(), train,
+                        nameForPrompt(standing));
 
             Integer units = askForWholeLength(question, TRAINS_TITLE);
 
@@ -10077,6 +10162,17 @@ public class AutonomyEditorPanel extends JPanel
          * @param units its length
          */
         void applyTrainLength(String train, int units);
+
+        /**
+         * Every locomotive autonomy would run, with the length it has - what the walk goes through when none is missing
+         * one (MT-533).
+         *
+         * @return name to length, in the order to ask them
+         */
+        default java.util.Map<String, Integer> trainLengths()
+        {
+            return new java.util.LinkedHashMap<>();
+        }
     }
 
     private TrainLengthDoor trainLengthDoor;
@@ -10101,6 +10197,14 @@ public class AutonomyEditorPanel extends JPanel
                 TrainControlUI window = parentWindow();
 
                 return window == null ? new java.util.ArrayList<String>() : window.trainsWithoutALength();
+            }
+
+            @Override
+            public java.util.Map<String, Integer> trainLengths()
+            {
+                TrainControlUI window = parentWindow();
+
+                return window == null ? new java.util.LinkedHashMap<String, Integer>() : window.trainLengths();
             }
 
             @Override

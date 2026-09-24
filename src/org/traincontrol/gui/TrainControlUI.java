@@ -6038,6 +6038,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Every locomotive autonomy would run, with its train length - for the train walk when none is missing one (MT-533).
+     *
+     * @return name to length, alphabetically; empty where there is no railway to ask
+     */
+    public java.util.Map<String, Integer> trainLengths()
+    {
+        if (this.model == null || !this.model.hasAutoLayout()) return new java.util.LinkedHashMap<>();
+
+        org.traincontrol.automation.Layout layout = this.model.getAutoLayout();
+
+        return layout == null ? new java.util.LinkedHashMap<>() : layout.trainLengths();
+    }
+
+    /**
      * The locomotives autonomy would run that have no train length - the gate's second half (VD14-B1).
      *
      * @return their names, empty when every one has a length or there is no railway to ask

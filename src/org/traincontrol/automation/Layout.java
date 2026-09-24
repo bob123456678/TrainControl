@@ -9585,6 +9585,27 @@ public class Layout
     }
 
     /**
+     * Every locomotive autonomy would run, with its train length - 0 where it has none (MT-533).
+     *
+     * Sorted, as `trainsWithNoLength` is.
+     *
+     * @return name to length, alphabetically
+     */
+    public java.util.Map<String, Integer> trainLengths()
+    {
+        java.util.Map<String, Integer> out = new java.util.TreeMap<>();
+
+        for (Locomotive loc : this.getLocomotivesToRun())
+        {
+            if (loc == null) continue;
+
+            out.put(loc.getName(), loc.getTrainLength() == null ? 0 : loc.getTrainLength());
+        }
+
+        return new java.util.LinkedHashMap<>(out);
+    }
+
+    /**
      * The locomotives autonomy would run that have no train length (VD14-B1).
      *
      * **The second half of what makes non-atomic mode unsafe, and the gate missed it.**
