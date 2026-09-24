@@ -1989,8 +1989,11 @@ public final class HomeStaging
         // first" sent the operator to put it back on the same square, where a placement turns it round.
         if (this.layout.isABarredCopyOfAStation(from))
         {
-            out.add(I18n.f("autolayout.whyHomeStartFacingBarred", Layout.placeNameOf(from),
-                I18n.t("autosetup.ui.menuArrivalsGroup")));
+            // Without "open that side" where every train turns (GUI4-C3): that is the terminus error.
+            out.add(this.layout.turnsEveryTrainAt(from)
+                ? I18n.f("autolayout.whyHomeStartFacingBarredMustTurn", Layout.placeNameOf(from))
+                : I18n.f("autolayout.whyHomeStartFacingBarred", Layout.placeNameOf(from),
+                    I18n.t("autosetup.ui.menuArrivalsGroup")));
         }
         else if (!from.isDestination())
         {

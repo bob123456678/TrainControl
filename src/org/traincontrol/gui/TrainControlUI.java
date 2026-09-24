@@ -7303,7 +7303,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 || getAutonomySession().getStationIndex() == null
                 ? null : getAutonomySession().getStationIndex().squareOf(wasOn);
 
-            if (!this.model.getAutoLayout().moveLocomotive(placing.getName(), point.getName(), false))
+            // ONTO A COPY TRAINS MAY NOT ARRIVE AT, TOO, where that is the heading kept (OB-284).
+            if (!this.model.getAutoLayout().moveLocomotive(placing.getName(), point.getName(), false, true))
             {
                 // The clipboard still holds it, so the next square accepts the same paste - which is
                 // what the dismissed-question branch above does, for the same reason.
@@ -8226,12 +8227,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Each copy of a square a train may be put down on, with the way it faces (OB-270).
      *
-     * `facingsFor` names every copy, and a square's copies are not all destinations: a copy trains may not arrive at
-     * is one no placement door chooses (a train stands there only by being there already - turned where it is,
-     * standing when the side was barred, or put back so by a rebuild), so a heading only such a copy holds is one no
-     * placement gives.
-     * Choosing and recording over these alone is what keeps the paste from saving a facing the train is not standing
-     * in - Adam: *"we shouldn't allow an impossible facing to be saved."*
+     * Since OB-284 these are the copies a train could LEAVE (Adam, 2026-09-24: *"for barred arrival directions, keep
+     * the direction.  for barred departure directions, turn it to a way trains may arrive in"*): a copy trains may not
+     * arrive at keeps a train that faces its way, and only a heading with no way out is not kept.  Choosing and
+     * recording over these is still what keeps the paste from saving a facing the train is not standing in - Adam:
+     * *"we shouldn't allow an impossible facing to be saved."*
      *
      * @param square the square
      * @return the placeable copies by name, in the build's order
@@ -8244,8 +8244,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return new java.util.LinkedHashMap<>();
         }
 
-        // The session's rule, which every door that puts a train down asks (GUI-B1).
-        return getAutonomySession().placeableFacingsFor(square, this.model.getAutoLayout());
+        // The session's rule, which every door that puts a train down asks: the headings a train can LEAVE by (OB-284).
+        return getAutonomySession().departableFacingsFor(square, this.model.getAutoLayout());
     }
 
     /**

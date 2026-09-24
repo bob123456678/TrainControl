@@ -5442,10 +5442,11 @@ public class AutonomyEditorPanel extends JPanel
 
         session.placeLocomotive(tile, name);
 
-        // OVER THE COPIES IT MAY BE PUT DOWN ON (GUI-B1), as the paste records it: a heading only a copy trains may not
-        // arrive at holds is one the build would stand it in, where autonomy will not start it.
+        // OVER THE COPIES IT COULD LEAVE (OB-284), as the paste records it: a heading only a copy trains may not arrive at
+        // holds is kept - the build stands the train there and autonomy says why it will not start it - and one no copy
+        // can leave by is not.
         session.setFacing(tile, org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
-            session.placeableFacingsFor(tile, layoutSource == null ? null : layoutSource.get()), heading, null));
+            session.departableFacingsFor(tile, layoutSource == null ? null : layoutSource.get()), heading, null));
 
         // THE DOOR MT-337 WAS REPORTED AT.  This writes `loc` into the setup and nowhere else, so the
         // rebuild that follows is the only thing that puts the train on the running layout - and

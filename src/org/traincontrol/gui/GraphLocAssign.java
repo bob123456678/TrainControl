@@ -235,7 +235,7 @@ public class GraphLocAssign extends javax.swing.JPanel
             {
                 org.traincontrol.automationui.TilePorts.Side intended =
                     org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
-                        session.placeableFacingsFor(square, layout), heading, edit.p.getName());
+                        session.departableFacingsFor(square, layout), heading, edit.p.getName());
 
                 org.traincontrol.automation.Point facingThatWay = session.copyFacing(square, intended, layout);
 
@@ -281,10 +281,10 @@ public class GraphLocAssign extends javax.swing.JPanel
         // than `arriving`: an assignment that did not take should not write a facing.
         if (point.getCurrentLocomotive() != null)
         {
-            // Over the copies it may be put down on (GUI-B1), the rule the copy above was chosen by.
+            // Over the copies it could leave (OB-284), the rule the copy above was chosen by.
             session.setFacing(tile,
                 org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
-                    session.placeableFacingsFor(tile, layout), heading, point.getName()));
+                    session.departableFacingsFor(tile, layout), heading, point.getName()));
 
             // AND WHERE ITS TAIL IS (REV9-B2, closed 2026-09-11).  See the note above: answered in the
             // dialog, written here, and into both stores because the walk that blocks track reads the
@@ -808,7 +808,8 @@ public class GraphLocAssign extends javax.swing.JPanel
      */
     public void commitChanges()
     {
-        parent.getModel().getAutoLayout().moveLocomotive(getLoc(), p.getName(), false);
+        // ONTO A COPY TRAINS MAY NOT ARRIVE AT, TOO, where that is the heading kept (OB-284).
+        parent.getModel().getAutoLayout().moveLocomotive(getLoc(), p.getName(), false, true);
 
         parent.getModel().getLocByName(getLoc()).setReversible(isReversible());
         parent.getModel().getLocByName(getLoc()).setArrivalFunc(getArrivalFunc());

@@ -498,8 +498,9 @@ turned round the two point the same way while the carriages have not moved.
 **Nothing about a placement is recorded until the railway has accepted it** (W21-B3). Every door that
 puts a train down asks `Layout.moveLocomotive`, and that refuses in four cases: autonomy is running,
 the locomotive is unknown, the point is unknown, and the target is not a destination. (The rebuild's
-put-back alone may also stand a train back on a copy of a station trains may not arrive at, where no
-station copy of the square faces its way: the copy is its direction - TDY3-A1, TDY4-B1, section 7.) Its answer used
+put-back, the paste and the Place Locomotive dialog may also stand a train on a copy of a station trains may
+not arrive at, where no station copy of the square faces its way: the copy is its direction - TDY3-A1,
+TDY4-B1, OB-284, section 7.) Its answer used
 to be discarded at the diagram's own menu, so the placement and the facing were written into the setup
 AND SAVED for a move the railway had just declined - and the setup is the half that survives a restart,
 so the next build emitted the train on a square it was never put on. The refusal is the method's, and
@@ -637,11 +638,14 @@ direction (section 3). Where a square has two copies a train may stop at, facing
 used to be whichever `StationIndex.speakerAt` met first, so the record said east while the train stood
 westbound, and its arrival side and tail were then worked out for the wrong copy. **The rule: the copy
 taken is the operator's chosen heading where one was asked, and the walked heading otherwise**; the heading
-is chosen and recorded over the copies trains may arrive at, so no impossible facing is saved. Built
-2026-09-23.  **Where the walked heading is one only a barred copy holds, the paste takes the one it may
-arrive in** - which turns a train that really faces the barred way round at the landing, where a
-reversal on the throttle or the Facing menu keeps it facing that way (the copy is the direction, section
-3).  Which the paste should do is Adam's question, on OB-284.
+is chosen and recorded over the copies a train could leave, so no impossible facing is saved. Built
+2026-09-23; **the barred-arrival half ruled 2026-09-24** (OB-284, Adam: *"this should check for barred
+departure directions, not arrival ones.  for barred arrival directions, keep the direction.  for barred
+departure directions, turn it to a way trains may arrive in"*).  So a train facing the way trains may not
+arrive at the landing keeps its heading - as a reversal on the throttle or the Facing menu keeps it (the
+copy is the direction, section 3) - and stands where autonomy will not start it, told why; a heading no
+copy can leave by is turned to one trains may arrive in.  The same rule at the editor's Place and the
+Place Locomotive dialog (`AutonomySession.departableFacingsFor`).
 
 **A cut train is walked from the square it was cut from** (Adam, 2026-09-23, OB-270: *"it should be east.
 no train should inadvertently change direction when pasted."*). Control+X takes the train off the railway,
@@ -1844,13 +1848,14 @@ siding he describes. The tile-wide copy a never-split square is emitted as is ne
 because there is no arrival side to bar and refusing it would make the station unreachable rather than
 restricted.
 
-**A train can still stand facing the barred way, and is not started there** (the 2026-09-23 review; which rule
-the placement doors follow is Adam's question, OB-284). The copy a train is on is its direction (section 3), so a
+**A train can still stand facing the barred way, and is not started there** (the 2026-09-23 review; the
+placement doors' rule was Adam's question, OB-284, ruled 2026-09-24). The copy a train is on is its direction (section 3), so a
 train reversed on the throttle, turned by the Facing menu, standing when the side was barred, or built from a setup
 that records that facing stands on the barred copy. Autonomy does not start it there, and Why not Moving? and Return
 Home say that trains may not arrive facing its way and what to do: drive it off by hand, turn it round, or open the
 side (GUI3-C1, TDY4-C3). The rebuild's put-back stands it there again where no station copy faces its way (TDY3-A1,
-TDY4-B1); every placement door still refuses it; a home does not save such a facing (GUI3-C2); and an import of an old
+TDY4-B1); a placement keeps it where the train can leave that way (OB-284); a home does not save such a facing
+(GUI3-C2); and an import of an old
 autonomy.json takes each train's facing from the side its point's one-way edges leave by, guessing one trains may
 arrive in only where they cannot say (REG3-C1, REG4-A1, REG4-C1). Where the diagram cannot hold the file's facing - a
 fresh upgrade's switches let trains out of their toe only - no impossible facing is saved (OB-270): the train stands

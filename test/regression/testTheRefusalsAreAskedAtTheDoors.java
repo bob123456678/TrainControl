@@ -276,12 +276,13 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * Only the rebuild's put-back stands a train on a copy of a station trains may not arrive at (REG4-C3, TDY3-A1).
+     * Only the rebuild's put-back and the two doors that keep a heading a train can leave by stand a train on a copy of
+     * a station trains may not arrive at (REG4-C3, TDY3-A1, OB-284).
      *
      * `moveLocomotive`'s four-argument form accepts such a copy when its last argument is true, and the guard above
      * counts calls without reading their arguments - a door passing `true` would still read as refusing.  A placement
-     * is somebody choosing where a train goes, and none may choose a copy autonomy will not start; the put-back is the
-     * railway saying where a train already is.
+     * the put-back is the railway saying where a train already is; the paste and the Place Locomotive dialog keep a
+     * train's heading where it can leave by it (OB-284).  Any other door passing `true` is a new decision.
      *
      * MUTATION: pass true from the paste door and this fails.
      *
@@ -334,7 +335,9 @@ public class testTheRefusalsAreAskedAtTheDoors
             }
         }
 
-        assertEquals(found.toString(), "[TrainControlUI.java: moveLocomotive(was.getKey(), back.getName(), false, true)]",
+        assertEquals(found.toString(), "[GraphLocAssign.java: moveLocomotive(getLoc(), p.getName(), false, true), "
+            + "TrainControlUI.java: moveLocomotive(was.getKey(), back.getName(), false, true), "
+            + "TrainControlUI.java: moveLocomotive(placing.getName(), point.getName(), false, true)]",
             "a door other than the rebuild's put-back may stand a train on a copy of a station trains may not arrive at"
             + " (REG4-C3): " + found);
     }

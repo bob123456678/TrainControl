@@ -1666,11 +1666,9 @@ public class AutonomySession
      *
      * `facingsFor` names every copy, and a square's copies are not all destinations: a copy trains may not arrive at is
      * built as no station, and a train stood there is one autonomy will not start - it is told that trains may not
-     * arrive there facing its way (`autolayout.why.startFacingBarred`).  So a heading only such a copy holds is one no
-     * placement may give (Adam, 2026-09-23: *"we
-     * shouldn't allow an impossible facing to be saved"*).  One method for every door that puts a train down and records
-     * which way it faces - the paste, the editor's Place, the Place Locomotive dialog - where there were three spellings
-     * and two of them without the test.
+     * arrive there facing its way (`autolayout.why.startFacingBarred`).  `copyFacing` asks this first, so that among the
+     * copies facing one way it takes one trains may arrive at.  The placement doors no longer filter a train's heading
+     * by it: they keep any heading a train can leave by (`departableFacingsFor`, OB-284).
      *
      * With no running layout there is nothing to ask a copy, and every copy is returned, which is what each door did
      * before.
@@ -1697,10 +1695,38 @@ public class AutonomySession
         return out;
     }
 
-    /** STUB for OB-284's red claim: today's rule, the ways trains may arrive in. */
+    /**
+     * Each copy of a square a train standing on it could leave, with the way it faces (OB-284).
+     *
+     * Adam, 2026-09-24: *"this should check for barred departure directions, not arrival ones.  for barred arrival
+     * directions, keep the direction.  for barred departure directions, turn it to a way trains may arrive in"*.  So
+     * the doors that put a train down - the paste, the editor's Place, the Place Locomotive dialog - keep its heading
+     * wherever a copy facing that way has a way out on the running layout, a copy trains may not arrive at included:
+     * the copy IS the train's direction, and it is told why autonomy will not start it there.  A heading no copy can
+     * leave by is not kept, and `facingAfterAPaste` then leaves the build's choice - a copy trains may arrive at.
+     *
+     * With no running layout there is nothing to ask a copy, and every copy is returned.
+     *
+     * @param square the square
+     * @param running the running layout, or null
+     * @return the copies with a way out by name, in the build's order
+     */
     public Map<String, Side> departableFacingsFor(TileKey square, org.traincontrol.automation.Layout running)
     {
-        return placeableFacingsFor(square, running);
+        Map<String, Side> all = square == null ? new LinkedHashMap<String, Side>() : facingsFor(square);
+
+        if (running == null) return all;
+
+        Map<String, Side> out = new LinkedHashMap<>();
+
+        for (Map.Entry<String, Side> copy : all.entrySet())
+        {
+            org.traincontrol.automation.Point point = running.getPoint(copy.getKey());
+
+            if (point != null && !running.getNeighbors(point).isEmpty()) out.put(copy.getKey(), copy.getValue());
+        }
+
+        return out;
     }
 
     /**

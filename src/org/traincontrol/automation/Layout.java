@@ -4980,6 +4980,10 @@ public class Layout
         // name, a station called not one, and no way out.
         if (isABarredCopyOfAStation(at))
         {
+            // NOT "OPEN THAT SIDE" WHERE EVERY TRAIN TURNS (GUI4-C3, Adam 2026-09-24: *"offer the other two remedies
+            // only"*): a terminus reached from two sides is the terminus error, whose own remedy is to close one.
+            if (turnsEveryTrainAt(at)) return I18n.f("autolayout.why.startFacingBarredMustTurn", placeNameOf(at));
+
             return I18n.f("autolayout.why.startFacingBarred", placeNameOf(at), I18n.t("autosetup.ui.menuArrivalsGroup"));
         }
 
@@ -9044,6 +9048,26 @@ public class Layout
         }
 
         return false;
+    }
+
+    /**
+     * Whether every copy of this Point's square turns a train round - a compulsory turn, or a terminus (GUI4-C3).
+     *
+     * A square trains MAY turn at has plain copies beside its turning ones; one where they MUST has turning copies only.
+     *
+     * @param point a copy of the square
+     * @return true where no copy lets a train through without turning it
+     */
+    public boolean turnsEveryTrainAt(Point point)
+    {
+        if (point == null) return false;
+
+        for (Point other : this.points.values())
+        {
+            if (other.isSamePlaceAs(point) && !other.isTerminus() && !other.isReversing()) return false;
+        }
+
+        return true;
     }
 
     /**

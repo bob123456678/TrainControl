@@ -301,7 +301,7 @@ public class testAPastedTrainKeepsItsDirection
             + " southbound round a loop is northbound one square away");
 
         int moved = door.indexOf(
-            "moveLocomotive(placing.getName(), point.getName(), false)", walk);
+            "moveLocomotive(placing.getName(), point.getName(), false, true)", walk);
 
         assertTrue(moved > walk,
             "the walk happens after the move that takes the train off the copy it starts from, so it"
