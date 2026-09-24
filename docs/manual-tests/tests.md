@@ -67,13 +67,16 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-484](#mt-484) | 2026-09-23 | Segment Length takes a 0 as an answer, and has a Clear button | fixed unvalidated | FR-097 |
 | [MT-485](#mt-485) | 2026-09-23 | The five route tiles' lengths are folded into the track beside them | fixed unvalidated | OB-281 |
 | [MT-486](#mt-486) | 2026-09-23 | Return Home brings a train back facing the way its home was set | fixed unvalidated | OB-282 |
-| [MT-487](#mt-487) | 2026-09-23 | Importing routes says they arrive switched off | fixed unvalidated | REG-B3, REG2-C6 |
-| [MT-488](#mt-488) | 2026-09-23 | A train reversed on the throttle where one direction is barred | fixed unvalidated | TDY2-A1, GUI2-A1, AUT2-A1, TDY3-A1, TDY3-A2, GUI3-C1, AUT3-B1, TDY3-C1, TDY4-C3 |
+| [MT-487](#mt-487) | 2026-09-23 | Importing routes says they arrive switched off | fixed unvalidated | REG-B3, REG2-C6, REG2-C7 |
+| [MT-488](#mt-488) | 2026-09-23 | A train reversed on the throttle where one direction is barred | fixed unvalidated | TDY2-A1, GUI2-A1, AUT2-A1, TDY3-A1, TDY3-A2, GUI3-C1, AUT3-B1, TDY3-C1, TDY4-C3, OB-284, GUI4-C5, the REG4 |
 | [MT-489](#mt-489) | 2026-09-23 | The questions at a may-reverse square name the square, not a direction | fixed unvalidated | GUI-C7 |
 | [MT-490](#mt-490) | 2026-09-23 | "Page is left out" brings an open editor forward | fixed unvalidated | GUI-C8 |
-| [MT-491](#mt-491) | 2026-09-23 | An old autonomy.json's trains face the way the old version ran them | fixed unvalidated | REG4-A1, REG4-C1 |
+| [MT-491](#mt-491) | 2026-09-23 | An old autonomy.json's trains face the way the old version ran them | fixed unvalidated | REG4-A1, REG4-C1, REG-B1 |
+| [MT-492](#mt-492) | 2026-09-24 | Return Home finds a plan on a crowded railway | fixed unvalidated | OB-230, AMH-C1 |
+| [MT-493](#mt-493) | 2026-09-24 | A station's entry guard can never be its exit guard | fixed unvalidated | AUT-C2 |
+| [MT-494](#mt-494) | 2026-09-24 | After a run, the Facing menu turns the train that is there | fixed unvalidated | TDY4-C5 |
 
-Everything else - 446 of 491 - needs nothing from you unless the area changes again:
+Everything else - 446 of 494 - needs nothing from you unless the area changes again:
 394 **fixed validated** and 52 **superseded**.
 
 ---
@@ -25022,32 +25025,34 @@ mutation.  The question in step 3 is what only you can check.
 ### MT-487 - 2026-09-23 - Importing routes says they arrive switched off
 
 **Disposition:** fixed unvalidated
-**From:** REG-B3, REG2-C6
+**From:** REG-B3, REG2-C6, REG2-C7
 
-**Written:** 2026-09-23
+**Written:** 2026-09-23; **rewritten 2026-09-24** for your ruling on REG2-C7: *"save the state in the file on export,
+and ask the user on import.  if they want them armed, arm them.  otherwise, don't."*  Not yet run in either form.
 
-**What was wrong.**  Routes read with Import Routes arrive with their automatic firing off, whatever the file says -
-your ruling of 2026-09-10 - and nothing said so.  Somebody restoring a backup found out when a train ran through a
-sensor that used to set a road.
+**What was wrong.**  Routes read with Import Routes arrived with their automatic firing off, whatever the file said,
+and nothing said so - or which had been on.  Somebody restoring a backup found out when a train ran through a sensor
+that used to set a road.
 
 **Steps**
 
-1. Note which routes have their automatic firing on now: the import switches it off on every route, and nothing lists
-   which were on (REG2-C7, still open).  If none has, turn it on for one route that has a sensor condition - right-click
-   it, Enable Auto Execution - so step 3 has something to switch off.
+1. Turn automatic firing on for one route that has a sensor condition, if none has it on - right-click it, Enable Auto
+   Execution.
 2. Routes -> Export, and save the file somewhere.
-3. Routes -> Import, and pick that file.
-4. Turn automatic firing back on for the routes you noted in step 1.
+3. Routes -> Import, pick that file, and answer **No** when asked whether to turn automatic firing on again.
+4. Routes -> Import the same file again, and this time answer **Yes**.
 
 **Expected**
 
-- A message says how many routes were imported, that their automatic firing is off until you turn it on, and names the
-  two ways to do it - Enable Auto Execution on a route's right-click menu, and Bulk Enable.
-- Between steps 3 and 4, the log has no "Route ... is running" line for the route armed in step 1 or any other, and
-  none of them fires automatically until you turn it on.
+- Step 3: the question names the routes saved with their firing on, and No is the default.  After No, a message says
+  how many routes were imported, that their automatic firing is off until you turn it on, and names the two ways to do
+  it - Enable Auto Execution on a route's right-click menu, and Bulk Enable.  None of them fires automatically, and the
+  log has no "Route ... is running" line for any of them.
+- Step 4: the message says automatic firing is on again for the routes saved with it on, and those - only those - are
+  armed again.
 
-*What this is:* `core.testAnImportSaysItsRoutesAreOff` (the notice, and no route armed on the way in).  The message on
-screen is what only you can check.
+*What this is:* `core.testAnImportSaysItsRoutesAreOff` (the notice, no route armed on the way in unless asked, and the
+routes saved armed armed again when asked).  The question and the messages on screen are what only you can check.
 
 ---
 
@@ -25056,9 +25061,10 @@ screen is what only you can check.
 ### MT-488 - 2026-09-23 - A train reversed on the throttle where one direction is barred
 
 **Disposition:** fixed unvalidated
-**From:** TDY2-A1, GUI2-A1, AUT2-A1, TDY3-A1, TDY3-A2, GUI3-C1, AUT3-B1, TDY3-C1, TDY4-C3
+**From:** TDY2-A1, GUI2-A1, AUT2-A1, TDY3-A1, TDY3-A2, GUI3-C1, AUT3-B1, TDY3-C1, TDY4-C3, OB-284, GUI4-C5, the REG4
+lead
 
-**Written:** 2026-09-23
+**Written:** 2026-09-23; steps 5 to 7 added 2026-09-24 (not yet run)
 
 **What was wrong.**  At a square where trains may not arrive from one side - BottomMainA, with arrivals from the east
 barred - a train reversed on the throttle was recorded as reversed but left standing the old way round in the model, and
@@ -25070,6 +25076,9 @@ the next route was locked in the direction it no longer drives.
 2. Reverse it on the throttle.
 3. Look at the routes offered for it by hand, and at Why not Moving? for it.
 4. Reverse it again.
+5. Reverse it once more so it faces west, then cut it (Control+X) and paste it back onto BottomMainA.
+6. In the Autonomy tab's locomotive list, click its destination label for the list of reasons.
+7. Close TrainControl and open it again, with the train still facing west at BottomMainA.
 
 **Expected**
 
@@ -25078,6 +25087,11 @@ the next route was locked in the direction it no longer drives.
   not Moving? says trains may not arrive at BottomMainA facing the way it faces, and to drive it off by hand, turn it
   round, or open that side under Trains May Arrive...; on Manual, Why not Moving? does not say it cannot be sent.
 - Step 4: it faces east again and autonomy can start it as before.
+- Step 5: after the paste it still faces west - a paste does not turn a train round where it can leave the way it
+  faces (your ruling on OB-284: *"for barred arrival directions, keep the direction"*).
+- Step 6: with autonomy stopped, the list gives the reasons for a train sent by hand, as Why not Moving? on Manual
+  does - it does not say the train cannot be sent anywhere.
+- Step 7: the log written while the setup loads has no line saying it was "placed on a non-station".
 
 The same is true of the autonomy editor's Facing menu: choosing west there stands the train facing west.
 
@@ -25142,9 +25156,10 @@ those two and is not a step here.
 ### MT-491 - 2026-09-23 - An old autonomy.json's trains face the way the old version ran them
 
 **Disposition:** fixed unvalidated
-**From:** REG4-A1, REG4-C1
+**From:** REG4-A1, REG4-C1, REG-B1
 
-**Written:** 2026-09-23
+**Written:** 2026-09-23; expectations added 2026-09-24 for your rulings on switched-off stations and the old file's
+directions (not yet run)
 
 **What was wrong.**  Importing an autonomy.json from an older version chose which way each train faces - the first
 way trains may arrive at its square - and said in the log that it had guessed.  The old file does say which way each
@@ -25164,9 +25179,115 @@ train runs: a train there went only along the edges that start at its point.  On
 - The import's message says it placed 4 locomotives.
 - The log has no line saying trains "had the way they face chosen for them", and none beginning "The old file ran the
   trains at" - the file says which way all four ran, and your railway's directions let each stand that way round.
+- The log says how many pieces of track the old file ran one way that this diagram does not (176 on the frozen copy of
+  your railway), and that they were left as the diagram has them.  **Your diagram's directions are not changed** -
+  they are shared by every configuration, and an import carries the old file's directions only onto a diagram nobody
+  has set a direction on.
+- In the imported configuration, the stations the old file had switched off - ParkingTrack4 to ParkingTrack12 among
+  them - are on, but not ones autonomy chooses (your ruling on REG-B1: *"translate as on but not auto destination"*).
+  A train can be sent to one by hand.
 
 *What this is:* `core.testAnImportedFacingGuessCanStart`: on a fresh upgrade of the frozen railway the four trains face
-the way the old file ran them (the 2-8-4 at TopMainR1 north), and where the file cannot say, the guess is made over
-the finished setup.  The log line is what only you can see.
+the way the old file ran them (the 2-8-4 at TopMainR1 north), the old file's one-way running is carried onto a fresh
+diagram and not onto yours, and where the file cannot say, the guess is made over the finished setup;
+`core.testAutonomyDiagramSession` for the switched-off stations.  The log lines are what only you can see.
+
+---
+
+<a id="mt-492"></a>
+
+### MT-492 - 2026-09-24 - Return Home finds a plan on a crowded railway
+
+**Disposition:** fixed unvalidated
+**From:** OB-230, AMH-C1
+
+**Written:** 2026-09-24
+
+**What was wrong.**  With six or more trains away from home, Return Home answered that it found no plan, after thinking
+for fifteen seconds, even where the order that brings them home can be seen by eye.  Its search gave no credit for a
+move that brings a train closer to home, so it spent its time on moves that were all equally promising to it.  Four
+trains came home in a second or two.
+
+**Steps**
+
+1. With autonomy stopped, give at least six trains a home, and stand each of them somewhere other than its home - some
+   of them on another train's home, so the order matters.
+2. Press Return Home.
+3. Let the plan run.
+
+**Expected**
+
+- Within about fifteen seconds Return Home shows a plan, not "no plan found".
+- Every train ends on its home, facing the way its home was set.
+- If you have time: the same with four trains shows a plan in a second or two, as before.
+
+*What this is:* `core.testReturnHomeFindsAPlanOnAFullRailway`: six trains on your frozen railway come home - a plan it
+could not find before - and an easy arrangement still gets its shortest plan.  Whether it finds one on your railway as
+it is today, in the time you are willing to wait, is what only you can check.
+
+---
+
+<a id="mt-493"></a>
+
+### MT-493 - 2026-09-24 - A station's entry guard can never be its exit guard
+
+**Disposition:** fixed unvalidated
+**From:** AUT-C2
+
+**Written:** 2026-09-24
+
+**What was wrong.**  One signal could be made both the Entry Guard Signal and the Exit Guard Signal of the same station,
+and the two throw it opposite ways at the same moment.  Your ruling of 2026-09-24: *"just make sure the entry guard can
+never be the same as the exit guard.  otherwise, it's up to the user to set it up right.  if the guard signal is not on
+a path leading to the chosen station, we can add notice to the autonomy editor."*
+
+**Steps**
+
+1. In the autonomy editor, right-click a station that has an Exit Guard Signal, choose Entry Guard Signal..., and pick
+   the signal that is already its exit guard.
+2. Right-click a station and make a signal its Entry Guard Signal that is nowhere on the track leading into it - one
+   on another line.
+3. Run the editor's checks.
+4. Take the signal from step 2 off again.
+
+**Expected**
+
+- Step 1: it is refused, with a message saying the signal is already the station's exit guard and one signal cannot
+  guard both the way in and the way out.  The same the other way round.
+- Step 3: a notice says the signal guards the station but no way into it passes the signal, and to check it is the
+  signal you meant.  It is a notice, not an error: the setup still saves and runs.
+
+*What this is:* `core.testAutonomyDiagramSession` (the refusal both ways, the warning for a file that already has one
+signal on both lists, and the notice).  The messages on screen are what only you can check.
+
+---
+
+<a id="mt-494"></a>
+
+### MT-494 - 2026-09-24 - After a run, the Facing menu turns the train that is there
+
+**Disposition:** fixed unvalidated
+**From:** TDY4-C5
+
+**Written:** 2026-09-24
+
+**What was wrong.**  After autonomy had run, the "... Is Facing" menu on the track diagram could name the train the
+setup last had on a square rather than the one standing there, and choosing a direction then turned neither.
+
+**Steps**
+
+1. Run autonomy until a train has stopped at a station that another train stood at before the run - one where trains
+   may arrive from both sides.
+2. Stop autonomy.  Right-click that station on the track diagram.
+3. Open the "... Is Facing" menu and choose the direction it is not ticked.
+
+**Expected**
+
+- Step 2: the menu is titled with the name of the train standing there now.
+- Step 3: that train is turned - the diagram shows it facing the way you chose - and the train that was there before
+  the run is not moved.
+
+*What this is:* `regression.testTheFacingMenuIsAboutTheTrainThere`, on your frozen railway with the setup's train and
+the railway's train deliberately different.  That it reads right after a real run is what only you can check.
 
 ---

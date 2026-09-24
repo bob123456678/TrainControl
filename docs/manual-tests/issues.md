@@ -1113,6 +1113,22 @@ Adam's call rather than a defect, carried until now only on OB-190's Inbox body,
 
 Adam's call.  At a square where trains may not arrive from one side - BottomMainA, arrivals from the east barred - a train can face the barred way: reversed there on the throttle, or turned by the Facing menu, it now stands on the copy facing that way (the copy is the direction; 8370abb1).  But a paste, the editor's Place and the Place Locomotive dialog choose only among facings a train may arrive in (OB-270: 'we shouldn't allow an impossible facing to be saved'), so the same train cut and pasted back onto the same square is turned round - against OB-270's other half, 'no train should inadvertently change direction when pasted'.  The question: should a placement keep a heading only a barred copy holds (the train then stands where autonomy will not start it, and says why), or keep choosing a way trains may arrive in?  (AUT2-A1's second half, AUT3-B2, DCN3-B1.)
 
+### OB-285 - 2026-09-24 - The runtime asks about no other train where the mover's own tail is the direct cover
+
+**Kind:** bug  
+**Raised from:** AUT2-C2  
+**Filed:** 2026-09-24  
+
+Found while fixing AUT2-C2, and filed rather than changed, because it would make the running railway refuse more.  `Layout.isPathClear` asks three questions of each edge a path runs over - which train's tail was walked along it, which train's tail lies on a lock partner of it, and which train's tail lies on the places it runs over - and stops at the first answer.  Where that first answer is the moving train itself (it is reversing out over its own tail), the edge is passed without the other two being asked, so another train's tail on the same switch is not seen.  The planner now asks every train on an edge (AUT2-C2), and does the same there on purpose, so that it never refuses a move the railway would make.  Rare - a train reversing over its own tail while another train's tail fouls the same switch - and nothing on your railway has been seen to do it.  The question: should the railway refuse that move too?  If yes, `isPathClear` and the planner change together, with a claim that has a switch in it.
+
+### OB-286 - 2026-09-24 - Highlight on Diagram can wash one three-way in both colours
+
+**Kind:** bug  
+**Raised from:** GUI2-C4  
+**Filed:** 2026-09-24  
+
+Cosmetic, rare, and deferred rather than worked: claiming it needs a three-way on a test diagram and the route editor open over it, which no fixture has yet.  A route that commands one of a three-way's two decoders and has a condition on the other lights the one tile in both colours - commanded and checked - and counts it twice, because the rule that a tile both commanded and checked is drawn as commanded is applied per address, and since GUI-C5 a three-way answers to two.  The fix is to decide it per tile in `TrainControlUI.lightWhere` (commanded first), or to fold a three-way's two addresses together before the rule in `RouteEditorFrame`.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1129,6 +1145,9 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-15 | OB-230 | bug | Adam, 2026-09-24: *"now that I have a measured layout, we should do OB-230"*.  Return Home's estimate counts the moves still needed - each train not home, and each train standing on another's home - and a weighted search takes over when the shortest plan cannot be found in time.  Six trains on his frozen railway now come home in ten moves; four still get the shortest plan.  `core.testReturnHomeFindsAPlanOnAFullRailway`. | - | `MT-492` |
+| 2026-09-23 | OB-284 | bug | Adam, 2026-09-24: *"this should check for barred departure directions, not arrival ones.  for barred arrival directions, keep the direction.  for barred departure directions, turn it to a way trains may arrive in"*.  A paste, the editor's Place and the Place Locomotive dialog keep a heading the train can leave by (`AutonomySession.departableFacingsFor`), and turn only one it cannot. | - | `MT-488` |
+| 2026-09-23 | OB-283 | bug | Adam, 2026-09-24: *"if it's a compulsory turn, turn it in the forced direction."*  Answered, no change: the code already turned trains at a compulsory turn on the way, and keep and reverse are measured on arrival.  `behaviour.md` section 3 said the opposite and is corrected. | declined | - |
 | 2026-09-23 | OB-282 | bug | Found by the refreeze: the pinned Return Home arrangement brought a train homed westbound on BottomMainA back eastbound, because the planner counted any copy of the home square as home (MT-165).  Adam: *"yes, it should accomplish the facing"*.  A home now keeps the facing it was set with - asked for a train standing elsewhere - and Return Home brings the train back on that copy or its turning twin. | - | `MT-486` |
 | 2026-09-23 | OB-281 | bug | Five route tiles held a length of 1 from before OB-273, which nothing reads, so each piece measured a unit less.  Adam: *"Fold them, they were likely auto set during the mass assignment run."*  Opening a setup moves a route tile's length onto the track beside it. | - | `MT-485` |
 | 2026-09-23 | FR-097 | feature request | Adam, in conversation, asked whether Segment Length's 0 should go on clearing a length: *"no, add a clear button"*; and *"stop listing answered zeros as missing."*  Segment Length's 0 records an answered 0, a Clear button removes the length, and the half-measured, reversal and berth refusal notices leave answered squares out. | - | `MT-484` |
