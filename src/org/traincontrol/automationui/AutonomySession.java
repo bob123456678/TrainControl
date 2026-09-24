@@ -9658,13 +9658,16 @@ public class AutonomySession
                     else if (!store.isTileLengthAnswered(tile)) unmeasured++;
                 }
 
-                // NOT WHERE THE BERTH HOLDS ITS LONGEST TRAIN BEFORE ANY HOLE (OB-288; Adam, 2026-09-24: "shows up on all
-                // berths, even though we have measured the s88 tile to match the berth max train size").  The walk
-                // spends from the berth backwards, its own square first (OB-278), and stops when the train is spent -
-                // so a train no longer than what is measured before the first unmeasured square never reaches it, and
-                // a berth that takes no longer train can refuse none for the hole.  Counted back as the walk counts: a
-                // square that takes no length is passed over, an answered 0 is track worth nothing, and an unanswered
-                // square is where the count ends.  With no longest train set, any train could reach the hole.
+                // NOT WHERE THE BERTH'S MEASURED TRACK BEFORE THE SWITCH HOLDS ITS LONGEST TRAIN (OB-288; corrected on
+                // MT-552).  `Layout.whyABerthCannotHoldIt` spends a train from the berth backwards, its own square first
+                // (OB-278), passes a square with no length for nothing, and refuses the train only when its spending
+                // reaches track another road runs over - the switch.  So a berth whose measured track before the switch
+                // holds its longest train refuses none for the holes in it, and is not warned about.  Counted the walk's
+                // way: a square that takes no length is passed over, a square with no length - answered 0 or not answered
+                // at all - is worth nothing and passed, and the switch ends the count.  The first version of this ended it
+                // at the first unanswered square, which the walk does not: Adam, 2026-09-24, of BottomMainPost - 1 on its
+                // own square, nothing on 22,7, 1 each on 22,8 and 22,9 - *"trains of length 3 can hold there"*.  With no
+                // longest train set, any train could reach the switch.
                 if (longest > 0 && anyMeasured && unmeasured > 0)
                 {
                     int held = 0;
@@ -9675,10 +9678,9 @@ public class AutonomySession
 
                         if (getGraph() != null && takesNoLength(tile)) continue;
 
-                        int length = store.getTileLength(tile);
+                        if (getGraph() != null && isSwitchSquare(tile)) break;
 
-                        if (length > 0) held += length;
-                        else if (!store.isTileLengthAnswered(tile)) break;
+                        held += Math.max(0, store.getTileLength(tile));
                     }
 
                     if (held >= longest) continue;
