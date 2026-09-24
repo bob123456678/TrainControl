@@ -36,8 +36,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-442](#mt-442) | 2026-09-15 | Why Not Moving? says a terminus is in the way, not that no track leads there | fixed unvalidated | PTR-B1 (OB-229) |
 | [MT-443](#mt-443) | 2026-09-15 | Making a square no longer a station takes Unavailable While Occupied with it | fixed unvalidated | AMS-B2 |
 | [MT-447](#mt-447) | 2026-09-15 | Unavailable While Occupied naming a station on an excluded page does not stop autonomy loading | fixed unvalidated | AMG-B1 |
-| [MT-452](#mt-452) | 2026-09-16 | Loading a configuration that names a train you no longer have keeps the rest of it | fixed unvalidated | AMR-C3 |
-| [MT-453](#mt-453) | 2026-09-16 | A lock naming track that is not in the file is dropped, and the log says so loudly | fixed unvalidated | AMR-C3 |
 | [MT-467](#mt-467) | 2026-09-19 | Turning a local route's automatic execution on or off does not wait for the Central Station | fixed unvalidated | GUX-C5 |
 | [MT-468](#mt-468) | 2026-09-19 | Every screen still finds its text after 239 unused message keys were removed | fixed unvalidated | UIX-C4 |
 | [MT-477](#mt-477) | 2026-09-23 | The tail question lists RampDown once | fixed unvalidated | OB-276 |
@@ -100,9 +98,12 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-541](#mt-541) | 2026-09-24 | Why Not Moving? redoes its answer when Path Type changes | fixed unvalidated | MT-439 |
 | [MT-542](#mt-542) | 2026-09-24 | Test a Path keeps its route when Path Type changes, and changes only the note | fixed unvalidated | MT-439 |
 | [MT-543](#mt-543) | 2026-09-24 | With Not known at BottomSecondary, the tail stops at switch 51 | fixed unvalidated | MT-477 |
+| [MT-544](#mt-544) | 2026-09-24 | On a Central Station layout there is no autonomy tab, and the Autonomy menu says how to get one | fixed unvalidated | OB-254 |
+| [MT-545](#mt-545) | 2026-09-24 | Quitting does not change the autonomy.json beside TrainControl | fixed unvalidated | OB-254 |
+| [MT-546](#mt-546) | 2026-09-24 | Autonomy > Documentation opens the automation guide | fixed unvalidated | OB-254 |
 
-Everything else - 470 of 543 - needs nothing from you unless the area changes again:
-400 **fixed validated** and 70 **superseded**.
+Everything else - 472 of 546 - needs nothing from you unless the area changes again:
+400 **fixed validated** and 72 **superseded**.
 
 ---
 
@@ -14105,6 +14106,10 @@ Adam, 2026-09-13: *"The tab should stay shut until they import."*
 
 **Expect:** the Auto tab is greyed, and the log does not say an autonomy layout was loaded or is running.
 
+**Claude, 2026-09-24.**
+
+**Still to run, and simpler since 2026-09-24** (OB-254).  Nothing reads `autonomy.json` at start any more - the start-up read and the old tab are both gone - so the file beside TrainControl no longer matters to this check.  Steps 1 and 4 of the 2026-09-24 *To run now* (moving files aside and back) can be skipped.  The expectation is unchanged: the Auto tab is greyed, and the log does not say an autonomy layout was loaded or is running.
+
 ---
 
 <a id="mt-245"></a>
@@ -23425,7 +23430,7 @@ and this entry is working as ruled. The length is not shown beside the terminus,
 
 ### MT-452 - 2026-09-16 - Loading a configuration that names a train you no longer have keeps the rest of it
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** AMR-C3
 
 **Written:** 2026-09-16
@@ -23455,12 +23460,16 @@ Found by the wide autonomy review, and your ruling on it: *"drop the train and k
 
 **To run now:** as written, but copy `autonomy.json` from the folder TrainControl runs from to somewhere safe first, and put it back after you quit - the exit writes over it.
 
+**Claude, 2026-09-24.**
+
+**Superseded: the door this used is gone** (OB-254).  The old autonomy JSON tab, whose **Import Configuration from File** button this entry pressed, was deleted on 2026-09-24 - Adam, 2026-09-24: *"Remove it, require a local copy for autonomy."*  The loader rule it checked is still held by the automated test named above; there is no longer a way to reach it by hand with an autonomy.json.  Nothing in the history above is withdrawn.
+
 ---
 <a id="mt-453"></a>
 
 ### MT-453 - 2026-09-16 - A lock naming track that is not in the file is dropped, and the log says so loudly
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** AMR-C3
 
 **Written:** 2026-09-16
@@ -23489,6 +23498,10 @@ Found by the wide autonomy review, and your ruling on it: *"drop the lock edge w
 **Claude, 2026-09-24.**
 
 **To run now:** as written, but copy `autonomy.json` from the folder TrainControl runs from to somewhere safe first, and put it back after you quit - the exit writes over it.
+
+**Claude, 2026-09-24.**
+
+**Superseded: the door this used is gone** (OB-254).  The old autonomy JSON tab, whose **Import Configuration from File** button this entry pressed, was deleted on 2026-09-24 - Adam, 2026-09-24: *"Remove it, require a local copy for autonomy."*  The loader rule it checked is still held by the automated test named above; there is no longer a way to reach it by hand with an autonomy.json.  Nothing in the history above is withdrawn.
 
 ---
 <a id="mt-454"></a>
@@ -26785,5 +26798,82 @@ autonomy editor."*
 - Step 4: the orange runs from BottomSecondary back to switch 51 and stops there - on neither the rail up to RampDown nor the turned rail towards BottomCrossover.
 
 *What this is:* `core.testATailPastASwitchIsAskedAbout.testWithNoAnswerTheTailStopsAtTheSwitch`.
+
+---
+
+<a id="mt-544"></a>
+
+### MT-544 - 2026-09-24 - On a Central Station layout there is no autonomy tab, and the Autonomy menu says how to get one
+
+**Disposition:** fixed unvalidated
+**From:** OB-254
+
+**Written:** 2026-09-24
+
+**What was wrong.**  The **Load Autonomy Configuration** tab - a JSON text box with Validate, Load and Export buttons - came back whenever TrainControl showed a layout read straight from the Central Station.  It was a second, older autonomy with a file of its own.  Adam, 2026-09-24: *"Remove it, require a local copy for autonomy."*  It is deleted, and such a layout has no autonomy until it is downloaded.
+
+**Steps**
+
+1. Layouts > **Switch to Central Station Layout**.
+2. Look along the row of tabs.
+3. Hover over the **Autonomy** menu.
+4. Switch back to your own layout folder (Layouts, then your local layout).
+
+**Expected**
+
+- Step 2: there is no **Load Autonomy Configuration** tab.
+- Step 3: the Autonomy menu is greyed, and its tooltip says autonomy needs a local copy of the track diagram and to use Layouts > Download to make one.
+
+*What this is:* `regression.testTheOldAutonomyTabIsGone.testACentralStationLayoutHasNoOldAutonomyTab`.
+
+---
+
+<a id="mt-545"></a>
+
+### MT-545 - 2026-09-24 - Quitting does not change the autonomy.json beside TrainControl
+
+**Disposition:** fixed unvalidated
+**From:** OB-254
+
+**Written:** 2026-09-24
+
+**What was wrong.**  TrainControl wrote `autonomy.json`, in the folder it runs from, every time it quit on a layout read from the Central Station - and on 2026-09-24 the one in the project folder was found overwritten with a graph generated from the diagram.  Nothing reads or writes that file any more; an old one is still imported from the Autonomy menu.
+
+**Steps**
+
+1. In the folder TrainControl runs from, note the **Date modified** of `autonomy.json` (if there is none, note that instead).
+2. Start TrainControl, Layouts > **Switch to Central Station Layout**, and quit.
+3. Start it again, switch back to your own layout folder, and quit.
+4. Look at `autonomy.json` again.
+
+**Expected**
+
+- Its Date modified is what you noted - or, if there was none, there still is none.
+
+*What this is:* `regression.testTheOldAutonomyTabIsGone.testNoLayoutWritesAutonomyJson` and `regression.testALocalLayoutNeverWritesAutonomyJson`, which ask it of the backup save.
+
+---
+
+<a id="mt-546"></a>
+
+### MT-546 - 2026-09-24 - Autonomy > Documentation opens the automation guide
+
+**Disposition:** fixed unvalidated
+**From:** OB-254
+
+**Written:** 2026-09-24
+
+**What was wrong.**  The link to the automation guide was on the old autonomy tab, which is gone.  Adam, 2026-09-24: *"Add a 'documentation' link to the autonomy JMenu that points to the same URL as the current jlabel."*
+
+**Steps**
+
+1. On your own layout folder, open the **Autonomy** menu.
+2. Choose **Documentation**, the last item.
+
+**Expected**
+
+- Your browser opens the automation guide on GitHub (`Automation.md`).
+
+*What this is:* `regression.testTheAutonomyMenuLinksItsDocumentation`, which also holds that it can be chosen while an editor is open and greys everything else.
 
 ---
