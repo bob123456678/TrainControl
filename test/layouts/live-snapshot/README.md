@@ -76,6 +76,8 @@ not fix it. Name the square.
 
 - `core.testACompulsoryTurnIsNotAQuestion`
 - `core.testAnImportedFacingGuessCanStart`
+- `core.testTheGreyNamesTheRoadOnADoubleCurve`
+- `regression.testTheFacingMenuIsAboutTheTrainThere`
 - `ui.testNonAtomicRoutesNeedTheirLengths`
 - `core.testMassAssignLengths`
 - `core.testASecondImportFillsGapsAndDoesNotOverwrite`
