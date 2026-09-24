@@ -7328,6 +7328,10 @@ public class Layout
                 // fork right behind the platform is asked about, and the side alone took whichever rail it met
                 // first.
                 Point roadBack = roadBackAtTheFirstHop(arrivedFrom, arrivedAlong, here, back, walked);
+
+                // The first rail arriving by that side, kept in case none comes from a plain copy (AUT3-C3, below).
+                Edge arriving = null;
+
                 for (Edge candidate : back)
                 {
                     Point other = candidate.getStart() == here
@@ -7369,15 +7373,33 @@ public class Layout
                     // The other copy is still taken when there is no arriving one, which is the
                     // case at a square a train has been turned on: it lies across that rail
                     // whichever way traffic runs, and half an answer beats none.
+                    //
+                    // AND FROM THE NEIGHBOUR'S PLAIN COPY, where its turning twin also arrives by this side (AUT3-C3).
+                    // At a neighbour trains may turn at, its plain copy and its turning copy both have a rail in here, and
+                    // `getNeighborsAndIncoming` sorts them by name - a turning copy is named by the opposite heading plus
+                    // ", reverse", so it came first whenever the plain heading was southbound or westbound.  Every rail
+                    // from a turning copy leads back here, so the walk stopped at it and claimed neither the neighbour's
+                    // square nor the road beyond.  The plain copy first, the rule `copyFacing` and `placementCopy` use.
                     if (candidate.getEnd() == here)
                     {
-                        segment = candidate;
+                        if (isPlainCopy(candidate.getStart()))
+                        {
+                            segment = candidate;
+                            arriving = null;
 
-                        break;
+                            break;
+                        }
+
+                        if (arriving == null) arriving = candidate;
+
+                        continue;
                     }
 
                     if (segment == null) segment = candidate;
                 }
+
+                // No arriving rail from a plain copy: the first arriving rail, as before, over one running away.
+                if (arriving != null) segment = arriving;
 
                 // Recorded, but naming a side no track leaves by - a stale value after an edit.
                 // Nothing can be said, and guessing would block the wrong rail.
@@ -7468,16 +7490,27 @@ public class Layout
                 {
                     Point towards = segment.getStart() == here ? segment.getEnd() : segment.getStart();
 
+                    Edge fromATwin = null;
+
                     for (Edge candidate : back)
                     {
                         if (candidate.getEnd() == here && candidate.getStart() != null
                             && candidate.getStart().isSamePlaceAs(towards))
                         {
-                            segment = candidate;
+                            // THE PLAIN COPY FIRST (AUT3-C3), as the side rule above takes it.
+                            if (isPlainCopy(candidate.getStart()))
+                            {
+                                segment = candidate;
+                                fromATwin = null;
 
-                            break;
+                                break;
+                            }
+
+                            if (fromATwin == null) fromATwin = candidate;
                         }
                     }
+
+                    if (fromATwin != null) segment = fromATwin;
                 }
             }
 
@@ -9025,6 +9058,20 @@ public class Layout
     synchronized public boolean moveLocomotive(String locomotive, String targetPoint, boolean purge)
     {
         return moveLocomotive(locomotive, targetPoint, purge, false);
+    }
+
+    /**
+     * Whether a Point is a copy trains pass through without turning - neither a terminus nor a reversing point (AUT3-C3).
+     *
+     * The build emits the turning copy of a square trains may turn at as a terminus, so this is how the tail walk tells a
+     * square's plain copy from its turning twin - the rule `AutonomySession.copyFacing` and `placementCopy` use.
+     *
+     * @param point the Point, or null
+     * @return true for a plain copy
+     */
+    private static boolean isPlainCopy(Point point)
+    {
+        return point != null && !point.isTerminus() && !point.isReversing();
     }
 
     /**
