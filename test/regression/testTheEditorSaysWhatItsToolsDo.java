@@ -1,0 +1,167 @@
+package regression;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Arrays;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.base.Accessory.accessoryDecoderType;
+import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import org.traincontrol.gui.AutonomyEditorPanel;
+import org.traincontrol.util.I18n;
+
+/**
+ * The autonomy editor says what its items do, and shows where its tools can be used (Adam, 2026-09-24: OB-293, FR-102).
+ *
+ * @author Adam
+ */
+public class testTheEditorSaysWhatItsToolsDo
+{
+    private File folder;
+    private AutonomySession session;
+
+    private static final TileKey WITH_A_TRAIN = new TileKey("main", 3, 1);
+    private static final TileKey EMPTY = new TileKey("main", 1, 1);
+
+    @BeforeMethod
+    public void setUp() throws IOException
+    {
+        folder = Files.createTempDirectory("tc-editor-tools").toFile();
+        session = new AutonomySession(folder);
+
+        // 1,1 station - 2,1 - 3,1 station, a train standing at 3,1.
+        LayoutDiagram page = new LayoutDiagram("main", 6, 3, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("Tools");
+        session.setStation(EMPTY, true);
+        session.setStation(WITH_A_TRAIN, true);
+        session.placeLocomotive(WITH_A_TRAIN, "FR-102 train");
+        session.rebuild();
+    }
+
+    @AfterMethod(alwaysRun = true)
+    public void tearDown()
+    {
+        delete(folder);
+    }
+
+    /**
+     * The exit and entry guard items on a station's menu say what the two guards do (OB-293).
+     *
+     * Adam, 2026-09-24: *"add brief tooltips on what entry guards and exit guards are to their items in the autonomy
+     * right click menu"*.
+     *
+     * MUTATION: leave either tooltip out, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheGuardItemsSayWhatTheGuardsDo() throws Exception
+    {
+        final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+        final javax.swing.JPopupMenu[] menu = new javax.swing.JPopupMenu[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+            menu[0] = panel.buildTileMenu(EMPTY, session.getGraph().getTiles().get(EMPTY)));
+
+        for (String key : new String[] {"autosetup.ui.menuPairSignal", "autosetup.ui.menuPairEntrySignal"})
+        {
+            javax.swing.JMenuItem item = find(menu[0], I18n.t(key));
+
+            assertNotNull(item, "precondition: a station's menu has no " + I18n.t(key));
+
+            String tip = item.getToolTipText();
+
+            assertTrue(tip != null && !tip.replaceAll("<[^>]*>", "").trim().isEmpty(), I18n.t(key) + " has no tooltip -"
+                + " Adam, OB-293: \"add brief tooltips on what entry guards and exit guards are\"");
+        }
+    }
+
+    /**
+     * With Why Not Moving armed and nothing drawn yet, the squares with trains are outlined (FR-102).
+     *
+     * Adam, 2026-09-24: *"when the button is pressed an nothing is drawn yet, highlight stations w/ trains on the editor
+     * diagram so it's clear what the user can click on"*.
+     *
+     * MUTATION: outline nothing while the tool waits, or every station, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testWhyNotMovingOutlinesTheTrains() throws Exception
+    {
+        final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+        assertFalse(panel.annotationFor(WITH_A_TRAIN).isSelected(), "precondition: the train's square is outlined before"
+            + " the tool is armed");
+
+        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("whyButton");
+
+        field.setAccessible(true);
+
+        final javax.swing.AbstractButton why = (javax.swing.AbstractButton) field.get(panel);
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> why.doClick());
+
+        assertTrue(why.isSelected(), "precondition: Why Not Moving did not arm");
+
+        assertTrue(panel.annotationFor(WITH_A_TRAIN).isSelected(), "Why Not Moving is waiting for a click and the square"
+            + " with a train on it is not outlined - Adam, FR-102: \"highlight stations w/ trains on the editor diagram so"
+            + " it's clear what the user can click on\"");
+
+        assertFalse(panel.annotationFor(EMPTY).isSelected(), "a station with no train on it is outlined, and there is"
+            + " nothing there to ask about");
+    }
+
+    /** The menu item with this text, anywhere in the menu. */
+    private static javax.swing.JMenuItem find(java.awt.Container container, String text)
+    {
+        for (java.awt.Component c : container instanceof javax.swing.JMenu
+            ? ((javax.swing.JMenu) container).getMenuComponents() : container.getComponents())
+        {
+            if (c instanceof javax.swing.JMenuItem && text.equals(((javax.swing.JMenuItem) c).getText()))
+            {
+                return (javax.swing.JMenuItem) c;
+            }
+
+            if (c instanceof java.awt.Container)
+            {
+                javax.swing.JMenuItem inner = find((java.awt.Container) c, text);
+
+                if (inner != null) return inner;
+            }
+        }
+
+        return null;
+    }
+
+    private static void delete(File file)
+    {
+        if (file == null) return;
+
+        File[] children = file.listFiles();
+
+        if (children != null)
+        {
+            for (File child : children) delete(child);
+        }
+
+        file.delete();
+    }
+}

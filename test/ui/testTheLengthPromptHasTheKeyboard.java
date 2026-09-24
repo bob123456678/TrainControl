@@ -262,8 +262,10 @@ public class testTheLengthPromptHasTheKeyboard
 
                 for (java.awt.Component inner : bulk.getPopupMenu().getComponents())
                 {
+                    // BY ITS NAME, since its text carries the count (MT-533) - or by the text it had before.
                     if (inner instanceof javax.swing.JMenuItem
-                        && I18n.t(TRAINS).equals(((javax.swing.JMenuItem) inner).getText()))
+                        && ("massAssignTrainLengths".equals(inner.getName())
+                            || I18n.t(TRAINS).equals(((javax.swing.JMenuItem) inner).getText())))
                     {
                         walk[0] = (javax.swing.JMenuItem) inner;
                     }

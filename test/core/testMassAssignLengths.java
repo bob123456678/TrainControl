@@ -1199,6 +1199,12 @@ public class testMassAssignLengths
             length.put(train, units);
             written.add(train + "=" + units);
         }
+
+        /** Every train and its length - what the walk goes through when none is missing (MT-533). */
+        public java.util.Map<String, Integer> trainLengths()
+        {
+            return new java.util.TreeMap<>(length);
+        }
     }
 
     private static void invokeTheTrainWalk(final AutonomyEditorPanel panel) throws Exception
@@ -1338,12 +1344,18 @@ public class testMassAssignLengths
     }
 
     /**
-     * The Bulk Tools item counts the trains, greys when there are none, and says why.
+     * The Bulk Tools item is never greyed, and says in its label how many trains are missing a length (MT-533).
+     *
+     * Adam, 2026-09-24: *"This option should never be greyed out completely (show the number of missing trains in
+     * parens)."*  It greyed when every train had a length, which is also why MT-533 could not be run: nothing short of a
+     * train with no length could open the walk.
+     *
+     * MUTATION: grey it again with none missing, or drop the count from its label, and this fails.
      *
      * @throws Exception from the event thread
      */
     @Test
-    public void testTheTrainWalkItemCountsAndGreys() throws Exception
+    public void testTheTrainWalkItemCountsAndIsNeverGreyed() throws Exception
     {
         openBerthBehindASwitch(key(5, 1));
 
@@ -1362,9 +1374,147 @@ public class testMassAssignLengths
 
         item = trainWalkItem(panel);
 
-        assertFalse(item.isEnabled(), "the item offers a walk with no train to ask about");
-        assertEquals(item.getToolTipText().replaceAll("<[^>]*>", ""),
-            org.traincontrol.util.I18n.t("autosetup.ui.infoEveryTrainHasALength"), "the greyed item does not say why");
+        assertNotNull(item, "the Bulk Tools menu has no Mass Assign Train Lengths item when every train has a length");
+
+        assertTrue(item.isEnabled(), "the item is greyed when every train has a length - Adam, MT-533: \"This option"
+            + " should never be greyed out completely\"");
+
+        assertEquals(item.getText(), org.traincontrol.util.I18n.f(TRAINS_COUNTED, 0), "the item does not say how many"
+            + " trains are missing a length - Adam, MT-533: \"show the number of missing trains in parens\"");
+
+        panel.setTrainLengthDoorForTest(new Lengths("Alpha", 0, "Bravo", 0, "Charlie", 5));
+
+        assertEquals(trainWalkItem(panel).getText(), org.traincontrol.util.I18n.f(TRAINS_COUNTED, 2),
+            "the item's count is not the number of trains missing a length");
+    }
+
+    /**
+     * With every train measured, the walk goes through all of them, each with the length it has, and Skip keeps it
+     * (MT-533).
+     *
+     * What an item that is never greyed does when nothing is missing: the lengths there are, to look at and to change.
+     *
+     * MUTATION: say every train has a length and walk nothing again, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testWithEveryTrainMeasuredTheWalkShowsEachAndSkipKeepsIt() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the walk's prompt needs a display");
+
+        openBerthBehindASwitch(key(5, 1));
+
+        Lengths lengths = new Lengths("Charlie", 5, "Delta", 2);
+
+        final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+        panel.setTrainLengthDoorForTest(lengths);
+
+        invokeTheTrainWalk(panel);
+
+        javax.swing.JDialog first = awaitPrompt(null, TRAINS);
+
+        assertTrue(promptText(first).contains("Charlie") && promptText(first).contains("5"), "the first prompt does not"
+            + " name Charlie and the length it has: " + promptText(first));
+
+        answer(first, org.traincontrol.util.I18n.t("autosetup.ui.btnSkipOne"));
+
+        javax.swing.JDialog second = awaitPrompt(first, TRAINS);
+
+        assertTrue(promptText(second).contains("Delta"), "the second prompt does not name Delta");
+
+        type(second, "4");
+        answer(second, org.traincontrol.util.I18n.t("ui.ok"));
+
+        awaitNoPrompt(TRAINS);
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        assertEquals(lengths.written, Arrays.asList("Delta=4"), "the walk wrote something other than the one length"
+            + " typed - Skip must keep the length a train has");
+    }
+
+    /**
+     * Train lengths and the stations' maximum train lengths are named apart (MT-533).
+     *
+     * Adam, 2026-09-24: *"better disambiguate labels for 'train lengths' from 'max train lengths', since the latter deals
+     * with stations."*  Read from the English bundle, which is the one the sentence was about.
+     *
+     * @throws Exception reading the bundle
+     */
+    @Test
+    public void testTrainLengthsAndStationMaximaAreNamedApart() throws Exception
+    {
+        java.util.Properties english = new java.util.Properties();
+
+        try (java.io.InputStream in = new java.io.FileInputStream("src/org/traincontrol/resources/messages.properties"))
+        {
+            english.load(in);
+        }
+
+        assertTrue(String.valueOf(english.getProperty(TRAINS_COUNTED)).contains("Locomotive"), "the train walk's label"
+            + " does not say it is about locomotives: " + english.getProperty(TRAINS_COUNTED));
+
+        assertTrue(String.valueOf(english.getProperty(MAXIMA)).contains("Station"), "the maximum walk's label does not say"
+            + " it is about stations: " + english.getProperty(MAXIMA));
+
+        assertTrue(String.valueOf(english.getProperty("autolayout.ui.menuClearAllMaxTrainLengths")).contains("Station"),
+            "Clear All Max Train Lengths does not say it is about stations: "
+            + english.getProperty("autolayout.ui.menuClearAllMaxTrainLengths"));
+    }
+
+    /**
+     * One-way run is greyed on a page left out of autonomy, as Mass Assign Lengths is (MT-528, OB-235).
+     *
+     * Adam, 2026-09-24, on MT-528: *"works, but one-way run isn't."*  Nothing on a page autonomy takes no notice of is
+     * built, so a run closed one way there closes nothing.
+     *
+     * MUTATION: leave One-way run enabled on a page left out, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testOneWayRunIsGreyedOnAPageLeftOut() throws Exception
+    {
+        openBerthBehindASwitch(key(5, 1));
+
+        final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+        assertTrue(bulkItemNamed(panel, org.traincontrol.util.I18n.t("autosetup.ui.toolOneWay")).isEnabled(),
+            "precondition: One-way run is greyed on a page autonomy uses");
+
+        session.setPageExcluded("main", true);
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> panel.refresh());
+
+        assertFalse(bulkItemNamed(panel, org.traincontrol.util.I18n.t("autosetup.ui.menuMassAssignLengths")).isEnabled(),
+            "precondition: Mass Assign Lengths is not greyed on a page left out (MT-528)");
+
+        assertFalse(bulkItemNamed(panel, org.traincontrol.util.I18n.t("autosetup.ui.toolOneWay")).isEnabled(),
+            "One-way run is offered on a page left out of autonomy - Adam, MT-528: \"works, but one-way run isn't\"");
+    }
+
+    /** The Bulk Tools item with this text. */
+    private static javax.swing.JMenuItem bulkItemNamed(AutonomyEditorPanel panel, String text) throws Exception
+    {
+        final javax.swing.JMenuItem[] found = new javax.swing.JMenuItem[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            javax.swing.JMenu bulk = panel.buildBulkMenuForTest();
+
+            for (int i = 0; i < bulk.getItemCount(); i++)
+            {
+                javax.swing.JMenuItem item = bulk.getItem(i);
+
+                if (item != null && text.equals(item.getText())) found[0] = item;
+            }
+        });
+
+        assertNotNull(found[0], "precondition: Bulk Tools has no item " + text);
+
+        return found[0];
     }
 
     /**
@@ -1428,7 +1578,11 @@ public class testMassAssignLengths
             {
                 javax.swing.JMenuItem item = bulk.getItem(i);
 
-                if (item != null && text.equals(item.getText())) found[0] = item;
+                // BY ITS NAME, since its text carries the count (MT-533) - or by the text it had before.
+                if (item != null && (TRAIN_WALK_ITEM.equals(item.getName()) || text.equals(item.getText())))
+                {
+                    found[0] = item;
+                }
             }
         });
 
@@ -1911,6 +2065,12 @@ public class testMassAssignLengths
 
     private static final String LENGTHS = "autosetup.ui.menuMassAssignLengths";
     private static final String MAXIMA = "autosetup.ui.menuMassAssignMaxTrainLengths";
+
+    /** The train walk's menu item's name, which does not change with the count its text carries (MT-533). */
+    private static final String TRAIN_WALK_ITEM = "massAssignTrainLengths";
+
+    /** The train walk's label, with the count of trains missing a length (MT-533). */
+    private static final String TRAINS_COUNTED = "autosetup.ui.menuMassAssignTrainLengthsCounted";
     private static final String TRAINS = "autosetup.ui.menuMassAssignTrainLengths";
 
     private static javax.swing.JTextField findField(java.awt.Container container)

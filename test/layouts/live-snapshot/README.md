@@ -78,6 +78,7 @@ not fix it. Name the square.
 - `core.testAnImportedFacingGuessCanStart`
 - `core.testTheGreyNamesTheRoadOnADoubleCurve`
 - `core.testATurnedTrainIsNotSentIntoAnotherTail`
+- `core.testATrainDoesNotRunIntoItsOwnTail`
 - `regression.testTheFacingMenuIsAboutTheTrainThere`
 - `ui.testNonAtomicRoutesNeedTheirLengths`
 - `core.testMassAssignLengths`
@@ -141,3 +142,5 @@ not fix it. Name the square.
 - `ui.testTheLengthPromptHasTheKeyboard`
 - `core.testATailPastASwitchIsAskedAbout`
 - `core.testATrainIsPutOnlyWhereItCanStart`
+- `regression.testTheTailIsPickedOnTheDiagram`
+- `regression.testANewStraightJoinsTheTrackBesideIt`

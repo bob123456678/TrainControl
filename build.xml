@@ -277,6 +277,7 @@
         <test-one-class class="testTheGreyNamesTheRoadOnADoubleCurve"/>
         <test-one-class class="testTheLoaderDoesNotCallAStationANonStation"/>
         <test-one-class class="testATurnedTrainIsNotSentIntoAnotherTail"/>
+        <test-one-class class="testATrainDoesNotRunIntoItsOwnTail"/>
         <test-one-class class="testABerthAndAPlatformJudgeAnOverhangDifferently"/>
         <test-one-class class="testAMayTurnStationIsNotATerminus"/>
         <test-one-class class="testTheArrivalHonoursTheAnswer"/>
@@ -293,6 +294,7 @@
         <test-one-class class="testATailRouteIsKept"/>
         <test-one-class class="testTheTailCrossedQuestion"/>
         <test-one-class class="testATailPastASwitchIsAskedAbout"/>
+        <test-one-class class="testTheTailIsPickedOnTheDiagram"/>
         <test-one-class class="testReturnHomeKeepsClearOfTheTailsItLeaves"/>
         <test-one-class class="testATestedPathStaysOnItsRail"/>
         <test-one-class class="testBulkToolsHoldsTheWholeLayoutTools"/>
@@ -503,6 +505,8 @@
         <test-one-class class="testTheHomeShortcutsDoNotTouch"/>
         <test-one-class class="testTheHomeLabelIsDrawnOnce"/>
         <test-one-class class="testARememberedNoneOpensWithTheCaptionsOff"/>
+        <test-one-class class="testANewStraightJoinsTheTrackBesideIt"/>
+        <test-one-class class="testTheEditorSaysWhatItsToolsDo"/>
         <test-one-class class="testTheDestinationDoorsAgree"/>
         <test-one-class class="testTheFunctionButtonsFollowTheConsist"/>
         <test-one-class class="testTheBulkClearSaysWhatCancelDoes"/>

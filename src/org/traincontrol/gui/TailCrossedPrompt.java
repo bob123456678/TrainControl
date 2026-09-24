@@ -675,6 +675,8 @@ public class TailCrossedPrompt
 
             prompt = new javax.swing.JDialog(ui, I18n.t("autolayout.ui.askArrivalSideTitle"), false);
 
+            TrainControlUI.applyWindowIcon(prompt);
+
             prompt.setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
             prompt.addWindowListener(new java.awt.event.WindowAdapter()
             {
