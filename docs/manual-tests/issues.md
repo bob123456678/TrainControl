@@ -1199,6 +1199,24 @@ usage graph uses basic/ugly graphics.  Keep current functionality, but make it l
 
 Adam, 2026-09-24: *"when new straight tracks are placed in the autonomy editor and they would connect two other tracks, they are automatically oriented to connect rather than not."*  Today a straight is placed at its default orientation, so dropping one into a gap between two pieces of track can leave it lying across the line, joining neither, until it is turned by hand.
 
+### FR-100 - 2026-09-24 - where is the tail visual selection
+
+**Kind:** feature request  
+**Raised from:** MT-557 (A tail question with one answer is not asked)  
+**Filed:** 2026-09-24 11:48  
+**Build:** commit fa71135f, in English - build\classes, compiled 24 Sep 11:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when asking about the tail, instead of showing the list of points, highlight possible squares on the diagram and ask the user to click one.  only show the list if there are options on another page.
+
+### FR-101 - 2026-09-24 - warning for "nothing can pass" stations
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-24 11:53  
+**Build:** commit fa71135f, in English - build\classes, compiled 24 Sep 11:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+these show "no train can reach <point> from any other station....check the direction".  Update the error message to say that is marked for nothing to be able to pass, user to validate if intentional.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1215,6 +1233,9 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-24 | FR-099 | feature request | prettify usage graph - **for v3.1.0**, on Adam's word of 2026-09-24 (*"FR-099 for later (mark it as for v3.1.0)"*).  Picked up and not built. | pending | - |
+| 2026-09-24 | FR-101 | feature request | A station set to No - Nothing Can Pass is said to be, once, in place of the two reachability sentences. | - | `MT-562` |
+| 2026-09-24 | OB-292 | bug | A straight put down between two pieces of track is turned to join them. | - | `MT-563` |
 | 2026-09-24 | OB-291 | bug | A station made pass-through keeps its maximum train length and has it back when made a station again; while it is not one, the maximum is ignored - not counted by Clear All, and starting no notices. | - | `MT-558` |
 | 2026-09-24 | OB-290 | bug | Found: the orange was drawn only from covered edges, and a tail that stops where the rails part behind its platform - any train with no road, which a restart or an edit leaves every train - covers none.  Such a train is now drawn from the places it claims. | - | `MT-549` |
 | 2026-09-24 | OB-289 | bug | The gap between Text Labels and Grid stayed when the autonomy editor hid Text Labels; it goes with the box now. | - | `MT-553` |

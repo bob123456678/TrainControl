@@ -78,26 +78,18 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-535](#mt-535) | 2026-09-24 | The orange covers the square a train stands on and every sensor it lies across | fixed unvalidated | MT-475 |
 | [MT-536](#mt-536) | 2026-09-24 | On a double curve the grey covers only the road the tail lies on | fixed unvalidated | MT-475, OB-280 |
 | [MT-537](#mt-537) | 2026-09-24 | Segment Length opens empty, and OK without a number records nothing | fixed unvalidated | MT-484, FR-097 |
-| [MT-538](#mt-538) | 2026-09-24 | Segment Length's 0 counts as an answer, and Clear takes it away | fixed unvalidated | MT-484, FR-097 |
 | [MT-539](#mt-539) | 2026-09-24 | Return Home brings a train back facing the way its home was set | fixed unvalidated | MT-486, OB-282 |
 | [MT-540](#mt-540) | 2026-09-24 | Setting a home for a train standing elsewhere asks which way it should face | fixed unvalidated | MT-486, OB-282 |
-| [MT-541](#mt-541) | 2026-09-24 | Why Not Moving? redoes its answer when Path Type changes | fixed unvalidated | MT-439 |
-| [MT-543](#mt-543) | 2026-09-24 | With Not known at BottomSecondary, the tail stops at switch 51 | fixed unvalidated | MT-477 |
-| [MT-545](#mt-545) | 2026-09-24 | Quitting does not change the autonomy.json beside TrainControl | fixed unvalidated | OB-254 |
 | [MT-547](#mt-547) | 2026-09-24 | On a Central Station layout there is no Load Autonomy Configuration tab | fixed unvalidated | OB-254, MT-544 |
 | [MT-548](#mt-548) | 2026-09-24 | On a Central Station layout the Autonomy menu opens, and only the download and Documentation can be chosen | fixed unvalidated | OB-254, OB-093, MT-544 |
-| [MT-549](#mt-549) | 2026-09-24 | After a restart, 75 407 DB at BottomMainA is drawn in orange | fixed unvalidated | OB-290 |
-| [MT-550](#mt-550) | 2026-09-24 | A train sent by hand is refused while the setup has errors | fixed unvalidated | MT-263 |
-| [MT-551](#mt-551) | 2026-09-24 | In simulation, Preferences > Debug > Echo Sent Commands is offered and remembered | fixed unvalidated | MT-488 |
-| [MT-552](#mt-552) | 2026-09-24 | A parking berth whose own square holds its longest train is not warned about | fixed unvalidated | OB-288 |
-| [MT-554](#mt-554) | 2026-09-24 | A square made pass-through keeps Unavailable While Occupied | fixed unvalidated | MT-443 |
-| [MT-555](#mt-555) | 2026-09-24 | Every Unavailable While Occupied is listed as a notice, station or not | fixed unvalidated | MT-443 |
-| [MT-556](#mt-556) | 2026-09-24 | Autonomy > Documentation opens the guide off the event thread | fixed unvalidated | MT-546 |
-| [MT-557](#mt-557) | 2026-09-24 | A tail question with one answer is not asked | fixed unvalidated | MT-437 |
-| [MT-558](#mt-558) | 2026-09-24 | A station made pass-through and back has its Maximum Train Length again | fixed unvalidated | OB-291 |
+| [MT-559](#mt-559) | 2026-09-24 | At a station autonomy may choose, a short run-in says a longer train may block the layout | fixed unvalidated | MT-555 |
+| [MT-561](#mt-561) | 2026-09-24 | A home on a parking berth every train turns at is not warned about | fixed unvalidated | MT-552 |
+| [MT-562](#mt-562) | 2026-09-24 | A station set to No - Nothing Can Pass says so, once | fixed unvalidated | FR-101 |
+| [MT-563](#mt-563) | 2026-09-24 | A straight put down between two pieces of track is turned to join them | fixed unvalidated | OB-292 |
+| [MT-564](#mt-564) | 2026-09-24 | No station on the railway is warned that it can refuse trains that would otherwise fit | fixed unvalidated | MT-552 |
 
-Everything else - 490 of 558 - needs nothing from you unless the area changes again:
-416 **fixed validated** and 74 **superseded**.
+Everything else - 504 of 564 - needs nothing from you unless the area changes again:
+428 **fixed validated** and 76 **superseded**.
 
 ---
 
@@ -26811,7 +26803,7 @@ autonomy editor."*
 
 ### MT-538 - 2026-09-24 - Segment Length's 0 counts as an answer, and Clear takes it away
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-484, FR-097
 
 **Written:** 2026-09-24
@@ -26829,6 +26821,14 @@ autonomy editor."*
 
 - Step 2: the run is no longer highlighted.
 - Step 3: it is highlighted again.
+
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit fa71135f, in English - build\classes, compiled 24 Sep 11:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
 
 ---
 
@@ -26882,7 +26882,7 @@ autonomy editor."*
 
 ### MT-541 - 2026-09-24 - Why Not Moving? redoes its answer when Path Type changes
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-439
 
 **Written:** 2026-09-24
@@ -26902,6 +26902,14 @@ autonomy editor."*
 - Step 3: autonomy's answer is back.
 
 *What this is:* `regression.testPathTypeRedrawsTheTestInTheEditor.testWhyNotMovingFollowsPathType`.
+
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit fa71135f, in English - build\classes, compiled 24 Sep 11:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
 
 ---
 
@@ -26942,7 +26950,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-543 - 2026-09-24 - With Not known at BottomSecondary, the tail stops at switch 51
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-477
 
 **Written:** 2026-09-24
@@ -26972,6 +26980,14 @@ With not known, there is no orange tail.  The tiles up to the switch are greyed 
 **Claude, 2026-09-24.**
 
 **The missing orange is OB-290, fixed** (2026-09-24).  With Not known the tail's claim stops at switch 51 as places and covers no edge, and the orange was drawn only from covered edges - so the grey went down and the orange did not.  Run the steps again as written: the orange should now run back to switch 51.
+
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit fa71135f, in English - build\classes, compiled 24 Sep 11:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
 
 ---
 
@@ -27010,7 +27026,7 @@ With not known, there is no orange tail.  The tiles up to the switch are greyed 
 
 ### MT-545 - 2026-09-24 - Quitting does not change the autonomy.json beside TrainControl
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-254
 
 **Written:** 2026-09-24
@@ -27029,6 +27045,20 @@ With not known, there is no orange tail.  The tiles up to the switch are greyed 
 - Its Date modified is what you noted - or, if there was none, there still is none.
 
 *What this is:* `regression.testTheOldAutonomyTabIsGone.testNoLayoutWritesAutonomyJson` and `regression.testALocalLayoutNeverWritesAutonomyJson`, which ask it of the backup save.
+
+**Adam, 2026-09-24 (triage).** Could not run this.
+
+make a automated test for this, close if it exists
+
+*Run against commit fa71135f, in English - build\classes, compiled 24 Sep 11:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+**Closed on your word** (2026-09-24): *"make a automated test for this, close if it exists"*.  Two exist - `regression.testTheOldAutonomyTabIsGone.testNoLayoutWritesAutonomyJson` and `regression.testALocalLayoutNeverWritesAutonomyJson` - and nothing in the source writes autonomy.json any more: the one reference left reads it into a backup.
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
 
 ---
 
@@ -27129,7 +27159,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-549 - 2026-09-24 - After a restart, 75 407 DB at BottomMainA is drawn in orange
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-290
 
 **Written:** 2026-09-24
@@ -27152,13 +27182,21 @@ Validated on your *Works* of 2026-09-24.
 
 *Run against commit 2baafd8a, in English - build\classes, compiled 24 Sep 10:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit fa71135f, in English - build\classes, compiled 24 Sep 11:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.  You had said so already at 2baafd8a; I missed that answer when I recorded the round, which is why it came back to you.
+
 ---
 
 <a id="mt-550"></a>
 
 ### MT-550 - 2026-09-24 - A train sent by hand is refused while the setup has errors
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-263
 
 **Written:** 2026-09-24
@@ -27183,13 +27221,21 @@ Validated on your *Works* of 2026-09-24.
 
 *Run against commit 2baafd8a, in English - build\classes, compiled 24 Sep 10:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit fa71135f, in English - build\classes, compiled 24 Sep 11:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.  You had said so already at 2baafd8a; I missed that answer when I recorded the round, which is why it came back to you.
+
 ---
 
 <a id="mt-551"></a>
 
 ### MT-551 - 2026-09-24 - In simulation, Preferences > Debug > Echo Sent Commands is offered and remembered
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-488
 
 **Written:** 2026-09-24
@@ -27213,13 +27259,21 @@ Validated on your *Works* of 2026-09-24.
 
 *Run against commit 2baafd8a, in English - build\classes, compiled 24 Sep 10:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit fa71135f, in English - build\classes, compiled 24 Sep 11:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.  You had said so already at 2baafd8a; I missed that answer when I recorded the round, which is why it came back to you.
+
 ---
 
 <a id="mt-552"></a>
 
 ### MT-552 - 2026-09-24 - A parking berth whose own square holds its longest train is not warned about
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-288
 
 **Written:** 2026-09-24
@@ -27241,6 +27295,20 @@ Validated on your *Works* of 2026-09-24.
 RampDown and BottomMainPost should not have the "refuse trains that would otherwise fit" warning as worded, since both sides are measured (and moreover, they only accept arrivals from one side).  Also, the "every train has to turn around" warning for TopMainR0Park is moot since it is a parking berth.  Non-reversible trains can still be backed in there.
 
 *Run against commit 2baafd8a, in English - build\classes, compiled 24 Sep 10:20 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-09-24 (triage).** Does not work.
+
+I still see the notices for RampDown, BottomMainPost, and TopMainR0. The rest of this MT remains fixed.
+
+*Run against commit fa71135f, in English - build\classes, compiled 24 Sep 11:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+**Both notes of your first run, answered now** (2026-09-24) - I missed them when I recorded that round, which is also why you were asked again.  RampDown and BottomMainPost were judged on the side they take no arrivals from; that side no longer counts (MT-560).  RampDown is clear.  BottomMainPost is not, and rightly: its one open side, from the south, has no length on 22,7, the straight directly behind it - it never had one, in this diagram or the overpass one.  TopMainR0Park's turn-round warning is gone at a parking berth (MT-561).  Superseded by MT-560 and MT-561.
+
+**Claude, 2026-09-24.**
+
+**Correction** (2026-09-24).  I said above that BottomMainPost was rightly still warned because 22,7 has no length.  You were right and I was wrong: the berth walk passes a square with no length for nothing, so 1 on its own square, then 22,8 and 22,9, hold your train of 3 before the switch.  The warning's count now does the same, and stops at the switch - MT-564.  LowerParkingOuter was the same case.
 
 ---
 
@@ -27280,7 +27348,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-554 - 2026-09-24 - A square made pass-through keeps Unavailable While Occupied
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-443
 
 **Written:** 2026-09-24
@@ -27300,13 +27368,21 @@ Validated on your *Works* of 2026-09-24.
 
 *What this is:* `regression.testStationBlockedByAnotherPoint.testDemotingTheStationKeepsTheRestriction`, which also holds that the built railway still makes every route into the square wait on the watched one.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit fa71135f, in English - build\classes, compiled 24 Sep 11:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-555"></a>
 
 ### MT-555 - 2026-09-24 - Every Unavailable While Occupied is listed as a notice, station or not
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-443
 
 **Written:** 2026-09-24
@@ -27327,13 +27403,27 @@ Validated on your *Works* of 2026-09-24.
 
 *What this is:* `regression.testStationBlockedByAnotherPoint.testEveryRestrictionIsListedAsANotice`.
 
+**Adam, 2026-09-24 (triage).** Works, with notes.
+
+Notices work, but they are wrong.  "so a train longer than x is refused" - "so a train longer than x may block other parts of the layout..."
+
+*Run against commit fa71135f, in English - build\classes, compiled 24 Sep 11:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+**Your note is MT-559** (2026-09-24).  The sentence you quoted is the run-in notice, not this one: at a station autonomy may choose it now says a longer train may block other parts of the layout; at a parking berth, where it is refused, it still says so.
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-556"></a>
 
 ### MT-556 - 2026-09-24 - Autonomy > Documentation opens the guide off the event thread
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-546
 
 **Written:** 2026-09-24
@@ -27350,13 +27440,21 @@ Validated on your *Works* of 2026-09-24.
 
 *What this is:* `regression.testTheAutonomyMenuLinksItsDocumentation`.  Nothing on screen tells the threads apart; this is that the guide still opens now that a thread of its own opens it.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit fa71135f, in English - build\classes, compiled 24 Sep 11:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-557"></a>
 
 ### MT-557 - 2026-09-24 - A tail question with one answer is not asked
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-437
 
 **Written:** 2026-09-24
@@ -27375,13 +27473,29 @@ Validated on your *Works* of 2026-09-24.
 
 *What this is:* `core.testATailPastASwitchIsAskedAbout.testAQuestionWithOneChoiceTakesItWithoutAsking`, and `...testAQuestionWithTwoChoicesIsStillAsked` for step 2.
 
+**Adam, 2026-09-24 (triage).** Works, with notes.
+
+see new FR
+
+Filed from this test: FR-100 (feature request - where is the tail visual selection).  They are in `issues.md` until they are picked up.
+
+*Run against commit fa71135f, in English - build\classes, compiled 24 Sep 11:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+**FR-100 picked up** (2026-09-24) - the question on the diagram rather than as a list.
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
 ---
 
 <a id="mt-558"></a>
 
 ### MT-558 - 2026-09-24 - A station made pass-through and back has its Maximum Train Length again
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-291
 
 **Written:** 2026-09-24
@@ -27400,5 +27514,162 @@ Validated on your *Works* of 2026-09-24.
 - Step 3: *Maximum Train Length (2)*, as before.
 
 *What this is:* `core.testMassAssignLengths.testADemotedStationRemembersItsMaximumTrainLength`; `...testARememberedMaximumDoesNotStartTheLengthNotices` holds that it starts no notices while it is ignored.
+
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit fa71135f, in English - build\classes, compiled 24 Sep 11:44 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-24.**
+
+Validated on your *Works* of 2026-09-24.
+
+---
+
+<a id="mt-559"></a>
+
+### MT-559 - 2026-09-24 - At a station autonomy may choose, a short run-in says a longer train may block the layout
+
+**Disposition:** fixed unvalidated
+**From:** MT-555
+
+**Written:** 2026-09-24
+
+**What was wrong.**  The notice for a station whose measured run-in is shorter than its Max Train Length said *"so a train longer than x is refused"* everywhere.  At a parking berth that is what happens; at a station autonomy may choose, the train is admitted and stands across the switch behind it (FR-087).  Adam, 2026-09-24: *"so a train longer than x may block other parts of the layout..."*
+
+**Steps**
+
+1. Open the autonomy editor and read the list under *Worth tidying*.
+
+**Expected**
+
+- BottomMainA, Tunnel, BottomInnerOtherside, LowerFront and TopMainR1Inter each say that a train longer than their run-in *stands across that switch while it is here, and may block other parts of the layout until it leaves* - none of them says *is refused*.
+
+*What this is:* `core.testAutonomyDiagramSession.testAPlatformIsToldALongTrainMayBlockAndABerthThatItIsRefused`, which also holds that a parking berth keeps *is refused*.
+
+---
+
+<a id="mt-560"></a>
+
+### MT-560 - 2026-09-24 - A side a station takes no arrivals from is not judged for length
+
+**Disposition:** superseded
+**From:** MT-552
+
+**Written:** 2026-09-24
+
+**What was wrong.**  RampDown and BottomMainPost were warned that they *"can refuse trains that would otherwise fit"* about the side they take no arrivals from.  Adam, 2026-09-24: *"they only accept arrivals from one side"*.  And the warning named the station where it meant the number of squares with no length.
+
+**Steps**
+
+1. Open the autonomy editor and read the list of things to look at.
+
+**Expected**
+
+- RampDown has no *can refuse trains that would otherwise fit* and no run-in notice.
+- BottomMainPost still has the warning, and it is right to: its one open side, from the south, has no length on 22,7, the straight directly behind it.  The sentence gives a number of squares where it gave the station's name.  Give 22,7 its length and the warning goes.
+
+*What this is:* `core.testAutonomyDiagramSession.testABarredApproachIsNotJudgedAsHalfMeasured`, `...testABarredApproachIsNotJudgedForItsRunIn`, `...testABarredApproachIsNotAskedToBeMeasuredForATurn` and `...testTheHalfMeasuredWarningCountsTheSquares`.
+
+**Claude, 2026-09-24.**
+
+**Superseded by MT-564** (2026-09-24).  Its second expected line - BottomMainPost still warned - was wrong: see MT-552.
+
+---
+
+<a id="mt-561"></a>
+
+### MT-561 - 2026-09-24 - A home on a parking berth every train turns at is not warned about
+
+**Disposition:** fixed unvalidated
+**From:** MT-552
+
+**Written:** 2026-09-24
+
+**What was wrong.**  *"Every train has to turn round on the square at TopMainR0Park"* was listed for a parking berth.  Adam, 2026-09-24: *"moot since it is a parking berth.  Non-reversible trains can still be backed in there."*
+
+**Steps**
+
+1. Open the autonomy editor and read the list of things to look at.
+
+**Expected**
+
+- Nothing says every train has to turn round at TopMainR0Park.
+
+*What this is:* `core.testAutonomyDiagramSession.testAHomeOnAParkingBerthIsNotWarnedAboutTurning`; a station autonomy may choose keeps the warning.
+
+---
+
+<a id="mt-562"></a>
+
+### MT-562 - 2026-09-24 - A station set to No - Nothing Can Pass says so, once
+
+**Disposition:** fixed unvalidated
+**From:** FR-101
+
+**Written:** 2026-09-24
+
+**What was wrong.**  A station switched to No - Nothing Can Pass was listed as one *no train can reach ... from any other station* and sent to check the directions.  Adam, 2026-09-24: *"Update the error message to say that is marked for nothing to be able to pass, user to validate if intentional."*
+
+**Steps**
+
+1. Open the autonomy editor and read the list of things to look at.
+
+**Expected**
+
+- ParkingTrack12, which is set to No - Nothing Can Pass on your railway, is listed once: *ParkingTrack12 is set to No - Nothing Can Pass, so no train can stop there or pass through it*, with where to change it.
+- No line says no train can reach it or leave it.
+
+*What this is:* `core.testAutonomyDiagramSession.testAStationNothingCanPassIsSaidToBeClosed`.
+
+---
+
+<a id="mt-563"></a>
+
+### MT-563 - 2026-09-24 - A straight put down between two pieces of track is turned to join them
+
+**Disposition:** fixed unvalidated
+**From:** OB-292
+
+**Written:** 2026-09-24
+
+**What was wrong.**  A straight came off the palette the way the palette held it, so dropping one into a gap in a north-south line left it lying east-west, joining neither side.  Adam, 2026-09-24: *"when new straight tracks are placed ... and they would connect two other tracks, they are automatically oriented to connect rather than not."*
+
+**Steps**
+
+1. Open Layouts > Edit Layout Page > 5 - Test.
+2. Delete one straight from the middle of a north-south run of track.
+3. Pick the straight from the palette, the way it comes, and put it into that gap.
+4. Put another straight down on an empty square with nothing beside it.
+5. Close the editor without saving.
+
+**Expected**
+
+- Step 3: the straight lies north-south and joins the run.
+- Step 4: it lies the way the palette held it.
+
+*What this is:* `regression.testANewStraightJoinsTheTrackBesideIt`.
+
+---
+
+<a id="mt-564"></a>
+
+### MT-564 - 2026-09-24 - No station on the railway is warned that it can refuse trains that would otherwise fit
+
+**Disposition:** fixed unvalidated
+**From:** MT-552
+
+**Written:** 2026-09-24
+
+**What was wrong.**  RampDown, BottomMainPost and LowerParkingOuter were warned they *"can refuse trains that would otherwise fit"*.  RampDown for the side it takes no arrivals from; BottomMainPost and LowerParkingOuter because the count stopped at the first square with no length - 22,7 at BottomMainPost - which the berth walk passes for nothing.  Adam, 2026-09-24: *"BottomMainPost (rightmost station) is measured on both sides ... trains of length 3 can hold there"*, *"look at 22,8 and 22,9"*.
+
+**Steps**
+
+1. Open the autonomy editor and read the list of things to look at.
+
+**Expected**
+
+- No station is said to *refuse trains that would otherwise fit* - not RampDown, BottomMainPost or LowerParkingOuter.
+
+*What this is:* `core.testMassAssignLengths.testASquareWithNoLengthBeforeTheSwitchDoesNotEndTheCount` and `core.testAutonomyDiagramSession.testABarredApproachIsNotJudgedAsHalfMeasured`; `...testTheHalfMeasuredWarningCountsTheSquares` holds the number in the sentence, which on your railway nothing now shows.
 
 ---
