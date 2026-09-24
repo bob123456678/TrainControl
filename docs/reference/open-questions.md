@@ -39,13 +39,13 @@ is not one.
 
 The railway defects live in the Inbox of `docs/manual-tests/issues.md`. **It is not empty**, and this
 paragraph said it was for twelve days (IND9X-B3, 2026-09-09).
-Today it holds 66 entries - 39 OB and 27 FR, recounted from the file on 2026-09-23: eighteen entries
+Today it holds 68 entries - 41 OB and 27 FR, recounted from the file on 2026-09-24: eighteen entries
 left it on Adam's word that day.  Seven were given their receipts then - OB-240 to OB-243, OB-271, OB-275
 and FR-095, each fixed, answered or withdrawn by its own text - and eleven had been receipted long before
 and were still sitting in the Inbox, which `triage.py` already treated as closed.  OB-272 to OB-277 and
 FR-094/FR-095 had been filed that morning, FR-096 was filed after the tidy; FR-094 left it
 when it was built, and OB-208, OB-270, OB-272 to OB-274, OB-276, OB-277 and FR-096 when they were.  Fifty more left it that
-evening on his word - *"anything already reviewed and certified as working should be cleared"*: every entry whose receipt, or the hands-on test it became, is fixed and validated, and OB-218, declined.  OB-283 was filed after that, to carry the open reversal question below (DCN-C14).  OB-284 was filed after it, for the paste question the review's third round raised (AUT3-B2, DCN3-B1).  Every
+evening on his word - *"anything already reviewed and certified as working should be cleared"*: every entry whose receipt, or the hands-on test it became, is fixed and validated, and OB-218, declined.  OB-283 was filed after that, to carry the open reversal question below (DCN-C14).  OB-284 was filed after it, for the paste question the review's third round raised (AUT3-B2, DCN3-B1).  On 2026-09-24 OB-230, OB-283 and OB-284 were given their receipts on Adam's rulings, and OB-285 and OB-286 were filed from the follow-ups (AUT2-C2, GUI2-C4).  Every
 earlier figure here was wrong in the same way, by being written rather than recounted: 99, then 111
 counted before six entries that had already been appended, then 118 (IND9X-B3, VD12-R13, VD13-R3).
 Most of them carry a receipt row that says the work was done - the protocol is that an entry is

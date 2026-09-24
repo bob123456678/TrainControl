@@ -120,8 +120,8 @@ AMG-D4	2026-09-15-AMG-autonomy-graph-build-review.md	Closed	-	A two-sensor oval 
 AMG-D5	2026-09-15-AMG-autonomy-graph-build-review.md	Closed	-	A station switched out of service is reported `STATION_UNREACHABLE` - deliberate and pinned
 AMH-B1	2026-09-15-AMH-return-home-planner-review.md	Closed	Fixed, to Adam's ruling	Return Home turned a train that cannot reverse and sent it on
 AMH-B2	2026-09-15-AMH-return-home-planner-review.md	Closed	Fixed, round 2 - Adam, asked: **"Yes, tails hold sensors."**	a latched tail closes a section for the whole plan
-AMH-C1	2026-09-15-AMH-return-home-planner-review.md	Open - deferred until the MT retests	Deferred as **OB-230**, at Adam's word (2026-09-15): *"I want to do the heuristic, but I t	completeness and determinism, with a scatter that shows it
-AMH-C1	2026-09-22-GS-backlog.md	Open - deferred until the MT retests	still true (deferred by ruling, OB-230)	(listed in a table, no section of its own)
+AMH-C1	2026-09-15-AMH-return-home-planner-review.md	Closed	Fixed - 8f55b863 (claims 7f453b75, red first), OB-230, picked up at Adam's word on 2026-09	completeness and determinism, with a scatter that shows it
+AMH-C1	2026-09-22-GS-backlog.md	Closed	Fixed - 8f55b863 (claims 7f453b75, red first), OB-230, picked up at Adam's word on 2026-09	(listed in a table, no section of its own)
 AMH-C2	2026-09-15-AMH-return-home-planner-review.md	Closed	Answered by claims, 2026-09-15	untested halves
 AMH-C3	2026-09-15-AMH-return-home-planner-review.md	Closed	Fixed (stated in the body)	comments the code contradicts
 AMH-D1	2026-09-15-AMH-return-home-planner-review.md	Closed	-	`canEnter` exempts the mover's own point, so a route could in principle loop through its origin; a breadth-first search returns the suffix first
@@ -249,7 +249,7 @@ AUS-D9	2026-09-19-AUS-autonomy-editor-second-pass.md	Closed	-	**The one-way tool
 AUT-B1	AUT.md	Closed	Fixed - ac5fe2f2 (claim 8873b0a4, red first): `Layout.anotherTailOn` - a standing tail blo	a standing train's tail never reaches the OTHER copies of the rail it lies on, so a train can be routed onto a turning copy under that tail
 AUT-B2	AUT.md	Closed	Fixed - ac5fe2f2, with TDY-B1 (the same defect)	a home "facing" accepts its turning twin, which faces the other way; OB-282 still brings a train home turned round at a may-turn square
 AUT-C1	AUT.md	Closed	Fixed - 5e2fbda5 (claim 0d060ffb, red first), completed in 8370abb1: the caller's removal 	`isAlreadyUnderway` is asked outside the monitor that takes the claim, and the dispatch that loses the race deletes the winner's claim
-AUT-C2	AUT.md	Open - Adam's decision	Open - Adam's decision: whether the entry guard should look at the routes commanding its s	the entry guard throws a signal red with no look at the routes that are commanding it green
+AUT-C2	AUT.md	Closed	Fixed - 8f55b863 (claims 7f453b75, red first), on Adam's ruling of 2026-09-24: "just make 	the entry guard throws a signal red with no look at the routes that are commanding it green
 AUT-C3	AUT.md	Closed	Fixed - 6b7301fc (claim c7308e7c, red first): the standing square is spent off an arriving	a train re-stood onto the other arrival's copy after turning has its own square left unspent by the tail walk, so it claims one square further back th
 AUT-C4	AUT.md	Closed	Fixed - 3492e38c (claim 4ed14f85, red first): the fold skips sensor squares; javadoc corre	the route-tile fold rests on "no rule reads a route tile's length", which is false, and it may fold onto a sensor square
 AUT-D1	AUT.md	Closed	Closed - checked clean	OB-269's narrowing (`Edge.isRunOver`) holds
@@ -258,9 +258,9 @@ AUT-D3	AUT.md	Closed	Closed - checked clean	the lock relation is by tile, not by
 AUT-D4	AUT.md	Closed	Closed - checked clean	the new model fields survive the file
 AUT-D5	AUT.md	Closed	Closed - checked clean	the "farthest sensor" prompt's walk agrees with OB-278
 AUT-D6	AUT.md	Closed	Closed - checked clean	`throwEntryGuard` is called outside every monitor
-AUT2-A1	AUT2.md	Open - Adam's decision	Partly fixed - 8370abb1 (claims 8346be65, red first), with TDY2-A1: the build, the throttl	GUI-B1's repair makes the build stand a placed train on a copy facing another way than its recorded facing: the re-blessed baseline shows two trains t
+AUT2-A1	AUT2.md	Closed	Fixed - 94d26378 (claims 8f55b863, red first) - the door half, OB-284, on Adam's ruling of	GUI-B1's repair makes the build stand a placed train on a copy facing another way than its recorded facing: the re-blessed baseline shows two trains t
 AUT2-C1	AUT2.md	Closed	Fixed - 8370abb1 (claim 8346be65, red first): the caller's removal is gone	AUT-C1's "removes only its own claim" compares routes by value, so the likeliest double dispatch (the same route twice) still deletes the winner's cla
-AUT2-C2	AUT2.md	Open	Open - for the next round: the planner and the runtime both settle on the first train foun	the planner blames the first train it finds on an edge and passes the edge if that train has moved, so an unmoved train's tail further along the same
+AUT2-C2	AUT2.md	Closed	Fixed - a6d3b476 (claim 7665a96f, red first): the planner collects every claimant (Layout.	the planner blames the first train it finds on an edge and passes the edge if that train has moved, so an unmoved train's tail further along the same
 AUT2-C3	AUT2.md	Closed	Fixed - 4132d260	comments the round-1 fixes made false: four sites still say `unlockPath` reads `clearedEdges`, a claim's MUTATION note names a mutation that no longer
 AUT2-D1	AUT2.md	Closed	Closed - checked clean	AUT-B1 verified
 AUT2-D2	AUT2.md	Closed	Closed - checked clean	AUT-B2 verified
@@ -272,10 +272,10 @@ AUT2-D7	AUT2.md	Closed	Closed - checked clean	GUI-A1's `releasedEarly` mirrors `
 AUT2-D8	AUT2.md	Closed	Closed - checked clean	the rest of the autonomy diff
 AUT3-A1	AUT3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first), with TDY3-A2	the throttle's direction-follow still pivots on the setup's stored facing, which after any run is missing or another train's, so a reversal made after
 AUT3-B1	AUT3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first): Return Home and Why not Moving? say the trai	a train stood on a barred copy by `8370abb1` is refused with sentences that call its station "not a station": Return Home refuses the whole railway sa
-AUT3-B2	AUT3.md	Open - Adam's decision	Open - Adam's decision: filed as OB-284 (9a9a8564), and AUT2-A1's row now says so	AUT2-A1's door half, "kept ... and recorded for Adam", now contradicts the rule `8370abb1` adopted, and it was not recorded: the store row is Closed,
+AUT3-B2	AUT3.md	Closed	Fixed - 94d26378 (claims 8f55b863, red first): OB-284 ruled 2026-09-24 and built with AUT2	AUT2-A1's door half, "kept ... and recorded for Adam", now contradicts the rule `8370abb1` adopted, and it was not recorded: the store row is Closed,
 AUT3-C1	AUT3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first)	on Manual, Why Not Moving? answers "cannot be sent anywhere ... autonomy will not start it" for a train on a barred copy, while the right-click menu o
 AUT3-C2	AUT3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first)	a home set for a train standing on a barred copy is saved with that copy's facing, which OB-282 calls impossible; `writeHome`'s "so no impossible faci
-AUT3-C3	AUT3.md	Open	Open - for a follow-up: older than this review; the tail walk's first arriving rail is cho	the tail walk's first hop takes the first ARRIVING rail by name, which at a may-turn neighbour is its turning twin whenever that sorts first; the walk
+AUT3-C3	AUT3.md	Closed	Fixed - 0e870b37 (claim 2033e3db, red first): the side rule and the TDY2-C5 swap prefer an	the tail walk's first hop takes the first ARRIVING rail by name, which at a may-turn neighbour is its turning twin whenever that sorts first; the walk
 AUT3-D1	AUT3.md	Closed	Closed - checked clean	TDY2-A1 / GUI2-A1 / AUT2-A1 (the build, the throttle and the Facing menu keep the copy facing the record) verified
 AUT3-D2	AUT3.md	Closed	Closed - checked clean	the runtime meets a train on a copy that is not a destination, and handles it everywhere the task named
 AUT3-D3	AUT3.md	Closed	Closed - checked clean	GUI2-B1 verified
@@ -583,7 +583,7 @@ DCN2-D6	DCN2.md	Closed	-	DCN-C12 verified, including the ratchet's numbers
 DCN2-D7	DCN2.md	Closed	-	DCN-C14 verified
 DCN2-D8	DCN2.md	Closed	-	DCN-C15's three promotions and DCN-C16 verified
 DCN2-D9	DCN2.md	Closed	-	DCN-C3 is recorded as Adam's decision in the document and the store
-DCN3-B1	DCN3.md	Open - Adam's decision	Fixed (the record) - 9a9a8564 and 031a7ddb: OB-284 filed, behaviour.md points at it, AUT2-	Round 2 left two placement rules that disagree about a facing only a barred copy holds, and the one decision that would settle it is catalogued Closed
+DCN3-B1	DCN3.md	Closed	Fixed - OB-284 ruled 2026-09-24 and built in 94d26378; behaviour.md 4 and 7 describe the r	Round 2 left two placement rules that disagree about a facing only a barred copy holds, and the one decision that would settle it is catalogued Closed
 DCN3-C1	DCN3.md	Closed	Fixed - 031a7ddb	GUI-B1's round-1 wording survives beside the round-2 rewrite: four places still say a train is never put on a copy trains may not arrive at, one of th
 DCN3-C2	DCN3.md	Closed	Fixed - 031a7ddb	GUI2-B1 made "falls through to copy 0" false, and eleven present-tense sentences still give it as the mechanism - three of them in failure messages
 DCN3-C3	DCN3.md	Closed	Fixed - d65df6cb, with TDY3-C3	The placement class's MUTATION note promises a `placementCopy` claim the round removed: GUI-B1's build-side preference is no longer pinned there
@@ -1212,7 +1212,7 @@ GUI2-B1	GUI2.md	Closed	Fixed - 8370abb1 (claim 8346be65, red first): with no fac
 GUI2-C1	GUI2.md	Closed	Fixed - 4132d260	three comments in `Layout` still say `unlockPath` reads `clearedEdges`, and `setAtomicRoutes`'s new javadoc claims more than the unlock does
 GUI2-C2	GUI2.md	Closed	Fixed - a9d5a2f0: a real non-atomic path, the first edge claimed by another train at the r	nothing pins the write GUI-A1's repair depends on: every claim seeds `releasedEarly` by reflection
 GUI2-C3	GUI2.md	Closed	Fixed - 91daff27: 506 values, only diacritics changed (checked by mapping each back to ASC	about 160 translated values added since v2.8.1 spell their accented letters in ASCII, and the round-1 tooltip edit made two of them mix both spellings
-GUI2-C4	GUI2.md	Open	Open - for the next round: cosmetic, rare	the three-way clause makes Highlight on Diagram wash one three-way in both colours when a route commands one of its decoders and checks the other
+GUI2-C4	GUI2.md	Open - deferred	Deferred as OB-286 (2026-09-24): claiming it needs a three-way on a test diagram with the 	the three-way clause makes Highlight on Diagram wash one three-way in both colours when a route commands one of its decoders and checks the other
 GUI2-C5	GUI2.md	Closed	Fixed - 4132d260 (the opener); GUI-C1's disposition corrected	small
 GUI2-D1	GUI2.md	Closed	Closed - verified	GUI-A1: verified, in every case the task named
 GUI2-D2	GUI2.md	Closed	Closed - verified	GUI-C5: every protocol a route command can carry is the enum a tile carries, and both read "missing" as MM2
@@ -1235,9 +1235,9 @@ GUI3-D7	GUI3.md	Closed	Closed - verified	REG2-C2's interface line
 GUI3-D8	GUI3.md	Closed	Closed - verified	GUI2-C1, GUI2-C5 and the two left open: dispositions truthful
 GUI4-C1	GUI4.md	Closed	Fixed - 6cb11933, with TDY4-C3: the English no longer reads two ways, and German and Polis	the German and Polish translations of both new sentences say the train faces the opposite way - towards the side trains may not arrive from - and the
 GUI4-C2	GUI4.md	Closed	Fixed - 6cb11933 (claim 1c6ae0fe, red first)	on Manual, Why Not Moving? still tells the operator a paused train "cannot be sent anywhere", which the pause does not stop - the new by-hand branch k
-GUI4-C3	GUI4.md	Open - Adam's decision	Open - Adam's decision: at a terminus with a barred side, "open that side" leads to the te	the new remedy "open that side under Trains May Arrive..." is, at a station every train must turn round at, the one that raises the blocking terminus
+GUI4-C3	GUI4.md	Closed	Fixed - 94d26378 (claim 8f55b863, red first), on Adam's ruling of 2026-09-24: "offer the o	the new remedy "open that side under Trains May Arrive..." is, at a station every train must turn round at, the one that raises the blocking terminus
 GUI4-C4	GUI4.md	Closed	Fixed - 6cb11933, with TDY4-C1 and DCN4-C3	GUI3-C4 is half done: `facingChoices`' javadoc, the sentence GUI3-C4 quoted, still says the first facing is what a placement with no recorded facing g
-GUI4-C5	GUI4.md	Open	Partly fixed - 6cb11933: the locomotive list's tooltip wraps. Open - for a follow-up: the 	small
+GUI4-C5	GUI4.md	Closed	Fixed - 6cb11933 (the tooltip wraps) and 6122b32c (claim bfa38c97, red first): the loader'	small
 GUI4-D1	GUI4.md	Closed	Closed - verified, one reason left in the Manual branch filed as GUI4-C2	GUI3-C1 (`4be3798a`): verified for Auto - the sentence names the square, says why, gives a remedy; on Manual the barred copy and the switched-off star
 GUI4-D2	GUI4.md	Closed	Closed - verified, the direction in de and pl filed as GUI4-C1	the two new sentences, mechanically and against their siblings, in all eight bundles
 GUI4-D3	GUI4.md	Closed	Closed - verified	each surface shows the right sentence for its question
@@ -1951,7 +1951,7 @@ RC-C6	2026-08-30-release-candidate-review.md	Closed	-	the fourth copy of a zoom 
 RC-C7	2026-08-30-release-candidate-review.md	Closed	-	the menu separator described an order Adam changed
 RC-C8	2026-08-30-release-candidate-review.md	Closed	-	`homeLoc` is a reference, and its javadoc said "by name"
 RC-C9	2026-08-30-release-candidate-review.md	Closed	-	two comments in one file disagreed about whether an item is disabled
-REG-B1	REG.md	Open - Adam's decision	Partly fixed - the changelog says it (4fb36b4b) and the two comments are corrected (fd6341	a 2.8.1 user's switched-off parking stations can no longer be reached by hand, and the only changelog line about it still promises they can
+REG-B1	REG.md	Closed	Fixed - 8f55b863 (claims 7f453b75, red first), on Adam's ruling of 2026-09-24: "translate 	a 2.8.1 user's switched-off parking stations can no longer be reached by hand, and the only changelog line about it still promises they can
 REG-B2	REG.md	Closed	Fixed - e2223851 (claims d64023cb, red first): the start-up JSON arm keeps 2.8.1's terms -	the auto-load default now reaches the old JSON path on every start, which `REL-B3`'s closure did not consider: a chooser dialog for users with no auto
 REG-B3	REG.md	Closed	Fixed - e2223851 (claim d64023cb, red first): the import logs and shows how many routes ar	Import Routes now switches every imported route off, and nothing says so - not the import, not the changelog
 REG-C1	REG.md	Closed	Fixed - 4fb36b4b: a changelog sentence	a 2.8.1 railway that ran with Atomic Routes off now runs with them on after every load, and the changelog does not say so
@@ -1973,7 +1973,7 @@ REG2-C3	REG2.md	Open - Adam's decision	Partly fixed - the changelog line (8370ab
 REG2-C4	REG2.md	Closed	Fixed - 8370abb1	the changelog names a control that does not exist: "untick Automatic Destination"
 REG2-C5	REG2.md	Closed	Fixed - 8370abb1, and AutomationAPI.md's two siblings in 4132d260	`AutomationAPI.md` still promises that inactive points can be reached by hand
 REG2-C6	REG2.md	Closed	Fixed - 8370abb1 (claim 8346be65, red first): an imported route is built unarmed	an import still announces every route the file saved armed as "running", just before the notice says they are off
-REG2-C7	REG2.md	Open - Adam's decision	Open - Adam's decision: whether an import should restore each route's saved firing, or at 	the file's per-route arming is read and thrown away unreported, so the notice's remedy cannot restore a backup as it was
+REG2-C7	REG2.md	Closed	Fixed - 8f55b863, on Adam's ruling of 2026-09-24: "save the state in the file on export, a	the file's per-route arming is read and thrown away unreported, so the notice's remedy cannot restore a backup as it was
 REG2-D1	REG2.md	Closed	-	REG-B2 verified: every kind of user traced through the start-up arm
 REG2-D10	REG2.md	Closed	-	the notice's placement in the door
 REG2-D11	REG2.md	Closed	-	Escape in the editor, as the changelog now documents it
@@ -2853,7 +2853,7 @@ TDY2-D9	TDY2.md	Closed	Closed - checked clean	AUT-B1's place rule refuses nothin
 TDY3-A1	TDY3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first): putTheTrainsBack may stand a train back on a	A train the throttle has stood on a copy trains may not arrive at is not carried across the next uncaptured rebuild: `putTheTrainsBack` re-places it w
 TDY3-A2	TDY3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first): flipFacing reads the railway first	The throttle's direction-follow flips the setup's record of the square, not the heading of the copy the train stands on; after a run that record is no
 TDY3-B1	TDY3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first), with REG3-C1	A legacy import invents the first copy's facing, and since `8370abb1` the build honours an invented facing that only a copy trains may not arrive at h
-TDY3-B2	TDY3.md	Open - Adam's decision	Partly fixed - the sentences say why and what to do (4be3798a, claim d65df6cb). Open - Ada	The sentences that refuse a train on a copy trains may not arrive at do not say why, and the remedy Return Home gives turns the model round: every pla
+TDY3-B2	TDY3.md	Closed	Fixed - 94d26378 (claims 8f55b863, red first): the door half is OB-284, ruled 2026-09-24 a	The sentences that refuse a train on a copy trains may not arrive at do not say why, and the remedy Return Home gives turns the model round: every pla
 TDY3-C1	TDY3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first)	Why Not Moving? with Path Type Manual answers "autonomy will not start it from there" for a train on a non-station copy, which a hand send leaves from
 TDY3-C2	TDY3.md	Closed	Fixed - 4be3798a (claim d65df6cb, red first)	A home set for a train standing on a copy trains may not arrive at saves a facing no train can be brought home in, which `writeHome` says cannot happe
 TDY3-C3	TDY3.md	Closed	Fixed - d65df6cb: the claim, proven by its mutation in the round's mutation run	Nothing pins the build's preference for a copy trains may arrive at among copies facing the recorded way, and the claim class's MUTATION note says it
@@ -2873,7 +2873,7 @@ TDY4-C1	TDY4.md	Closed	Fixed - 6cb11933: `facingChoices`' javadoc, and `placemen
 TDY4-C2	TDY4.md	Closed	Fixed - 6cb11933 (claim 1c6ae0fe, red first): by hand, no pause	On Manual, Why not Moving? still stops at "This locomotive is paused", a reason that binds only autonomy - the new tier's own comment says it gives "o
 TDY4-C3	TDY4.md	Closed	Fixed - 6cb11933: "Trains may not arrive at {0} facing the way this one faces", with drivi	The new "facing the barred way" sentence never names a side, reads two ways in English, and says the opposite heading in German and Polish; it also le
 TDY4-C4	TDY4.md	Closed	Fixed - 6cb11933: `flipFacing`, `faceTheWayItCameIn` and the drain's comment; the single f	Comments `4be3798a` made false: `flipFacing` is still described as pivoting on the setup's facing, and the one-facing Facing menu as ticked
-TDY4-C5	TDY4.md	Open	Open - for a follow-up: older than this review (OB-181, SPEC-B4) - after a run the Facing 	TDY3-A2's shape, one door along: the Facing menu is keyed on the SETUP's train, so after a run the diagram's right-click offers "P is facing" for a sq
+TDY4-C5	TDY4.md	Closed	Fixed - 69d015c0 (claim cbb6554b, red first): the Facing menu names and turns the railway'	TDY3-A2's shape, one door along: the Facing menu is keyed on the SETUP's train, so after a run the diagram's right-click offers "P is facing" for a sq
 TDY4-D1	TDY4.md	Closed	Closed - checked clean	TDY3-A2 / AUT3-A1 verified: `flipFacing` pivots on the copy the railway has the train on, in both of TDY3's cases
 TDY4-D2	TDY4.md	Closed	Closed - checked clean	TDY3-A1 verified at BottomMainA, and the new acceptance refuses nothing it refused before
 TDY4-D3	TDY4.md	Closed	Closed - checked clean	TDY3-B1 / REG3-C1 verified: the import's guess is a way trains may arrive

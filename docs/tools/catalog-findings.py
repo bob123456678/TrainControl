@@ -374,7 +374,8 @@ def collect():
     rows = []
 
     for name in sorted(os.listdir(REVIEWS)):
-        if not name.endswith(".md") or name == "findings.md" or name == "README.md":
+        # The procedure documents are not reviews: README.md's rules and FANOUT.md's fanout (2026-09-24).
+        if not name.endswith(".md") or name in ("findings.md", "README.md", "FANOUT.md"):
             continue
 
         path = os.path.join(REVIEWS, name)

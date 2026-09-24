@@ -1,0 +1,375 @@
+<title>Review Close-Out, 23 September</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,600;0,800;1,400&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+  :root {
+    --ground: #f3f4f1;
+    --panel: #ffffff;
+    --ink: #1b2320;
+    --ink-soft: #4a5550;
+    --rule: #d9ddd6;
+    --accent: #1f5f4a;
+    --accent-soft: #e2eee8;
+    --decide: #9a5b0b;
+    --decide-soft: #f7ecd9;
+    --away: #3d4f8a;
+    --away-soft: #e5e9f5;
+    --ok: #2d6a3e;
+    --warn: #8a3b2e;
+    --chip: #eef0ec;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #131816;
+      --panel: #1b2220;
+      --ink: #e4e9e6;
+      --ink-soft: #a5b0ab;
+      --rule: #2f3935;
+      --accent: #7cc4a6;
+      --accent-soft: #1f302a;
+      --decide: #e0a650;
+      --decide-soft: #33291a;
+      --away: #9fb0e6;
+      --away-soft: #232a40;
+      --ok: #7fc493;
+      --warn: #e59a8b;
+      --chip: #25302c;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #131816;
+    --panel: #1b2220;
+    --ink: #e4e9e6;
+    --ink-soft: #a5b0ab;
+    --rule: #2f3935;
+    --accent: #7cc4a6;
+    --accent-soft: #1f302a;
+    --decide: #e0a650;
+    --decide-soft: #33291a;
+    --away: #9fb0e6;
+    --away-soft: #232a40;
+    --ok: #7fc493;
+    --warn: #e59a8b;
+    --chip: #25302c;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Public Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size: 15.5px;
+    line-height: 1.6;
+    padding-inline: 20px;
+  }
+  main { max-width: 820px; margin: 0 auto; padding-block: 44px 72px; }
+  h1, h2, h3 { text-wrap: balance; line-height: 1.2; }
+  h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.01em; margin: 0 0 10px; }
+  h2 { font-size: 1.3rem; font-weight: 800; margin: 52px 0 6px; }
+  h3 { font-size: 1.02rem; font-weight: 600; margin: 0; }
+  p { margin: 0 0 12px; max-width: 68ch; }
+  .lede { color: var(--ink-soft); font-size: 1.05rem; max-width: 64ch; }
+  .eyebrow {
+    font-size: 0.74rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent);
+    margin: 0 0 8px;
+  }
+  .section-note { color: var(--ink-soft); margin-bottom: 16px; }
+  code, .id {
+    font-family: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 0.84em;
+  }
+  code { background: var(--chip); padding: 1px 5px; border-radius: 4px; }
+
+  .stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 28px 0 8px;
+  }
+  .stat { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 14px 16px; }
+  .stat b { display: block; font-size: 1.6rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat span { color: var(--ink-soft); font-size: 0.86rem; }
+
+  .cards { display: grid; gap: 12px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 16px 18px;
+    display: grid; gap: 8px;
+  }
+  .card.decide { border-left: 4px solid var(--decide); }
+  .card.away { border-left: 4px solid var(--away); }
+  .card-head { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: baseline; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    font-family: "JetBrains Mono", ui-monospace, Consolas, monospace; font-size: 0.74rem; padding: 2px 7px;
+    border-radius: 999px; background: var(--chip); color: var(--ink-soft); white-space: nowrap;
+  }
+  .card p { margin: 0; }
+  .options { margin: 2px 0 0; padding-left: 20px; }
+  .options li { margin: 2px 0; }
+  .rec { font-size: 0.93rem; color: var(--ink-soft); }
+  .rec strong { color: var(--decide); font-weight: 600; }
+  .card.away .rec strong { color: var(--away); }
+
+  .group-label { font-size: 0.8rem; font-weight: 600; color: var(--ink-soft); margin: 22px 0 10px; }
+
+  .table-wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.93rem; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+  td.id { white-space: nowrap; color: var(--accent); }
+
+  .state { display: inline-block; font-size: 0.74rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; }
+  .state.ok { background: var(--accent-soft); color: var(--ok); }
+  .state.bad { background: var(--decide-soft); color: var(--warn); }
+
+  ul.plain { padding-left: 20px; margin: 0 0 12px; max-width: 68ch; }
+  ul.plain li { margin: 4px 0; }
+  footer { margin-top: 56px; color: var(--ink-soft); font-size: 0.86rem; border-top: 1px solid var(--rule); padding-top: 14px; }
+  a { color: var(--accent); }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<main>
+  <p class="eyebrow">TrainControl · branch autonomy-diagram-r0 · 23–24 September 2026</p>
+  <h1>Review close-out</h1>
+  <p class="lede">Your MT feedback is fixed. The five-lane review has been through four rounds of fixes, each checked
+    by an Opus validator. This page lists what is still open and what needs your answer. Everything else is closed
+    in the finding store.</p>
+
+  <div class="stats">
+    <div class="stat"><b>336</b><span>findings from the five lanes (20 documents, rounds 1–4)</span></div>
+    <div class="stat"><b>321</b><span>closed: fixed, or checked clean</span></div>
+    <div class="stat"><b>10</b><span>waiting on your decision (four of them are one question, OB-284)</span></div>
+    <div class="stat"><b>5</b><span>left for a later session</span></div>
+  </div>
+  <p class="section-note">The final full test battery passed 286 of its 288 classes. The other two failed only because a counter needed lowering and a comment named a mutation instead of a finding. Both are fixed (<span class="id">fccdf44e</span>) and pass when re-run. Every fix from all four rounds was also mutation-tested: 50 mutations, each undoing one fix. 46 made a test fail the first time. Two more did once I strengthened their tests (GUI2-C2, TDY4-B1). The last two change nothing the code can actually reach: GUI-A1b and AUT-C3b each undo a check that only matters in a state the lock rules or the graph builder never produce.</p>
+
+  <h2>Needs your decision</h2>
+  <p class="section-note">None of these blocks anything today. Each card gives the options and, where I have one, my
+    recommendation.</p>
+
+  <p class="group-label">How autonomy treats trains</p>
+  <div class="cards">
+    <article class="card decide">
+      <div class="card-head"><h3>A pasted train whose heading only a barred copy holds</h3>
+        <div class="chips"><span class="chip">OB-284</span><span class="chip">AUT2-A1</span><span class="chip">AUT3-B2</span><span class="chip">TDY3-B2</span></div></div>
+      <p>At a square where arrivals from one side are barred (BottomMainA, east barred), a train can still face the barred
+        way: reversed on the throttle, or turned by the Facing menu, it now stands on that copy and keeps its
+        direction. A paste, the editor's Place and the Place Locomotive dialog still choose only ways trains may arrive
+        in, so cutting that train and pasting it back turns it round.</p>
+      <ul class="options">
+        <li>Keep the heading on a paste too. The train then stands where autonomy won't start it, and Why not Moving?
+          says why.</li>
+        <li>Keep turning it to a way trains may arrive in. That keeps your OB-270 rule "no impossible facing saved", but
+          a paste changes the train's direction.</li>
+      </ul>
+      <p class="rec"><strong>Recommendation:</strong> keep the heading. It makes the paste match the throttle and the
+        Facing menu, and it meets your other OB-270 rule, "no train should inadvertently change direction when pasted".</p>
+    </article>
+
+    <article class="card decide">
+      <div class="card-head"><h3>"Keep the current direction" through a compulsory turn</h3>
+        <div class="chips"><span class="chip">OB-283</span></div></div>
+      <p>A journey that passes a square every train must turn at is turned there, and you don't see it happen. At a
+        destination where trains may turn, answering "Yes – keep the current direction" can then leave the train
+        facing the opposite way from how it started.</p>
+      <p class="rec"><strong>Your call:</strong> should "keep" mean the direction the train left in, counting the turns
+        on the way?</p>
+    </article>
+
+    <article class="card decide">
+      <div class="card-head"><h3>The entry guard and routes that want the signal green</h3>
+        <div class="chips"><span class="chip">AUT-C2</span></div></div>
+      <p>An Entry Guard Signal throws its signal red when a train arrives, without checking whether a route is
+        commanding that signal green at the same moment.</p>
+      <p class="rec"><strong>Your call:</strong> should the guard look at those routes before it throws the signal red?</p>
+    </article>
+
+    <article class="card decide">
+      <div class="card-head"><h3>The "open that side" remedy at a terminus</h3>
+        <div class="chips"><span class="chip">GUI4-C3</span></div></div>
+      <p>A train facing a barred way is now told to "drive it off by hand, turn it round, or open that side under Trains
+        May Arrive...". At a station every train must turn round at, opening the side causes the terminus error, whose
+        own fix is to close the side again. This can't happen on your railway today: none of your must-turn squares
+        has a barred side.</p>
+      <p class="rec"><strong>Recommendation:</strong> at a must-turn square, drop "open that side" and offer the other two
+        remedies only. That needs one new sentence in eight languages.</p>
+    </article>
+  </div>
+
+  <p class="group-label">Upgrading from 2.8.1</p>
+  <div class="cards">
+    <article class="card decide">
+      <div class="card-head"><h3>Carry the old file's directions onto the diagram</h3>
+        <div class="chips"><span class="chip">REG4-A1</span><span class="chip">MT-491</span></div></div>
+      <p>An import now reads which way each train ran from the old file's one-way edges (see the next section). On a
+        fresh upgrade the diagram's default switch directions can forbid that way. On a fresh-upgrade copy of your railway,
+        TopMainR1Inter shows this. The train is then stood the only way the square allows, and the log
+        names the square. The old file already holds the missing directions, in its 88 one-way edges.</p>
+      <p class="rec"><strong>Your call:</strong> should the import also set one-way running along each old edge, so a
+        2.8.1 user's diagram runs the way their old graph did? This would be a new feature, not a fix.</p>
+    </article>
+
+    <article class="card decide">
+      <div class="card-head"><h3>Switched-off stations from 2.8.1</h3>
+        <div class="chips"><span class="chip">REG-B1</span></div></div>
+      <p>A 2.8.1 user's switched-off parking stations can no longer be reached by hand. The changelog now says so.</p>
+      <p class="rec"><strong>Your call:</strong> should the old-file import translate <code>active: false</code> on a
+        station into "on, but not an automatic destination"?</p>
+    </article>
+
+    <article class="card decide">
+      <div class="card-head"><h3>The Load Autonomy box on the old JSON path</h3>
+        <div class="chips"><span class="chip">REG2-C3</span></div></div>
+      <p>For a user who has never touched it, the box shows ticked and does nothing when the old JSON graph is the only
+        thing it could load. Ticking it takes two clicks. The changelog mentions it.</p>
+      <p class="rec"><strong>Your call:</strong> should an untouched box show unticked there?</p>
+    </article>
+
+    <article class="card decide">
+      <div class="card-head"><h3>Importing routes switches all automatic firing off</h3>
+        <div class="chips"><span class="chip">REG2-C7</span><span class="chip">MT-487</span></div></div>
+      <p>This follows your 10 September ruling, and the import now tells you it has happened. The file records which
+        routes were armed, but the import discards that, so restoring a backup doesn't bring the arming back. MT-487
+        now asks you to note your armed routes before you import and to re-arm them afterwards.</p>
+      <p class="rec"><strong>Your call:</strong> should an import restore each route's saved arming, or at least list the
+        routes that were armed?</p>
+    </article>
+  </div>
+
+  <p class="group-label">Code and housekeeping</p>
+  <div class="cards">
+    <article class="card decide">
+      <div class="card-head"><h3>Dead whole-column / whole-row move code</h3>
+        <div class="chips"><span class="chip">DCN-C3</span></div></div>
+      <p>Nothing has called this code since 19 August. It is about 180 lines, and four javadocs and one test still
+        describe it as a working gesture.</p>
+      <p class="rec"><strong>Recommendation:</strong> remove it. It can be restored from git if the gesture comes back.</p>
+    </article>
+
+    <article class="card decide">
+      <div class="card-head"><h3>A leftover folder beside the project</h3>
+        <div class="chips"><span class="chip">TrainControl-facing</span></div></div>
+      <p><code>NetBeansProjects\TrainControl-facing</code> is left over from a temporary worktree I used earlier today.
+        Windows refused to let git delete it because a file was locked. Its branch was merged and deleted, so
+        only the folder is left.</p>
+      <p class="rec"><strong>Recommendation:</strong> delete it. I haven't, because I don't delete folders outside the
+        project without asking you.</p>
+    </article>
+
+    <article class="card decide">
+      <div class="card-head"><h3>Return Home's search heuristic</h3>
+        <div class="chips"><span class="chip">OB-230</span></div></div>
+      <p>This is still deferred, as you asked on 15 September: it waits for your fully measured layout.</p>
+      <p class="rec"><strong>Your call:</strong> keep it deferred, or pick it up now.</p>
+    </article>
+
+    <article class="card decide">
+      <div class="card-head"><h3>Notes from the translation pass</h3>
+        <div class="chips"><span class="chip">bundles</span></div></div>
+      <p>I didn't change these. Each needs a native speaker or your preference:</p>
+      <ul class="options">
+        <li>A few older keys are still untranslated in some languages.</li>
+        <li>The German <code>layout.ui.errorInvalidPathOrCorruptData</code> is cut short.</li>
+        <li>The Polish name for the layouts menu, "Makiety".</li>
+        <li>The first sentence of <code>autosetup.ui.checkNoArrivalsLeft</code> is still in English in some bundles.</li>
+        <li>Apostrophes in Italian, and "commando’s" in Dutch.</li>
+        <li><code>layout.ui.sidebarAutonomy</code> was shortened to fit the sidebar.</li>
+      </ul>
+    </article>
+  </div>
+
+  <h2>Decided while you were away</h2>
+  <p class="section-note">I made these calls without you because each follows from a rule you've already set. Any of
+    them can be reversed.</p>
+  <div class="cards">
+    <article class="card away">
+      <div class="card-head"><h3>An import reads each train's facing from the old file</h3>
+        <div class="chips"><span class="chip">REG4-A1</span><span class="chip">REG4-C1</span></div></div>
+      <p>The code said an old autonomy.json "cannot say" which way a train faces. It can: 2.8.1 sent a train only along
+        the edges that start at its point, so the side those edges leave by is the way it drives. On a fresh upgrade of
+        your railway, the import had stood the 2-8-4 at TopMainR1 facing south, but 2.8.1 only ever drove it north. The
+        import now reads the facing from the file. Where the diagram can't hold that facing, it saves no impossible
+        facing (your OB-270 rule) and names the square. It guesses only where the file can't say, and makes that guess
+        after it has marked the squares where trains turn round. The log line no longer says "or just run them".</p>
+    </article>
+    <article class="card away">
+      <div class="card-head"><h3>A rebuild puts a train back where it can start</h3>
+        <div class="chips"><span class="chip">TDY4-B1</span><span class="chip">AUT4-B1</span></div></div>
+      <p>A train the railway had on a barred copy is now put back on the station copy of the same square that faces the
+        same way, if there is one. At a square where trains may turn round, that is the turning copy. Before this fix,
+        barring the side a standing train came in by meant autonomy refused it for good.</p>
+    </article>
+    <article class="card away">
+      <div class="card-head"><h3>Why not Moving? on Manual</h3>
+        <div class="chips"><span class="chip">GUI4-C2</span><span class="chip">AUT4-C1</span></div></div>
+      <p>On Manual it no longer says that a paused train "cannot be sent anywhere", because a pause only stops
+        autonomy. The start rules apply to a train sent by hand only while autonomy runs, which is what the route check
+        does.</p>
+    </article>
+    <article class="card away">
+      <div class="card-head"><h3>The "facing a barred way" sentence, in eight languages</h3>
+        <div class="chips"><span class="chip">TDY4-C3</span><span class="chip">GUI4-C1</span></div></div>
+      <p>It now reads: "Trains may not arrive at BottomMainA facing the way this one faces, so autonomy will not start
+        it there. Drive it off by hand, turn it round, or open that side under "Trains May Arrive..." in the autonomy
+        editor." The earlier wording could be read either way, and the German and Polish said the opposite
+        direction.</p>
+    </article>
+    <article class="card away">
+      <div class="card-head"><h3>Smaller ones</h3>
+        <div class="chips"><span class="chip">DCN4-C3</span><span class="chip">GUI4-C5</span><span class="chip">DCN4-C6</span></div></div>
+      <ul class="options">
+        <li>The Facing menu ticks the only facing on a square that has one.</li>
+        <li>The locomotive list's tooltip wraps its long sentences.</li>
+        <li>MT-490's title now names only the door its steps test.</li>
+      </ul>
+    </article>
+  </div>
+
+  <h2>Left for a later session</h2>
+  <p class="section-note">These need no decision. All but one are older than today's work, and none can be seen on
+    your railway as it stands.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Finding</th><th>What is left</th></tr></thead>
+      <tbody>
+        <tr><td class="id">AUT2-C2</td><td>Both the planner and the run blame the first train they find on an edge, so
+          the fix has to be one rule that both use.</td></tr>
+        <tr><td class="id">AUT3-C3</td><td>The tail walk's first step takes the first arriving rail by name. This is
+          also what your "Not known" answer on MT-477 falls back to at a fork.</td></tr>
+        <tr><td class="id">TDY4-C5</td><td>After a run, the Facing menu names the train the setup has on the square,
+          not the one the railway has. It should use the railway's train.</td></tr>
+        <tr><td class="id">GUI4-C5</td><td>When a setup loads, a train on a barred copy gets the warning "placed on a
+          non-station". The loader can't yet tell the two apart.</td></tr>
+        <tr><td class="id">GUI2-C4</td><td>Highlight on Diagram can colour one three-way both colours. This is cosmetic
+          and rare.</td></tr>
+        <tr><td class="id">coverage</td><td>No test checks the per-road grey on a double curve; MT-475 step 4 is the
+          only check.</td></tr>
+        <tr><td class="id">REG4 lead</td><td>On Manual, the locomotive list's "No available paths" tooltip still gives
+          autonomy's reasons. This predates today.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Waiting on the railway</h2>
+  <p>42 manual tests are waiting for a run. They include MT-464, MT-466 and MT-467, which you marked "Does not work" or "Could
+    not run" and which have since been answered with fixes, and these new or changed entries:</p>
+  <ul class="plain">
+    <li><span class="id">MT-487</span>: importing routes says they arrive switched off. Note your armed routes first.</li>
+    <li><span class="id">MT-488</span>: a train reversed on the throttle at BottomMainA, and the new sentence.</li>
+    <li><span class="id">MT-489</span>: the questions at a may-reverse square name the square.</li>
+    <li><span class="id">MT-490</span>: "Page is left out" brings an open editor forward.</li>
+    <li><span class="id">MT-491</span>: an old autonomy.json's trains face the way the old version ran them. The file
+      is provided.</li>
+  </ul>
+  <p>On MT-474, I couldn't reproduce the lost focus. If it happens again, tell me which prompt it was.</p>
+
+  <footer>
+    Commits for this round: <span class="id">1c6ae0fe</span> (round-4 tests, failing before the fixes),
+    <span class="id">6cb11933</span> (fixes), <span class="id">12ef4379</span> (tracker), <span class="id">6234adaa</span>
+    (catalogue), then <span class="id">a9d5a2f0</span> and <span class="id">07a0cc30</span> (stronger tests after the mutation run), <span class="id">f6883890</span> (round closed) and <span class="id">7a961962</span> (round documents deleted) and <span class="id">fccdf44e</span> (the two battery fixes). The review documents are catalogued in <code>docs/manual-tests/triage.db</code> and deleted
+    from the repo, as the review process requires. Your own uncommitted <code>cs2_sample_layout</code> changes were left
+    as they were.
+  </footer>
+</main>

@@ -9,7 +9,9 @@ them has been deleted - 143 on 2026-09-08 and 65 on 2026-09-21, alongside two fo
 never reviews - once the catalogue was carrying
 what they found.  The five-lane review of 2026-09-23 wrote twenty more, in `docs/reviews-2026-09-23/`, over four
 rounds of fixes and validation, and they were deleted the same way in the commit that closed it; the counts below are
-of the two earlier deletions.
+of the two earlier deletions.  **How a multi-lane review like that one is run, closed and reported is in
+[FANOUT.md](FANOUT.md)**, with the report Adam reviewed at the end of it kept as the example
+([examples/session-report-2026-09-23.html](examples/session-report-2026-09-23.html)).
 
 **Where those numbers come from**, because a validation round re-derived them and got a different total
 (VD15-R2): `git log --diff-filter=D` counts **210 files** deleted from the review folders, 145 on
