@@ -1279,6 +1279,23 @@ def git_build():
 
 PAD = 8
 
+# What the Show menu offers.  The first is the default, and what an unknown saved value falls back to.
+FILTERS = [
+    "open - not yet answered here",
+    "open - everything not validated",
+    "reopened - changed since your verdict",
+    "answered this session",
+    "everything, validated included",
+]
+
+# Inline markdown the read-only panes draw: a code span, a link (shown as its text), bold, italic - tried in that
+# order, so that nothing inside a code span is read as emphasis, and an asterisk inside a word is not italic.
+_INLINE = re.compile(
+    r"(?P<code>`[^`\n]+`)"
+    r"|(?P<link>\[(?P<label>[^\]\n]+)\]\([^)\s]+\))"
+    r"|(?P<bold>\*\*(?=\S)(?P<btext>.+?)(?<=\S)\*\*)"
+    r"|(?P<italic>(?<![*\w])\*(?=[^\s*])(?P<itext>[^*\n]+?)(?<=\S)\*(?![*\w]))")
+
 # Which layout a saved window size belongs to.  2 is the stacked one (2026-09-24); a size saved by the side-by-side
 # layout is 1024 pixels wide and is not restored into this one.
 LAYOUT = 2
@@ -1422,8 +1439,19 @@ class Triage(tk.Tk):
         style.configure("Sub.TLabel", foreground="#555555")
         style.configure("Big.TButton", font=("Segoe UI", 10, "bold"))
 
+        # Before the menu, whose Show items are bound to it.
+        self.filter_var = tk.StringVar(value=self.state_.data.get("filter", FILTERS[0]))
+
+        if self.filter_var.get() not in FILTERS:
+            self.filter_var.set(FILTERS[0])
+
         self._build_menu()
         self._build_toolbar()
+
+        # THE STATUS LINE BEFORE THE PANES.  Packed after them it was given what they left, and together they ask for
+        # more height than the window has, so it was given nothing - and it is where the Show filter is named.
+        self.status = ttk.Label(self, anchor=tk.W, relief=tk.SUNKEN, padding=(6, 3))
+        self.status.pack(fill=tk.X, side=tk.BOTTOM)
 
         # THE LIST ABOVE THE TEST, NOT BESIDE IT (2026-09-24).  This runs beside TrainControl in about a third of the
         # screen's width and all of its height.  Side by side, the list and the steps each had half of a third, and the
@@ -1437,9 +1465,6 @@ class Triage(tk.Tk):
         self.panes.add(self._build_left(self.panes), weight=0)
         self.panes.add(detail, weight=1)
         self.panes.add(self.answer_pane, weight=0)
-
-        self.status = ttk.Label(self, anchor=tk.W, relief=tk.SUNKEN, padding=(6, 3))
-        self.status.pack(fill=tk.X, side=tk.BOTTOM)
 
         self._say("Ready.  %d entries, %d open." % (
             len(self.doc.entries), sum(1 for e in self.doc.entries if e.is_open)))
@@ -1456,6 +1481,16 @@ class Triage(tk.Tk):
         f.add_separator()
         f.add_command(label="Quit", command=self._on_close)
         bar.add_cascade(label="File", menu=f)
+
+        # THE SHOW FILTER IS A MENU (Adam, 2026-09-24: "move the "show" options into the menubar").  It drives all
+        # three tabs (_on_filter_changed); which one is chosen is ticked here and named at the start of the status line.
+        s = tk.Menu(bar, tearoff=0)
+
+        for choice in FILTERS:
+            s.add_radiobutton(label=choice, value=choice, variable=self.filter_var,
+                              command=self._on_filter_changed)
+
+        bar.add_cascade(label="Show", menu=s)
 
         t = tk.Menu(bar, tearoff=0)
         t.add_command(label="Launch TrainControl (simulate + debug)\tCtrl+L", command=self.launch)
@@ -1481,7 +1516,7 @@ class Triage(tk.Tk):
 
     def _build_toolbar(self):
         # TWO ROWS, because one did not fit a third of the screen: its right-hand end - New issue, and the Show filter -
-        # was cut off.  The filter now sits over the list it filters (_build_left).
+        # was cut off.  The filter is the Show menu now.
         bar = ttk.Frame(self, padding=(PAD, PAD, PAD, 4))
         bar.pack(fill=tk.X)
 
@@ -1514,38 +1549,14 @@ class Triage(tk.Tk):
         led to this.
         """
 
-        frame = ttk.Frame(parent)
-
-        # The Show filter, over the tabs it drives - all three of them (_on_filter_changed).
-        show = ttk.Frame(frame)
-        show.pack(fill=tk.X, pady=(0, 4))
-
-        ttk.Label(show, text="Show:").pack(side=tk.LEFT)
-
-        self.filter_var = tk.StringVar(value=self.state_.data.get("filter", "open"))
-
-        picker = ttk.Combobox(show, textvariable=self.filter_var, state="readonly",
-                              values=["open - not yet answered here",
-                                      "open - everything not validated",
-                                      "reopened - changed since your verdict",
-                                      "answered this session",
-                                      "everything, validated included"])
-
-        picker.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(4, 0))
-        picker.bind("<<ComboboxSelected>>", lambda e: self._on_filter_changed())
-
-        if self.filter_var.get() not in picker["values"]:
-            self.filter_var.set("open - not yet answered here")
-
-        self.left_book = ttk.Notebook(frame)
-        self.left_book.pack(fill=tk.BOTH, expand=True)
+        self.left_book = ttk.Notebook(parent)
 
         self.left_book.add(self._build_list(self.left_book), text="  Tests  ")
         self.left_book.add(self._build_issue_list(self.left_book, "feature request"),
                            text="  Feature requests  ")
         self.left_book.add(self._build_issue_list(self.left_book, "bug"), text="  Bugs  ")
 
-        return frame
+        return self.left_book
 
     def _build_list(self, parent):
         frame = ttk.Frame(parent)
@@ -1687,7 +1698,7 @@ class Triage(tk.Tk):
             self._populate_issue_tree(kind)
 
     def _issue_include(self, is_open):
-        """Same 'Show:' filter the Tests tab uses, applied to a bug/feature request's own
+        """Same Show filter the Tests tab uses, applied to a bug/feature request's own
         open/closed state.  Issues have no per-session mark the way a test's Skip/Submit does -
         nothing is ever 'answered' through a read-only tab - so the two 'open' modes collapse
         into one question here (still open, or not), and 'answered this session' has nothing to
@@ -2080,7 +2091,7 @@ class Triage(tk.Tk):
         self.after(150, self._default_dividers)
 
     def _default_dividers(self):
-        """A third of the height to the list, what it asks for to the answer, and the rest to the steps."""
+        """About a quarter of the height to the list, what it asks for to the answer, and the rest to the steps."""
 
         self.update_idletasks()
 
@@ -2089,7 +2100,7 @@ class Triage(tk.Tk):
         if total < 200:
             return
 
-        first = int(total * 0.33)
+        first = int(total * 0.27)
         second = max(first + 120, total - self.answer_pane.winfo_reqheight() - 6)
 
         self.panes.sashpos(0, first)
@@ -2180,7 +2191,7 @@ class Triage(tk.Tk):
         return out
 
     def _on_filter_changed(self):
-        """The 'Show:' dropdown drives all three tabs, not just Tests - a feature request or bug
+        """The Show menu drives all three tabs, not just Tests - a feature request or bug
         that's done closing shouldn't need its own separate control to hide it.
         """
 
@@ -2251,9 +2262,10 @@ class Triage(tk.Tk):
 
         again = sum(1 for e in self.doc.entries if e.reopened)
 
-        message = ("%d entries, %d not validated, %d of those changed since you judged them, "
-                  "%d answered here this session.  Showing %d."
-                  % (total, openn, again, done, len(self.tree.get_children())))
+        # What is shown FIRST: the Show menu no longer says it on screen, and a narrow window cuts this line's end off.
+        message = ("Showing %d: %s.  %d entries, %d not validated, %d of those changed since you judged them, "
+                  "%d answered here this session."
+                  % (len(self.tree.get_children()), self.filter_var.get(), total, openn, again, done))
 
         message += self._data_warnings()
 
@@ -2377,10 +2389,96 @@ class Triage(tk.Tk):
         self.skip_button.config(text="Unskip" if skipped else "Skip", state=tk.NORMAL)
 
     def _fill(self, widget, text):
+        """Shows `text` read-only, with its markdown drawn rather than spelled out (Adam, 2026-09-24: "The markdown shows
+        raw - can you render bold in the steps?").
+
+        Bold, italic, code spans, links as their text, headings in bold, list dashes as bullets, and a fenced block in
+        the code face without its fences.  Tables and everything else are shown as written.  Only what is shown
+        changes: nothing here is written back.
+        """
+
         widget.config(state=tk.NORMAL)
         widget.delete("1.0", tk.END)
-        widget.insert("1.0", text)
+
+        fenced = False
+
+        for number, line in enumerate(text.split("\n")):
+            if number:
+                widget.insert(tk.END, "\n")
+
+            if line.strip().startswith("```"):
+                fenced = not fenced
+                continue
+
+            if fenced:
+                widget.insert(tk.END, line, self._style(widget, ("code",)))
+                continue
+
+            # A rule - the "---" that closes every entry in the file - is a gap, not three dashes.
+            if re.match(r"^\s*(?:-{3,}|\*{3,}|_{3,})\s*$", line):
+                continue
+
+            heading = re.match(r"^\s*#{1,6}\s+(.*)$", line)
+
+            if heading:
+                self._inline(widget, heading.group(1), ("bold",))
+                continue
+
+            bullet = re.match(r"^(\s*)[-*+]\s+(.*)$", line)
+
+            if bullet:
+                widget.insert(tk.END, bullet.group(1) + "•  ")
+                line = bullet.group(2)
+
+            self._inline(widget, line, ())
+
         widget.config(state=tk.DISABLED)
+
+    def _inline(self, widget, text, styles):
+        """One line's inline markdown, inserted at the end of `widget` in `styles` and whatever it adds to them."""
+
+        position = 0
+
+        for match in _INLINE.finditer(text):
+            if match.start() > position:
+                widget.insert(tk.END, text[position:match.start()], self._style(widget, styles))
+
+            if match.group("code"):
+                widget.insert(tk.END, match.group("code")[1:-1], self._style(widget, styles + ("code",)))
+            elif match.group("link"):
+                self._inline(widget, match.group("label"), styles)
+            elif match.group("bold"):
+                self._inline(widget, match.group("btext"), styles + ("bold",))
+            else:
+                self._inline(widget, match.group("itext"), styles + ("italic",))
+
+            position = match.end()
+
+        if position < len(text):
+            widget.insert(tk.END, text[position:], self._style(widget, styles))
+
+    @staticmethod
+    def _style(widget, styles):
+        """The Text tag for a set of styles, made the first time it is asked for.  One tag per combination, because Tk
+        takes a run's font from one tag rather than merging them - bold and italic together is a font of its own.
+        """
+
+        styles = sorted(set(styles))
+
+        if not styles:
+            return ()
+
+        name = "md-" + "-".join(styles)
+
+        if name not in widget.tag_names():
+            if "code" in styles:
+                widget.tag_configure(name, font=("Consolas", 9, "bold" if "bold" in styles else "normal"),
+                                     background="#eceef1")
+            else:
+                widget.tag_configure(name, font=("Segoe UI", 10) + tuple(
+                    style for style in ("bold", "italic") if style in styles))
+
+        return (name,)
 
     def _refresh_observations(self):
         for child in self.obs_rows_frame.winfo_children():

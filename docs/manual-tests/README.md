@@ -205,7 +205,9 @@ in two rows, then the list, the entry's steps, and the answer, one above the oth
 can be dragged. It starts in the right third of the screen; **View > Fill the right third** (or left)
 puts it back there, and its size and dividers are remembered. The list leaves out the date, which is in
 the entry's heading, and the steps and comments are reflowed on screen, so a paragraph wrapped at 110
-characters in the file wraps once to the window instead of twice.
+characters in the file wraps once to the window instead of twice - and drawn rather than spelled out:
+bold, italic, code, bullets and headings, with links shown as their text. The **Show** filter is a menu
+in the menu bar, and the status line starts with what it is showing.
 
 **Reopened entries are marked, and can be filtered to.** An entry Adam has already judged, and which
 has been worked on since, is the one thing the list could not tell apart from an entry nobody has ever
