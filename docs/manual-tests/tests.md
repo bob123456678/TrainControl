@@ -29,17 +29,13 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 |---|---|---|---|---|
 | [MT-244](#mt-244) | 2026-08-31 | The Auto tab on a layout that has only an autonomy.json | fixed unvalidated | RGN-A2 |
 | [MT-263](#mt-263) | 2026-09-03 | The three refusals, when the graph will not build | fixed unvalidated | V31-C1, V32-C1, DY3-C7 |
-| [MT-267](#mt-267) | 2026-09-04 | A setup edit made the instant autonomy starts | fixed unvalidated | VD11-C8 |
 | [MT-291](#mt-291) | 2026-09-07 | The Grid tooltip, in a language you read | needs test | FR-057 (split from MT-274) |
 | [MT-298](#mt-298) | 2026-09-07 | A second import fills gaps and does not overwrite | fixed unvalidated | IPR-A1 (split from MT-243) |
-| [MT-326](#mt-326) | 2026-09-07 | A declined setup edit survives quitting (a race, not a mode) | fixed unvalidated | ACC-B3 (split from MT-269) |
 | [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
 | [MT-437](#mt-437) | 2026-09-15 | What the measured route in holds, and which tier is bound by it | needs test | FR-087 |
 | [MT-442](#mt-442) | 2026-09-15 | Why Not Moving? says a terminus is in the way, not that no track leads there | fixed unvalidated | PTR-B1 (OB-229) |
 | [MT-443](#mt-443) | 2026-09-15 | Making a square no longer a station takes Unavailable While Occupied with it | fixed unvalidated | AMS-B2 |
-| [MT-446](#mt-446) | 2026-09-15 | After an edit declined at the start of a run, where the trains are is saved again | fixed unvalidated | AMS-B1 (MT-267) |
 | [MT-447](#mt-447) | 2026-09-15 | Unavailable While Occupied naming a station on an excluded page does not stop autonomy loading | fixed unvalidated | AMG-B1 |
-| [MT-450](#mt-450) | 2026-09-15 | Return Home is not stopped by the sensor under a standing train's tail | fixed unvalidated | AMH-B2 |
 | [MT-452](#mt-452) | 2026-09-16 | Loading a configuration that names a train you no longer have keeps the rest of it | fixed unvalidated | AMR-C3 |
 | [MT-453](#mt-453) | 2026-09-16 | A lock naming track that is not in the file is dropped, and the log says so loudly | fixed unvalidated | AMR-C3 |
 | [MT-467](#mt-467) | 2026-09-19 | Turning a local route's automatic execution on or off does not wait for the Central Station | fixed unvalidated | GUX-C5 |
@@ -49,7 +45,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-481](#mt-481) | 2026-09-23 | The orange line and the grey carry on across a route tile | fixed unvalidated | OB-279 |
 | [MT-482](#mt-482) | 2026-09-23 | The grey is only where the train is, and nothing past the switch | fixed unvalidated | OB-280 |
 | [MT-483](#mt-483) | 2026-09-23 | A cut train is pasted facing the way it would arrive | fixed unvalidated | OB-270 |
-| [MT-485](#mt-485) | 2026-09-23 | The five route tiles' lengths are folded into the track beside them | fixed unvalidated | OB-281 |
 | [MT-488](#mt-488) | 2026-09-23 | A train reversed on the throttle where one direction is barred | fixed unvalidated | TDY2-A1, GUI2-A1, AUT2-A1, TDY3-A1, TDY3-A2, GUI3-C1, AUT3-B1, TDY3-C1, TDY4-C3 |
 | [MT-489](#mt-489) | 2026-09-23 | The questions at a may-reverse square name the square, not a direction | fixed unvalidated | GUI-C7 |
 | [MT-490](#mt-490) | 2026-09-23 | "Page is left out" brings an open editor forward | fixed unvalidated | GUI-C8 |
@@ -106,8 +101,8 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-542](#mt-542) | 2026-09-24 | Test a Path keeps its route when Path Type changes, and changes only the note | fixed unvalidated | MT-439 |
 | [MT-543](#mt-543) | 2026-09-24 | With Not known at BottomSecondary, the tail stops at switch 51 | fixed unvalidated | MT-477 |
 
-Everything else - 465 of 543 - needs nothing from you unless the area changes again:
-395 **fixed validated** and 70 **superseded**.
+Everything else - 470 of 543 - needs nothing from you unless the area changes again:
+400 **fixed validated** and 70 **superseded**.
 
 ---
 
@@ -390,7 +385,7 @@ would look exactly the same.
 
 ### MT-267 - 2026-09-04 - A setup edit made the instant autonomy starts
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** VD11-C8
 
 **Written:** 2026-09-04
@@ -449,6 +444,10 @@ Automated, with MT-326. Your step 2 said this is deliberately hard to hit and yo
 **Claude, 2026-09-24.**
 
 **Nothing is left for your hands.**  The last note asked for step 1 - editing the setup with autonomy running - but the editor cannot be opened during a run (OB-047): Edit says "Cannot edit auto layout while running." and nothing opens, so the ordinary case this checks cannot happen.  The race itself, and its silence on an ordinary rebuild, are held by `regression.testADeclinedSetupEditSaysSoAndSurvivesTheExit`.  Mark it Works, or say if you want the refusal checked by hand.
+
+**Claude, 2026-09-24.**
+
+Adam, in conversation, 2026-09-24, asked what verdict these five needed and was told Works: *"Ok, close these 5 then."*  Closed the hand check it left cannot happen - the editor does not open while autonomy runs - and the automated test holds the rest.
 
 ---
 
@@ -17829,7 +17828,7 @@ no idea what this is talking about, re-file as a clear test if needed, otherwise
 
 ### MT-326 - 2026-09-07 - A declined setup edit survives quitting (a race, not a mode)
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** ACC-B3 (split from MT-269)
 
 **Written:** 2026-09-07
@@ -17887,6 +17886,10 @@ Automated, with MT-267, and your objection was right: the entry was badly writte
 **Claude, 2026-09-24.**
 
 **Nothing to run.**  It is automated and green - `regression.testADeclinedSetupEditSaysSoAndSurvivesTheExit`, in today's battery - and your note of 2026-09-12 asked for it to be closed once it was.  Mark it Works to close it.
+
+**Claude, 2026-09-24.**
+
+Adam, in conversation, 2026-09-24, asked what verdict these five needed and was told Works: *"Ok, close these 5 then."*  Closed on the automated test, as he asked on 2026-09-12.
 
 ---
 
@@ -23174,7 +23177,7 @@ Found by the wide autonomy review, and your ruling on it: *"this should only be 
 
 ### MT-446 - 2026-09-15 - After an edit declined at the start of a run, where the trains are is saved again
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** AMS-B1 (MT-267)
 
 **Written:** 2026-09-15
@@ -23218,6 +23221,10 @@ takes a minute. Nothing else in this entry needs the race to be hit.
 **Claude, 2026-09-24.**
 
 **Nothing is left for your hands** - the same as MT-267: the step the last note asked for cannot happen, because the editor cannot be opened during a run, and the race is held by `regression.testADeclinedSetupEditSaysSoAndSurvivesTheExit.testTheRefusedRebuildSaysSo`.  Mark it Works.
+
+**Claude, 2026-09-24.**
+
+Adam, in conversation, 2026-09-24, asked what verdict these five needed and was told Works: *"Ok, close these 5 then."*  Closed as MT-267.
 
 ---
 
@@ -23318,7 +23325,7 @@ Found by the validation of MT-445's fix.  That fix governed where a move ENDS; a
 
 ### MT-450 - 2026-09-15 - Return Home is not stopped by the sensor under a standing train's tail
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** AMH-B2
 
 **Written:** 2026-09-15
@@ -23343,6 +23350,10 @@ Found by the wide autonomy review, and your answer on how your detection behaves
 **Claude, 2026-09-24.**
 
 **Nothing you can run as written:** it needs a train whose tail lies over a sensor that another train's only way home crosses, and no such arrangement is named - I cannot name one from here without building it.  The rule is held by `core.testHomeStaging.testASensorHeldByAStandingTrainsTailIsNotBlocked`.  Mark it Works on that, or tell me to find an arrangement on your railway.
+
+**Claude, 2026-09-24.**
+
+Adam, in conversation, 2026-09-24, asked what verdict these five needed and was told Works: *"Ok, close these 5 then."*  Closed on core.testHomeStaging.testASensorHeldByAStandingTrainsTailIsNotBlocked.
 
 ---
 <a id="mt-451"></a>
@@ -25156,7 +25167,7 @@ Superseded by MT-537, MT-538 - one test each, so each gets its own verdict (your
 
 ### MT-485 - 2026-09-23 - The five route tiles' lengths are folded into the track beside them
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-281
 
 **Written:** 2026-09-23
@@ -25204,6 +25215,10 @@ The layout's lengths add up to 181 units before and after.  If that is enough, m
 **Claude, 2026-09-24.**
 
 **Nothing to run.**  Its steps ask you to read per-square lengths, which the editor does not show.  The five folds were checked against your saved setup and are listed in the 2026-09-23 note above; if that is enough, mark it Works.
+
+**Claude, 2026-09-24.**
+
+Adam, in conversation, 2026-09-24, asked what verdict these five needed and was told Works: *"Ok, close these 5 then."*  Closed on the five folds checked against his saved setup (the 2026-09-23 note).
 
 ---
 
