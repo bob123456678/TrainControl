@@ -51,6 +51,9 @@ public class testATailPastASwitchIsAskedAbout
 {
     private static final String PLATFORM = "BottomSecondary";
 
+    /** Where Adam met a list with one entry (MT-437). */
+    private static final String TUNNEL = "Tunnel (southbound)";
+
     private static support.LayoutSandbox sandbox;
     private static MarklinControlStation model;
     private static Layout layout;
@@ -312,6 +315,73 @@ public class testATailPastASwitchIsAskedAbout
     }
 
     /**
+     * A question with one answer on its list takes it, with no dialog (Adam, 2026-09-24, on MT-437).
+     *
+     * *"when a tail question comes up and there is only one option (len 4 on tunnel), it should auto select that
+     * option."*  He asked the same on MT-477 (*"since there is only one choice, it should be auto selected without a
+     * prompt"*); that list was missing a rail, and offering it left two.  At Tunnel the one entry is real.  The two rails
+     * in from the north - TunnelPre's, 4 units, and 12,7's, 5 - share every square back to the switch at 11,5, which
+     * measures nothing, and so does the square after it.  So a four-unit tail spends out one square short of the switch,
+     * on track both rails share, and has reached TunnelPre by the whole-rail count (OB-226): the question is put, and
+     * TunnelPre is all it can offer.
+     *
+     * The dialog is closed if it is shown, so a question put to the operator comes back unanswered.
+     *
+     * MUTATION: show the dialog for one choice again, and this fails.
+     */
+    @Test
+    public void testAQuestionWithOneChoiceTakesItWithoutAsking()
+    {
+        Point tunnel = tunnel();
+
+        List<TailCrossedPrompt.Choice> choices = TailCrossedPrompt.choicesFor(layout, tunnel, "N", 4, null);
+
+        assertTrue(TailCrossedPrompt.wouldAsk(layout, tunnel, "N", 4), "precondition: a four-unit train at " + TUNNEL
+            + " from the north is not asked about its tail");
+
+        assertEquals(choices.size(), 1, "precondition: a four-unit train at " + TUNNEL + " is offered " + labels(choices)
+            + ", where Adam saw one entry");
+
+        TailCrossedPrompt.answerForTests(TailCrossedPrompt.DISMISSED);
+
+        TailCrossedPrompt.Answer answer =
+            TailCrossedPrompt.askAfterPlacement(layout, tunnel, "N", 4, train.getName(), null, null);
+
+        assertTrue(answer.wasAnswered(), "a four-unit train at " + TUNNEL + " was put the question with one entry on the"
+            + " list, " + labels(choices) + ", and the dialog was shown.  Adam, 2026-09-24: \"when a tail question comes up"
+            + " and there is only one option (len 4 on tunnel), it should auto select that option\"");
+
+        assertEquals(answer.getRoad(), choices.get(0).getRoad(), "the one entry, " + labels(choices) + ", was taken and"
+            + " a different road recorded");
+    }
+
+    /**
+     * Two answers on the list are still asked about.
+     *
+     * The control on the rule above: at five units the tail at Tunnel has reached TunnelPre on the one rail and 12,7 on
+     * the other, and which it lies on is the operator's to say.
+     *
+     * MUTATION: take the first entry, or the one the list starts on, whatever the list holds, and this fails.
+     */
+    @Test
+    public void testAQuestionWithTwoChoicesIsStillAsked()
+    {
+        Point tunnel = tunnel();
+
+        List<TailCrossedPrompt.Choice> choices = TailCrossedPrompt.choicesFor(layout, tunnel, "N", 5, null);
+
+        assertTrue(choices.size() > 1, "precondition: a five-unit train at " + TUNNEL + " is offered " + labels(choices));
+
+        TailCrossedPrompt.answerForTests(TailCrossedPrompt.DISMISSED);
+
+        TailCrossedPrompt.Answer answer =
+            TailCrossedPrompt.askAfterPlacement(layout, tunnel, "N", 5, train.getName(), null, null);
+
+        assertFalse(answer.wasAnswered(), "a five-unit train at " + TUNNEL + " is offered " + labels(choices) + " and was"
+            + " answered without the operator: the dialog was closed, and " + answer.getRoad() + " recorded");
+    }
+
+    /**
      * Stands the train at the platform at this length, answers the question with the way towards RampDown, and hands back
      * the rails it then covers.  The train is left standing, for the caller to read and then clear.
      */
@@ -346,6 +416,15 @@ public class testATailPastASwitchIsAskedAbout
     }
 
     // ---------------------------------------------------------------------------------------------
+
+    private static Point tunnel()
+    {
+        Point found = layout.getPoint(TUNNEL);
+
+        assertNotNull(found, "precondition: the frozen railway has no " + TUNNEL);
+
+        return found;
+    }
 
     private static Point platform()
     {
