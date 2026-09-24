@@ -246,6 +246,12 @@ Automated, as you asked twice over. `regression.testTheRefusalToStartSaysWhichTh
 
 **Expect:** Start is greyed; the tooltip and the Start message both say one thing has to be dealt with first and point at the count along the top of the diagram; neither says to wait for the trains to stop.  Steps 4 and 5 of the original are automated; skip them.
 
+**Adam, 2026-09-24 (triage).** Does not work.
+
+Start autonomy doesn't run autonomy, as expected- I get an error message saying errors must first be fixed. Good.  But trains can still be moved manually via both the track diagram viewer and the autonomy tab, which should throw an error instead.
+
+*Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-264"></a>
@@ -14111,6 +14117,10 @@ Adam, 2026-09-13: *"The tab should stay shut until they import."*
 
 **Still to run, and simpler since 2026-09-24** (OB-254).  Nothing reads `autonomy.json` at start any more - the start-up read and the old tab are both gone - so the file beside TrainControl no longer matters to this check.  Steps 1 and 4 of the 2026-09-24 *To run now* (moving files aside and back) can be skipped.  The expectation is unchanged: the Auto tab is greyed, and the log does not say an autonomy layout was loaded or is running.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-245"></a>
@@ -22831,6 +22841,12 @@ CORRECTION, and two of them are mine. (1) The step 4 I wrote this morning was wr
 
 **Expect:** BottomMainA is refused, and the refusal names it.  Autonomy asks the same rule, so it is not checked separately.
 
+**Adam, 2026-09-24 (triage).** Does not work.
+
+Works, except that at length 5, it still can't go from tunnel to bottommainA, even though that length measures 6 if you include the bottommainA tile. it works if we make the length before bottommainA be 6. it should be inclusive, just like the berth rule.
+
+*Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-438"></a>
@@ -23084,6 +23100,10 @@ Found by the review of the OB-229 fix.  Since the route search stopped going thr
 
 **Expect:** each that is refused says it contains an intermediate terminus station; none says no track route leads there.  Skip the original's optional step.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-443"></a>
@@ -23111,6 +23131,12 @@ Found by the wide autonomy review.  A station can be set unavailable while anoth
 *What this is:* AMS-B2.  `regression.testStationBlockedByAnotherPoint.testDemotingTheStationTakesTheRestrictionWithIt`.  Seen red first (8818d8cd); fixed in 64169b0b.
 
 #### Comments
+
+**Adam, 2026-09-24 (triage).** Works, with notes.
+
+This test passes, but what happens when we re-add the restriction when it's a non-station, does it get enforced?
+
+*Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -23258,6 +23284,10 @@ Found by the wide autonomy review.  The **Unavailable While Occupied...** list o
 *What this is:* AMG-B1.  `regression.testStationBlockedByAnotherPoint.testARestrictionWatchingASquareOffTheGraphIsLeftOut`.  Seen red first (8818d8cd); fixed in 64169b0b.
 
 #### Comments
+
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -24175,6 +24205,10 @@ What says a route came from the station is its lock: only a sync sets it, to exa
 
 **To run now:** steps 1 to 4 only.  **Expect:** no spinner and no wait, one route or many, and the list shows the new state.  Step 5 needed a route from the station, and the last note does not ask for it again.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-468"></a>
@@ -24822,6 +24856,10 @@ Left as it was, and yours to decide (it is in the report): with no answer, or No
 
 Adam, in conversation, 2026-09-24, answering the question above: *"MT-477 stop at the switch"*.  Built: with no answer, or Not known, the tail now stops at switch 51 - the squares both rails share are claimed, nothing past the switch.  Its own check is MT-543; this entry's list check ("To run now" above) is unchanged.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-478"></a>
@@ -24929,6 +24967,10 @@ Done.  The sentence now wraps so that the one you see before any signal is paire
 3. The same with Exit Guard Signal...
 
 **Expect:** the sentence wraps, the window is not too wide, and it does not widen when the first signal is paired.
+
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -25040,6 +25082,10 @@ Held at fixed unvalidated although you said *Works*: after your run the tail wal
 
 **Expect:** both run unbroken through 15,10, as on the track either side.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-482"></a>
@@ -25083,6 +25129,10 @@ Held at fixed unvalidated although you said *Works*, and the note meant for this
 **Claude, 2026-09-23.**
 
 A correction to the comment above: the square a train stands on is spent first on every kind of square since 8370abb1, not 12ed2faa - 12ed2faa was the repair to 6b7301fc on hand-written graphs (DCN3-C7).
+
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -25130,6 +25180,10 @@ Held at fixed unvalidated although you said *Works*: after your run, where a tra
 **Claude, 2026-09-24.**
 
 **To run now:** as written - BottomSecondary facing west, cut, and paste on BottomMainA.  **Expect:** it faces east.  Since OB-284 a paste can keep a westbound heading at BottomMainA, so facing east is now the paste's own choice, not the only one the square allows.
+
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -25352,6 +25406,12 @@ railway), red under its mutations.  Whether the diagram and the refusal read rig
 
 The steps above are as written on 2026-09-23.  What 2026-09-24 added is in entries of their own: the paste (MT-498), the locomotive list on Manual (MT-499) and the start-up log (MT-500).
 
+**Adam, 2026-09-24 (triage).** Does not work.
+
+reversing it on the throttle has no effect on autonomy.  when no autonomy or manual math is running, have the throttle change its autonomy direction.  but the "is facing" menu should not change it
+
+*Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-489"></a>
@@ -25375,6 +25435,10 @@ both questions named the square with a direction already in it - "BottomMainB (e
 - Each question names the square as the diagram does - "BottomMainB" - with no direction after it.
 
 *What this is:* `ui.testAPastedTrainFacesTheWayTheOperatorChose` (both questions' wording).
+
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -25402,6 +25466,10 @@ on the banner - said "Close the editor first", where the Edit item it stands for
 *What this is:* `regression.testEditorSurfaceRules` and `regression.testTheRefusalsAreAskedAtTheDoors`.  Fix Setup on
 the banner was changed the same way; it shows only on a setup with a problem that stops autonomy, so it is left to
 those two and is not a step here.
+
+**Adam, 2026-09-24 (triage).** Works.
+
+*Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -26773,6 +26841,12 @@ autonomy editor."*
 - The route stays drawn throughout.
 - The note that autonomy will never choose TunnelLongPark goes on Manual and comes back on Auto.
 
+**Adam, 2026-09-24 (triage).** Works.
+
+Filed from this test: OB-288 (bug - erronous autonomy editor warning).  They are in `issues.md` until they are picked up.
+
+*Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-543"></a>
@@ -26799,6 +26873,12 @@ autonomy editor."*
 - Step 4: the orange runs from BottomSecondary back to switch 51 and stops there - on neither the rail up to RampDown nor the turned rail towards BottomCrossover.
 
 *What this is:* `core.testATailPastASwitchIsAskedAbout.testWithNoAnswerTheTailStopsAtTheSwitch`.
+
+**Adam, 2026-09-24 (triage).** Works, with notes.
+
+With not known, there is no orange tail.  The tiles up to the switch are greyed out, as expected.
+
+*Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -26880,6 +26960,12 @@ autonomy editor."*
 - Your browser opens the automation guide on GitHub (`Automation.md`).
 
 *What this is:* `regression.testTheAutonomyMenuLinksItsDocumentation`, which also holds that it can be chosen while an editor is open and greys everything else.
+
+**Adam, 2026-09-24 (triage).** Works, with notes.
+
+Works, but are we calling this on EDT?
+
+*Run against commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 

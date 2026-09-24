@@ -1145,6 +1145,33 @@ Adam, on MT-466, 2026-09-22: *"there is no cancel button if you go to manage loc
 
 Adam, on MT-464, 2026-09-22: *"make an automated test for this"*.  `core.testAdvancedRoutes` holds the half about the route finishing its commands (CS3-B1).  The refusal itself - `TrainControlUI.refuseWhileARouteDrivesIt`, at both the delete and the rename door, naming the route - has no test.  Found by the 2026-09-24 pass over the waiting tests; MT-531 is the part of MT-464 still for his hands.
 
+### OB-288 - 2026-09-24 - erronous autonomy editor warning
+
+**Kind:** bug  
+**Raised from:** MT-542 (Test a Path keeps its route when Path Type changes, and changes only the note)  
+**Filed:** 2026-09-24 07:28  
+**Build:** commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+<station> can refuse trains that would otherwise fit shows up on all berths, even though we have measured the s88 tile to match the berth max train size. likely an artifact from before we included the station length in the measurement.
+
+### OB-289 - 2026-09-24 - spacing below "visible elements" in autonomy editor
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-24 07:41  
+**Build:** commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+there is slightly too much spacing/padding below "visible elements" in autonomy editor.  make it be consistent with other labels
+
+### OB-290 - 2026-09-24 - orange line for 75 407 DB
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-24 07:59  
+**Build:** commit 107f54ba, build\classes, compiled 24 Sep 06:22 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+in the CURRENT setup, 75 407 DB gets no orange line at bottommaina.  it did earlier
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
