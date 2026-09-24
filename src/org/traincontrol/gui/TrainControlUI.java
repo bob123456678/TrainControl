@@ -26,7 +26,6 @@ import java.awt.event.MouseMotionAdapter;
 import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -1217,11 +1216,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.showKeyboardHintsMenuItem.setSelected(prefs.getBoolean(SHOW_KEYBOARD_HINTS_PREF, true));
         this.windowAlwaysOnTopMenuItem.setSelected(prefs.getBoolean(ONTOP_SETTING_PREF, ONTOP_SETTING_DEFAULT));
         this.toggleMenuBar.setSelected(prefs.getBoolean(MENUBAR_SETTING_PREF, true));
-        // Always on, and no longer offered as a choice - the stored preference is deliberately ignored
-        // rather than read.  Turning it off only ever meant losing work: what it saves is the state of
-        // the railway, and nobody sets a layout up in order to discard it on exit.
-        this.autosave.setSelected(true);
-        this.autosave.setVisible(false);
         this.activeLocInTitle.setSelected(prefs.getBoolean(ACTIVE_LOC_IN_TITLE, true));
         this.checkForUpdates.setSelected(prefs.getBoolean(CHECK_FOR_UPDATES, true));
         // Defaulted ON.  A layout with a setup on it opened with that setup not loaded: the
@@ -1230,10 +1224,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // looked like it did.
         //
         // Loading is not running - it builds the graph and draws it, and starting trains is still a
-        // separate press.  A layout with no setup is unaffected - which was not true until REG-B2: the
-        // JSON arm that a layout with no setup reaches now keeps 2.8.1's terms, a box somebody ticked
-        // and a graph to load (`resumesFromJsonAtStart`).  Anybody who does not want it keeps their
-        // unticked box.  It is announced in the changelog: "the one you were last using is loaded
+        // separate press.  A layout with no setup is unaffected: nothing is loaded for one at start.  The
+        // old JSON graph REG-B2 kept loading on 2.8.1's terms is gone with the rest of the JSON path
+        // (OB-254).  Anybody who does not want the setup loaded keeps their unticked box.  It is announced in the changelog: "the one you were last using is loaded
         // when TrainControl starts."
         //
         // **"NOTHING FOR THE DEFAULT TO PUT AT RISK" WAS TOO STRONG** (REL-B3), and it is worth
@@ -2076,29 +2069,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * Decodes stored autonomy JSON bytes.  Current files are raw JSON; files written by older versions
-     * (and their backups) are ObjectOutputStream-serialized Strings, detected by the 0xAC 0xED magic header.
-     * @param bytes the raw file contents
-     * @return the JSON string
-     * @throws IOException
-     * @throws ClassNotFoundException
-     */
-    private static String decodeAutonomyJson(byte[] bytes) throws IOException, ClassNotFoundException
-    {
-        // ObjectOutputStream files begin with the magic header 0xAC 0xED
-        if (bytes.length >= 2 && (bytes[0] & 0xFF) == 0xAC && (bytes[1] & 0xFF) == 0xED)
-        {
-            try (ObjectInputStream obj_in = new ObjectInputStream(new ByteArrayInputStream(bytes)))
-            {
-                Object obj = obj_in.readObject();
-                return (obj instanceof String) ? (String) obj : "";
-            }
-        }
-
-        return new String(bytes, StandardCharsets.UTF_8);
-    }
-
-    /**
      * Puts a yes/no question on screen from whatever thread is asking, and waits for the answer.
      *
      * The backup runs on its own thread - it writes files and may fetch a layout over the network -
@@ -2531,7 +2501,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // When the running layout came from the diagram, what was changed while it ran - placements,
         // homes, settings - is lifted back into the configuration it came from, so it is what loads next
-        // time.  autonomy.json is not written for a layout stored on this computer at all (OB-254, below).
+        // time.  autonomy.json is not written at all (OB-254, below).
         //
         // Not on backup: backups run this method from their own thread, and the session is an event
         // thread object - and "Backup data" silently rewriting the active configuration would surprise
@@ -2610,82 +2580,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         }
 
-        // NEVER when the running layout came from the diagram.  autonomy.json is the LEGACY
-        // configuration - hand-authored, and still the fallback this application auto-loads - while
-        // getAutoLayout() is now whatever the diagram derived.  Writing one into the other replaced a
-        // user's named points with generated coordinates on every clean exit, silently, and took the
-        // ground-truth baseline with it.  The companion store is the source of truth in that case and
-        // autonomy.json must be left exactly as it is.
-        //
-        // AND NEVER FOR A LAYOUT STORED ON THIS COMPUTER (OB-254; Adam, 2026-09-24: "We should only write to the new
-        // save format in the layout folder, IMO.").  Asking whether a configuration was LOADED left a gap: a local
-        // layout started with Load Autonomy unticked - as every legacy import leaves it (REG2-C3) - has none loaded,
-        // and the old file was written back on exit.  Such a layout keeps its autonomy in the layout folder; only a
-        // Central Station layout, which cannot hold a setup, still has the old window and its file.
-        if (!this.isLocalLayout()
-                && this.autosave.isSelected() && this.model.hasAutoLayout()
-                && this.model.getAutoLayout().isValid()
-                && !this.model.getAutoLayout().getPoints().isEmpty())
-        {
-            if (this.model.getAutoLayout().isRunning())
-            {
-                this.model.logf(
-                    "autolayout.infoAutonomyRunningSkippingAutosave"
-                );
-            }
-            else
-            {
-                try
-                {
-                    this.autonomyJSON.setText(this.getModel().getAutoLayout().toJSON());
+        // AUTONOMY.JSON IS NOT WRITTEN, on any layout (OB-254; Adam, 2026-09-24: "We should only write to the new save
+        // format in the layout folder" - and then "Remove it, require a local copy for autonomy.").  It was the old JSON
+        // autonomy's file, beside the application; writing a diagram-derived graph into it replaced a hand-made one, and
+        // on 2026-09-24 one was found overwritten that way.  A setup is saved in its layout folder, above.
 
-                    this.model.logf(
-                        "autolayout.infoAutoSavingState"
-                    );
-                }
-                catch (IllegalAccessException | IllegalArgumentException | NoSuchFieldException ex)
-                {
-                    this.model.logf(
-                        "autolayout.errorSavingJson",
-                        ex.getMessage()
-                    );
-                }
-            }
-        }
-        
-        // Same reason: on a layout stored on this computer, whatever is in the text area is either stale or derived,
-        // and either way it is not what belongs in autonomy.json (OB-254).
-        if (!this.isLocalLayout() && !this.autonomyJSON.getText().trim().equals(""))
-        {
-            // Backups go into a dedicated folder (falling back to the current directory if it can't be created)
-            String autonomyPath = backup
-                ? Util.getBackupPath(prefix + TrainControlUI.AUTONOMY_FILE_NAME)
-                : (prefix + TrainControlUI.AUTONOMY_FILE_NAME);
-
-            try
-            {
-                this.model.logf(
-                    "autolayout.infoSavingAutonomyJson",
-                    new File(autonomyPath).getAbsolutePath()
-                );
-
-                // Write as raw JSON so the file (and its backups) is human-readable and importable via Load JSON.
-                // (Older versions wrote this via ObjectOutputStream; the auto-load below still reads those.)
-                //
-                // Staged and moved into place: a truncated autonomy.json costs the operator their whole
-                // graph, and it is written on exit like the other two, so it shares their failure window.
-                Util.writeAtomically(new File(autonomyPath),
-                    out -> out.write(this.autonomyJSON.getText().getBytes(StandardCharsets.UTF_8)));
-            }
-            catch (IOException iOException)
-            {
-                this.model.logf(
-                    "autolayout.errorSavingAutonomyJson",
-                    iOException.getMessage()
-                );
-            }
-        }
-        
         saveLayoutTitles();
     }
     
@@ -3928,13 +3827,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private DiagramMonitorDriver diagramMonitorDriver;
 
     /**
-     * Puts the autonomy configuration panel where the JSON window used to be.
+     * Wires up the autonomy controls for the layout that is open: the Layout menu's own additions, and - for a layout
+     * stored on this computer - the Autonomy menu and the page menus that act on its setup.
      *
-     * setViewportView swaps the text area for the panel without touching the generated layout, and the
-     * buttons that only made sense for JSON are hidden rather than removed - GroupLayout gives their
-     * space back, and phase 2 deletes them properly.  If this layout cannot hold an autonomy setup (no
-     * local copy), nothing changes and the JSON window remains, so nothing is lost while the old path
-     * still exists.
+     * A layout with no local copy gets no autonomy at all (OB-254; Adam, 2026-09-24: *"Remove it, require a local
+     * copy for autonomy."*).  The old Load Autonomy Configuration tab, a JSON window that used to come back here for
+     * such a layout, has been deleted from the window; the Autonomy menu is greyed there and its tooltip says to use
+     * Layouts > Download.
      */
     public void mountAutonomyControls()
     {
@@ -3970,28 +3869,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             });
         }
 
-        if (session == null)
-        {
-            // No local copy, so no setup is possible - put the JSON window back rather than leaving an
-            // orphaned panel bound to a session whose pages are gone.  Phase 1 promises the old path
-            // still works here; it did not, after any switch away from a local layout.
-            this.jScrollPane2.setViewportView(this.autonomyJSON);
-
-            // put the tab back if a diagram-derived setup took it away earlier
-            if (locCommandPanels.indexOfComponent(this.autonomyPanel) < 0)
-            {
-                locCommandPanels.addTab(I18n.t("ui.main.autoConfig"), this.autonomyPanel);
-            }
-
-            this.validateButton.setVisible(true);
-            this.loadDefaultBlankGraph.setVisible(true);
-            this.loadJSONButton.setVisible(true);
-            this.exportJSON.setVisible(true);
-            this.jsonDocumentationButton.setVisible(true);
-            this.jLabel6.setVisible(true);
-
-            return;
-        }
+        // NO LOCAL COPY, NO AUTONOMY (OB-254).  The old JSON tab used to come back here, as a second autonomy system
+        // with a file of its own; it is gone from the window, and nothing replaces it for a Central Station layout.
+        if (session == null) return;
 
         if (autonomyViewerPanel == null)
         {
@@ -4006,23 +3886,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         addCombinePagesItem();
 
         mountEditPageMenu();
-
-        // And the tab it used to fill goes.  Removed here rather than left out of the form, because
-        // the form is generated - and it comes BACK below when there is no local layout, where the
-        // JSON window it also hosts is still the only way to set autonomy up.
-        int configTab = locCommandPanels.indexOfComponent(this.autonomyPanel);
-
-        if (configTab >= 0) locCommandPanels.remove(configTab);
-
-        // the JSON-era controls; everything they did has a home on the panel now
-        this.validateButton.setVisible(false);
-        this.loadDefaultBlankGraph.setVisible(false);
-        this.loadJSONButton.setVisible(false);
-        this.exportJSON.setVisible(false);
-        this.jsonDocumentationButton.setVisible(false);
-
-        // The panel names its own first step; a heading above it just says the same thing twice.
-        this.jLabel6.setVisible(false);
     }
 
     /**
@@ -4238,11 +4101,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private String activeDiagramConfiguration;
 
     /**
-     * The same confirm-and-stop gate the JSON reload applies, for loads that come from the diagram.
+     * The confirm-and-stop gate for loading a configuration from the diagram.
      *
-     * Duplicated from validateButtonActionPerformed rather than extracted from it: that handler holds
-     * hard-won ordering (see its comments) and is deleted whole in phase 2, so restructuring it now
-     * would risk the old path to tidy a temporary seam.
+     * It began as a copy of the old JSON tab's Load gate, which went with that tab (OB-254); this is now the only one.
      *
      * @return true to proceed, false if the user kept the running layout
      */
@@ -4320,8 +4181,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // had been running for a year.
         //
         // **The premise of that has since stopped being true.**  Nothing at start-up parses or
-        // activates `autonomy.json` any more: the only two `parseAuto` callers in `src` are the
-        // diagram path and the Validate button on the JSON tab itself.  So the tab is not standing
+        // activates `autonomy.json` any more: the only `parseAuto` caller in `src` is the diagram path
+        // (the other, the JSON tab's Validate button, went with that tab - OB-254).  So the tab is not standing
         // between that user and a running railway - there is nothing running - and leaving it open
         // offers a route into a model the rest of the application has moved off.
         //
@@ -6138,9 +5999,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * answer.  The same is true at a dispatch, where there is nobody to answer either: the operator
      * pressed Start, not "tell me about my train lengths".
      *
-     * **SEVEN CALLERS, AND THE COUNT HERE HAS BEEN WRONG TWICE (VD17-B1).**  Two are the parse doors
-     * this was written for - the Validate button on the autonomy JSON panel, and the editor's own
-     * apply in `AutonomyViewerPanel`.  The other five are the dispatch doors: Start, Execute
+     * **SIX CALLERS, AND THE COUNT HERE HAS BEEN WRONG TWICE (VD17-B1).**  One is the parse door this
+     * was written for, the editor's own apply in `AutonomyViewerPanel`; the other, the Validate button
+     * on the old autonomy JSON panel, went with that panel (OB-254).  The other five are the dispatch
+     * doors: Start, Execute
      * Timetable, Return Home, and the two hand dispatches in `AutoLocomotiveStatus` and
      * `LayoutRightclickAutonomyMenu`.  A train length is written on the LIVE layout, long after a
      * parse, so a door that dispatches without asking is a door that runs a zero-length train over
@@ -9428,21 +9290,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         adder.setLocationRelativeTo(this);
         selector.setLocationRelativeTo(this);
         
-        // Load autonomy data.  Current versions store autonomy.json as raw JSON; older versions stored it as
-        // an ObjectOutputStream-serialized String, so detect and fall back to that for files written by them.
-        try
-        {
-            byte[] bytes = Files.readAllBytes(Paths.get(TrainControlUI.AUTONOMY_FILE_NAME));
-            this.autonomyJSON.setText(decodeAutonomyJson(bytes));
-        }
-        catch (IOException | ClassNotFoundException e)
-        {
-            this.model.logf(
-                "autolayout.errorReadAutonomyState",
-                TrainControlUI.AUTONOMY_FILE_NAME
-            );
-        }
-                        
         // Add list of routes to tab
         refreshRouteList();
                 
@@ -9737,18 +9584,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             javax.swing.SwingUtilities.invokeLater(() ->
             {
-                // The active configuration resumes from the diagram when there is one; the JSON path
-                // remains the fallback for layouts that have never been set up the new way.
+                // The active configuration resumes from the diagram when there is one.  Nothing else is loaded at
+                // start: the old JSON graph, once the fallback for a layout never set up the new way, went with its
+                // tab (OB-254).
                 org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
                 if (session != null && this.getAutonomyViewerPanel() != null
                     && session.getStore().getActiveConfiguration() != null)
                 {
                     this.getAutonomyViewerPanel().loadActive();
-                }
-                else if (resumesFromJsonAtStart())
-                {
-                    this.validateButtonActionPerformed(new CustomActionEvent(this, ActionEvent.ACTION_PERFORMED, "", ""));
                 }
 
                 refreshAutonomyTabState();
@@ -9762,34 +9606,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Show window - this is now called externally once this call returns        
     }
     
-    /**
-     * Whether the start-up load falls back to the old JSON graph, for a layout with no configuration to resume
-     * (REG-B2).
-     *
-     * Auto-load became the default in this release, so that a configuration somebody set up is there when
-     * TrainControl starts.  The same box sends a layout with no configuration down the JSON path - a Central Station
-     * layout always, a local one until it is set up or imported - and at v2.8.1 the box was unticked unless somebody
-     * ticked it.  So an upgrading user who never had was sent there on every start: with no `autonomy.json`, a modal
-     * Blank / Sample chooser during start-up and a validation error after a cancel, again on every start; with a
-     * 2.8.1 file, its route activations applied before anybody asked, which switches off every s88 route the file
-     * does not list.  The legacy import refuses those two keys - `activateRoutes` and `activateRouteIDs` - for
-     * exactly that reason.
-     *
-     * So the JSON arm keeps 2.8.1's terms: somebody ticked the box, and there is a graph to load.  The configuration
-     * arm keeps the new default.  The box still SHOWS ticked for somebody who never touched it, which is true of the
-     * configuration arm and not of this one; ticking it (or unticking and ticking) is what stores the choice.
-     *
-     * @return whether to load the JSON graph now
-     */
-    public boolean resumesFromJsonAtStart()
-    {
-        // CHOSEN, NOT DEFAULTED: only the menu item writes this key, so an absent one is 2.8.1's unticked box.
-        if (prefs.get(AUTO_LOAD_AUTONOMY, null) == null) return false;
-
-        // NOTHING TO LOAD is not a reason to ask, during start-up, what to create.
-        return !this.autonomyJSON.getText().trim().isEmpty();
-    }
-
     /**
      * Renders the UI once everything is initialized - to be called externally
      */
@@ -13477,17 +13293,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         editLayoutButton = new javax.swing.JButton();
         autoPanel = new javax.swing.JPanel();
         locCommandPanels = new javax.swing.JTabbedPane();
-        autonomyPanel = new javax.swing.JPanel();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        autonomyJSON = new javax.swing.JTextArea();
-        jLabel6 = new javax.swing.JLabel();
-        exportJSON = new javax.swing.JButton();
-        loadJSONButton = new javax.swing.JButton();
-        autosave = new javax.swing.JCheckBox();
-        jsonDocumentationButton = new javax.swing.JButton();
-        loadDefaultBlankGraph = new javax.swing.JButton();
-        validateButton = new javax.swing.JButton();
-        jSeparator4 = new javax.swing.JSeparator();
         locCommandTab = new javax.swing.JPanel();
         autoLocScroll = new javax.swing.JScrollPane();
         autoLocPanel = new javax.swing.JPanel();
@@ -15565,146 +15370,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 locCommandPanelsMouseClicked(evt);
             }
         });
-
-        autonomyPanel.setBackground(new java.awt.Color(255, 255, 255));
-
-        autonomyJSON.setColumns(20);
-        autonomyJSON.setFont(new java.awt.Font("Monospaced", 0, 16)); // NOI18N
-        autonomyJSON.setRows(5);
-        autonomyJSON.setToolTipText("");
-        jScrollPane2.setViewportView(autonomyJSON);
-
-        jLabel6.setForeground(new java.awt.Color(0, 0, 115));
-
-        exportJSON.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        exportJSON.setText(bundle.getString("ui.main.exportCurrentGraph")); // NOI18N
-        exportJSON.setEnabled(false);
-        exportJSON.setFocusable(false);
-        exportJSON.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                exportJSONActionPerformed(evt);
-            }
-        });
-
-        loadJSONButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        loadJSONButton.setText(bundle.getString("ui.main.importAutoConfigFromFile")); // NOI18N
-        loadJSONButton.setFocusable(false);
-        loadJSONButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                loadJSONButtonActionPerformed(evt);
-            }
-        });
-
-        autosave.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        autosave.setSelected(true);
-        autosave.setText(bundle.getString("ui.main.autoSaveOnExit")); // NOI18N
-        autosave.setToolTipText(bundle.getString("ui.main.tooltip.autoSaveOnExit")); // NOI18N
-        autosave.setFocusable(false);
-        autosave.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-        autosave.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        autosave.setMaximumSize(new java.awt.Dimension(139, 20));
-        autosave.setMinimumSize(new java.awt.Dimension(139, 20));
-        autosave.setPreferredSize(new java.awt.Dimension(139, 20));
-        autosave.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                autosaveActionPerformed(evt);
-            }
-        });
-
-        jsonDocumentationButton.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jsonDocumentationButton.setForeground(new java.awt.Color(0, 0, 155));
-        jsonDocumentationButton.setText(bundle.getString("ui.main.documentation")); // NOI18N
-        jsonDocumentationButton.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
-        jsonDocumentationButton.setBorderPainted(false);
-        jsonDocumentationButton.setContentAreaFilled(false);
-        jsonDocumentationButton.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        jsonDocumentationButton.setFocusable(false);
-        jsonDocumentationButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jsonDocumentationButtonActionPerformed(evt);
-            }
-        });
-
-        loadDefaultBlankGraph.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        loadDefaultBlankGraph.setForeground(new java.awt.Color(0, 0, 155));
-        loadDefaultBlankGraph.setText(bundle.getString("ui.main.initNewAutoConfig")); // NOI18N
-        loadDefaultBlankGraph.setToolTipText(bundle.getString("ui.main.tooltip.initNewAutoConfig")); // NOI18N
-        loadDefaultBlankGraph.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 1, 1, 1));
-        loadDefaultBlankGraph.setContentAreaFilled(false);
-        loadDefaultBlankGraph.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        loadDefaultBlankGraph.setFocusable(false);
-        loadDefaultBlankGraph.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                loadDefaultBlankGraphActionPerformed(evt);
-            }
-        });
-
-        validateButton.setBackground(new java.awt.Color(204, 255, 204));
-        validateButton.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        validateButton.setText(bundle.getString("ui.main.validateConfigOpenGraphUI")); // NOI18N
-        validateButton.setToolTipText(bundle.getString("ui.main.tooltip.validateConfigOpenGraphUI")); // NOI18N
-        validateButton.setFocusable(false);
-        validateButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                validateButtonActionPerformed(evt);
-            }
-        });
-
-        jSeparator4.setOrientation(javax.swing.SwingConstants.VERTICAL);
-
-        javax.swing.GroupLayout autonomyPanelLayout = new javax.swing.GroupLayout(autonomyPanel);
-        autonomyPanel.setLayout(autonomyPanelLayout);
-        autonomyPanelLayout.setHorizontalGroup(
-            autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(autonomyPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, autonomyPanelLayout.createSequentialGroup()
-                        .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(autonomyPanelLayout.createSequentialGroup()
-                                .addComponent(validateButton)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(loadDefaultBlankGraph)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jSeparator4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jsonDocumentationButton))
-                            .addComponent(jScrollPane2))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jLabel6))
-                    .addGroup(autonomyPanelLayout.createSequentialGroup()
-                        .addComponent(loadJSONButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(exportJSON, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 179, Short.MAX_VALUE)
-                        .addComponent(autosave, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addContainerGap())))
-        );
-        autonomyPanelLayout.setVerticalGroup(
-            autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(autonomyPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jsonDocumentationButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(loadDefaultBlankGraph, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(validateButton)
-                    .addComponent(jSeparator4))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 491, Short.MAX_VALUE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addGroup(autonomyPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(exportJSON, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(autosave, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addComponent(loadJSONButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap())
-            .addGroup(autonomyPanelLayout.createSequentialGroup()
-                .addGap(34, 34, 34)
-                .addComponent(jLabel6)
-                .addContainerGap(519, Short.MAX_VALUE))
-        );
-
-        locCommandPanels.addTab(bundle.getString("ui.main.autoConfig"), autonomyPanel); // NOI18N
 
         locCommandTab.setBackground(new java.awt.Color(255, 255, 255));
         locCommandTab.setMaximumSize(new java.awt.Dimension(718, 5000));
@@ -19722,8 +19387,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // exit with trains at speed, neither of which has anything to do with saving the setup.
         //
         // It was NOT reachable, and the review that found it said trains could keep running - they
-        // could not. Autosave is forced on and its checkbox hidden at startup (see setSelected(true)
-        // and setVisible(false) in the constructor), so the condition was always true. Adam: "layout
+        // could not. Autosave was forced on and its checkbox hidden at startup, so the condition was
+        // always true; the checkbox has since gone with the old autonomy tab (OB-254). Adam: "layout
         // autosave should be default and forced these days."
         //
         // Moved out anyway, because a guard that stops a railway must not be one hidden checkbox away
@@ -22597,8 +22262,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 // The LEGACY autonomy file (IAR-B1).
                 //
-                // For an operator still on the hand-authored graph this is their entire autonomy
-                // setup, and it was in neither half of the backup: not in this archive, and no longer
+                // For an operator coming from the hand-authored graph this is what their setup is
+                // imported from - nothing writes it any more (OB-254) - and it was in neither half of
+                // the backup: not in this archive, and no longer
                 // copied into the backup folder either, because that copy only happens on a
                 // timestamped save and this menu item stopped making one. "Backup TrainControl Data"
                 // reported success with none of it in the file.
@@ -23011,360 +22677,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.stats.refresh();
         }
     }//GEN-LAST:event_KeyboardTabStateChanged
-
-    private void locCommandPanelsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locCommandPanelsMouseClicked
-        this.KeyboardTab.requestFocus();
-    }//GEN-LAST:event_locCommandPanelsMouseClicked
-
-    private void turnOnFunctionsOnDepartureMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_turnOnFunctionsOnDepartureMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setTurnOnFunctionsOnDeparture(this.turnOnFunctionsOnDeparture.isSelected());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_turnOnFunctionsOnDepartureMouseReleased
-
-    private void simulateMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_simulateMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setSimulate(this.simulate.isSelected());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_simulateMouseReleased
-
-    private void turnOffFunctionsOnArrivalMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_turnOffFunctionsOnArrivalMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setTurnOffFunctionsOnArrival(this.turnOffFunctionsOnArrival.isSelected());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_turnOffFunctionsOnArrivalMouseReleased
-
-    private void atomicRoutesMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_atomicRoutesMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                // NOT WITHOUT LENGTHS (Adam, 2026-09-21).  Asked only when it is being switched OFF:
-                // going back to atomic is always safe, and a refusal there would trap somebody.
-                if (!this.atomicRoutes.isSelected())
-                {
-                    String why = whyNonAtomicRoutesAreRefused();
-
-                    if (why != null)
-                    {
-                        JOptionPane.showMessageDialog(this, why);
-
-                        // The tick goes back, the same way every other refusal on this panel puts it
-                        // back - the setting itself is never touched.
-                        loadAutoLayoutSettings();
-
-                        return;
-                    }
-                }
-
-                this.model.getAutoLayout().setAtomicRoutes(this.atomicRoutes.isSelected());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_atomicRoutesMouseReleased
-
-    private void preArrivalSpeedReductionMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_preArrivalSpeedReductionMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setPreArrivalSpeedReduction(Double.valueOf(this.preArrivalSpeedReduction.getValue()) / 100);
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_preArrivalSpeedReductionMouseReleased
-
-    private void defaultLocSpeedMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_defaultLocSpeedMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setDefaultLocSpeed(this.defaultLocSpeed.getValue());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_defaultLocSpeedMouseReleased
-
-    private void maxDelayMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxDelayMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setMaxDelay(this.maxDelay.getValue());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_maxDelayMouseReleased
-
-    private void maxLocInactiveSecondsMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxLocInactiveSecondsMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setMaxLocInactiveSeconds(this.maxLocInactiveSeconds.getValue() * 60);
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_maxLocInactiveSecondsMouseReleased
-
-    private void minDelayMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_minDelayMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setMinDelay(this.minDelay.getValue());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_minDelayMouseReleased
-
-    private void timetableCaptureActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_timetableCaptureActionPerformed
-
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            if (this.isAutonomyBusy())
-            {
-                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-            }
-            else
-            {
-                this.model.getAutoLayout().setTimetableCapture(!this.model.getAutoLayout().isTimetableCapture());
-            }
-
-            this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
-        });
-    }//GEN-LAST:event_timetableCaptureActionPerformed
-
-    private void executeTimetableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_executeTimetableActionPerformed
-
-        // Not under an open editor, for the same reason Start Autonomy is not (MT-135).
-        //
-        // Adam: "I was also able to start autonomy while the editor was open. This should not be
-        // possible." That was fixed at the Start button and at nothing else - and this button and
-        // Return Home start trains just as surely, over a diagram the editor is still changing.
-        // isAutonomyBusy, which both of them do ask, knows nothing about an editor being open.
-        //
-        // Refused BEFORE the button is greyed, so a refusal cannot leave it dead.
-        if (refuseWhileEditorOpen()) return;
-
-        this.executeTimetable.setEnabled(false);
-
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            if (!this.getModel().getPowerState())
-            {
-                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart"));
-                this.executeTimetable.setEnabled(true);
-                return;
-            } 
-
-            if (this.isAutonomyBusy())
-            {
-                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-                this.executeTimetable.setEnabled(true);
-                return;
-            }
-
-            if (this.model.getAutoLayout().getTimetable().isEmpty())
-            {
-                JOptionPane.showMessageDialog(
-                    this,
-                    I18n.t("timetable.ui.errorNoEntriesCaptureCommandsFirst")
-                );
-                this.executeTimetable.setEnabled(true);
-                return;
-            }
-
-            // AND NOT NON-ATOMIC OVER A RAILWAY THAT COULD RELEASE TRACK UNDER A TRAIN (GS-B1).  This
-            // door dispatches without going near Start, and a train length cleared on the live layout
-            // since the checkbox was unticked is not something anything here would otherwise notice.
-            //
-            // After every refusal above, not before them (GUI-A1): a press refused as "wait for active
-            // locomotives to stop" switched the running railway to atomic on its way to being refused, and
-            // a refused press should change nothing.
-            keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
-
-            // Conditional route warning
-            for (String routeName : this.model.getRouteList())
-            {
-                Route r = this.model.getRoute(routeName);
-
-                // A NAME FROM A LIST IS NOT A ROUTE (MKR-C4's shape, swept here by FXV-B4).  The list
-                // is a copy of the names; the lookup is live, and both `editRoute` and the station's
-                // re-read of a route are a delete followed by a re-add.
-                if (r == null) continue;
-
-                if (r.isEnabled())
-                {
-                    this.model.logf(
-                        "autolayout.warningActiveConditionalRouteUnpredictable",
-                        r.getName()
-                    );
-
-                    if (!conditionalRouteWarningShown)
-                    {
-                        int dialogResult = JOptionPane.showOptionDialog(
-                            this,
-                            I18n.t("route.ui.confirmConditionalRoutesActiveProceed"),
-                            I18n.t("ui.dialogConfirm"),
-                            JOptionPane.YES_NO_OPTION,
-                            JOptionPane.PLAIN_MESSAGE,
-                            null,
-                            YES_NO_OPTS,
-                            YES_NO_OPTS[0]
-                        );
-                        
-                        // Anything but Yes - declining is what Escape means.
-                        if (dialogResult != JOptionPane.YES_OPTION)
-                        {
-                            // The other four early returns in this handler re-enable; this one did not,
-                            // so declining the warning - the prudent answer, and the one the warning
-                            // invites - killed the button for the session with no stated way back.
-                            this.executeTimetable.setEnabled(true);
-
-                            return;
-                        }
-                        else
-                        {
-                            conditionalRouteWarningShown = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // Validate starting locations
-            List<Locomotive> seen = new ArrayList<>();
-
-            // Clamped: the index is -1 when every entry has finished, which would start this loop
-            // one before the list
-            for (int i = Math.max(0, this.model.getAutoLayout().getUnfinishedTimetablePathIndex()); i < this.model.getAutoLayout().getTimetable().size(); i++)
-            {
-                TimetablePath ttp = this.model.getAutoLayout().getTimetable().get(i);
-
-                if (!seen.contains(ttp.getLoc()))
-                {
-                    Point locLocation = this.model.getAutoLayout().getLocomotiveLocation(ttp.getLoc());
-                    if (locLocation == null || !locLocation.equals(ttp.getStart()))
-                    {
-                        JOptionPane.showMessageDialog(
-                            this,
-                            I18n.f(
-                                "timetable.ui.infoLocomotiveMustBeMovedToStart",
-                                ttp.getLoc().getName(),
-                                ttp.getStart()
-                            )
-                        );
-                        this.executeTimetable.setEnabled(true);
-                        return;
-                    }
-
-                    seen.add(ttp.getLoc());
-                }
-            }
-
-            // Capture is left exactly as the operator set it, as the staging button next door already
-            // does.  Forcing it off protected against a run appending itself to the list being walked;
-            // that guard now lives in addTimetableEntry, covers both entrances, and does not cost the
-            // operator their toggle every time they execute a timetable.
-
-            new Thread(() ->
-            {
-                javax.swing.SwingUtilities.invokeLater(() ->
-                {
-                    this.startAutonomy.setEnabled(false);
-
-                    // UXR-C4: the button's tooltip has to say trains are moving for the length of this
-                    // run, not keep whatever it said before the timetable started - refreshReturnHomeButton
-                    // below (on completion) puts the real answer back once it is safe to ask again.
-                    this.disableReturnHome(describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null));
-                });
-
-                // The ANSWER, not just the call.  It was discarded, so a timetable that gave up part
-                // way through looked exactly like one that finished: the trains stopped, the buttons
-                // came back, and the only account of it was a line in a scrolling log.  What the
-                // operator is looking at is trains that stopped halfway with no explanation.
-                //
-                // A graceful stop is not a failure - the operator asked for it and watched it happen -
-                // so it is not reported.
-                final boolean completed = this.model.getAutoLayout().executeTimetable();
-                final int stoppedAt = this.model.getAutoLayout().getUnfinishedTimetablePathIndex();
-
-                if (!completed && !this.gracefulStopRequested)
-                {
-                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this,
-                        I18n.f("autolayout.ui.errorTimetableStopped", stoppedAt + 1)));
-                }
-
-                // Marshalled, like the staging flow next door does.  These lines are new in this
-                // feature; the surrounding handler predates it and touches Swing from this worker
-                // thread, but there is no reason to add more of it.
-                javax.swing.SwingUtilities.invokeLater(() ->
-                {
-                    this.executeTimetable.setEnabled(true);
-                    this.startAutonomy.setEnabled(true);
-                    this.refreshReturnHomeButton();
-                    this.exportJSON.setEnabled(true);
-
-                    // Same gap as the staging run had: nothing turned this off once the trains stopped
-                    this.gracefulStop.setEnabled(false);
-                });
-            }).start();
-
-            this.gracefulStop.setEnabled(true);
-        });
-    }//GEN-LAST:event_executeTimetableActionPerformed
 
     private void NextKeyboardActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_NextKeyboardActionPerformed
         this.switchKeyboard(this.keyboardNumber + 1);
@@ -24295,246 +23607,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 && this.model.getAutoLayout().isActivateRoutes());
         }
     }
-
-    private void validateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_validateButtonActionPerformed
-
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            // Retiring a Layout does not stop anything: parseAuto calls stopLocomotives(), which only
-            // clears the dispatch flag.  Trains already under way would keep running with no graph
-            // tracking them, so everything moving is stopped here, before the swap.  That also makes it
-            // irrelevant whether each running path's version fence gets a chance to fire - the fence
-            // stops the locomotive at its next milestone, but only if it is reached and only if the
-            // capture happened before the reload.
-            //
-            // This warns rather than refuses deliberately.  isRunning() is also true when an
-            // activeLocomotives entry has been stranded - executePath has no handler between adding one
-            // and removing it, and nothing else clears the map - so refusing outright would leave a
-            // stuck layout unrecoverable without restarting TrainControl.  Reloading builds a fresh
-            // Layout and is the only in-session way out of that state.
-            // isAutonomyBusy, not isRunning: a staging run spends its planning phase with nothing
-            // dispatched, so isRunning read false and this block was skipped entirely.  The Layout was
-            // then swapped underneath a worker that went on to load and execute its plan against the
-            // retired one - commanding accessories for a move no train could make, stranding an entry
-            // in activeLocomotives, and wedging the worker so its finally never released
-            // stagingFlowActive, which left every surface reporting "trains are moving" for the session.
-            //
-            // Still a confirmation rather than a refusal, for the reason above: reloading is the only
-            // in-session way out of a stranded activeLocomotives entry, and refusing here would put
-            // that recovery out of reach.
-            if (this.model.hasAutoLayout() && this.isAutonomyBusy())
-            {
-                int stillRunningResult = JOptionPane.showOptionDialog(
-                    this,
-                    I18n.t("autolayout.ui.confirmReloadJsonStopsRunningLocomotives"),
-                    I18n.t("loc.ui.dialogConfirmReset"),
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.WARNING_MESSAGE,
-                    null,
-                    YES_NO_OPTS,
-                    YES_NO_OPTS[1] // default to leaving the running layout alone
-                );
-
-                if (stillRunningResult != JOptionPane.YES_OPTION)
-                {
-                    return;
-                }
-
-                // Set here rather than on entry: declining the dialog is not asking for a stop, and
-                // arming it there left a staging run in progress able to end short without saying so.
-                this.gracefulStopRequested = true;
-
-                // Order matters: clear the dispatch flag first, so no locomotive thread can pick up a
-                // new path in between, then stop everything that is currently moving.
-                this.model.getAutoLayout().stopLocomotives();
-
-                for (Locomotive active : this.model.getAutoLayout().getActiveLocomotives().keySet())
-                {
-                    active.setSpeed(0);
-                }
-            }
-
-            resetLayoutStationLabels();
-            
-            // If valid, confirm before we overwrite
-            if (this.model.hasAutoLayout() && this.model.getAutoLayout().isValid()
-                && !this.model.getAutoLayout().getPoints().isEmpty())
-            {
-                try
-                {
-                    if (!this.model.getAutoLayout().toJSON().equals(this.autonomyJSON.getText()))
-                    {
-                        int dialogResult = JOptionPane.showOptionDialog(
-                            this,
-                            I18n.t("autolayout.ui.confirmReloadJsonResetsUnsavedChanges"),
-                            I18n.t("loc.ui.dialogConfirmReset"),
-                            JOptionPane.YES_NO_OPTION,
-                            JOptionPane.PLAIN_MESSAGE,
-                            null,
-                            YES_NO_OPTS,
-                            // VAL-B5: default to No - Yes here throws away unsaved autonomy JSON edits.
-                            YES_NO_OPTS[1]
-                        );
-                        
-                        // Anything but Yes: Escape was discarding the unsaved autonomy JSON.
-                        if (dialogResult != JOptionPane.YES_OPTION)
-                        {
-                            return;
-                        }
-                        else
-                        {
-                            // Hide the window
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    this.model.log(e);
-                }
-            }
-
-            // Offer to load a blank graph if there is no JSON
-            if (this.autonomyJSON.getText().trim().equals(""))
-            {
-                this.loadDefaultBlankGraphActionPerformed(null);
-            }
-
-            this.model.parseAuto(this.autonomyJSON.getText());
-
-            // NOT NON-ATOMIC OVER UNMEASURED TRACK, whatever the file says (Adam, 2026-09-21).
-            keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
-
-            // The other way a Layout comes into being, and callbacks live on the object.
-            attachAutonomyRefresh(this.model.hasAutoLayout() ? this.model.getAutoLayout() : null);
-
-            if (!this.model.hasAutoLayout() || !this.model.getAutoLayout().isValid())
-            {
-                locCommandPanels.remove(this.locCommandTab);
-                locCommandPanels.remove(this.timetablePanel);
-                locCommandPanels.remove(this.autoSettingsPanel);
-
-                this.startAutonomy.setEnabled(false);
-
-                // UXR-C4: say why, the same as the other "no valid autonomy setup" site above -
-                // otherwise a JSON validation failure leaves whatever Return Home's tooltip said before
-                // this attempt, which will usually be wrong once the setup that produced it is gone.
-                this.disableReturnHome(I18n.t("autosetup.ui.whyNoLayout"));
-
-                JOptionPane.showMessageDialog(
-                    this,
-                    I18n.f(
-                        "autolayout.ui.errorJsonValidationFailedCheckLog",
-                        Layout.getLastError()
-                    )
-                );
-
-                this.KeyboardTab.requestFocus();
-
-                this.exportJSON.setEnabled(false);
-            }
-            else
-            {
-                // Need to repaint route UI if we are making changes
-                this.refreshRouteList();
-                                
-                locCommandPanels.insertTab(
-                    I18n.t("autolayout.ui.tabLocomotiveCommands"),
-                    null,                  // optional icon
-                    this.locCommandTab,
-                    null,                  // optional tooltip
-                    0                      // index position
-                );
-
-                locCommandPanels.insertTab(
-                    I18n.t("autolayout.ui.tabTimetable"),
-                    null,
-                    this.timetablePanel,
-                    null,
-                    1
-                );
-
-                locCommandPanels.insertTab(
-                    I18n.t("autolayout.ui.tabAutonomySettings"),
-                    null,
-                    this.autoSettingsPanel,
-                    null,
-                    2
-                );
-
-                loadAutoLayoutSettings();
-
-                this.startAutonomy.setEnabled(true);
-                this.refreshReturnHomeButton();
-                this.executeTimetable.setEnabled(true);
-
-                // Advance to locomotive tab
-                this.locCommandPanels.setSelectedIndex(
-                    0 //1
-                    //(this.locCommandPanels.getSelectedIndex() + 1)
-                    //% this.locCommandPanels.getComponentCount()
-                );
-
-                this.KeyboardTab.requestFocus();
-
-                this.exportJSON.setEnabled(true);
-                this.gracefulStop.setEnabled(false);
-                
-                if (evt != null && evt instanceof CustomActionEvent)
-                {
-                    this.KeyboardTab.setSelectedIndex(0);
-                    this.requestFocus();
-                    this.toFront();
-                }
-            }
-
-            // Stop all locomotives
-            AltEmergencyStopActionPerformed(null);
-
-        });
-    }//GEN-LAST:event_validateButtonActionPerformed
-
-    private void gracefulStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gracefulStopActionPerformed
-
-        this.gracefulStopRequested = true;
-
-        this.gracefulStop.setEnabled(false);
-        this.refreshReturnHomeButton();
-
-        new Thread(() ->
-            {
-                this.getModel().getAutoLayout().stopLocomotives();
-
-                // Ensure list is updated after stopping a timetable run
-                this.repaintAutoLocListLite();
-
-                // UXR-B7, second surface. stopLocomotives() clears the running flag and returns at
-                // once; the trains it was driving keep going until each reaches its next station, and
-                // isRunning() - therefore isAutonomyBusy() - stays true for that whole coast-down
-                // window. Enabling Start here, synchronously, is what AutonomyOverlayToggle was
-                // faithfully mirroring when it flipped the diagram strip from "Graceful Stop" to
-                // "Start Autonomous Operation" while trains were still moving: the strip picks its
-                // button from these two, and LayoutRightclickAutonomyMenu now asks isAutonomyBusy()
-                // for the same choice, so the buttons were the one surface still saying something
-                // else. Waited out here rather than left as a poll somewhere else, because this
-                // thread already exists for exactly this transition and nothing else owns it - an
-                // unbounded wait, like every other wait in this file for a railway event rather than
-                // an acknowledgement.
-                while (this.model.hasAutoLayout() && this.model.getAutoLayout().isRunning())
-                {
-                    try
-                    {
-                        Thread.sleep(REPAINT_ROUTE_INTERVAL);
-                    }
-                    catch (InterruptedException ex)
-                    {
-                        Thread.currentThread().interrupt();
-                        return;
-                    }
-                }
-
-                javax.swing.SwingUtilities.invokeLater(() -> this.startAutonomy.setEnabled(true));
-            }).start();
-    }//GEN-LAST:event_gracefulStopActionPerformed
 
     /**
      * Called externally
@@ -25640,369 +24712,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     
-    private void startAutonomyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startAutonomyActionPerformed
-
-        // Nothing while an editor holds the diagram, and nothing while the setup has errors.
-        //
-        // Both are refused BEFORE the button is greyed below: greying first and returning would leave
-        // it dead until something else re-enabled it, which is a worse failure than the one being
-        // prevented - the user would be locked out of starting autonomy by having been told not to.
-        //
-        // Adam, MT-135: "I was also able to start autonomy while the editor was open.  This should not
-        // be possible."  The editor holds the pages the session is built from, so starting underneath
-        // it runs trains over a diagram that is still being changed.
-        if (refuseWhileEditorOpen()) return;
-
-        if (refuseAutonomyStartWhileBroken()) return;
-
-        // AND NOT NON-ATOMIC OVER A RAILWAY THAT COULD RELEASE TRACK UNDER A TRAIN (VD16-B2).
-        //
-        // THE FOURTH DOOR, and the one the other three cannot cover.  An edge's length is only ever
-        // written by `parseAuto`, and both file doors re-ask this afterwards - but a TRAIN's length is
-        // written on the live layout by `applyTrainLength` (whose zero means "not set") and by
-        // `GraphLocAssign.commitChanges`, neither of which rebuilds anything.  So the checkbox can be
-        // unticked honestly over a measured railway with every train measured, and a length cleared a
-        // minute later puts `behind >= trainLength` back to `0 >= 0`: every edge handed back as that
-        // train's head passes it, with the train still lying over it.
-        //
-        // ONE OF FIVE DISPATCH DOORS, AND THIS COMMENT CLAIMED IT WAS THE ONLY ONE (GS-B1, VD17-C1).
-        // "Start
-        // is the choke point - no edge is released until autonomy runs" was wrong about where the
-        // release lives: it is in `executePathInternal`, and Execute Timetable, Return Home and the
-        // two hand dispatches all reach it without passing here.  Every one of them asks now, and
-        // `ui.testNonAtomicRoutesNeedTheirLengths.testEveryDispatchDoorAsksTheGate` is the list.
-        //
-        // The remedy is the file door's rather than the checkbox's, because it is the file door's
-        // situation: the setting was chosen deliberately and the railway has changed under it since,
-        // and there is nothing for the operator to answer.
-        keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
-
-        // Greyed here, on the EDT, before anything is dispatched.  The button used to stay live until
-        // a worker thread several checks later got round to disabling it, and there are three ways to
-        // press it - this button, the diagram strip's mirror, and the station right-click item - so
-        // two quick presses each spawned a worker, both passed the busy check, and both called
-        // runLocomotives, which has no reentrancy guard of its own.  A double dispatch of every train
-        // on the layout is not something to leave to how fast somebody clicks.
-        this.startAutonomy.setEnabled(false);
-
-        final java.util.concurrent.atomic.AtomicBoolean started =
-            new java.util.concurrent.atomic.AtomicBoolean(false);
-
-        new Thread(() ->
-            {
-            try
-            {
-                if (!this.model.getPowerState())
-                {
-                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart")));
-                    return;
-                }
-
-                for (String routeName : this.model.getRouteList())
-                {
-                    Route r = this.model.getRoute(routeName);
-
-                    // A NAME FROM A LIST IS NOT A ROUTE (MKR-C4's shape, swept here by FXV-B4).  This
-                    // runs on a worker with nothing to catch it, so a route deleted between the listing
-                    // and the lookup meant a Start press that did nothing and logged nothing.
-                    if (r == null) continue;
-
-                    if (r.isEnabled())
-                    {
-                        this.model.logf(
-                            "autolayout.warningActiveConditionalRouteUnpredictable",
-                            r.getName()
-                        );
-
-                        if (!conditionalRouteWarningShown)
-                        {
-                            // On the EDT, like every other dialog in this method.  This one was
-                            // raised straight from the worker thread - building and showing a modal
-                            // dialog off the EDT, which is the kind of violation that mispaints on a
-                            // good day and deadlocks on a bad one.
-                            int dialogResult = confirmOnEventThread(
-                                I18n.t("route.ui.confirmConditionalRoutesActiveProceed"));
-                            
-                            // Anything that is not the first option.  With a custom option array the
-                            // dialog returns an INDEX, and closing it with Escape returns -1 - which
-                            // is neither yes nor no, and was being read as "carry on and start the
-                            // trains".  Dismissing a warning is not agreeing with it.
-                            if (dialogResult != JOptionPane.YES_OPTION)
-                            {
-                                return;
-                            }
-                            else
-                            {
-                                conditionalRouteWarningShown = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (this.model.getAutoLayout().getLocomotivesToRun().isEmpty())
-                {
-                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                        this,
-                        I18n.t("autolayout.ui.infoPleaseAddLocomotivesToGraph")
-                    ));
-                    return;
-                }
-
-                if (this.model.getAutoLayout().isValid() && !this.isAutonomyBusy())
-                {
-                    started.set(true);
-
-                    new Thread( () ->
-                    {
-                        this.model.getAutoLayout().runLocomotives();
-                    }).start();
-
-                    // Swing, so on the EDT.  These two were being set from the worker thread
-                    // directly, which the run-button mirror beside them already defends itself
-                    // against by re-marshalling - the buttons themselves did not.
-                    javax.swing.SwingUtilities.invokeLater(() ->
-                    {
-                        this.startAutonomy.setEnabled(false);
-                        this.gracefulStop.setEnabled(true);
-                    });
-
-                    // Not refreshReturnHomeButton(): runLocomotives was just dispatched to its own
-                    // thread, so isRunning() may still be false here and a refresh would re-enable the
-                    // button it is meant to grey.  This path knows the answer without asking.
-                    this.disableReturnHome(
-                        describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null));
-                }
-                else if (this.model.getAutoLayout().isRunning())
-                {
-                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                        this,
-                        I18n.t("autolayout.ui.infoWaitForActiveLocomotivesToStop")
-                    ));
-                }
-                else if (!this.model.getAutoLayout().isValid())
-                {
-                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                        this,
-                        I18n.t("autolayout.ui.errorLayoutStateInvalidRevalidateJson")
-                    ));
-                }
-                else
-                {
-                    // Busy but not running - the staging planning window.  The guard above moved to
-                    // isAutonomyBusy without this arm following it, so a press during planning was
-                    // correctly refused and then said nothing at all.
-                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                        this,
-                        describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null)
-                    ));
-                }
-            }
-            finally
-            {
-                // Given back on every path that did not start anything - a refused dialog, no power,
-                // no locomotives, an invalid layout.  Not on the path that did: there the button
-                // stays greyed, and the run is what gives it back.
-                if (!started.get())
-                {
-                    javax.swing.SwingUtilities.invokeLater(
-                        () -> this.startAutonomy.setEnabled(true));
-                }
-            }
-            }).start();
-    }//GEN-LAST:event_startAutonomyActionPerformed
-
-    private void loadDefaultBlankGraphActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadDefaultBlankGraphActionPerformed
-        
-        String[] options = {
-            I18n.t("autolayout.ui.optionBlankGraph"),
-            I18n.t("autolayout.ui.optionSampleGraph"),
-            I18n.t("ui.cancel")
-        };
-
-        int choice = JOptionPane.showOptionDialog(
-            this,
-            I18n.t("autolayout.ui.confirmCreateNewGraphOverwritesExisting"),
-            I18n.t("autolayout.ui.dialogGraphSelection"),
-            JOptionPane.DEFAULT_OPTION,
-            JOptionPane.INFORMATION_MESSAGE,
-            null,
-            options,
-            options[0]
-        );
-
-        switch (choice)
-        {
-            case 0: // Blank
-            case 1: // Sample
-                try
-                {
-                    this.autonomyJSON.setText(
-                        new BufferedReader(
-                            new InputStreamReader(
-                                TrainControlUI.class
-                                    .getResource(
-                                        RESOURCE_PATH + (choice == 1 ? AUTONOMY_SAMPLE : AUTONOMY_BLANK)
-                                    )
-                                    .openStream()
-                            )
-                        )
-                        .lines()
-                        .collect(Collectors.joining("\n"))
-                    );
-
-                    if (evt != null) this.validateButtonActionPerformed(null);
-                }
-                catch (IOException e)
-                {
-                    JOptionPane.showMessageDialog(
-                        this,
-                        I18n.t("autolayout.ui.errorOpeningGraphFile")
-                    );
-                    this.model.log(e);
-                }
-                break;
-            case 2: // Cancel
-                break;
-            default:
-                break;
-        }
-    }//GEN-LAST:event_loadDefaultBlankGraphActionPerformed
-
-    private void jsonDocumentationButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jsonDocumentationButtonActionPerformed
-        Util.openUrl(README_URL);
-    }//GEN-LAST:event_jsonDocumentationButtonActionPerformed
-
-    private void autosaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_autosaveActionPerformed
-        prefs.putBoolean(AUTOSAVE_SETTING_PREF, this.autosave.isSelected());
-    }//GEN-LAST:event_autosaveActionPerformed
-
-    private void loadJSONButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadJSONButtonActionPerformed
-
-        // THE SIBLING OF OB-137, found by the test written for it.
-        //
-        // Adam reported the route import; this had the identical fault and nobody had reached it yet.
-        // A modal JFileChooser was opened inside `new Thread(...)`, and this one went further: it set
-        // the text area and called straight into validateButtonActionPerformed from that same thread.
-        // Three Swing calls off the event thread in one handler.
-        //
-        // The chooser and every Swing call belong here, on the event thread an action handler already
-        // runs on. Only reading and decoding the file goes off it.
-        JFileChooser fc = getFileChooser(JFileChooser.OPEN_DIALOG, "json");
-
-        if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
-
-        final File chosen = fc.getSelectedFile();
-
-        this.loadJSONButton.setEnabled(false);
-
-        new Thread(() ->
-            {
-                String decoded = null;
-                Exception failed = null;
-
-                try
-                {
-                    decoded = decodeAutonomyJson(Files.readAllBytes(Paths.get(chosen.getPath())));
-                }
-                catch (HeadlessException | IOException | ClassNotFoundException e)
-                {
-                    failed = e;
-                }
-
-                final String text = decoded;
-                final Exception threw = failed;
-
-                javax.swing.SwingUtilities.invokeLater(() ->
-                {
-                    this.loadJSONButton.setEnabled(true);
-
-                    if (threw != null)
-                    {
-                        JOptionPane.showMessageDialog(this,
-                            I18n.t("autolayout.ui.errorOpeningFile"));
-
-                        this.model.log(threw);
-
-                        return;
-                    }
-
-                    this.autonomyJSON.setText(text);
-
-                    prefs.put(LAST_USED_FOLDER, chosen.getParent());
-
-                    validateButtonActionPerformed(null);
-                });
-            }).start();
-    }//GEN-LAST:event_loadJSONButtonActionPerformed
-
-    private void exportJSONActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportJSONActionPerformed
-
-        // THE PANEL IS BUILT AND SHOWN ON THE EVENT THREAD (VB-B1).
-        //
-        // "showMessageDialog" reads like a toast, which is why this sat here through OB-137: what it
-        // shows is a whole AutoJSONExport - a JTextArea, a JButton and a GroupLayout - and all of it
-        // was CONSTRUCTED on a raw thread before being shown modally from the same one. Constructing
-        // Swing components off the event thread is as wrong as showing them.
-        //
-        // Generating the export is the slow part and is the only thing left on the thread. It also
-        // now runs once instead of twice: the old code generated it for the panel and generated it
-        // again for the clipboard.
-        new Thread(() ->
-        {
-            String generated = null;
-            Exception failed = null;
-
-            try
-            {
-                generated = this.getModel().getAutoLayout().toJSON();
-            }
-            catch (Exception e)
-            {
-                failed = e;
-            }
-
-            final String payload = generated;
-            final Exception threw = failed;
-
-            javax.swing.SwingUtilities.invokeLater(() ->
-            {
-                if (threw != null)
-                {
-                    this.model.logf("autolayout.errorJsonExportFailedWithMessage", threw.getMessage());
-                    this.model.log(threw);
-
-                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorFailedToGenerateOrExportJsonCheckLog"));
-
-                    return;
-                }
-
-                try
-                {
-                    JOptionPane.showMessageDialog(
-                        this,
-                        new AutoJSONExport(payload, this, "autonomy", "json"),
-                        I18n.t("autolayout.ui.dialogExportGraphStateToJsonFile"),
-                        JOptionPane.PLAIN_MESSAGE
-                    );
-
-                    // Place in clipboard
-                    StringSelection selection = new StringSelection(payload);
-                    Toolkit.getDefaultToolkit()
-                        .getSystemClipboard()
-                        .setContents(selection, selection);
-                }
-                catch (Exception e)
-                {
-                    this.model.logf("autolayout.errorJsonExportFailedWithMessage", e.getMessage());
-                    this.model.log(e);
-
-                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorFailedToGenerateOrExportJsonCheckLog"));
-                }
-            });
-        }).start();
-    }//GEN-LAST:event_exportJSONActionPerformed
-
     private void showKeyboardHintsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showKeyboardHintsMenuItemActionPerformed
         prefs.putBoolean(SHOW_KEYBOARD_HINTS_PREF, this.showKeyboardHintsMenuItem.isSelected());
         displayKeyboardHints(prefs.getBoolean(SHOW_KEYBOARD_HINTS_PREF, true));
@@ -26384,41 +25093,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         RouteList.repaint();
     }//GEN-LAST:event_RouteListMouseExited
 
-    private void maximumLatencyMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maximumLatencyMouseReleased
-        
-        if (!this.isAutoLayoutRunning())
-        {            
-            try
-            {
-                this.model.getAutoLayout().setMaxLatency(this.maximumLatency.getValue());
-                this.maximumLatency.setValue(this.model.getAutoLayout().getMaxLatency());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_maximumLatencyMouseReleased
-
     private void AutoLoadAutonomyMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AutoLoadAutonomyMenuItemActionPerformed
         prefs.putBoolean(AUTO_LOAD_AUTONOMY, this.AutoLoadAutonomyMenuItem.isSelected());
     }//GEN-LAST:event_AutoLoadAutonomyMenuItemActionPerformed
-
-    private void maxActiveTrainsMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxActiveTrainsMouseReleased
-        if (!this.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.model.getAutoLayout().setMaxActiveTrains(this.maxActiveTrains.getValue());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
-    }//GEN-LAST:event_maxActiveTrainsMouseReleased
 
     /**
      * Opens a window and prompts the user for layout name
@@ -27551,55 +26228,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }//GEN-LAST:event_popUpAllMenuItemActionPerformed
 
-    private void toggleSpecifiedRoutesMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_toggleSpecifiedRoutesMouseReleased
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            if (this.isAutonomyBusy())
-            {
-                JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-            }
-            else
-            {
-                this.model.getAutoLayout().setActivateRoutes(!this.model.getAutoLayout().isActivateRoutes());
-                this.model.applyAutonomyRouteActivations();
-            }
-
-            this.toggleSpecifiedRoutes.setSelected(this.model.getAutoLayout().isActivateRoutes());
-
-            refreshActivateRoutesControls();
-        });
-    }//GEN-LAST:event_toggleSpecifiedRoutesMouseReleased
-
-    private void autoRouteListMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_autoRouteListMouseReleased
-            
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            if (this.model.hasAutoLayout())
-            {
-                if (this.isAutonomyBusy())
-                {
-                    this.applyAutoRouteListSelections();
-                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
-                }
-                else
-                {
-                    // Collect IDs of all selected routes
-                    List<Integer> activateRouteIDs = new ArrayList<>();
-
-                    for (Route r:  this.autoRouteList.getSelectedValuesList())
-                    {
-                        activateRouteIDs.add(r.getId());
-                    }
-
-                    // Push back into the model
-                    this.model.getAutoLayout().setActivateRouteIDs(activateRouteIDs);
-                    this.model.applyAutonomyRouteActivations();
-                    this.refreshRouteList();
-                }
-            }    
-        });
-    }//GEN-LAST:event_autoRouteListMouseReleased
-
     private void InnerLayoutPanelMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_InnerLayoutPanelMouseClicked
         if (evt.getButton() == MouseEvent.BUTTON3)
         {
@@ -27617,13 +26245,662 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         prefs.putBoolean(ENHANCED_PATH_VALIDATION, this.enhancedPathValidationMenuItemCheckbox.isSelected());
     }//GEN-LAST:event_enhancedPathValidationMenuItemActionPerformed
 
-    private void returnHomeButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_returnHomeButtonActionPerformed
-        requestReturnToHome();
-    }//GEN-LAST:event_returnHomeButtonActionPerformed
+    private void locCommandPanelsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locCommandPanelsMouseClicked
+        this.KeyboardTab.requestFocus();
+    }//GEN-LAST:event_locCommandPanelsMouseClicked
 
     private void editAutonomyFromSettingsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editAutonomyFromSettingsActionPerformed
         editLayoutButtonActionPerformed(evt);
     }//GEN-LAST:event_editAutonomyFromSettingsActionPerformed
+
+    private void autoRouteListMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_autoRouteListMouseReleased
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                if (this.model.hasAutoLayout())
+                {
+                    if (this.isAutonomyBusy())
+                    {
+                        this.applyAutoRouteListSelections();
+                        JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                    }
+                    else
+                    {
+                        // Collect IDs of all selected routes
+                        List<Integer> activateRouteIDs = new ArrayList<>();
+
+                        for (Route r:  this.autoRouteList.getSelectedValuesList())
+                        {
+                            activateRouteIDs.add(r.getId());
+                        }
+
+                        // Push back into the model
+                        this.model.getAutoLayout().setActivateRouteIDs(activateRouteIDs);
+                        this.model.applyAutonomyRouteActivations();
+                        this.refreshRouteList();
+                    }
+                }
+            });
+    }//GEN-LAST:event_autoRouteListMouseReleased
+
+    private void toggleSpecifiedRoutesMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_toggleSpecifiedRoutesMouseReleased
+        javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                if (this.isAutonomyBusy())
+                {
+                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                }
+                else
+                {
+                    this.model.getAutoLayout().setActivateRoutes(!this.model.getAutoLayout().isActivateRoutes());
+                    this.model.applyAutonomyRouteActivations();
+                }
+
+                this.toggleSpecifiedRoutes.setSelected(this.model.getAutoLayout().isActivateRoutes());
+
+                refreshActivateRoutesControls();
+            });
+    }//GEN-LAST:event_toggleSpecifiedRoutesMouseReleased
+
+    private void maxActiveTrainsMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxActiveTrainsMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setMaxActiveTrains(this.maxActiveTrains.getValue());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_maxActiveTrainsMouseReleased
+
+    private void maximumLatencyMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maximumLatencyMouseReleased
+
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setMaxLatency(this.maximumLatency.getValue());
+                this.maximumLatency.setValue(this.model.getAutoLayout().getMaxLatency());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_maximumLatencyMouseReleased
+
+    private void turnOnFunctionsOnDepartureMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_turnOnFunctionsOnDepartureMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setTurnOnFunctionsOnDeparture(this.turnOnFunctionsOnDeparture.isSelected());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_turnOnFunctionsOnDepartureMouseReleased
+
+    private void simulateMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_simulateMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setSimulate(this.simulate.isSelected());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_simulateMouseReleased
+
+    private void turnOffFunctionsOnArrivalMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_turnOffFunctionsOnArrivalMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setTurnOffFunctionsOnArrival(this.turnOffFunctionsOnArrival.isSelected());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_turnOffFunctionsOnArrivalMouseReleased
+
+    private void atomicRoutesMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_atomicRoutesMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                // NOT WITHOUT LENGTHS (Adam, 2026-09-21).  Asked only when it is being switched OFF:
+                // going back to atomic is always safe, and a refusal there would trap somebody.
+                if (!this.atomicRoutes.isSelected())
+                {
+                    String why = whyNonAtomicRoutesAreRefused();
+
+                    if (why != null)
+                    {
+                        JOptionPane.showMessageDialog(this, why);
+
+                        // The tick goes back, the same way every other refusal on this panel puts it
+                        // back - the setting itself is never touched.
+                        loadAutoLayoutSettings();
+
+                        return;
+                    }
+                }
+
+                this.model.getAutoLayout().setAtomicRoutes(this.atomicRoutes.isSelected());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_atomicRoutesMouseReleased
+
+    private void preArrivalSpeedReductionMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_preArrivalSpeedReductionMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setPreArrivalSpeedReduction(Double.valueOf(this.preArrivalSpeedReduction.getValue()) / 100);
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_preArrivalSpeedReductionMouseReleased
+
+    private void defaultLocSpeedMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_defaultLocSpeedMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setDefaultLocSpeed(this.defaultLocSpeed.getValue());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_defaultLocSpeedMouseReleased
+
+    private void maxDelayMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxDelayMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setMaxDelay(this.maxDelay.getValue());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_maxDelayMouseReleased
+
+    private void maxLocInactiveSecondsMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxLocInactiveSecondsMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setMaxLocInactiveSeconds(this.maxLocInactiveSeconds.getValue() * 60);
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_maxLocInactiveSecondsMouseReleased
+
+    private void minDelayMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_minDelayMouseReleased
+        if (!this.isAutoLayoutRunning())
+        {
+            try
+            {
+                this.model.getAutoLayout().setMinDelay(this.minDelay.getValue());
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this, e.getMessage());
+                loadAutoLayoutSettings();
+            }
+        }
+    }//GEN-LAST:event_minDelayMouseReleased
+
+    private void timetableCaptureActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_timetableCaptureActionPerformed
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                if (this.isAutonomyBusy())
+                {
+                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                }
+                else
+                {
+                    this.model.getAutoLayout().setTimetableCapture(!this.model.getAutoLayout().isTimetableCapture());
+                }
+
+                this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
+            });
+    }//GEN-LAST:event_timetableCaptureActionPerformed
+
+    private void executeTimetableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_executeTimetableActionPerformed
+
+        // Not under an open editor, for the same reason Start Autonomy is not (MT-135).
+        //
+        // Adam: "I was also able to start autonomy while the editor was open. This should not be
+        // possible." That was fixed at the Start button and at nothing else - and this button and
+        // Return Home start trains just as surely, over a diagram the editor is still changing.
+        // isAutonomyBusy, which both of them do ask, knows nothing about an editor being open.
+        //
+        // Refused BEFORE the button is greyed, so a refusal cannot leave it dead.
+        if (refuseWhileEditorOpen()) return;
+
+        this.executeTimetable.setEnabled(false);
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                if (!this.getModel().getPowerState())
+                {
+                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart"));
+                    this.executeTimetable.setEnabled(true);
+                    return;
+                }
+
+                if (this.isAutonomyBusy())
+                {
+                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
+                    this.executeTimetable.setEnabled(true);
+                    return;
+                }
+
+                if (this.model.getAutoLayout().getTimetable().isEmpty())
+                {
+                    JOptionPane.showMessageDialog(
+                        this,
+                        I18n.t("timetable.ui.errorNoEntriesCaptureCommandsFirst")
+                    );
+                    this.executeTimetable.setEnabled(true);
+                    return;
+                }
+
+                // AND NOT NON-ATOMIC OVER A RAILWAY THAT COULD RELEASE TRACK UNDER A TRAIN (GS-B1).  This
+                // door dispatches without going near Start, and a train length cleared on the live layout
+                // since the checkbox was unticked is not something anything here would otherwise notice.
+                //
+                // After every refusal above, not before them (GUI-A1): a press refused as "wait for active
+                // locomotives to stop" switched the running railway to atomic on its way to being refused, and
+                // a refused press should change nothing.
+                keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
+
+                // Conditional route warning
+                for (String routeName : this.model.getRouteList())
+                {
+                    Route r = this.model.getRoute(routeName);
+
+                    // A NAME FROM A LIST IS NOT A ROUTE (MKR-C4's shape, swept here by FXV-B4).  The list
+                    // is a copy of the names; the lookup is live, and both `editRoute` and the station's
+                    // re-read of a route are a delete followed by a re-add.
+                    if (r == null) continue;
+
+                    if (r.isEnabled())
+                    {
+                        this.model.logf(
+                            "autolayout.warningActiveConditionalRouteUnpredictable",
+                            r.getName()
+                        );
+
+                        if (!conditionalRouteWarningShown)
+                        {
+                            int dialogResult = JOptionPane.showOptionDialog(
+                                this,
+                                I18n.t("route.ui.confirmConditionalRoutesActiveProceed"),
+                                I18n.t("ui.dialogConfirm"),
+                                JOptionPane.YES_NO_OPTION,
+                                JOptionPane.PLAIN_MESSAGE,
+                                null,
+                                YES_NO_OPTS,
+                                YES_NO_OPTS[0]
+                            );
+
+                            // Anything but Yes - declining is what Escape means.
+                            if (dialogResult != JOptionPane.YES_OPTION)
+                            {
+                                // The other four early returns in this handler re-enable; this one did not,
+                                // so declining the warning - the prudent answer, and the one the warning
+                                // invites - killed the button for the session with no stated way back.
+                                this.executeTimetable.setEnabled(true);
+
+                                return;
+                            }
+                            else
+                            {
+                                conditionalRouteWarningShown = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Validate starting locations
+                List<Locomotive> seen = new ArrayList<>();
+
+                // Clamped: the index is -1 when every entry has finished, which would start this loop
+                // one before the list
+                for (int i = Math.max(0, this.model.getAutoLayout().getUnfinishedTimetablePathIndex()); i < this.model.getAutoLayout().getTimetable().size(); i++)
+                {
+                    TimetablePath ttp = this.model.getAutoLayout().getTimetable().get(i);
+
+                    if (!seen.contains(ttp.getLoc()))
+                    {
+                        Point locLocation = this.model.getAutoLayout().getLocomotiveLocation(ttp.getLoc());
+                        if (locLocation == null || !locLocation.equals(ttp.getStart()))
+                        {
+                            JOptionPane.showMessageDialog(
+                                this,
+                                I18n.f(
+                                    "timetable.ui.infoLocomotiveMustBeMovedToStart",
+                                    ttp.getLoc().getName(),
+                                    ttp.getStart()
+                                )
+                            );
+                            this.executeTimetable.setEnabled(true);
+                            return;
+                        }
+
+                        seen.add(ttp.getLoc());
+                    }
+                }
+
+                // Capture is left exactly as the operator set it, as the staging button next door already
+                // does.  Forcing it off protected against a run appending itself to the list being walked;
+                // that guard now lives in addTimetableEntry, covers both entrances, and does not cost the
+                // operator their toggle every time they execute a timetable.
+
+                new Thread(() ->
+                    {
+                        javax.swing.SwingUtilities.invokeLater(() ->
+                            {
+                                this.startAutonomy.setEnabled(false);
+
+                                // UXR-C4: the button's tooltip has to say trains are moving for the length of this
+                                // run, not keep whatever it said before the timetable started - refreshReturnHomeButton
+                                // below (on completion) puts the real answer back once it is safe to ask again.
+                                this.disableReturnHome(describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null));
+                            });
+
+                            // The ANSWER, not just the call.  It was discarded, so a timetable that gave up part
+                            // way through looked exactly like one that finished: the trains stopped, the buttons
+                            // came back, and the only account of it was a line in a scrolling log.  What the
+                            // operator is looking at is trains that stopped halfway with no explanation.
+                            //
+                            // A graceful stop is not a failure - the operator asked for it and watched it happen -
+                            // so it is not reported.
+                            final boolean completed = this.model.getAutoLayout().executeTimetable();
+                            final int stoppedAt = this.model.getAutoLayout().getUnfinishedTimetablePathIndex();
+
+                            if (!completed && !this.gracefulStopRequested)
+                            {
+                                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this,
+                                    I18n.f("autolayout.ui.errorTimetableStopped", stoppedAt + 1)));
+                        }
+
+                        // Marshalled, like the staging flow next door does.  These lines are new in this
+                        // feature; the surrounding handler predates it and touches Swing from this worker
+                        // thread, but there is no reason to add more of it.
+                        javax.swing.SwingUtilities.invokeLater(() ->
+                            {
+                                this.executeTimetable.setEnabled(true);
+                                this.startAutonomy.setEnabled(true);
+                                this.refreshReturnHomeButton();
+
+                                // Same gap as the staging run had: nothing turned this off once the trains stopped
+                                this.gracefulStop.setEnabled(false);
+                            });
+                        }).start();
+
+                        this.gracefulStop.setEnabled(true);
+                    });
+    }//GEN-LAST:event_executeTimetableActionPerformed
+
+    private void returnHomeButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_returnHomeButtonActionPerformed
+        requestReturnToHome();
+    }//GEN-LAST:event_returnHomeButtonActionPerformed
+
+    private void startAutonomyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startAutonomyActionPerformed
+
+        // Nothing while an editor holds the diagram, and nothing while the setup has errors.
+        //
+        // Both are refused BEFORE the button is greyed below: greying first and returning would leave
+        // it dead until something else re-enabled it, which is a worse failure than the one being
+        // prevented - the user would be locked out of starting autonomy by having been told not to.
+        //
+        // Adam, MT-135: "I was also able to start autonomy while the editor was open.  This should not
+        // be possible."  The editor holds the pages the session is built from, so starting underneath
+        // it runs trains over a diagram that is still being changed.
+        if (refuseWhileEditorOpen()) return;
+
+        if (refuseAutonomyStartWhileBroken()) return;
+
+        // AND NOT NON-ATOMIC OVER A RAILWAY THAT COULD RELEASE TRACK UNDER A TRAIN (VD16-B2).
+        //
+        // THE FOURTH DOOR, and the one the other three cannot cover.  An edge's length is only ever
+        // written by `parseAuto`, and both file doors re-ask this afterwards - but a TRAIN's length is
+        // written on the live layout by `applyTrainLength` (whose zero means "not set") and by
+        // `GraphLocAssign.commitChanges`, neither of which rebuilds anything.  So the checkbox can be
+        // unticked honestly over a measured railway with every train measured, and a length cleared a
+        // minute later puts `behind >= trainLength` back to `0 >= 0`: every edge handed back as that
+        // train's head passes it, with the train still lying over it.
+        //
+        // ONE OF FIVE DISPATCH DOORS, AND THIS COMMENT CLAIMED IT WAS THE ONLY ONE (GS-B1, VD17-C1).
+        // "Start
+        // is the choke point - no edge is released until autonomy runs" was wrong about where the
+        // release lives: it is in `executePathInternal`, and Execute Timetable, Return Home and the
+        // two hand dispatches all reach it without passing here.  Every one of them asks now, and
+        // `ui.testNonAtomicRoutesNeedTheirLengths.testEveryDispatchDoorAsksTheGate` is the list.
+        //
+        // The remedy is the file door's rather than the checkbox's, because it is the file door's
+        // situation: the setting was chosen deliberately and the railway has changed under it since,
+        // and there is nothing for the operator to answer.
+        keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
+
+        // Greyed here, on the EDT, before anything is dispatched.  The button used to stay live until
+        // a worker thread several checks later got round to disabling it, and there are three ways to
+        // press it - this button, the diagram strip's mirror, and the station right-click item - so
+        // two quick presses each spawned a worker, both passed the busy check, and both called
+        // runLocomotives, which has no reentrancy guard of its own.  A double dispatch of every train
+        // on the layout is not something to leave to how fast somebody clicks.
+        this.startAutonomy.setEnabled(false);
+
+        final java.util.concurrent.atomic.AtomicBoolean started =
+        new java.util.concurrent.atomic.AtomicBoolean(false);
+
+        new Thread(() ->
+            {
+                try
+                {
+                    if (!this.model.getPowerState())
+                    {
+                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart")));
+                        return;
+                    }
+
+                    for (String routeName : this.model.getRouteList())
+                    {
+                        Route r = this.model.getRoute(routeName);
+
+                        // A NAME FROM A LIST IS NOT A ROUTE (MKR-C4's shape, swept here by FXV-B4).  This
+                        // runs on a worker with nothing to catch it, so a route deleted between the listing
+                        // and the lookup meant a Start press that did nothing and logged nothing.
+                        if (r == null) continue;
+
+                        if (r.isEnabled())
+                        {
+                            this.model.logf(
+                                "autolayout.warningActiveConditionalRouteUnpredictable",
+                                r.getName()
+                            );
+
+                            if (!conditionalRouteWarningShown)
+                            {
+                                // On the EDT, like every other dialog in this method.  This one was
+                                // raised straight from the worker thread - building and showing a modal
+                                // dialog off the EDT, which is the kind of violation that mispaints on a
+                                // good day and deadlocks on a bad one.
+                                int dialogResult = confirmOnEventThread(
+                                    I18n.t("route.ui.confirmConditionalRoutesActiveProceed"));
+
+                                // Anything that is not the first option.  With a custom option array the
+                                // dialog returns an INDEX, and closing it with Escape returns -1 - which
+                                // is neither yes nor no, and was being read as "carry on and start the
+                                // trains".  Dismissing a warning is not agreeing with it.
+                                if (dialogResult != JOptionPane.YES_OPTION)
+                                {
+                                    return;
+                                }
+                                else
+                                {
+                                    conditionalRouteWarningShown = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (this.model.getAutoLayout().getLocomotivesToRun().isEmpty())
+                    {
+                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                            this,
+                            I18n.t("autolayout.ui.infoPleaseAddLocomotivesToGraph")
+                        ));
+                        return;
+                    }
+
+                    if (this.model.getAutoLayout().isValid() && !this.isAutonomyBusy())
+                    {
+                        started.set(true);
+
+                        new Thread( () ->
+                            {
+                                this.model.getAutoLayout().runLocomotives();
+                            }).start();
+
+                            // Swing, so on the EDT.  These two were being set from the worker thread
+                            // directly, which the run-button mirror beside them already defends itself
+                            // against by re-marshalling - the buttons themselves did not.
+                            javax.swing.SwingUtilities.invokeLater(() ->
+                                {
+                                    this.startAutonomy.setEnabled(false);
+                                    this.gracefulStop.setEnabled(true);
+                                });
+
+                                // Not refreshReturnHomeButton(): runLocomotives was just dispatched to its own
+                                // thread, so isRunning() may still be false here and a refresh would re-enable the
+                                // button it is meant to grey.  This path knows the answer without asking.
+                                this.disableReturnHome(
+                                    describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null));
+                            }
+                            else if (this.model.getAutoLayout().isRunning())
+                            {
+                                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                                    this,
+                                    I18n.t("autolayout.ui.infoWaitForActiveLocomotivesToStop")
+                                ));
+                            }
+                            else if (!this.model.getAutoLayout().isValid())
+                            {
+                                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                                    this,
+                                    I18n.t("autolayout.ui.errorLayoutStateInvalidRevalidateJson")
+                                ));
+                            }
+                            else
+                            {
+                                // Busy but not running - the staging planning window.  The guard above moved to
+                                // isAutonomyBusy without this arm following it, so a press during planning was
+                                // correctly refused and then said nothing at all.
+                                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                                    this,
+                                    describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null)
+                                ));
+                            }
+                        }
+                        finally
+                        {
+                            // Given back on every path that did not start anything - a refused dialog, no power,
+                            // no locomotives, an invalid layout.  Not on the path that did: there the button
+                            // stays greyed, and the run is what gives it back.
+                            if (!started.get())
+                            {
+                                javax.swing.SwingUtilities.invokeLater(
+                                    () -> this.startAutonomy.setEnabled(true));
+                            }
+                        }
+                    }).start();
+    }//GEN-LAST:event_startAutonomyActionPerformed
+
+    private void gracefulStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gracefulStopActionPerformed
+
+        this.gracefulStopRequested = true;
+
+        this.gracefulStop.setEnabled(false);
+        this.refreshReturnHomeButton();
+
+        new Thread(() ->
+            {
+                this.getModel().getAutoLayout().stopLocomotives();
+
+                // Ensure list is updated after stopping a timetable run
+                this.repaintAutoLocListLite();
+
+                // UXR-B7, second surface. stopLocomotives() clears the running flag and returns at
+                // once; the trains it was driving keep going until each reaches its next station, and
+                // isRunning() - therefore isAutonomyBusy() - stays true for that whole coast-down
+                // window. Enabling Start here, synchronously, is what AutonomyOverlayToggle was
+                // faithfully mirroring when it flipped the diagram strip from "Graceful Stop" to
+                // "Start Autonomous Operation" while trains were still moving: the strip picks its
+                // button from these two, and LayoutRightclickAutonomyMenu now asks isAutonomyBusy()
+                // for the same choice, so the buttons were the one surface still saying something
+                // else. Waited out here rather than left as a poll somewhere else, because this
+                // thread already exists for exactly this transition and nothing else owns it - an
+                // unbounded wait, like every other wait in this file for a railway event rather than
+                // an acknowledgement.
+                while (this.model.hasAutoLayout() && this.model.getAutoLayout().isRunning())
+                {
+                    try
+                    {
+                        Thread.sleep(REPAINT_ROUTE_INTERVAL);
+                    }
+                    catch (InterruptedException ex)
+                    {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                }
+
+                javax.swing.SwingUtilities.invokeLater(() -> this.startAutonomy.setEnabled(true));
+            }).start();
+    }//GEN-LAST:event_gracefulStopActionPerformed
 
     public final void displayKeyboardHints(boolean visibility)
     {
@@ -30585,11 +29862,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JPanel autoPanel;
     private javax.swing.JList<Route> autoRouteList;
     private javax.swing.JPanel autoSettingsPanel;
-    private javax.swing.JTextArea autonomyJSON;
-    private javax.swing.JPanel autonomyPanel;
     private javax.swing.JMenu autonomyToolbarMenu;
     private javax.swing.JMenu autonomyTopMenu;
-    private javax.swing.JCheckBox autosave;
     private javax.swing.JMenuItem backupDataMenuItem;
     private javax.swing.ButtonGroup buttonGroup2;
     private javax.swing.ButtonGroup buttonGroup3;
@@ -30612,7 +29886,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JCheckBoxMenuItem enhancedPathValidationMenuItemCheckbox;
     private javax.swing.JButton executeTimetable;
     private javax.swing.JMenuItem exitMenuItem;
-    private javax.swing.JButton exportJSON;
     private javax.swing.JMenuItem exportLocsToCSVMenuItem;
     private javax.swing.JMenuItem exportRoutesMenuItem;
     private javax.swing.JLabel f0Label;
@@ -30668,7 +29941,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JLabel jLabel51;
     private javax.swing.JLabel jLabel52;
     private javax.swing.JLabel jLabel53;
-    private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
     private javax.swing.JList jList1;
@@ -30676,7 +29948,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JScrollPane jScrollPane6;
@@ -30697,13 +29968,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JPopupMenu.Separator jSeparator23;
     private javax.swing.JPopupMenu.Separator jSeparator24;
     private javax.swing.JPopupMenu.Separator jSeparator3;
-    private javax.swing.JSeparator jSeparator4;
     private javax.swing.JPopupMenu.Separator jSeparator5;
     private javax.swing.JPopupMenu.Separator jSeparator6;
     private javax.swing.JPopupMenu.Separator jSeparator7;
     private javax.swing.JPopupMenu.Separator jSeparator8;
     private javax.swing.JSeparator jSeparator9;
-    private javax.swing.JButton jsonDocumentationButton;
     private javax.swing.JRadioButtonMenuItem keyboardAzertyMenuItem;
     private javax.swing.JPanel keyboardButtonPanel;
     private javax.swing.JRadioButtonMenuItem keyboardQwertyMenuItem;
@@ -30714,8 +29983,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenu layoutMenuItem;
     private javax.swing.JButton layoutNewWindow;
     private javax.swing.JPanel layoutPanel;
-    private javax.swing.JButton loadDefaultBlankGraph;
-    private javax.swing.JButton loadJSONButton;
     private javax.swing.JTabbedPane locCommandPanels;
     private javax.swing.JPanel locCommandTab;
     private javax.swing.JLabel locIcon;
@@ -30769,7 +30036,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JCheckBox turnOffFunctionsOnArrival;
     private javax.swing.JCheckBox turnOnFunctionsOnDeparture;
     private javax.swing.JMenuItem turnOnLightsMenuItem;
-    private javax.swing.JButton validateButton;
     private javax.swing.JMenuItem viewDatabaseMenuItem;
     private javax.swing.JMenuItem viewReleasesMenuItem;
     private javax.swing.JCheckBoxMenuItem windowAlwaysOnTopMenuItem;

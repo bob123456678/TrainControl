@@ -24,8 +24,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * autonomy.json is the old graph's file, beside the application rather than in the layout folder.  The save on exit
  * wrote it back whenever no diagram configuration was loaded - which on a local layout is any session started with
  * Load Autonomy unticked, as every legacy import now leaves it (REG2-C3).  Adam, 2026-09-24: *"We should only write to
- * the new save format in the layout folder, IMO."*  A Central Station layout, which cannot hold a setup, keeps the old
- * window and its file.
+ * the new save format in the layout folder, IMO."*  The same day the old window was removed from every layout, and
+ * no layout writes the file (testTheOldAutonomyTabIsGone asks it of a Central Station one).
  *
  * Asked of the backup save, which writes the same files under a timestamp into the run's own backup folder - never over
  * the application's autonomy.json, whichever way the claim comes out.
@@ -119,14 +119,21 @@ public class testALocalLayoutNeverWritesAutonomyJson
         assertNull(ui.getActiveDiagramConfiguration(), "precondition: a configuration was loaded at start, so this is"
             + " not the session OB-254 is about");
 
-        // What the old window holds on every start: autonomy.json, read in whether or not anything uses it.
-        Field field = TrainControlUI.class.getDeclaredField("autonomyJSON");
+        // What the old window held on every start, where it still exists: autonomy.json, read in whether used or not.
+        try
+        {
+            Field field = TrainControlUI.class.getDeclaredField("autonomyJSON");
 
-        field.setAccessible(true);
+            field.setAccessible(true);
 
-        final JTextArea text = (JTextArea) field.get(ui);
+            final JTextArea text = (JTextArea) field.get(ui);
 
-        SwingUtilities.invokeAndWait(() -> text.setText("{\"points\": [], \"edges\": []}"));
+            SwingUtilities.invokeAndWait(() -> text.setText("{\"points\": [], \"edges\": []}"));
+        }
+        catch (NoSuchFieldException gone)
+        {
+            // Deleted with the tab (OB-254): nothing is left to write.
+        }
 
         File folder = new File(Util.dataPath(Util.BACKUP_FOLDER));
 

@@ -12,6 +12,7 @@ import javax.swing.event.MenuListener;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.util.I18n;
+import org.traincontrol.util.Util;
 
 /**
  * Setting autonomy up, from the menu bar beside Layouts.
@@ -177,7 +178,31 @@ public class AutonomyMenu extends JMenu
         insertSeparator(1);
     }
 
+    /**
+     * Builds the menu, and ends it with Documentation whatever else it holds (Adam, 2026-09-24).
+     *
+     * *"Add a 'documentation' link to the autonomy JMenu that points to the same URL as the current jlabel."*  The link
+     * was on the old Load Autonomy Configuration tab, which went (OB-254); the guide it opened is about the autonomy
+     * this menu drives.  Left enabled while an editor greys the rest: reading the guide changes nothing.
+     */
     private void rebuild()
+    {
+        buildItems();
+
+        if (getMenuComponentCount() > 0) addSeparator();
+
+        JMenuItem documentation = new JMenuItem(I18n.t("ui.main.documentation"));
+
+        documentation.addActionListener(e -> Util.openUrl(TrainControlUI.README_URL));
+
+        add(documentation);
+
+        guardWhileEditing();
+
+        documentation.setEnabled(true);
+    }
+
+    private void buildItems()
     {
         removeAll();
 
@@ -468,8 +493,7 @@ public class AutonomyMenu extends JMenu
         // Autonomy instead." He is right, and the Layout menu was already the better of the two: a
         // greyed item says "this exists and not now", and an empty menu says "this feature is gone" -
         // which is a worse thing to be told by the surface you have just opened to use it.
-        guardWhileEditing();
-}
+    }
 
     /**
      * Adding a configuration - the same offer whether or not any exist yet.

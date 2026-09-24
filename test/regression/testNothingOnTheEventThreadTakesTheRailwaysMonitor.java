@@ -187,10 +187,6 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "OFF THE EVENT THREAD: this method bounces itself onto a thread when it finds itself on the"
             + " event thread, and takes the monitor only after that");
 
-        ALLOWED.put("TrainControlUI.java#exportJSONActionPerformed",
-            "OFF THE EVENT THREAD: the `new Thread` this action starts; only the export is on it, and"
-            + " the window it feeds is built inside an invokeLater (OB-137)");
-
         ALLOWED.put("AutonomyEditorPanel.java#composeWhy",
             "OFF THE EVENT THREAD: WhyRenderer, submitted by applyWhy - which captures the Layout and"
             + " the station index on the event thread first, because both of those BUILD, and paints"
@@ -270,10 +266,6 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
 
         ALLOWED.put("TrainControlUI.java#captureRunningLayout",
             "ON THE EVENT THREAD: capturing the running layout into the setup, on an explicit gesture");
-
-        ALLOWED.put("TrainControlUI.java#validateButtonActionPerformed",
-            "ON THE EVENT THREAD: comparing the edited JSON with the running layout's, on the button"
-            + " press that asks for it");
     }
 
     /**

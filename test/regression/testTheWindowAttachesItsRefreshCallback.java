@@ -146,9 +146,26 @@ public class testTheWindowAttachesItsRefreshCallback
             + "will go on showing the old name over a locomotive that no longer answers to it "
             + "(MT-153).  The data repair alone is not the fix - it was never the broken half");
 
-        assertTrue(attached >= 3,
+        // HOW MANY LOADS, COUNTED rather than pinned.  There were two doors into parseAuto until the
+        // old JSON tab's Validate button went with its tab (OB-254), and a pinned two then failed on a
+        // window that was right; a pinned one would pass a window that later gains a door and no call.
+        int doors = 0;
+
+        for (File file : new File("src/org/traincontrol/gui").listFiles())
+        {
+            if (!file.getName().endsWith(".java")) continue;
+
+            String code = withoutComments(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
+
+            doors += code.split("parseAuto\\(", -1).length - 1;
+        }
+
+        assertTrue(doors >= 1, "no window code calls parseAuto - if it was renamed, rename it here, or this"
+            + " counts nothing and asks nothing");
+
+        assertTrue(attached >= 1 + doors,
             "attachAutonomyRefresh appears " + attached + " times: it should be declared once and "
-            + "called after EVERY parseAuto, of which there are two.  Callbacks live on the Layout "
+            + "called after EVERY parseAuto, of which there are " + doors + ".  Callbacks live on the Layout "
             + "object and parseAuto replaces that object, so an attachment that does not follow it is "
             + "an attachment to a layout nobody is running");
     }

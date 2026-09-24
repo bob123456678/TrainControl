@@ -671,8 +671,9 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
      * was loaded and live and this tab held the only way to reach it.
      *
      * **The half that made that argument has stopped being true.**  Nothing at start-up parses or
-     * activates `autonomy.json` any more - the only two `parseAuto` callers in `src` are the diagram
-     * path and the Validate button on the JSON tab.  So the tab is not standing between that user and
+     * activates `autonomy.json` any more - the only `parseAuto` caller in `src` is the diagram path (the
+     * JSON tab's Validate button, the other, went with that tab - OB-254).  So the tab is not standing
+     * between that user and
      * a running railway; it is standing in front of an empty one, offering a route into a model the
      * rest of the application has moved off.
      *
