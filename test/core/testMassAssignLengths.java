@@ -1816,6 +1816,80 @@ public class testMassAssignLengths
     }
 
     /**
+     * A square with no length between a berth and its switch does not end the count - the berth walk passes it for
+     * nothing (Adam, 2026-09-24, on MT-552).
+     *
+     * *"BottomMainPost (rightmost station) is measured on both sides ... trains of length 3 can hold there"* - *"look at
+     * 22,8 and 22,9"*.  Its own square 1, 22,7 with no length, 22,8 and 22,9 1 each, then the switch at 22,10.
+     * `Layout.whyABerthCannotHoldIt` spends a train back from the berth and passes a square with no length for nothing,
+     * so a three-unit train is spent at 22,9, short of the switch, and nothing refuses it.  OB-288's count stopped at the
+     * first square with no length and warned about a refusal the walk never makes.  What it does stop at is the switch:
+     * the walk refuses a train whose spending reaches track another road runs over.
+     *
+     * MUTATION: stop the count at a square with no length again, or let it run on past the switch, and this fails.
+     *
+     * @throws IOException from the fixture
+     */
+    @Test
+    public void testASquareWithNoLengthBeforeTheSwitchDoesNotEndTheCount() throws IOException
+    {
+        openBerthBehindALongerRun();
+
+        TileKey berth = key(7, 1);
+
+        // BOTTOMMAINPOST'S SHAPE: the berth 1, the square behind it nothing, the two after it 1 each, then the switch.
+        session.setTileLength(berth, 1);
+        session.setTileLength(key(5, 1), 1);
+        session.setTileLength(key(4, 1), 1);
+        session.setPointProperty(berth, "maxTrainLength", 3);
+
+        assertFalse(session.stationsWithAHalfMeasuredApproach().containsKey(berth), "a berth taking trains of 3, with 1"
+            + " on its own square, nothing on the next and 1 on each of the two before the switch, is warned that it can"
+            + " refuse trains that would otherwise fit - the walk passes the square with no length and a three-unit train"
+            + " is spent before the switch.  Adam, MT-552: \"trains of length 3 can hold there\"");
+
+        // CONTROL: a train of 4 is not spent before the switch, and is warned about.
+        session.setPointProperty(berth, "maxTrainLength", 4);
+
+        assertTrue(session.stationsWithAHalfMeasuredApproach().containsKey(berth), "a berth taking trains of 4, with 3"
+            + " measured before the switch, is not warned about - so the claim above could pass by never firing");
+
+        // AND THE SWITCH ENDS THE COUNT: measured track beyond it is another road's, and reaching it is the refusal.
+        session.setTileLength(key(2, 1), 5);
+
+        assertTrue(session.stationsWithAHalfMeasuredApproach().containsKey(berth), "measured track beyond the switch"
+            + " was counted as room for the berth's longest train - a train spent there lies across the points");
+    }
+
+    /**
+     * 1,1 sensor - 2,1 - 3,1 switch - 4,1 - 5,1 - 6,1 - 7,1 berth, with the switch's branch to a sensor at 3,0: a berth with
+     * three plain squares between it and its switch.
+     */
+    private void openBerthBehindALongerRun() throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 11, 4, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
+
+        wire(page, 3, 1, 7);
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("Lengths");
+        session.setStation(key(7, 1), true);
+        session.setAutoDestination(key(7, 1), false);
+        session.rebuild();
+    }
+
+    /**
      * 1,1 sensor - 2,1 - 3,1 - 4,1 station: a run of two plain squares between two sensors.
      */
     private void openARunOfTwoPlainSquares() throws IOException
