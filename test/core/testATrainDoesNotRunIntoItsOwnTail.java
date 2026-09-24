@@ -546,4 +546,73 @@ public class testATrainDoesNotRunIntoItsOwnTail
                 + planned);
         }
     }
+
+    /**
+     * Return Home judges a train it has already moved by the road it moved it along, not by what the railway records
+     * there (TDA-C3).
+     *
+     * The plan's second move of a train starts where its first left it, and the railway knows nothing of that yet: here
+     * the plan has brought the train to BottomSecondary down RampDown, and BottomSecondary is empty on the railway.  Asked
+     * from the railway's record the body is nothing, and the plan sends a twenty-unit train round into it - a move the
+     * railway refuses once the first has been driven, and a plan that stops half way (OB-073).
+     *
+     * MUTATION: judge the moved train by the railway's record of its square, and this fails.
+     *
+     * @throws Exception from the reflection
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testReturnHomeJudgesAMovedTrainByTheRoadItCameAlong() throws Exception
+    {
+        java.lang.reflect.Method route = org.traincontrol.automation.HomeStaging.class.getDeclaredMethod("firstClearRoute",
+            Map.class, java.util.Set.class, Locomotive.class, Point.class, Point.class);
+
+        route.setAccessible(true);
+
+        java.lang.reflect.Field moved = org.traincontrol.automation.HomeStaging.class.getDeclaredField("movedAlong");
+
+        moved.setAccessible(true);
+
+        // Nothing on the railway at BottomSecondary: the train is there only in the plan.
+        clearTheRailway();
+
+        for (int length : new int[] {4, 20})
+        {
+            train.setTrainLength(length);
+
+            org.traincontrol.automation.HomeStaging staging = org.traincontrol.automation.HomeStaging.snapshot(layout);
+
+            Map<Locomotive, List<Edge>> movedAlong = new java.util.HashMap<>();
+
+            movedAlong.put(train, Arrays.asList(intoRampDown, downRampDown));
+
+            moved.set(staging, movedAlong);
+
+            Map<Point, Locomotive> state = new java.util.LinkedHashMap<>();
+
+            state.put(atBottomSecondary, train);
+
+            boolean anyPlanned = false;
+
+            for (Point end : lowerFront)
+            {
+                List<Edge> planned = (List<Edge>) route.invoke(staging, state, new java.util.HashSet<String>(), train,
+                    atBottomSecondary, end);
+
+                if (planned != null) anyPlanned = true;
+            }
+
+            if (length == 4)
+            {
+                assertTrue(anyPlanned, "control: Return Home plans no way for a 4-unit train it has moved to BottomSecondary"
+                    + " on to LowerFront, so the claim below is not about the train's tail");
+            }
+            else
+            {
+                assertFalse(anyPlanned, "Return Home planned a 20-unit train it had moved to BottomSecondary, down RampDown,"
+                    + " on round to LowerFront into its own tail - it judged the train by the railway's record of the"
+                    + " square, where nothing stands (TDA-C3)");
+            }
+        }
+    }
 }

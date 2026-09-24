@@ -154,6 +154,9 @@ public final class HomeStaging
      */
     private Map<Locomotive, List<Edge>> movedAlong = new java.util.HashMap<>();
 
+    /** A train's body at a square, by the square, the train and the road the plan moved it along (OB-294, TDA-C4). */
+    private final Map<List<Object>, Map<String, Integer>> bodies = new HashMap<>();
+
     /** What the greedy pass left in `movedAlong`, for A* to start from. */
     private Map<Locomotive, List<Edge>> greedyMovedAlong = new java.util.HashMap<>();
 
@@ -1136,17 +1139,6 @@ public final class HomeStaging
         // home is already home (`atHome`), so this never keeps a train from home.
         if (from.getBlock() != null && from.getBlock().equals(to.getBlock())) return null;
 
-        // ITS OWN BODY AS IT STANDS HERE, for the own-tail question below (OB-294): the road this plan moved it along
-        // where it has moved it, and what the railway records where it has not - the two bodies the runtime would walk.
-        List<Edge> cameAlong = this.movedAlong.get(loc);
-
-        if (cameAlong != null && (cameAlong.isEmpty() || !from.isSamePlaceAs(cameAlong.get(cameAlong.size() - 1).getEnd())))
-        {
-            cameAlong = null;
-        }
-
-        final Map<String, Integer> ownBody = this.layout == null ? null : this.layout.bodyOfATrainAt(from, loc, cameAlong);
-
         // The origin is exempt from every other test here - that is what stops the moving train's own
         // sensor blocking its own departure - but not from these two.  isPathClear applies its
         // inactive-point rule to every edge start including the first, and staging executes with
@@ -1195,6 +1187,22 @@ public final class HomeStaging
         // elsewhere whose departure is the plan's own first move.  This is the arrival test, which is
         // the one that was ever right.
         if (!canRest(loc, to, state) || state.containsKey(to)) return null;
+
+        // ITS OWN BODY AS IT STANDS HERE, for the own-tail question below (OB-294): the road this plan moved it along
+        // where it has moved it, and what the railway records where it has not - the two bodies the runtime would walk.
+        //
+        // AFTER THE CHEAP REFUSALS, AND WALKED ONCE PER TRAIN AND ROAD (TDA-C4).  It depends on neither the destination nor
+        // the rest of the arrangement, and this is asked once per destination inside a search with a time budget.
+        List<Edge> cameAlong = this.movedAlong.get(loc);
+
+        if (cameAlong != null && (cameAlong.isEmpty() || !from.isSamePlaceAs(cameAlong.get(cameAlong.size() - 1).getEnd())))
+        {
+            cameAlong = null;
+        }
+
+        final Map<String, Integer> ownBody = this.layout == null ? null
+            : this.bodies.computeIfAbsent(java.util.Arrays.asList(from, loc, cameAlong),
+                key -> this.layout.bodyOfATrainAt(from, loc, (List<Edge>) key.get(2)));
 
         Deque<Candidate> queue = new ArrayDeque<>();
         Map<String, List<Map<String, Accessory.accessorySetting>>> seen = new HashMap<>();
