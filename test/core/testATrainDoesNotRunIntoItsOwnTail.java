@@ -289,6 +289,12 @@ public class testATrainDoesNotRunIntoItsOwnTail
 
         assertTrue(gap > 0 && gap < 20, "the gap named is " + gap + ", which a 20-unit train would not be refused for");
 
+        // THE FIGURE ITSELF, measured on the frozen railway (TDD-C4): from BottomSecondary west round by the tunnel and
+        // back to row 11 at 14,11 - 11,8 and 11,7, 11,4 and 10,3, 7,4 and 7,5, 7,11 and 9,12, 12,12 are measured, one
+        // unit each.  A claim that the sentence agrees with itself would pass a rule that moved every figure alike.
+        assertEquals(gap.intValue(), 9, "the way round from BottomSecondary back to its own tail measures 9 on the frozen"
+            + " railway, and the refusal names " + gap);
+
         clearTheRailway();
         standItAsArrived(gap);
 
@@ -314,6 +320,15 @@ public class testATrainDoesNotRunIntoItsOwnTail
 
         assertNotNull(gapNamedBy(pastTheGap), "a train of " + (gap + 1) + " units - one more than the refusal allows - is"
             + " not refused for its own tail: " + pastTheGap);
+
+        // AND EVERY WAY THERE, which is what a person sees (TDA-C2): a destination is offered if any route to it is
+        // clear, so a train one unit past the figure is kept off LowerFront only if every route there refuses it.
+        for (Map.Entry<List<Edge>, String> each : routesToLowerFront().entrySet())
+        {
+            assertNotNull(gapNamedBy(each.getValue()), "a train of " + (gap + 1) + " units is not refused for its own tail"
+                + " on one of the ways to LowerFront, so it is still offered there: " + each.getKey() + " - "
+                + each.getValue());
+        }
     }
 
     /**

@@ -279,6 +279,7 @@
         <test-one-class class="testATurnedTrainIsNotSentIntoAnotherTail"/>
         <test-one-class class="testATrainDoesNotRunIntoItsOwnTail"/>
         <test-one-class class="testATailIsNotHiddenByAnother"/>
+        <test-one-class class="testTheOwnTailArithmetic"/>
         <test-one-class class="testABerthAndAPlatformJudgeAnOverhangDifferently"/>
         <test-one-class class="testAMayTurnStationIsNotATerminus"/>
         <test-one-class class="testTheArrivalHonoursTheAnswer"/>
