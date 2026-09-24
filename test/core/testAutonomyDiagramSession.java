@@ -3689,6 +3689,42 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A side trains may not arrive by is not asked to be measured for a turn there either (the sibling of MT-552).
+     *
+     * `reversalsWithoutLength` walks the same arriving edges as the two checks MT-552 was about, and asked for the
+     * track after the last switch on a side no train comes in by.
+     *
+     * MUTATION: judge every arriving edge in `reversalsWithoutLength` again, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testABarredApproachIsNotAskedToBeMeasuredForATurn() throws Exception
+    {
+        session.open(Arrays.asList(platformWithTwoApproaches()));
+        session.initialize("BarredTurn");
+
+        TileKey platform = new TileKey("main", 5, 1);
+
+        session.setStation(platform, true);
+        session.setPointProperty(platform, "canReverse", Boolean.TRUE);
+        session.setTileLength(new TileKey("main", 2, 1), 2);
+        session.setTileLength(new TileKey("main", 6, 1), 1);
+        session.rebuild();
+
+        assertTrue(session.isTurnAround(platform), "precondition: trains may not turn at the platform");
+
+        assertTrue(session.reversalsWithoutLength().containsKey(platform), "precondition: the west side's track after"
+            + " the switch, measured not at all, is not asked for - so this fixture cannot show the notice at all");
+
+        session.setBarredArrivals(platform, java.util.EnumSet.of(org.traincontrol.automationui.TilePorts.Side.W));
+        session.rebuild();
+
+        assertFalse(session.reversalsWithoutLength().containsKey(platform), "the platform takes no arrivals from the"
+            + " west, and it is still asked for lengths on the west side's track: " + session.reversalsWithoutLength());
+    }
+
+    /**
      * A side trains may not arrive by is not an approach, and its unmeasured track is not a half-measured one (MT-552).
      *
      * The same note: RampDown and BottomMainPost were told they *"can refuse trains that would otherwise fit"* for the
