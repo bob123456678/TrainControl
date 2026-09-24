@@ -1190,6 +1190,15 @@ make max train length be remembered if a station is changed to a non-station, an
 
 usage graph uses basic/ugly graphics.  Keep current functionality, but make it look nicer.
 
+### OB-292 - 2026-09-24 - a new straight that would join two tracks is not turned to join them
+
+**Kind:** bug  
+**Raised from:** Adam, in conversation - not from a particular test  
+**Filed:** 2026-09-24 11:16  
+**Build:** commit c3efc506
+
+Adam, 2026-09-24: *"when new straight tracks are placed in the autonomy editor and they would connect two other tracks, they are automatically oriented to connect rather than not."*  Today a straight is placed at its default orientation, so dropping one into a gap between two pieces of track can leave it lying across the line, joining neither, until it is turned by hand.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
