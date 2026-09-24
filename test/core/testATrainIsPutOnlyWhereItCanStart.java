@@ -459,8 +459,10 @@ public class testATrainIsPutOnlyWhereItCanStart
 
         barred.setLocomotive(model.getLocByName(PROBE));
 
-        session.placeLocomotive(post, PROBE);
-        session.setFacing(post, Side.S);
+        // WHAT A RUN LEAVES: the setup names another square, so the build does not stand the train at BottomMainPost
+        // and only the put-back can.  With the setup saying BottomMainPost, the build's own choice stood it on the twin
+        // whatever the put-back did, and the claim could not fail.
+        session.placeLocomotive(square(session, "BottomMainA"), PROBE);
 
         java.util.Map<String, String[]> where = org.traincontrol.gui.TrainControlUI.whereTheTrainsAre(running);
 

@@ -376,6 +376,107 @@ public class testTrainTailClearsEdges
     }
 
     /**
+     * An edge a non-atomic run gave back on the way is not given back again when the run ends (GUI2-C2).
+     *
+     * `unlockPath` skips the edges a run recorded in `releasedEarly` as its tail cleared them, and gives back the rest.
+     * Every other claim on that rule seeds the record by reflection, so deleting the one line that writes it left the
+     * suite green - and the unlock then released each early-given-back edge a second time, taking away the claim of
+     * whichever train had locked it since (GUI-A1).  This runs a real path, non-atomic and unmeasured so each edge is
+     * given back as soon as it is passed, and has another train claim the first edge at the route's end, just before
+     * the unlock: the unlock must leave that claim alone.
+     *
+     * MUTATION: stop recording the early release (`released.add(givenBack)`) and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testAnEdgeGivenBackOnTheWayIsNotGivenBackAgain() throws Exception
+    {
+        for (String s : new String[] { S88_MID, S88_MID2, S88_END })
+        {
+            if (!model.isFeedbackSet(s)) model.newFeedback(Integer.parseInt(s), null);
+
+            model.setFeedbackState(s, false);
+        }
+
+        model.clearAutoLayout();
+
+        Layout layout = model.getAutoLayout();
+
+        layout.setSimulate(true);
+        layout.setAtomicRoutes(false);
+
+        layout.createPoint("TG_A", false, null);
+        layout.createPoint("TG_B", false, S88_MID);
+        layout.createPoint("TG_C", false, S88_MID2);
+        layout.createPoint("TG_D", true, S88_END);
+
+        final Edge ab = layout.createEdge("TG_A", "TG_B");
+        Edge bc = layout.createEdge("TG_B", "TG_C");
+        Edge cd = layout.createEdge("TG_C", "TG_D");
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        Integer wasLength = loc.getTrainLength();
+
+        final java.util.function.Consumer<Locomotive> wasEnd =
+            loc.hasCallback(Layout.CB_ROUTE_END) ? loc.getCallback(Layout.CB_ROUTE_END) : null;
+
+        final int[] beforeTheEnd = { -1 };
+
+        try
+        {
+            loc.setTrainLength(250);
+
+            layout.getPoint("TG_A").setLocomotive(loc);
+
+            // ANOTHER TRAIN TAKES THE FIRST EDGE at the route's end, after this run gave it back and before its unlock.
+            loc.setCallback(Layout.CB_ROUTE_END, l ->
+            {
+                beforeTheEnd[0] = occupancy(ab);
+
+                ab.setOccupied();
+
+                if (wasEnd != null) wasEnd.accept(l);
+            });
+
+            assertTrue(layout.executePath(Arrays.asList(ab, bc, cd), loc, 30, null), "the dispatch did not complete, so"
+                + " nothing here tests anything");
+
+            assertEquals(beforeTheEnd[0], 0, "precondition: the run had not given the first edge back by its end - an"
+                + " unmeasured path gives back each edge as soon as it is passed - so there is no early release here");
+
+            assertEquals(occupancy(ab), 1, "the run's unlock gave back the first edge a second time: it had given it back"
+                + " when its tail passed it, and the claim another train made since was taken away (GUI-A1, GUI2-C2)");
+        }
+        finally
+        {
+            loc.setTrainLength(wasLength);
+
+            // No way to remove a callback: an absent one is put back as one that does nothing.
+            loc.setCallback(Layout.CB_ROUTE_END, wasEnd != null ? wasEnd : l -> { });
+
+            model.clearAutoLayout();
+        }
+    }
+
+    private static int occupancy(Edge edge)
+    {
+        try
+        {
+            java.lang.reflect.Field field = Edge.class.getDeclaredField("occupancy");
+
+            field.setAccessible(true);
+
+            return field.getInt(edge);
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new IllegalStateException("Edge has no occupancy count to read", e);
+        }
+    }
+
+    /**
      * Builds a fresh A-B-C-D path with the given edge lengths, dispatches the first locomotive in the
      * database down it with the given train length, and records - once per leg, via the real
      * `getActiveAccs()` - whether the first edge's own accessory is still reported active.

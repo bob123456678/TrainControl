@@ -166,6 +166,12 @@ public class testAnUnlockGivesBackOnlyWhatItHolds
         assertEquals(occupancy(first), 0, "an atomic run's unlock kept an edge its tail had passed - held for good, with"
             + " its locks, and the next route over it refused on a claim nobody holds");
         assertEquals(occupancy(second), 0, "an atomic run's unlock kept an edge it held");
+
+        // AND THE POINTS BEHIND THE TRAIN.  Taken down the careful road instead - chosen when the cleared set is read
+        // as what was given back - the edges come free and the Points this run held behind the train keep it, so
+        // nothing can be routed onto them again.
+        assertEquals(s1.getCurrentLocomotive(), null, "an atomic run's unlock left the train on V1, behind it");
+        assertEquals(s2.getCurrentLocomotive(), null, "an atomic run's unlock left the train on V2, behind it");
     }
 
     // ---------------------------------------------------------------------------------------------
