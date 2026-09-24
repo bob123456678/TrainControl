@@ -62,16 +62,17 @@ otherwise be reported as bugs.
 
 ## Reversals
 
-**Open: one, and it is Adam's call rather than a defect.** A journey that passes a compulsory-turn
-square is turned there, invisibly to the operator, so at a may-reverse destination the answer *"Yes -
-keep the current direction"* can leave the train **net-reversed**: measured 2026-09-08, keep ends
-backward and reverse ends forward. Section 3 of `behaviour.md` promises the opposite in as many words.
-Recorded on **OB-283** in the Inbox (filed 2026-09-23, DCN-C14): it had been carried on OB-190's Inbox
-body since 2026-09-08, which the clear-out of certified entries removed. This section said "none" until
-2026-09-21 (IND9X-B3).
+**Open: none.** OB-283, the last, was decided on 2026-09-24 (below).
 
 **Decided, and each of these reversed an implemented behaviour** - which is exactly what this section
 is for.
+
+- **A compulsory turn on the way turns the train, and keep/reverse is measured on arrival** (Adam,
+  2026-09-24, OB-283: *"if it's a compulsory turn, turn it in the forced direction."*). A journey that
+  passes a compulsory-turn square is turned there, so at a may-reverse destination "keep the current
+  direction" can leave the train net-reversed from how it set off (measured 2026-09-08). That was the
+  code's behaviour all along; what it reversed is `behaviour.md` section 3, which promised the opposite.
+  Carried on OB-190's Inbox body from 2026-09-08 and then on OB-283 (DCN-C14).
 
 - **A direction command arriving while a run is under way is ignored, not queued** (Adam, 2026-09-07,
   `bc6120f1`): *"The arrival writes the graph - but if a manual command is sent, ignore it, as this is

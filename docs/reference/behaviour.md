@@ -332,6 +332,14 @@ intermediates - we care about the reversal if it’s the destination, since that
 train can go, and where it is facing"*). Intermediates turn as the path requires, exactly as they do
 for autonomy.
 
+**A compulsory turn on the way turns the train, whatever the answer** (OB-283; Adam, 2026-09-24: *"if
+it's a compulsory turn, turn it in the forced direction."*). So *keep* and *reverse* are measured
+against the way the train **arrives** at the destination, not the way it set off: a journey that
+passes a compulsory-turn square is turned there, and "Yes - keep the current direction" then leaves it
+facing the way it came in - which is the other way round from how it left (measured 2026-09-08: keep
+ends backward, reverse ends forward). This sentence said the opposite until 2026-09-24, and the code
+never did.
+
 That ruling **dissolved** the refusal described above rather than qualifying it: with nothing asked
 about intermediates there is no declined turn for a journey to depend on, and the stranding refusal,
 its helper, both door checks and its message in all eight bundles were removed the same day.
