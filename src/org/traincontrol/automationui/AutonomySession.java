@@ -5266,8 +5266,9 @@ public class AutonomySession
      * Squares whose recorded facing is not one the square can actually hold.
      *
      * The facing says which way the train standing there points, and the build honours it by choosing
-     * the copy of the split square that faces that way.  When no copy does, the builder falls through
-     * to the first one - it has to place the train somewhere - and that copy may point the other way.
+     * the copy of the split square that faces that way.  When no copy does, the builder falls back to
+     * the first copy trains may arrive at (`startableCopy`) - it has to place the train somewhere - and
+     * that copy may point the other way.
      * So the train quietly turns round.
      *
      * The way squares stop being able to hold a facing is that the track around them changes: move a
@@ -6205,7 +6206,7 @@ public class AutonomySession
         //
         // `facingsFor` reads `StationIndex`, which reads `builder.facingByName()`.  So this is now the
         // build's own list of what its copies face, which is exactly the question the menu is asking:
-        // a facing has to be one the build can HOLD, or `placementCopy` falls through to the first copy
+        // a facing has to be one the build can HOLD, or `placementCopy` falls back to `startableCopy`
         // and quietly turns the train round.
         //
         // Everything the old derivation was careful about comes for free:

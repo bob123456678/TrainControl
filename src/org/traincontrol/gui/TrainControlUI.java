@@ -7434,8 +7434,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return null;
         }
 
-        // The session's rule, which every door that puts a train down asks (GUI-B1): only a copy a train may be put down
-        // on (MT-394), the plain one before its turning twin.
+        // The session's rule, which every door that puts a train down asks (GUI-B1, TDY2-A1): a copy facing that way,
+        // one trains may arrive at first (MT-394), the plain one before its turning twin.  The doors only ever ask it
+        // for a facing such a copy holds - `placeableFacings` - so for them it never falls back to a barred copy.
         return getAutonomySession().copyFacing(square, facing, this.model.getAutoLayout());
     }
 
@@ -8107,9 +8108,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         //
         // A square is several Points, one per side a train can arrive by, and `placementCopy` picks
         // between them by the stored facing.  This door wrote the locomotive and left the facing
-        // alone, so a pasted train had no recorded direction at all - and `placementCopy` falls
-        // through to COPY 0 when nothing matches.  Copy 0 is whichever the builder happened to emit
-        // first, which is not a direction anybody chose.  The next `captureFromLayout` then wrote that
+        // alone, so a pasted train had no recorded direction at all - and `placementCopy` then fell
+        // through to COPY 0 (since GUI2-B1, to the first copy trains may arrive at): whichever the
+        // builder happened to emit first, which is not a direction anybody chose.  The next `captureFromLayout` then wrote that
         // copy's side back into the configuration as though the operator had picked it, which is why
         // the dropdown disagreed with the train and why the change survived a reload.
         //
@@ -8219,7 +8220,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Each copy of a square a train may be put down on, with the way it faces (OB-270).
      *
      * `facingsFor` names every copy, and a square's copies are not all destinations: a copy trains may not arrive at
-     * cannot be placed on (`copyFacing` refuses it), so a heading only such a copy holds is one no placement can give.
+     * is one no placement door chooses (a train can come to stand there only by turning where it is), so a heading only
+     * such a copy holds is one no placement gives.
      * Choosing and recording over these alone is what keeps the paste from saving a facing the train is not standing
      * in - Adam: *"we shouldn't allow an impossible facing to be saved."*
      *
@@ -24567,8 +24569,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * the setup at all and the refusal is about trains being in motion; reached with a broken graph it tells
      * the operator to wait for trains that are not running and never will be.
      *
-     * Four answers, in the order they have to be asked:
+     * Five answers, in the order they have to be asked:
      *
+     *  - a layout that lives on the Central Station -> it needs one on this computer, the guard's own first reason
+     *    (REG2-C2);
      *  - error findings -> name how many, because the editor can take them there;
      *  - more than one blocking problem -> name how many, and point at the count along the top;
      *  - exactly one, or a setup that will not run for any other reason -> the singular of the same sentence;

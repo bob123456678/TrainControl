@@ -47,8 +47,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * doing before - which is Adam's "terminuses must reverse on paste".
  *
  * **The defect this covers.**  `TrainControlUI.rememberPlacement` wrote the locomotive and not the
- * facing, so a pasted train had no recorded direction; `AutonomyBuilder.placementCopy` falls through
- * to COPY 0 when nothing matches, and copy 0 is whichever the builder emitted first.  The next
+ * facing, so a pasted train had no recorded direction; `AutonomyBuilder.placementCopy` then fell
+ * through to COPY 0 when nothing matched (since GUI2-B1, to the first copy trains may arrive at) -
+ * whichever the builder emitted first.  The next
  * `captureFromLayout` wrote that copy's side back as though it had been chosen.  A probe on the real
  * layout caught every step of it: a facing of `S` carried into a square whose only built copy was
  * `{BottomMainPost=N}`, and `afterCapture facingAtTo=N`.
@@ -289,7 +290,7 @@ public class testAPastedTrainKeepsItsDirection
 
         assertTrue(walk > 0,
             "the door no longer works out where the train will be facing. Without it the paste has no"
-            + " direction at all, placementCopy falls through to copy 0, and the next capture writes"
+            + " direction at all, placementCopy falls back to the first copy it can start from, and the next capture writes"
             + " that arbitrary side back as though somebody had chosen it - which is the symptom Adam"
             + " reported four times");
 
@@ -394,8 +395,8 @@ public class testAPastedTrainKeepsItsDirection
      *
      * Nothing about a home decides where a train stands, so the suspect is the REBUILD that a home
      * change triggers rather than the change itself. `AutonomyBuilder.placementCopy` picks between a
-     * square's copies by the recorded facing and **falls through to COPY 0** when there is no facing or
-     * none of them matches. Copy 0 is whichever the builder emitted first - so if that order is not
+     * square's copies by the recorded facing and **falls back to the first copy trains may arrive at**
+     * when there is no facing or none of them matches - an order-dependent choice, so if that order is not
      * stable, every rebuild is a chance for a facing-less train to appear somewhere else, and a home
      * assignment is simply one of the many things that rebuilds.
      *
@@ -439,7 +440,7 @@ public class testAPastedTrainKeepsItsDirection
 
             assertTrue(moved.isEmpty(),
                 "a square's copies came back in a different order after a rebuild that changed nothing"
-                + " about them. `placementCopy` falls through to COPY 0 for a train with no recorded"
+                + " about them. `placementCopy` falls back to the first startable copy for a train with no recorded"
                 + " facing, so an unstable order moves that train to a different Point every time"
                 + " anything rebuilds - which is a locomotive teleporting for no reason anybody can"
                 + " reproduce (OB-183). " + moved);
@@ -531,8 +532,8 @@ public class testAPastedTrainKeepsItsDirection
      *
      * A square that splits is several `Point`s, one per (arrival side x reverse), and **which one a
      * train is on IS its direction**. `AutonomyBuilder.placementCopy` picks between them by the stored
-     * facing and falls through to COPY 0 when nothing matches - and copy 0 is whichever the builder
-     * happened to emit first, which is not a direction anybody chose. That fall-through is the
+     * facing and falls back to the first copy trains may arrive at when nothing matches - whichever
+     * the builder happened to emit first, which is not a direction anybody chose. That fall-through is the
      * mechanism behind the "the menu disagrees with the train" reports on this project, and until the
      * fixture was fixed there was no square in the suite where it could be exercised at all.
      *
@@ -591,8 +592,8 @@ public class testAPastedTrainKeepsItsDirection
 
             assertEquals(copies.get(landed.getName()), facing,
                 "a train recorded as facing " + facing + " was built onto " + landed.getName()
-                + ", which faces " + copies.get(landed.getName()) + ". placementCopy falls through to"
-                + " the first copy when nothing matches, and the next capture writes that"
+                + ", which faces " + copies.get(landed.getName()) + ". placementCopy falls back to"
+                + " the first startable copy when nothing matches, and the next capture writes that"
                 + " copy's"
                 + " side back as though the operator had chosen it - which is why the menu and the"
                 + " train disagree (SPEC-A1). Copies here: " + copies);

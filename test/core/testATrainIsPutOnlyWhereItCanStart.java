@@ -29,17 +29,17 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * track nothing reserved.  GUI-B1's first repair did exactly that where only a copy trains may not arrive at faces the
  * recorded way - the build, the throttle's direction-follow and the Facing menu all stood the train on a copy facing the
  * other way, and the log said the direction had been followed.  Where no copy trains may arrive at faces the recorded
- * way, the train now stands on one that faces it anyway: autonomy will not start it there, and says so - *"It is
- * standing on {0}, which is not a station"* - which is the truth.
+ * way, the train now stands on one that faces it anyway: autonomy will not start it there, and says so - that it faces
+ * the way trains may not arrive at that square, and what to do: turn it round, or open that side (GUI3-C1).
  *
  * GUI-B1's own case stands: among the copies facing the recorded way, one trains may arrive at is chosen first.
  *
- * Adam, 2026-09-23, on OB-270: *"we shouldn't allow an impossible facing to be saved."*  That was built into the paste.
- * But a facing only a barred copy holds could still reach the setup - through the editor's Place door and the Place
- * Locomotive dialog, or from any setup saved before - and two things then acted on it without asking whether trains may
- * arrive at that copy: the build, which put the train on the copy facing that way, and the Facing door and the idle
- * drain after a turn, which move a train onto "the copy that faces X".  The train then stood on a copy that is not a
- * station, and autonomy would not start it: *"It is standing on {0}, which is not a station."*
+ * What GUI-B1 was, in the past tense: Adam, 2026-09-23, on OB-270: *"we shouldn't allow an impossible facing to be
+ * saved."*  That was built into the paste.  But a facing only a barred copy holds could still reach the setup - through
+ * the editor's Place door and the Place Locomotive dialog, or from any setup saved before - and the build, the Facing
+ * door and the idle drain after a turn put the train on "the copy that faces X" without asking whether trains may arrive
+ * at it, even where one that faces X and may be arrived at existed.  That preference is what still stands; the train is
+ * never turned round to get it.
  *
  * **On the frozen railway, as he has it**: BottomMainA with arrivals from the east barred, so its westbound copy is no
  * station; BottomMainPost, which trains may turn at and which has arrivals from the north barred.
@@ -226,7 +226,7 @@ public class testATrainIsPutOnlyWhereItCanStart
     }
 
     /**
-     * The Facing door moves a train onto a copy facing that way that it can be started from, or nowhere.
+     * The Facing door moves a train onto a copy facing that way, one it can be started from where there is one.
      *
      * @throws Exception from the build
      */

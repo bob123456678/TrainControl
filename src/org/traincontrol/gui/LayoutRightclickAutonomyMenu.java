@@ -426,7 +426,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                 if (!canStart)
                 {
-                    // And say which of the THREE reasons it is (V32-C1).
+                    // And say which of the FOUR reasons it is (V32-C1; the fourth, a layout on the Central Station,
+                    // since REG2-C2).
                     //
                     // The tooltip was hardcoded to the waiting-for-trains message, which is a lie
                     // whenever Start is off for any other reason - including the one immediately

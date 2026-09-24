@@ -163,7 +163,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         // The first version added up the list instead, and two errors then cancelled: a door was
         // declared that never asked at all - `putThePendingTurnsBack`, where the name appears in a
         // COMMENT explaining why another door's guard makes something safe - while
-        // `refreshAutonomyPrompt` asks twice and was counted once. The totals matched and the check
+        // `refreshAutonomyPrompt` asked twice (once since GUI-C8) and was counted once. The totals matched and the check
         // passed. Reading the bodies cannot cancel that way: a door that does not ask contributes
         // nothing and the test above names it, and a door that asks twice contributes two.
         int inDeclaredDoors = 0;

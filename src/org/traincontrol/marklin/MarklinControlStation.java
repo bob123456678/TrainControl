@@ -4162,8 +4162,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         // EVERY ROUTE HERE IS DISARMED, and stays that way - parseRoutesFromJson says why, and it is
         // Adam's ruling: an imported file does not start driving the railway until the operator turns
-        // its routes on.  A file's `auto` flag is therefore read and then overridden, which is the one
-        // thing about an import that is not a faithful restoration of what the file says.
+        // its routes on.  A file's `auto` flag is therefore overwritten before anything reads it - in
+        // parseRoutesFromJson, before each route is built (REG2-C6) - which is the one thing about an
+        // import that is not a faithful restoration of what the file says.  Reporting which routes were
+        // saved armed would have to read it there, first.
         this.logf("route.deletingExisting");
         for (MarklinRoute r : this.routeDB.getItems())
         {

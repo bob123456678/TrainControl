@@ -2250,7 +2250,7 @@ public class testAutoLayout
      * A failure does not release an edge the tail had already given up (VD10-A1).
      *
      * `unlockPath` reads `releasedEarly` (since GUI-A1; `clearedEdges` before it) to know which edges the tail
-     * released as it passed them, so that it does not release them again.The comment at that lookup says what a
+     * released as it passed them, so that it does not release them again. The comment at that lookup says what a
      * second release costs: *"the second release would take away a claim somebody else made in
      * between"* - the edge comes free under a train that locked it after the tail went by, and its
      * lock edges with it.

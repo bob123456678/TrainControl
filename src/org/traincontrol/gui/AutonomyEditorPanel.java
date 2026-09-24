@@ -3744,7 +3744,7 @@ public class AutonomyEditorPanel extends JPanel
         //
         // It IS an answer, and not one this menu may override: a facing has to be one the BUILD can
         // hold, because `placementCopy` matches it against the copies the split made and anything else
-        // falls through to the first copy and quietly turns the train round.  Offering a second facing
+        // falls back to `startableCopy` and quietly turns the train round.  Offering a second facing
         // where the railway holds one would be `facingsThatCannotBeHeld` manufactured on purpose.
         //
         // So the one facing is shown, ticked, with a line saying why there is nothing to choose.

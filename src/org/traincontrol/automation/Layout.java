@@ -10658,7 +10658,7 @@ public class Layout
      * **A run that the setting changes under is unlocked by what it did** (GUI-A1).  A path releases its
      * edges under one setting and `unlockPath` finishes under the other; `unlockPath` decides how to give
      * track back by whether that run gave any back early - the edges `releasedEarly` records - not by the
-     * setting at its end.  So neither direction gives an edge back twice or leaves one held: false-to-true
+     * setting at its end.  So neither direction gives an edge back twice: false-to-true
      * mid-run (the Atomic Routes gate's write, reached while trains run) stops further early releases and
      * the unlock skips the ones already made; true-to-false starts them, and the same record covers them.
      * That is about giving back twice.  True-to-false can still leave one edge held (GUI2-C1): one the tail

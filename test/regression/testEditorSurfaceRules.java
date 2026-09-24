@@ -66,7 +66,7 @@ public class testEditorSurfaceRules
      *
      * **It is an answer, and not one the menu may override.** A facing has to be one the BUILD can
      * hold: `placementCopy` matches it against the copies the split made, and anything else falls
-     * through to the first copy and quietly turns the train round. Offering a second facing where the
+     * back to `startableCopy` and quietly turns the train round. Offering a second facing where the
      * railway holds one would be `facingsThatCannotBeHeld` manufactured on purpose - so the menu shows
      * the one facing, ticked, and a disabled line saying why there is nothing to choose.
      *

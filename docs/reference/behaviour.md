@@ -634,9 +634,12 @@ the heading in the setup and the copy the train stands on in the running layout 
 direction (section 3). Where a square has two copies a train may stop at, facing opposite ways, the copy
 used to be whichever `StationIndex.speakerAt` met first, so the record said east while the train stood
 westbound, and its arrival side and tail were then worked out for the wrong copy. **The rule: the copy
-taken is the operator's chosen heading where one was asked, and the walked heading otherwise**; a copy no
-train may be placed on is still refused (`copyFacing`), and the heading is chosen and recorded over the
-copies a train may stand on, so no impossible facing is saved. Built 2026-09-23.
+taken is the operator's chosen heading where one was asked, and the walked heading otherwise**; the heading
+is chosen and recorded over the copies trains may arrive at, so no impossible facing is saved. Built
+2026-09-23.  **Where the walked heading is one only a barred copy holds, the paste takes the one it may
+arrive in** - which turns a train that really faces the barred way round at the landing, where a
+reversal on the throttle or the Facing menu keeps it facing that way (the copy is the direction, section
+3).  Which the paste should do is Adam's question, on OB-284.
 
 **A cut train is walked from the square it was cut from** (Adam, 2026-09-23, OB-270: *"it should be east.
 no train should inadvertently change direction when pasted."*). Control+X takes the train off the railway,
@@ -999,7 +1002,7 @@ a train of any length, row by row, and asks each one's maximum - the walk refuse
 NEGATIVE is refused at the single door as well (SET-B1): `Layout.fromJSON` will not load a configuration
 carrying one, and the bulk clear counts any non-zero maximum so that one already stored can be taken off.  **Clear All Track Lengths** (FR-069)
 and **Clear All Max Train Lengths** (FR-092) each take their setting off every page after a confirmation that says how
-many.  The three WALKS - track lengths, station maxima and train lengths - share one prompt:the number box has the keyboard focus, Enter submits,
+many.  The three WALKS - track lengths, station maxima and train lengths - share one prompt: the number box has the keyboard focus, Enter submits,
 Skip leaves the square as it was, Cancel or Escape stops, and the prompt opens where the last one was left
 until a new round is started.  The number box is asked for by name whenever the prompt gains the keyboard (Adam,
 2026-09-23, MT-474: *"make sure the text field is focused by default"*).  The two clears ask once, in a confirmation.
