@@ -75,6 +75,7 @@ not fix it. Name the square.
 ## Used by
 
 - `core.testACompulsoryTurnIsNotAQuestion`
+- `core.testAnImportedFacingGuessCanStart`
 - `ui.testNonAtomicRoutesNeedTheirLengths`
 - `core.testMassAssignLengths`
 - `core.testASecondImportFillsGapsAndDoesNotOverwrite`

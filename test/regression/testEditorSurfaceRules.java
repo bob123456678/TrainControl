@@ -3310,6 +3310,28 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * The Facing menu ticks nothing where nothing says which way the train faces (GUI3-C4).
+     *
+     * It ticked the first facing, as "the one a placement with no recorded facing actually gets" - which stopped being
+     * so when the build began standing such a train on a copy it can start from (GUI2-B1): at BottomMainA that faces the
+     * other way, so the menu's tick contradicted the train.  With nothing recorded and nothing on the railway to ask,
+     * nothing is known, and a tick would say otherwise.
+     *
+     * MUTATION: tick the first facing again and this fails.
+     *
+     * @throws Exception reading the source
+     */
+    @Test
+    public void testTheFacingMenuTicksOnlyWhatIsKnown() throws Exception
+    {
+        String panel = codeOnly(new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/AutonomyEditorPanel.java")), java.nio.charset.StandardCharsets.UTF_8));
+
+        assertFalse(panel.contains("facing == facings.get(0)"), "the Facing menu ticks the first facing when nothing"
+            + " says which way the train faces - the build no longer stands it that way (GUI3-C4)");
+    }
+
+    /**
      * "Is an editor open" is asked of the EDITOR, not of the button that opens one.
      *
      * This was `!editLayoutButton.isEnabled()`, which was a true answer for as long as the button

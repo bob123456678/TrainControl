@@ -4922,6 +4922,18 @@ public class Layout
 
 
     /**
+     * Why this locomotive cannot leave, for the tier asking.
+     *
+     * @param loc the locomotive
+     * @param byHand whether the question is about a route picked by hand
+     * @return the reason, ready to show, or null when the train is free to be given a route
+     */
+    public String explainCannotStart(Locomotive loc, boolean byHand)
+    {
+        return explainCannotStart(loc);
+    }
+
+    /**
      * Why this locomotive cannot leave at all, or null when it can.
      *
      * The four reasons that have nothing to do with any particular destination: they are about the

@@ -311,6 +311,249 @@ public class testATrainIsPutOnlyWhereItCanStart
         return null;
     }
 
+    /**
+     * The throttle's direction-follow flips the way the train faces ON THE RAILWAY, whatever the setup last said
+     * (TDY3-A2, AUT3-A1).
+     *
+     * `flipFacing` took "the other one" of the SETUP's facing for the square.  The setup names the heading a train set
+     * off with until a capture writes the arrival back, so after a run it is absent - and the reversal was dropped - or
+     * another train's - and the flip went the wrong way while the log said it was followed.  Either way the train was
+     * left on the copy facing the way its decoder no longer drives.
+     *
+     * MUTATION: read the setup's facing first again and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAReversalIsFollowedWhateverTheSetupLastSaid() throws Exception
+    {
+        for (Side lastSaid : new Side[] {null, Side.W})
+        {
+            AutonomySession session = session();
+
+            TileKey mainA = square(session, "BottomMainA");
+
+            final Layout running = build(session);
+
+            session.setRunningLayoutSource(() -> running);
+
+            stoodFacing(session, running, mainA, Side.E);
+
+            session.placeLocomotive(mainA, PROBE);
+
+            // WHAT THE SETUP HAS, which is not the railway's answer: nothing, or another train's facing.
+            session.setFacing(mainA, lastSaid);
+
+            session.flipFacing(PROBE, running);
+
+            Point standing = standingOn(running);
+
+            assertNotNull(standing, "the flip took the train off the railway");
+
+            assertEquals(session.facingsFor(mainA).get(standing.getName()), Side.W, "the train stood facing east at"
+                + " BottomMainA and was reversed on the throttle, with the setup saying " + lastSaid + " - and it was"
+                + " left on " + standing.getName() + ", so its next route is locked the way its decoder no longer"
+                + " drives (TDY3-A2)");
+        }
+    }
+
+    /**
+     * A train the railway has on a copy trains may not arrive at is put back there after a rebuild (TDY3-A1).
+     *
+     * After a run the setup still names the square a train set off from, and a rebuild - setting a home or a caption from
+     * the diagram asks for one - regenerates every placement from it; `putTheTrainsBack` then stands each train back
+     * where the railway had it.  It did that through `moveLocomotive`, which refuses a copy that is no station, so a
+     * train reversed onto BottomMainA's westbound copy was left where the setup had it - in the model somewhere it is
+     * not, and free to be dispatched from there.
+     *
+     * MUTATION: put the train back through the placement door's refusal again and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testATrainPutBackStandsWhereItStood() throws Exception
+    {
+        AutonomySession session = session();
+
+        TileKey mainA = square(session, "BottomMainA");
+        TileKey post = square(session, "BottomMainPost");
+
+        final Layout running = build(session);
+
+        session.setRunningLayoutSource(() -> running);
+
+        stoodFacing(session, running, mainA, Side.E);
+
+        session.placeLocomotive(mainA, PROBE);
+        session.setFacingAndMove(mainA, Side.W);
+
+        Point standing = standingOn(running);
+
+        assertTrue(standing != null && !standing.isDestination(), "precondition: the train is not on the copy of"
+            + " BottomMainA trains may not arrive at");
+
+        // WHAT A RUN LEAVES: the setup names another square.
+        session.placeLocomotive(post, PROBE);
+
+        java.util.Map<String, String[]> where = org.traincontrol.gui.TrainControlUI.whereTheTrainsAre(running);
+
+        Layout rebuilt = build(session);
+
+        org.traincontrol.gui.TrainControlUI.putTheTrainsBack(rebuilt, where, null);
+
+        Point after = standingOn(rebuilt);
+
+        assertTrue(after != null && after.getName().equals(standing.getName()), "the railway had the train on "
+            + standing.getName() + " and the rebuild's put-back left it on " + (after == null ? "nothing" : after.getName())
+            + " - where the setup last had it, not where it is (TDY3-A1)");
+    }
+
+    /**
+     * A home set for a train standing on a copy trains may not arrive at saves no facing no train can come home in
+     * (GUI3-C2, AUT3-C2).
+     *
+     * Adam: *"we shouldn't allow an impossible facing to be saved."*  The facing of the train standing there was saved
+     * unfiltered, on the premise that a copy a train stands on is one it may arrive at - which stopped being so when a
+     * train facing the barred way was stood on the barred copy.
+     *
+     * MUTATION: save the railway's facing unfiltered again and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAHomeIsNotSetFacingAWayNoTrainArrives() throws Exception
+    {
+        AutonomySession session = session();
+
+        TileKey mainA = square(session, "BottomMainA");
+
+        final Layout running = build(session);
+
+        session.setRunningLayoutSource(() -> running);
+
+        stoodFacing(session, running, mainA, Side.E);
+
+        session.placeLocomotive(mainA, PROBE);
+        session.setFacingAndMove(mainA, Side.W);
+
+        try
+        {
+            session.setHome(mainA, PROBE, null);
+
+            Object saved = session.getPointProperty(mainA, org.traincontrol.automationui.AutonomyBuilder.HOME_FACING);
+
+            assertFalse("W".equals(saved), "a home at BottomMainA was saved facing west, a way no train may arrive"
+                + " there - a facing Return Home can never bring a train back in (GUI3-C2)");
+        }
+        finally
+        {
+            session.setHome(mainA, null);
+        }
+    }
+
+    /**
+     * A train facing the way trains may not arrive at a station is told so, by the square's name, with what to do - and
+     * nothing refuses its start by hand (GUI3-C1, AUT3-B1, DCN3-C6).
+     *
+     * The sentence said "It is standing on BottomMainA (westbound), which is not a station": the copy's name, a station
+     * called not one, no remedy - and the editor's Why not Moving? gave it on Manual too, where a route picked by hand
+     * may start there.  Return Home said "place it on a station first", and a paste onto the same square turns the
+     * train round.
+     *
+     * MUTATION: name the copy, or refuse the start by hand, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testATrainFacingABarredWayIsToldWhy() throws Exception
+    {
+        AutonomySession session = session();
+
+        TileKey mainA = square(session, "BottomMainA");
+        TileKey post = square(session, "BottomMainPost");
+
+        final Layout running = build(session);
+
+        session.setRunningLayoutSource(() -> running);
+
+        stoodFacing(session, running, mainA, Side.E);
+
+        session.placeLocomotive(mainA, PROBE);
+        session.setFacingAndMove(mainA, Side.W);
+
+        org.traincontrol.base.Locomotive train = model.getLocByName(PROBE);
+
+        String expected = org.traincontrol.util.I18n.f("autolayout.why.startFacingBarred", "BottomMainA",
+            org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup"));
+
+        assertEquals(running.explainCannotStart(train), expected, "a train facing the way trains may not arrive at"
+            + " BottomMainA is told something else about why autonomy will not start it (GUI3-C1)");
+
+        assertEquals(running.explainCannotStart(train, true), null, "by hand a route may start from where the train"
+            + " stands, and Why not Moving? on Manual still said it cannot be sent anywhere (GUI3-C1)");
+
+        // AND RETURN HOME'S SENTENCE, for a train whose home is elsewhere.
+        String home = null;
+
+        for (Map.Entry<String, Side> copy : session.facingsFor(post).entrySet())
+        {
+            Point point = running.getPoint(copy.getKey());
+
+            if (point != null && point.isDestination()) home = point.getName();
+        }
+
+        assertNotNull(home, "precondition: BottomMainPost has no copy a train may be homed on");
+
+        running.setHomeLocomotive(home, PROBE);
+
+        try
+        {
+            java.util.List<String> why = org.traincontrol.automation.HomeStaging.snapshot(running).plan().getReasons()
+                .get(train);
+
+            String expectedHome = org.traincontrol.util.I18n.f("autolayout.whyHomeStartFacingBarred", "BottomMainA",
+                org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup"));
+
+            assertTrue(why != null && why.contains(expectedHome), "Return Home did not say the train faces the way trains"
+                + " may not arrive at BottomMainA, and what to do; it said " + why + " (AUT3-B1)");
+        }
+        finally
+        {
+            running.clearHomeLocomotives();
+        }
+    }
+
+    /**
+     * Among the copies facing the recorded way, the build takes one trains may arrive at (GUI-B1, DCN3-C3).
+     *
+     * At BottomMainPost, which trains may turn at with arrivals from the north barred, two copies face south: the plain
+     * copy arriving from the north - no station - and the turning copy arriving from the south.  A train recorded
+     * facing south is stood on the one autonomy can start.
+     *
+     * MUTATION: let `placementCopy` take the first copy facing that way and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testTheBuildPrefersACopyItCanStartFrom() throws Exception
+    {
+        AutonomySession session = session();
+
+        TileKey post = square(session, "BottomMainPost");
+
+        session.placeLocomotive(post, PROBE);
+        session.setFacing(post, Side.S);
+
+        Point standing = standingOn(build(session));
+
+        assertNotNull(standing, "the build put the train nowhere");
+
+        assertEquals(session.facingsFor(post).get(standing.getName()), Side.S, "precondition: the build turned the train");
+
+        assertTrue(standing.isDestination(), "recorded facing south at BottomMainPost, the train was stood on "
+            + standing.getName() + " - no station - where a copy facing south that trains may arrive at exists");
+    }
+
     /** Stands the train on a copy of the square facing this way that it can start from, and says which. */
     private static Point stoodFacing(AutonomySession session, Layout running, TileKey square, Side facing)
     {

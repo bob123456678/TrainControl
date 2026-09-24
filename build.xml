@@ -467,6 +467,7 @@
         <test-one-class class="testARunKeepsItsOwnState"/>
         <test-one-class class="testAnUnlockGivesBackOnlyWhatItHolds"/>
         <test-one-class class="testATrainIsPutOnlyWhereItCanStart"/>
+        <test-one-class class="testAnImportedFacingGuessCanStart"/>
         <test-one-class class="testAnImportSaysItsRoutesAreOff"/>
         <test-one-class class="testAStartLoadsOnlyAGraphSomebodyAskedFor"/>
         <test-one-class class="testRouteInventory"/>
