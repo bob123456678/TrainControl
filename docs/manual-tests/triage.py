@@ -1680,11 +1680,13 @@ class Triage(tk.Tk):
 
         frame = ttk.Frame(parent)
 
-        # Anchored widgets are packed FIRST, from the bottom, so they claim only their natural
-        # size; the tree is packed LAST with fill+expand so it gets everything left over.  Doing
-        # it the other way round - tree first - was the previous bug: 'tree' had ended up a direct
-        # child of 'frame' rather than of 'rows' (its scrollbar's actual parent), so it was
-        # competing with 'rows' as an unrelated sibling instead of living inside it, and lost.
+        # THE LIST IS THE LAST THING TO GIVE WAY.  Tk's packer gives each widget its asked-for size in the order they
+        # were packed and squeezes the last ones when the pane is short - so the buttons go first, then the list
+        # (fill+expand, so it takes whatever is spare), then the detail pane, which is what shrinks.  Packed the other
+        # way round - the list last - a short top pane squeezed the list to its heading and left a blank detail box: in
+        # the third-of-the-screen layout Adam saw both tabs empty (2026-09-24: "why is the FR and OB list in my app
+        # empty?") with 30 and 56 rows in them.  (The list's own scrollbar shares 'rows' with it, which is where an
+        # older version went wrong: the tree a direct child of 'frame', competing with 'rows' as a sibling.)
         button_row = ttk.Frame(frame)
         button_row.pack(side=tk.BOTTOM, fill=tk.X, pady=(4, 0))
 
@@ -1697,16 +1699,18 @@ class Triage(tk.Tk):
                                      self.issue_widgets[kind].get("open_tag")))
         open_button.pack(side=tk.RIGHT)
 
+        rows = ttk.Frame(frame)
+        rows.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
         detail = tk.Text(frame, wrap=tk.WORD, height=4, font=("Segoe UI", 10),
                          background="#fbfbfb", relief=tk.FLAT, padx=8, pady=6, state=tk.DISABLED)
         detail.pack(side=tk.BOTTOM, fill=tk.X, pady=(6, 0))
 
-        rows = ttk.Frame(frame)
-        rows.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-
         columns = ("state", "ref", "date", "what")
 
-        tree = ttk.Treeview(rows, columns=columns, show="headings", selectmode="browse", height=6)
+        # Three rows asked for, not six: what it asks for is what it keeps when the pane is short, and the detail pane
+        # under it needs some of that too.  A taller pane gives the list the rest.
+        tree = ttk.Treeview(rows, columns=columns, show="headings", selectmode="browse", height=3)
 
         for name, title, width in (
             ("state", "State", 92),
