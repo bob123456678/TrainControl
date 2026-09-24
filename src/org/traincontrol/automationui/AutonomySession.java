@@ -7622,6 +7622,11 @@ public class AutonomySession
      * one `setFacing` writer left telling nobody.  Until the next build the diagram showed the new
      * direction while the train stood on the copy facing the old one.
      *
+     * **The train the railway has here, and only then the setup's** (TDY4-C5).  After a run the setup still names each
+     * square's pre-run occupant (behaviour.md 6a), so this turned the setup's train - found on no copy of the square,
+     * so nothing moved - while the train actually standing there stayed as it was.  The setup's record is its own
+     * train's, so it is written only where the railway has that train, or none.
+     *
      * Silently a plain `setFacing` when no layout is running, which is every headless use.
      *
      * @param tile the square
@@ -7629,20 +7634,43 @@ public class AutonomySession
      */
     public void setFacingAndMove(TileKey tile, Side facing)
     {
-        setFacing(tile, facing);
-
         org.traincontrol.automation.Layout running =
             runningLayout == null ? null : runningLayout.get();
 
+        String inTheSetup = getLocomotiveNameAt(tile);
+        String onTheRailway = trainOnTheRailway(tile, running);
+
+        if (onTheRailway == null || onTheRailway.equals(inTheSetup)) setFacing(tile, facing);
+
         if (running == null || facing == null) return;
 
-        Object standing = getPointProperty(tile, "loc");
-
-        if (!(standing instanceof org.json.JSONObject)) return;
-
-        String name = ((org.json.JSONObject) standing).optString("name", null);
+        String name = onTheRailway != null ? onTheRailway : inTheSetup;
 
         if (name != null) moveOntoFacingCopy(running, name, tile, facing);
+    }
+
+    /**
+     * The train standing on any copy of a square on the RAILWAY, or null (TDY4-C5).
+     *
+     * `facingOnTheRailway`'s question about the train rather than its facing: after a run the setup's placement need not
+     * be the railway's, and a door acting on the train that is there asks this.
+     *
+     * @param square the diagram square
+     * @param running the running layout, or null
+     * @return the locomotive's name, or null when no copy holds one
+     */
+    public String trainOnTheRailway(TileKey square, org.traincontrol.automation.Layout running)
+    {
+        if (square == null || running == null || getStationIndex() == null) return null;
+
+        for (String name : getStationIndex().pointNamesAt(square))
+        {
+            org.traincontrol.automation.Point copy = running.getPoint(name);
+
+            if (copy != null && copy.getCurrentLocomotive() != null) return copy.getCurrentLocomotive().getName();
+        }
+
+        return null;
     }
 
     /**

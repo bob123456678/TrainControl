@@ -3691,7 +3691,15 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (target == null) return null;
 
-        final String standing = locomotiveAt(target);
+        org.traincontrol.automation.Layout showing =
+            runningLayout == null ? null : runningLayout.get();
+
+        // THE TRAIN THE RAILWAY HAS HERE, and only then the setup's (TDY4-C5).  After a run the setup still names each
+        // square's pre-run occupant (behaviour.md 6a) and nothing captures before this menu, so it named the setup's
+        // train, ticked the railway's, and a click turned neither.  `setFacingAndMove` turns the one named here.
+        String onTheRailway = session == null ? null : session.trainOnTheRailway(target, showing);
+
+        final String standing = onTheRailway != null ? onTheRailway : locomotiveAt(target);
 
         if (standing == null) return null;
 
@@ -3708,14 +3716,11 @@ public class AutonomyEditorPanel extends JPanel
         //
         // One question, one answer, and the file is the fallback rather than the source: an empty
         // square has no train whose direction this could be, and there the stored value is all there is.
-        org.traincontrol.automation.Layout showing =
-            runningLayout == null ? null : runningLayout.get();
-
-        org.traincontrol.automationui.TilePorts.Side onTheRailway =
+        org.traincontrol.automationui.TilePorts.Side facingOnTheRailway =
             session.facingOnTheRailway(target, showing);
 
         final org.traincontrol.automationui.TilePorts.Side recorded =
-            onTheRailway != null ? onTheRailway : session.getFacing(target);
+            facingOnTheRailway != null ? facingOnTheRailway : session.getFacing(target);
 
         // AND WHATEVER IS ACTUALLY RECORDED, even when this square cannot hold it (OB-177).
         //

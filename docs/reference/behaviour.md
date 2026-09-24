@@ -1838,6 +1838,13 @@ surface that reaches this most often has no editor in it at all - the track diag
 right-click autonomy menu rebuilds after every gesture, and nothing on that path ever captures where
 the trains are.
 
+**So the Facing menu is about the train the RAILWAY has on the square** (TDY4-C5, 2026-09-24). After a run
+the setup can still name a square's pre-run occupant while another train stands there. The menu named the
+setup's train, ticked the railway's, and a click turned neither - it wrote the setup's record and looked for
+the setup's train on a square it was not on. It now names the train that is there, turns that one onto the
+copy facing the chosen way, and writes the setup's facing only where the setup's train is the one standing
+there (or nothing is). `regression.testTheFacingMenuIsAboutTheTrainThere`.
+
 ---
 
 ## 7. Routing checks in the editor
