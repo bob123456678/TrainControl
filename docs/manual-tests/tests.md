@@ -67,8 +67,13 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-484](#mt-484) | 2026-09-23 | Segment Length takes a 0 as an answer, and has a Clear button | fixed unvalidated | FR-097 |
 | [MT-485](#mt-485) | 2026-09-23 | The five route tiles' lengths are folded into the track beside them | fixed unvalidated | OB-281 |
 | [MT-486](#mt-486) | 2026-09-23 | Return Home brings a train back facing the way its home was set | fixed unvalidated | OB-282 |
+| [MT-487](#mt-487) | 2026-09-23 | Importing routes says they arrive switched off | fixed unvalidated | REG-B3, REG2-C6 |
+| [MT-488](#mt-488) | 2026-09-23 | A train reversed on the throttle where one direction is barred | fixed unvalidated | TDY2-A1, GUI2-A1, AUT2-A1, TDY3-A1, TDY3-A2, GUI3-C1, AUT3-B1, TDY3-C1, TDY4-C3 |
+| [MT-489](#mt-489) | 2026-09-23 | The questions at a may-reverse square name the square, not a direction | fixed unvalidated | GUI-C7 |
+| [MT-490](#mt-490) | 2026-09-23 | "Page is left out" brings an open editor forward | fixed unvalidated | GUI-C8 |
+| [MT-491](#mt-491) | 2026-09-23 | An old autonomy.json's trains face the way the old version ran them | fixed unvalidated | REG4-A1, REG4-C1 |
 
-Everything else - 446 of 486 - needs nothing from you unless the area changes again:
+Everything else - 446 of 491 - needs nothing from you unless the area changes again:
 394 **fixed validated** and 52 **superseded**.
 
 ---
@@ -25012,6 +25017,8 @@ mutation.  The question in step 3 is what only you can check.
 
 ---
 
+<a id="mt-487"></a>
+
 ### MT-487 - 2026-09-23 - Importing routes says they arrive switched off
 
 **Disposition:** fixed unvalidated
@@ -25025,25 +25032,31 @@ sensor that used to set a road.
 
 **Steps**
 
-1. Routes -> Export, and save the file somewhere.
-2. Routes -> Import, and pick that file.
+1. Note which routes have their automatic firing on now: the import switches it off on every route, and nothing lists
+   which were on (REG2-C7, still open).  If none has, turn it on for one route that has a sensor condition - right-click
+   it, Enable Auto Execution - so step 3 has something to switch off.
+2. Routes -> Export, and save the file somewhere.
+3. Routes -> Import, and pick that file.
+4. Turn automatic firing back on for the routes you noted in step 1.
 
 **Expected**
 
 - A message says how many routes were imported, that their automatic firing is off until you turn it on, and names the
   two ways to do it - Enable Auto Execution on a route's right-click menu, and Bulk Enable.
-- The log has no "Route ... is running" line for the imported routes, and none of them fires automatically until you
-  turn it on.
+- Between steps 3 and 4, the log has no "Route ... is running" line for the route armed in step 1 or any other, and
+  none of them fires automatically until you turn it on.
 
 *What this is:* `core.testAnImportSaysItsRoutesAreOff` (the notice, and no route armed on the way in).  The message on
 screen is what only you can check.
 
 ---
 
+<a id="mt-488"></a>
+
 ### MT-488 - 2026-09-23 - A train reversed on the throttle where one direction is barred
 
 **Disposition:** fixed unvalidated
-**From:** TDY2-A1, GUI2-A1, AUT2-A1
+**From:** TDY2-A1, GUI2-A1, AUT2-A1, TDY3-A1, TDY3-A2, GUI3-C1, AUT3-B1, TDY3-C1, TDY4-C3
 
 **Written:** 2026-09-23
 
@@ -25061,9 +25074,9 @@ the next route was locked in the direction it no longer drives.
 **Expected**
 
 - Step 2: the diagram shows it facing west.
-- Step 3: the routes offered by hand lead west, the way it now faces - none east.  Autonomy will not choose it, and Why
-  not Moving? says it faces the way trains may not arrive at BottomMainA, and to turn it round or open that side under
-  Trains May Arrive...; on Manual, Why not Moving? does not say it cannot be sent.
+- Step 3: the routes offered by hand lead west, the way it now faces - none east.  Autonomy will not start it, and Why
+  not Moving? says trains may not arrive at BottomMainA facing the way it faces, and to drive it off by hand, turn it
+  round, or open that side under Trains May Arrive...; on Manual, Why not Moving? does not say it cannot be sent.
 - Step 4: it faces east again and autonomy can start it as before.
 
 The same is true of the autonomy editor's Facing menu: choosing west there stands the train facing west.
@@ -25072,6 +25085,8 @@ The same is true of the autonomy editor's Facing menu: choosing west there stand
 railway), red under its mutations.  Whether the diagram and the refusal read right is what only you can check.
 
 ---
+
+<a id="mt-489"></a>
 
 ### MT-489 - 2026-09-23 - The questions at a may-reverse square name the square, not a direction
 
@@ -25095,7 +25110,9 @@ both questions named the square with a direction already in it - "BottomMainB (e
 
 ---
 
-### MT-490 - 2026-09-23 - "Page is left out" and Fix Setup bring an open editor forward
+<a id="mt-490"></a>
+
+### MT-490 - 2026-09-23 - "Page is left out" brings an open editor forward
 
 **Disposition:** fixed unvalidated
 **From:** GUI-C8
@@ -25114,6 +25131,42 @@ on the banner - said "Close the editor first", where the Edit item it stands for
 
 - The open editor comes to the front; no message.
 
-*What this is:* `regression.testEditorSurfaceRules` and `regression.testTheRefusalsAreAskedAtTheDoors`.
+*What this is:* `regression.testEditorSurfaceRules` and `regression.testTheRefusalsAreAskedAtTheDoors`.  Fix Setup on
+the banner was changed the same way; it shows only on a setup with a problem that stops autonomy, so it is left to
+those two and is not a step here.
+
+---
+
+<a id="mt-491"></a>
+
+### MT-491 - 2026-09-23 - An old autonomy.json's trains face the way the old version ran them
+
+**Disposition:** fixed unvalidated
+**From:** REG4-A1, REG4-C1
+
+**Written:** 2026-09-23
+
+**What was wrong.**  Importing an autonomy.json from an older version chose which way each train faces - the first
+way trains may arrive at its square - and said in the log that it had guessed.  The old file does say which way each
+train runs: a train there went only along the edges that start at its point.  On a fresh upgrade of your railway the
+2-8-4 3505 SP at TopMainR1 came in facing south, where the old version only ever drove it north.
+
+**File:** `docs/manual-tests/files/MT-491-autonomy-2.7.4c.json` - the same copy of your own old file MT-298 uses.
+
+**Steps**
+
+1. Import `MT-491-autonomy-2.7.4c.json` the way MT-298 does, into a new configuration.
+2. Read the lines the import writes in the log.
+3. Switch back to your own configuration; the imported one can be deleted.
+
+**Expected**
+
+- The import's message says it placed 4 locomotives.
+- The log has no line saying trains "had the way they face chosen for them", and none beginning "The old file ran the
+  trains at" - the file says which way all four ran, and your railway's directions let each stand that way round.
+
+*What this is:* `core.testAnImportedFacingGuessCanStart`: on a fresh upgrade of the frozen railway the four trains face
+the way the old file ran them (the 2-8-4 at TopMainR1 north), and where the file cannot say, the guess is made over
+the finished setup.  The log line is what only you can see.
 
 ---
