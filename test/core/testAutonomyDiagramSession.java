@@ -3493,7 +3493,7 @@ public class testAutonomyDiagramSession
 
         // NOTHING MEASURED: a railway that records no track lengths has decided not to model them, and
         // there is nothing to compare the maximum against.
-        assertFalse(hasFinding(org.traincontrol.automationui.AutonomyChecks.RUN_IN_SHORTER_THAN_THE_BERTH),
+        assertFalse(runInNotice() != null,
             "a railway that measures no track was told its platforms are shorter than their maxima, "
             + "which is a comparison with one side missing");
 
@@ -3503,7 +3503,7 @@ public class testAutonomyDiagramSession
         session.rebuild();
 
         org.traincontrol.automationui.AutonomyChecks.Finding notice =
-            findingFor(org.traincontrol.automationui.AutonomyChecks.RUN_IN_SHORTER_THAN_THE_BERTH);
+            runInNotice();
 
         assertNotNull(notice, "a platform set to hold four units of train has two units of track "
             + "between it and the switch behind it, so a three-unit train is refused there whatever "
@@ -3529,7 +3529,7 @@ public class testAutonomyDiagramSession
         session.setTileLength(new TileKey("main", 4, 1), 4);
         session.rebuild();
 
-        assertFalse(hasFinding(org.traincontrol.automationui.AutonomyChecks.RUN_IN_SHORTER_THAN_THE_BERTH),
+        assertFalse(runInNotice() != null,
             "four units of track beyond the switch hold the four-unit train the platform claims, and "
             + "the notice is still asking about it");
 
@@ -3539,7 +3539,7 @@ public class testAutonomyDiagramSession
         session.setTileLength(new TileKey("main", 4, 1), 2);
         session.rebuild();
 
-        assertFalse(hasFinding(org.traincontrol.automationui.AutonomyChecks.RUN_IN_SHORTER_THAN_THE_BERTH),
+        assertFalse(runInNotice() != null,
             "a platform with no stated maximum was compared against one");
 
         // AND AN UNMEASURED STRETCH IS UNKNOWN, NOT SHORT - the doctrine the guard itself follows.
@@ -3547,7 +3547,7 @@ public class testAutonomyDiagramSession
         session.setTileLength(new TileKey("main", 4, 1), 0);
         session.rebuild();
 
-        assertFalse(hasFinding(org.traincontrol.automationui.AutonomyChecks.RUN_IN_SHORTER_THAN_THE_BERTH),
+        assertFalse(runInNotice() != null,
             "the track beyond the switch has no length recorded and the platform was reported as "
             + "short. Unmeasured is unknown, not zero - and REVERSAL_NEEDS_LENGTH is the notice that "
             + "asks for a number where one is needed");
@@ -3571,7 +3571,7 @@ public class testAutonomyDiagramSession
             "the fixture did not take: trains must turn round at the far end of this run");
 
         org.traincontrol.automationui.AutonomyChecks.Finding afterATurn =
-            findingFor(org.traincontrol.automationui.AutonomyChecks.RUN_IN_SHORTER_THAN_THE_BERTH);
+            runInNotice();
 
         assertNotNull(afterATurn, "a platform set to hold nine units is four units of track from the "
             + "square trains turn round at, and the walk stops at a reversal just as it stops at a "
@@ -3590,7 +3590,7 @@ public class testAutonomyDiagramSession
 
         assertFalse(session.isTurnAround(turns), "the fixture did not take: nothing should turn here now");
 
-        assertFalse(hasFinding(org.traincontrol.automationui.AutonomyChecks.RUN_IN_SHORTER_THAN_THE_BERTH),
+        assertFalse(runInNotice() != null,
             "an edge that crosses no switch and starts nowhere trains turn round bounds nothing - the "
             + "guard carries on back through the route - so the number this would quote is not the "
             + "number that would refuse the train");
@@ -3602,6 +3602,45 @@ public class testAutonomyDiagramSession
      * @param messageKey the check to look for
      * @return the finding, or null when nothing raised it
      */
+    /** The run-in notice, whichever of its two sentences it has - the berth's, or a platform autonomy chooses (MT-555). */
+    private org.traincontrol.automationui.AutonomyChecks.Finding runInNotice()
+    {
+        org.traincontrol.automationui.AutonomyChecks.Finding berth =
+            findingFor(org.traincontrol.automationui.AutonomyChecks.RUN_IN_SHORTER_THAN_THE_BERTH);
+
+        return berth != null ? berth : findingFor(RUN_IN_AT_A_PLATFORM);
+    }
+
+    /** The platform's own sentence (MT-555), by its key so the claims compile before it exists. */
+    private static final String RUN_IN_AT_A_PLATFORM = "autosetup.ui.checkRunInShorterThanThePlatform";
+
+    /** How many findings of this key the setup gives about this square. */
+    private int findingsAbout(String messageKey, TileKey square)
+    {
+        int seen = 0;
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (finding.getMessageKey().equals(messageKey) && square.equals(finding.getTile())) seen++;
+        }
+
+        return seen;
+    }
+
+    /**
+     * `platformBehindASwitch`, and track on past the platform to a second sensor - so the platform has an approach
+     * from each side, one of which can be barred.
+     */
+    private LayoutDiagram platformWithTwoApproaches() throws IOException
+    {
+        LayoutDiagram page = platformBehindASwitch();
+
+        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 8, 14, accessoryDecoderType.MM2, null);
+
+        return page;
+    }
+
     private org.traincontrol.automationui.AutonomyChecks.Finding findingFor(String messageKey)
     {
         for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
@@ -3610,6 +3649,203 @@ public class testAutonomyDiagramSession
         }
 
         return null;
+    }
+
+    /**
+     * A side trains may not arrive by is not an approach, and its run-in is not compared with the maximum (MT-552).
+     *
+     * Adam, 2026-09-24: *"RampDown and BottomMainPost should not have the ... warning as worded, since both sides are
+     * measured (and moreover, they only accept arrivals from one side)."*  Every arriving edge was judged, the barred
+     * one too - and no train comes in that way, so nothing about its track can refuse one.
+     *
+     * The control first: with both sides open the short side is reported, so the fixture can say it.
+     *
+     * MUTATION: judge every arriving edge in `runInsShorterThanTheBerth` again, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testABarredApproachIsNotJudgedForItsRunIn() throws Exception
+    {
+        session.open(Arrays.asList(platformWithTwoApproaches()));
+        session.initialize("Barred");
+
+        TileKey platform = new TileKey("main", 5, 1);
+
+        session.setStation(platform, true);
+        session.setPointProperty(platform, "maxTrainLength", 4);
+        session.setTileLength(new TileKey("main", 2, 1), 2);
+        session.setTileLength(new TileKey("main", 4, 1), 2);
+        session.rebuild();
+
+        assertNotNull(runInNotice(), "precondition: two units of track between the platform and the switch on its west"
+            + " side, and a maximum of 4, is not reported - so this fixture cannot show the notice at all");
+
+        session.setBarredArrivals(platform, java.util.EnumSet.of(org.traincontrol.automationui.TilePorts.Side.W));
+        session.rebuild();
+
+        assertNull(runInNotice(), "the platform takes no arrivals from the west, and the west side's run-in is still"
+            + " compared with its maximum - Adam, MT-552: \"they only accept arrivals from one side\"");
+    }
+
+    /**
+     * A side trains may not arrive by is not an approach, and its unmeasured track is not a half-measured one (MT-552).
+     *
+     * The same note: RampDown and BottomMainPost were told they *"can refuse trains that would otherwise fit"* for the
+     * side nothing arrives by.
+     *
+     * MUTATION: judge every arriving edge in `stationsWithAHalfMeasuredApproach` again, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testABarredApproachIsNotJudgedAsHalfMeasured() throws Exception
+    {
+        session.open(Arrays.asList(platformWithTwoApproaches()));
+        session.initialize("BarredHalf");
+
+        TileKey berth = new TileKey("main", 5, 1);
+
+        session.setStation(berth, true);
+        session.setAutoDestination(berth, false);
+        session.setTileLength(new TileKey("main", 4, 1), 2);
+        session.rebuild();
+
+        assertTrue(session.stationsWithAHalfMeasuredApproach().containsKey(berth), "precondition: a berth whose west"
+            + " approach is measured in part is not reported - so this fixture cannot show the warning at all");
+
+        session.setBarredArrivals(berth, java.util.EnumSet.of(org.traincontrol.automationui.TilePorts.Side.W));
+        session.rebuild();
+
+        assertFalse(session.stationsWithAHalfMeasuredApproach().containsKey(berth), "the berth takes no arrivals from"
+            + " the west, and it is still warned that the west approach is half measured - Adam, MT-552: \"they only"
+            + " accept arrivals from one side\"");
+    }
+
+    /**
+     * At a station autonomy may choose, a train longer than the run-in stands across the switch and blocks the railway
+     * behind it; at a parking berth it is refused - and the notice says which (MT-555).
+     *
+     * Adam, 2026-09-24: *"Notices work, but they are wrong.  'so a train longer than x is refused' - 'so a train
+     * longer than x may block other parts of the layout...'"*  `Layout.whyTooLongForThisRoute` refuses it at a berth
+     * and, at a station autonomy may choose, admits it as far as the measured route in holds (FR-087).
+     *
+     * MUTATION: word both kinds of station the same, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testAPlatformIsToldALongTrainMayBlockAndABerthThatItIsRefused() throws Exception
+    {
+        session.open(Arrays.asList(platformBehindASwitch()));
+        session.initialize("Wording");
+
+        TileKey platform = new TileKey("main", 5, 1);
+
+        session.setStation(platform, true);
+        session.setPointProperty(platform, "maxTrainLength", 4);
+        session.setTileLength(new TileKey("main", 2, 1), 2);
+        session.setTileLength(new TileKey("main", 4, 1), 2);
+        session.rebuild();
+
+        assertTrue(session.isAutoDestination(platform), "precondition: a new station is not one autonomy may choose");
+
+        assertEquals(findingsAbout(RUN_IN_AT_A_PLATFORM, platform), 1, "a station autonomy may choose is not told that a"
+            + " train longer than its run-in may block the railway - Adam, MT-555: \"so a train longer than x may block"
+            + " other parts of the layout\"");
+
+        assertEquals(findingsAbout(org.traincontrol.automationui.AutonomyChecks.RUN_IN_SHORTER_THAN_THE_BERTH, platform),
+            0, "a station autonomy may choose is told a train longer than its run-in is refused, and it is admitted");
+
+        assertFalse(org.traincontrol.util.I18n.t(RUN_IN_AT_A_PLATFORM).contains("refused"), "the platform's sentence"
+            + " still says the train is refused: " + org.traincontrol.util.I18n.t(RUN_IN_AT_A_PLATFORM));
+
+        session.setAutoDestination(platform, false);
+        session.rebuild();
+
+        assertEquals(findingsAbout(org.traincontrol.automationui.AutonomyChecks.RUN_IN_SHORTER_THAN_THE_BERTH, platform),
+            1, "a parking berth is not told that a train longer than its run-in is refused, which it is");
+    }
+
+    /**
+     * A home on a parking berth every train turns at is not warned about (MT-552).
+     *
+     * Adam, 2026-09-24: *"the 'every train has to turn around' warning for TopMainR0Park is moot since it is a parking
+     * berth.  Non-reversible trains can still be backed in there."*
+     *
+     * The control first: at a station autonomy may choose, the warning stands.
+     *
+     * MUTATION: warn about every home a train must turn at, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testAHomeOnAParkingBerthIsNotWarnedAboutTurning() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack()));
+        session.initialize("Home");
+
+        TileKey berth = new TileKey("main", 4, 1);
+
+        session.setStation(berth, true);
+        session.setPointProperty(berth, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, Boolean.TRUE);
+        session.setHome(berth, "Test Loc");
+        session.rebuild();
+
+        String key = org.traincontrol.automationui.AutonomyChecks.HOME_NEEDS_REVERSIBLE;
+
+        assertEquals(findingsAbout(key, berth), 1, "precondition: a home on a station every train turns at, which"
+            + " autonomy may choose, is not warned about - so this fixture cannot show the warning at all");
+
+        session.setAutoDestination(berth, false);
+        session.rebuild();
+
+        assertEquals(findingsAbout(key, berth), 0, "a home on a parking berth every train turns at is warned that a"
+            + " locomotive will be driven in nose first - Adam, MT-552: \"moot since it is a parking berth\"");
+    }
+
+    /**
+     * A station set to No - Nothing Can Pass is said to be, once - not reported as unreachable (FR-101).
+     *
+     * Adam, 2026-09-24: *"these show 'no train can reach &lt;point&gt; from any other station....check the direction'.
+     * Update the error message to say that is marked for nothing to be able to pass, user to validate if
+     * intentional."*
+     *
+     * MUTATION: let the reachability sentences report a closed station again, or leave out the new one, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testAStationNothingCanPassIsSaidToBeClosed() throws Exception
+    {
+        session.open(Arrays.asList(platformWithTwoApproaches()));
+        session.initialize("Closed");
+
+        TileKey platform = new TileKey("main", 5, 1);
+        TileKey other = new TileKey("main", 1, 1);
+
+        session.setStation(platform, true);
+        session.setStation(other, true);
+        session.setStation(new TileKey("main", 7, 1), true);
+        session.rebuild();
+
+        String unreachable = org.traincontrol.automationui.AutonomyChecks.STATION_UNREACHABLE;
+        String closed = "autosetup.ui.checkStationClosed";
+
+        assertEquals(findingsAbout(unreachable, platform), 0, "precondition: in service, the platform is already"
+            + " reported as one no train can reach");
+
+        session.setPointProperty(platform, "active", Boolean.FALSE);
+        session.rebuild();
+
+        assertEquals(findingsAbout(closed, platform), 1, "a station set to No - Nothing Can Pass is not said to be -"
+            + " Adam, FR-101: \"say that is marked for nothing to be able to pass, user to validate if intentional\"");
+
+        assertEquals(findingsAbout(unreachable, platform)
+            + findingsAbout(org.traincontrol.automationui.AutonomyChecks.STATION_REACHES_NOTHING, platform)
+            + findingsAbout(org.traincontrol.automationui.AutonomyChecks.TERMINUS_STRANDED, platform), 0,
+            "a station set to No - Nothing Can Pass is still reported as one no train can reach or leave, with advice"
+            + " about the directions");
     }
 
     /**
