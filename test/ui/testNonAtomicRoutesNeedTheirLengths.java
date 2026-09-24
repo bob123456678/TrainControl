@@ -583,6 +583,60 @@ public class testNonAtomicRoutesNeedTheirLengths
     }
 
     /**
+     * Start and Return Home ask the gate only once their own refusals have passed, as Execute Timetable does (TDU-C8).
+     *
+     * GUI-A1 moved Execute Timetable's call below its refusals - *"a refused press should change nothing"* - and the two
+     * sibling doors kept the old order: Return Home refused as "locomotives running", or Start refused for the power,
+     * switched the railway to atomic on the way to being refused.
+     *
+     * MUTATION: move either call back above its refusals and this fails.
+     *
+     * @throws Exception from reading the source
+     */
+    @Test
+    public void testStartAndReturnHomeAskTheGateAfterTheirRefusals() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(
+            new java.io.File("src/org/traincontrol/gui/TrainControlUI.java").toPath()), java.nio.charset.StandardCharsets.UTF_8);
+
+        String gate = "keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack()";
+
+        int home = source.indexOf("public void requestReturnToHome()");
+        int homeEnd = source.indexOf("\n    }", home);
+
+        assertTrue(home > 0 && homeEnd > home, "precondition: Return Home's door is not where this looks for it");
+
+        String returnHome = source.substring(home, homeEnd);
+
+        int homeBusy = returnHome.indexOf("HomeStaging.Outcome.LOCOMOTIVES_RUNNING");
+        int homePower = returnHome.indexOf("autolayout.ui.powerOnToStart");
+        int homeGate = returnHome.indexOf(gate);
+
+        assertTrue(homeBusy > 0 && homePower > 0 && homeGate > 0, "precondition: Return Home no longer refuses a busy"
+            + " railway and one with the power off, or no longer asks the gate");
+
+        assertTrue(homeGate > homeBusy && homeGate > homePower, "Return Home asks the Atomic Routes gate before it"
+            + " refuses - so a refused press still switches the running railway's setting (TDU-C8, GUI-A1)");
+
+        int start = source.indexOf("private void startAutonomyActionPerformed(");
+        int end = source.indexOf("GEN-LAST:event_startAutonomyActionPerformed", start);
+
+        assertTrue(start > 0 && end > start, "precondition: Start's handler is not where this looks for it");
+
+        String startDoor = source.substring(start, end);
+
+        int power = startDoor.indexOf("autolayout.ui.powerOnToStart");
+        int none = startDoor.indexOf("autolayout.ui.infoPleaseAddLocomotivesToGraph");
+        int asks = startDoor.indexOf(gate);
+
+        assertTrue(power > 0 && none > 0 && asks > 0, "precondition: Start no longer refuses with the power off or with"
+            + " no trains, or no longer asks the gate");
+
+        assertTrue(asks > power && asks > none, "Start asks the Atomic Routes gate before it refuses - so a refused press"
+            + " still switches the running railway's setting (TDU-C8, GUI-A1)");
+    }
+
+    /**
      * How many times one string occurs in another.
      *
      * @param text the whole
