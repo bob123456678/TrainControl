@@ -528,6 +528,7 @@
         <test-one-class class="testAHandSendIsRefusedWhileTheSetupIsBroken"/>
         <test-one-class class="testAThrottleReversalIsFollowedFromItsEcho"/>
         <test-one-class class="testTheDebugMenuSwitchesTheEcho"/>
+        <test-one-class class="testTheVisibleElementsHeadingIsSpacedLikeTheOthers"/>
         <test-one-class class="testPathTypeRedrawsTheTestInTheEditor"/>
         <test-one-class class="testTheWhyAnswerIsOnScreen"/>
         <test-one-class class="testTheMenusComeBackAtOneMoment"/>
