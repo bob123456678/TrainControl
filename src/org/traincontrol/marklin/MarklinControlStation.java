@@ -4662,6 +4662,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
 
         final TrainControlUI theUI = ui;
+
+        // WHETHER THIS IS A SIMULATION, before the window starts rather than after it (Adam, 2026-09-24).  The window asks
+        // while it builds - Preferences > Debug is offered only in debug and simulation - and this was set at the end of
+        // init, once the window had been built on the event thread, so the window read false.  The only other reader is
+        // `TrainControlUI.isCentralStationConnected`, for which false while simulating is the right answer from the
+        // first frame (OB-098).  Set again below with the power, as it always was.
+        model.simulation = simulate;
         
         // Set model
         if (showUI && theUI != null)

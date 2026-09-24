@@ -228,6 +228,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String AUTOSAVE_SETTING_PREF = "AutoSave";
 
     /**
+     * Whether a simulation answers every command sent as a Central Station would - Preferences > Debug > Echo Sent
+     * Commands, offered only in debug and simulation (Adam, 2026-09-24).  Off unless somebody has turned it on.
+     */
+    public static final String ECHO_COMMANDS_PREF = "EchoSentCommandsWhenSimulating";
+
+    /**
      * Whether the diagram shows the captions of stations autonomy cannot choose.
      *
      * On by default, because a caption disappearing is a worse first impression than a crowded
@@ -3263,6 +3269,54 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** The two section labels on the Layout menu - see mountLayoutHeadings and guardLayoutMenu */
     private javax.swing.JMenuItem localHeading;
     private javax.swing.JMenuItem centralStationHeading;
+
+    /**
+     * Preferences > Debug, in debug and simulation only (Adam, 2026-09-24).
+     *
+     * *"it would be handy to have a preference option (only when in debug+simulate mode) to turn on and off echoing, so
+     * we don't need to recompile every time"*, *"under a debug heading visible only in this mode"*, and *"I'd rather have
+     * debug be a non-bold heading with a submenu that has the options"* - so an ordinary submenu, like Startup beside it.
+     *
+     * **Echo Sent Commands** is `MarklinControlStation.DEBUG_SIMULATE_PACKETS`: with it on, a simulation answers every
+     * command as a Central Station would, which is what lets the window follow a throttle reversal (MT-488), a switch or
+     * a function there.  It was a constant, changed by recompiling.
+     *
+     * **The stored choice is the operator's, not a test's.**  A test run is unattended, and sets the flag in code for
+     * what it needs; so there the choice is neither read into the flag nor written from it, and a test cannot switch
+     * echo on - or off - for the next launch.
+     */
+    private void mountDebugMenu()
+    {
+        if (this.model == null || !this.model.isDebug() || !this.model.isSimulation()) return;
+
+        if (interfaceMenu == null) return;
+
+        if (!isUnattended())
+        {
+            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS =
+                prefs.getBoolean(ECHO_COMMANDS_PREF, false);
+        }
+
+        javax.swing.JMenu debug = new javax.swing.JMenu(I18n.t("ui.main.toolbar.debug"));
+
+        final javax.swing.JCheckBoxMenuItem echo =
+            new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.echoCommands"));
+
+        echo.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("ui.main.toolbar.tooltip.echoCommands")));
+
+        echo.setSelected(org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS);
+
+        echo.addActionListener(e ->
+        {
+            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = echo.isSelected();
+
+            if (!isUnattended()) prefs.putBoolean(ECHO_COMMANDS_PREF, echo.isSelected());
+        });
+
+        debug.add(echo);
+
+        interfaceMenu.add(debug);
+    }
 
     /**
      * A label on a menu, in the shape this project already uses for one.
@@ -9316,6 +9370,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             this.openCS3AppMenuItem.setEnabled(false);
         }
+
+        // Once the model says which mode this is.
+        mountDebugMenu();
                 
         HandScrollListener scrollListener = new HandScrollListener(InnerLayoutPanel);
         LayoutArea.getViewport().addMouseMotionListener(scrollListener);
