@@ -886,6 +886,71 @@ public class testAutonomyDiagramReducer
     }
 
     /**
+     * An overpass's two levels share no place, and a crossing's two roads share one (Adam, 2026-09-24).
+     *
+     * *"show that the overpass routes don't touch ... and double check our layout model accurately reflects this."*
+     * The locks are held above.  A STANDING train is held by places instead: its tail claims the place ids of the track
+     * it lies on (OB-207), and every door that asks whether track is free - the path check, the grey, the orange - reads
+     * those.  So a train whose tail lies over one level of an overpass must claim nothing the other level runs over,
+     * while a crossing is one piece of metal that both roads run over.
+     *
+     * MUTATION: give an overpass's places the square alone in `GraphReducer.locationsOf`, and this fails.
+     *
+     * @throws IOException from the fixtures
+     */
+    @Test
+    public void testAnOverpassesTwoLevelsShareNoPlaceAndACrossingsRoadsDo() throws IOException
+    {
+        assertTrue(placesBothRoadsShare(componentType.OVERPASS).isEmpty(), "the two levels of an overpass share "
+            + placesBothRoadsShare(componentType.OVERPASS) + ", so a train whose tail lies over one claims the other -"
+            + " one track is above the other, and they never meet");
+
+        assertFalse(placesBothRoadsShare(componentType.CROSSING).isEmpty(), "the two roads of a crossing share no"
+            + " place, so a train standing across one leaves the other free - they cross at the same height");
+    }
+
+    /**
+     * Builds a square of this type with a north-south road and an east-west road through it, and gives the places both
+     * roads run over.
+     */
+    private Set<String> placesBothRoadsShare(componentType type) throws IOException
+    {
+        LayoutDiagram page = page("main", 6, 6);
+        feedbackNS(page, 2, 1, 11);
+        feedbackNS(page, 2, 3, 12);
+        add(page, type, 2, 2, 0);
+        feedback(page, 1, 2, 13);
+        feedback(page, 3, 2, 14);
+
+        GraphReducer reducer = reduce(graph(page), null);
+
+        List<ReducedEdge> northSouth = edgesBetween(reducer, key("main", 2, 1), key("main", 2, 3));
+        List<ReducedEdge> eastWest = edgesBetween(reducer, key("main", 1, 2), key("main", 3, 2));
+
+        assertFalse(northSouth.isEmpty() || eastWest.isEmpty(), "precondition: the " + type + " fixture does not build"
+            + " both roads");
+
+        Set<String> shared = new LinkedHashSet<>();
+        Set<String> across = new LinkedHashSet<>();
+
+        for (GraphReducer.Place place : reducer.placesAlong(eastWest.get(0))) across.add(place.getId());
+
+        boolean onTheSquare = false;
+
+        for (GraphReducer.Place place : reducer.placesAlong(northSouth.get(0)))
+        {
+            if (place.getId().startsWith(key("main", 2, 2).toString())) onTheSquare = true;
+
+            if (across.contains(place.getId())) shared.add(place.getId());
+        }
+
+        assertTrue(onTheSquare, "precondition: the north-south road has no place on the " + type + " square, so nothing"
+            + " here is about it");
+
+        return shared;
+    }
+
+    /**
      * The two directions of one run are the same track, not rivals for it.
      */
     @Test
