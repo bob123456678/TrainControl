@@ -383,6 +383,13 @@ public class testSwitchingToACentralStationLayout
                 assertFalse(ui.canStartAutonomy(), "Start is offered over a layout that lives on the Central"
                     + " Station, and pressing it is refused with 'autonomy needs a layout on this computer' - the"
                     + " menu offering what the handler refuses (REG-C3)");
+
+                // AND THE GREYED ITEM SAYS THE REFUSAL'S OWN REASON (REG2-C2).  Its tooltip is this sentence; over
+                // a Central Station layout it told the operator to wait for trains, which is no reason at all.
+                assertEquals(ui.whyAutonomyWillNotStart(),
+                    org.traincontrol.util.I18n.t("autosetup.ui.menuNoSetupPossible"), "the greyed Start explains"
+                    + " itself with a reason that is not the refusal's: over a Central Station layout it is that"
+                    + " autonomy needs a layout on this computer, which is what pressing Start says (REG2-C2)");
             }
             finally
             {

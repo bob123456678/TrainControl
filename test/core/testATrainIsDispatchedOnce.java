@@ -1,5 +1,6 @@
 package core;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -8,6 +9,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.AfterClass;
@@ -224,6 +226,127 @@ public class testATrainIsDispatchedOnce
 
         assertFalse(layout.isAlreadyUnderway(train),
             "the locomotive still counts as under way after it stopped running");
+    }
+
+    /**
+     * A duplicate dispatch refused inside the lock leaves the winner's claim alone - on the same route too (AUT2-C1,
+     * TDY2-C6).
+     *
+     * AUT-C1 made the refused dispatch's clean-up remove the claim only when it was "its own": `takingPath.remove(loc,
+     * path)`.  But that compares by value, and a list of edges equals any other listing the same edges - so a double
+     * dispatch of ONE route, the likeliest duplicate (a double click, or a hand send racing autonomy to the same square),
+     * removed the winner's claim while the winner was still locking.  The train was then in neither map: a third dispatch
+     * could pass, and the cap undercounted.  Every refusal inside `configureAndLockPath` either took nothing or has already
+     * dropped its own claim, so the caller had nothing of its own to remove.
+     *
+     * Two threads dispatch the same route.  This thread holds the layout's monitor until both are parked on it, and the
+     * run list's throughout - so the winner, having claimed and locked, waits before it registers, and the loser is
+     * refused inside the lock in exactly that window.  Then the claim is read.  The winner is let go afterwards and its
+     * run finished by setting the sensor it is waiting for.
+     *
+     * MUTATION: put back the caller's `takingPath.remove(loc, path)` and this fails.
+     *
+     * @throws Exception on a failure to build the fixture or to finish the winner's run
+     */
+    @Test
+    public void testARefusedDuplicateLeavesTheWinnersClaim() throws Exception
+    {
+        Layout layout = oneEdge();
+
+        Locomotive train = aTrainAtTheStart(layout);
+
+        Object runList = field(layout, "activeLocomotives");
+
+        @SuppressWarnings("unchecked")
+        java.util.Map<Locomotive, List<Edge>> claims =
+            (java.util.Map<Locomotive, List<Edge>>) field(layout, "takingPath");
+
+        final Boolean[] answered = new Boolean[2];
+        final Thread[] dispatch = new Thread[2];
+
+        int winner = -1;
+
+        try
+        {
+            synchronized (runList)
+            {
+                synchronized (layout)
+                {
+                    for (int i = 0; i < 2; i++)
+                    {
+                        final int which = i;
+
+                        dispatch[i] = new Thread(() ->
+                        {
+                            try
+                            {
+                                answered[which] = layout.executePath(new ArrayList<>(theRoute(layout)), train, 30, null);
+                            }
+                            catch (Exception e)
+                            {
+                                answered[which] = null;
+                            }
+                        }, "duplicate-dispatch-" + i);
+
+                        dispatch[i].setDaemon(true);
+                        dispatch[i].start();
+                    }
+
+                    // BOTH PAST THE OUTER CHECK, parked on the lock's monitor, which this thread holds.
+                    waitUntil(() -> dispatch[0].getState() == Thread.State.BLOCKED
+                        && dispatch[1].getState() == Thread.State.BLOCKED, "both dispatches to reach the lock");
+                }
+
+                // ONE REFUSED INSIDE THE LOCK, the other claimed and waiting on the run list, which this thread holds.
+                waitUntil(() -> !dispatch[0].isAlive() || !dispatch[1].isAlive(), "one dispatch to be refused");
+
+                int loser = dispatch[0].isAlive() ? 1 : 0;
+
+                winner = 1 - loser;
+
+                assertEquals(answered[loser], Boolean.FALSE, "precondition: the duplicate was not refused - it answered "
+                    + answered[loser]);
+
+                assertTrue(claims.containsKey(train), "a duplicate dispatch of the same route was refused inside the lock,"
+                    + " and its clean-up removed the winner's claim while the winner was still locking - the train is"
+                    + " in neither map, so a third dispatch could pass and the cap undercounts (AUT2-C1, TDY2-C6)");
+            }
+        }
+        finally
+        {
+            // THE WINNER'S RUN, finished: it waits for the route's end sensor, which nothing else here sets.
+            model.setFeedbackState("195", true);
+
+            if (winner >= 0) dispatch[winner].join(DEADLINE_SECONDS * 1000L);
+
+            model.setFeedbackState("195", false);
+
+            if (layout.isAlreadyUnderway(train)) layout.unlockPath(theRoute(layout), train);
+        }
+    }
+
+    private static Object field(Object target, String name) throws Exception
+    {
+        java.lang.reflect.Field f = target.getClass().getDeclaredField(name);
+
+        f.setAccessible(true);
+
+        return f.get(target);
+    }
+
+    private static void waitUntil(java.util.function.BooleanSupplier condition, String what) throws Exception
+    {
+        long giveUp = System.currentTimeMillis() + DEADLINE_SECONDS * 1000L;
+
+        while (!condition.getAsBoolean())
+        {
+            if (System.currentTimeMillis() > giveUp)
+            {
+                throw new AssertionError("gave up waiting for " + what + " after " + DEADLINE_SECONDS + " seconds");
+            }
+
+            Thread.sleep(10);
+        }
     }
 
     /**

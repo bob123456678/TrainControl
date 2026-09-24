@@ -9,6 +9,7 @@ import java.util.logging.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -130,5 +131,12 @@ public class testAnImportSaysItsRoutesAreOff
         assertTrue(logged.contains(notice), "an import of routes switched their automatic firing off - one of them"
             + " was saved armed - and said nothing about it: a train runs through the sensor that used to set a road"
             + " or cut the power before anybody knows (REG-B3).  Logged: " + logged);
+
+        // AND NOTHING WAS ARMED ON THE WAY IN (REG2-C6).  A route built from a file that says "auto" started its
+        // sensor monitor, which logs that the route is running, and was disarmed on the next line - so the log said
+        // a route was running just before saying every route had arrived off.
+        assertFalse(logged.contains(I18n.f("route.running", "REG-B3 probe 0")), "the route saved armed logged that"
+            + " it was running while it was imported, just before the notice that the routes arrive off: it was"
+            + " built armed and disarmed afterwards (REG2-C6).  Logged: " + logged);
     }
 }

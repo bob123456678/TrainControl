@@ -3,6 +3,7 @@ package core;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -19,7 +20,19 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A train is only ever stood on a copy of its square it can be started from - whatever facing the setup holds (GUI-B1).
+ * A train is stood on a copy of its square facing the way the setup records, and among those on one it can be started
+ * from (GUI-B1, TDY2-A1, GUI2-A1, AUT2-A1, GUI2-B1).
+ *
+ * **The copy IS the direction.**  Nothing else in the running layout says which way a train will move: the runtime never
+ * commands an absolute direction, it only reverses at a turning square.  So a train stood on a copy facing the other way
+ * from the way it really points is dispatched along a route locked one way while its decoder drives it the other, over
+ * track nothing reserved.  GUI-B1's first repair did exactly that where only a copy trains may not arrive at faces the
+ * recorded way - the build, the throttle's direction-follow and the Facing menu all stood the train on a copy facing the
+ * other way, and the log said the direction had been followed.  Where no copy trains may arrive at faces the recorded
+ * way, the train now stands on one that faces it anyway: autonomy will not start it there, and says so - *"It is
+ * standing on {0}, which is not a station"* - which is the truth.
+ *
+ * GUI-B1's own case stands: among the copies facing the recorded way, one trains may arrive at is chosen first.
  *
  * Adam, 2026-09-23, on OB-270: *"we shouldn't allow an impossible facing to be saved."*  That was built into the paste.
  * But a facing only a barred copy holds could still reach the setup - through the editor's Place door and the Place
@@ -31,7 +44,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * **On the frozen railway, as he has it**: BottomMainA with arrivals from the east barred, so its westbound copy is no
  * station; BottomMainPost, which trains may turn at and which has arrivals from the north barred.
  *
- * MUTATION: have `placementCopy` or `moveOntoFacingCopy` take the first copy facing that way again, and its claim fails.
+ * MUTATION: have `placementCopy` or `moveOntoFacingCopy` take the first copy facing that way again, and its claim fails;
+ * let either fall back to a copy trains may arrive at before one facing the recorded way, and the facing claims fail;
+ * return copy zero with no facing recorded, and the no-facing claim fails.
  *
  * @author Adam
  */
@@ -72,12 +87,12 @@ public class testATrainIsPutOnlyWhereItCanStart
     }
 
     /**
-     * A facing only a barred copy holds does not put the train on that copy at the next build.
+     * A facing only a copy trains may not arrive at holds still stands the train on a copy facing that way (AUT2-A1).
      *
      * @throws Exception from the build
      */
     @Test
-    public void testTheBuildNeverStandsATrainOnACopyItCannotStartFrom() throws Exception
+    public void testTheBuildKeepsTheFacingTheSetupRecords() throws Exception
     {
         AutonomySession session = session();
 
@@ -99,8 +114,115 @@ public class testATrainIsPutOnlyWhereItCanStart
 
         assertNotNull(standing, "the build put the train nowhere");
 
-        assertTrue(standing.isDestination(), "the setup holds a facing only " + westbound + " holds, and the build stood"
-            + " the train on " + standing.getName() + " - no station, so autonomy will not start it from there");
+        assertEquals(session.facingsFor(mainA).get(standing.getName()), Side.W, "the setup records the train at"
+            + " BottomMainA facing west, and the build stood it on " + standing.getName() + ", which faces "
+            + session.facingsFor(mainA).get(standing.getName()) + " - turned round in the model, so its next route is"
+            + " locked one way while its decoder drives it the other (AUT2-A1)");
+    }
+
+    /**
+     * A train placed with no facing recorded is stood on a copy it can be started from (GUI2-B1).
+     *
+     * The build returned copy zero when the setup held no facing, and copies are emitted N, E, S, W - so at BottomMainA
+     * and BottomMainPost copy zero is the one trains may not arrive at.  A door that places a train and records no facing
+     * (several copies it could stand on, and nothing saying which way it points) is ordinary.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testATrainWithNoFacingIsPutWhereItCanStart() throws Exception
+    {
+        for (String name : new String[] {"BottomMainA", "BottomMainPost"})
+        {
+            AutonomySession session = session();
+
+            TileKey square = square(session, name);
+
+            session.placeLocomotive(square, PROBE);
+            session.setFacing(square, null);
+
+            Point standing = standingOn(build(session));
+
+            assertNotNull(standing, "the build put the train at " + name + " nowhere");
+
+            assertTrue(standing.isDestination(), "placed at " + name + " with no facing recorded, the train was stood"
+                + " on " + standing.getName() + " - no station, so autonomy will not start it from there, and nothing"
+                + " said which way it points to make that the truth (GUI2-B1)");
+        }
+    }
+
+    /**
+     * A train reversed on the throttle at a square whose other facing only a barred copy holds is moved onto a copy
+     * facing its new way (TDY2-A1, GUI2-A1).
+     *
+     * Adam: *"a locomotive direction command WILL update the direction on the graph if it does not match"*.  The flip is a
+     * physical fact - the decoder has already reversed - so the copy has to follow it, whether or not autonomy can start
+     * the train from there.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAReversalOnTheThrottleIsFollowed() throws Exception
+    {
+        AutonomySession session = session();
+
+        TileKey mainA = square(session, "BottomMainA");
+
+        final Layout running = build(session);
+
+        session.setRunningLayoutSource(() -> running);
+
+        Point eastbound = stoodFacing(session, running, mainA, Side.E);
+
+        session.placeLocomotive(mainA, PROBE);
+        session.setFacing(mainA, Side.E);
+
+        assertEquals(session.flipFacing(PROBE, running), mainA, "precondition: the direction-follow did not act on the"
+            + " train at BottomMainA");
+
+        assertEquals(session.getFacing(mainA), Side.W, "precondition: the flip did not record the train facing west");
+
+        Point standing = standingOn(running);
+
+        assertNotNull(standing, "the flip took the train off the railway");
+
+        assertEquals(session.facingsFor(mainA).get(standing.getName()), Side.W, "reversed on the throttle at"
+            + " BottomMainA, the train was recorded facing west and left on " + standing.getName() + " - facing "
+            + session.facingsFor(mainA).get(standing.getName()) + " in the model, so its next route is locked that way"
+            + " while its decoder drives it west (TDY2-A1)");
+
+        assertTrue(eastbound != standing, "precondition: the train did not move at all");
+    }
+
+    /**
+     * And the Facing menu, which is how the operator tells the record which way the train really points (GUI2-A1).
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testTheFacingMenuMovesTheTrainOntoACopyFacingThatWay() throws Exception
+    {
+        AutonomySession session = session();
+
+        TileKey mainA = square(session, "BottomMainA");
+
+        final Layout running = build(session);
+
+        session.setRunningLayoutSource(() -> running);
+
+        stoodFacing(session, running, mainA, Side.E);
+
+        session.placeLocomotive(mainA, PROBE);
+
+        session.setFacingAndMove(mainA, Side.W);
+
+        Point standing = standingOn(running);
+
+        assertNotNull(standing, "the Facing menu took the train off the railway");
+
+        assertEquals(session.facingsFor(mainA).get(standing.getName()), Side.W, "told the train at BottomMainA faces"
+            + " west, the Facing menu recorded west and left it on " + standing.getName() + ", facing "
+            + session.facingsFor(mainA).get(standing.getName()) + " in the model (GUI2-A1)");
     }
 
     /**
@@ -187,6 +309,24 @@ public class testATrainIsPutOnlyWhereItCanStart
         }
 
         return null;
+    }
+
+    /** Stands the train on a copy of the square facing this way that it can start from, and says which. */
+    private static Point stoodFacing(AutonomySession session, Layout running, TileKey square, Side facing)
+    {
+        for (Map.Entry<String, Side> copy : session.facingsFor(square).entrySet())
+        {
+            Point point = running.getPoint(copy.getKey());
+
+            if (copy.getValue() != facing || point == null || !point.isDestination()) continue;
+
+            assertTrue(running.moveLocomotive(PROBE, point.getName(), false), "could not stand the train on "
+                + point.getName());
+
+            return point;
+        }
+
+        throw new AssertionError("precondition: no copy of the square faces " + facing + " and is a station");
     }
 
     private static Point standingOn(Layout layout)

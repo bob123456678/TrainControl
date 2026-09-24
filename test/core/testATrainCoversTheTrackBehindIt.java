@@ -797,6 +797,70 @@ public class testATrainCoversTheTrackBehindIt
     }
 
     /**
+     * A train with no recorded side, on a square emitted as one Point, spends that square first like every other
+     * (TDY2-C5, OB-278).
+     *
+     * With nothing saying which side it came in by, the walk takes the fork rule, which kept the first rail it met to
+     * each neighbour - and the running layout lists the rails LEAVING a Point before those arriving at it.  A leaving
+     * rail's places begin after the square the train stands on, so the square was neither claimed nor spent and the tail
+     * reached one square further back than the train lies.  The AUT-C3 read that spends the square off an arriving rail
+     * needs the square's block, which the build writes only where a square is split into several Points - so a square
+     * emitted once, a dead end's turning copy among them, was left out.
+     *
+     * MUTATION: let the fork rule keep the first rail it meets again and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testATrainOnASquareEmittedOnceSpendsItFirst() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        String tag = "_once" + (addresses++);
+
+        Point neighbour = point(layout, "ON" + tag, true);
+        Point end = point(layout, "OE" + tag, true);
+
+        // NO BLOCK: a square the build emits as one Point.  Its place is its tile, as the build writes it.
+        String square = "OE-square" + tag;
+
+        // Built as the build writes them: a rail's places are the track it runs over and the square it arrives at.
+        Edge arriving = layout.createEdge(neighbour.getName(), end.getName());
+        Edge leaving = layout.createEdge(end.getName(), neighbour.getName());
+
+        arriving.setPlaces(java.util.Arrays.asList("t1" + tag, square), java.util.Arrays.asList(1, 2));
+        leaving.setPlaces(java.util.Arrays.asList("t1" + tag, "ON-square" + tag), java.util.Arrays.asList(1, 1));
+
+        arriving.setLength(3);
+        leaving.setLength(2);
+
+        Locomotive standing = model.getLocByName(model.getLocList().get(0));
+
+        standing.setTrainLength(2);
+
+        try
+        {
+            // STANDING THERE, WITH NO SIDE RECORDED - placed by hand and not asked, or answered Not Known.
+            end.setLocomotive(standing);
+            end.setArrivedFrom(null);
+
+            Map<String, Locomotive> claimed = layout.placesCoveredByStandingTrains();
+
+            assertEquals(claimed.get(square), standing, "a train standing on a square emitted once does not claim the"
+                + " square it stands on.  Claimed: " + claimed.keySet());
+
+            assertFalse(claimed.containsKey("t1" + tag), "a two-unit train on a two-unit square emitted once claims the"
+                + " track behind it: the walk took the rail leaving its square, whose places begin after it, and the"
+                + " square was never spent (TDY2-C5; OB-278: the square a train stands on is spent first).  Claimed: "
+                + claimed.keySet());
+        }
+        finally
+        {
+            end.setLocomotive(null);
+        }
+    }
+
+    /**
      * MOVING A TRAIN CHANGES THE COVERED SET, WHICH IS WHAT THE DIAGRAM HAS TO REDRAW (OB-180).
      *
      * Adam: **"when a train is manually moved to a new station in the track diagram viewer using
