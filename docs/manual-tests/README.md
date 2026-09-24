@@ -246,7 +246,9 @@ Pick an entry from the Tests tab, say whether it worked, write what happened, ad
 noticed along the way, and submit. **New issue** files a bug or a feature request that has nothing to
 do with the entry on screen - a problem spotted in passing, or an idea, with nowhere else that fits it.
 It has a button that starts TrainControl itself, using the Simulate + Debug configuration, so the two
-windows can sit side by side.
+windows can sit side by side - in the language chosen beside it, or from **Tools > Launch TrainControl
+in**, which launches straight away. The language is set on Java's command line (`-Duser.language`), is
+remembered, and is named at the start of the build stamp on every result submitted from that run.
 
 **What it writes, and to where.** A result is appended under that entry's `#### Comments` in
 `tests.md` - dated, signed, and stamped with the commit it was run against - the same shape a comment

@@ -1138,8 +1138,10 @@ def project_jars():
     return jars
 
 
-def launch_plan():
+def launch_plan(language=None):
     """What would be run, and how fresh it is.
+
+    :param language: one of LANGUAGES to run it in, or None for whatever this computer's is
 
     Prefers build/classes, which NetBeans refreshes on every Run, over dist/TrainControl.jar, which
     only moves on a Clean and Build.  Which one is in use is reported rather than assumed: a result
@@ -1162,6 +1164,15 @@ def launch_plan():
 
     args = ["0", "1", "1"]          # IP, debug, simulate - the Simulate run configuration
 
+    # IN THE LANGUAGE ASKED FOR, first in the note: the note is the running label, which a narrow window cuts off at the
+    # end, and it is stamped on every result submitted, so a result says which language it was seen in.
+    props = []
+    said = ""
+
+    if language:
+        props = ["-Duser.language=%s" % language[0], "-Duser.country=%s" % language[1]]
+        said = "in %s - " % language[2]
+
     if os.path.isdir(classes):
         stamp = newest_mtime(classes)
 
@@ -1170,18 +1181,18 @@ def launch_plan():
             classpath = os.pathsep.join([classes] + jars)
 
             return (
-                [java, "-cp", classpath, "TrainControl"] + args,
-                "build\\classes, compiled %s - java: %s"
-                % (time.strftime("%d %b %H:%M", time.localtime(stamp)), java_note),
+                [java] + props + ["-cp", classpath, "TrainControl"] + args,
+                "%sbuild\\classes, compiled %s - java: %s"
+                % (said, time.strftime("%d %b %H:%M", time.localtime(stamp)), java_note),
             )
 
     if os.path.exists(jar):
         stamp = os.path.getmtime(jar)
 
         return (
-            [java, "-jar", jar] + args,
-            "dist\\TrainControl.jar, built %s (build\\classes is missing - this may be old) - "
-            "java: %s" % (time.strftime("%d %b %H:%M", time.localtime(stamp)), java_note),
+            [java] + props + ["-jar", jar] + args,
+            "%sdist\\TrainControl.jar, built %s (build\\classes is missing - this may be old) - "
+            "java: %s" % (said, time.strftime("%d %b %H:%M", time.localtime(stamp)), java_note),
         )
 
     return None, "Neither build\\classes nor dist\\TrainControl.jar exists.  Build in NetBeans first."
@@ -1278,6 +1289,20 @@ def git_build():
 # --------------------------------------------------------------------------------------------
 
 PAD = 8
+
+# The languages TrainControl has message bundles for, each named in itself: (language, country, name).  TrainControl
+# takes its language from Java's default locale, which these set on the command line - and so do Swing's own OK and
+# Cancel, which follow the same locale.
+LANGUAGES = [
+    ("en", "US", "English"),
+    ("da", "DK", "Dansk"),
+    ("de", "DE", "Deutsch"),
+    ("es", "ES", "Español"),
+    ("fr", "FR", "Français"),
+    ("it", "IT", "Italiano"),
+    ("nl", "NL", "Nederlands"),
+    ("pl", "PL", "Polski"),
+]
 
 # What the Show menu offers.  The first is the default, and what an unknown saved value falls back to.
 FILTERS = [
@@ -1445,6 +1470,14 @@ class Triage(tk.Tk):
         if self.filter_var.get() not in FILTERS:
             self.filter_var.set(FILTERS[0])
 
+        # The language TrainControl is launched in, by its name; remembered with the rest of the state.
+        names = [name for _, _, name in LANGUAGES]
+
+        self.language_var = tk.StringVar(value=self.state_.data.get("language", names[0]))
+
+        if self.language_var.get() not in names:
+            self.language_var.set(names[0])
+
         self._build_menu()
         self._build_toolbar()
 
@@ -1494,6 +1527,15 @@ class Triage(tk.Tk):
 
         t = tk.Menu(bar, tearoff=0)
         t.add_command(label="Launch TrainControl (simulate + debug)\tCtrl+L", command=self.launch)
+
+        # One click to a language: choosing one here launches in it, and it stays the choice beside the Launch button.
+        languages = tk.Menu(t, tearoff=0)
+
+        for _, _, name in LANGUAGES:
+            languages.add_radiobutton(label=name, value=name, variable=self.language_var,
+                                      command=self._launch_in_chosen_language)
+
+        t.add_cascade(label="Launch TrainControl in", menu=languages)
         t.add_command(label="Show TrainControl output", command=self.show_output)
         t.add_separator()
         t.add_command(label="New issue…\tCtrl+N", command=self.free_observation)
@@ -1528,6 +1570,13 @@ class Triage(tk.Tk):
 
         ttk.Button(top, text="\u25b6  Launch TrainControl", style="Big.TButton",
                    command=self.launch).pack(side=tk.LEFT, padx=(6, 0))
+
+        # THE LANGUAGE IT LAUNCHES IN, beside the button that launches it (Adam, 2026-09-24: "so that I can easily
+        # launch in a chosen language").
+        picker = ttk.Combobox(top, textvariable=self.language_var, state="readonly", width=10,
+                              values=[name for _, _, name in LANGUAGES])
+        picker.pack(side=tk.LEFT, padx=(4, 0))
+        picker.bind("<<ComboboxSelected>>", lambda e: self._remember_language())
 
         ttk.Button(top, text="New issue\u2026", style="Big.TButton",
                    command=self.free_observation).pack(side=tk.RIGHT)
@@ -2019,11 +2068,10 @@ class Triage(tk.Tk):
         row = ttk.Frame(answer)
         row.pack(fill=tk.X)
 
-        # Two by two: four in a row did not fit a third of the screen.
-        for index, (value, label) in enumerate(RESULTS):
+        # One row (Adam, 2026-09-24), which fits a third of the screen with the gaps kept small.
+        for value, label in RESULTS:
             ttk.Radiobutton(row, text=label.split(" - ")[0], value=value,
-                            variable=self.result_var).grid(row=index // 2, column=index % 2, sticky=tk.W,
-                                                           padx=(0, 18), pady=1)
+                            variable=self.result_var).pack(side=tk.LEFT, padx=(0, 10))
 
         ttk.Label(answer, text="What happened (optional, but this is the part that gets read):",
                   style="Sub.TLabel").pack(anchor=tk.W, pady=(8, 2))
@@ -2815,6 +2863,19 @@ class Triage(tk.Tk):
 
     # -- TrainControl ------------------------------------------------------------------------
 
+    def _language(self):
+        """The chosen one of LANGUAGES."""
+
+        return next((language for language in LANGUAGES if language[2] == self.language_var.get()), LANGUAGES[0])
+
+    def _remember_language(self):
+        self.state_.data["language"] = self.language_var.get()
+        self.state_.save()
+
+    def _launch_in_chosen_language(self):
+        self._remember_language()
+        self.launch()
+
     def launch(self):
         if self.process and self.process.poll() is None:
             messagebox.showinfo("Already running",
@@ -2830,7 +2891,7 @@ class Triage(tk.Tk):
                 "NetBeans, stop it there rather than killing it." % CS2_PORT, parent=self)
             return
 
-        command, note = launch_plan()
+        command, note = launch_plan(self._language())
 
         if not command:
             messagebox.showerror("Cannot launch", note, parent=self)
