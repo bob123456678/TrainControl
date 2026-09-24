@@ -245,6 +245,73 @@ public class testATailPastASwitchIsAskedAbout
     }
 
     /**
+     * With no answer - or Not known - a tail past switch 51 stops at the switch (Adam, 2026-09-24, on MT-477: *"stop at
+     * the switch"*).
+     *
+     * Every other fork stops the tail where the roads part (his rule of 2026-09-07, "end locking at the switch").  The
+     * fork right behind the platform did not: with no road to follow, the walk took the first rail by that side - the
+     * turned one from BottomCrossover - and laid a four-unit tail up it, claiming track the train may not be on and none
+     * of the rail it may be on.  So the squares both rails share are claimed, up to and including the switch, and none
+     * that only one of them runs over.
+     *
+     * MUTATION: take the first rail by the side again, and this fails.
+     */
+    @Test
+    public void testWithNoAnswerTheTailStopsAtTheSwitch()
+    {
+        Point platform = platform();
+
+        Edge straight = null;
+        Edge turned = null;
+
+        for (Edge rail : railsIn(platform))
+        {
+            if (rail.getStart().getName().startsWith("RampDown")) straight = rail;
+            if (rail.getStart().getName().startsWith("BottomCrossover")) turned = rail;
+        }
+
+        assertNotNull(straight, "precondition: no rail from RampDown comes into " + PLATFORM);
+        assertNotNull(turned, "precondition: no rail from BottomCrossover comes into " + PLATFORM);
+
+        train.setTrainLength(4);
+
+        platform.setLocomotive(train);
+        platform.setArrivedFrom("E");
+        platform.setArrivedAlong(null);
+
+        List<String> covered = new ArrayList<>();
+
+        for (Map.Entry<String, Locomotive> at : layout.placesCoveredByStandingTrains().entrySet())
+        {
+            if (at.getValue() == train) covered.add(at.getKey());
+        }
+
+        platform.setLocomotive(null);
+        platform.setArrivedAlong(null);
+
+        Set<String> shared = new LinkedHashSet<>(straight.getPlaceIds());
+
+        shared.retainAll(turned.getPlaceIds());
+
+        Set<String> oneRailOnly = new LinkedHashSet<>(straight.getPlaceIds());
+
+        oneRailOnly.addAll(turned.getPlaceIds());
+        oneRailOnly.removeAll(shared);
+
+        Set<String> wrong = new LinkedHashSet<>(covered);
+
+        wrong.retainAll(oneRailOnly);
+
+        assertTrue(covered.containsAll(shared), "a four-unit tail at " + PLATFORM + " with no answer does not cover the"
+            + " squares both rails share up to switch 51, which it lies on whichever rail it is: " + shared + ".  Covered: "
+            + covered);
+
+        assertTrue(wrong.isEmpty(), "with no answer, a four-unit tail at " + PLATFORM + " is claimed past switch 51 on " + wrong
+            + " - squares only one rail runs over, so it may not be there at all; it should stop at the switch (MT-477)."
+            + "  Covered: " + covered);
+    }
+
+    /**
      * Stands the train at the platform at this length, answers the question with the way towards RampDown, and hands back
      * the rails it then covers.  The train is left standing, for the caller to read and then clear.
      */
