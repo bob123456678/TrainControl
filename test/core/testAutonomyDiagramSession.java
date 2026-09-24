@@ -3689,6 +3689,47 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * The half-measured warning says how many squares have no length, in every language (found with MT-552).
+     *
+     * A finding renders {0} as the square, {1} as its subject - here the station's name - {2} as its count and {3} as its
+     * detail.  The sentence put {1} where it meant the count, so Adam's list read *"BottomMainPost can refuse trains ...
+     * BottomMainPost squares leading to it still have no length"*.
+     *
+     * MUTATION: put {1} back in any one language, and this fails.
+     *
+     * @throws Exception reading the bundles
+     */
+    @Test
+    public void testTheHalfMeasuredWarningCountsTheSquares() throws Exception
+    {
+        String key = org.traincontrol.automationui.AutonomyChecks.HALF_MEASURED_APPROACH;
+
+        java.io.File[] bundles = new java.io.File("src/org/traincontrol/resources").listFiles(
+            (dir, name) -> name.startsWith("messages") && name.endsWith(".properties"));
+
+        assertTrue(bundles != null && bundles.length == 8, "precondition: the eight message bundles are not where"
+            + " this looks for them");
+
+        for (java.io.File bundle : bundles)
+        {
+            java.util.Properties read = new java.util.Properties();
+
+            try (java.io.InputStream in = new java.io.FileInputStream(bundle))
+            {
+                read.load(in);
+            }
+
+            String sentence = read.getProperty(key);
+
+            assertNotNull(sentence, bundle.getName() + " has no " + key);
+
+            assertTrue(sentence.contains("{2}") && !sentence.contains("{1}"), bundle.getName() + ": the half-measured"
+                + " warning names the station where it means the number of squares with no length - {1} is the"
+                + " subject, {2} the count: " + sentence);
+        }
+    }
+
+    /**
      * A side trains may not arrive by is not asked to be measured for a turn there either (the sibling of MT-552).
      *
      * `reversalsWithoutLength` walks the same arriving edges as the two checks MT-552 was about, and asked for the
