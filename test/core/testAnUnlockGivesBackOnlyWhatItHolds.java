@@ -130,7 +130,9 @@ public class testAnUnlockGivesBackOnlyWhatItHolds
      * set was empty, so an atomic run whose tail had passed anything kept those edges, and their locks, for good: the
      * next leg of a Return Home plan was refused on a lock edge nobody held.
      *
-     * MUTATION: choose the careful road by the cleared set rather than by what was released, and this fails.
+     * MUTATION: read the cleared set as what was given back - at the road choice and at the skip, as the first repair
+     * did - and this fails.  At the road choice alone the two roads differ only where another train holds an end Point
+     * of an atomic run, which the lock rules refuse, so that half has no claim (round 4's mutation run, GUI-A1b).
      *
      * @throws Exception from reflection or the fixture
      */
@@ -166,12 +168,6 @@ public class testAnUnlockGivesBackOnlyWhatItHolds
         assertEquals(occupancy(first), 0, "an atomic run's unlock kept an edge its tail had passed - held for good, with"
             + " its locks, and the next route over it refused on a claim nobody holds");
         assertEquals(occupancy(second), 0, "an atomic run's unlock kept an edge it held");
-
-        // AND THE POINTS BEHIND THE TRAIN.  Taken down the careful road instead - chosen when the cleared set is read
-        // as what was given back - the edges come free and the Points this run held behind the train keep it, so
-        // nothing can be routed onto them again.
-        assertEquals(s1.getCurrentLocomotive(), null, "an atomic run's unlock left the train on V1, behind it");
-        assertEquals(s2.getCurrentLocomotive(), null, "an atomic run's unlock left the train on V2, behind it");
     }
 
     // ---------------------------------------------------------------------------------------------
