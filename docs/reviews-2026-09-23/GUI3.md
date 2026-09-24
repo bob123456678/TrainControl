@@ -1,6 +1,6 @@
 # User interface round 2 fixes - validation
 
-**Status:** open
+**Status:** closed
 
 **Prefix:** `GUI3`
 

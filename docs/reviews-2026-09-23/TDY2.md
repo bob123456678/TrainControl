@@ -1,6 +1,6 @@
 # Today's work (2026-09-23) on autonomy-diagram-r0 - validation of TDY and the round-1 diff
 
-**Status:** open
+**Status:** closed
 
 **Prefix:** `TDY2`
 

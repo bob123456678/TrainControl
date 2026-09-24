@@ -2,6 +2,8 @@
 
 **Status:** open
 
+**Open at close:** AUT2-A1, AUT2-C2 - carried in the finding store.
+
 **Prefix:** `AUT2`
 
 **Reviewed:** branch `autonomy-diagram-r0` at `08a47bdd`, 2026-09-23.  Baseline: the AUT lane's review at `281c79de`; two-dot diffs `281c79de..08a47bdd`, and each fix commit against its parent (`git show <hash>^:path`).

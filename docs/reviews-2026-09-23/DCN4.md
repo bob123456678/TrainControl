@@ -1,6 +1,6 @@
 # Documentation validation of round 3 (DCN4)
 
-**Status:** open
+**Status:** closed
 
 **Prefix:** `DCN4`
 

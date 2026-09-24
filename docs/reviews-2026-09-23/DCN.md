@@ -2,6 +2,8 @@
 
 **Status:** open
 
+**Open at close:** DCN-C3 - carried in the finding store.
+
 **Prefix:** `DCN`
 
 **Reviewed:** branch `autonomy-diagram-r0` at `281c79de`, 2026-09-23.  Baseline: `master` at `5f0a75e3` (v2.8.1), two-dot diffs.

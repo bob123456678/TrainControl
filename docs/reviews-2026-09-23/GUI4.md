@@ -2,6 +2,8 @@
 
 **Status:** open
 
+**Open at close:** GUI4-C3, GUI4-C5 - carried in the finding store.
+
 **Prefix:** `GUI4`
 
 **Reviewed:** branch `autonomy-diagram-r0` at `9f5d8e23`, 2026-09-23.  Baseline: the GUI3 validation at `2f4448b6` (`docs/reviews-2026-09-23/GUI3.md`); range `2f4448b6..9f5d8e23` (5 commits: `d65df6cb` claims, `4be3798a` fixes, `9a9a8564` tracker, `031a7ddb` text, `9f5d8e23` catalogue).

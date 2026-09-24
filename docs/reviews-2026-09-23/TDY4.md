@@ -2,6 +2,8 @@
 
 **Status:** open
 
+**Open at close:** TDY4-C5 - carried in the finding store.
+
 **Prefix:** `TDY4`
 
 **Reviewed:** branch `autonomy-diagram-r0` at `9f5d8e23`, 2026-09-23.  Baseline: TDY3 (written at `2f4448b6`) and the range `2f4448b6..9f5d8e23` - `d65df6cb` (claims), `4be3798a` (fixes), `9a9a8564` (tracker), `031a7ddb` (text), `9f5d8e23` (catalogue).
@@ -34,7 +36,7 @@ its premise is TDY4-B1.
 
 | | |
 |---|---|
-| **Disposition** | Fixed - 6cb11933 (claim 1c6ae0fe, red first): the put-back takes the station copy of the square facing the same way where there is one, and a copy is "barred" only where there is none |
+| **Disposition** | Fixed - 6cb11933 (claim 1c6ae0fe, red first; in a9d5a2f0 the setup names another square, as after a run - the first form passed under the mutation, the build's own choice standing the train on the twin) |
 | **Where** | `Layout.java:9108` (`moveLocomotive`'s new test: `evenOntoABarredCopy && isABarredCopyOfAStation(target)`), `Layout.java:9022-9031` (`isABarredCopyOfAStation`); caller `TrainControlUI.java:6498` (`putTheTrainsBack`, railway-wins branch); against `AutonomyBuilder.java:742-757` (`placementCopy`'s first two loops, GUI-B1) |
 
 **New with `4be3798a`.**  The fix's own javadoc states its premise: *"a train can be THERE: reversed on the throttle,

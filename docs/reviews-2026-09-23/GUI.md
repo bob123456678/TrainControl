@@ -1,6 +1,6 @@
 # User interface since v2.8.1 - review
 
-**Status:** open
+**Status:** closed
 
 **Prefix:** `GUI`
 

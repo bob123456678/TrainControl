@@ -1,6 +1,6 @@
 # Documentation validation of round 1 (DCN)
 
-**Status:** open
+**Status:** closed
 
 **Prefix:** `DCN2`
 

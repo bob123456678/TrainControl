@@ -2,6 +2,8 @@
 
 **Status:** open
 
+**Open at close:** TDY3-B2 - carried in the finding store.
+
 **Prefix:** `TDY3`
 
 **Reviewed:** branch `autonomy-diagram-r0` at `2f4448b6`, 2026-09-23.  Baseline: TDY2 (written at `08a47bdd`) and the range `08a47bdd..2f4448b6` - `264f2a73`, `8346be65`, `8370abb1`, `4132d260`, `b53439dc`, `9c85db2a`, `1facc0c2`, `91daff27`, `2f4448b6`.

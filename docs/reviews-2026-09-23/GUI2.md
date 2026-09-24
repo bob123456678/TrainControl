@@ -2,6 +2,8 @@
 
 **Status:** open
 
+**Open at close:** GUI2-C4 - carried in the finding store.
+
 **Prefix:** `GUI2`
 
 **Reviewed:** branch `autonomy-diagram-r0` at `08a47bdd`, 2026-09-23.  Baseline: the GUI lane's review at `281c79de` (`docs/reviews-2026-09-23/GUI.md`); range `281c79de..08a47bdd` (33 commits).
@@ -83,7 +85,7 @@ The setter's javadoc now says *"true-to-false starts them, and the same record c
 
 | | |
 |---|---|
-| **Disposition** | Open - for the next round: a mutation of the recording line decides whether a real-path claim is needed |
+| **Disposition** | Fixed - a9d5a2f0: a real non-atomic path, the first edge claimed by another train at the route's end; removing the line that records an early release now fails it (round 4's mutation run - it survived every earlier claim) |
 | **Where** | `Layout.java:8549-8556` (`released.add(givenBack)`); `test/core/testAnUnlockGivesBackOnlyWhatItHolds.java:101`, `test/core/testAutoLayout.java:2335`, `test/core/testAutonomyPathValidation.java:769` |
 
 `unlockPath` now trusts `releasedEarly` completely: an edge not in it is released again.  The three claims that exercise that trust all put the edge into `releasedEarly` themselves, through `getDeclaredField("releasedEarly")`; the one real-path claim in the area (`testTrainTailClearsEdges.testAnEdgeTheRuleRefusesToClearStaysHeldWhileARealPathRuns`) runs atomic, where nothing is recorded; the source-shape claim there counts `.add(path.get(waiting[0]))`, which the new line (`released.add(givenBack)`) does not match.  So deleting the recording line would, as far as reading can tell, leave the suite green while every non-atomic run's early releases were given back a second time at its end - RC-A9/OB-164's hazard, the claim-under-a-train decrement.  The GUI lane's own verification request for GUI-A1 (dispatch a real non-atomic run in simulate mode, let the tail give an edge back, claim it for a second train, finish) is the claim that would pin it.

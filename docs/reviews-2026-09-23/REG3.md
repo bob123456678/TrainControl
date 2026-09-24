@@ -1,6 +1,6 @@
 # Regression validation, round 3: round 2's REG fixes and the range since, seen by a user upgrading from v2.8.1
 
-**Status:** open
+**Status:** closed
 
 **Prefix:** `REG3`
 

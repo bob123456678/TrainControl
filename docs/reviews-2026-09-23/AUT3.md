@@ -2,6 +2,8 @@
 
 **Status:** open
 
+**Open at close:** AUT3-B2, AUT3-C3 - carried in the finding store.
+
 **Prefix:** `AUT3`
 
 **Reviewed:** branch `autonomy-diagram-r0` at `2f4448b6`, 2026-09-23.  Baseline: AUT2 at `08a47bdd`; two-dot diffs `08a47bdd..2f4448b6`, and each fix commit against its parent (`git show <hash>^:path`).

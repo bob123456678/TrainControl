@@ -1,6 +1,6 @@
 # Autonomy validator, round 4 - round 3's fixes to AUT3, and the autonomy diff 2f4448b6..9f5d8e23
 
-**Status:** open
+**Status:** closed
 
 **Prefix:** `AUT4`
 
@@ -18,7 +18,7 @@
 
 | | |
 |---|---|
-| **Disposition** | Fixed - 6cb11933 (claim 1c6ae0fe, red first), with TDY4-B1 |
+| **Disposition** | Fixed - 6cb11933 (claim 1c6ae0fe, red first, made able to fail without the put-back in a9d5a2f0), with TDY4-B1 |
 | **Where** | `TrainControlUI.java:6498` (`built.moveLocomotive(was.getKey(), was.getValue()[0], false, true)`); `Layout.java:9022-9031` (`isABarredCopyOfAStation` - no facing test); `Layout.java:9037-9040` (the four-argument form's javadoc: *"at a square whose other facing only such a copy holds"*); against `AutonomyBuilder.java:744-757` (`placementCopy`'s allowed-first loops, before the any-copy loops at `:766-774`) and `AutonomySession.java:1591-1603` (`copyFacing`'s placeable-first loop) |
 
 **New with `4be3798a` (TDY3-A1's fix), and not a restatement of TDY3-A1:** TDY3-A1 is the case where the barred copy is the ONLY copy facing the train's way (BottomMainA, not a turning square), and there the fix is right.  This is the case the fix's own javadoc excludes and its code does not.

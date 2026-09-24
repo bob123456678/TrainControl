@@ -2,6 +2,8 @@
 
 **Status:** open
 
+**Open at close:** REG-B1 - carried in the finding store.
+
 **Prefix:** `REG`
 
 **Reviewed:** branch `autonomy-diagram-r0` at `281c79de`, 2026-09-23.  Baseline: branch `master` at `5f0a75e3` (`RAW_VERSION = "2.8.1"`), compared with two-dot diffs (`git diff master HEAD`, `git show master:<path>`) throughout.  Four earlier rounds used this baseline - `R28` and `RG3` at `cf048f9b`, `RG4` at `2cef4211`, `RG5` at `357cdc40` - and 540 commits have landed since the last of them; this pass concentrates on those.

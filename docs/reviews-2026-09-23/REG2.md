@@ -2,6 +2,8 @@
 
 **Status:** open
 
+**Open at close:** REG2-C3, REG2-C7 - carried in the finding store.
+
 **Prefix:** `REG2`
 
 **Reviewed:** branch `autonomy-diagram-r0` at `08a47bdd`, 2026-09-23.  Baseline: the REG lane at `281c79de` and the fixes since (`git log 281c79de..08a47bdd`, 33 commits); `master` at `5f0a75e3` (v2.8.1) for "what did 2.8.1 do".
