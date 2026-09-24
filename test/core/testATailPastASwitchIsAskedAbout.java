@@ -356,10 +356,12 @@ public class testATailPastASwitchIsAskedAbout
     }
 
     /**
-     * Two answers on the list are still asked about.
+     * Two answers on the list are still asked about - including where the list starts on one of them.
      *
      * The control on the rule above: at five units the tail at Tunnel has reached TunnelPre on the one rail and 12,7 on
-     * the other, and which it lies on is the operator's to say.
+     * the other, and which it lies on is the operator's to say.  At four units at BottomSecondary the list starts on
+     * RampDown, the one sensor crossed (FR-088), and the train may as well lie up the other rail: a start is a
+     * suggestion for OK, not an answer.
      *
      * MUTATION: take the first entry, or the one the list starts on, whatever the list holds, and this fails.
      */
@@ -379,6 +381,19 @@ public class testATailPastASwitchIsAskedAbout
 
         assertFalse(answer.wasAnswered(), "a five-unit train at " + TUNNEL + " is offered " + labels(choices) + " and was"
             + " answered without the operator: the dialog was closed, and " + answer.getRoad() + " recorded");
+
+        // WHERE THE LIST STARTS ON ONE.
+        List<TailCrossedPrompt.Choice> started = TailCrossedPrompt.choicesFor(layout, platform(), "E", 4, null);
+
+        assertTrue(started.size() > 1 && TailCrossedPrompt.preselectedIndex(started, null) >= 0, "precondition: a"
+            + " four-unit train at " + PLATFORM + " is offered " + labels(started) + ", and the list starts on none");
+
+        TailCrossedPrompt.Answer atThePlatform =
+            TailCrossedPrompt.askAfterPlacement(layout, platform(), "E", 4, train.getName(), null, null);
+
+        assertFalse(atThePlatform.wasAnswered(), "a four-unit train at " + PLATFORM + " is offered " + labels(started)
+            + " and was answered with the entry the list starts on, without the operator: the dialog was closed, and "
+            + atThePlatform.getRoad() + " recorded");
     }
 
     /**
