@@ -53,6 +53,7 @@ It also produces something else the suite has never had by hand: **a split squar
 - `regression.testTheDiagramCeiling`
 - `regression.testALegacyImportUnticksLoadAutonomy`
 - `regression.testALocalLayoutNeverWritesAutonomyJson`
+- `regression.testTheAutonomyMenuLinksItsDocumentation`
 - `core.testAFailedDispatchSaysWhichKindItWas`
 - `regression.testTheRouteHighlightAsksWhatATileIs` - for the address COLLISION built into the
   invariants above: WestEnd is s88 10 and the turnout is accessory 1, so "accessory 10" is an
