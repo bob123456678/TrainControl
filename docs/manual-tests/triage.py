@@ -1279,6 +1279,77 @@ def git_build():
 
 PAD = 8
 
+# Which layout a saved window size belongs to.  2 is the stacked one (2026-09-24); a size saved by the side-by-side
+# layout is 1024 pixels wide and is not restored into this one.
+LAYOUT = 2
+
+
+# A line that starts a new block in markdown rather than continuing the one above it: a list item, numbered or not, a
+# heading, a table row, a quotation or a code fence.
+_BLOCK_START = re.compile(r"^\s*(?:[-*+]\s|\d+[.)]\s|#|\||>|```)")
+
+
+def reflow(text):
+    """Markdown as it reads at the width on screen: the lines of one paragraph joined, everything else kept.
+
+    Older entries are wrapped at about 110 characters in the file.  A window a third of the screen wide wraps each of
+    those lines again, which left a stub of two or three words at the end of every one.  Joined, the paragraph wraps
+    once.  Only what is shown changes; the file is written exactly as it was.
+
+    A line joins the one above it when both have text, neither is the start of a list item, heading, table row,
+    quotation or code fence (a list item's own indented continuation lines do join it), the line above does not end in
+    a hard break, and it is not inside a fenced code block.
+    """
+
+    out = []
+    fenced = False
+    joinable = False
+
+    for line in text.split("\n"):
+        if line.strip().startswith("```"):
+            fenced = not fenced
+            out.append(line)
+            joinable = False
+            continue
+
+        if fenced or not line.strip():
+            out.append(line)
+            joinable = False
+            continue
+
+        starts_block = bool(_BLOCK_START.match(line))
+
+        if joinable and not starts_block:
+            out[-1] = out[-1].rstrip() + " " + line.strip()
+        else:
+            out.append(line)
+
+        last = out[-1]
+
+        joinable = not (last.endswith("  ") or last.endswith("\\") or last.lstrip().startswith(("#", "|")))
+
+    return "\n".join(out)
+
+
+def work_area(widget):
+    """The screen less the taskbar, as (left, top, right, bottom) in the coordinates Tk uses.
+
+    Windows answers it; anywhere else, or if asking fails, the whole screen stands in.
+    """
+
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        rect = wintypes.RECT()
+
+        if ctypes.windll.user32.SystemParametersInfoW(0x0030, 0, ctypes.byref(rect), 0):     # SPI_GETWORKAREA
+            return rect.left, rect.top, rect.right, rect.bottom
+    except Exception:
+        pass
+
+    return 0, 0, widget.winfo_screenwidth(), widget.winfo_screenheight()
+
 
 class Triage(tk.Tk):
 
@@ -1314,9 +1385,19 @@ class Triage(tk.Tk):
         self._refresh_list(select_first=True)
         self._refresh_issue_tabs()
 
+        # A THIRD OF THE SCREEN, FULL HEIGHT, the first time (Adam, 2026-09-24: "I have about 1/3 width and full
+        # height available").  A size saved by the side-by-side layout is not this window's, so it starts in the right
+        # third instead - once; from then on its own size and dividers are remembered.
         geometry = self.state_.data.get("geometry")
 
-        self.geometry(geometry if geometry else "1220x820")
+        if geometry and self.state_.data.get("layout") == LAYOUT:
+            self.geometry(geometry)
+            self.after(200, self._restore_dividers)
+        else:
+            self.geometry("500x860")
+            self.after(200, lambda: self.dock("right"))
+
+        self.state_.data["layout"] = LAYOUT
 
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
@@ -1337,18 +1418,25 @@ class Triage(tk.Tk):
         except tk.TclError:
             pass
 
-        style.configure("Tag.TLabel", font=("Segoe UI", 14, "bold"))
+        style.configure("Tag.TLabel", font=("Segoe UI", 12, "bold"))
         style.configure("Sub.TLabel", foreground="#555555")
         style.configure("Big.TButton", font=("Segoe UI", 10, "bold"))
 
         self._build_menu()
         self._build_toolbar()
 
-        panes = ttk.Panedwindow(self, orient=tk.HORIZONTAL)
-        panes.pack(fill=tk.BOTH, expand=True, padx=PAD, pady=(0, PAD))
+        # THE LIST ABOVE THE TEST, NOT BESIDE IT (2026-09-24).  This runs beside TrainControl in about a third of the
+        # screen's width and all of its height.  Side by side, the list and the steps each had half of a third, and the
+        # toolbar ran off the edge; stacked, each has the whole width, and the height - of which there is plenty - is
+        # shared by three panes whose dividers can be dragged: the list, the steps, and the answer.
+        self.panes = ttk.Panedwindow(self, orient=tk.VERTICAL)
+        self.panes.pack(fill=tk.BOTH, expand=True, padx=PAD, pady=(0, PAD))
 
-        panes.add(self._build_left(panes), weight=0)
-        panes.add(self._build_detail(panes), weight=1)
+        detail, self.answer_pane = self._build_detail(self.panes)
+
+        self.panes.add(self._build_left(self.panes), weight=0)
+        self.panes.add(detail, weight=1)
+        self.panes.add(self.answer_pane, weight=0)
 
         self.status = ttk.Label(self, anchor=tk.W, relief=tk.SUNKEN, padding=(6, 3))
         self.status.pack(fill=tk.X, side=tk.BOTTOM)
@@ -1378,6 +1466,13 @@ class Triage(tk.Tk):
         t.add_command(label="Clear this session's marks", command=self.clear_marks)
         bar.add_cascade(label="Tools", menu=t)
 
+        v = tk.Menu(bar, tearoff=0)
+        v.add_command(label="Fill the right third of the screen", command=lambda: self.dock("right"))
+        v.add_command(label="Fill the left third of the screen", command=lambda: self.dock("left"))
+        v.add_separator()
+        v.add_command(label="Reset the dividers", command=self._default_dividers)
+        bar.add_cascade(label="View", menu=v)
+
         h = tk.Menu(bar, tearoff=0)
         h.add_command(label="How this works", command=self.about)
         bar.add_cascade(label="Help", menu=h)
@@ -1385,41 +1480,32 @@ class Triage(tk.Tk):
         self.config(menu=bar)
 
     def _build_toolbar(self):
+        # TWO ROWS, because one did not fit a third of the screen: its right-hand end - New issue, and the Show filter -
+        # was cut off.  The filter now sits over the list it filters (_build_left).
         bar = ttk.Frame(self, padding=(PAD, PAD, PAD, 4))
         bar.pack(fill=tk.X)
 
-        self.compile_button = ttk.Button(bar, text="Compile", command=self.compile)
+        top = ttk.Frame(bar)
+        top.pack(fill=tk.X)
+
+        self.compile_button = ttk.Button(top, text="Compile", command=self.compile)
         self.compile_button.pack(side=tk.LEFT)
 
-        ttk.Button(bar, text="\u25b6  Launch TrainControl", style="Big.TButton",
+        ttk.Button(top, text="\u25b6  Launch TrainControl", style="Big.TButton",
                    command=self.launch).pack(side=tk.LEFT, padx=(6, 0))
 
-        self.run_label = ttk.Label(bar, text="not started", style="Sub.TLabel")
-        self.run_label.pack(side=tk.LEFT, padx=(8, 0))
-
-        ttk.Button(bar, text="Output\u2026", command=self.show_output).pack(side=tk.LEFT, padx=(8, 0))
-        ttk.Button(bar, text="Compile output\u2026",
-                   command=self.show_compile_output).pack(side=tk.LEFT, padx=(4, 0))
-
-        ttk.Button(bar, text="New issue\u2026", style="Big.TButton",
+        ttk.Button(top, text="New issue\u2026", style="Big.TButton",
                    command=self.free_observation).pack(side=tk.RIGHT)
 
-        ttk.Label(bar, text="Show:").pack(side=tk.RIGHT, padx=(12, 4))
+        under = ttk.Frame(bar)
+        under.pack(fill=tk.X, pady=(4, 0))
 
-        self.filter_var = tk.StringVar(value=self.state_.data.get("filter", "open"))
+        ttk.Button(under, text="Compile output\u2026",
+                   command=self.show_compile_output).pack(side=tk.RIGHT, padx=(4, 0))
+        ttk.Button(under, text="Output\u2026", command=self.show_output).pack(side=tk.RIGHT)
 
-        picker = ttk.Combobox(bar, textvariable=self.filter_var, width=26, state="readonly",
-                              values=["open - not yet answered here",
-                                      "open - everything not validated",
-                                      "reopened - changed since your verdict",
-                                      "answered this session",
-                                      "everything, validated included"])
-
-        picker.pack(side=tk.RIGHT)
-        picker.bind("<<ComboboxSelected>>", lambda e: self._on_filter_changed())
-
-        if self.filter_var.get() not in picker["values"]:
-            self.filter_var.set("open - not yet answered here")
+        self.run_label = ttk.Label(under, text="not started", style="Sub.TLabel")
+        self.run_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
     def _build_left(self, parent):
         """A tab per kind of thing this app tracks, so a feature request never has to borrow the
@@ -1428,17 +1514,41 @@ class Triage(tk.Tk):
         led to this.
         """
 
-        self.left_book = ttk.Notebook(parent)
+        frame = ttk.Frame(parent)
+
+        # The Show filter, over the tabs it drives - all three of them (_on_filter_changed).
+        show = ttk.Frame(frame)
+        show.pack(fill=tk.X, pady=(0, 4))
+
+        ttk.Label(show, text="Show:").pack(side=tk.LEFT)
+
+        self.filter_var = tk.StringVar(value=self.state_.data.get("filter", "open"))
+
+        picker = ttk.Combobox(show, textvariable=self.filter_var, state="readonly",
+                              values=["open - not yet answered here",
+                                      "open - everything not validated",
+                                      "reopened - changed since your verdict",
+                                      "answered this session",
+                                      "everything, validated included"])
+
+        picker.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(4, 0))
+        picker.bind("<<ComboboxSelected>>", lambda e: self._on_filter_changed())
+
+        if self.filter_var.get() not in picker["values"]:
+            self.filter_var.set("open - not yet answered here")
+
+        self.left_book = ttk.Notebook(frame)
+        self.left_book.pack(fill=tk.BOTH, expand=True)
 
         self.left_book.add(self._build_list(self.left_book), text="  Tests  ")
         self.left_book.add(self._build_issue_list(self.left_book, "feature request"),
                            text="  Feature requests  ")
         self.left_book.add(self._build_issue_list(self.left_book, "bug"), text="  Bugs  ")
 
-        return self.left_book
+        return frame
 
     def _build_list(self, parent):
-        frame = ttk.Frame(parent, width=380)
+        frame = ttk.Frame(parent)
 
         search = ttk.Frame(frame)
         search.pack(fill=tk.X, pady=(0, 4))
@@ -1467,7 +1577,7 @@ class Triage(tk.Tk):
 
         columns = ("mark", "again", "tag", "date", "what")
 
-        self.tree = ttk.Treeview(frame, columns=columns, show="headings", selectmode="browse")
+        self.tree = ttk.Treeview(frame, columns=columns, show="headings", selectmode="browse", height=8)
 
         for name, title, width, anchor in (
             ("mark", "", 26, tk.CENTER),
@@ -1479,6 +1589,10 @@ class Triage(tk.Tk):
             self.tree.heading(name, text=title)
             self.tree.column(name, width=width, anchor=anchor,
                              stretch=(name == "what"))
+
+        # NO DATE ON SCREEN: in a third of the screen its column was a fifth of the width the title had.  The entry's
+        # date is in the heading over its steps.
+        self.tree.configure(displaycolumns=("mark", "again", "tag", "what"))
 
         bar = ttk.Scrollbar(frame, orient=tk.VERTICAL, command=self.tree.yview)
         self.tree.configure(yscrollcommand=bar.set)
@@ -1523,7 +1637,7 @@ class Triage(tk.Tk):
                                      self.issue_widgets[kind].get("open_tag")))
         open_button.pack(side=tk.RIGHT)
 
-        detail = tk.Text(frame, wrap=tk.WORD, height=9, font=("Segoe UI", 10),
+        detail = tk.Text(frame, wrap=tk.WORD, height=4, font=("Segoe UI", 10),
                          background="#fbfbfb", relief=tk.FLAT, padx=8, pady=6, state=tk.DISABLED)
         detail.pack(side=tk.BOTTOM, fill=tk.X, pady=(6, 0))
 
@@ -1532,7 +1646,7 @@ class Triage(tk.Tk):
 
         columns = ("state", "ref", "date", "what")
 
-        tree = ttk.Treeview(rows, columns=columns, show="headings", selectmode="browse")
+        tree = ttk.Treeview(rows, columns=columns, show="headings", selectmode="browse", height=6)
 
         for name, title, width in (
             ("state", "State", 92),
@@ -1542,6 +1656,9 @@ class Triage(tk.Tk):
         ):
             tree.heading(name, text=title)
             tree.column(name, width=width, anchor=tk.W, stretch=(name == "what"))
+
+        # The Filed date is in the detail underneath, for the same reason the Tests list has none.
+        tree.configure(displaycolumns=("state", "ref", "what"))
 
         bar = ttk.Scrollbar(rows, orient=tk.VERTICAL, command=tree.yview)
         tree.configure(yscrollcommand=bar.set)
@@ -1827,16 +1944,22 @@ class Triage(tk.Tk):
             self.tree.see(tag)
 
     def _build_detail(self, parent):
+        """The entry on screen, and the answer to it - two panes, so the steps can be given the height and the answer
+        keeps what it needs.
+
+        :return: (the entry's pane, the answer's pane)
+        """
+
         outer = ttk.Frame(parent)
 
         head = ttk.Frame(outer)
         head.pack(fill=tk.X)
 
-        self.head_label = ttk.Label(head, text="", style="Tag.TLabel", anchor=tk.W)
+        self.head_label = ttk.Label(head, text="", style="Tag.TLabel", anchor=tk.W, justify=tk.LEFT)
         self.head_label.pack(fill=tk.X)
 
         meta = ttk.Frame(head)
-        meta.pack(fill=tk.X, pady=(0, 6))
+        meta.pack(fill=tk.X)
 
         self.meta_written = ttk.Label(meta, text="", style="Sub.TLabel")
         self.meta_written.pack(side=tk.LEFT)
@@ -1853,8 +1976,16 @@ class Triage(tk.Tk):
         self.meta_disposition = ttk.Label(meta, text="", style="Sub.TLabel")
         self.meta_disposition.pack(side=tk.LEFT)
 
-        self.meta_from = ttk.Label(meta, text="", style="Sub.TLabel")
-        self.meta_from.pack(side=tk.LEFT, padx=(14, 0))
+        self.meta_from = ttk.Label(head, text="", style="Sub.TLabel", anchor=tk.W, justify=tk.LEFT)
+        self.meta_from.pack(fill=tk.X, pady=(0, 6))
+
+        # WRAPPED TO THE WIDTH THERE IS.  A title is often longer than a third of the screen, and cut off it lost the
+        # half that says what the test is about; "from" can name several entries.
+        def wrap(event):
+            self.head_label.config(wraplength=max(120, event.width - 4))
+            self.meta_from.config(wraplength=max(120, event.width - 4))
+
+        head.bind("<Configure>", wrap)
 
         book = ttk.Notebook(outer)
         book.pack(fill=tk.BOTH, expand=True)
@@ -1867,7 +1998,9 @@ class Triage(tk.Tk):
 
         self.book = book
 
-        answer = ttk.Labelframe(outer, text=" Your answer ", padding=PAD)
+        lower = ttk.Frame(parent)
+
+        answer = ttk.Labelframe(lower, text=" Your answer ", padding=PAD)
         answer.pack(fill=tk.X, pady=(PAD, 0))
 
         self.result_var = tk.StringVar(value="")
@@ -1875,14 +2008,16 @@ class Triage(tk.Tk):
         row = ttk.Frame(answer)
         row.pack(fill=tk.X)
 
-        for value, label in RESULTS:
+        # Two by two: four in a row did not fit a third of the screen.
+        for index, (value, label) in enumerate(RESULTS):
             ttk.Radiobutton(row, text=label.split(" - ")[0], value=value,
-                            variable=self.result_var).pack(side=tk.LEFT, padx=(0, 14))
+                            variable=self.result_var).grid(row=index // 2, column=index % 2, sticky=tk.W,
+                                                           padx=(0, 18), pady=1)
 
         ttk.Label(answer, text="What happened (optional, but this is the part that gets read):",
                   style="Sub.TLabel").pack(anchor=tk.W, pady=(8, 2))
 
-        self.feedback = tk.Text(answer, height=6, wrap=tk.WORD, font=("Segoe UI", 10))
+        self.feedback = tk.Text(answer, height=3, wrap=tk.WORD, font=("Segoe UI", 10))
         self.feedback.pack(fill=tk.X)
 
         obs = ttk.Frame(answer)
@@ -1901,7 +2036,7 @@ class Triage(tk.Tk):
         self.obs_rows_frame = ttk.Frame(answer)
         self.obs_rows_frame.pack(fill=tk.X, pady=(4, 0))
 
-        buttons = ttk.Frame(outer, padding=(0, PAD, 0, 0))
+        buttons = ttk.Frame(lower, padding=(0, PAD, 0, 0))
         buttons.pack(fill=tk.X)
 
         ttk.Button(buttons, text="\u25c0  Previous", command=lambda: self.step(-1)).pack(side=tk.LEFT)
@@ -1913,7 +2048,64 @@ class Triage(tk.Tk):
         self.skip_button = ttk.Button(buttons, text="Skip", command=self.toggle_skip)
         self.skip_button.pack(side=tk.RIGHT, padx=6)
 
-        return outer
+        return outer, lower
+
+    # -- where the window sits ---------------------------------------------------------------
+
+    def dock(self, side):
+        """Fills the right or left third of the screen, top to bottom - where this sits beside TrainControl.
+
+        The frame Windows draws round the window is outside the size Tk sets, so it is measured - where Tk says the
+        inside is, against where the frame is - rather than assumed.
+
+        :param side: "right" or "left"
+        """
+
+        left, top, right, bottom = work_area(self)
+
+        if self.wm_state() == "zoomed":
+            self.wm_state("normal")
+
+        self.update_idletasks()
+
+        border = max(0, self.winfo_rootx() - self.winfo_x())
+        title = max(0, self.winfo_rooty() - self.winfo_y())
+
+        third = (right - left) // 3
+
+        x = left if side == "left" else right - third
+
+        self.geometry("%dx%d+%d+%d" % (third - 2 * border, (bottom - top) - title - border, x, top))
+
+        self.after(150, self._default_dividers)
+
+    def _default_dividers(self):
+        """A third of the height to the list, what it asks for to the answer, and the rest to the steps."""
+
+        self.update_idletasks()
+
+        total = self.panes.winfo_height()
+
+        if total < 200:
+            return
+
+        first = int(total * 0.33)
+        second = max(first + 120, total - self.answer_pane.winfo_reqheight() - 6)
+
+        self.panes.sashpos(0, first)
+        self.panes.sashpos(1, second)
+
+    def _restore_dividers(self):
+        saved = self.state_.data.get("dividers")
+
+        if not isinstance(saved, list) or len(saved) != 2:
+            self._default_dividers()
+            return
+
+        self.update_idletasks()
+
+        self.panes.sashpos(0, saved[0])
+        self.panes.sashpos(1, saved[1])
 
     def _read_only(self, parent):
         frame = ttk.Frame(parent)
@@ -2154,8 +2346,8 @@ class Triage(tk.Tk):
         dot_color = DISPOSITION_COLORS.get(disposition_slug(entry.disposition), "")
         self.disp_dot.itemconfig(self.disp_dot_oval, fill=dot_color, outline=dot_color)
 
-        self._fill(self.what_text, entry.what)
-        self._fill(self.comments_text, entry.comments or "(nothing yet)")
+        self._fill(self.what_text, reflow(entry.what))
+        self._fill(self.comments_text, reflow(entry.comments) if entry.comments else "(nothing yet)")
 
         draft = self.state_.draft(entry.tag) or {}
 
@@ -2194,8 +2386,8 @@ class Triage(tk.Tk):
         for child in self.obs_rows_frame.winfo_children():
             child.destroy()
 
+        # Nothing at all when there is nothing: a "(none yet)" line was a line of height the steps could use.
         if not self.observations:
-            ttk.Label(self.obs_rows_frame, text="(none yet)", style="Sub.TLabel").pack(anchor=tk.W)
             return
 
         for index, ob in enumerate(self.observations):
@@ -2739,6 +2931,8 @@ class Triage(tk.Tk):
             "on a skipped row.\n\n"
             "This app never changes a Disposition or the ledger - Claude sets those from what you "
             "wrote, which is the rule that makes the file mean anything.\n\n"
+            "View > Fill the right third of the screen puts this window beside TrainControl, top to bottom.  The "
+            "dividers between the list, the steps and your answer can be dragged, and are remembered.\n\n"
             "Every write backs the file up first, into .triage-backups.  From a terminal, run this "
             "script with an argument (stats, tests, issues, verify-ledger, --help) for the same data "
             "as JSON, no window needed.", parent=self)
@@ -2756,6 +2950,12 @@ class Triage(tk.Tk):
         self._stash_draft()
 
         self.state_.data["geometry"] = self.geometry()
+
+        try:
+            self.state_.data["dividers"] = [self.panes.sashpos(0), self.panes.sashpos(1)]
+        except tk.TclError:
+            pass
+
         self.state_.save()
 
         if self.process and self.process.poll() is None:
@@ -2828,7 +3028,10 @@ class ObservationDialog(tk.Toplevel):
 
         self.update_idletasks()
 
-        self.geometry("+%d+%d" % (parent.winfo_rootx() + 120, parent.winfo_rooty() + 120))
+        # Inside the screen: from a window in the right third, 120 pixels in put most of the dialog past its edge.
+        x = min(parent.winfo_rootx() + 40, self.winfo_screenwidth() - self.winfo_reqwidth() - 16)
+
+        self.geometry("+%d+%d" % (max(0, x), parent.winfo_rooty() + 120))
 
         self.grab_set()
         parent.wait_window(self)

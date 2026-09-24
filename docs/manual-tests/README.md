@@ -199,6 +199,14 @@ the same thing anyway, say so in whichever is read second rather than leaving bo
 alt-tabbing between a long markdown document and the running railway. `py -3 docs\manual-tests\triage.py`
 - no build step, no dependency beyond the Python standard library.
 
+**Laid out for a third of the screen, full height (2026-09-24).** Adam runs it beside TrainControl in
+about a third of the width and all of the height, so it is stacked rather than side by side: the toolbar
+in two rows, then the list, the entry's steps, and the answer, one above the other, with dividers that
+can be dragged. It starts in the right third of the screen; **View > Fill the right third** (or left)
+puts it back there, and its size and dividers are remembered. The list leaves out the date, which is in
+the entry's heading, and the steps and comments are reflowed on screen, so a paragraph wrapped at 110
+characters in the file wraps once to the window instead of twice.
+
 **Reopened entries are marked, and can be filtered to.** An entry Adam has already judged, and which
 has been worked on since, is the one thing the list could not tell apart from an entry nobody has ever
 run - and they mean opposite things: "look at this again, it should be different now" versus "nobody has
@@ -210,7 +218,7 @@ and there is an Adam verdict above it. Shown as a mark in its own column, offere
 changed since your verdict"** filter, counted in the status line, and available as `tests --reopened`.
 Added 2026-08-23, when 41 of the 63 open entries were in that state and nothing on screen said so.
 
-**Three tabs on the left: Tests, Feature requests, Bugs.** A feature request used to be reachable only
+**Three tabs over the list: Tests, Feature requests, Bugs.** A feature request used to be reachable only
 by finding the `MT-###` row it got picked up into, indistinguishable there from an actual hands-on
 test - which is exactly backwards, since "does this behave correctly" and "should this exist at all"
 are different questions with different owners. Feature requests and Bugs list `issues.md`'s Inbox
