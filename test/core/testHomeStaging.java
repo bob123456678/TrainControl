@@ -227,7 +227,9 @@ public class testHomeStaging
             "src/org/traincontrol/automation/HomeStaging.java")),
             java.nio.charset.StandardCharsets.UTF_8);
 
-        assertTrue(planner.contains("edgesCoveredByStandingTrains()"),
+        // ONE TRAIN AT A TIME since TDD-A1: the railway's single map records one train per place, so the planner reads
+        // each train's own record - `tailsOfEachStandingTrain` walks the same tails `edgesCoveredByStandingTrains` does.
+        assertTrue(planner.contains("layout.tailsOfEachStandingTrain()"),
             "the planner no longer asks which track the trains are lying across, so it routes through it"
             + " and the runtime refuses the plan on its first move (OB-184)");
 
@@ -261,8 +263,8 @@ public class testHomeStaging
             "the planner's check of the tails its own moves leave does not ask by place, so it plans onto a copy of"
             + " the rail the runtime refuses (AUT-B1)");
 
-        // EVERY TRAIN on those places, not the first (AUT2-C2): `tailsOn` rather than `anotherTailOn`.
-        assertTrue(planner.contains("lyingAcross.addAll(Layout.tailsOn(edge, mover, this.placesCoveredAtStart));"),
+        // EVERY TRAIN on those places, not the first (AUT2-C2), each asked against its own record (TDD-A1).
+        assertTrue(planner.contains("return Layout.tailLiesOn(edge, train, places);"),
             "the planner's check of the tails of trains that have not moved does not ask by place, for every train"
             + " lying there (AUT-B1, AUT2-C2)");
     }    /**

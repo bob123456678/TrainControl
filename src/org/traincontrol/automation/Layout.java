@@ -2684,7 +2684,10 @@ public class Layout
 
         Map<String, Locomotive> coveredPlaces = new LinkedHashMap<>();
 
-        walkStandingTrains(coveredTrack, coveredPlaces);
+        // EVERY TRAIN BUT THIS ONE (TDD-A1).  The maps hold one train per place, the last walked; walked with the others,
+        // this train's own claim on a switch square another train's tail also fouls could stand where that train's was -
+        // and nothing below would find it.  Its own tail is no obstacle to it, so leaving it out loses nothing.
+        walkStandingTrains(coveredTrack, coveredPlaces, other -> !other.equals(loc));
 
         for (Edge e : path)
         {
@@ -6916,6 +6919,37 @@ public class Layout
     }
 
     /**
+     * Each standing train's covered edges and claimed places, walked one train at a time (TDD-A1).
+     *
+     * The maps `edgesCoveredByStandingTrains` and `placesCoveredByStandingTrains` answer "whose tail is here" with ONE
+     * train, the last walked; two tails that foul one switch from its two legs both claim its square, and only one is
+     * recorded.  A question about every train on a place - Return Home's, which asks whether each has moved - reads
+     * these instead.
+     *
+     * @return for each standing train, its covered edges (index 0) and its claimed places (index 1)
+     */
+    synchronized public Map<Locomotive, Object[]> tailsOfEachStandingTrain()
+    {
+        Map<Locomotive, Object[]> out = new LinkedHashMap<>();
+
+        for (Point standing : this.points.values())
+        {
+            final Locomotive train = standing.getCurrentLocomotive();
+
+            if (train == null || out.containsKey(train)) continue;
+
+            Map<Edge, Locomotive> covered = new LinkedHashMap<>();
+            Map<String, Locomotive> places = new LinkedHashMap<>();
+
+            walkStandingTrains(covered, places, other -> other.equals(train));
+
+            if (!covered.isEmpty() || !places.isEmpty()) out.put(train, new Object[] {covered, places});
+        }
+
+        return out;
+    }
+
+    /**
      * The same walk, answered in PLACES rather than whole edges (OB-207).
      *
      * Adam: *"75 407 DB cannot go from Tunnel to BottomMainA even though it should be able to"*, with a
@@ -7111,6 +7145,25 @@ public class Layout
      */
     private void walkStandingTrains(Map<Edge, Locomotive> covered, Map<String, Locomotive> places)
     {
+        walkStandingTrains(covered, places, null);
+    }
+
+    /**
+     * The same walk, over only the trains asked for (TDD-A1).
+     *
+     * The maps hold ONE train per edge and per place, and the train walked last wins - in the order of `points`, which
+     * nobody chose.  Two tails that foul one switch from its two legs both claim its square, and only one is recorded.
+     * So a question about one train's route walks every OTHER train: its own tail is never an obstacle to it
+     * (behaviour.md 5c), and walked with the others its claim could stand where another train's was.  And a question
+     * that needs every train on a place walks them one at a time.
+     *
+     * @param covered filled with every covered edge and its train
+     * @param places filled with every claimed place and its train
+     * @param which the trains to walk, or null for every one
+     */
+    private void walkStandingTrains(Map<Edge, Locomotive> covered, Map<String, Locomotive> places,
+        java.util.function.Predicate<Locomotive> which)
+    {
         // ONE TAIL PER TRAIN, AND A RUNNING ONE IS ANCHORED WHERE IT IS (MT-438).
         //
         // Adam, 2026-09-21, on an orange line left along a road his train never drove: *"There is no
@@ -7139,6 +7192,8 @@ public class Layout
             Locomotive loc = standing.getCurrentLocomotive();
 
             if (loc == null || loc.getTrainLength() == null || loc.getTrainLength() <= 0) continue;
+
+            if (which != null && !which.test(loc)) continue;
 
             // ONCE EACH.  A train that is NOT running occupies exactly one Point - `setLocomotive`
             // sweeps it off every other - so this changes nothing for a standing train; it is the

@@ -139,10 +139,10 @@ public final class HomeStaging
      * under-claims, which is the safe direction for a plan: the runtime refuses what it must, and a
      * planner that over-refused would report a railway as impossible that is not.
      */
-    private final Map<Edge, Locomotive> coveredAtStart;
+    private final Map<Locomotive, Map<Edge, Locomotive>> coveredAtStart;
 
     /** The same, by place rather than by edge - what the shared-metal refusal is narrowed with. */
-    private final Map<String, Locomotive> placesCoveredAtStart;
+    private final Map<Locomotive, Map<String, Locomotive>> placesCoveredAtStart;
 
     /**
      * The route each train the search has moved last took, for the arrangement being expanded (OB-228).
@@ -178,19 +178,29 @@ public final class HomeStaging
         // TAKEN ONCE, with everything else about the starting state.  Asking the live layout during the
         // search would be asking about a railway that has moved on - and would be a different answer on
         // every expansion, which is not a thing a search can reason with.
-        this.coveredAtStart = layout == null
-            ? java.util.Collections.<Edge, Locomotive>emptyMap()
-            : layout.edgesCoveredByStandingTrains();
-
-        // AND THE SAME SWEEP AT THE FINER GRAIN (PRW-B2).
         //
-        // `edgesCoveredByStandingTrains` says WHICH edges a standing train's tail touches;
-        // `placesCoveredByStandingTrains` says which pieces of metal, and the runtime narrows its
-        // shared-metal refusal with it.  Taken here for the same reason as its coarser twin: asking
-        // the live layout during the search would be asking about a railway that has moved on.
-        this.placesCoveredAtStart = layout == null
-            ? java.util.Collections.<String, Locomotive>emptyMap()
-            : layout.placesCoveredByStandingTrains();
+        // AT BOTH GRAINS (PRW-B2): the edges a standing train's tail touches, and the pieces of metal it lies on, which the
+        // runtime narrows its shared-metal refusal with.
+        //
+        // AND ONE TRAIN AT A TIME (TDD-A1).  The railway's single map holds one train per place, the last walked, so two
+        // tails fouling one switch from its two legs were recorded as one - and the train recorded, moving, hid the other.
+        this.coveredAtStart = new LinkedHashMap<>();
+        this.placesCoveredAtStart = new LinkedHashMap<>();
+
+        if (layout != null)
+        {
+            for (Map.Entry<Locomotive, Object[]> tail : layout.tailsOfEachStandingTrain().entrySet())
+            {
+                @SuppressWarnings("unchecked")
+                Map<Edge, Locomotive> edges = (Map<Edge, Locomotive>) tail.getValue()[0];
+                @SuppressWarnings("unchecked")
+                Map<String, Locomotive> places = (Map<String, Locomotive>) tail.getValue()[1];
+
+                this.coveredAtStart.put(tail.getKey(), edges);
+                this.placesCoveredAtStart.put(tail.getKey(), places);
+            }
+        }
+
         this.homes = homes;
         this.stations = stations;
         this.sensorsSet = sensorsSet;
@@ -1655,11 +1665,41 @@ public final class HomeStaging
     {
         Set<Locomotive> lyingAcross = new LinkedHashSet<>();
 
-        Locomotive direct = this.coveredAtStart.get(edge);
+        // EACH TRAIN'S OWN RECORD, one at a time (TDD-A1) - so a place two tails claim answers with both.
+        for (Map.Entry<Locomotive, Map<Edge, Locomotive>> each : this.coveredAtStart.entrySet())
+        {
+            Locomotive train = each.getKey();
 
-        // THE MOVER'S OWN TAIL IS NOT THE ANSWER, only not an obstacle (OB-285): the other trains on the same metal are
-        // still asked about, as `Layout.isPathClear` asks them since the same change.
-        if (direct != null && !direct.equals(mover)) lyingAcross.add(direct);
+            // THE MOVER'S OWN TAIL IS NOT THE ANSWER, only not an obstacle (OB-285): the other trains on the same metal
+            // are still asked about, as `Layout.isPathClear` asks them since the same change.
+            if (train.equals(mover)) continue;
+
+            if (liesAcrossAtStart(edge, train, each.getValue(), this.placesCoveredAtStart.get(train))) lyingAcross.add(train);
+        }
+
+        for (Locomotive train : lyingAcross)
+        {
+            if (stillWhereItStarted(train, state)) return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether this train's tail, as it stood at the start of the plan, lies over metal this edge runs on (OB-184, TDD-A1).
+     *
+     * @param edge the edge being entered
+     * @param train one train standing at the start
+     * @param covered the edges its tail covers, walked alone
+     * @param places the places its tail claims, walked alone
+     * @return true when it lies there
+     */
+    private static boolean liesAcrossAtStart(Edge edge, Locomotive train, Map<Edge, Locomotive> covered,
+        Map<String, Locomotive> places)
+    {
+        if (places == null) places = java.util.Collections.emptyMap();
+
+        if (covered.containsKey(edge)) return true;
 
         // AND THE TRACK IT SHARES METAL WITH, which is where this actually bites (OB-184).
         //
@@ -1676,9 +1716,7 @@ public final class HomeStaging
         // planner that asks a different question offers plans the runtime refuses.
         for (Edge sharing : edge.getLockEdges())
         {
-            Locomotive onShared = this.coveredAtStart.get(sharing);
-
-            if (onShared == null || onShared.equals(mover)) continue;
+            if (!covered.containsKey(sharing)) continue;
 
             if (!sharing.getLockEdges().contains(edge)) continue;
 
@@ -1695,26 +1733,17 @@ public final class HomeStaging
             // must be described in places or nothing is narrowed, so a configuration written
             // before 3.0.0 keeps the whole-edge answer it always had.
             if (!edge.getPlaceIds().isEmpty() && !sharing.getPlaceIds().isEmpty()
-                && !Layout.tailLiesOn(edge, onShared, this.placesCoveredAtStart))
+                && !Layout.tailLiesOn(edge, train, places))
             {
                 continue;
             }
 
-            lyingAcross.add(onShared);
+            return true;
         }
 
         // AND EVERY OTHER COPY OF THE SAME METAL, as `Layout.isPathClear` asks it (AUT-B1): the rail into a turning copy
         // runs over the places of the rail into its plain twin, and is no lock partner of it.
-        lyingAcross.addAll(Layout.tailsOn(edge, mover, this.placesCoveredAtStart));
-
-        lyingAcross.remove(mover);
-
-        for (Locomotive train : lyingAcross)
-        {
-            if (stillWhereItStarted(train, state)) return false;
-        }
-
-        return true;
+        return Layout.tailLiesOn(edge, train, places);
     }
 
     /**
@@ -1863,9 +1892,13 @@ public final class HomeStaging
         // it reached that end.
         Map<String, Boolean> everyTailHasGone = new LinkedHashMap<>();
 
-        for (Map.Entry<Edge, Locomotive> covered : this.coveredAtStart.entrySet())
+        for (Map.Entry<Locomotive, Map<Edge, Locomotive>> each : this.coveredAtStart.entrySet())
+        for (Map.Entry<Edge, Locomotive> covered : each.getValue().entrySet())
         {
-            Locomotive tail = covered.getValue();
+            Locomotive tail = each.getKey();
+
+            // THIS TRAIN'S OWN PLACES (TDD-A1), so a second tail on the same square is not read as this one's.
+            Map<String, Locomotive> tailPlaces = this.placesCoveredAtStart.get(tail);
 
             boolean moved = false;
 
@@ -1895,7 +1928,7 @@ public final class HomeStaging
                 {
                     String nearest = places.get(which == 0 ? 0 : places.size() - 1);
 
-                    if (!tail.equals(this.placesCoveredAtStart.get(nearest))) continue;
+                    if (tailPlaces == null || !tail.equals(tailPlaces.get(nearest))) continue;
                 }
 
                 Boolean soFar = everyTailHasGone.get(end.getS88());
