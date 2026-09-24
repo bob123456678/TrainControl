@@ -3763,6 +3763,124 @@ public class testHomeStaging
     }
 
     /**
+     * An edge two trains' tails lay across at the start is passed only when BOTH have moved (AUT2-C2).
+     *
+     * `passesTheTailsOfTrainsThatHaveNotMoved` settled on ONE train - the first found by the direct cover, a lock
+     * partner, or the places the edge runs over - and asked only whether that one had moved.  So an edge with two start
+     * tails on it passed as soon as the first-found train had gone, while the second still lay there: the runtime, which
+     * walks the tails as they are now, refuses that leg, and the plan stops half way (OB-073) - the drift this class
+     * promises not to have.
+     *
+     * The throat TT_X -> TT_Y runs over two places, TT:k1 and TT:k2.  Two trains of two units stand at TT_B1 and TT_B2,
+     * each come in over one of them, so bravo's tail lies on TT:k1 and charlie's on TT:k2; bravo is the one found first.
+     * Called by reflection, as `testARoadThatTurnedIsNotTheSameStateAsOneThatDidNot` calls `tailKey`.
+     *
+     * MUTATION: settle on the first train found again, and this fails.
+     *
+     * @throws Exception from the reflection
+     */
+    @Test
+    public void testAnEdgeTwoTailsLieAcrossWaitsForBoth() throws Exception
+    {
+        Layout layout = load(twoTailsOverOneThroat());
+
+        Integer wasB = loc(LOC_B).getTrainLength();
+        Integer wasC = loc(LOC_C).getTrainLength();
+
+        try
+        {
+            loc(LOC_B).setTrainLength(2);
+            loc(LOC_C).setTrainLength(2);
+
+            for (String[] berth : new String[][] {{"TT_C1", "TT_B1"}, {"TT_C2", "TT_B2"}})
+            {
+                Edge approach = layout.getEdge(berth[0], berth[1]);
+                Point at = layout.getPoint(berth[1]);
+
+                at.setArrivedFrom(layout.entrySideOf(approach, at));
+                at.setArrivedAlong(Arrays.asList(approach));
+            }
+
+            Map<String, Locomotive> claimed = layout.placesCoveredByStandingTrains();
+
+            assertEquals(claimed.get("TT:k1"), loc(LOC_B), "precondition: bravo's tail does not lie on TT:k1 - " + claimed);
+            assertEquals(claimed.get("TT:k2"), loc(LOC_C), "precondition: charlie's tail does not lie on TT:k2 - " + claimed);
+
+            HomeStaging staging = HomeStaging.snapshot(layout);
+
+            Method passes = HomeStaging.class.getDeclaredMethod("passesTheTailsOfTrainsThatHaveNotMoved", Edge.class,
+                Locomotive.class, Map.class);
+
+            passes.setAccessible(true);
+
+            Field startField = HomeStaging.class.getDeclaredField("start");
+
+            startField.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            Map<Point, Locomotive> start = new LinkedHashMap<>((Map<Point, Locomotive>) startField.get(staging));
+
+            Edge throat = layout.getEdge("TT_X", "TT_Y");
+
+            assertNotNull(throat, "precondition: the fixture has no throat");
+
+            // THE CONTROLS: nobody has moved, and both have.
+            assertFalse((Boolean) passes.invoke(staging, throat, loc(LOC_A), start), "control: with both trains still"
+                + " standing, the planner lets alpha over the throat their tails lie across");
+
+            Map<Point, Locomotive> bothGone = new LinkedHashMap<>(start);
+
+            bothGone.remove(layout.getPoint("TT_B1"));
+            bothGone.remove(layout.getPoint("TT_B2"));
+
+            assertTrue((Boolean) passes.invoke(staging, throat, loc(LOC_A), bothGone), "control: with both trains gone,"
+                + " the planner still refuses the throat their tails no longer lie across");
+
+            // THE CASE: bravo, found first, has gone; charlie is still standing.
+            Map<Point, Locomotive> oneGone = new LinkedHashMap<>(start);
+
+            oneGone.remove(layout.getPoint("TT_B1"));
+
+            assertFalse((Boolean) passes.invoke(staging, throat, loc(LOC_A), oneGone), "the planner let alpha over the"
+                + " throat because bravo, the first train it found there, had moved - while charlie's tail still lies on"
+                + " TT:k2, so the runtime refuses the leg and the plan stops half way (AUT2-C2, OB-073)");
+        }
+        finally
+        {
+            for (String berth : new String[] {"TT_B1", "TT_B2"})
+            {
+                layout.getPoint(berth).setArrivedFrom(null);
+                layout.getPoint(berth).setArrivedAlong(null);
+            }
+
+            loc(LOC_B).setTrainLength(wasB == null ? 0 : wasB);
+            loc(LOC_C).setTrainLength(wasC == null ? 0 : wasC);
+        }
+    }
+
+    /** A throat two trains' tails lie across, one place each; alpha stands short of it. */
+    private static String twoTailsOverOneThroat()
+    {
+        return json("{'points': ["
+            + square("TT_M", 70, null, true, LOC_A) + ","
+            + square("TT_X", 71, null, true, null) + ","
+            + square("TT_Y", 72, null, true, null) + ","
+            + square("TT_C1", 73, null, true, null) + ","
+            + square("TT_B1", 74, null, true, LOC_B) + ","
+            + square("TT_C2", 75, null, true, null) + ","
+            + square("TT_B2", 76, null, true, LOC_C)
+            + "],'edges': ["
+            + edge("TT_M", "TT_X") + ","
+            + "{'start': 'TT_X', 'end': 'TT_Y', 'length': 2,"
+            + " 'places': [{'at': 'TT:k1', 'length': 1}, {'at': 'TT:k2', 'length': 1}]},"
+            + "{'start': 'TT_C1', 'end': 'TT_B1', 'length': 2,"
+            + " 'places': [{'at': 'TT:k1', 'length': 1}, {'at': 'TT:b1', 'length': 1}]},"
+            + "{'start': 'TT_C2', 'end': 'TT_B2', 'length': 2,"
+            + " 'places': [{'at': 'TT:k2', 'length': 1}, {'at': 'TT:b2', 'length': 1}]}"
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
+    /**
      * A sensor a standing train's TAIL holds is not blocked for the whole plan (Adam, 2026-09-15, AMH-B2).
      *
      * `blockedSensors` treats a sensor reading occupied as unexplained unless a train is standing on a point that
