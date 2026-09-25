@@ -147,6 +147,43 @@ public class testATrainIsPutOnlyWhereItCanStart
         assertEquals(east, session.copyFacing(mainA, Side.E, running).getName(), "the right-click Place and the paste put a"
             + " train facing east on different copies (ADU-C1)");
 
+        // AND AT EVERY STATION OF HIS RAILWAY, EACH WAY: the paste's copy (ADU-C1).  Where a heading has more than one copy
+        // - a plain one and its turning twin, or one trains may not arrive at - the first the build made facing that way
+        // need not be it; BottomMainA has one copy each way, so it alone cannot tell the two choices apart.
+        int discriminating = 0;
+
+        for (TileKey station : session.getStore().getNamedTiles())
+        {
+            if (!session.getStore().isStation(station) || session.facingsFor(station).size() < 2) continue;
+
+            List<String> offered = new ArrayList<>();
+
+            for (String name : session.facingsFor(station).keySet())
+            {
+                Point copy = running.getPoint(name);
+
+                if (copy != null && copy.isDestination() && running.canReachAnyDestination(copy)) offered.add(name);
+            }
+
+            if (offered.isEmpty()) continue;
+
+            for (Side side : Side.values())
+            {
+                Point paste = session.copyFacing(station, side, running);
+
+                if (paste == null) continue;
+
+                if (!paste.getName().equals(copyFacing(session, station, side))) discriminating++;
+
+                assertEquals(rule.invoke(null, session, station, running, side, offered), paste.getName(), "the"
+                    + " right-click Place put a train facing " + side + " at " + session.getStore().getPointName(station)
+                    + " on another copy than the paste does (ADU-C1)");
+            }
+        }
+
+        assertTrue(discriminating > 0, "precondition: at every station of his railway the first copy facing each way is"
+            + " the paste's copy too, so nothing here tells the two choices apart");
+
         for (int again = 0; again < 8; again++)
         {
             assertEquals(rule.invoke(null, session, mainA, running, null, usable), usable.get(0), "a train with no"

@@ -167,6 +167,81 @@ public class testAnAnsweredZeroIsNotMissing
         assertTrue(seen > 0, "precondition: nothing on his frozen railway is left to measure, so nothing here is marked");
     }
 
+    /**
+     * TopMainR1Inter's refusing figure is the railway's own refusal (TDA-C10, ADA-C4): on a route in from TopR1ParkShort
+     * measuring that figure, a train that long is admitted and one a unit longer is refused.
+     *
+     * The notice reads the figure off the built railway; the refusal is `Layout.whyTooLongForThisRoute`.  Two rules stated
+     * apart, so asked of each other.
+     *
+     * MUTATION: give the figure a unit high, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testTheRefusingFigureIsTheRailwaysOwn() throws Exception
+    {
+        TileKey inter = null;
+
+        for (TileKey key : session.getStore().getNamedTiles())
+        {
+            if ("TopMainR1Inter".equals(session.getStore().getPointName(key))) inter = key;
+        }
+
+        assertNotNull(inter, "precondition: his railway has no TopMainR1Inter");
+
+        Integer figure = null;
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if ("autosetup.ui.checkRunInShorterThanThePlatformRefused".equals(finding.getMessageKey())
+                && inter.equals(finding.getTile())) figure = finding.getThird();
+        }
+
+        assertNotNull(figure, "precondition: TopMainR1Inter's notice gives no refusing figure");
+
+        Layout layout = layoutNow();
+
+        java.util.List<Edge> path = null;
+
+        for (org.traincontrol.automation.Point start : layout.getPoints())
+        {
+            if (!start.isDestination() || !start.getName().startsWith("TopR1ParkShort")) continue;
+
+            for (org.traincontrol.automation.Point end : layout.getPoints())
+            {
+                if (!end.isDestination() || !(end.getName().equals("TopMainR1Inter")
+                    || end.getName().startsWith("TopMainR1Inter ("))) continue;
+
+                java.util.List<Edge> way = layout.bfs(start, end, new java.util.ArrayList<java.util.List<Edge>>());
+
+                if (way != null && Layout.measuredRouteIn(way) == figure) path = way;
+            }
+        }
+
+        assertNotNull(path, "no route the railway runs from TopR1ParkShort into TopMainR1Inter measures the notice's"
+            + " figure, " + figure);
+
+        Integer was = train.getTrainLength();
+
+        try
+        {
+            train.setTrainLength(figure);
+
+            org.testng.Assert.assertNull(Layout.whyTooLongForThisRoute(path, train), "a train of " + figure + ", the"
+                + " notice's figure, is refused from TopR1ParkShort");
+
+            train.setTrainLength(figure + 1);
+
+            assertNotNull(Layout.whyTooLongForThisRoute(path, train), "a train of " + (figure + 1) + " is admitted from"
+                + " TopR1ParkShort, where the notice says it is refused");
+        }
+        finally
+        {
+            train.setTrainLength(was);
+        }
+    }
+
     /** The square a place identifier names - the tile, before any `/route` of an overpass. */
     private static TileKey squareOf(String id)
     {
