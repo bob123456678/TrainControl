@@ -62,7 +62,17 @@ otherwise be reported as bugs.
 
 ## Reversals
 
-**Open: none.** OB-283, the last, was decided on 2026-09-24 (below).
+**Open.** OB-283 was decided on 2026-09-24 (below).  The validation round that evening left two questions that are
+Adam's:
+
+- **A turning copy on a side trains may not arrive by** (TDA-C8).  Of RampDown and BottomMainPost he said *"they only
+  accept arrivals from one side"*.  The build still emits a turning copy for the barred side of a square trains may
+  turn at, and a route can arrive that way and turn there; the notice asking for the length behind a turn has stopped
+  asking about that side.  If "only from one side" includes turning, the build is what is wrong and should not emit
+  the copy; if it does not, the notice should ask again.
+- **The right-click Place item stands a train on a random copy** (OB-296, TDU-B4).  The other three placement doors
+  keep the train's heading and stand it on the copy that faces that way; should this one follow them, or keep choosing
+  for the operator?
 
 **Decided, and each of these reversed an implemented behaviour** - which is exactly what this section
 is for.
@@ -125,7 +135,17 @@ either.
 
 ## Length, blocking, and the tail
 
-**Open:** none.
+**Open.** Two wordings from the validation round of 2026-09-24, both Adam's:
+
+- **The platform run-in notice says a longer train "may block"** (TDA-C10).  MT-555's sentence says so by his ruling,
+  and a claim pins that it does not say "refused" - but a train longer than the measured route in is refused there,
+  with a figure the notice never shows.  One case on his railway: a four-unit train from TopR1ParkShort to
+  TopMainR1Inter (the MT-564 comment).
+- **Answered-0 track and the Atomic Routes refusal** (TDU-C6).  A stretch answered 0 is "not missing" to Mass Assign
+  Lengths and the Unmeasured Track display, and the Atomic Routes refusal still names it and says "Measure them", with
+  nothing in the editor offering it.  The refusal is right - a zero-length edge is released under a train.  Either
+  the refusal says that answered-0 track needs a length for non-atomic running, or Unmeasured Track marks it while
+  Atomic Routes is off.
 
 **Decided.**
 
@@ -155,7 +175,9 @@ either.
 
 ## Routing tiers
 
-**Open:** none.
+**Open.** One wording, Adam's (OB-295, TDA-C9): a restriction kept on a square made pass-through is listed as *"{0} is
+unavailable while {1} is occupied"*, and on a square no train stops at only the route half of it is live - a train
+standing at {1} holds nothing back there.
 
 **Decided.**
 
@@ -188,6 +210,23 @@ and 1,617. It is a limit rather than a defect - every route it returns is legal 
 measurement over all routes can be compared with an earlier one, which is why the figures in this file
 are quoted with the run that produced them. Recorded here on 2026-09-21 because it was living in a
 resume note that has been deleted.
+
+## Setup and start-up
+
+**Open.** Two questions from the validation round of 2026-09-24, Adam's:
+
+- **Return Home and Execute Timetable over a setup with errors** (TDU2-C3).  Since TDU-B1 both refuse a press while
+  the setup has errors, as Start does - but both stay offered, where Start's right-click item is greyed with the
+  setup's reason.  Grey them with the same sentence as their tooltip, or keep them live as the hand doors are, and say
+  so in `behaviour.md` section 1.
+- **The untick after a legacy import** (TDD-C11).  He ruled for it (*"Set the setting to unchecked when importing a
+  legacy json file, each time"*) when Load Autonomy also loaded the old graph at start.  Since OB-254 it resumes the
+  active configuration, which an import makes, so a ticked box would load the imported setup and the untick is what
+  makes the next start load nothing.  Keep it, or drop it now nothing old is loaded at start.
+
+**Decided while he was away, and reversible** (2026-09-24, TDU-B1): Execute Timetable and Return Home refuse a setup
+with errors, as Start and the hand doors do - they drive over the railway the same setup built.  It extends MT-263 on
+the rule's own stated reason; his ruling named the hand doors.
 
 ---
 

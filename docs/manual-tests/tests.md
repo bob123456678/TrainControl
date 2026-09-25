@@ -28039,6 +28039,10 @@ Validated on your *Works* of 2026-09-24.
 
 *What this is:* `core.testMassAssignLengths.testOneWayRunIsGreyedOnAPageLeftOut`.
 
+**Claude, 2026-09-24.**
+
+**Step 3 cannot show the fix, from the second validation round** (2026-09-24).  Switching page builds a new editor panel for the page you arrive on, so its One-Way Run button was never pressed, whatever the fix does.  The fix is reached by leaving out the page the tool is armed on.  To check it: on 1 - Main press One-Way Run, then tick Exclude Page on 1 - Main itself and answer Yes - the button comes up and is greyed, and the message no longer asks for the first square.  Untick Exclude Page and click a square: nothing waits for a second click.  The claim is `core.testMassAssignLengths.testTheOneWayButtonIsGreyedAndPutDownOnAPageLeftOut`.
+
 ---
 
 <a id="mt-569"></a>
@@ -28125,6 +28129,10 @@ Validated on your *Works* of 2026-09-24.
 
 **What you will see at steps 2 and 3, from the validation round** (2026-09-24).  LowerFront is not offered at all for a 20- or a 10-unit EN57-203: both send doors list only routes the railway would accept, and every way to LowerFront is refused.  The sentence the steps quote is shown by Why not Moving? on the diagram, clicked on BottomSecondary, and in the locomotive list's Why window.  At step 4 LowerFront is offered.  Two changes since the entry was written: the figure named is the tightest return on the route, and a way round with nothing measured on it is not judged at all - on your railway the figure is still 9.
 
+**Claude, 2026-09-24.**
+
+**Re-measured at this build, from the second validation round** (2026-09-24).  The census behind "no train of 9 or less is refused by this anywhere" was taken before the refusal named the tightest return on a route, which could only have lowered it.  Taken again over every station, arrival and route at 40 units, the smallest figure named is still 9 - on 728 routes, none lower - so the sentence stands.  And the windows the comment above names: the locomotive list's Why window opens from the destination label only while it reads No available paths, so if EN57-203 has somewhere else to go, use Why not Moving? on the diagram, clicked on BottomSecondary - it gives the sentence under either Path Type setting.
+
 ---
 
 <a id="mt-572"></a>
@@ -28179,6 +28187,10 @@ Validated on your *Works* of 2026-09-24.
 - Step 4: the same message, and the button is still usable afterwards.
 
 *What this is:* `regression.testAHandSendIsRefusedWhileTheSetupIsBroken.testTheRunDoorsAskItToo`, and `testABrokenSetupIsRefusedAndAMendedOneIsNot` on a real window.
+
+**Claude, 2026-09-24.**
+
+**Before step 2, from the second validation round** (2026-09-24).  Return Home is offered only while some train is away from its home, and after a restart every train is at home, so at step 3 the button would be greyed.  Before breaking the setup, send one train by hand to another station - the hand doors refuse once the setup is broken.  Step 3 then shows the refusal.  After step 5, send it back or press Return Home.
 
 ---
 

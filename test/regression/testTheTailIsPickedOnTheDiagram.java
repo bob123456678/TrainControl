@@ -34,9 +34,10 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * can probably piggyback off the highlight feature and s88 click events."*
  *
  * On the frozen railway (OB-111): a five-unit train at Tunnel from the north has reached TunnelPre on the one rail and
- * 12,7 on the other, both on 1 - Main.  The question is asked the way a placement door asks it - owned by the main
- * window - off the event thread, so the test can click; and the click is TunnelPre's own tile on the main diagram,
- * through the listener every s88 tile has.
+ * 12,7 on the other, both on 1 - Main.  The question is asked owned by the main window, as a placement door asks it,
+ * but off the event thread, so the test can click - a placement door asks on the event thread, which
+ * `testAQuestionAskedOnTheEventThreadIsAnsweredByAClick` covers (TDU-C2); and the click is TunnelPre's own tile on the
+ * main diagram, through the listener every s88 tile has.
  *
  * MUTATION: ask with the list again, and the click answers nothing.
  *

@@ -561,7 +561,8 @@ public class TailCrossedPrompt
 
     /**
      * The same, knowing which click of a run this is - so the rest of a double-click on the sensor that answered is the
-     * question's too (TDU-B3).
+     * question's too (TDU-B3): that one double-click, and no later one, since the next click puts the guard down
+     * (TDU2-C1).
      *
      * The first click answers and takes the question down; the second arrives with nothing waiting and would reach the
      * sensor's own click, which flips it - announced as a real sensor change, which an armed route acts on.  Asking to

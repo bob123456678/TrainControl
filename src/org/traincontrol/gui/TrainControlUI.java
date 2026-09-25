@@ -5943,7 +5943,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * **THE QUESTION IS THE RAILWAY'S, NOT THE EDITOR'S** (VD13-B1, VD13-B2).  It asks
      * `Layout.unmeasuredTrackThatCouldBeReleased` and `Layout.trainsWithNoLength`, so the checkbox and
-     * both load doors give one answer, and a railway with no diagram behind it is asked the same
+     * the load door give one answer, and a railway with no diagram behind it is asked the same
      * question as one built in the editor.  Asking the editor's `squaresNeedingALength` instead refused
      * a railway whose every edge is measured - where the escape provably cannot fire - and answered
      * "nothing unmeasured" for a legacy setup, which is where the danger actually lives.
@@ -6025,7 +6025,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * disagreed on every load, which is the OB-090 fault this was meant to avoid.
      *
      * `Layout.unmeasuredTrackThatCouldBeReleased` is the question in the form the hazard takes, and one
-     * answer for the checkbox and both load doors.  The editor's square count keeps its own job - the
+     * answer for the checkbox and the load door.  The editor's square count keeps its own job - the
      * Unmeasured Track display and Mass Assign Lengths - which is about how far a tail reaches, not
      * about whether an edge may be released.
      *
@@ -23836,8 +23836,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Adam, 2026-09-24: *"Start autonomy doesn't run autonomy, as expected - I get an error message saying errors must
      * first be fixed.  Good.  But trains can still be moved manually via both the track diagram viewer and the
      * autonomy tab, which should throw an error instead."*  A hand send runs over the railway the same setup built, so
-     * it is refused on the question Start is refused on - `autonomyHasErrors` - and both hand doors ask it before the
-     * reversal question, so nothing is asked about a journey that is going to be refused.
+     * it is refused on the question Start is refused on - `autonomyHasErrors`.  Both hand doors ask it before the
+     * reversal question, so nothing is asked about a journey that is going to be refused; and the two run doors that
+     * dispatch without Start, Execute Timetable and Return Home, ask it too (TDU-B1) - named for the hand doors, where it
+     * was first asked.
      *
      * @return the sentence to show, or null
      */

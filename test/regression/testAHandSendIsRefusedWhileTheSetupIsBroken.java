@@ -16,7 +16,8 @@ import org.testng.annotations.Test;
  * first be fixed.  Good.  But trains can still be moved manually via both the track diagram viewer and the autonomy
  * tab, which should throw an error instead."*  A hand send runs over the railway the same setup built, so the setup
  * that stops autonomy starting stops a hand send too: the same question, `autonomyHasErrors`, at both hand doors - the
- * diagram's right-click destinations and the Auto tab's list of paths.
+ * diagram's right-click destinations and the Auto tab's list of paths - and at the two run doors that dispatch without
+ * Start, Execute Timetable and Return Home (TDU-B1).
  *
  * **Asked of the words, then of the doors**, as `testTheRefusalToStartSaysWhichThing` asks Start's: a behavioural
  * claim would have to raise the modal dialog each door shows, which is how a runner was stranded on 2026-09-09.

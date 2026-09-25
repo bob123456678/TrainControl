@@ -1149,14 +1149,18 @@ The editor notice about turn-round squares with no length is a different questio
 - **Except round a loop into its own tail** (OB-294; Adam, 2026-09-24: *"make sure the model factors in whether the
   train will clear the area before it crosses over"*, and *"the check should pass if the train would be gone (i.e. if
   that one was only length 4, for example)"*). **The head may come back to a place only once the tail has left it.**
-  The body as it stands is the one the walk above claims; the route's own places are timed as the head runs them. A
-  train longer than the measured track run between leaving a place and coming back to it is refused, and the refusal
-  names the tightest such figure on the route - the longest train that goes (TDA-C1). **Only measured track binds**: a
-  way round with nothing measured on it is not judged, and where stretches of it have no length the refusal says how
-  many, which is the other way past (TDA-B1). **After a turn the body is ahead of the train** and moves with it - a turn
-  on the way, or a train leaving over its own tail - so the question starts again. Asked by every tier, both hand doors
-  (with the sentence), Why not Moving? and Return Home's planner. On his railway the way round from BottomSecondary by
-  the tunnel back to row 11 measures nine units, so a four-unit train goes and a twenty-unit one does not.
+  The body as it stands is the one the walk above claims; the route's own places are timed as the head runs them. The
+  figure for a return is the longest train clear of the place in time: for a place the body lies on, the measured
+  track the head runs before it comes back there plus the body in front of that place; for a place the route ran
+  over, the measured track run since the head left it. A longer train is refused, and the refusal names the tightest
+  such figure on the route - the longest train that goes (TDA-C1). **Only measured track binds**: a return is judged
+  only where the route itself - not the body in front of the place - has measured something since the head left it,
+  and where stretches of it have no length the refusal says how many, which is the other way past (TDA-B1).
+  **After a turn the body is ahead of the train** and moves with it - a turn on the way, or a train leaving over its
+  own tail - so the question starts again. Asked by every tier, Why not Moving? and Return Home's planner. A hand door
+  does not offer a destination the rule refuses on every route; the sentence shows where a menu built before the
+  length changed is used, and in Why not Moving? (TDD-C1). On his railway the way round from BottomSecondary by the
+  tunnel back to row 11 measures nine units, so a four-unit train goes and a twenty-unit one does not.
   `core.testATrainDoesNotRunIntoItsOwnTail`, `core.testTheOwnTailArithmetic`.
 - **Every other train's tail is asked about, not only the one the record kept** (TDD-A1). The claims record one train
   per place - the last walked, in an order nobody chose - and two tails fouling one switch from its two legs both claim
@@ -1573,9 +1577,9 @@ or load a setting:
 
 - the **Atomic Routes checkbox** refuses the gesture and says what is unmeasured - somebody is there,
   and one gesture from fixing it;
-- the **two load doors** (Validate on the autonomy tab, and the editor's apply) force the setting back
-  ON and write the reason to the log, because a file has nobody at it and refusing the load would make
-  a configuration the operator already has unopenable;
+- the **load door** (the editor's apply; the other, Validate on the old autonomy tab, went with that tab -
+  OB-254) forces the setting back ON and writes the reason to the log, because a file has nobody at it and
+  refusing the load would make a configuration the operator already has unopenable;
 - the **five dispatch doors** - Start, Execute Timetable, Return Home, and the two hand dispatches -
   do the same, because a TRAIN's length is written on the live layout long after any file was parsed.
 
