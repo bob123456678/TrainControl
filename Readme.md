@@ -365,10 +365,10 @@ Tab icons provided by Freepik.
 
 * v2.8.2 [9/25/2026]
     - Autonomy Bug Fixes
-        - Fixed: renaming a locomotive that was standing at a station took it off that station, so autonomy could send another train there.
+        - Fixed: renaming a locomotive, or one of the locomotives in a multi-unit, took the train off the station it was standing at, so autonomy could send another train there.
         - Fixed: clearing a station’s priority made autonomy stop sending trains out, and stopped the graph from being saved.
         - Fixed: a running train could miss its stop sensor and drive through its station while another train’s route was being set.
-        - Fixed: Return Home gave up and stopped every train when one train was standing somewhere that is not a station, or had no speed set.
+        - Fixed: Return Home started and then stopped every train when one train had no speed set, or was standing somewhere that is not a station.  Now a train with no speed is skipped and the others still go home, and a train that is not at a station is named before anything moves, so it can be moved to a station first.
         - Fixed: double-clicking Start could start every train twice.
         - Fixed: one timetable entry that could no longer be loaded, for example after its locomotive was deleted, wiped out the whole timetable.
     - Route Bug Fixes
