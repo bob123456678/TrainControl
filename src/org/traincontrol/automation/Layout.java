@@ -3605,10 +3605,40 @@ public class Layout
     }
         
     /**
-     * Ensures that the passed locomotive does not conflict with any other multi-units by removing it from the graph
-     * @param l 
+     * Takes off the graph whatever an edit to this locomotive - its name, its address, its consist,
+     * changed from the window - has made conflict with it; nothing when it stands nowhere.
+     *
+     * An edit can only make a conflict ON THE GRAPH through the edited train's own presence there: a
+     * train that stands nowhere clashes with nothing that stands.  Swept regardless, a rename of a
+     * MEMBER of a multi-unit whose head stood on a station asked the head whether it was compatible
+     * with its own member - never, isLinkedTo - and took the head off its station: the platform read
+     * as empty with the train standing on it, the loss the self-skip below was written for, by the one
+     * rename that self-skip does not reach.  Found by the validator of the 2.8.2 backports (BPV-A1).
+     *
+     * Every door that calls this - rename, the multi-unit editor, rename from the Central Station -
+     * refuses while autonomy runs, its coast-down and Return Home's planning included
+     * (isAutonomyRunning), as delete does; so this is the stopped railway.
+     *
+     * Placing a train asks the sweep itself, before the train is put down, through
+     * clearMultiUnitConflictsWith.
+     *
+     * @param l the locomotive edited
      */
     public void sanitizeMultiUnits(Locomotive l)
+    {
+        if (l == null || this.getLocomotiveLocation(l) == null) return;
+
+        this.clearMultiUnitConflictsWith(l);
+    }
+
+    /**
+     * Takes off the graph every train that cannot stand on it at the same time as this one - a member
+     * of its consist, or one with an equivalent address - for a locomotive that is on the graph or
+     * about to be put there.
+     *
+     * @param l the locomotive
+     */
+    private void clearMultiUnitConflictsWith(Locomotive l)
     {
         if (l != null)
         {
@@ -3710,8 +3740,9 @@ public class Layout
                 }
             }
             
-            // Ensure no multi-unit conflicts
-            this.sanitizeMultiUnits(l);
+            // Ensure no multi-unit conflicts - asked before the train is put down, so the sweep itself,
+            // not the edit doors' sanitizeMultiUnits, which asks only of a train already standing (BPV-A1)
+            this.clearMultiUnitConflictsWith(l);
                         
             // Set new location
             target.setLocomotive(l);
@@ -4840,8 +4871,9 @@ public class Layout
                                 );
                             }
 
-                            // De-conflict with other multi-units
-                            layout.sanitizeMultiUnits(l);
+                            // De-conflict with other multi-units - before it is put down, as a placement
+                            // asks, so the sweep itself (BPV-A1)
+                            layout.clearMultiUnitConflictsWith(l);
                             
                             // Place the locomotive
                             layout.getPoint(point.getString("name")).setLocomotive(l);
