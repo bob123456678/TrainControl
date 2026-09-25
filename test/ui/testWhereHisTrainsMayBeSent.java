@@ -453,6 +453,298 @@ public class testWhereHisTrainsMayBeSent
             "after the click no answer was drawn (MT-570 step 2): " + said);
     }
 
+    /**
+     * With the stretch between BottomSecondary and TunnelPre answered 0 in the editor, 75 407 DB - 5 long - placed at
+     * RampDown facing south is offered Tunnel and goes there; standing there, the track held behind it reaches back past
+     * TunnelPre and BottomSecondary onto the track towards RampDown (MT-586).
+     *
+     * The 0 is given as the steps give it: the squares of that stretch selected with Shift-click in the autonomy editor on
+     * 1 - Main, then Segment Length... on one of them, 0 and OK; the running railway is then rebuilt, as closing the editor
+     * saving the change rebuilds it.  The train is sent with the right-click's "-> Tunnel" and driven in simulation.  The
+     * grey behind a standing train is the track the railway holds for it, read here from the railway.
+     *
+     * MUTATION: stop the measured way in at the stretch answered 0, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAStretchAnsweredZeroLetsHisTrainIntoTunnel() throws Exception
+    {
+        clearTheRailway();
+
+        Locomotive his = train(HIS_TRAIN);
+
+        remember(his);
+
+        TileKey rampDown = square("RampDown");
+        TileKey tunnel = square("Tunnel");
+
+        Edge hop = railway().getEdge("BottomSecondary", "TunnelPre");
+
+        assertNotNull(hop, "precondition: the frozen railway no longer runs BottomSecondary -> TunnelPre");
+
+        List<TileKey> stretch = new ArrayList<>();
+
+        for (String id : hop.getPlaceIds()) stretch.add(squareOfPlace(id));
+
+        java.util.Map<TileKey, Integer> was = new java.util.LinkedHashMap<>();
+        java.util.Set<TileKey> wasAnswered = new java.util.LinkedHashSet<>();
+
+        for (TileKey square : stretch)
+        {
+            was.put(square, session.getStore().getTileLength(square));
+
+            if (session.getStore().isTileLengthAnswered(square)) wasAnswered.add(square);
+        }
+
+        int speedWas = his.getPreferredSpeed();
+
+        try
+        {
+            // STEP 2: Shift-click every square of the stretch in the editor on 1 - Main; Segment Length..., 0, OK.
+            final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, stretch.get(0).getPage(), () -> { });
+
+            panel.setRunningLayoutSource(() -> model.getAutoLayout());
+            panel.setLayoutSource(() -> model.getAutoLayout());
+
+            for (final TileKey square : stretch)
+            {
+                SwingUtilities.invokeAndWait(() ->
+                    panel.tileClicked(square, session.getGraph().getTiles().get(square), true));
+            }
+
+            final javax.swing.JMenuItem[] length = new javax.swing.JMenuItem[1];
+
+            SwingUtilities.invokeAndWait(() -> length[0] = itemStarting(panel.buildTileMenu(stretch.get(0), null),
+                I18n.t("autosetup.ui.menuSetLength")));
+
+            assertNotNull(length[0], "the editor's right-click on the stretch has no Segment Length... item");
+
+            SwingUtilities.invokeLater(length[0]::doClick);
+
+            javax.swing.JDialog asked = awaitDialogTitled(I18n.t("autosetup.ui.menuSetLength"));
+
+            final javax.swing.JTextField field = find(asked.getContentPane(), javax.swing.JTextField.class);
+            final javax.swing.JOptionPane pane = find(asked.getContentPane(), javax.swing.JOptionPane.class);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                field.setText("0");
+                pane.setValue(javax.swing.UIManager.getString("OptionPane.okButtonText"));
+            });
+
+            awaitNoDialogTitled(I18n.t("autosetup.ui.menuSetLength"));
+
+            // CLOSED SAVING THE CHANGE: the running railway rebuilt from the setup.
+            SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
+
+            pump();
+
+            Edge answered = railway().getEdge("BottomSecondary", "TunnelPre");
+
+            assertTrue(answered != null && answered.getLength() == 0 && answered.isMeasured(), "precondition: the stretch"
+                + " BottomSecondary -> TunnelPre is not answered 0 end to end after Segment Length... 0");
+
+            // STEP 3: a length of 5, at RampDown facing south - as the right-click Place and the Facing menu leave it.
+            his.setTrainLength(5);
+
+            if (his.getPreferredSpeed() < 1) his.setPreferredSpeed(30);
+
+            // THE PLAIN SOUTHBOUND COPY: RampDown also has a copy for trains that turn there, which is no station.
+            SwingUtilities.invokeAndWait(() -> railway().moveLocomotive(HIS_TRAIN, "RampDown (southbound)", false));
+
+            pump();
+
+            assertTrue(railway().getLocomotiveLocation(his) != null
+                && "RampDown (southbound)".equals(railway().getLocomotiveLocation(his).getName()), "precondition: 75 407 DB"
+                + " could not be stood on RampDown facing south");
+
+            // STEP 4: offered Tunnel, and sent there.
+            assertTrue(offered(rampDown).contains("Tunnel"), "with the stretch answered 0, 75 407 DB at RampDown is not"
+                + " offered Tunnel (MT-586): " + offered(rampDown));
+
+            railway().setSimulate(true);
+
+            model.go();
+
+            assertTrue(model.waitForPowerState(true, 15000), "precondition: the power did not come on");
+
+            javax.swing.JMenuItem send = destination(rampDown, "Tunnel");
+
+            SwingUtilities.invokeLater(send::doClick);
+
+            Point arrived = null;
+
+            for (long end = System.currentTimeMillis() + 180000; System.currentTimeMillis() < end; )
+            {
+                Point at = railway().getLocomotiveLocation(his);
+
+                if (at != null && at.getName().startsWith("Tunnel (") && !railway().getActiveLocomotives().containsKey(his))
+                {
+                    arrived = at;
+                    break;
+                }
+
+                String asking = aQuestionShowing();
+
+                assertNull(asking, "the send to Tunnel asked something the steps do not answer: " + asking);
+
+                Thread.sleep(200);
+            }
+
+            assertNotNull(arrived, "75 407 DB, sent to Tunnel, did not arrive (MT-586): it stands at "
+                + railway().getLocomotiveLocation(his));
+
+            // AND THE GREY BEHIND IT: the track held for it reaches back past TunnelPre and BottomSecondary onto the track
+            // towards RampDown.
+            Map<String, Locomotive> held = railway().placesCoveredByStandingTrains();
+
+            for (String place : railway().getEdge("BottomSecondary", "TunnelPre").getPlaceIds())
+            {
+                assertTrue(held.get(place) == his, "standing at Tunnel, 75 407 DB does not hold " + place + " on the"
+                    + " stretch answered 0 (MT-586)");
+            }
+
+            Edge behind = null;
+
+            for (Edge in : railway().getNeighborsAndIncoming(railway().getPoint("BottomSecondary")))
+            {
+                if (in.getEnd().getName().equals("BottomSecondary") && in.getStart().getName().startsWith("RampDown")) behind = in;
+            }
+
+            assertNotNull(behind, "precondition: no track from RampDown into BottomSecondary");
+
+            List<String> towardsRampDown = behind.getPlaceIds();
+
+            assertTrue(held.get(towardsRampDown.get(towardsRampDown.size() - 1)) == his, "standing at Tunnel, 75 407 DB's"
+                + " held track stops at BottomSecondary instead of reaching onto the track towards RampDown (MT-586): "
+                + held.keySet());
+        }
+        finally
+        {
+            for (int turn = 0; turn < 10 && !railway().getActiveLocomotives().isEmpty(); turn++) Thread.sleep(500);
+
+            try
+            {
+                railway().setSimulate(false);
+            }
+            catch (Exception stillRunning)
+            {
+                // Left simulating: the class's railway is a sandbox copy.
+            }
+
+            his.setPreferredSpeed(speedWas);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (java.util.Map.Entry<TileKey, Integer> square : was.entrySet())
+                {
+                    if (square.getValue() > 0) session.setTileLength(square.getKey(), square.getValue());
+                    else if (wasAnswered.contains(square.getKey()))
+                    {
+                        session.answerTileLengthsZero(java.util.Arrays.asList(square.getKey()));
+                    }
+                    else session.setTileLength(square.getKey(), 0);
+                }
+
+                ui.rebuildRunningLayoutFromSetup();
+            });
+
+            pump();
+        }
+    }
+
+    /** The square a place id names: its page, and its column and row. */
+    private static TileKey squareOfPlace(String id)
+    {
+        String square = id.indexOf('/') >= 0 ? id.substring(0, id.indexOf('/')) : id;
+
+        int colon = square.lastIndexOf(':');
+        int comma = square.lastIndexOf(',');
+
+        return new TileKey(square.substring(0, colon), Integer.parseInt(square.substring(colon + 1, comma)),
+            Integer.parseInt(square.substring(comma + 1)));
+    }
+
+    /** The right-click's "-> X" item on this square. */
+    private static javax.swing.JMenuItem destination(TileKey square, String to) throws Exception
+    {
+        final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
+
+        final Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class, Point.class);
+
+        gather.setAccessible(true);
+
+        final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
+            TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
+
+        make.setAccessible(true);
+
+        final Point[] standing = new Point[1];
+
+        SwingUtilities.invokeAndWait(() -> standing[0] = ui.getAutonomyPointForTile(square));
+
+        final Object options = gather.invoke(null, ui, standing[0]);
+
+        final javax.swing.JMenuItem[] item = new javax.swing.JMenuItem[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                javax.swing.JPopupMenu menu = (javax.swing.JPopupMenu) make.newInstance(ui, square, square, options);
+
+                item[0] = itemExactly(menu, "-> " + to);
+            }
+            catch (ReflectiveOperationException failed)
+            {
+                throw new IllegalStateException(failed);
+            }
+        });
+
+        assertNotNull(item[0], "the right-click on " + name(square) + " offers no -> " + to);
+
+        return item[0];
+    }
+
+    /** The item with exactly this text, on a menu or its submenus - "-> Tunnel" is not "-> TunnelLeftPark". */
+    private static javax.swing.JMenuItem itemExactly(java.awt.Container menu, String text)
+    {
+        java.awt.Component[] children = menu instanceof javax.swing.JMenu
+            ? ((javax.swing.JMenu) menu).getMenuComponents() : menu.getComponents();
+
+        for (java.awt.Component child : children)
+        {
+            if (child instanceof javax.swing.JMenu)
+            {
+                javax.swing.JMenuItem found = itemExactly((javax.swing.JMenu) child, text);
+
+                if (found != null) return found;
+            }
+            else if (child instanceof javax.swing.JMenuItem && text.equals(((javax.swing.JMenuItem) child).getText()))
+            {
+                return (javax.swing.JMenuItem) child;
+            }
+        }
+
+        return null;
+    }
+
+    /** The message of any option dialog on screen, or null. */
+    private static String aQuestionShowing()
+    {
+        for (java.awt.Window window : java.awt.Window.getWindows())
+        {
+            if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
+
+            javax.swing.JOptionPane pane = find(((javax.swing.JDialog) window).getContentPane(), javax.swing.JOptionPane.class);
+
+            if (pane != null) return ((javax.swing.JDialog) window).getTitle() + ": " + pane.getMessage();
+        }
+
+        return null;
+    }
+
     // ---------------------------------------------------------------- the doors
 
     /** The editor's Unavailable While Occupied window on this square, with one square ticked and OK; then saved. */
