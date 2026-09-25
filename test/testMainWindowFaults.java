@@ -386,6 +386,98 @@ public class testMainWindowFaults
     }
 
     /**
+     * A UI state file that will not read is not saved over while its copy cannot be kept.
+     *
+     * The save cleared its "unreadable" mark first and then tried the copy.  When the copy failed, the
+     * failure was logged and the save went on to replace the unreadable file - every key mapping and
+     * page name gone, with no copy anywhere.  The mark is now cleared only once the copy is known to
+     * exist, and until then the file is left as it is; the next save tries again (BPV-C7).
+     *
+     * The copy alone is made to fail as testControlStationFaults does it for the locomotive database:
+     * a folder standing at every name the copy could be given.  Refuses to run where the test above
+     * does.
+     */
+    @Test
+    public void testAnUnreadableUiStateIsNotSavedOverWhileItsCopyCannotBeKept() throws Exception
+    {
+        File live = new File("UIState.data");
+
+        if (live.exists())
+        {
+            throw new SkipException("Not run here: the working directory holds a UI state file ("
+                + live.getAbsolutePath() + "), and this test has to put an unreadable one in its place");
+        }
+
+        if (TrainControlUI.getPrefs().getBoolean(PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, false))
+        {
+            throw new SkipException("Not run here: this folder remembers window positions, so saving "
+                + "the UI state would rewrite the saved diagram window titles");
+        }
+
+        TrainControlUI ui = windowless();
+
+        // What the window's save reads, and nothing more
+        set(ui, "model", stubModel((method, args) -> null));
+        set(ui, "buttonMapping", new HashMap<Integer, JButton>());
+        set(ui, "pageNames", new HashMap<Integer, String>());
+        set(ui, "autosave", new JCheckBox());
+        set(ui, "autonomyJSON", new JTextArea());
+
+        List<HashMap<JButton, Locomotive>> pages = new ArrayList<>();
+        pages.add(new HashMap<>());
+        set(ui, "locMapping", pages);
+
+        byte[] unreadable = testControlStationFaults.truncatedObjectStream();
+
+        File backups = new File(Util.BACKUP_FOLDER);
+        boolean hadBackups = backups.isDirectory();
+        Set<String> before = testControlStationFaults.names(backups);
+        List<File> blockers = new ArrayList<>();
+
+        try
+        {
+            Files.write(live.toPath(), unreadable);
+
+            // As at startup: the file is there, and will not read
+            ui.restoreState();
+
+            testControlStationFaults.blockTheCopy("UIState.data", blockers);
+
+            // As on exit, with the copy impossible
+            ui.saveState(false);
+
+            assertEquals(Files.readAllBytes(live.toPath()), unreadable,
+                "the unreadable UI state file could not be copied aside, and the save replaced it anyway "
+                + "- no copy kept anywhere, and every key mapping and page name gone (BPV-C7)");
+
+            // Once the copy can be made, the next save makes it, and then saves
+            testControlStationFaults.unblock(blockers);
+
+            ui.saveState(false);
+
+            assertEquals(testControlStationFaults.keptCopies(backups, before, unreadable), 1,
+                "the save after the copy became possible did not keep the unreadable file");
+
+            assertFalse(java.util.Arrays.equals(Files.readAllBytes(live.toPath()), unreadable),
+                "once the unreadable file was kept, the save must go ahead - refusing for ever would "
+                + "lose whatever the session did");
+        }
+        finally
+        {
+            testControlStationFaults.unblock(blockers);
+
+            Files.deleteIfExists(live.toPath());
+
+            for (String name : testControlStationFaults.names(backups))
+            {
+                if (!before.contains(name)) Files.deleteIfExists(new File(backups, name).toPath());
+            }
+
+            if (!hadBackups) Files.deleteIfExists(backups.toPath());
+        }
+    }
+
+    /**
      * Page names survive a UI state file that has fewer pages than this version shows.
      *
      * The file is the key mappings of each page followed by one last entry holding the page names and

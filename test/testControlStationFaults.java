@@ -1,7 +1,9 @@
 import java.io.File;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import static org.testng.Assert.*;
 import org.testng.SkipException;
@@ -10,6 +12,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Point;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.util.Conversion;
 import org.traincontrol.util.Util;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
@@ -214,6 +217,81 @@ public class testControlStationFaults
     }
 
     /**
+     * A locomotive database that will not read is not saved over while its copy cannot be kept.
+     *
+     * The save cleared its "unreadable" mark first and then tried the copy.  When the copy failed, the
+     * failure was logged and the save went on to replace the unreadable file - the copy the mark was
+     * there to guarantee was never made, and the file was gone.  The mark is now cleared only once the
+     * copy is known to exist, and until then the file is left as it is; the next save tries again
+     * (BPV-C7).
+     *
+     * The copy alone is made to fail by a folder, with something in it, standing at every name the copy
+     * could be given in the next minute - the file itself, and the save beside it, are untouched.  Like
+     * the test above, this refuses to run where a real database is present.
+     */
+    @Test
+    public void testAnUnreadableDatabaseIsNotSavedOverWhileItsCopyCannotBeKept() throws Exception
+    {
+        File live = new File(MarklinControlStation.DATA_FILE_NAME);
+
+        if (live.exists())
+        {
+            throw new SkipException("Not run here: the working directory holds a locomotive database ("
+                + live.getAbsolutePath() + "), and this test has to put an unreadable one in its place");
+        }
+
+        byte[] unreadable = truncatedObjectStream();
+
+        File backups = new File(Util.BACKUP_FOLDER);
+        boolean hadBackups = backups.isDirectory();
+        Set<String> before = names(backups);
+        List<File> blockers = new ArrayList<>();
+
+        try
+        {
+            Files.write(live.toPath(), unreadable);
+
+            // As at startup: the file is there, and will not read
+            model.restoreState(MarklinControlStation.DATA_FILE_NAME);
+
+            blockTheCopy(MarklinControlStation.DATA_FILE_NAME, blockers);
+
+            // As on exit, with the copy impossible
+            model.saveState(false);
+
+            assertEquals(Files.readAllBytes(live.toPath()), unreadable,
+                "the unreadable locomotive database could not be copied aside, and the save replaced it "
+                + "anyway - no copy kept anywhere, and every locomotive's functions, icons, notes and "
+                + "statistics gone (BPV-C7)");
+
+            // Once the copy can be made, the next save makes it, and then saves
+            unblock(blockers);
+
+            model.saveState(false);
+
+            assertEquals(keptCopies(backups, before, unreadable), 1,
+                "the save after the copy became possible did not keep the unreadable file");
+
+            assertFalse(Arrays.equals(Files.readAllBytes(live.toPath()), unreadable),
+                "once the unreadable file was kept, the save must go ahead - refusing for ever would "
+                + "lose whatever the session did");
+        }
+        finally
+        {
+            unblock(blockers);
+
+            Files.deleteIfExists(live.toPath());
+
+            for (String name : names(backups))
+            {
+                if (!before.contains(name)) Files.deleteIfExists(new File(backups, name).toPath());
+            }
+
+            if (!hadBackups) Files.deleteIfExists(backups.toPath());
+        }
+    }
+
+    /**
      * A file that stops part way through its first object, as an interrupted copy or sync leaves one.
      *
      * A valid stream header, so the reader opens it and fails on the object itself.  Plain garbage
@@ -254,5 +332,50 @@ public class testControlStationFaults
         }
 
         return kept;
+    }
+
+    /**
+     * Makes the copy of an unreadable file - and only the copy - fail for the next minute: a folder,
+     * with a file in it, at every name the copy could be given, which a copy that replaces what is
+     * there cannot remove.  Undone by unblock.
+     *
+     * @param fileName the file whose copy is to fail
+     * @param made where what is made is listed as it is made, for unblock
+     */
+    static void blockTheCopy(String fileName, List<File> made) throws Exception
+    {
+        // The middle of each second from the one before this to a minute after: a name is to the
+        // second, and a time exactly on the minute would be written without its seconds
+        long now = System.currentTimeMillis();
+        long first = now - now % 1000 - 1000 + 500;
+
+        for (long t = first; t <= now + 60000; t += 1000)
+        {
+            // Named exactly as the saves name the copy
+            File folder = new File(Util.getBackupPath("unreadable"
+                + Conversion.convertSecondsToDatetime(t).replace(':', '-').replace(' ', '_') + fileName));
+
+            if (folder.exists()) continue;
+
+            assertTrue(folder.mkdirs(), "the fixture could not make " + folder);
+            made.add(folder);
+
+            File inside = new File(folder, "blocker");
+            Files.write(inside.toPath(), new byte[]{ 1 });
+            made.add(inside);
+        }
+    }
+
+    /**
+     * Removes what blockTheCopy made, innermost first.
+     */
+    static void unblock(List<File> made) throws Exception
+    {
+        for (int i = made.size() - 1; i >= 0; i--)
+        {
+            Files.deleteIfExists(made.get(i).toPath());
+        }
+
+        made.clear();
     }
 }
