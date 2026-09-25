@@ -10,7 +10,8 @@ never reviews - once the catalogue was carrying
 what they found.  The five-lane review of 2026-09-23 wrote twenty more, in `docs/reviews-2026-09-23/`, over four
 rounds of fixes and validation, and they were deleted the same way in the commit that closed it; the counts below are
 of the two earlier deletions.  The validation of 2026-09-24 - OB-294 and the two days of commits before it, three
-lanes over five rounds - wrote fifteen more in `docs/reviews-2026-09-24/`, and they went the same way.  **How a multi-lane review like that one is run, closed and reported is in
+lanes over five rounds - wrote fifteen more in `docs/reviews-2026-09-24/`, and they went the same way.  The validation of the work on Adam's answers of that night - three lanes over two rounds,
+on 2026-09-25 - wrote six more in `docs/reviews-2026-09-25/`, and they went the same way.  **How a multi-lane review like that one is run, closed and reported is in
 [FANOUT.md](FANOUT.md)**, with the report Adam reviewed at the end of it kept as the example
 ([examples/session-report-2026-09-23.html](examples/session-report-2026-09-23.html)).
 
