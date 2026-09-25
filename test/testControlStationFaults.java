@@ -85,6 +85,22 @@ public class testControlStationFaults
             "with no answer, the time since the last ping must keep growing - that reading is what "
             + "the lost-connection warning is made of");
 
+        // Still nothing answering: the keepalive resends, and the silence is still measured from the
+        // FIRST unanswered ping.  Measured from the resend, the reading would fall back at every retry,
+        // so a station silent for an hour would read like one silent for two seconds - and both the
+        // lost-connection warning and the latency power cut read this figure (BPV-C1).
+        model.sendPing(false);
+
+        Thread.sleep(2100);
+
+        long silence = model.getTimeSinceLastPing();
+
+        assertTrue(silence >= 4000,
+            "the time since the last ping fell back when the unanswered ping was resent (" + silence
+            + "ms after two unanswered pings 2.1s apart) - it must measure the whole silence, from the "
+            + "first unanswered ping, or the lost-connection warning and the latency cutoff go quiet "
+            + "during a real outage");
+
         // Now the station answers again, as it would when the network came back
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
 
