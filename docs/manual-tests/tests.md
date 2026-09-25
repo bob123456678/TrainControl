@@ -81,8 +81,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-583](#mt-583) | 2026-09-25 | TopMainR1Inter's notice gives the length a train is refused above | fixed unvalidated | TDA-C10 |
 | [MT-584](#mt-584) | 2026-09-25 | A train standing on the watched square closes a square trains only pass | fixed unvalidated | OB-295, TDA-C9 |
 | [MT-585](#mt-585) | 2026-09-25 | The right-click Place keeps a heading trains may not arrive by | fixed unvalidated | OB-296, ADU-B1, ADD2-C9 |
+| [MT-586](#mt-586) | 2026-09-25 | A stretch answered 0 lets a train in when the total track holds it | fixed unvalidated | ADU-C7, TDU-C6 |
 
-Everything else - 531 of 585 - needs nothing from you unless the area changes again:
+Everything else - 531 of 586 - needs nothing from you unless the area changes again:
 453 **fixed validated** and 78 **superseded**.
 
 ---
@@ -24821,6 +24822,10 @@ shown red under their own mutations.
 
 Promoted on your *Works* of 2026-09-23. Nothing Mass Assign Lengths does changed after your run; the route-tile fold at open (3492e38c) now never moves a length onto a sensor square, which is not a step here.
 
+**Claude, 2026-09-25.**
+
+**What an answered 0 means now** (2026-09-25, ADU-C7).  On your answer it counts as measured track of no length to every length rule, not only to Atomic Routes: a train is let in wherever the measured track holds it in total.  MT-586 checks it on the railway.
+
 ---
 
 <a id="mt-477"></a>
@@ -28603,5 +28608,32 @@ Validated on your *Works* of 2026-09-24.
 - Step 3: it faces west, and Why not Moving? says *Trains may not arrive at BottomMainA facing the way this one faces, so autonomy will not start it there.*
 
 *What this is:* `core.testATrainIsPutOnlyWhereItCanStart.testTheRightClickPlaceKeepsTheTrainsHeading`, over every station of the frozen copy of your railway each way.  Run it in the same sitting as MT-581.
+
+---
+
+<a id="mt-586"></a>
+
+### MT-586 - 2026-09-25 - A stretch answered 0 lets a train in when the total track holds it
+
+**Disposition:** fixed unvalidated
+**From:** ADU-C7, TDU-C6
+
+**Written:** 2026-09-25
+
+**What was wrong.**  Track answered 0 on purpose ended the measured way into a platform, as if nobody had measured it, so a train the whole measured run would hold was refused.  Your answer: "we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow", and "Build it".
+
+**Steps**
+
+1. Close TrainControl, copy your layout folder's `config/autonomy` folder somewhere safe, and start it again.
+2. In the autonomy editor, on 1 - Main, Shift-click every square between BottomSecondary and TunnelPre - the switch, the crossing, the straight squares and TunnelPre's own square (on the frozen copy of your railway: 12,11, 11,11, and 11,10 up to 11,7) - then right-click one of them, choose Segment Length..., type 0 and press OK.  Close the editor, saving the change.
+3. Set 75 407 DB's train length to 5, noting what it was.  Make it the active locomotive, right-click RampDown and choose Place 75 407 DB, and under 75 407 DB Is Facing... make it face south.
+4. Right-click 75 407 DB and send it to Tunnel.  Let it arrive.
+5. Close TrainControl, copy the saved `config/autonomy` folder back, and set 75 407 DB's length back.
+
+**Expected**
+
+- Step 4: Tunnel is offered and the train goes; standing there, the grey behind it reaches back past TunnelPre and BottomSecondary onto the track towards RampDown.
+
+*What this is:* `core.testAnAnsweredZeroIsNotMissing.testAStretchAnsweredZeroIsMeasuredTrackOfNoLength`, on the frozen copy of your railway: RampDown -4-> BottomSecondary -2-> TunnelPre -4-> Tunnel takes a train of 5 with the middle answered 0, where it was refused quoting 4.  If you have measured those squares differently since, the figures differ; the train still goes wherever the measured track in total holds it.
 
 ---

@@ -132,17 +132,12 @@ either.
 
 ## Length, blocking, and the tail
 
-**Open.** One reach, Adam's (ADU-C7, ADA-A1): **should an answered 0 count as measured beyond the Atomic Routes
-gate?**  Today it does at the gate and the escape only, and every other length rule reads it as unmeasured (OB-274).
-**What that costs:** where track answered 0 lies between measured stretches on the way into a station autonomy may
-choose - a hop between two sensors side by side, which is what you asked the 0 for - the route in stops at it, so a
-train the whole measured run would hold is refused, and the refusal says the track measures only what lies after the
-0; the one way past is to type a length for track you have answered is nothing.  **The wider reading** admits that
-train, and is safe only if the tail walk and the tail question walk on over an answered 0 as well, claiming its
-squares for nothing and the track behind it; that claims more, never less, but changes what a standing train blocks
-on a railway answered that way.  **Recommended:** leave it at the gate unless you have such a stretch.  The copy of
-your railway frozen for the tests predates answering 0, so it cannot say whether yours has one; where you answered 0
-only at the ends of stretches, nothing changes either way (ADA2-C5, ADD2-C2).
+**Decided 2026-09-25** (ADU-C7, ADA-A1): **an answered 0 is measured track of no length, to every length rule.**
+Adam: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*, and *"Build it"*.  The route in, the room walk, the walk that claims a standing train's
+tail, the berth rule and the tail question count it, adding nothing, and walk on over it; a leg with any square nobody
+answered - a switch or crossing on it included - still ends them.  Asked with the frozen railway's Tunnel as the example:
+with BottomSecondary -> TunnelPre answered 0 throughout, a train of 5 from RampDown is admitted over the 8 measured end to
+end.  Built in 3567d45d; MT-586 on the railway.
 
 **Before that:** the three wordings the validation rounds of 2026-09-24 left here were answered the same night.
 

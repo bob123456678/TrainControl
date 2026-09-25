@@ -1018,20 +1018,26 @@ beside it along the road it carries - plain track before a switch - so every tot
 
 **A deliberate 0 is an answer** (Adam, 2026-09-23, OB-274: *"we need to allow a length of 0 as a length
 that is set deliberately, i.e. for adjacent tracks.  same meaning to the model, but this will allow
-everything to get assigned without what appears to be a skip."*). So the walks accept 0, the piece is
-recorded as answered and is not asked about again, and **every length rule reads it exactly as it reads a
-piece nobody has measured** - 5b is unchanged. Confirmed by Adam when asked the question directly: a deliberate 0 is not a
-measurement of nothing, and a stretch whose answers are all 0 is still not judged. What changes is only whether the tools keep asking.
-**One exception since 2026-09-24**: the Atomic Routes gate and the release escape it guards count track answered 0 as
-measured (TDU-C6, §5d) - and nothing else does.  The route in counted on past it for a day and admitted a train whose
-tail lay on track the standing walk does not claim (ADA-A1).
-Built 2026-09-23 (MT-476).
+everything to get assigned without what appears to be a skip."*). So the walks accept 0, and the piece is
+recorded as answered and is not asked about again.  **And it is measured track of no length, to every length rule**
+(Adam, 2026-09-25, ADU-C7: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*, and *"Build it"*).  The route in, the room walk, the
+walk that claims a standing train's tail, the berth rule and the tail question count it, adding nothing, and walk on
+over it - so a train is let in wherever the measured track holds it in total, and a train standing there is claimed over
+the 0 and the track behind it.  They all ask one question, `Edge.isMeasured` - a length, or every place answered - so
+what the route in admits the tail walk claims.  **A leg with any square nobody answered still ends every walk** - a switch
+or crossing on it included, which Mass Assign Lengths still asks for.  On the frozen railway's Tunnel: with BottomSecondary
+-> TunnelPre answered 0 throughout, a train of 5 from RampDown is admitted over the 8 measured end to end, where it was
+refused quoting 4.  Until then an answered 0 read as a stretch nobody measured (confirmed by Adam on 2026-09-23), but for
+the Atomic Routes gate and its escape from 2026-09-24 (TDU-C6, §5d); for a day in between the route in counted past it
+while the tail walk did not (ADA-A1).  `core.testAnAnsweredZeroIsNotMissing.testAStretchAnsweredZeroIsMeasuredTrackOfNoLength`,
+`core.testAutoLayout.testTrackAnsweredZeroIsMeasuredTrack`.  Built 2026-09-23 (MT-476); measured everywhere since
+2026-09-25 (MT-586).
 
 **Segment Length's 0 is the same answer, and Clear is its own button** (Adam, 2026-09-23, FR-097: *"no, add a clear
 button"*). A 0 typed there records the run - or each selected square - as answered 0; **Clear**, or an emptied field,
 removes the length and the answer. And **an answered 0 is not listed as missing** (*"stop listing answered zeros as
 missing"*): the half-measured berth notice, the reversal notice and the berth refusal's "N squares still have no
-length" leave answered squares out, while the rules go on reading them as nothing. The refusal is worded on the
+length" leave answered squares out, while the rules read them as measured track of no length. The refusal is worded on the
 running layout, so the build marks an answered place and the runtime keeps the mark.
 `core.testMassAssignLengths.testSegmentLengthZeroIsAnAnswerAndClearTakesItAway`, `core.testAnAnsweredZeroIsNotMissing`.
 
@@ -1522,7 +1528,8 @@ never binds, and a train inside it is refused by a rule quoting a number nobody 
   track from there, is refused.  That figure is the sentence's third number, given where it is under the stated
   maximum, and read off the railway the setup builds: back from the platform over every leg, through sensors nobody is
   started at, to a copy a train is started at or turns at - a station square can have a copy heading the platform's way
-  that trains may not arrive at - and stopped at a leg with no length, as the route in is; never through or into a
+  that trains may not arrive at - and stopped at a leg nobody measured, as the route in is, and on past one answered
+  0 throughout (2026-09-25); never through or into a
   point that is switched off, though out of a station switched off round a train standing there, and never from or
   through another copy of the platform's own square; worked out for every leg together, so a loop is walked whole
   (ADD-C6, ADA2-C3).  Each way in gives the larger of its room and its route in, as the refusal quotes, and the figure
@@ -1661,15 +1668,14 @@ at a destination and so can never be unmeasured end to end - which is enforced w
 in `Layout.bfs` and `HomeStaging.firstClearRoute`, not where they are checked.  And a rail is counted
 once, not once per direction.
 
-**Track answered 0 on purpose is measured - here, and only here** (Adam, 2026-09-24, TDU-C6: *"0 lengths count
+**Track answered 0 on purpose is measured** (Adam, 2026-09-24, TDU-C6: *"0 lengths count
 as measures, so non-atomic should be allowed"*). The checkbox, the load door and the dispatch doors do not count
 it, and the escape above does not fire over it - all of them ask `Edge.isMeasured`, which is true of an edge
 with a length or with every square answered 0 (a route tile counts as answered, since it takes no length). Such
 a path gets no escape, so its edges are held until the measured track after them covers the train - and to the
-end of the route where none does - the safe direction.  **Every other length rule still reads an answered 0 as
-unmeasured** (OB-274, §5b): the gate and the escape have to ask one question, and nothing else has to follow
-them.  The route in did follow for a day, and a platform then admitted a train whose tail lay past the 0, on
-track the standing walk never claims (ADA-A1, ADD-B1).
+end of the route where none does - the safe direction.  **Every other length rule asks the same question since
+2026-09-25** (§5b, ADU-C7): the gate and the escape have to ask one question, and so do the route in and the tail walk,
+or a platform admits a train whose tail lies past the 0 on track nothing claims - as it did for a day (ADA-A1, ADD-B1).
 
 So the Unmeasured Track display in the editor is **not** the list to work from: it answers a different
 question, about how far a tail reaches.  The refusal's own list is the one to measure, and it comes
