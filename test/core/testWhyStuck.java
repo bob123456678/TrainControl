@@ -709,6 +709,41 @@ public class testWhyStuck
     }
 
     /**
+     * Turning round is offered only onto a copy a train may be started from: where the square's other copy reaches a
+     * station but is switched off, the train is told what would help instead (RLA-C5).
+     *
+     * Turned round onto a copy autonomy will not start a train from, the next Why not Moving? gave that copy's refusal,
+     * and turning back led to this sentence again.
+     *
+     * MUTATION: offer turning round wherever another copy reaches a station, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testTurningRoundIsOfferedOnlyOntoACopyATrainMayStartFrom() throws Exception
+    {
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        Layout layout = platformWithASiding("WS11", true);
+
+        // THE COPY THAT REACHES WS11 FAR, SWITCHED OFF.
+        layout.getPoint("WS11 Platform (westbound)").setActive(false);
+
+        layout.moveLocomotive(loc.getName(), "WS11 Platform (eastbound)", false);
+
+        assertEquals(layout.explainCannotStart(loc), org.traincontrol.util.I18n.f(
+            "autolayout.why.startReachesNoStationEitherWay", "WS11 Platform",
+            org.traincontrol.util.I18n.t("autosetup.ui.menuAutoDestination")), "a train on the copy of WS11 Platform that"
+            + " reaches no station is told to turn round, onto a copy that is switched off (RLA-C5)");
+
+        // CONTROL: switched on, the other copy is one to turn round onto.
+        layout.getPoint("WS11 Platform (westbound)").setActive(true);
+
+        assertEquals(layout.explainCannotStart(loc), org.traincontrol.util.I18n.f("autolayout.why.startReachesNoStation",
+            "WS11 Platform"), "CONTROL: with the other copy switched on, turning round is not offered");
+    }
+
+    /**
      * A platform of two copies, eastbound running into a siding that goes no further; westbound into another siding,
      * or on to a station of its own where `westReachesAStation`.
      */
