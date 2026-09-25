@@ -308,6 +308,8 @@ This is the section to read first when nothing happens. In rough order of how of
 
 **The train is too long for everywhere it could go.** If you have set lengths, a train can run out of destinations simply by being long — the tooltip on "No available paths" says so for each station in turn. This is the rule doing its job, but it is worth checking the measurements are right before you shorten the train.
 
+**It is facing a way that leads to no station autonomy may choose.** A train stood on a platform facing a way whose track leads only to sensors, turning points or parking is never sent anywhere by autonomy. Why not Moving? says so: turn the train round, or drive it off by hand.
+
 **Two places tell you which it is, rather than making you guess.**
 
 In the locomotive list, hover over "No available paths". The tooltip names every station the train

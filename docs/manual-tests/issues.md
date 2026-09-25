@@ -1307,6 +1307,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-25 | OB-299 | bug | Why not Moving? says when the copy a train stands on reaches no station autonomy may choose - to turn it round where another copy of the square reaches one, and otherwise to drive it off by hand or let autonomy choose a station it can reach; eight languages: `core.testWhyStuck.testACopyThatReachesNoStationSaysSo`.  Nothing to run by hand: the frozen copy of your railway has no such copy (its two stranded copies are on sides trains may not arrive by, which already say why).  Mark it Works to close it. | fixed unvalidated | - |
 | 2026-09-24 | OB-298 | bug | A rebuild builds its lists apart and hands them over whole, so a reader walking them finishes on the railway it began on: `core.testAutonomyDiagramReducer.testARebuildDoesNotChangeWhatAReaderIsWalking`; the setup hands a rebuilt railway out only once it is whole (ADA-C2).  Nothing to run by hand: mark it Works to close it. | fixed unvalidated | - |
 | 2026-09-24 | OB-297 | bug | The own-tail refusal counts what Mass Assign Lengths would ask a length for on the way round - a piece, a page's switches, a page's crossings - and says so in its name: `core.testTheOwnTailArithmetic.testTheNoteCountsWhatMassAssignAsksFor`, `core.testMassAssignLengths.testTheSwitchesOfAPageAreOneThingToMeasure`. | - | `MT-571` |
 | 2026-09-24 | OB-296 | bug | The right-click Place keeps the train's heading, on your answer. | - | `MT-581` |
