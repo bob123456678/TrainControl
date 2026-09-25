@@ -79,6 +79,7 @@ not fix it. Name the square.
 - `core.testTheGreyNamesTheRoadOnADoubleCurve`
 - `core.testATurnedTrainIsNotSentIntoAnotherTail`
 - `core.testATrainDoesNotRunIntoItsOwnTail`
+- `regression.testAHandSendIsRefusedWhileTheSetupIsBroken`
 - `regression.testTheFacingMenuIsAboutTheTrainThere`
 - `ui.testNonAtomicRoutesNeedTheirLengths`
 - `core.testMassAssignLengths`
