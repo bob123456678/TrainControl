@@ -55,7 +55,7 @@ public class testJavadocsAreAttached
     // AutonomyCompanionStore.moveTiles - reattached to the members they were written for.
     // 88 -> 87 on 2026-09-24: TDY4-C1, AutonomyBuilder's placementCopy javadoc - left above homeCopy's when that
     // was inserted - moved onto placementCopy.
-    private static final int ALLOWED = 87;
+    private static final int ALLOWED = 86;
 
     /**
      * WHICH files carry the orphans, not just how many (VAL-C8).
@@ -90,7 +90,7 @@ public class testJavadocsAreAttached
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "AutonomyEditorPanel.java (18)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
-            + "gui" + File.separator + "AutonomyViewerPanel.java (3)",
+            + "gui" + File.separator + "AutonomyViewerPanel.java (2)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator
             + "gui" + File.separator + "DiagramTileRegistry.java (1)",
         "src" + File.separator + "org" + File.separator + "traincontrol" + File.separator

@@ -336,6 +336,81 @@ public class testALocomotiveDoesNotEvictItself
         }
     }
 
+    /**
+     * The same for a Central Station multi-unit: a member given, in Change Name or Address, the address of another train
+     * that stands takes that train off the graph (RLA-B1, RLD2-C6).
+     *
+     * A Central Station multi-unit commands its members through the Central Station's own list, not TrainControl's
+     * links, so the sweep finds it as a head by that list.  The claim beside this one links in TrainControl and cannot see
+     * that half.
+     *
+     * MUTATION: find heads by TrainControl's links alone, and this fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testReAddressingAMemberOfACentralStationMultiUnitTakesTheStandingTrainOff() throws Exception
+    {
+        MarklinLocomotive member = model.newMM2Locomotive(CS_MEMBER, 83);
+        MarklinLocomotive other = model.newMM2Locomotive(CS_OTHER, 84);
+        MarklinLocomotive head = model.newMM2Locomotive(CS_HEAD, 1);
+
+        try
+        {
+            model.changeLocAddress(CS_HEAD, 4010, MarklinLocomotive.decoderType.MULTI_UNIT);
+
+            head = model.getLocByName(CS_HEAD);
+
+            java.util.Map<String, Double> members = new java.util.HashMap<>();
+
+            members.put(CS_MEMBER, 1.0);
+
+            head.setModelMultiUnitLocomotives(members);
+
+            assertTrue(head.getModelMultiUnitLocomotives().contains(member), "precondition: the Central Station multi-unit"
+                + " does not hold its member");
+
+            assertFalse(head.isLinkedTo(member), "precondition: the member is linked in TrainControl as well, so this says"
+                + " nothing about the Central Station's own list");
+
+            Layout layout = new Layout(model);
+
+            MarklinFeedback first = model.newFeedback(8398, null);
+            MarklinFeedback second = model.newFeedback(8399, null);
+
+            model.setFeedbackState(first.getName(), false);
+            model.setFeedbackState(second.getName(), false);
+
+            layout.createPoint("MU G", true, first.getName());
+            layout.createPoint("MU H", true, second.getName());
+            layout.createEdge("MU G", "MU H");
+
+            layout.getPoint("MU G").setLocomotive(head);
+            layout.getPoint("MU H").setLocomotive(other);
+
+            model.changeLocAddress(CS_MEMBER, 84, MarklinLocomotive.decoderType.MM2);
+
+            // What the window does next.
+            layout.sanitizeMultiUnits(model.getLocByName(CS_MEMBER));
+
+            assertNotNull(layout.getLocomotiveLocation(head), "re-addressing a member took its own Central Station"
+                + " multi-unit off its station");
+
+            assertNull(layout.getLocomotiveLocation(other), "a member of a standing Central Station multi-unit now has the"
+                + " address of a train standing on MU H, and both still stand (RLA-B1)");
+        }
+        finally
+        {
+            try { model.deleteLoc(CS_OTHER); } catch (Exception ignored) { }
+            try { model.deleteLoc(CS_MEMBER); } catch (Exception ignored) { }
+            try { model.deleteLoc(CS_HEAD); } catch (Exception ignored) { }
+        }
+    }
+
+    private static final String CS_HEAD = "SM cs head";
+    private static final String CS_MEMBER = "SM cs member";
+    private static final String CS_OTHER = "SM cs other";
+
     private static final String HEAD = "SM head";
     private static final String MEMBER = "SM member";
     private static final String MEMBER_RENAMED = "SM member renamed";

@@ -187,6 +187,52 @@ public class testWhereHisTrainsMayBeSent
     }
 
     /**
+     * No message on either right-click menu - the diagram's autonomy menu, or the track-diagram editor's - belongs to the
+     * menu itself (RLU-B2, RLU2-C5, RLU2-C6).
+     *
+     * The claim above drives one refusal; the rest are read here.  A menu has left its window by the time its item runs,
+     * so a message parented on it belongs to Swing's hidden frame and, with Window Always on Top, opens beneath the
+     * window it holds.
+     *
+     * MUTATION: put `this` back as any one of their owners, and this fails naming the line.
+     *
+     * @throws Exception from the files
+     */
+    @Test
+    public void testNoMessageOnARightClickMenuBelongsToTheMenu() throws Exception
+    {
+        List<String> onAMenu = new ArrayList<>();
+        int messages = 0;
+
+        for (String path : new String[] {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java",
+            "src/org/traincontrol/gui/LayoutEditorRightclickMenu.java"})
+        {
+            String[] lines = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(path)),
+                java.nio.charset.StandardCharsets.UTF_8).split("\n");
+
+            for (int i = 0; i < lines.length; i++)
+            {
+                if (!lines[i].contains("JOptionPane.show")) continue;
+
+                messages++;
+
+                // The owner is the first argument: on this line, or the next where the call breaks after its bracket.
+                String call = lines[i].substring(lines[i].indexOf("JOptionPane.show"))
+                    + (i + 1 < lines.length ? " " + lines[i + 1].trim() : "");
+
+                String owner = call.substring(call.indexOf('(') + 1).trim();
+
+                if (owner.startsWith("this,") || owner.startsWith("this ,")) onAMenu.add(path + ":" + (i + 1));
+            }
+        }
+
+        assertTrue(messages > 10, "precondition: the two menus show only " + messages + " messages");
+
+        assertTrue(onAMenu.isEmpty(), "a message on a right-click menu belongs to the menu, which has left its window by"
+            + " the time it shows - with Window Always on Top it opens beneath the window it holds: " + onAMenu);
+    }
+
+    /**
      * EN57-947, which cannot reverse, at BottomSecondary: Why not Moving? on Manual lists BottomMainC under the stations
      * it cannot be sent to right now, saying a terminus is not allowed because it is not reversible - and the right-click
      * list does not offer BottomMainC (MT-517).

@@ -1189,6 +1189,14 @@ public class testTheTailIsPickedOnTheDiagram
             int guard = source.lastIndexOf(door[2], save);
 
             assertTrue(save > 0 && guard > asked, door[0] + " saves a setup the window let go in the wait (TDU4-C2)");
+
+            // AND AN EDITOR OPENED IN THE WAIT LETS THE SETUP GO TOO (RLU-C9, RLU2-C4): the paste door is claimed above.
+            int stands = source.indexOf("setupStands =", asked);
+
+            String rule = stands > 0 ? source.substring(stands, source.indexOf(";", stands)) : "";
+
+            assertTrue(rule.contains("anEditorOpenedInTheWait()"), door[0] + " writes a late answer into a setup that an"
+                + " editor opened in the wait holds a copy of (RLU-C9): " + rule);
         }
     }
 

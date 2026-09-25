@@ -418,6 +418,96 @@ public class testMockCentralStation
     // ---------------------------------------------------------------- the whole sync, end to end
 
     /**
+     * A sync that gives a member of a standing multi-unit the address of another standing train takes that train off the
+     * graph, as the window's Change Name or Address does (RLA2-B2).
+     *
+     * The sync is the fourth writer of a locomotive's address, and the only door a Central Station multi-unit's members
+     * come in by; it re-addressed and re-linked and swept nothing, so both trains stood and autonomy would run the second
+     * as a train of its own while the multi-unit's commands moved it.  Here the served file's BR 85 006 Gl. is at address
+     * 5, the database has it at 90 in a consist standing on one station, and another train at 5 stands on the other.
+     *
+     * MUTATION: sweep nothing after the sync's locomotive pass, and this fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testASyncThatGivesAMemberAStandingTrainsAddressTakesThatTrainOff() throws Exception
+    {
+        String was = TestStationAddress.get();
+
+        final String served = "BR 85 006 Gl.";
+
+        MarklinLocomotive member = model.getLocByName(served);
+
+        final boolean made = member == null;
+        final int addressWas = made ? -1 : member.getAddress();
+        final MarklinLocomotive.decoderType typeWas = made ? null : member.getDecoderType();
+
+        if (made) member = model.newMM2Locomotive(served, 90);
+        else model.changeLocAddress(served, 90, MarklinLocomotive.decoderType.MM2);
+
+        member = model.getLocByName(served);
+
+        MarklinLocomotive head = model.newMM2Locomotive("SYNC head", 91);
+        MarklinLocomotive other = model.newMM2Locomotive("SYNC other", 5);
+
+        try
+        {
+            java.util.Map<String, Double> consist = new java.util.HashMap<>();
+
+            consist.put(served, 1.0);
+
+            assertEquals(head.setLinkedLocomotives(consist), 1, "precondition: the member could not be linked to the head");
+
+            org.traincontrol.automation.Layout layout = model.getAutoLayout();
+
+            org.traincontrol.marklin.MarklinFeedback first = model.newFeedback(8401, null);
+            org.traincontrol.marklin.MarklinFeedback second = model.newFeedback(8402, null);
+
+            model.setFeedbackState(first.getName(), false);
+            model.setFeedbackState(second.getName(), false);
+
+            layout.createPoint("SYNC A", true, first.getName());
+            layout.createPoint("SYNC B", true, second.getName());
+            layout.createEdge("SYNC A", "SYNC B");
+
+            layout.getPoint("SYNC A").setLocomotive(head);
+            layout.getPoint("SYNC B").setLocomotive(other);
+
+            TestStationAddress.set(address);
+
+            assertTrue(model.syncWithCS2() >= 0, "precondition: the sync against the mock station failed");
+
+            assertEquals(model.getLocByName(served).getAddress(), 5, "precondition: the sync did not give " + served
+                + " the address the station serves");
+
+            assertNotNull(layout.getLocomotiveLocation(head), "the sync took the multi-unit off its own station");
+
+            assertNull(layout.getLocomotiveLocation(other), "the sync gave a member of the multi-unit standing on SYNC A"
+                + " the address of the train standing on SYNC B, and both still stand - autonomy would run that train as"
+                + " its own while every command to the multi-unit moves it (RLA2-B2)");
+        }
+        finally
+        {
+            TestStationAddress.set(was);
+
+            model.clearAutoLayout();
+
+            try { model.deleteLoc("SYNC other"); } catch (Exception ignored) { }
+            try { model.deleteLoc("SYNC head"); } catch (Exception ignored) { }
+
+            if (made)
+            {
+                try { model.deleteLoc(served); } catch (Exception ignored) { }
+            }
+            else
+            {
+                try { model.changeLocAddress(served, addressWas, typeWas); } catch (Exception ignored) { }
+            }
+        }
+    }
+
+    /**
      * A full sync against the mock station, reconciliation and all.
      *
      * syncWithCS2 is two hundred lines that decide what happens to every locomotive the user owns -

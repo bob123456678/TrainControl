@@ -1010,4 +1010,46 @@ public class testMessageBundles
         assertTrue(wrong.isEmpty(), "a screen asks for a message key that is missing, or empty, in a language - the key's"
             + " name, an error or a blank would show where the sentence should be (MT-468): " + wrong);
     }
+
+    /**
+     * Every key of the English bundle has a value in every language - not only the keys a road above can see asked for
+     * (RLD2-C5, RLU2-C3).
+     *
+     * The roads above find a key where it is the first argument of I18n, a generated read, a form entry or a constant;
+     * about 340 are asked another way - chosen by a ternary, returned from a switch, handed to a helper, or logged -
+     * among them the old-file import's two questions and every log line.  Asked of the bundle instead of the callers,
+     * none can be missed.  A plural ending may be nothing.
+     *
+     * MUTATION: give any key an empty value in one language, and this fails naming it.
+     *
+     * @throws Exception reading the bundles
+     */
+    @Test
+    public void testEveryKeyHasAValueInEveryLanguage() throws Exception
+    {
+        java.util.Properties english = null;
+
+        for (File bundle : bundles()) if (bundle.getName().equals("messages.properties")) english = valuesOf(bundle);
+
+        assertNotNull(english, "precondition: no messages.properties among the bundles");
+
+        assertTrue(english.size() > 1500, "precondition: the English bundle holds only " + english.size() + " keys");
+
+        List<String> empty = new ArrayList<>();
+
+        for (File bundle : bundles())
+        {
+            java.util.Properties values = valuesOf(bundle);
+
+            for (String key : english.stringPropertyNames())
+            {
+                String value = values.getProperty(key);
+
+                if (value != null && value.trim().isEmpty() && !key.endsWith("Suffix")) empty.add(bundle.getName() + " " + key);
+            }
+        }
+
+        assertTrue(empty.isEmpty(), "a key has no value in a language - a blank would show where its sentence should be: "
+            + empty);
+    }
 }

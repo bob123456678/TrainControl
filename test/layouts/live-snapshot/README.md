@@ -110,6 +110,7 @@ not fix it. Name the square.
 - `regression.testOneChangeSticks`
 - `regression.testTheDiagramIsNotRebuiltForAnArrow`
 - `regression.testTheDiagramRefreshDoesNotWaitOnTheRailway`
+- `regression.testTheEditorSaysWhatItsToolsDo`
 - `regression.testTheGreyDoesNotRebuildTheDiagram`
 - `regression.testTheHomeLabelIsDrawnOnce`
 - `regression.testTheTurnAtTheDestinationReachesTheDiagram`

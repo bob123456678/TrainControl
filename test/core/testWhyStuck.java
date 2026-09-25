@@ -704,7 +704,8 @@ public class testWhyStuck
 
         assertEquals(stranded.explainCannotStart(loc), org.traincontrol.util.I18n.f(
             "autolayout.why.startReachesNoStationEitherWay", "WS10 Platform",
-            org.traincontrol.util.I18n.t("autosetup.ui.menuAutoDestination")), "a train on a square where neither copy"
+            org.traincontrol.util.I18n.t("autosetup.ui.menuAutoDestination"),
+            org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")), "a train on a square where neither copy"
             + " reaches a station autonomy may choose is told to turn round, which would not help (OB-299)");
     }
 
@@ -733,7 +734,8 @@ public class testWhyStuck
 
         assertEquals(layout.explainCannotStart(loc), org.traincontrol.util.I18n.f(
             "autolayout.why.startReachesNoStationEitherWay", "WS11 Platform",
-            org.traincontrol.util.I18n.t("autosetup.ui.menuAutoDestination")), "a train on the copy of WS11 Platform that"
+            org.traincontrol.util.I18n.t("autosetup.ui.menuAutoDestination"),
+            org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")), "a train on the copy of WS11 Platform that"
             + " reaches no station is told to turn round, onto a copy that is switched off (RLA-C5)");
 
         // CONTROL: switched on, the other copy is one to turn round onto.
@@ -744,10 +746,51 @@ public class testWhyStuck
     }
 
     /**
+     * Turning round is not offered onto a copy that is no station - the copy of a square trains may not arrive at - even
+     * where it reaches a station (RLA-C5, RLA2-C6).
+     *
+     * The barred copy is the case RLA-C5 led with: turned round onto it, the next Why not Moving? refuses it and sends
+     * the operator back.  The claim beside this one switches a copy off, which a built railway never does to one copy
+     * alone.
+     *
+     * MUTATION: offer turning round onto any copy that reaches a station, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testTurningRoundIsNotOfferedOntoACopyThatIsNoStation() throws Exception
+    {
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        Layout layout = platformWithASiding("WS12", true, false);
+
+        layout.moveLocomotive(loc.getName(), "WS12 Platform (eastbound)", false);
+
+        assertTrue(layout.isABarredCopyOfAStation(layout.getPoint("WS12 Platform (westbound)")), "precondition: the"
+            + " westbound copy is not a copy of the station trains may not arrive at");
+
+        assertEquals(layout.explainCannotStart(loc), org.traincontrol.util.I18n.f(
+            "autolayout.why.startReachesNoStationEitherWay", "WS12 Platform",
+            org.traincontrol.util.I18n.t("autosetup.ui.menuAutoDestination"),
+            org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")), "a train on the copy of WS12 Platform that"
+            + " reaches no station is told to turn round onto a copy trains may not arrive at (RLA-C5)");
+    }
+
+    /**
      * A platform of two copies, eastbound running into a siding that goes no further; westbound into another siding,
      * or on to a station of its own where `westReachesAStation`.
      */
     private static Layout platformWithASiding(String prefix, boolean westReachesAStation) throws Exception
+    {
+        return platformWithASiding(prefix, westReachesAStation, true);
+    }
+
+    /**
+     * The same, with the westbound copy no station where `westIsAStation` is false - the copy of a square trains may not
+     * arrive at.
+     */
+    private static Layout platformWithASiding(String prefix, boolean westReachesAStation, boolean westIsAStation)
+        throws Exception
     {
         Layout layout = new Layout(model);
 
@@ -763,7 +806,7 @@ public class testWhyStuck
         }
 
         layout.createPoint(prefix + " Platform (eastbound)", true, platform.getName());
-        layout.createPoint(prefix + " Platform (westbound)", true, platform.getName());
+        layout.createPoint(prefix + " Platform (westbound)", westIsAStation, platform.getName());
 
         layout.getPoint(prefix + " Platform (eastbound)").setBlock(prefix + "-P");
         layout.getPoint(prefix + " Platform (westbound)").setBlock(prefix + "-P");

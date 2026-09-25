@@ -205,7 +205,8 @@ public class testTheImportDoorReadsAnOldFile
      * two: it fills what is missing and does not replace what is there (MT-298).
      *
      * The change is a station's maximum train length, one the file has an opinion about, made the way the editor makes it.
-     * The second import is answered Yes when the door asks whether to replace the configuration of that name.
+     * The second import is answered Yes when the door asks whether to add what the file has and the configuration
+     * does not.
      *
      * MUTATION: have the second import overwrite what is there, and this fails.
      *
@@ -598,20 +599,21 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * An old file imported into the configuration in use, by its name, keeps what it brought: the reload after it does
-     * not write the running railway back over it (RLA-C2).
+     * An import into the configuration in use, by its name, is refused and changes nothing: the file is imported under
+     * another name and chosen from there (RLA2-B1, RLA2-B3, RLD2-C2).
      *
-     * The reload captured the running layout into that configuration first, and the capture takes a train off every
-     * square where the running layout has none standing - so a train the import had just placed, and counted, was gone
-     * again.  Homes went the same way.  The running layout's state now goes in before the import, which then fills only
-     * what is left, and the reload does not capture again.
+     * The reload after an import into the configuration running captured the running railway over what the import had
+     * just written - an old file's homes, a bundle's settings and timetable - and capturing first instead stood the old
+     * file's trains on the running railway, facing the way the square's last occupant faced, while nothing knew where
+     * those trains really were.  Where a train stands on the railway running is the railway's to say (OB-183); a file
+     * belongs in a configuration of its own, chosen when the operator means to run it.
      *
-     * MUTATION: reload after the import with the capture, and this fails.
+     * MUTATION: import into the configuration in use again, and this fails.
      *
      * @throws Exception from the window or the import
      */
     @Test
-    public void testAnImportIntoTheConfigurationInUseKeepsWhatItBrought() throws Exception
+    public void testAnImportIntoTheConfigurationInUseIsRefused() throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
@@ -635,34 +637,29 @@ public class testTheImportDoorReadsAnOldFile
 
             assertNotNull(inUse, "precondition: the frozen railway has no configuration in use");
 
-            Set<String> before = standingIn(session, inUse);
+            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not the"
+                + " configuration running");
+
+            String before = session.getStore().getConfiguration(inUse).toString();
+            List<String> namesBefore = new ArrayList<>(session.getStore().getConfigurationNames());
+            String onDiskBefore = setupOnDisk(session).toString();
 
             List<String> said = importFromTheMenu(ui[0], MT491, inUse);
 
-            Integer placed = placedIn(said);
-
-            assertNotNull(placed, "precondition: the import said nothing about what it placed: " + said);
-
-            assertTrue(placed > 0, "precondition: the import placed none of the file's trains in " + inUse + ", so there"
-                + " is nothing for the reload to take back: " + said);
-
             session = ui[0].getAutonomySession();
 
-            assertEquals(session.getStore().getActiveConfiguration(), inUse, "precondition: the import left " + inUse
-                + " no longer the one chosen");
+            assertEquals(session.getStore().getConfiguration(inUse).toString(), before, "an import into " + inUse
+                + ", the configuration in use, by its name, changed it: " + said);
 
-            Set<String> after = standingIn(session, inUse);
+            assertEquals(new ArrayList<>(session.getStore().getConfigurationNames()), namesBefore, "an import refused"
+                + " left a configuration behind");
 
-            Set<String> brought = new java.util.TreeSet<>(after);
+            assertEquals(setupOnDisk(session).toString(), onDiskBefore, "an import refused changed the setup on disk");
 
-            brought.removeAll(before);
+            String refused = I18n.f("autosetup.ui.errorImportIntoConfigurationInUse", inUse, whereChosen(inUse));
 
-            assertTrue(after.containsAll(before), "the import into " + inUse + " took off a train that stood there: "
-                + before + " then " + after);
-
-            assertEquals(brought.size(), placed.intValue(), "the import said it placed " + placed + " in " + inUse + ", and"
-                + " after the reload " + inUse + " has " + brought + " more - the reload wrote the running railway back"
-                + " over what the import brought (RLA-C2)");
+            assertTrue(said.contains(refused), "the door did not say it will not import into the configuration in use,"
+                + " and what to do instead: " + said);
         }
         finally
         {
@@ -677,6 +674,232 @@ public class testTheImportDoorReadsAnOldFile
 
             if (sandbox != null) sandbox.close();
         }
+    }
+
+    /**
+     * A train an old file places, on a square a train facing the other way stood on since, faces the way the file ran
+     * it (RLA2-B3).
+     *
+     * The import asked the file for a placed train's facing only where the square had none recorded, and an empty square
+     * keeps its last occupant's - so a second import into a configuration that had been run stood its train facing the
+     * way another train had stood, and autonomy would drive it off the wrong end.  A facing on an empty square is no
+     * evidence about the train the file puts there.
+     *
+     * MUTATION: ask the file only where the square has no facing, and this fails.
+     *
+     * @throws Exception from the window or the import
+     */
+    @Test
+    public void testASecondImportFacesItsTrainTheWayTheFileRanIt() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in docs/manual-tests/files");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            importFromTheMenu(ui[0], MT491, "MT-491 facings");
+
+            AutonomySession session = ui[0].getAutonomySession();
+
+            org.json.JSONObject points = session.getStore().getConfiguration("MT-491 facings").getJSONObject("points");
+
+            // A PLACED TRAIN ON A SQUARE THAT HAS COPIES BOTH WAYS, and the way the file ran it.
+            TileKey square = null;
+            String train = null;
+            String ran = null;
+            String other = null;
+
+            for (TileKey key : session.getReducer().getPoints().keySet())
+            {
+                org.json.JSONObject extras = points.optJSONObject(key.toString());
+
+                if (extras == null || !extras.has(AutonomyBuilder.LOCOMOTIVE) || !extras.has(AutonomyBuilder.FACING)) continue;
+
+                String facing = extras.getString(AutonomyBuilder.FACING);
+
+                for (Object side : session.facingsFor(key).values())
+                {
+                    if (!String.valueOf(side).equals(facing) && other == null)
+                    {
+                        square = key;
+                        train = extras.getJSONObject(AutonomyBuilder.LOCOMOTIVE).getString("name");
+                        ran = facing;
+                        other = String.valueOf(side);
+                    }
+                }
+
+                if (square != null) break;
+            }
+
+            assertNotNull(square, "precondition: no train the file placed stands on a square with copies both ways");
+
+            // TAKEN OFF, and the square left facing the other way - as a train standing there the other way leaves it.
+            points.getJSONObject(square.toString()).remove(AutonomyBuilder.LOCOMOTIVE);
+            points.getJSONObject(square.toString()).put(AutonomyBuilder.FACING, other);
+
+            importFromTheMenu(ui[0], MT491, "MT-491 facings");
+
+            session = ui[0].getAutonomySession();
+
+            org.json.JSONObject after = session.getStore().getConfiguration("MT-491 facings").getJSONObject("points")
+                .getJSONObject(square.toString());
+
+            assertEquals(after.getJSONObject(AutonomyBuilder.LOCOMOTIVE).getString("name"), train, "precondition: the"
+                + " second import did not place " + train + " on its square again");
+
+            assertEquals(after.getString(AutonomyBuilder.FACING), ran, "the second import stood " + train + " facing "
+                + after.getString(AutonomyBuilder.FACING) + ", the way the square's last occupant faced, where the file"
+                + " ran it " + ran + " (RLA2-B3)");
+        }
+        finally
+        {
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * A home the configuration already has for a train is kept, and the message says the file's was not taken
+     * (RLA2-C3, RLD2-C6).
+     *
+     * The file gives ET22-245 a home at BottomMainB; the configuration it was imported into has since moved that home to
+     * BottomMainC; a second import leaves one home, at BottomMainC, and names the train.  The home half of RLA-B2 had no
+     * claim, and the dropped home was counted where nothing read it.
+     *
+     * MUTATION: start the homes check empty again, or leave the kept homes unsaid, and this fails.
+     *
+     * @throws Exception from the window or the import
+     */
+    @Test
+    public void testASecondImportKeepsAHomeTheConfigurationHas() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        assertTrue(MT298.isFile(), "precondition: the MT-298 file is not in docs/manual-tests/files");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final String train = "ET22-245";
+
+        // HIS FILE, WITH A HOME AT BOTTOMMAINB.
+        File homed = File.createTempFile("tc-homed-autonomy", ".json");
+
+        org.json.JSONObject file = new org.json.JSONObject(new String(java.nio.file.Files.readAllBytes(MT298.toPath()),
+            java.nio.charset.StandardCharsets.UTF_8));
+
+        boolean given = false;
+
+        for (int i = 0; i < file.getJSONArray("points").length(); i++)
+        {
+            org.json.JSONObject point = file.getJSONArray("points").getJSONObject(i);
+
+            if ("BottomMainB".equals(point.optString("name"))) { point.put("home", train); given = true; }
+        }
+
+        assertTrue(given, "precondition: the MT-298 file has no BottomMainB to give a home");
+
+        java.nio.file.Files.write(homed.toPath(), file.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            importFromTheMenu(ui[0], homed, "MT-298 homes");
+
+            AutonomySession session = ui[0].getAutonomySession();
+
+            TileKey mainB = null;
+            TileKey mainC = null;
+
+            for (TileKey key : session.getStore().getNamedTiles())
+            {
+                if ("BottomMainB".equals(session.getStore().getPointName(key))) mainB = key;
+                if ("BottomMainC".equals(session.getStore().getPointName(key))) mainC = key;
+            }
+
+            assertTrue(mainB != null && mainC != null, "precondition: no BottomMainB or BottomMainC on his railway");
+
+            org.json.JSONObject points = session.getStore().getConfiguration("MT-298 homes").getJSONObject("points");
+
+            assertEquals(homesOf(points, train), Collections.singletonList(mainB.toString()), "precondition: the first"
+                + " import did not give " + train + " its home at BottomMainB");
+
+            // THE HOME MOVED, in that configuration, to BottomMainC.
+            points.getJSONObject(mainB.toString()).remove("home");
+
+            if (!points.has(mainC.toString())) points.put(mainC.toString(), new org.json.JSONObject());
+
+            points.getJSONObject(mainC.toString()).put("home", train);
+
+            List<String> said = importFromTheMenu(ui[0], homed, "MT-298 homes");
+
+            session = ui[0].getAutonomySession();
+
+            points = session.getStore().getConfiguration("MT-298 homes").getJSONObject("points");
+
+            assertEquals(homesOf(points, train), Collections.singletonList(mainC.toString()), "the second import gave "
+                + train + " a second home, or took the one the configuration had (RLA-B2)");
+
+            String kept = I18n.f("autosetup.ui.infoLegacyHomesKept", train);
+
+            assertTrue(said.stream().anyMatch(message -> message.contains(kept)), "the import did not say it kept the home"
+                + " the configuration already had for " + train + " (RLA2-C3): " + said);
+        }
+        finally
+        {
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+
+            if (!homed.delete()) homed.deleteOnExit();
+        }
+    }
+
+    /** The squares a configuration gives this train as its home. */
+    private static List<String> homesOf(org.json.JSONObject points, String train)
+    {
+        List<String> out = new ArrayList<>();
+
+        for (String square : points.keySet())
+        {
+            org.json.JSONObject extras = points.optJSONObject(square);
+
+            if (extras != null && train.equals(extras.optString("home", null))) out.add(square);
+        }
+
+        return out;
     }
 
     /** The locomotives a configuration has standing somewhere. */
@@ -728,8 +951,8 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Presses Import on the Autonomy menu's panel and answers everything it asks: the file, the name, Yes to replacing a
-     * configuration of that name, and OK to every message - whose texts are returned, in order.
+     * Presses Import on the Autonomy menu's panel and answers everything it asks: the file, the name, Yes to the question
+     * about a configuration of that name, and OK to every message - whose texts are returned, in order.
      */
     private static List<String> importFromTheMenu(TrainControlUI ui, File file, String name) throws Exception
     {

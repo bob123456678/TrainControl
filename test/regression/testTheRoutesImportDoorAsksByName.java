@@ -151,8 +151,17 @@ public class testTheRoutesImportDoorAsksByName
 
         assertNotNull(noSensor[0], "precondition: no route with no sensor was saved armed in the file");
 
-        assertFalse(run.savedArmed.contains(noSensor[0]), "the question names " + noSensor[0] + ", saved armed with no"
-            + " sensor, among the routes Yes turns automatic firing on for - and Yes does not (RLU-C2): " + run.question);
+        // THE QUESTION ON SCREEN, not the model's list (RLD2-C4): its names, after the colon, split as they were joined.
+        String asked = words(run.question);
+        String opening = words(I18n.f("route.ui.confirmRearmImported", "@@@"));
+        String listed = asked.substring(opening.indexOf("@@@"), asked.length() - (opening.length() - opening.indexOf("@@@") - 3));
+
+        assertFalse(java.util.Arrays.asList(listed.split(", ")).contains(noSensor[0]), "the question names " + noSensor[0]
+            + ", saved armed with no sensor, among the routes Yes turns automatic firing on for - and Yes does not"
+            + " (RLU-C2): " + run.question);
+
+        assertEquals(java.util.Arrays.asList(listed.split(", ")), run.savedArmed, "the question does not name exactly the"
+            + " routes the import arms: " + run.question);
 
         assertEquals(run.armedAfter, run.armedBefore, "answered Yes, a route saved armed with no sensor was armed, or a"
             + " route with one was not");
