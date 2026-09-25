@@ -1,8 +1,6 @@
 # ADA - Automation lane, validation round 1: Adam's answers of 2026-09-24 as carried out in `45cfa410..d05a6356`
 
-**Status:** open
-
-Open: ADA-A1, ADA-C1, ADA-C2, ADA-C3, ADA-C4, ADA-C5, ADA-C6.
+**Status:** closed
 
 **Prefix:** ADA
 

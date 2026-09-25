@@ -1,6 +1,6 @@
 # ADD2 - Documents, tracker and tests lane, validation round 2: round 1's fixes and records
 
-**Status:** open
+**Status:** closed
 
 **Prefix:** ADD2
 

@@ -1,8 +1,6 @@
 # ADA2 - Automation lane, validation round 2: round 1's fixes and records, `d05a6356..117298de`
 
-**Status:** open
-
-Open: every finding below; none has a disposition yet.
+**Status:** closed
 
 **Prefix:** ADA2
 

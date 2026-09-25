@@ -1,6 +1,6 @@
 # UI validation - Adam's answers of 2026-09-24, round 1
 
-**Status:** open
+**Status:** closed
 
 **Prefix:** `ADU`
 
@@ -178,7 +178,7 @@ On the frozen railway one train is away from its home: EN57-947 stands at Bottom
 
 | | |
 |---|---|
-| **Disposition** | Not a defect under the narrow reading (ADA-A1) - an answered 0 is measured to the gate and the escape only, so the tail doors keep OB-274's reading and agree with each other; `Edge.isMeasured`'s javadoc now names only those two.  Whether to widen is the open question in open-questions.md. |
+| **Disposition** | Not a defect under the narrow reading (ADA-A1) - an answered 0 is measured to the gate and the escape only, so the tail doors keep OB-274's reading and agree with each other; `Edge.isMeasured`'s javadoc now names only those two.  Whether to widen is the open question in open-questions.md.  **Answered by Adam, 2026-09-25**: *"We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*, and *"Build it"* - an answered 0 is now measured track of no length to every length rule (fix 3567d45d; MT-586). |
 | **Where** | `TailCrossedPrompt.java:1009` (`back`: `hop.getLength() <= 0 ? -1` ends the road), `:1152` (`reachOf`: covers nothing); `Layout.java:7742` (the standing-train walk: `if (segment.getLength() <= 0) break;`, "THE MEASUREMENT RULE"), `:9255` (`claimUpToWhereTheRailsPart`); against `Edge.java:482` (*"The one question every rule that asks 'is this track measured' puts to an edge"*) |
 
 **Is the reading beyond the gate right?**  Yes, it holds where it was carried.  Taking "0 is a measure" into the release escape and the route in keeps the gate's premise true: the gate cannot let through a railway the escape treats as unmeasured.  Over a 0, a moving train keeps its route locked until the route ends, which is the safe direction.

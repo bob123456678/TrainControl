@@ -1,6 +1,6 @@
 # ADD - Documents, tracker and tests lane, round 1: Adam's answers of 2026-09-24 as carried out
 
-**Status:** open
+**Status:** closed
 
 **Prefix:** ADD
 

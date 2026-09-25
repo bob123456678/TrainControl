@@ -1,6 +1,6 @@
 # UI validation - Adam's answers of 2026-09-24, round 2
 
-**Status:** open
+**Status:** closed
 
 **Prefix:** `ADU2`
 
