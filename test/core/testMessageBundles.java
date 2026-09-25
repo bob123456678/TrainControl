@@ -888,4 +888,97 @@ public class testMessageBundles
             "something asks for a message key that is not in the bundle, so it would show the operator "
             + "the raw key instead of a sentence: " + missing);
     }
+
+    /**
+     * Every message key a screen asks for is in every language, with a value - the mechanical half of MT-468 (Adam,
+     * 2026-09-25: "OK" to testing that half, and folding the reading of the sentences into MT-291).
+     *
+     * `testNothingAsksForAKeyThatIsNotThere` reads the `I18n.t` / `I18n.f` calls, in English.  The NetBeans-generated code
+     * of the older windows reads its labels another way - `bundle.getString("...")` and
+     * `ResourceBundle.getBundle(...).getString("...")` - from keys its `.form` files hold as ResourceString entries, and
+     * that scan does not see them.  A key missing there throws MissingResourceException when the window is built, which
+     * is MT-468's "an error about a missing resource"; a key whose value is empty in some language shows a blank where a
+     * label should be, which is the other thing its walk looked for.  Every bundle, every key a screen asks for, by any
+     * of the three roads.
+     *
+     * MUTATION: take a form's key out of any bundle, or give any asked-for key an empty value in one language, and this
+     * fails naming it.
+     *
+     * @throws Exception reading the sources and bundles
+     */
+    @Test
+    public void testEveryKeyAScreenAsksForIsInEveryLanguageWithAValue() throws Exception
+    {
+        Set<String> asked = new TreeSet<>();
+
+        Set<String> fromTheForms = new TreeSet<>();
+
+        // THE THREE ROADS: I18n, the generated code's bundle reads, and the form files' own resource entries.
+        Pattern i18n = Pattern.compile("I18n\\.[tf]\\(\\s*\"([^\"]+)\"");
+        Pattern generated = Pattern.compile("(?:\\bbundle|getBundle\\([^)]*\\))\\.getString\\(\\s*\"([^\"]+)\"\\s*\\)");
+        Pattern form = Pattern.compile("<ResourceString bundle=\"org/traincontrol/resources/messages\\.properties\""
+            + " key=\"([^\"]+)\"");
+
+        List<String> built = Arrays.asList(
+            "route.kind.", "autosetup.ui.side", "autosetup.ui.facing",
+            "autolayout.ui.pathPreference", "autolayout.ui.tooltip.pathPreference");
+
+        List<File> sources = javaSources(new File("src"));
+
+        assertFalse(sources.isEmpty(), "precondition: nothing was scanned under src/ - run from the project root");
+
+        for (File source : sources)
+        {
+            // I18n's own javadoc shows the idiom with example keys.
+            if (source.getName().equals("I18n.java")) continue;
+
+            String text = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
+
+            java.util.regex.Matcher m = i18n.matcher(text);
+
+            while (m.find()) if (!built.contains(m.group(1))) asked.add(m.group(1));
+
+            m = generated.matcher(text);
+
+            while (m.find()) asked.add(m.group(1));
+        }
+
+        File[] forms = new File("src/org/traincontrol/gui").listFiles((dir, name) -> name.endsWith(".form"));
+
+        assertTrue(forms != null && forms.length > 0, "precondition: no .form files were found under src/org/traincontrol/gui");
+
+        for (File file : forms)
+        {
+            java.util.regex.Matcher m = form.matcher(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
+
+            while (m.find()) fromTheForms.add(m.group(1));
+        }
+
+        // FLOORS, so a scan that stopped matching reads as a failure and not as a clean sweep.
+        assertTrue(fromTheForms.size() > 30, "precondition: the form files gave only " + fromTheForms.size() + " keys");
+        assertTrue(asked.size() > 1000, "precondition: the sources gave only " + asked.size() + " keys");
+
+        asked.addAll(fromTheForms);
+
+        List<String> wrong = new ArrayList<>();
+
+        for (File bundle : bundles())
+        {
+            java.util.Properties values = valuesOf(bundle);
+
+            for (String key : asked)
+            {
+                String value = values.getProperty(key);
+
+                if (value == null) wrong.add(bundle.getName() + " has no " + key);
+
+                // A SUFFIX MAY BE NOTHING: the plural ending the usage chart adds after a number is "s" in English and
+                // nothing at all in Italian or Polish.  Present, as every key must be; empty only where it is a suffix.
+                else if (value.trim().isEmpty() && !key.endsWith("Suffix")) wrong.add(bundle.getName() + " has " + key + " empty");
+            }
+        }
+
+        assertTrue(wrong.isEmpty(), "a screen asks for a message key that is missing, or empty, in a language - the key's"
+            + " name, an error or a blank would show where the sentence should be (MT-468): " + wrong);
+    }
 }
