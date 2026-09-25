@@ -29,7 +29,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 |---|---|---|---|---|
 | [MT-291](#mt-291) | 2026-09-07 | The Grid tooltip, in a language you read | needs test | FR-057 (split from MT-274) |
 | [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
-| [MT-468](#mt-468) | 2026-09-19 | Every screen still finds its text after 239 unused message keys were removed | fixed unvalidated | UIX-C4 |
 | [MT-492](#mt-492) | 2026-09-24 | Return Home finds a plan on a crowded railway | fixed unvalidated | OB-230, AMH-C1 |
 | [MT-533](#mt-533) | 2026-09-24 | The train-length prompt takes typing without a click | fixed unvalidated | MT-474 |
 | [MT-548](#mt-548) | 2026-09-24 | On a Central Station layout the Autonomy menu opens, and only the download and Documentation can be chosen | fixed unvalidated | OB-254, OB-093, MT-544 |
@@ -40,8 +39,8 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-576](#mt-576) | 2026-09-24 | A tail answer given after the placement changed is written where the train now stands, or not at all | fixed unvalidated | TDU2-A1, TDU3-B1 |
 | [MT-586](#mt-586) | 2026-09-25 | A stretch answered 0 lets a train in when the total track holds it | fixed unvalidated | ADU-C7, TDU-C6 |
 
-Everything else - 574 of 586 - needs nothing from you unless the area changes again:
-453 **fixed validated** and 121 **superseded**.
+Everything else - 575 of 586 - needs nothing from you unless the area changes again:
+453 **fixed validated** and 122 **superseded**.
 
 ---
 
@@ -16476,6 +16475,10 @@ The tooltip mentions the column and row numbers, and reads like something a pers
 **Seven of the eight translations were written by an agent and nobody has read them for idiom.** If
 one looks wrong, it probably is.
 
+**Claude, 2026-09-25.**
+
+**MT-468's reading half is folded in here** (2026-09-25, on your answer "OK").  When you run this in German, look over the screens you use as well - Locomotives, Routes, the track diagram, the layout editor and the autonomy editor, and the dialogs you open from them - for anything that does not read as a sentence a person would write.  That keys exist in every language, with a value, is now tested (`core.testMessageBundles.testEveryKeyAScreenAsksForIsInEveryLanguageWithAValue`), so a key name, a blank or a missing-resource error is no longer what to look for.
+
 ---
 
 <a id="mt-292"></a>
@@ -24216,7 +24219,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-468 - 2026-09-19 - Every screen still finds its text after 239 unused message keys were removed
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** UIX-C4
 
 **Written:** 2026-09-19
@@ -24244,6 +24247,10 @@ From the 2026-09-19 review round, finished the next day.  Keys in all eight lang
 **Claude, 2026-09-24.**
 
 **To run now:** visit Locomotives, Routes, the track diagram, the layout editor and the autonomy editor; open add locomotive, edit functions, edit route, diagram export and Bulk Tools > Mass Assign Lengths...; then switch to German and do the same, then one more language, then back.  **Expect:** every label, button, menu item and tooltip is a sentence - no key names like `route.ui.x`, nothing blank, no missing-resource errors.
+
+**Claude, 2026-09-25.**
+
+**Superseded, on your answer of 2026-09-25** (*"OK"*, to testing the mechanical half and folding the reading into MT-291).  `core.testMessageBundles.testEveryKeyAScreenAsksForIsInEveryLanguageWithAValue` reads every message key a screen asks for - by the `I18n` calls, by the older windows' generated `bundle.getString(...)` reads, and by their `.form` files' own resource entries, which no test read before - and asserts each is in all eight languages with a value (a plural suffix may be empty, as it is in Italian and Polish).  That is the "no key name, no blank, no missing-resource error" half of the Expected.  Whether the sentences read as sentences in German is now part of MT-291.  If you want this back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
