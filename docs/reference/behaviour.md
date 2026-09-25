@@ -1139,7 +1139,8 @@ The editor notice about turn-round squares with no length is a different questio
     (FR-100; Adam, 2026-09-24: *"highlight possible squares on the diagram and ask the user to click one.  only show the
     list if there are options on another page"*): the sensors are lit and a click on one answers it, with **Not known**
     and **Cancel** in a small window.  The list is asked where a choice is on another page or not drawn, and where an
-    editor window is open, whose squares do not take the click (TDU-C1).  The rest of a double-click on the sensor that
+    editor window is open, whose squares do not take the click (TDU-C1) - and then the list opens from the editor,
+    in front of it, not from the main window it covers (MT-575, 2026-09-25).  The rest of a double-click on the sensor that
     answered is the question's, not the sensor's (TDU-B3), and the paste reads everything about its landing before the
     question waits, because the window stays live while it does (TDU-B2).  **An answer is written only where the placement
     still stands when it comes back** (TDU2-A1, TDU3-B1): the square's copy on the railway running then still holds the

@@ -35,12 +35,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-566](#mt-566) | 2026-09-24 | The locomotive train-length walk is never greyed, and counts | fixed unvalidated | MT-533 |
 | [MT-567](#mt-567) | 2026-09-24 | Train lengths and station maximum lengths are named apart | fixed unvalidated | MT-533 |
 | [MT-569](#mt-569) | 2026-09-24 | The guard items say what each guard does | fixed unvalidated | OB-293 |
-| [MT-575](#mt-575) | 2026-09-24 | From the autonomy editor the tail question is the list | fixed unvalidated | FR-100, TDU-C1 |
-| [MT-576](#mt-576) | 2026-09-24 | A tail answer given after the placement changed is written where the train now stands, or not at all | fixed unvalidated | TDU2-A1, TDU3-B1 |
-| [MT-586](#mt-586) | 2026-09-25 | A stretch answered 0 lets a train in when the total track holds it | fixed unvalidated | ADU-C7, TDU-C6 |
 
-Everything else - 575 of 586 - needs nothing from you unless the area changes again:
-453 **fixed validated** and 122 **superseded**.
+Everything else - 578 of 586 - needs nothing from you unless the area changes again:
+453 **fixed validated** and 125 **superseded**.
 
 ---
 
@@ -28385,7 +28382,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-575 - 2026-09-24 - From the autonomy editor the tail question is the list
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** FR-100, TDU-C1
 
 **Written:** 2026-09-24
@@ -28402,13 +28399,17 @@ Validated on your *Works* of 2026-09-24.
 
 *What this is:* `regression.testTheTailIsPickedOnTheDiagram.testWithAnEditorOpenTheQuestionIsTheList`.
 
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `ui.testThePlaceDoorsKeepTheHeading.testFromTheEditorTheTailQuestionIsTheListInFrontOfIt` on the real window over a sandbox copy of your railway, with your own 75 407 DB from the test run's copy of your locomotive data.  It gives the train a length of 5, opens the autonomy editor on 1 - Main as Autonomy > Edit Autonomy opens it, chooses Place Locomotive... on Tunnel's right-click there, picks 75 407 DB and presses OK; it asserts the tail question is the list and not waiting on the main window's diagram, that the list belongs to the editor, and that choosing TunnelPre in it gives the train at Tunnel TunnelPre's road.  **Automating this found a fault, now fixed:** the list was hung from the main window the editor covers - centred on it and ordered with it - rather than from the editor.  While an editor is open it now opens from the editor.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
+
 ---
 
 <a id="mt-576"></a>
 
 ### MT-576 - 2026-09-24 - A tail answer given after the placement changed is written where the train now stands, or not at all
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** TDU2-A1, TDU3-B1
 
 **Written:** 2026-09-24
@@ -28439,6 +28440,10 @@ Validated on your *Works* of 2026-09-24.
 **Claude, 2026-09-24.**
 
 **Step 7's log line, as it reads after the fifth validation round** (2026-09-24): *where the tail of 75 407 DB lies was not recorded: Tunnel changed while the question waited - the train was moved or turned, another train stands there, or the setup was reloaded*.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testTheTailIsPickedOnTheDiagram.testTheLateAnswersOfMT576ByTheirGestures` on the real window over a sandbox copy of your railway, with your own 75 407 DB from the test run's copy of your locomotive data.  With a length of 5 it cuts and pastes the train at Tunnel from the north with Control+X and Control+V through the diagram's own key door, the question left waiting.  (a) While it waits, it flips BottomMainB's Can Be Chosen in Full Autonomy on that station's right-click, which rebuilds the railway, then clicks TunnelPre on the diagram: the rebuilt railway's Tunnel gets TunnelPre's road, in its own rails - the grey reaches TunnelPre.  It flips the setting back.  (b) It pastes again, takes the train off Tunnel with Remove on Tunnel's right-click, and clicks TunnelPre: nothing is written behind Tunnel, and the log says where the tail of 75 407 DB lies was not recorded because Tunnel changed while the question waited.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -28751,7 +28756,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-586 - 2026-09-25 - A stretch answered 0 lets a train in when the total track holds it
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** ADU-C7, TDU-C6
 
 **Written:** 2026-09-25
@@ -28771,5 +28776,9 @@ Validated on your *Works* of 2026-09-24.
 - Step 4: Tunnel is offered and the train goes; standing there, the grey behind it reaches back past TunnelPre and BottomSecondary onto the track towards RampDown.
 
 *What this is:* `core.testAnAnsweredZeroIsNotMissing.testAStretchAnsweredZeroIsMeasuredTrackOfNoLength`, on the frozen copy of your railway: RampDown -4-> BottomSecondary -2-> TunnelPre -4-> Tunnel takes a train of 5 with the middle answered 0, where it was refused quoting 4.  If you have measured those squares differently since, the figures differ; the train still goes wherever the measured track in total holds it.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `ui.testWhereHisTrainsMayBeSent.testAStretchAnsweredZeroLetsHisTrainIntoTunnel` on the real window over a sandbox copy of your railway, with your own 75 407 DB from the test run's copy of your locomotive data.  In the autonomy editor on 1 - Main it Shift-clicks every square of the stretch between BottomSecondary and TunnelPre, chooses Segment Length... on one, types 0 and presses OK, and rebuilds the railway as closing the editor saving the change does; with the train 5 long at RampDown facing south, it asserts Tunnel is offered on the right-click, sends it there with that item, lets it drive in simulation, and asserts that standing at Tunnel it holds the whole stretch answered 0 and the track from RampDown into BottomSecondary.  Its setup is a sandbox copy and every length is put back, so the backup steps are not needed.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
