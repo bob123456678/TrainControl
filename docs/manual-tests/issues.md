@@ -1282,6 +1282,15 @@ The own-tail refusal's note says how many stretches of the way round have no len
 
 Seen once, in a test that edited the setup off the event thread while a rebuild ran: `AutonomyBuilder.splitSides` iterated `reducer.getEdges()` while the other rebuild cleared and refilled that list in place (`GraphReducer` keeps one `ArrayList` of edges).  The test was put right - it now edits on the event thread, as the application does - and every door read so far builds and edits there too.  Left for later because the question is whether any door builds off the event thread: the start-up resume and `rebuildRunningLayoutFromSetup` are the ones to check.  If one does, a build could throw mid-way or read half a rebuild.
 
+### OB-299 - 2026-09-25 - a train put on a copy that reaches no station is never started, and nothing says why
+
+**Kind:** bug  
+**Raised from:** follow-up from the validation round, ADU2-C2  
+**Filed:** 2026-09-25  
+**Build:** found by reading, not on the railway
+
+Since your answer to OB-296 the right-click Place keeps the train's heading, as the paste does, over every copy of the square the train could leave by.  A copy can have a way out and still reach no station autonomy may choose - everything past it is sensors, turning points or parking - and a train stood there facing that way is never started.  For a copy trains may not arrive at, Why not Moving? says so (*"cannot be started there facing that way"*); for one that reaches no station it lists each destination's own reason, not the copy's.  Before, this door turned such a train onto the other copy - the worse fault, since its heading was then wrong.  Left for later: it is a new sentence in eight languages. On the frozen copy of your railway no station has one: the two copies there with a way out that reach no station - BottomInner facing south and TopMainR2Inter facing north - are both ones trains may not arrive at, and Why not Moving? says so at each.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1299,9 +1308,9 @@ not, never both.
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
 | 2026-09-24 | OB-298 | bug | A rebuild builds its lists apart and hands them over whole, so a reader walking them finishes on the railway it began on: `core.testAutonomyDiagramReducer.testARebuildDoesNotChangeWhatAReaderIsWalking`; the setup hands a rebuilt railway out only once it is whole (ADA-C2).  Nothing to run by hand: mark it Works to close it. | fixed unvalidated | - |
-| 2026-09-24 | OB-297 | bug | The own-tail refusal counts the pieces Mass Assign Lengths asks for, the build marking the switches and crossings on each stretch: `core.testTheOwnTailArithmetic.testTheNoteCountsPiecesCutAtTheSwitches`. | fixed unvalidated | - |
+| 2026-09-24 | OB-297 | bug | The own-tail refusal counts what Mass Assign Lengths would ask a length for on the way round - a piece, a page's switches, a page's crossings - and says so in its name: `core.testTheOwnTailArithmetic.testTheNoteCountsWhatMassAssignAsksFor`, `core.testMassAssignLengths.testTheSwitchesOfAPageAreOneThingToMeasure`. | - | `MT-571` |
 | 2026-09-24 | OB-296 | bug | The right-click Place keeps the train's heading, on your answer. | - | `MT-581` |
-| 2026-09-24 | OB-295 | bug | "Unavailable while occupied" shuts a square to routes through it while a train stands on the square it watches, as well as to arrivals - at runtime, in Why not Moving? and in Return Home's planner: `regression.testStationBlockedByAnotherPoint`, `core.testHomeStaging`.  The frozen copy of your railway has no such restriction, so there is nothing to run by hand. | fixed unvalidated | - |
+| 2026-09-24 | OB-295 | bug | "Unavailable while occupied" shuts a square to routes through it while a train stands on the square it watches, as well as to arrivals - at runtime, in Why not Moving? and in Return Home's planner: `regression.testStationBlockedByAnotherPoint`, `core.testHomeStaging`. | - | `MT-584` |
 | 2026-09-24 | OB-286 | bug | Highlight on Diagram lights a three-way once, as commanded, where a route commands one of its decoders and checks the other. | - | `MT-578` |
 | 2026-09-24 | FR-098 | feature request | Customize Function Icons greys Apply while the function on show is as the locomotive holds it. | - | `MT-577` |
 | 2026-09-24 | OB-287 | bug | The refusal to delete or rename a locomotive a running route drives has its test, at both doors and the name proposal: `regression.testARouteDrivenLocomotiveIsNotEdited`. | fixed unvalidated | - |

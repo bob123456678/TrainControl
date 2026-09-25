@@ -73,9 +73,10 @@ train standing there. Both halves now ask the same thing of every square on the 
 names: while that train stands there, the square is shut to routes through it too. Return Home's planner
 asks it of every square a plan passes, against the occupancy the plan has reached. **And two restrictions can
 now hold each other**: where each watched train's only way out passes the square the other holds back, the
-exemption lets each leave its own watched square but not pass the other's, and neither moves until one is
-driven off by hand - Return Home answers NO_PLAN_FOUND there (ADA-C3).  Before, a standing train closed only
-arrivals, so both went.
+exemption lets each leave its own watched square but not pass the other's, and neither is sent - by autonomy,
+by hand from TrainControl, or by Return Home - until one is moved without TrainControl's routing (driven on the
+throttle, or taken off the diagram) or one restriction is cleared (ADA-C3, ADD2-C4).  Before, a standing train
+closed only arrivals, so both went.
 `regression.testStationBlockedByAnotherPoint.testATrainStandingOnTheWatchedPointClosesASquareTrainsPass`,
 `core.testHomeStaging.testAHomeBeyondAHeldBackSquareIsNotStagedThroughIt`.
 
@@ -698,8 +699,10 @@ placement that answers differently each time it is repeated is drift (*"in all y
 should never drift"*, 2026-09-07). **The diagram's right-click Place follows the same rule** (Adam,
 2026-09-24, OB-296: *"Yes, keep the train's heading."*) - the heading over every copy the train can
 leave by, a copy trains may not arrive at included, and the copy the paste would take (`copyFacing`);
-otherwise the first copy the menu offers.  It took one at random until then, and for a day chose only
-among station copies, which turned a train round at every square with a barred side (ADU-B1). `core.testATrainIsPutOnlyWhereItCanStart.testTheRightClickPlaceKeepsTheTrainsHeading`.
+otherwise the first copy the menu offers.  The item is offered wherever a copy has a way out, as the action
+chooses (ADU2-C2).  It took one at random until then, and for a day chose only among station copies, which turned a
+train facing the barred way round at a square with a barred side (ADU-B1).  A copy with a way out that reaches no
+station autonomy may choose is kept too, and nothing yet says why autonomy never starts a train there (OB-299). `core.testATrainIsPutOnlyWhereItCanStart.testTheRightClickPlaceKeepsTheTrainsHeading`.
 
 > *"Simply don’t place the train, leave it on the clipboard as if no paste had been done."* — Adam,
 > 2026-09-07, on a dismissed prompt
@@ -1193,8 +1196,9 @@ The editor notice about turn-round squares with no length is a different questio
   only where the route itself - not the body in front of the place - has measured something since the head left it,
   and where some of it has no length the refusal says how many things Mass Assign Lengths would ask a length for on
   the way round, which is the other way past (TDA-B1).  The build marks, place by place, the piece, switch or shared
-  square the editor still asks for (Adam, 2026-09-24, OB-297: *"Locations of switches are known."*), and the note
-  counts those marks, each once - so it asks for exactly what the editor offers: a route tile's piece is asked for
+  square the editor still asks for, keyed by the answer it is asked in - its piece, or all of its page's switches, or
+  all of its page's crossings, one length each (Adam, 2026-09-24, OB-297: *"Locations of switches are known."*;
+  ADA2-C7) - and the note counts those answers, each once - so it asks for exactly what the editor offers: a route tile's piece is asked for
   until its other squares are measured, and a piece whose units sit on a station's square is not (ADA-C1).  A
   configuration built before the marks counts whole legs, as TDA2-C1 did.
   **After a turn the body is ahead of the train** and moves with it - a turn on the way, or a train leaving over its
@@ -1518,11 +1522,18 @@ never binds, and a train inside it is refused by a rule quoting a number nobody 
   track from there, is refused.  That figure is the sentence's third number, given where it is under the stated
   maximum, and read off the railway the setup builds: back from the platform over every leg, through sensors nobody is
   started at, to a copy a train is started at or turns at - a station square can have a copy heading the platform's way
-  that trains may not arrive at - and stopped at a leg with no length, as the route in is; the least over every such
-  way in (ADD-C6).  Only for the notice's own ways in, over a switch or from a turn, so it is never less than {3}.  On
-  the frozen railway: TopMainR1Inter 3 (TopR1ParkShort's four-unit train, MT-564) and LowerFront 4, each the railway's
-  own refusal; none at Tunnel, BottomMainA or BottomInnerOtherside, where every way in the railway runs measures at
-  least the maximum.
+  that trains may not arrive at - and stopped at a leg with no length, as the route in is; never through or into a
+  point that is switched off, though out of a station switched off round a train standing there, and never from or
+  through another copy of the platform's own square; worked out for every leg together, so a loop is walked whole
+  (ADD-C6, ADA2-C3).  Each way in gives the larger of its room and its route in, as the refusal quotes, and the figure
+  is the least.  Only over the ways in {3} is taken over - past a switch with something measured, or with a length from
+  a turn - so it is never less than {3}, and a way in with no length refuses nothing and hides nothing (ADA2-C1,
+  ADA2-C2).  Where it equals {3} it is still given: the shortest way in holds nothing behind its switch, and a train
+  longer than {3} is refused there rather than standing across it.  On the frozen railway: TopMainR1Inter 3, equal to
+  its room (TopR1ParkShort's four-unit train, MT-564), and LowerFront 4, from ParkingTrack12 - switched off, and a
+  train standing there is sent by hand - each the railway's own refusal; none at Tunnel, BottomMainA or
+  BottomInnerOtherside, where every way in the railway runs measures at least the maximum.
+  `core.testAnAnsweredZeroIsNotMissing.testTheRefusingFigureIsTheRailwaysOwn`.
 - An arriving edge crossing no switch is skipped unless trains turn round where it starts - there the
   guard walks on back through earlier edges, so that edge bounds nothing - or, for a parking berth, a crossing on
   it ends the berth rule's room, as above.
@@ -2423,7 +2434,7 @@ Comments in this codebase cite review findings constantly - `RGD-B2`, `MON-C6`, 
 locomotive but `DY3-C7` is a finding - because that is how a comment says *why* rather than *what*.
 The documents those ids came from are gone. **The findings are not.**
 
-All of them are in `docs/manual-tests/triage.db`, in the `finding` table - **4,385 rows for 4,028
+All of them are in `docs/manual-tests/triage.db`, in the `finding` table - **4,433 rows for 4,076
 findings**, because a finding written up in two documents has a row for each, and reading the row count
 as a finding count is a mistake three documents have made (VD15-T5) - with the document they
 came from, the line in it, the severity, what it was about, the file and line of the evidence, the

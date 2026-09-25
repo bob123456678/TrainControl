@@ -80,8 +80,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-582](#mt-582) | 2026-09-25 | Importing an old autonomy.json leaves Load Autonomy as it was | fixed unvalidated | TDD-C11 |
 | [MT-583](#mt-583) | 2026-09-25 | TopMainR1Inter's notice gives the length a train is refused above | fixed unvalidated | TDA-C10 |
 | [MT-584](#mt-584) | 2026-09-25 | A train standing on the watched square closes a square trains only pass | fixed unvalidated | OB-295, TDA-C9 |
+| [MT-585](#mt-585) | 2026-09-25 | The right-click Place keeps a heading trains may not arrive by | fixed unvalidated | OB-296, ADU-B1, ADD2-C9 |
 
-Everything else - 531 of 584 - needs nothing from you unless the area changes again:
+Everything else - 531 of 585 - needs nothing from you unless the area changes again:
 453 **fixed validated** and 78 **superseded**.
 
 ---
@@ -233,6 +234,10 @@ Start autonomy doesn't run autonomy, as expected- I get an error message saying 
 **Claude, 2026-09-24.**
 
 **The Start half is as you found it; the hand half is built** (2026-09-24).  You confirmed Start is refused with the errors named.  Both hand doors - the track diagram's right-click destinations and the Auto tab's paths - now ask the question Start asks and refuse with the setup's own message.  That is MT-550.
+
+**Claude, 2026-09-25.**
+
+**What Start says over this break** (2026-09-25, ADD2-C1).  The repeated sensor page is an error finding now (OB-150), so Start's tooltip and Start's message name the error count - *Autonomy cannot start while the setup has 1 error(s)* - as you saw on 2026-09-24.  *One thing has to be dealt with first* is what a setup says when it will not build with no finding, which this break no longer gives; steps 2 and 3's expectation is superseded by that.  MT-580 checks the same tooltip, in the same sitting.
 
 ---
 
@@ -27950,6 +27955,10 @@ Measured on your railway: 28 approaches into parking berths - none refuses the s
 
 Validated on your *Works* of 2026-09-24.  The deep dive you asked for is the comment above.
 
+**Claude, 2026-09-25.**
+
+**LowerFront refuses too** (2026-09-25, ADD2-C8).  This census tried a train one unit longer than the track past each switch, and that one is admitted.  At LowerFront a train of 5, its maximum, set off from ParkingTrack12 is refused: the track from there measures 4.  So LowerFront is a second exception beside TopMainR1Inter, and MT-583 gives both figures.
+
 ---
 
 <a id="mt-565"></a>
@@ -28472,6 +28481,10 @@ Validated on your *Works* of 2026-09-24.
 
 **And at a square with a barred side** (2026-09-25, ADU-B1).  Repeat steps 1 to 3 at BottomMainA with 75 407 DB facing west - BottomMainA takes no arrivals from the east.  It stays facing west, on the copy trains may not arrive at, and Why not Moving? says it cannot be started there facing that way.  Until round 1's fix the right-click Place turned it round there.
 
+**Claude, 2026-09-25.**
+
+**The BottomMainA step is MT-585 now** (2026-09-25, ADD2-C9).  The comment above added a second outcome to this entry, and its steps could not be run as written.  Judge this entry on BottomMainB alone; BottomMainA is MT-585, in the same sitting.
+
 ---
 
 <a id="mt-582"></a>
@@ -28529,6 +28542,10 @@ Validated on your *Works* of 2026-09-24.
 
 **The figures, measured** (2026-09-25).  On the frozen copy of your railway a train of 3 set off from TopR1ParkShort is admitted at TopMainR1Inter and one of 4 refused; at LowerFront the same with 4 and 5 from ParkingTrack12.  The figure now counts back over sensors nobody is started at, as the railway's route in does, so a way in with a `...Pre` sensor behind the platform can give one too; on the frozen railway that changes nothing.
 
+**Claude, 2026-09-25.**
+
+**All five figures are checked against the railway now** (2026-09-25, ADD2-C8), on the frozen copy of your railway: TopMainR1Inter 3 and LowerFront 4, each the railway's own refusal, and no figure at the other three.  ParkingTrack12 is switched off on it; a train standing there can still be sent into LowerFront by hand, and that is LowerFront's way in.  Held by `core.testAnAnsweredZeroIsNotMissing.testTheRefusingFigureIsTheRailwaysOwn`.
+
 ---
 
 <a id="mt-584"></a>
@@ -28557,5 +28574,34 @@ Validated on your *Works* of 2026-09-24.
 - Step 5: BottomMainA is offered again - unless something else is in the way, which Why not Moving? then names.
 
 *What this is:* `regression.testStationBlockedByAnotherPoint.testATrainStandingOnTheWatchedPointClosesASquareTrainsPass`.  On the frozen copy of your railway the route from Tunnel into BottomMainA runs through BottomMainAPre, and the rule names it.
+
+**Claude, 2026-09-25.**
+
+**The dialog's sentence** (2026-09-25, ADU2-C6).  At step 2 the Unavailable While Occupied dialog now reads *Trains will not be routed to or through BottomMainAPre while any of these is occupied or has a route running into it* - what the rule does since your answer.
+
+---
+
+<a id="mt-585"></a>
+
+### MT-585 - 2026-09-25 - The right-click Place keeps a heading trains may not arrive by
+
+**Disposition:** fixed unvalidated
+**From:** OB-296, ADU-B1, ADD2-C9
+
+**Written:** 2026-09-25
+
+**What was wrong.**  For a day after your answer to OB-296, the right-click Place chose only among a square's station copies, so at a square that takes no arrivals from one side a train facing that way was turned round.  At BottomMainA, which takes no arrivals from the east, a train facing west was put down facing east.  The paste and the locomotive dialog already kept the heading there.
+
+**Steps**
+
+1. Put 75 407 DB on BottomMainB and make it the active locomotive.  Right-click it and, under *75 407 DB Is Facing...*, make it face west.
+2. Right-click BottomMainA and choose Place 75 407 DB.  If you are asked where its tail lies, answer Not known.
+3. Right-click BottomMainA and read *75 407 DB Is Facing...*.  Then open Why not Moving? for it.
+
+**Expected**
+
+- Step 3: it faces west, and Why not Moving? says *Trains may not arrive at BottomMainA facing the way this one faces, so autonomy will not start it there.*
+
+*What this is:* `core.testATrainIsPutOnlyWhereItCanStart.testTheRightClickPlaceKeepsTheTrainsHeading`, over every station of the frozen copy of your railway each way.  Run it in the same sitting as MT-581.
 
 ---

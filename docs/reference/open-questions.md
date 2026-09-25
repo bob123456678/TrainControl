@@ -39,13 +39,13 @@ is not one.
 
 The railway defects live in the Inbox of `docs/manual-tests/issues.md`. **It is not empty**, and this
 paragraph said it was for twelve days (IND9X-B3, 2026-09-09).
-Today it holds 85 entries - 53 OB and 32 FR, recounted from the file on 2026-09-24: eighteen entries
+Today it holds 86 entries - 54 OB and 32 FR, recounted from the file on 2026-09-24: eighteen entries
 left it on Adam's word that day.  Seven were given their receipts then - OB-240 to OB-243, OB-271, OB-275
 and FR-095, each fixed, answered or withdrawn by its own text - and eleven had been receipted long before
 and were still sitting in the Inbox, which `triage.py` already treated as closed.  OB-272 to OB-277 and
 FR-094/FR-095 had been filed that morning, FR-096 was filed after the tidy; FR-094 left it
 when it was built, and OB-208, OB-270, OB-272 to OB-274, OB-276, OB-277 and FR-096 when they were.  Fifty more left it that
-evening on his word - *"anything already reviewed and certified as working should be cleared"*: every entry whose receipt, or the hands-on test it became, is fixed and validated, and OB-218, declined.  OB-283 was filed after that, to carry the open reversal question below (DCN-C14).  OB-284 was filed after it, for the paste question the review's third round raised (AUT3-B2, DCN3-B1).  On 2026-09-24 OB-230, OB-283 and OB-284 were given their receipts on Adam's rulings, and OB-285 and OB-286 were filed from the follow-ups (AUT2-C2, GUI2-C4); OB-287 and FR-098 that evening, from the pass over the waiting tests.  OB-288 to OB-290 came from Adam's round of manual tests the same day, and were given their receipts on it; OB-291 from his next, and given its receipt on it too, and FR-099 with it; OB-292 was filed from the conversation after, and FR-100 and FR-101 from his next round; OB-293 and FR-102 from the one after, and OB-294 with them; OB-295 and OB-296 from the validation round that evening (TDA-C9, TDU-B4), OB-297 from its third round (TDA2-C1), and OB-298 from a test run the same evening; all four were given their receipts on 2026-09-25, on his answers.  Every
+evening on his word - *"anything already reviewed and certified as working should be cleared"*: every entry whose receipt, or the hands-on test it became, is fixed and validated, and OB-218, declined.  OB-283 was filed after that, to carry the open reversal question below (DCN-C14).  OB-284 was filed after it, for the paste question the review's third round raised (AUT3-B2, DCN3-B1).  On 2026-09-24 OB-230, OB-283 and OB-284 were given their receipts on Adam's rulings, and OB-285 and OB-286 were filed from the follow-ups (AUT2-C2, GUI2-C4); OB-287 and FR-098 that evening, from the pass over the waiting tests.  OB-288 to OB-290 came from Adam's round of manual tests the same day, and were given their receipts on it; OB-291 from his next, and given its receipt on it too, and FR-099 with it; OB-292 was filed from the conversation after, and FR-100 and FR-101 from his next round; OB-293 and FR-102 from the one after, and OB-294 with them; OB-295 and OB-296 from the validation round that evening (TDA-C9, TDU-B4), OB-297 from its third round (TDA2-C1), and OB-298 from a test run the same evening; all four were given their receipts on 2026-09-25, on his answers, and OB-299 was filed that day from the second validation round of that work (ADU2-C2).  Every
 earlier figure here was wrong in the same way, by being written rather than recounted: 99, then 111
 counted before six entries that had already been appended, then 118 (IND9X-B3, VD12-R13, VD13-R3).
 Most of them carry a receipt row that says the work was done - the protocol is that an entry is
@@ -132,12 +132,17 @@ either.
 
 ## Length, blocking, and the tail
 
-**Open.** One reach, Adam's (ADD-B1, ADA-A1): **should an answered 0 count as measured beyond the Atomic Routes
+**Open.** One reach, Adam's (ADU-C7, ADA-A1): **should an answered 0 count as measured beyond the Atomic Routes
 gate?**  Today it does at the gate and the escape only, and every other length rule reads it as unmeasured (OB-274).
-The wider reading - the route in counting on past it - is safe only if the tail walk and the tail question walk on
-over an answered 0 as well, claiming its squares for nothing and the track behind it; that claims more, never less,
-but changes what a standing train blocks on a railway answered that way.  **Recommended:** leave it at the gate - your
-own railway has no stretch answered 0 end to end, and a rule that admits more should wait for a case that needs it.
+**What that costs:** where track answered 0 lies between measured stretches on the way into a station autonomy may
+choose - a hop between two sensors side by side, which is what you asked the 0 for - the route in stops at it, so a
+train the whole measured run would hold is refused, and the refusal says the track measures only what lies after the
+0; the one way past is to type a length for track you have answered is nothing.  **The wider reading** admits that
+train, and is safe only if the tail walk and the tail question walk on over an answered 0 as well, claiming its
+squares for nothing and the track behind it; that claims more, never less, but changes what a standing train blocks
+on a railway answered that way.  **Recommended:** leave it at the gate unless you have such a stretch.  The copy of
+your railway frozen for the tests predates answering 0, so it cannot say whether yours has one; where you answered 0
+only at the ends of stretches, nothing changes either way (ADA2-C5, ADD2-C2).
 
 **Before that:** the three wordings the validation rounds of 2026-09-24 left here were answered the same night.
 
@@ -415,8 +420,8 @@ this document exactly the thing it replaces.
 **2026-09-08: `docs/reviews/` was deleted**, down to its README, once its 2,226 findings were in
 `docs/manual-tests/triage.db`. **2026-09-21: the same for the 65 documents written since** - 44 of them in
 `docs/reviews/` itself and 21 in three dated folders beside it, on Adam's *"I don't want more
-reviews living in the repo"* - 3,726 rows then.  The round of 2026-09-23 added 336 - five reviews and three rounds of validation - and 13 more came on 2026-09-24 with OB-247 (AR-17 to AR-23 and LR-1 to LR-6, which have no document), and the validation rounds of 2026-09-24 added 258 (TDA, TDU and TDD, then the same three lanes as TDA2 to TDD5), and the validation of the work on Adam's answers of that night added 52 on 2026-09-25 (ADA, ADU and ADD), which makes
-4,385 finding rows in the store now, every one of them with a status.
+reviews living in the repo"* - 3,726 rows then.  The round of 2026-09-23 added 336 - five reviews and three rounds of validation - and 13 more came on 2026-09-24 with OB-247 (AR-17 to AR-23 and LR-1 to LR-6, which have no document), and the validation rounds of 2026-09-24 added 258 (TDA, TDU and TDD, then the same three lanes as TDA2 to TDD5), and the validation of the work on Adam's answers of that night added 52 on 2026-09-25 (ADA, ADU and ADD) and 48 in its second round (ADA2, ADU2 and ADD2), which makes
+4,433 finding rows in the store now, every one of them with a status.
 (This paragraph's figures - 65 documents, 44 of them in `docs/reviews/`, and the finding count - are quoted from the deletion commit and the store.  A correction to 63 and 206 was itself wrong and was reverted; the 208 it was about is in the first paragraph of this file, not here.  `regression.testTheRecordsCountTheStore` now compares the finding and Inbox counts with the store rather than trusting a reader to keep them - VD13-R1, VD14-R2, VD14-R5.) Everything still open above is open in that store too,
 so it can be queried rather than re-read:*
 
