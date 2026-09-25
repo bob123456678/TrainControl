@@ -2883,8 +2883,12 @@ public class Layout
         // passing through it was already refused while the watched square's approach was held; this
         // was asked of the destination only, so a route through a square trains only pass went while a
         // train STOOD on the watched one.  The cost is the one the setting names: while that train
-        // stands there, the square is shut to routes through it as well as to arrivals - somebody named
-        // both squares, and nothing else is held up by it.
+        // stands there, the square is shut to routes through it as well as to arrivals.  And the deadlock
+        // `Edge.isLockHeld` stops short of is taken on here, by his answer: two restrictions set against
+        // each other - each square watching the one the other's route needs, each with a train standing
+        // on it - hold both trains until one is moved without TrainControl's routing (driven on the
+        // throttle, or taken off the diagram) or a restriction is cleared (ADA-C3, ADA2-C4; behaviour.md
+        // section 1).
         //
         // IN EVERY TIER, and it was fenced twice before (Adam, 2026-09-10).
         //
@@ -5578,7 +5582,7 @@ public class Layout
      * autonomy runs is history: it fires for every tier now, and the window names the square in all
      * of them.
      *
-     * @param destination the station being arrived at
+     * @param destination the square being arrived at - a route's destination or any square on the way (OB-295)
      * @param loc the locomotive arriving, exempt where it is itself the occupant
      * @return the watched square with somebody else standing on it, or null
      */
@@ -10079,8 +10083,9 @@ public class Layout
      * BottomMainA should be allowed at length 3, since it is not a parking spot, the station allows the length, and the
      * length would be tracked?"*  Asked how far that reaches, he chose the route: the train is accepted if the measured
      * track of the route it drives in on, counted back from the station without a gap, holds it - its tail lies on that
-     * route, a driven train's road is kept (WK7-B1), and the track under it is claimed.  An unmeasured leg ends the count,
-     * so a tail that would reach track nothing has measured is still refused.  What follows is the method as it was
+     * route, a driven train's road is kept (WK7-B1), and the track under it is claimed.  A leg with no length ends the
+     * count - one answered 0 as well, as every walk but the Atomic Routes gate reads it (OB-274, ADA-A1) - so a tail that
+     * would reach track nothing has measured is still refused.  What follows is the method as it was
      * written for the approach.
      *
      * **Adam's relaxation of 2026-09-12, and the reason it is a method rather than a line.**  On a

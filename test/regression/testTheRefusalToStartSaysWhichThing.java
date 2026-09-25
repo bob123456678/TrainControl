@@ -105,7 +105,9 @@ public class testTheRefusalToStartSaysWhichThing
             "the diagram menu still words the refusal itself, and that is the door that read 'one thing'"
             + " for any number of blocking problems");
 
-        assertTrue(menu.contains("whyAutonomyWillNotStart()"),
+        // Directly, or through the one reading of Start's sentence and the hand doors' (ADU2-C5), which asks the rule.
+        assertTrue(menu.contains("whyAutonomyWillNotStart()") || (menu.contains("whyStartAndAHandSendAreRefused()")
+            && ui.contains("whyAutonomyWillNotStart(errors, blocking, broken)")),
             "the greyed Start item's tooltip does not come from the rule");
 
         assertEquals(count(ui, "errorCannotBuildDetailOne"), 1,

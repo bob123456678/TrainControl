@@ -839,7 +839,7 @@ public class Point
      *        square is held back by nothing
      * @param arriving the locomotive arriving, exempt where it is itself the occupant
      * @param occupancy where to look for who is standing where
-     * @return the watched square somebody else is standing on, or null when the destination is free
+     * @return the watched square somebody else is standing on, or null when nobody else stands on any it watches
      */
     public static Point heldBackBy(Point destination, Locomotive arriving, Occupancy occupancy)
     {

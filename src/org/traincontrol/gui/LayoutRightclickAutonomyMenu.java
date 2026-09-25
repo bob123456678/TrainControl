@@ -410,7 +410,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 // canStartAutonomy asks refuseAutonomyStartWhileBroken's own number now, which is the
                 // rule this repository has paid for six times in two days: the control that OFFERS an
                 // action asks the predicate the guard asks.
-                // Asked ONCE each, and this is not tidiness (LD-C6).
+                // Asked as few times as the answers allow, and this is not tidiness (LD-C6): once where Start
+                // is offered, and where it is not, once more for both sentences below (ADU2-C5).
                 //
                 // Both of these reach AutonomySession.check(), which is not cached: it rebuilds the
                 // termini and turn-around sets over every point in the graph. Written out four times
@@ -421,6 +422,12 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 // The predicate is unchanged and still the guard's own, which is what the comment
                 // above is about. What changes is how many times it is asked.
                 boolean canStart = ui.canStartAutonomy();
+
+                // BOTH SENTENCES FROM ONE READING (ADU2-C5): Start's tooltip and the Return Home item's, where
+                // Start is not offered.  Asked apart over a broken setup - which is when the operator
+                // right-clicks to find out what is wrong - they walked the setup four more times.  Where Start
+                // is offered the setup has no errors, and neither is asked (ADU-C3).
+                String[] why = canStart ? null : ui.whyStartAndAHandSendAreRefused();
 
                 menuItem.setEnabled(canStart);
 
@@ -442,7 +449,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     // for exactly this state.
                     // THROUGH THE ONE RULE (MT-263).  This wording was chosen here, and it never asked
                     // how many blocking problems there were - so three of them read as one.
-                    menuItem.setToolTipText(AutonomyEditorPanel.wrapped(ui.whyAutonomyWillNotStart()));
+                    menuItem.setToolTipText(AutonomyEditorPanel.wrapped(why[0]));
                 }
 
                 menuItem.addActionListener(event -> 
@@ -459,9 +466,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                 add(menuItem);
 
-                // THE HAND DOORS' SENTENCE, from Start's answer (ADU-C3).  Start offered means the setup has no errors, so it
-                // is null without asking - `check()` is not cached, and LD-C6 above is why that matters here.
-                String broken = canStart ? null : ui.whyAHandSendIsRefused();
+                // THE HAND DOORS' SENTENCE, from the same reading (ADU-C3, ADU2-C5).
+                String broken = why == null ? null : why[1];
 
                 HomeLocomotiveMenu.addReturnHomeItem(this, ui, broken);
 
@@ -682,8 +688,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     // whichever copy came first, which put the train on a Point whose only moves are
                     // the ones the split exists to forbid.  Autonomy could see the locomotive and
                     // could not route it anywhere.
-                    // Putting one down is still only at a destination, as it was: somewhere trains
-                    // may not stop is not somewhere to start one from.
+                    // Offered only on a square that is a destination, as it was.  Which copy of it the
+                    // train stands on is its heading's (below) - a copy trains may not arrive at
+                    // included (OB-284), where Why not Moving? says so.
                     if (ui.getActiveLoc() != null
                         && current.isDestination()
                         && !ui.isAutonomyBusy()
@@ -694,8 +701,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         // Asking was tried and is the wrong question here: on the diagram a user
                         // is pointing at a platform, not at one of the several Points that platform
                         // became, and the sides mean nothing at that moment.  The copy is the one
-                        // facing the way the train already faces, where the square can hold that
-                        // heading, and otherwise the first the build made - never a draw (Adam,
+                        // facing the way the train already faces, wherever a copy facing that way has
+                        // a way out (OB-284), and otherwise the first this menu offers - never a draw (Adam,
                         // 2026-09-24, OB-296: "Yes, keep the train's heading.").  Turning it is the
                         // facing item below.
                         //
@@ -704,19 +711,37 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         // later as a setup that will not run.
                         final java.util.List<String> usable = placeableCopies();
 
+                        // OFFERED ON THE ACTION'S OWN QUESTION (ADU2-C2): every copy the train could leave by,
+                        // which is what its heading is kept over - one trains may not arrive at included.
+                        // `placeableCopies` never offers one of those, so where every copy with a way out was
+                        // barred the item was greyed with "no way out" over a copy the action would have
+                        // stood the train on.  Its order still decides the copy where no heading holds, and
+                        // any other copy a train could leave by comes after it.
+                        final java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> departable =
+                            session == null || !ui.getModel().hasAutoLayout()
+                                ? new java.util.LinkedHashMap<String, org.traincontrol.automationui.TilePorts.Side>()
+                                : session.departableFacingsFor(station, ui.getModel().getAutoLayout());
+
+                        final java.util.List<String> offered = new java.util.ArrayList<>(usable);
+
+                        for (String copy : departable.keySet())
+                        {
+                            if (!offered.contains(copy)) offered.add(copy);
+                        }
+
                         menuItem = new JMenuItem(
                             I18n.f("layout.ui.menuPlaceLocomotive", ui.getActiveLoc().getName())
                         );
 
-                        menuItem.setEnabled(!usable.isEmpty());
+                        menuItem.setEnabled(!departable.isEmpty());
 
-                        if (usable.isEmpty())
+                        if (departable.isEmpty())
                         {
                             menuItem.setToolTipText(I18n.t("layout.ui.hintNoWayOut"));
                         }
                         else
                         {
-                            menuItem.addActionListener(event -> placeSomewhereLegal(usable));
+                            menuItem.addActionListener(event -> placeSomewhereLegal(offered));
                         }
 
                         add(menuItem);
@@ -1037,9 +1062,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             // "nothing moves" fault: on the sample layout, Tunnel (northbound) offers routes and
             // Tunnel (southbound) offers none, and placement could not tell them apart.
             //
-            // Barred copies come second for the reason they always did: barring an arrival side makes
-            // that copy a non-destination, and placing a train there earns a warning from parseAuto on
-            // every load.
+            // Barred copies are not on this list: barring an arrival side makes that copy a
+            // non-destination.  The right-click Place still stands a train on one where its heading is
+            // that way (OB-284, ADU2-C2); this list is the order a copy is taken in where no heading
+            // holds, and a barred copy comes after it.
             if (!ui.getModel().getAutoLayout().canReachAnyDestination(copy))
             {
                 stranded.add(name);
@@ -1059,16 +1085,17 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // different message from the "no way out" one this list produces.
         if (!out.isEmpty()) return out;
 
-        // BUT NOT A COPY THE RAILWAY WILL REFUSE (TWV-C6).
+        // NOT A BARRED COPY, FIRST (TWV-C6, ADU2-C2).
         //
-        // `shut` is the copies whose `isDestination()` is explicitly false, and since `W21-B3` those
-        // are exactly what `moveLocomotive` declines.  Offering them enabled the menu item, the
-        // operator clicked it, and nothing happened but a line in the log - the button promising an
-        // action the guard behind it refuses, which is the `OB-057` / `OB-090` shape: the affordance
-        // must ask the guard's own question.
+        // `shut` is the copies whose `isDestination()` is explicitly false.  Until the right-click Place
+        // moved with the form of `moveLocomotive` that accepts them (ADU-C2), that form declined them,
+        // and offering them enabled an item that did nothing - the `OB-057` / `OB-090` shape.  It
+        // accepts them now, and the item is offered over every copy a train could leave by
+        // (`departableFacingsFor`); this list is only the order a copy is taken in where the train's
+        // heading holds none.
         //
-        // Stranded copies stay: they ARE destinations, so the railway accepts them, and standing a
-        // train somewhere it cannot leave is a thing an operator may legitimately want to do.
+        // Stranded copies stay, barred or not: standing a train somewhere autonomy cannot send it
+        // anywhere is a thing an operator may legitimately want to do.
         return stranded;
     }
 
@@ -1221,10 +1248,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // SAVED for a move the railway had just declined - and the setup is the half that survives a
         // restart, so the next build emitted the train on a square it was never put on.
         //
-        // Both doors are real.  `placeableCopies` deliberately offers non-destination copies - its own
-        // comment says "nothing open is not the same as nowhere to go" - and falls back to exactly those
-        // when no copy is reachable, which is the case `moveLocomotive` refuses.  And `behaviour.md`
-        // section 6a states the other as a rule: a menu is greyed when the popup OPENS and the action
+        // Two doors reached it.  The first, a copy `moveLocomotive` declines, is closed at this door: it
+        // moves with the form that accepts a copy trains may not arrive at (ADU-C2), as the paste does.
+        // The other is still open, and `behaviour.md` section 6a states it as a rule: a menu is greyed when the popup OPENS and the action
         // fires when it is clicked, so autonomy started from another window in between leaves a live
         // item over a running railway.  The refusal is in the method, correctly; what was missing was
         // the caller honouring it.

@@ -330,11 +330,21 @@ public class testErrorsStopTheSetupRunning
             + "question, so it can offer a Start that every press refuses - OB-090, at the third of "
             + "its three sites");
 
-        assertTrue(menuCode.contains("whyAutonomyWillNotStart()"),
+        // Through Start's rule, or through the one reading that works out Start's sentence and the
+        // hand doors' together (ADU2-C5) - which has to reach the rule and the numbers itself.
+        assertTrue(menuCode.contains("whyAutonomyWillNotStart()")
+            || menuCode.contains("whyStartAndAHandSendAreRefused()"),
             "the right-click Start item is greyed with nothing saying why.  The number used to be read "
             + "here for the tooltip; MT-263 moved the wording and the counting into "
             + "whyAutonomyWillNotStart(), and one of the two has to be present or the operator meets a "
             + "dead item and no reason");
+
+        String both = withoutComments(bodyOf(ui, "public String[] whyStartAndAHandSendAreRefused()"));
+
+        assertTrue(both.contains("whyAutonomyWillNotStart(errors, blocking, broken)")
+            && both.contains("errorCount()") && both.contains("blockingProblemCount()"),
+            "the reading that gives the menu Start's sentence no longer counts, or no longer asks the one "
+            + "rule with what it counted.  Body: " + both);
 
         // AND THE ONE RULE HAS TO REACH THE NUMBER, which is the correspondence the assertion above
         // cannot see: a `whyAutonomyWillNotStart` that stopped counting would leave every affordance
@@ -697,7 +707,8 @@ public class testErrorsStopTheSetupRunning
             assertFalse(body.isEmpty(), where + " has moved or been renamed");
 
             boolean wordsItHere = body.contains("errorCannotStartWithErrors");
-            boolean throughTheRule = body.contains("whyAutonomyWillNotStart()");
+            boolean throughTheRule = body.contains("whyAutonomyWillNotStart()")
+                || body.contains("whyStartAndAHandSendAreRefused()");
 
             if (!wordsItHere && !throughTheRule) continue;
 

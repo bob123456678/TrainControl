@@ -442,8 +442,11 @@ public class AutonomySession
 
         // HANDED OUT ONLY ONCE REDUCED (OB-298, ADA-C2).  This assigned the field a line before reducing, so a build asking
         // for the reducer in between walked lists being filled - the incident OB-298 was filed from - and, once `reduce`
-        // swapped its lists whole, got the empty ones a new reducer starts with, silently.  Whichever thread rebuilds, a
-        // reader now holds the old railway or the whole new one.
+        // swapped its lists whole, got the empty ones a new reducer starts with, silently.  A build takes the field once,
+        // so it holds the old railway or the whole new one.  This session's own methods read the field at every use, and
+        // `graph` is published first, so one that read twice across a rebuild on another thread could see two railways:
+        // they rely on every rebuild running on the event thread, as every caller does - the loads and the revert, Delete
+        // Everything, and the editor's edits (ADA2-C6).
         GraphReducer fresh = new GraphReducer(graph, store.asAuthored());
 
         fresh.reduce();
@@ -4449,10 +4452,11 @@ public class AutonomySession
     }
 
     /**
-     * What Mass Assign Lengths would ask a length for, square by square: each square of a piece still wanting one, keyed
-     * by the piece; and each switch and shared square still wanting one, keyed by itself (OB-297, ADA-C1).
+     * What Mass Assign Lengths would ask a length for, square by square, keyed as it asks (OB-297, ADA-C1, ADA2-C7): each
+     * piece still wanting one is one answer; all of a page's switches with no length are one more, and all its crossings
+     * one more.  In the order its walk asks them, so a switch two roads share is answered as a switch.
      *
-     * @return the squares, each to the key of what it is asked for in
+     * @return the squares, each to the key of the answer it is asked for in
      */
     private java.util.Map<TileKey, String> piecesToMeasure()
     {
@@ -4467,9 +4471,14 @@ public class AutonomySession
             for (TileKey tile : stretch.getTiles()) out.put(tile, "piece " + piece);
         }
 
-        for (TileKey tile : squaresNeedingALength())
+        for (TileKey tile : switchesALengthRuleReads())
         {
-            if (!out.containsKey(tile)) out.put(tile, "square " + tile);
+            if (!out.containsKey(tile) && squareNeedsALength(tile)) out.put(tile, "switches on " + tile.getPage());
+        }
+
+        for (TileKey tile : sharedSquaresALengthRuleReads())
+        {
+            if (!out.containsKey(tile) && squareNeedsALength(tile)) out.put(tile, "crossings on " + tile.getPage());
         }
 
         return out;
@@ -9990,6 +9999,9 @@ public class AutonomySession
 
             if (worst >= 0)
             {
+                // NEVER UNDER {3}, since both are taken over the same ways in (ADA2-C2), and given where it EQUALS {3}: the
+                // shortest way in holds nothing behind its switch, and there a train longer than {3} is refused instead of
+                // standing across it - TopMainR1Inter on his railway, the platform TDA-C10 was asked about.
                 out.put(square, refusedAbove != null && refusedAbove > 0 && refusedAbove < max
                     ? new int[] {max, worst, refusedAbove} : new int[] {max, worst});
             }
@@ -9999,20 +10011,24 @@ public class AutonomySession
     }
 
     /**
-     * The measured track on the shortest way into each platform over a switch, read off the railway the setup builds
-     * (TDA-C10): what `Layout.measuredRouteIn` counts, at the least, for a route in a train can run.
+     * The figure a train is refused above at each platform, read off the railway the setup builds (TDA-C10): the least,
+     * over the notice's own ways in, of what `Layout.whyTooLongForThisRoute` refuses above on each - the larger of the
+     * room past the switch and the measured route in (`Layout.measuredRouteIn`, FR-087).
      *
      * **Off the built railway, not the squares.**  A square's copies are its directions, and which of them a train is
      * started at is the build's answer: a square that is a station can have a copy heading this way that trains may not
      * arrive at, and nobody is started there.  Read off the squares, Tunnel's notice said 3 from BottomInnerOtherside,
      * where no route the railway runs into Tunnel measures under 6.
      *
-     * **Back over every leg, as the route in counts** (ADD-C6, ADA-C4): from the leg into the platform, back through
-     * sensors nobody is started at, to a copy a train is started at - a station - or turns at, where the route in stops;
-     * and stopped at a leg with no length, as the route in is (ADA-A1).  Only from where a train can be got to at all.
-     * The least over every such way in is the figure.  Only the ways in the notice's own {3} is about - over a switch,
-     * or straight from a square trains turn at: a way in with neither is the room rule's, and quoting it beside {3} said
-     * a train is refused above less than the room it stands in.
+     * **The notice's own ways in, and only where the railway refuses on them** (ADA2-C1, ADA2-C2): a leg over a switch
+     * with something measured past it, or a leg with a length straight from a copy trains turn at - the ways `{3}` is
+     * taken over (`roomTheNoticeQuotes`), so the figure is never less than `{3}`.  A way in with nothing measured past its
+     * switch is the half-measured notice's; one with no length at all is not judged by the room rule and refuses no
+     * train, so it gives no figure and hides none.
+     *
+     * **The route in, walked back as the railway runs it** (`routesIn`): over sensors nobody is started at, to a copy a
+     * train is started at or turns at; stopped at a leg with no length (ADA-A1); never through a point that is switched
+     * off, or from or through another copy of the platform's own square (ADA2-C3).
      *
      * @param built the built railway, or null
      * @param named its point names to squares, or null to ask the builder
@@ -10026,10 +10042,11 @@ public class AutonomySession
 
         java.util.Map<String, TileKey> byName = named != null ? named : builder(null).tilesByName();
 
-        // Where a train stops, and where the route in stops: a train started there, or turned there.
+        // Where a train stops, where the route in stops - a train started there, or turned there - and where nothing runs.
         java.util.Set<String> stops = new java.util.HashSet<>();
         java.util.Set<String> setsOff = new java.util.HashSet<>();
         java.util.Set<String> turns = new java.util.HashSet<>();
+        java.util.Set<String> off = new java.util.HashSet<>();
 
         org.json.JSONArray points = built.getJSONArray("points");
 
@@ -10037,20 +10054,32 @@ public class AutonomySession
         {
             org.json.JSONObject point = points.getJSONObject(i);
 
-            if (point.optBoolean("station", false))
+            String name = point.getString("name");
+
+            // SWITCHED OFF, NOTHING PASSES (ADA2-C3): `isPathClear` refuses any route through a point that is not active.
+            if (!point.optBoolean("active", true))
             {
-                stops.add(point.getString("name"));
-                setsOff.add(point.getString("name"));
+                off.add(name);
+
+                continue;
             }
 
-            if (point.optBoolean("reversing", false)) setsOff.add(point.getString("name"));
+            if (point.optBoolean("station", false))
+            {
+                stops.add(name);
+                setsOff.add(name);
+            }
 
-            if (point.optBoolean("reversing", false) || point.optBoolean("terminus", false)) turns.add(point.getString("name"));
+            // THE ROUTE IN STOPS AT A TURN (ADD2-C5): `measuredRouteIn` counts nothing behind a copy the train turned at -
+            // on his railway a barred turning copy, which is no station, at RampDown and BottomMainPost.
+            if (point.optBoolean("reversing", false)) setsOff.add(name);
+
+            if (point.optBoolean("reversing", false) || point.optBoolean("terminus", false)) turns.add(name);
         }
 
-        // The legs into each point, and where a train can be got to at all: from a station, onward.
-        java.util.Map<String, java.util.List<org.json.JSONObject>> into = new java.util.HashMap<>();
-        java.util.Map<String, java.util.List<String>> onward = new java.util.HashMap<>();
+        // The legs the railway can run, and the notice's own ways into each platform.
+        java.util.List<org.json.JSONObject> legs = new java.util.ArrayList<>();
+        java.util.Map<TileKey, java.util.List<org.json.JSONObject>> waysIn = new java.util.LinkedHashMap<>();
 
         org.json.JSONArray edges = built.getJSONArray("edges");
 
@@ -10058,100 +10087,166 @@ public class AutonomySession
         {
             org.json.JSONObject edge = edges.getJSONObject(i);
 
-            into.computeIfAbsent(edge.getString("end"), k -> new java.util.ArrayList<>()).add(edge);
-            onward.computeIfAbsent(edge.getString("start"), k -> new java.util.ArrayList<>()).add(edge.getString("end"));
-        }
+            if (off.contains(edge.getString("start")) || off.contains(edge.getString("end"))) continue;
 
-        java.util.Set<String> reached = new java.util.HashSet<>(stops);
-        java.util.Deque<String> todo = new java.util.ArrayDeque<>(stops);
+            legs.add(edge);
 
-        while (!todo.isEmpty())
-        {
-            for (String next : onward.getOrDefault(todo.pop(), java.util.Collections.<String>emptyList()))
-            {
-                if (reached.add(next)) todo.push(next);
-            }
-        }
-
-        java.util.Map<org.json.JSONObject, Integer> known = new java.util.IdentityHashMap<>();
-
-        for (int i = 0; i < edges.length(); i++)
-        {
-            org.json.JSONObject edge = edges.getJSONObject(i);
-
-            // The notice's two branches: a leg over a switch, or one straight from a copy trains turn at.
             if (!stops.contains(edge.getString("end"))) continue;
-
-            if (!edge.has("roomAtTheEnd") && !turns.contains(edge.getString("start"))) continue;
 
             TileKey square = byName.get(edge.getString("end"));
 
-            // Not from another copy of the same square, which is no way in.
-            if (square == null || square.equals(byName.get(edge.getString("start")))) continue;
+            if (square != null && roomTheNoticeQuotes(edge, turns) > 0)
+            {
+                waysIn.computeIfAbsent(square, k -> new java.util.ArrayList<>()).add(edge);
+            }
+        }
 
-            int way = measuredWayIn(edge, into, setsOff, reached, known,
-                java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<org.json.JSONObject, Boolean>()));
+        for (java.util.Map.Entry<TileKey, java.util.List<org.json.JSONObject>> platform : waysIn.entrySet())
+        {
+            java.util.Map<org.json.JSONObject, Integer> routeIn = routesIn(platform.getKey(), byName, legs, stops, setsOff);
 
-            if (way != Integer.MAX_VALUE) out.merge(square, way, Math::min);
+            for (org.json.JSONObject edge : platform.getValue())
+            {
+                Integer walked = routeIn.get(edge);
+
+                // No train comes in this way.  A leg with no length never gets here: it quotes no room (ADA2-C1).
+                if (walked == null) continue;
+
+                out.merge(platform.getKey(), Math.max(roomTheNoticeQuotes(edge, turns), walked), Math::min);
+            }
         }
 
         return out;
     }
 
     /**
-     * The least the route in counts for a train that comes in along this built leg - `Layout.measuredRouteIn` over every
-     * way it can come - or `Integer.MAX_VALUE` where no train can (TDA-C10).
+     * The room `{3}` is taken over for a leg into a platform - `runInFigures`' own choice - or none where that notice does
+     * not read the leg: past a switch, what is measured there, -1 where nothing is; straight from a copy trains turn at,
+     * the leg's length; otherwise 0, because the room walk keeps walking back and this leg alone bounds nothing.
      *
-     * @param leg the leg
-     * @param into the legs into each point
-     * @param setsOff where the route in stops: a station copy, where a train may be started, or a turning copy
-     * @param reached the points a train can be got to at all
-     * @param known the answers already worked out
-     * @param walking the legs on the way back now, so a loop ends the walk
-     * @return the units, or `Integer.MAX_VALUE`
+     * @param leg the built leg
+     * @param turns the copies trains turn at
+     * @return the room, 0 or less where it gives none
      */
-    private static int measuredWayIn(org.json.JSONObject leg, java.util.Map<String, java.util.List<org.json.JSONObject>> into,
-        java.util.Set<String> setsOff, java.util.Set<String> reached, java.util.Map<org.json.JSONObject, Integer> known,
-        java.util.Set<org.json.JSONObject> walking)
+    private static int roomTheNoticeQuotes(org.json.JSONObject leg, java.util.Set<String> turns)
     {
-        Integer done = known.get(leg);
+        if (leg.has("roomAtTheEnd")) return leg.optInt("roomAtTheEnd", -1);
 
-        if (done != null) return done;
+        return turns.contains(leg.getString("start")) ? leg.optInt("length", 0) : 0;
+    }
 
-        String from = leg.getString("start");
+    /**
+     * The least the route in counts for a train coming along each built leg towards this platform -
+     * `Layout.measuredRouteIn` over every way the railway can run it - for the legs a train can come along (TDA-C10).
+     *
+     * **Worked out for every leg together, and lowered until nothing changes**, so a loop of sensors is walked whole.
+     * Walked one leg at a time and remembered, a leg first reached inside a loop was stored as having no way in, and a
+     * platform whose way in ran back through it lost its figure or took a larger one (ADA2-C3).
+     *
+     * - From a copy a train is started at or turns at, the leg alone: the route in stops there.
+     * - A leg with no length ends the route in, so nothing behind it counts (ADA-A1): 0.
+     * - Otherwise the leg and the least way into where it starts.
+     *
+     * Only from where a train can be got to at all without passing the platform, and never from or through another copy
+     * of its own square: a route from a platform round to itself is no journey (ADA2-C3).
+     *
+     * @param platform the platform's square
+     * @param byName the built railway's point names to squares
+     * @param legs the legs the railway can run
+     * @param stops the station copies, where a train can be started
+     * @param setsOff where the route in stops: a station copy, or a copy trains turn at
+     * @return each leg a train can come along, to the units
+     */
+    private static java.util.Map<org.json.JSONObject, Integer> routesIn(TileKey platform,
+        java.util.Map<String, TileKey> byName, java.util.List<org.json.JSONObject> legs, java.util.Set<String> stops,
+        java.util.Set<String> setsOff)
+    {
+        java.util.Set<String> own = new java.util.HashSet<>();
 
-        if (!reached.contains(from) || !walking.add(leg)) return Integer.MAX_VALUE;
-
-        int length = leg.optInt("length", 0);
-
-        int answer;
-
-        if (length <= 0)
+        for (java.util.Map.Entry<String, TileKey> point : byName.entrySet())
         {
-            // THE ROUTE IN STOPS AT A LEG WITH NO LENGTH (ADA-A1): nothing of it or behind it counts.
-            answer = 0;
+            if (platform.equals(point.getValue())) own.add(point.getKey());
         }
-        else if (setsOff.contains(from))
-        {
-            answer = length;
-        }
-        else
-        {
-            int before = Integer.MAX_VALUE;
 
-            for (org.json.JSONObject previous : into.getOrDefault(from, java.util.Collections.<org.json.JSONObject>emptyList()))
+        java.util.Map<String, java.util.List<org.json.JSONObject>> into = new java.util.HashMap<>();
+        java.util.Map<String, java.util.List<String>> onward = new java.util.HashMap<>();
+
+        for (org.json.JSONObject leg : legs)
+        {
+            into.computeIfAbsent(leg.getString("end"), k -> new java.util.ArrayList<>()).add(leg);
+            onward.computeIfAbsent(leg.getString("start"), k -> new java.util.ArrayList<>()).add(leg.getString("end"));
+        }
+
+        // Where a train can be got to: onward from a station, never through the platform.
+        java.util.Set<String> reached = new java.util.HashSet<>();
+        java.util.Deque<String> todo = new java.util.ArrayDeque<>();
+
+        for (String stop : stops)
+        {
+            if (!own.contains(stop) && reached.add(stop)) todo.push(stop);
+        }
+
+        while (!todo.isEmpty())
+        {
+            for (String next : onward.getOrDefault(todo.pop(), java.util.Collections.<String>emptyList()))
             {
-                before = Math.min(before, measuredWayIn(previous, into, setsOff, reached, known, walking));
+                if (!own.contains(next) && reached.add(next)) todo.push(next);
             }
-
-            answer = before == Integer.MAX_VALUE ? Integer.MAX_VALUE : length + before;
         }
 
-        walking.remove(leg);
+        java.util.Map<org.json.JSONObject, Integer> way = new java.util.IdentityHashMap<>();
 
-        known.put(leg, answer);
+        boolean lowered = true;
 
-        return answer;
+        while (lowered)
+        {
+            lowered = false;
+
+            for (org.json.JSONObject leg : legs)
+            {
+                String from = leg.getString("start");
+
+                if (own.contains(from) || !reached.contains(from)) continue;
+
+                int length = leg.optInt("length", 0);
+
+                Integer least;
+
+                if (length <= 0)
+                {
+                    least = 0;
+                }
+                else if (setsOff.contains(from))
+                {
+                    least = length;
+                }
+                else
+                {
+                    Integer before = null;
+
+                    for (org.json.JSONObject previous : into.getOrDefault(from,
+                        java.util.Collections.<org.json.JSONObject>emptyList()))
+                    {
+                        Integer known = way.get(previous);
+
+                        if (known != null && (before == null || known < before)) before = known;
+                    }
+
+                    least = before == null ? null : length + before;
+                }
+
+                Integer had = way.get(leg);
+
+                if (least != null && (had == null || least < had))
+                {
+                    way.put(leg, least);
+
+                    lowered = true;
+                }
+            }
+        }
+
+        return way;
     }
 
     /**

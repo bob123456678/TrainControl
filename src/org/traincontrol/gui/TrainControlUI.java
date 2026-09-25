@@ -23898,6 +23898,33 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Start's sentence and the hand doors', from one reading of the setup (ADU-C3, ADU2-C5): {why Start is refused, why a
+     * hand send is refused or null}.
+     *
+     * For the right-click menu, which shows both where Start is not offered.  Asked one after the other, the two rules
+     * walked the whole setup check four times between them - `check()` is not cached - on the event thread, while the
+     * operator is right-clicking to find out what is wrong.  The same rules as `whyAutonomyWillNotStart()` and
+     * `whyAHandSendIsRefused()`, over the same three numbers, read once.
+     *
+     * @return the two sentences, already translated
+     */
+    public String[] whyStartAndAHandSendAreRefused()
+    {
+        org.traincontrol.automationui.AutonomySession asked = getAutonomySession();
+
+        int errors = asked == null ? 0 : asked.errorCount();
+        int blocking = asked == null ? 0 : asked.blockingProblemCount();
+
+        // `hasErrors`, from the count already read.
+        boolean broken = asked != null && (asked.hasBlockingProblems() || errors > 0);
+
+        // Over a Central Station layout, the guard's own first reason, which asks nothing of the setup (REG2-C2).
+        String start = isRemoteLayout() ? whyAutonomyWillNotStart() : whyAutonomyWillNotStart(errors, blocking, broken);
+
+        return new String[] {start, broken ? whyAHandSendIsRefused(errors, blocking) : null};
+    }
+
+    /**
      * How many blocking findings the loaded setup has, or zero when there is nothing to ask.
      *
      * The number, for saying WHAT is wrong - not the question that decides (TS3-B6).

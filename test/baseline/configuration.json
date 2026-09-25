@@ -151,7 +151,7 @@
         {
           "at": "1 - Main:1,7",
           "length": 0,
-          "toMeasure": "square 1 - Main:1,7"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:1,6",
@@ -161,12 +161,12 @@
         {
           "at": "1 - Main:1,5",
           "length": 0,
-          "toMeasure": "square 1 - Main:1,5"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:1,4",
           "length": 0,
-          "toMeasure": "square 1 - Main:1,4"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:1,3",
@@ -233,12 +233,12 @@
         {
           "at": "1 - Main:1,4",
           "length": 0,
-          "toMeasure": "square 1 - Main:1,4"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:1,5",
           "length": 0,
-          "toMeasure": "square 1 - Main:1,5"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:1,6",
@@ -248,7 +248,7 @@
         {
           "at": "1 - Main:1,7",
           "length": 0,
-          "toMeasure": "square 1 - Main:1,7"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:1,8",
@@ -294,7 +294,7 @@
         {
           "at": "1 - Main:11,5",
           "length": 0,
-          "toMeasure": "square 1 - Main:11,5"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:11,4",
@@ -304,7 +304,7 @@
         {
           "at": "1 - Main:11,3",
           "length": 0,
-          "toMeasure": "square 1 - Main:11,3"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:12,3",
@@ -341,12 +341,12 @@
         {
           "at": "1 - Main:11,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:11,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:10,11/0#1",
           "length": 0,
-          "toMeasure": "square 1 - Main:10,11"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:10,10",
@@ -391,7 +391,7 @@
         {
           "at": "1 - Main:11,9",
           "length": 0,
-          "toMeasure": "square 1 - Main:11,9"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:11,8",
@@ -469,7 +469,7 @@
         {
           "at": "1 - Main:17,3",
           "length": 0,
-          "toMeasure": "square 1 - Main:17,3"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:18,3",
@@ -547,12 +547,12 @@
         {
           "at": "1 - Main:17,10",
           "length": 0,
-          "toMeasure": "square 1 - Main:17,10"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:18,10",
           "length": 0,
-          "toMeasure": "square 1 - Main:18,10"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:18,9",
@@ -618,12 +618,12 @@
         {
           "at": "1 - Main:17,10",
           "length": 0,
-          "toMeasure": "square 1 - Main:17,10"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:17,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:17,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:16,11",
@@ -643,7 +643,7 @@
         {
           "at": "1 - Main:13,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:13,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:12,11",
@@ -733,12 +733,12 @@
         {
           "at": "1 - Main:18,10",
           "length": 0,
-          "toMeasure": "square 1 - Main:18,10"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:17,10",
           "length": 0,
-          "toMeasure": "square 1 - Main:17,10"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:16,10",
@@ -789,7 +789,7 @@
         {
           "at": "1 - Main:21,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,11",
@@ -799,7 +799,7 @@
         {
           "at": "1 - Main:21,10",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,10"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,9",
@@ -879,7 +879,7 @@
         {
           "at": "1 - Main:21,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,11",
@@ -889,7 +889,7 @@
         {
           "at": "1 - Main:21,10",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,10"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,9",
@@ -989,7 +989,7 @@
         {
           "at": "1 - Main:13,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:13,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:12,12",
@@ -1004,7 +1004,7 @@
         {
           "at": "1 - Main:10,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:10,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:9,12",
@@ -1098,7 +1098,7 @@
         {
           "at": "1 - Main:13,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:13,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:12,12",
@@ -1113,17 +1113,17 @@
         {
           "at": "1 - Main:10,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:10,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:10,11/0#0",
           "length": 0,
-          "toMeasure": "square 1 - Main:10,11"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:9,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:9,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:9,10",
@@ -1205,12 +1205,12 @@
         {
           "at": "1 - Main:21,13",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,13"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,11",
@@ -1220,7 +1220,7 @@
         {
           "at": "1 - Main:21,10",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,10"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,9",
@@ -1304,12 +1304,12 @@
         {
           "at": "1 - Main:21,13",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,13"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,11",
@@ -1319,7 +1319,7 @@
         {
           "at": "1 - Main:21,10",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,10"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,9",
@@ -1403,17 +1403,17 @@
         {
           "at": "1 - Main:21,14",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,14"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,13",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,13"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,11",
@@ -1423,7 +1423,7 @@
         {
           "at": "1 - Main:21,10",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,10"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,9",
@@ -1519,17 +1519,17 @@
         {
           "at": "1 - Main:21,14",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,14"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,13",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,13"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,11",
@@ -1539,7 +1539,7 @@
         {
           "at": "1 - Main:21,10",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,10"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,9",
@@ -1663,7 +1663,7 @@
         {
           "at": "1 - Main:11,13",
           "length": 0,
-          "toMeasure": "square 1 - Main:11,13"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:10,13",
@@ -1696,12 +1696,12 @@
         {
           "at": "1 - Main:1,1",
           "length": 0,
-          "toMeasure": "square 1 - Main:1,1"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:0,1",
           "length": 0,
-          "toMeasure": "square 1 - Main:0,1"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:0,2",
@@ -1740,7 +1740,7 @@
         {
           "at": "1 - Main:1,1",
           "length": 0,
-          "toMeasure": "square 1 - Main:1,1"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:1,2",
@@ -1783,22 +1783,22 @@
         {
           "at": "1 - Main:20,9",
           "length": 0,
-          "toMeasure": "square 1 - Main:20,9"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:20,10/0#0",
           "length": 0,
-          "toMeasure": "square 1 - Main:20,10"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:19,10/0#1",
           "length": 0,
-          "toMeasure": "square 1 - Main:19,10"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:19,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:19,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:18,11",
@@ -1808,7 +1808,7 @@
         {
           "at": "1 - Main:17,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:17,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:16,11",
@@ -1828,7 +1828,7 @@
         {
           "at": "1 - Main:13,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:13,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:12,11",
@@ -1918,22 +1918,22 @@
         {
           "at": "1 - Main:20,9",
           "length": 0,
-          "toMeasure": "square 1 - Main:20,9"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:20,10/0#0",
           "length": 0,
-          "toMeasure": "square 1 - Main:20,10"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:19,10/0#1",
           "length": 0,
-          "toMeasure": "square 1 - Main:19,10"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:19,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:19,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:18,11",
@@ -1943,7 +1943,7 @@
         {
           "at": "1 - Main:17,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:17,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:16,11",
@@ -1963,7 +1963,7 @@
         {
           "at": "1 - Main:13,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:13,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:12,11",
@@ -2053,7 +2053,7 @@
         {
           "at": "1 - Main:20,9",
           "length": 0,
-          "toMeasure": "square 1 - Main:20,9"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:19,9",
@@ -2063,17 +2063,17 @@
         {
           "at": "1 - Main:19,10/0#0",
           "length": 0,
-          "toMeasure": "square 1 - Main:19,10"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:18,10",
           "length": 0,
-          "toMeasure": "square 1 - Main:18,10"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:17,10",
           "length": 0,
-          "toMeasure": "square 1 - Main:17,10"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:16,10",
@@ -2159,7 +2159,7 @@
         {
           "at": "1 - Main:20,9",
           "length": 0,
-          "toMeasure": "square 1 - Main:20,9"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:19,9",
@@ -2169,17 +2169,17 @@
         {
           "at": "1 - Main:19,10/0#0",
           "length": 0,
-          "toMeasure": "square 1 - Main:19,10"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:18,10",
           "length": 0,
-          "toMeasure": "square 1 - Main:18,10"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:17,10",
           "length": 0,
-          "toMeasure": "square 1 - Main:17,10"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:16,10",
@@ -2468,7 +2468,7 @@
         {
           "at": "1 - Main:21,10",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,10"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,11",
@@ -2478,7 +2478,7 @@
         {
           "at": "1 - Main:21,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:20,12",
@@ -2558,7 +2558,7 @@
         {
           "at": "1 - Main:21,10",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,10"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,11",
@@ -2568,7 +2568,7 @@
         {
           "at": "1 - Main:21,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:20,12",
@@ -2648,7 +2648,7 @@
         {
           "at": "1 - Main:21,10",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,10"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,11",
@@ -2658,12 +2658,12 @@
         {
           "at": "1 - Main:21,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,13",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,13"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:20,13",
@@ -2746,7 +2746,7 @@
         {
           "at": "1 - Main:21,10",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,10"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,11",
@@ -2756,12 +2756,12 @@
         {
           "at": "1 - Main:21,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:21,13",
           "length": 0,
-          "toMeasure": "square 1 - Main:21,13"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:20,13",
@@ -3066,17 +3066,17 @@
         {
           "at": "1 - Main:3,2",
           "length": 0,
-          "toMeasure": "square 1 - Main:3,2"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:4,2",
           "length": 0,
-          "toMeasure": "square 1 - Main:4,2"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:5,2",
           "length": 0,
-          "toMeasure": "square 1 - Main:5,2"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,2",
@@ -3189,12 +3189,12 @@
         {
           "at": "1 - Main:4,2",
           "length": 0,
-          "toMeasure": "square 1 - Main:4,2"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:5,2",
           "length": 0,
-          "toMeasure": "square 1 - Main:5,2"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,2",
@@ -3350,7 +3350,7 @@
         {
           "at": "1 - Main:5,2",
           "length": 0,
-          "toMeasure": "square 1 - Main:5,2"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,2",
@@ -3924,17 +3924,17 @@
         {
           "at": "1 - Main:5,2",
           "length": 0,
-          "toMeasure": "square 1 - Main:5,2"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:4,2",
           "length": 0,
-          "toMeasure": "square 1 - Main:4,2"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:3,2",
           "length": 0,
-          "toMeasure": "square 1 - Main:3,2"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:3,3",
@@ -3990,12 +3990,12 @@
         {
           "at": "1 - Main:5,2",
           "length": 0,
-          "toMeasure": "square 1 - Main:5,2"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:4,2",
           "length": 0,
-          "toMeasure": "square 1 - Main:4,2"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:4,3",
@@ -4050,7 +4050,7 @@
         {
           "at": "1 - Main:5,2",
           "length": 0,
-          "toMeasure": "square 1 - Main:5,2"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:5,3",
@@ -4118,7 +4118,7 @@
         {
           "at": "1 - Main:6,3",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,3"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:7,3",
@@ -4138,7 +4138,7 @@
         {
           "at": "1 - Main:10,3",
           "length": 0,
-          "toMeasure": "square 1 - Main:10,3"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:10,4",
@@ -4148,7 +4148,7 @@
         {
           "at": "1 - Main:10,5",
           "length": 0,
-          "toMeasure": "square 1 - Main:10,5"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:10,6",
@@ -4206,7 +4206,7 @@
         {
           "at": "1 - Main:6,3",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,3"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:7,3",
@@ -4226,12 +4226,12 @@
         {
           "at": "1 - Main:10,3",
           "length": 0,
-          "toMeasure": "square 1 - Main:10,3"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:11,3",
           "length": 0,
-          "toMeasure": "square 1 - Main:11,3"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:12,3",
@@ -4283,7 +4283,7 @@
         {
           "at": "1 - Main:8,7",
           "length": 0,
-          "toMeasure": "square 1 - Main:8,7"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:8,8",
@@ -4298,7 +4298,7 @@
         {
           "at": "1 - Main:6,8",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,8"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,9",
@@ -4318,7 +4318,7 @@
         {
           "at": "1 - Main:6,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:7,12",
@@ -4424,7 +4424,7 @@
         {
           "at": "1 - Main:8,7",
           "length": 0,
-          "toMeasure": "square 1 - Main:8,7"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:8,8",
@@ -4439,7 +4439,7 @@
         {
           "at": "1 - Main:6,8",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,8"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,9",
@@ -4459,7 +4459,7 @@
         {
           "at": "1 - Main:6,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,13",
@@ -4575,7 +4575,7 @@
         {
           "at": "1 - Main:10,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:10,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:11,12",
@@ -4590,12 +4590,12 @@
         {
           "at": "1 - Main:13,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:13,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:13,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:13,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:14,11",
@@ -4615,12 +4615,12 @@
         {
           "at": "1 - Main:17,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:17,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:17,10",
           "length": 0,
-          "toMeasure": "square 1 - Main:17,10"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:17,9",
@@ -4739,7 +4739,7 @@
         {
           "at": "1 - Main:10,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:10,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:11,12",
@@ -4754,7 +4754,7 @@
         {
           "at": "1 - Main:13,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:13,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:14,12",
@@ -4848,7 +4848,7 @@
         {
           "at": "1 - Main:10,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:10,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:11,12",
@@ -4863,12 +4863,12 @@
         {
           "at": "1 - Main:13,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:13,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:13,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:13,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:14,11",
@@ -4888,7 +4888,7 @@
         {
           "at": "1 - Main:17,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:17,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:18,11",
@@ -4898,22 +4898,22 @@
         {
           "at": "1 - Main:19,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:19,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:19,10/0#1",
           "length": 0,
-          "toMeasure": "square 1 - Main:19,10"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:20,10/0#0",
           "length": 0,
-          "toMeasure": "square 1 - Main:20,10"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:20,9",
           "length": 0,
-          "toMeasure": "square 1 - Main:20,9"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:20,8",
@@ -5032,7 +5032,7 @@
         {
           "at": "1 - Main:10,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:10,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:11,12",
@@ -5047,12 +5047,12 @@
         {
           "at": "1 - Main:13,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:13,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:13,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:13,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:14,11",
@@ -5072,7 +5072,7 @@
         {
           "at": "1 - Main:17,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:17,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:18,11",
@@ -5082,22 +5082,22 @@
         {
           "at": "1 - Main:19,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:19,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:19,10/0#1",
           "length": 0,
-          "toMeasure": "square 1 - Main:19,10"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:20,10/0#0",
           "length": 0,
-          "toMeasure": "square 1 - Main:20,10"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:20,9",
           "length": 0,
-          "toMeasure": "square 1 - Main:20,9"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:20,8",
@@ -5216,7 +5216,7 @@
         {
           "at": "1 - Main:6,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,11",
@@ -5236,7 +5236,7 @@
         {
           "at": "1 - Main:6,8",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,8"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,7",
@@ -5329,7 +5329,7 @@
         {
           "at": "1 - Main:6,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,11",
@@ -5349,7 +5349,7 @@
         {
           "at": "1 - Main:6,8",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,8"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:7,8",
@@ -5364,7 +5364,7 @@
         {
           "at": "1 - Main:8,7",
           "length": 0,
-          "toMeasure": "square 1 - Main:8,7"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:7,7",
@@ -5470,7 +5470,7 @@
         {
           "at": "1 - Main:6,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,11",
@@ -5490,7 +5490,7 @@
         {
           "at": "1 - Main:6,8",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,8"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:7,8",
@@ -5505,7 +5505,7 @@
         {
           "at": "1 - Main:8,7",
           "length": 0,
-          "toMeasure": "square 1 - Main:8,7"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:8,6",
@@ -5606,7 +5606,7 @@
         {
           "at": "1 - Main:6,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,11",
@@ -5626,7 +5626,7 @@
         {
           "at": "1 - Main:6,8",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,8"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:7,8",
@@ -5641,7 +5641,7 @@
         {
           "at": "1 - Main:8,7",
           "length": 0,
-          "toMeasure": "square 1 - Main:8,7"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:9,7",
@@ -5742,7 +5742,7 @@
         {
           "at": "1 - Main:8,7",
           "length": 0,
-          "toMeasure": "square 1 - Main:8,7"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:8,8",
@@ -5757,7 +5757,7 @@
         {
           "at": "1 - Main:6,8",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,8"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,9",
@@ -5777,7 +5777,7 @@
         {
           "at": "1 - Main:6,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:7,12",
@@ -5878,7 +5878,7 @@
         {
           "at": "1 - Main:8,7",
           "length": 0,
-          "toMeasure": "square 1 - Main:8,7"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:8,8",
@@ -5893,7 +5893,7 @@
         {
           "at": "1 - Main:6,8",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,8"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,9",
@@ -5913,7 +5913,7 @@
         {
           "at": "1 - Main:6,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,13",
@@ -6029,7 +6029,7 @@
         {
           "at": "1 - Main:11,13",
           "length": 0,
-          "toMeasure": "square 1 - Main:11,13"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:12,13",
@@ -6100,7 +6100,7 @@
         {
           "at": "1 - Main:11,13",
           "length": 0,
-          "toMeasure": "square 1 - Main:11,13"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:11,14",
@@ -6165,7 +6165,7 @@
         {
           "at": "1 - Main:11,13",
           "length": 0,
-          "toMeasure": "square 1 - Main:11,13"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:11,14",
@@ -6240,7 +6240,7 @@
         {
           "at": "1 - Main:6,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,11",
@@ -6260,7 +6260,7 @@
         {
           "at": "1 - Main:6,8",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,8"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,7",
@@ -6363,7 +6363,7 @@
         {
           "at": "1 - Main:6,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,11",
@@ -6383,7 +6383,7 @@
         {
           "at": "1 - Main:6,8",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,8"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:7,8",
@@ -6398,7 +6398,7 @@
         {
           "at": "1 - Main:8,7",
           "length": 0,
-          "toMeasure": "square 1 - Main:8,7"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:7,7",
@@ -6514,7 +6514,7 @@
         {
           "at": "1 - Main:6,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,11",
@@ -6534,7 +6534,7 @@
         {
           "at": "1 - Main:6,8",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,8"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:7,8",
@@ -6549,7 +6549,7 @@
         {
           "at": "1 - Main:8,7",
           "length": 0,
-          "toMeasure": "square 1 - Main:8,7"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:8,6",
@@ -6660,7 +6660,7 @@
         {
           "at": "1 - Main:6,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,11",
@@ -6680,7 +6680,7 @@
         {
           "at": "1 - Main:6,8",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,8"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:7,8",
@@ -6695,7 +6695,7 @@
         {
           "at": "1 - Main:8,7",
           "length": 0,
-          "toMeasure": "square 1 - Main:8,7"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:9,7",
@@ -6801,7 +6801,7 @@
         {
           "at": "1 - Main:8,7",
           "length": 0,
-          "toMeasure": "square 1 - Main:8,7"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:8,8",
@@ -6816,7 +6816,7 @@
         {
           "at": "1 - Main:6,8",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,8"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,9",
@@ -6836,7 +6836,7 @@
         {
           "at": "1 - Main:6,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:7,12",
@@ -6942,7 +6942,7 @@
         {
           "at": "1 - Main:8,7",
           "length": 0,
-          "toMeasure": "square 1 - Main:8,7"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:8,8",
@@ -6957,7 +6957,7 @@
         {
           "at": "1 - Main:6,8",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,8"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,9",
@@ -6977,7 +6977,7 @@
         {
           "at": "1 - Main:6,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:6,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:6,13",
@@ -7093,17 +7093,17 @@
         {
           "at": "1 - Main:9,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:9,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:10,11/0#0",
           "length": 0,
-          "toMeasure": "square 1 - Main:10,11"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:10,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:10,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:11,12",
@@ -7118,12 +7118,12 @@
         {
           "at": "1 - Main:13,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:13,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:13,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:13,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:14,11",
@@ -7143,12 +7143,12 @@
         {
           "at": "1 - Main:17,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:17,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:17,10",
           "length": 0,
-          "toMeasure": "square 1 - Main:17,10"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:17,9",
@@ -7275,17 +7275,17 @@
         {
           "at": "1 - Main:9,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:9,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:10,11/0#0",
           "length": 0,
-          "toMeasure": "square 1 - Main:10,11"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:10,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:10,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:11,12",
@@ -7300,7 +7300,7 @@
         {
           "at": "1 - Main:13,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:13,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:14,12",
@@ -7402,17 +7402,17 @@
         {
           "at": "1 - Main:9,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:9,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:10,11/0#0",
           "length": 0,
-          "toMeasure": "square 1 - Main:10,11"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:10,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:10,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:11,12",
@@ -7427,12 +7427,12 @@
         {
           "at": "1 - Main:13,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:13,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:13,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:13,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:14,11",
@@ -7452,7 +7452,7 @@
         {
           "at": "1 - Main:17,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:17,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:18,11",
@@ -7462,22 +7462,22 @@
         {
           "at": "1 - Main:19,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:19,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:19,10/0#1",
           "length": 0,
-          "toMeasure": "square 1 - Main:19,10"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:20,10/0#0",
           "length": 0,
-          "toMeasure": "square 1 - Main:20,10"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:20,9",
           "length": 0,
-          "toMeasure": "square 1 - Main:20,9"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:20,8",
@@ -7604,17 +7604,17 @@
         {
           "at": "1 - Main:9,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:9,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:10,11/0#0",
           "length": 0,
-          "toMeasure": "square 1 - Main:10,11"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:10,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:10,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:11,12",
@@ -7629,12 +7629,12 @@
         {
           "at": "1 - Main:13,12",
           "length": 0,
-          "toMeasure": "square 1 - Main:13,12"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:13,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:13,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:14,11",
@@ -7654,7 +7654,7 @@
         {
           "at": "1 - Main:17,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:17,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:18,11",
@@ -7664,22 +7664,22 @@
         {
           "at": "1 - Main:19,11",
           "length": 0,
-          "toMeasure": "square 1 - Main:19,11"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:19,10/0#1",
           "length": 0,
-          "toMeasure": "square 1 - Main:19,10"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:20,10/0#0",
           "length": 0,
-          "toMeasure": "square 1 - Main:20,10"
+          "toMeasure": "crossings on 1 - Main"
         },
         {
           "at": "1 - Main:20,9",
           "length": 0,
-          "toMeasure": "square 1 - Main:20,9"
+          "toMeasure": "switches on 1 - Main"
         },
         {
           "at": "1 - Main:20,8",
@@ -7801,7 +7801,7 @@
         {
           "at": "2 - Bottom:12,13",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:12,13"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:13,13",
@@ -7859,7 +7859,7 @@
         {
           "at": "2 - Bottom:12,13",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:12,13"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:12,12",
@@ -7879,7 +7879,7 @@
         {
           "at": "2 - Bottom:13,10",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:13,10"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:13,9",
@@ -7894,17 +7894,17 @@
         {
           "at": "2 - Bottom:14,8",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:14,8"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:14,7",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:14,7"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:13,7",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:13,7"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:13,6",
@@ -7989,7 +7989,7 @@
         {
           "at": "2 - Bottom:12,13",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:12,13"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:12,12",
@@ -8009,7 +8009,7 @@
         {
           "at": "2 - Bottom:13,10",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:13,10"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:14,10",
@@ -8073,7 +8073,7 @@
         {
           "at": "2 - Bottom:12,13",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:12,13"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:12,12",
@@ -8093,7 +8093,7 @@
         {
           "at": "2 - Bottom:13,10",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:13,10"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:13,9",
@@ -8108,22 +8108,22 @@
         {
           "at": "2 - Bottom:14,8",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:14,8"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:14,7",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:14,7"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:14,6",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:14,6"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:14,5",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:14,5"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:14,4",
@@ -8207,7 +8207,7 @@
         {
           "at": "2 - Bottom:12,13",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:12,13"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:12,12",
@@ -8227,7 +8227,7 @@
         {
           "at": "2 - Bottom:13,10",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:13,10"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:13,9",
@@ -8242,27 +8242,27 @@
         {
           "at": "2 - Bottom:14,8",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:14,8"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:14,7",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:14,7"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:14,6",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:14,6"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:14,5",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:14,5"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:15,5/0#0",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:15,5"
+          "toMeasure": "crossings on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:15,4",
@@ -8346,7 +8346,7 @@
         {
           "at": "2 - Bottom:12,13",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:12,13"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:12,12",
@@ -8366,7 +8366,7 @@
         {
           "at": "2 - Bottom:13,10",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:13,10"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:13,9",
@@ -8381,27 +8381,27 @@
         {
           "at": "2 - Bottom:14,8",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:14,8"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:14,7",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:14,7"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:14,6",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:14,6"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:15,6/0#0",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:15,6"
+          "toMeasure": "crossings on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:15,5/0#1",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:15,5"
+          "toMeasure": "crossings on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:16,5",
@@ -8481,7 +8481,7 @@
         {
           "at": "2 - Bottom:12,13",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:12,13"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:12,12",
@@ -8501,7 +8501,7 @@
         {
           "at": "2 - Bottom:13,10",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:13,10"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:13,9",
@@ -8516,12 +8516,12 @@
         {
           "at": "2 - Bottom:14,8",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:14,8"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:15,8",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:15,8"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:15,9",
@@ -8598,7 +8598,7 @@
         {
           "at": "2 - Bottom:12,13",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:12,13"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:12,12",
@@ -8618,7 +8618,7 @@
         {
           "at": "2 - Bottom:13,10",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:13,10"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:13,9",
@@ -8633,12 +8633,12 @@
         {
           "at": "2 - Bottom:14,8",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:14,8"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:14,7",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:14,7"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:15,7",
@@ -8648,7 +8648,7 @@
         {
           "at": "2 - Bottom:15,6/0#1",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:15,6"
+          "toMeasure": "crossings on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:16,6",
@@ -8729,7 +8729,7 @@
         {
           "at": "2 - Bottom:12,13",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:12,13"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:12,12",
@@ -8749,7 +8749,7 @@
         {
           "at": "2 - Bottom:13,10",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:13,10"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:13,9",
@@ -8764,12 +8764,12 @@
         {
           "at": "2 - Bottom:14,8",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:14,8"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:15,8",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:15,8"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:16,8",
@@ -8846,7 +8846,7 @@
         {
           "at": "2 - Bottom:14,13",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:14,13"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:15,13",
@@ -8885,7 +8885,7 @@
         {
           "at": "2 - Bottom:14,13",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:14,13"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:14,12",
@@ -8895,7 +8895,7 @@
         {
           "at": "2 - Bottom:15,12",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:15,12"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:16,12",
@@ -8948,7 +8948,7 @@
         {
           "at": "2 - Bottom:10,14",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:10,14"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:9,14",
@@ -8991,17 +8991,17 @@
         {
           "at": "2 - Bottom:10,14",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:10,14"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:10,13/0#0",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:10,13"
+          "toMeasure": "crossings on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:9,13",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:9,13"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:8,13",
@@ -9148,7 +9148,7 @@
         {
           "at": "2 - Bottom:14,14",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:14,14"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:13,14",
@@ -9177,7 +9177,7 @@
         {
           "at": "2 - Bottom:6,14",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:6,14"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:5,14",
@@ -9187,7 +9187,7 @@
         {
           "at": "2 - Bottom:4,14",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:4,14"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:3,14",
@@ -9261,12 +9261,12 @@
         {
           "at": "2 - Bottom:6,14",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:6,14"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:6,13",
           "length": 0,
-          "toMeasure": "square 2 - Bottom:6,13"
+          "toMeasure": "switches on 2 - Bottom"
         },
         {
           "at": "2 - Bottom:7,13",
