@@ -40,7 +40,8 @@ public class AutonomySession
 
     private List<LayoutDiagram> pages = new ArrayList<>();
     private TileGraph graph;
-    private GraphReducer reducer;
+    // VOLATILE, AND HANDED OUT ONLY ONCE REDUCED (OB-298, ADA-C2) - see `rebuild`.
+    private volatile GraphReducer reducer;
 
     private boolean dirty = false;
 
@@ -439,8 +440,15 @@ public class AutonomySession
 
         graph.validatePortals();
 
-        reducer = new GraphReducer(graph, store.asAuthored());
-        reducer.reduce();
+        // HANDED OUT ONLY ONCE REDUCED (OB-298, ADA-C2).  This assigned the field a line before reducing, so a build asking
+        // for the reducer in between walked lists being filled - the incident OB-298 was filed from - and, once `reduce`
+        // swapped its lists whole, got the empty ones a new reducer starts with, silently.  Whichever thread rebuilds, a
+        // reader now holds the old railway or the whole new one.
+        GraphReducer fresh = new GraphReducer(graph, store.asAuthored());
+
+        fresh.reduce();
+
+        reducer = fresh;
 
         // Now, on this thread, rather than on whichever thread happens to ask first
         deriveStationIndex();
@@ -3602,7 +3610,8 @@ public class AutonomySession
         if (stretch == null || wholeLength < 0 || measuredIn(stretch) > 0) return false;
 
         // A DELIBERATE 0 IS AN ANSWER (OB-274): every square of the piece is recorded as answered, so the walk does
-        // not offer it again, and every length rule goes on reading it as unmeasured.
+        // not offer it again, and every length rule but the Atomic Routes gate and its escape (TDU-C6) goes on reading it
+        // as unmeasured.
         if (wholeLength == 0)
         {
             for (TileKey tile : stretch.getTiles()) store.answerTileLengthZero(tile);
@@ -3655,7 +3664,8 @@ public class AutonomySession
         {
             if (store.getTileLength(tile) > 0) continue;
 
-            // 0 ANSWERS IT (OB-274) - two switches back to back are his adjacent tracks - and reads as unmeasured.
+            // 0 ANSWERS IT (OB-274) - two switches back to back are his adjacent tracks - and reads as unmeasured to every
+            // length rule but the Atomic Routes gate and its escape (TDU-C6).
             if (length == 0)
             {
                 if (store.isTileLengthAnswered(tile)) continue;
@@ -4435,20 +4445,32 @@ public class AutonomySession
             .withProtectingSignals(protectingSignalNames())
             .withEntrySignals(entrySignalNames())
             .withBlockingPoints(store.getBlockingPoints())
-            .withPieceCuts(pieceCuts());
+            .withPiecesToMeasure(piecesToMeasure());
     }
 
     /**
-     * The squares that cut a stretch into the pieces Mass Assign Lengths asks for: every switch and every square two
-     * roads cross (OB-297).
+     * What Mass Assign Lengths would ask a length for, square by square: each square of a piece still wanting one, keyed
+     * by the piece; and each switch and shared square still wanting one, keyed by itself (OB-297, ADA-C1).
      *
-     * @return the squares
+     * @return the squares, each to the key of what it is asked for in
      */
-    private java.util.Set<TileKey> pieceCuts()
+    private java.util.Map<TileKey, String> piecesToMeasure()
     {
-        java.util.Set<TileKey> out = new LinkedHashSet<>(switchesALengthRuleReads());
+        java.util.Map<TileKey, String> out = new LinkedHashMap<>();
 
-        out.addAll(sharedSquaresALengthRuleReads());
+        int piece = 0;
+
+        for (Stretch stretch : stretchesNeedingALength())
+        {
+            piece++;
+
+            for (TileKey tile : stretch.getTiles()) out.put(tile, "piece " + piece);
+        }
+
+        for (TileKey tile : squaresNeedingALength())
+        {
+            if (!out.containsKey(tile)) out.put(tile, "square " + tile);
+        }
 
         return out;
     }
@@ -8614,7 +8636,8 @@ public class AutonomySession
      * Answers these squares 0 on purpose, replacing any length they had, and re-derives once (Adam, 2026-09-23).
      *
      * What Segment Length's 0 means since *"no, add a clear button"*: a 0 typed there is the same answer a 0 in Mass
-     * Assign Lengths is (OB-274) - kept, not offered again, and read as unmeasured by every rule.  Clearing a length is
+     * Assign Lengths is (OB-274) - kept, not offered again, and read as unmeasured by every length rule but the Atomic
+     * Routes gate and its escape (TDU-C6).  Clearing a length is
      * `setTileLength(tile, 0)`, which removes the answer as well.
      *
      * @param tiles the squares
@@ -9758,9 +9781,9 @@ public class AutonomySession
             {
                 if (!arriving.getEnd().equals(square)) continue;
 
-                // NOT A SIDE NO TRAIN ARRIVES BY (MT-552; Adam, 2026-09-24, of RampDown and BottomMainPost: *"they only
-                // accept arrivals from one side"*).  A barred side is an approach no train uses, so nothing about its
-                // track can refuse one - and the walk the rule stands for never starts from it.
+                // NOT A SIDE NO TRAIN STOPS FROM (MT-552; Adam, 2026-09-24, of RampDown and BottomMainPost: *"they only
+                // accept arrivals from one side"*).  A train may come in that way and turn (TDA-C8), but none stops there,
+                // so nothing about its track can refuse one - and the walk the rule stands for never starts from it.
                 if (getBarredArrivals(square).contains(arriving.getEntrySide())) continue;
 
                 boolean anyMeasured = false;
@@ -9896,9 +9919,9 @@ public class AutonomySession
             {
                 if (!arriving.getEnd().equals(square)) continue;
 
-                // NOT A SIDE NO TRAIN ARRIVES BY (MT-552; Adam, 2026-09-24, of RampDown and BottomMainPost: *"they only
-                // accept arrivals from one side"*).  A barred side is an approach no train uses, so nothing about its
-                // track can refuse one - and the walk the rule stands for never starts from it.
+                // NOT A SIDE NO TRAIN STOPS FROM (MT-552; Adam, 2026-09-24, of RampDown and BottomMainPost: *"they only
+                // accept arrivals from one side"*).  A train may come in that way and turn (TDA-C8), but none stops there,
+                // so nothing about its track can refuse one - and the walk the rule stands for never starts from it.
                 if (getBarredArrivals(square).contains(arriving.getEntrySide())) continue;
 
                 int room = arriving.getRoomAtTheEnd();
@@ -9913,7 +9936,7 @@ public class AutonomySession
                 // approach is measured, which the rule asks first (PRW-B1), and only where the stop is one the berth
                 // rule refuses on: another road runs over it (TDA5-C1) - so the room walk's figure is not quoted
                 // either.  Squares nobody has answered are the half-measured notice's to name, and this one says nothing;
-                // answered 0 on purpose, they are named by nothing else, and this one says 0.
+                // answered 0 on purpose, they are the berth's own warning's (TDA4-C2), and this one says nothing either.
                 boolean theBerthRulesFigure = false;
 
                 if (!isAutoDestination(square))
@@ -9976,16 +9999,20 @@ public class AutonomySession
     }
 
     /**
-     * The measured track on the shortest way into each square, read off the railway the setup builds (TDA-C10): what
-     * `Layout.measuredRouteIn` counts for a train that sets off from the copy right behind - a station copy, where a
-     * train is started, or a turning copy, where the route in stops.
+     * The measured track on the shortest way into each platform over a switch, read off the railway the setup builds
+     * (TDA-C10): what `Layout.measuredRouteIn` counts, at the least, for a route in a train can run.
      *
      * **Off the built railway, not the squares.**  A square's copies are its directions, and which of them a train is
-     * started at is the build's answer: a square that is a station can have a copy heading this way that is not one,
-     * because trains may not arrive at it from behind.  Read off the squares, Tunnel's notice said 3 from
-     * BottomInnerOtherside, where no route the railway runs into Tunnel measures under 6.  Only the leg straight from
-     * such a copy is counted: a way in from further back measures at least as much, so a figure it might lower is left
-     * unsaid rather than guessed - a notice without a figure, never a figure the railway does not refuse at.
+     * started at is the build's answer: a square that is a station can have a copy heading this way that trains may not
+     * arrive at, and nobody is started there.  Read off the squares, Tunnel's notice said 3 from BottomInnerOtherside,
+     * where no route the railway runs into Tunnel measures under 6.
+     *
+     * **Back over every leg, as the route in counts** (ADD-C6, ADA-C4): from the leg into the platform, back through
+     * sensors nobody is started at, to a copy a train is started at - a station - or turns at, where the route in stops;
+     * and stopped at a leg with no length, as the route in is (ADA-A1).  Only from where a train can be got to at all.
+     * The least over every such way in is the figure.  Only the ways in the notice's own {3} is about - over a switch,
+     * or straight from a square trains turn at: a way in with neither is the room rule's, and quoting it beside {3} said
+     * a train is refused above less than the room it stands in.
      *
      * @param built the built railway, or null
      * @param named its point names to squares, or null to ask the builder
@@ -9999,9 +10026,10 @@ public class AutonomySession
 
         java.util.Map<String, TileKey> byName = named != null ? named : builder(null).tilesByName();
 
-        // Where a train stops, and where it may be started or has turned.
+        // Where a train stops, and where the route in stops: a train started there, or turned there.
         java.util.Set<String> stops = new java.util.HashSet<>();
         java.util.Set<String> setsOff = new java.util.HashSet<>();
+        java.util.Set<String> turns = new java.util.HashSet<>();
 
         org.json.JSONArray points = built.getJSONArray("points");
 
@@ -10016,7 +10044,13 @@ public class AutonomySession
             }
 
             if (point.optBoolean("reversing", false)) setsOff.add(point.getString("name"));
+
+            if (point.optBoolean("reversing", false) || point.optBoolean("terminus", false)) turns.add(point.getString("name"));
         }
+
+        // The legs into each point, and where a train can be got to at all: from a station, onward.
+        java.util.Map<String, java.util.List<org.json.JSONObject>> into = new java.util.HashMap<>();
+        java.util.Map<String, java.util.List<String>> onward = new java.util.HashMap<>();
 
         org.json.JSONArray edges = built.getJSONArray("edges");
 
@@ -10024,42 +10058,100 @@ public class AutonomySession
         {
             org.json.JSONObject edge = edges.getJSONObject(i);
 
-            if (!stops.contains(edge.getString("end")) || !setsOff.contains(edge.getString("start"))) continue;
+            into.computeIfAbsent(edge.getString("end"), k -> new java.util.ArrayList<>()).add(edge);
+            onward.computeIfAbsent(edge.getString("start"), k -> new java.util.ArrayList<>()).add(edge.getString("end"));
+        }
+
+        java.util.Set<String> reached = new java.util.HashSet<>(stops);
+        java.util.Deque<String> todo = new java.util.ArrayDeque<>(stops);
+
+        while (!todo.isEmpty())
+        {
+            for (String next : onward.getOrDefault(todo.pop(), java.util.Collections.<String>emptyList()))
+            {
+                if (reached.add(next)) todo.push(next);
+            }
+        }
+
+        java.util.Map<org.json.JSONObject, Integer> known = new java.util.IdentityHashMap<>();
+
+        for (int i = 0; i < edges.length(); i++)
+        {
+            org.json.JSONObject edge = edges.getJSONObject(i);
+
+            // The notice's two branches: a leg over a switch, or one straight from a copy trains turn at.
+            if (!stops.contains(edge.getString("end"))) continue;
+
+            if (!edge.has("roomAtTheEnd") && !turns.contains(edge.getString("start"))) continue;
 
             TileKey square = byName.get(edge.getString("end"));
 
             // Not from another copy of the same square, which is no way in.
             if (square == null || square.equals(byName.get(edge.getString("start")))) continue;
 
-            if (!isMeasuredOnTheRailway(edge)) continue;
+            int way = measuredWayIn(edge, into, setsOff, reached, known,
+                java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<org.json.JSONObject, Boolean>()));
 
-            out.merge(square, Math.max(0, edge.optInt("length", 0)), Math::min);
+            if (way != Integer.MAX_VALUE) out.merge(square, way, Math::min);
         }
 
         return out;
     }
 
     /**
-     * Whether a built edge is measured as the railway reads it, `Edge.isMeasured`: a length, or every place on it
-     * answered 0 (TDU-C6).
+     * The least the route in counts for a train that comes in along this built leg - `Layout.measuredRouteIn` over every
+     * way it can come - or `Integer.MAX_VALUE` where no train can (TDA-C10).
      *
-     * @param edge the edge, as built
-     * @return true when it is measured
+     * @param leg the leg
+     * @param into the legs into each point
+     * @param setsOff where the route in stops: a station copy, where a train may be started, or a turning copy
+     * @param reached the points a train can be got to at all
+     * @param known the answers already worked out
+     * @param walking the legs on the way back now, so a loop ends the walk
+     * @return the units, or `Integer.MAX_VALUE`
      */
-    private static boolean isMeasuredOnTheRailway(org.json.JSONObject edge)
+    private static int measuredWayIn(org.json.JSONObject leg, java.util.Map<String, java.util.List<org.json.JSONObject>> into,
+        java.util.Set<String> setsOff, java.util.Set<String> reached, java.util.Map<org.json.JSONObject, Integer> known,
+        java.util.Set<org.json.JSONObject> walking)
     {
-        if (edge.optInt("length", 0) > 0) return true;
+        Integer done = known.get(leg);
 
-        org.json.JSONArray places = edge.optJSONArray("places");
+        if (done != null) return done;
 
-        if (places == null || places.length() == 0) return false;
+        String from = leg.getString("start");
 
-        for (int i = 0; i < places.length(); i++)
+        if (!reached.contains(from) || !walking.add(leg)) return Integer.MAX_VALUE;
+
+        int length = leg.optInt("length", 0);
+
+        int answer;
+
+        if (length <= 0)
         {
-            if (!places.getJSONObject(i).optBoolean("answered", false)) return false;
+            // THE ROUTE IN STOPS AT A LEG WITH NO LENGTH (ADA-A1): nothing of it or behind it counts.
+            answer = 0;
+        }
+        else if (setsOff.contains(from))
+        {
+            answer = length;
+        }
+        else
+        {
+            int before = Integer.MAX_VALUE;
+
+            for (org.json.JSONObject previous : into.getOrDefault(from, java.util.Collections.<org.json.JSONObject>emptyList()))
+            {
+                before = Math.min(before, measuredWayIn(previous, into, setsOff, reached, known, walking));
+            }
+
+            answer = before == Integer.MAX_VALUE ? Integer.MAX_VALUE : length + before;
         }
 
-        return true;
+        walking.remove(leg);
+
+        known.put(leg, answer);
+
+        return answer;
     }
 
     /**

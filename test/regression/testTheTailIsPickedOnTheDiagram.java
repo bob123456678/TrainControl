@@ -1073,7 +1073,8 @@ public class testTheTailIsPickedOnTheDiagram
      * under a new name.  Asked only by the configuration's name, the check dropped the answer from the railway and from
      * the setup, and the log gave another configuration as the reason.
      *
-     * MUTATION: ask for the configuration's name alone, and this fails.
+     * MUTATION: ask for anything beyond the session - the configuration's name, the railway running - and this fails
+     * (TDD5-C1: the answer follows the train).
      *
      * @throws Exception from the event thread
      */

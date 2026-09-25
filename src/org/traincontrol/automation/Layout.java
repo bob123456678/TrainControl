@@ -4917,8 +4917,9 @@ public class Layout
      * behind never reaches the train's length is held until the route ends. The cure is to measure
      * those edges. Guessing about them is what this method exists to stop.
      *
-     * @param pathIsUnmeasured whether NO edge anywhere on this path has a length - computed over the
-     *        whole path before the run, not sampled from a running total
+     * @param pathIsUnmeasured whether nothing on this path is measured (`pathIsUnmeasured`: no edge with a length, or with
+     *        every square answered 0 - TDU-C6) - computed over the whole path before the run, not sampled from a running
+     *        total
      * @param behind how far the head has travelled since the END of the edge in question
      * @param trainLength the train's length, or null
      * @return whether the tail is provably clear of it
@@ -4952,8 +4953,9 @@ public class Layout
      *
      * Asked of each edge by `Edge.isMeasured`, the question the Atomic Routes gate asks of the railway
      * (`unmeasuredTrackThatCouldBeReleased`): track answered 0 on purpose is measured (Adam, 2026-09-24, TDU-C6: *"0
-     * lengths count as measures"*), so a path over it holds its edges until the tail has provably passed - nothing
-     * accumulates over a 0, so a train with a length holds them to the end of the route, which is the safe direction.
+     * lengths count as measures"*), so a path over it is not given the escape: its edges are held until the measured
+     * track the head runs after them covers the train, and to the end of the route where none does - the safe
+     * direction.
      *
      * @param path the route
      * @return true when no edge on it is measured
@@ -9550,7 +9552,7 @@ public class Layout
      *
      * **Why this is the question and the editor's square count is not.**  Non-atomic mode is unsafe
      * only through one escape: `tailHasProvablyPassed` returns true the moment `pathIsUnmeasured`, and
-     * that means NO EDGE ANYWHERE ON THE PATH has a length.  An edge's length is the sum of its
+     * that means NO EDGE ANYWHERE ON THE PATH is measured - a length, or every square answered 0 (TDU-C6).  An edge's length is the sum of its
      * squares, so a railway with one unmeasured switch square still has a length on every edge - the
      * escape can never fire on it, and the only cost of the missing square is that `behind`
      * under-counts and edges are held LONGER, which is the conservative direction.  Asking the
@@ -10125,8 +10127,10 @@ public class Layout
     /**
      * How much measured track the route in holds, counted back from where it ends (FR-087).
      *
-     * Leg by leg while each is measured - a leg answered 0 on purpose is, and adds 0 (Adam, 2026-09-24, TDU-C6: *"0
-     * lengths count as measures"*) - and never back past a square the train turns at - Adam, 2026-09-11: the berth
+     * Leg by leg while each has a length - a leg answered 0 on purpose ends it as one nobody measured does (OB-274): the
+     * walk that claims a standing train's tail stops there too, so a count carried on past it admitted a train whose tail
+     * lay on track nothing claims (ADA-A1, ADD-B1; TDU-C6's 0 reaches only the Atomic Routes gate and its escape) - and
+     * never back past a square the train turns at - Adam, 2026-09-11: the berth
      * is *"measured back to whichever of the last switch and the reversal is met first"*, and a train that changed
      * direction on the way does not lie back over the track it drove before the turn.  The same test
      * `measuredRoomAtTheEndOf` makes, so the room rule and this allowance stop at the same square.
@@ -10148,9 +10152,11 @@ public class Layout
         {
             if (i < path.size() - 1 && path.get(i).getEnd() != null && path.get(i).getEnd().isReversing()) break;
 
-            if (!path.get(i).isMeasured()) break;
+            int leg = path.get(i).getLength();
 
-            held += Math.max(0, path.get(i).getLength());
+            if (leg <= 0) break;
+
+            held += leg;
         }
 
         return held;
@@ -10405,11 +10411,11 @@ public class Layout
      * being the route the head drives between leaving the place and coming back to it, not the body in front of it
      * (TDA-B1: judged by the body, a loop with no length on it was refused at every length, though it may be thirty
      * units long).  Unmeasured squares within a measured way round make it shorter than it is, which refuses rather than
-     * permits - so the refusal says how many pieces of the way round have nothing measured on them, and that measuring
-     * them is the way past: in the stretch it left the place in, the pieces after it; every piece of those between; and
-     * in the one it comes back in, the pieces before the return.  A piece is what Mass Assign Lengths asks for - a
-     * stretch cut at its switches and at squares two roads cross, each of those a piece of its own - and one answered 0
-     * is measured (OB-297, TDU-C6; TDA2-C1 counted whole stretches, and one measured only at its switch was missed).
+     * permits - so the refusal says how many things Mass Assign Lengths would ask a length for on the way round, and that
+     * measuring them is the way past: the pieces, switches and shared squares the build marks as still wanting one, over
+     * the places the head runs between leaving the place and coming back to it (OB-297, ADA-C1).  Its list and the note's
+     * are one list: TDA2-C1 counted whole stretches, and one measured only at its switch was missed; the runtime's own
+     * pieces then read a route tile's piece as measured and a piece whose units sit on a station's square as not.
      *
      * **The tightest return is the one named** (TDA-C1).  A route that comes up behind the body meets it more than once,
      * and a later return can allow less than an earlier one; the refusal's "a train of N units or shorter" has to be true
@@ -10452,11 +10458,15 @@ public class Layout
         // And where in that edge the head left each place - after any repeats of the same square that follow it.
         Map<String, Integer> leftAt = new HashMap<>();
 
-        // THE PIECES OF EACH EDGE OF THE ROUTE, and which have nothing measured on them (OB-297).  NOT THE SQUARE: a
-        // square with no length inside a measured piece is how a short piece drawn over several squares is stored, not a
-        // gap (counted by square, Adam's measured railway had 21 on one way round).  The piece is what Mass Assign
-        // Lengths asks for, cut at the places the build marks; an edge with no marks is one piece (TDA2-C1).
-        List<List<int[]>> piecesOfEdge = new ArrayList<>();
+        // WHAT MASS ASSIGN WOULD ASK FOR, place by place along the route (OB-297, ADA-C1): the key of the piece, switch or
+        // shared square each place lies in, where the build marked it as still wanting a length - or, on a configuration
+        // built before the marks, one key per edge with nothing measured on it (TDA2-C1).  NOT THE SQUARE: a square with no
+        // length inside a measured piece is how a short piece drawn over several squares is stored, not a gap.  The note
+        // counts the keys of the way round, once each.
+        List<String> askedAlong = new ArrayList<>();
+
+        // Where each edge's places start in that list.
+        List<Integer> startsAt = new ArrayList<>();
 
         // LEAVING OVER ITS OWN BODY: the first place the route goes to, other than the square the train stands on, is
         // one its body lies on - a train turned where it stands.  The first place only: a route that comes back round a
@@ -10505,7 +10515,9 @@ public class Layout
             // A configuration that describes no places says nothing about where the train is.
             if (ids.size() != spans.size()) return null;
 
-            piecesOfEdge.add(piecesOf(edge));
+            startsAt.add(askedAlong.size());
+
+            for (int at = 0; at < ids.size(); at++) askedAlong.add(askedFor(edge, i, at));
 
             for (int at = 0; at < ids.size(); at++)
             {
@@ -10529,9 +10541,11 @@ public class Layout
                         tightestOn = edge;
                         tightestUnmeasured = 0;
 
-                        // The pieces of the way round with nothing measured on them (TDA2-C1, TDD2-C3, OB-297).
-                        tightestUnmeasured = unmeasuredPiecesOfTheWayRound(piecesOfEdge, edgeWhenLeft.get(place),
-                            leftAt.get(place), i, at);
+                        // What Mass Assign would ask for on the way round (TDA2-C1, TDD2-C3, OB-297, ADA-C1).
+                        int leftIn = edgeWhenLeft.get(place);
+
+                        tightestUnmeasured = askedForOnTheWayRound(askedAlong,
+                            leftIn < 0 ? -1 : startsAt.get(leftIn) + leftAt.get(place), startsAt.get(i) + at);
                     }
                 }
 
@@ -10572,97 +10586,51 @@ public class Layout
     }
 
     /**
-     * The pieces of an edge, in order - each {first place, last place, 1 when nothing on it is measured} (OB-297).
+     * What Mass Assign Lengths would ask a length for at this place of an edge, as a key - or null (OB-297, ADA-C1).
      *
-     * Cut where the build marked a place (`Edge.isPlaceACut`) - a switch, or a square two roads cross - each of those a
-     * piece of its own, and the runs of places between them pieces too: what Mass Assign Lengths asks for.  A piece is
-     * measured when anything on it has a length or was answered 0 on purpose (TDU-C6).  An edge with no places is one
-     * piece, measured as the edge is.
+     * The build marks each place lying in a piece, switch or shared square still wanting a length with that thing's key
+     * (`Edge.pieceToMeasure`), so the note counts exactly the editor's list: a route tile is in no piece, and a piece whose
+     * units sit on a station's square is measured whichever edge it is read from.  A configuration built before the
+     * marks has none, and each edge of it with nothing measured on it counts as one thing, as it did (TDA2-C1).
      *
      * @param edge the edge
-     * @return its pieces
+     * @param index its place in the route, which keys an edge of the old reading
+     * @param at the place's index in the edge
+     * @return the key, or null where nothing is asked for
      */
-    static List<int[]> piecesOf(Edge edge)
+    static String askedFor(Edge edge, int index, int at)
     {
-        List<int[]> out = new ArrayList<>();
+        if (edge.knowsPiecesToMeasure()) return edge.pieceToMeasure(edge.getPlaceIds().get(at));
 
-        List<String> ids = edge.getPlaceIds();
-        List<Integer> spans = edge.getPlaceLengths();
+        if (edge.getLength() > 0) return null;
 
-        if (ids.isEmpty() || ids.size() != spans.size())
+        for (Integer span : edge.getPlaceLengths())
         {
-            out.add(new int[] {0, Math.max(0, ids.size() - 1), edge.isMeasured() ? 0 : 1});
-
-            return out;
+            if (span != null && span > 0) return null;
         }
 
-        int first = -1;
-        boolean measured = false;
-
-        for (int at = 0; at <= ids.size(); at++)
-        {
-            boolean cut = at < ids.size() && edge.isPlaceACut(ids.get(at));
-
-            if (at == ids.size() || cut)
-            {
-                if (first >= 0) out.add(new int[] {first, at - 1, measured ? 0 : 1});
-
-                first = -1;
-                measured = false;
-
-                if (cut) out.add(new int[] {at, at, isMeasuredAt(edge, at) ? 0 : 1});
-
-                continue;
-            }
-
-            if (first < 0) first = at;
-
-            if (isMeasuredAt(edge, at)) measured = true;
-        }
-
-        return out;
-    }
-
-    /** Whether the place at this index of an edge has a length, or was answered 0 on purpose (TDU-C6). */
-    private static boolean isMeasuredAt(Edge edge, int at)
-    {
-        Integer span = edge.getPlaceLengths().get(at);
-
-        return (span != null && span > 0) || edge.isPlaceAnswered(edge.getPlaceIds().get(at));
+        return "edge " + index;
     }
 
     /**
-     * How many pieces of a way round have nothing measured on them (OB-297): in the edge the place was left in, the
-     * pieces after where it was left; every piece of the edges between; and in the edge the route comes back in, the
-     * pieces before the return.  A place of the body was left before the journey began (edge -1), so the way round is
-     * the route from its start.
+     * How many things Mass Assign would ask for over the places strictly between two points of the route, each once
+     * (OB-297).
      *
-     * @param pieces the pieces of each edge of the route, as `piecesOf` gives them
-     * @param leftIn the edge the place was left in, -1 for the body
-     * @param leftAt where in that edge
-     * @param backIn the edge the route comes back to it in
-     * @param backAt where in that edge
+     * @param askedAlong each place's key along the route, as `askedFor` gives it
+     * @param left where the place was left, -1 for before the journey began
+     * @param back where the route comes back to it
      * @return the count
      */
-    static int unmeasuredPiecesOfTheWayRound(List<List<int[]>> pieces, int leftIn, int leftAt, int backIn, int backAt)
+    static int askedForOnTheWayRound(List<String> askedAlong, int left, int back)
     {
-        int count = 0;
+        java.util.Set<String> keys = new java.util.HashSet<>();
 
-        for (int k = Math.max(0, leftIn); k <= backIn && k < pieces.size(); k++)
+        for (int g = Math.max(0, left + 1); g < back && g < askedAlong.size(); g++)
         {
-            for (int[] piece : pieces.get(k))
-            {
-                if (piece[2] == 0) continue;
-
-                if (k == leftIn && piece[1] <= leftAt) continue;
-
-                if (k == backIn && piece[0] >= backAt) continue;
-
-                count++;
-            }
+            if (askedAlong.get(g) != null) keys.add(askedAlong.get(g));
         }
 
-        return count;
+        return keys.size();
     }
 
     /**
@@ -12860,8 +12828,8 @@ public class Layout
 
                     List<String> answered = new LinkedList<>();
 
-                    // Where the edge is cut into pieces - a switch, or a square two roads cross (OB-297).
-                    List<String> cut = new LinkedList<>();
+                    // What Mass Assign asks a length for, place by place (OB-297, ADA-C1).
+                    java.util.Map<String, String> asked = new java.util.LinkedHashMap<>();
 
                     JSONArray places = edge.getJSONArray("places");
 
@@ -12901,7 +12869,7 @@ public class Layout
 
                         if (place.optBoolean("answered", false)) answered.add(place.getString("at"));
 
-                        if (place.optBoolean("cut", false)) cut.add(place.getString("at"));
+                        if (place.has("toMeasure")) asked.put(place.getString("at"), place.getString("toMeasure"));
                     }
 
                     if (whole)
@@ -12910,7 +12878,7 @@ public class Layout
 
                         e.setAnsweredPlaces(answered);
 
-                        e.setCutPlaces(cut);
+                        if (edge.optBoolean("lengthsAsked", false)) e.setPiecesToMeasure(asked);
                     }
                     else
                     {

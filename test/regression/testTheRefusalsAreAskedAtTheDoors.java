@@ -253,7 +253,7 @@ public class testTheRefusalsAreAskedAtTheDoors
      * Every placement door asks which headings a train can LEAVE by, not which it may arrive in (OB-284).
      *
      * Adam, 2026-09-24: *"this should check for barred departure directions, not arrival ones."*  The rule is claimed in
-     * `core.testATrainIsPutOnlyWhereItCanStart`; this is its three call sites - the extracted rule moves the bug to the
+     * `core.testATrainIsPutOnlyWhereItCanStart`; this is its four call sites - the extracted rule moves the bug to the
      * call.
      *
      * MUTATION: have any door filter by `placeableFacingsFor` again, and this fails.
@@ -264,7 +264,8 @@ public class testTheRefusalsAreAskedAtTheDoors
     public void testThePlacementDoorsKeepAHeadingATrainCanLeaveBy() throws Exception
     {
         for (String door : new String[] {"src/org/traincontrol/gui/TrainControlUI.java",
-            "src/org/traincontrol/gui/GraphLocAssign.java", "src/org/traincontrol/gui/AutonomyEditorPanel.java"})
+            "src/org/traincontrol/gui/GraphLocAssign.java", "src/org/traincontrol/gui/AutonomyEditorPanel.java",
+            "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java"})
         {
             String source = withoutComments(read(door));
 
@@ -276,13 +277,14 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * Only the rebuild's put-back and the two doors that keep a heading a train can leave by stand a train on a copy of
-     * a station trains may not arrive at (REG4-C3, TDY3-A1, OB-284).
+     * Only the rebuild's put-back and the three doors that keep a heading a train can leave by stand a train on a copy of
+     * a station trains may not arrive at (REG4-C3, TDY3-A1, OB-284, OB-296).
      *
      * `moveLocomotive`'s four-argument form accepts such a copy when its last argument is true, and the guard above
      * counts calls without reading their arguments - a door passing `true` would still read as refusing.  A placement
-     * the put-back is the railway saying where a train already is; the paste and the Place Locomotive dialog keep a
-     * train's heading where it can leave by it (OB-284).  Any other door passing `true` is a new decision.
+     * the put-back is the railway saying where a train already is; the paste, the Place Locomotive dialog and the
+     * diagram's right-click Place keep a train's heading where it can leave by it (OB-284, OB-296, ADU-B1).  Any other
+     * door passing `true` is a new decision.
      *
      * MUTATION: pass true from the paste door and this fails.
      *
@@ -336,6 +338,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         }
 
         assertEquals(found.toString(), "[GraphLocAssign.java: moveLocomotive(getLoc(), p.getName(), false, true), "
+            + "LayoutRightclickAutonomyMenu.java: moveLocomotive(locName, pointName, false, true), "
             + "TrainControlUI.java: moveLocomotive(was.getKey(), back.getName(), false, true), "
             + "TrainControlUI.java: moveLocomotive(placing.getName(), point.getName(), false, true)]",
             "a door other than the rebuild's put-back may stand a train on a copy of a station trains may not arrive at"

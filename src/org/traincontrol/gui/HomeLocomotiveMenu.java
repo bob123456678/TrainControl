@@ -32,8 +32,9 @@ final class HomeLocomotiveMenu
      * Adds the item that sends every locomotive back where it belongs.
      *
      * Shown always and greyed when there is nothing to do, so the feature stays discoverable and says
-     * why it is unavailable.  Only the cheap half of the question is asked: whether a plan exists needs
-     * a search, which would stall the popup, and the real answer comes when it is clicked.
+     * why it is unavailable.  Only the cheap half of the question is asked here: whether a plan exists needs
+     * a search, which would stall the popup, and the real answer comes when it is clicked.  The setup's
+     * question is asked by the caller, once, from what Start's item already knows (ADU-C3).
      *
      * **AND IT IS THE BUTTON'S ANSWER, NOT THE RAILWAY'S (OB-192, second round).**  This used to ask
      * `Layout.triageReturnToHome` itself, and a popup menu is built on the event thread by definition:
@@ -43,13 +44,13 @@ final class HomeLocomotiveMenu
      * with nothing running at all - froze the window instead of opening the menu.
      *
      * `refreshReturnHomeButton` is the one place that asks now, off the event thread, and this reads
-     * the button it maintains.  That also settles by construction what this method's own guard was
-     * arranged to approximate: the item and the button cannot describe one situation two ways, because
-     * there is only one description.
+     * the button it maintains, so the two describe the railway one way.  Over a setup with errors they part
+     * on purpose, below: the item is greyed with the setup's sentence and the button stays live and explains
+     * on a click, as Start's item and button do.
      *
-     * Autonomy being busy is still asked HERE and first, exactly as before.  It costs no monitor - two
-     * flags and a ConcurrentHashMap - and it can turn true between the last refresh and this menu
-     * opening, so asking it makes the item strictly fresher than the button beside it.
+     * Autonomy being busy is asked HERE, after the setup.  It costs no monitor - two flags and a
+     * ConcurrentHashMap - and it can turn true between the last refresh and this menu opening, so asking it
+     * makes the item strictly fresher than the button beside it.
      *
      * **AND A SETUP THAT CANNOT BE USED GREYS IT, with the setup's own sentence** (Adam, 2026-09-24,
      * TDU2-C3: *"Yes, go with your recommendation"*).  Return Home refuses to run over it (TDU-B1), and
@@ -59,11 +60,10 @@ final class HomeLocomotiveMenu
      *
      * @param menu
      * @param ui
+     * @param broken why the setup refuses a hand send - `whyAHandSendIsRefused` - or null where it does not
      */
-    static void addReturnHomeItem(JComponent menu, TrainControlUI ui)
+    static void addReturnHomeItem(JComponent menu, TrainControlUI ui, String broken)
     {
-        String broken = ui.whyAHandSendIsRefused();
-
         boolean offered = broken == null && !ui.isAutonomyBusy() && ui.isReturnHomeOffered();
 
         JMenuItem menuItem = new JMenuItem(I18n.t("autolayout.ui.menuReturnToHome"));
@@ -73,7 +73,8 @@ final class HomeLocomotiveMenu
 
         if (!offered)
         {
-            menuItem.setToolTipText(broken != null ? broken : ui.isAutonomyBusy()
+            // WRAPPED, as Start's item beside it is (ADU-C4): the setup's sentence runs to two hundred characters.
+            menuItem.setToolTipText(broken != null ? AutonomyEditorPanel.wrapped(broken) : ui.isAutonomyBusy()
                 ? ui.describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null)
                 : ui.whyReturnHomeIsNotOffered());
         }

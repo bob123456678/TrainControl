@@ -7075,7 +7075,8 @@ public class AutonomyEditorPanel extends JPanel
      *
      * **0 is an answer, and clearing is null** (Adam, 2026-09-23: *"no, add a clear button"*).  A 0 typed here records
      * the run - or each selected square - as answered 0, as Mass Assign Lengths does (OB-274): not offered again, and
-     * read as unmeasured by every rule.  Until then a 0 here cleared the length, which the Clear button does now.
+     * read as unmeasured by every length rule but the Atomic Routes gate and its escape (TDU-C6).  Until then a 0 here
+     * cleared the length, which the Clear button does now.
      *
      * The decision, apart from the dialog that asks for it, so it can be driven without a display.
      *

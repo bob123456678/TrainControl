@@ -24503,8 +24503,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * this action used to ask the railway for itself - the button here, the diagram's right-click
      * menu, and the click handler - which is three chances to describe one situation three ways, and
      * three doors onto the railway's monitor from the event thread.  There is one asker now,
-     * `refreshReturnHomeButton`, and the button it maintains is what the others read.  They cannot
-     * disagree with it, because there is nothing left for them to disagree with.
+     * `refreshReturnHomeButton`, and the button it maintains is what the others read, so they describe the
+     * railway one way.  Over a setup with errors the right-click item parts from it on purpose - greyed with
+     * the setup's sentence while the button stays live and explains (TDU2-C3).
      *
      * @return true when the action can be taken
      */

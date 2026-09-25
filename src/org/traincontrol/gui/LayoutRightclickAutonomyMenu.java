@@ -459,7 +459,11 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                 add(menuItem);
 
-                HomeLocomotiveMenu.addReturnHomeItem(this, ui);
+                // THE HAND DOORS' SENTENCE, from Start's answer (ADU-C3).  Start offered means the setup has no errors, so it
+                // is null without asking - `check()` is not cached, and LD-C6 above is why that matters here.
+                String broken = canStart ? null : ui.whyAHandSendIsRefused();
+
+                HomeLocomotiveMenu.addReturnHomeItem(this, ui, broken);
 
                 // The Point standing on that square, preferring one with a train on it.
                 //
@@ -721,8 +725,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     // Turn the standing train round.
                     //
                     // Placing keeps the heading the train had, which may not be the one it has on the
-                    // railway now, and a locomotive put down by hand is
-                    // pointing whichever way the setup last recorded - so there has to be a way to say
+                    // railway now, and a locomotive put down by hand is pointing whichever way the setup
+                    // last recorded - so there has to be a way to say
                     // "no, it faces the other way" without taking it off and putting it back.
                     //
                     // Only the copies it could actually leave from, for the same reason placing is:
@@ -1028,7 +1032,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             //
             // "Has an outgoing edge" was the old test and it is not the same question.  A copy of a
             // split square can have somewhere to go and nowhere to be SENT - everything it reaches is
-            // a plain point, a reversing point or parking - and this list is drawn at RANDOM, so a
+            // a plain point, a reversing point or parking - and this list was drawn at RANDOM, so a
             // train was put on a dead copy about half the time and then never moved.  That is the
             // "nothing moves" fault: on the sample layout, Tunnel (northbound) offers routes and
             // Tunnel (southbound) offers none, and placement could not tell them apart.
@@ -1083,56 +1087,47 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         String loc = ui.getActiveLoc() == null ? null : ui.getActiveLoc().getName();
 
-        java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> facings = session == null
-            ? new java.util.LinkedHashMap<String, org.traincontrol.automationui.TilePorts.Side>()
-            : session.facingsFor(station);
+        org.traincontrol.automation.Layout running = org.traincontrol.gui.TailCrossedPrompt.runningNow(ui.getModel());
 
-        org.traincontrol.automationui.TilePorts.Side keep = session == null ? null
-            : session.facingOf(loc, org.traincontrol.gui.TailCrossedPrompt.runningNow(ui.getModel()));
+        // ITS HEADING, read before the move, from the copy it stands on (CONF-B1).
+        org.traincontrol.automationui.TilePorts.Side keep = session == null ? null : session.facingOf(loc, running);
 
-        String name = copyToPlaceOn(usable, facings, keep);
+        String name = copyToPlaceOn(session, station, running, keep, usable);
 
-        placeFacing(loc, name, facings.get(name));
+        placeFacing(loc, name, session == null ? null : session.facingsFor(station).get(name));
     }
 
     /**
-     * The copy a train is put on by the right-click Place: of those it could leave from, the one facing the way it
-     * already faces, where the square can hold that heading; the one heading a single copy has; and otherwise the first
-     * the build made - the same answer every time (OB-296).  `AutonomySession.facingAfterAPaste` decides the heading, as it
-     * does for the paste.
+     * The copy a train is put on by the right-click Place, as the paste chooses it (OB-296, ADU-B1, ADU-C1): the heading
+     * over every copy the train could leave by - one trains may not arrive at included (OB-284: *"for barred arrival
+     * directions, keep the direction"*) - by `AutonomySession.facingAfterAPaste`; then the copy facing that way by
+     * `copyFacing`, the plain one before its turning twin.  Where no heading holds, the first copy the menu offers - the
+     * same answer every time.
      *
-     * @param usable the copies a train can be driven away from, in the build's order
-     * @param facings each copy's heading, by name
+     * Chosen over the menu's own list only, it turned a train round at every square with a barred side: the copy facing
+     * that way is no station, so it was never on the list.
+     *
+     * @param session the setup, or null
+     * @param station the square
+     * @param running the railway running, or null
      * @param keep the heading the train has before the move, or null when none is known
+     * @param usable the copies the menu offers Place over, in the build's order
      * @return the copy to put it on, or null when there is none
      */
-    static String copyToPlaceOn(java.util.List<String> usable,
-        java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> facings,
-        org.traincontrol.automationui.TilePorts.Side keep)
+    static String copyToPlaceOn(org.traincontrol.automationui.AutonomySession session,
+        org.traincontrol.automationui.TileGraph.TileKey station, org.traincontrol.automation.Layout running,
+        org.traincontrol.automationui.TilePorts.Side keep, java.util.List<String> usable)
     {
         if (usable == null || usable.isEmpty()) return null;
 
-        java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> held = new java.util.LinkedHashMap<>();
+        if (session == null || running == null || station == null) return usable.get(0);
 
-        for (String name : usable)
-        {
-            org.traincontrol.automationui.TilePorts.Side side = facings == null ? null : facings.get(name);
+        org.traincontrol.automationui.TilePorts.Side intended = org.traincontrol.automationui.AutonomySession
+            .facingAfterAPaste(session.departableFacingsFor(station, running), keep, null);
 
-            if (side != null) held.put(name, side);
-        }
+        org.traincontrol.automation.Point copy = intended == null ? null : session.copyFacing(station, intended, running);
 
-        org.traincontrol.automationui.TilePorts.Side intended =
-            org.traincontrol.automationui.AutonomySession.facingAfterAPaste(held, keep, null);
-
-        if (intended != null)
-        {
-            for (String name : usable)
-            {
-                if (intended == held.get(name)) return name;
-            }
-        }
-
-        return usable.get(0);
+        return copy != null ? copy.getName() : usable.get(0);
     }
 
     /**
@@ -1252,7 +1247,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         final org.traincontrol.automationui.TileGraph.TileKey squareBefore = wasOn == null || session == null
             || session.getStationIndex() == null ? null : session.getStationIndex().squareOf(wasOn);
 
-        if (!ui.getModel().getAutoLayout().moveLocomotive(locName, pointName, false)) return;
+        // EVEN ONTO A COPY TRAINS MAY NOT ARRIVE AT, as the paste and the dialog move (OB-284, ADU-B1, ADU-C2): the
+        // heading chose it, and the railway's three-argument form refuses it, which answered the click with a log line.
+        if (!ui.getModel().getAutoLayout().moveLocomotive(locName, pointName, false, true)) return;
 
         // Whether the setup this door writes to is still the window's once its tail question is answered (TDU4-C2).
         boolean setupStands = true;

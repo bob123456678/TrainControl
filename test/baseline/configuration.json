@@ -7,6 +7,7 @@
   "maxLatency": 0,
   "edges": [
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:0,10",
@@ -38,7 +39,8 @@
         },
         {
           "at": "1 - Main:0,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 3"
         }
       ],
       "entrySide": "S",
@@ -47,34 +49,42 @@
       "end": "1 - Main 0,3 (northbound)"
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:1,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 38"
         },
         {
           "at": "1 - Main:2,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 38"
         },
         {
           "at": "1 - Main:3,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 38"
         },
         {
           "at": "1 - Main:4,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 38"
         },
         {
           "at": "1 - Main:5,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 38"
         },
         {
           "at": "1 - Main:5,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 38"
         },
         {
           "at": "1 - Main:5,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 38"
         }
       ],
       "entrySide": "S",
@@ -87,6 +97,7 @@
       }]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:0,4",
@@ -127,6 +138,7 @@
       "end": "TopMainR2Inter (southbound)"
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:1,9",
@@ -138,23 +150,28 @@
         },
         {
           "at": "1 - Main:1,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:1,7"
         },
         {
           "at": "1 - Main:1,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 16"
         },
         {
           "at": "1 - Main:1,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:1,5"
         },
         {
           "at": "1 - Main:1,4",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:1,4"
         },
         {
           "at": "1 - Main:1,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 4"
         }
       ],
       "entrySide": "S",
@@ -178,22 +195,27 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:2,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 35"
         },
         {
           "at": "1 - Main:3,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 35"
         },
         {
           "at": "1 - Main:4,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 35"
         },
         {
           "at": "1 - Main:4,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 35"
         }
       ],
       "entrySide": "S",
@@ -206,22 +228,27 @@
       }]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:1,4",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:1,4"
         },
         {
           "at": "1 - Main:1,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:1,5"
         },
         {
           "at": "1 - Main:1,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 16"
         },
         {
           "at": "1 - Main:1,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:1,7"
         },
         {
           "at": "1 - Main:1,8",
@@ -257,22 +284,27 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:11,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 24"
         },
         {
           "at": "1 - Main:11,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:11,5"
         },
         {
           "at": "1 - Main:11,4",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 12"
         },
         {
           "at": "1 - Main:11,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:11,3"
         },
         {
           "at": "1 - Main:12,3",
@@ -304,30 +336,37 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:11,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:11,11"
         },
         {
           "at": "1 - Main:10,11/0#1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:10,11"
         },
         {
           "at": "1 - Main:10,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 36"
         },
         {
           "at": "1 - Main:10,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 36"
         },
         {
           "at": "1 - Main:10,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 36"
         },
         {
           "at": "1 - Main:10,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 36"
         }
       ],
       "entrySide": "S",
@@ -347,18 +386,22 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:11,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:11,9"
         },
         {
           "at": "1 - Main:11,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 26"
         },
         {
           "at": "1 - Main:11,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 24"
         }
       ],
       "entrySide": "S",
@@ -372,26 +415,32 @@
       }]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:12,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 37"
         },
         {
           "at": "1 - Main:13,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 37"
         },
         {
           "at": "1 - Main:14,10",
+          "answered": true,
           "length": 0
         },
         {
           "at": "1 - Main:15,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 37"
         },
         {
           "at": "1 - Main:16,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 37"
         }
       ],
       "entrySide": "W",
@@ -400,42 +449,52 @@
       "end": "1 - Main 16,10 (eastbound)"
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:14,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 7"
         },
         {
           "at": "1 - Main:15,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 7"
         },
         {
           "at": "1 - Main:16,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 7"
         },
         {
           "at": "1 - Main:17,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:17,3"
         },
         {
           "at": "1 - Main:18,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 8"
         },
         {
           "at": "1 - Main:18,4",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 8"
         },
         {
           "at": "1 - Main:18,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 8"
         },
         {
           "at": "1 - Main:18,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 8"
         },
         {
           "at": "1 - Main:18,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 8"
         }
       ],
       "entrySide": "N",
@@ -449,26 +508,32 @@
       }]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:15,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 37"
         },
         {
           "at": "1 - Main:14,10",
+          "answered": true,
           "length": 0
         },
         {
           "at": "1 - Main:13,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 37"
         },
         {
           "at": "1 - Main:12,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 37"
         },
         {
           "at": "1 - Main:12,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 30"
         }
       ],
       "entrySide": "S",
@@ -477,26 +542,32 @@
       "end": "BottomInner (northbound)"
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:17,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:17,10"
         },
         {
           "at": "1 - Main:18,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:18,10"
         },
         {
           "at": "1 - Main:18,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 32"
         },
         {
           "at": "1 - Main:18,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 32"
         },
         {
           "at": "1 - Main:18,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 8"
         }
       ],
       "lockedges": [
@@ -532,42 +603,52 @@
       }]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:17,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 31"
         },
         {
           "at": "1 - Main:17,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 31"
         },
         {
           "at": "1 - Main:17,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:17,10"
         },
         {
           "at": "1 - Main:17,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:17,11"
         },
         {
           "at": "1 - Main:16,11",
+          "answered": true,
           "length": 0
         },
         {
           "at": "1 - Main:15,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 40"
         },
         {
           "at": "1 - Main:14,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 40"
         },
         {
           "at": "1 - Main:13,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:13,11"
         },
         {
           "at": "1 - Main:12,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 39"
         }
       ],
       "lockedges": [
@@ -637,26 +718,32 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:18,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 32"
         },
         {
           "at": "1 - Main:18,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 32"
         },
         {
           "at": "1 - Main:18,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:18,10"
         },
         {
           "at": "1 - Main:17,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:17,10"
         },
         {
           "at": "1 - Main:16,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 37"
         }
       ],
       "lockedges": [
@@ -692,38 +779,47 @@
       }]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:20,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 47"
         },
         {
           "at": "1 - Main:21,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,12"
         },
         {
           "at": "1 - Main:21,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 42"
         },
         {
           "at": "1 - Main:21,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,10"
         },
         {
           "at": "1 - Main:21,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         }
       ],
       "lockedges": [
@@ -773,38 +869,47 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:20,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 47"
         },
         {
           "at": "1 - Main:21,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,12"
         },
         {
           "at": "1 - Main:21,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 42"
         },
         {
           "at": "1 - Main:21,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,10"
         },
         {
           "at": "1 - Main:21,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         }
       ],
       "lockedges": [
@@ -854,50 +959,62 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:18,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 46"
         },
         {
           "at": "1 - Main:17,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 46"
         },
         {
           "at": "1 - Main:16,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 46"
         },
         {
           "at": "1 - Main:15,12",
+          "answered": true,
           "length": 0
         },
         {
           "at": "1 - Main:14,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 46"
         },
         {
           "at": "1 - Main:13,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:13,12"
         },
         {
           "at": "1 - Main:12,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 45"
         },
         {
           "at": "1 - Main:11,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 45"
         },
         {
           "at": "1 - Main:10,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:10,12"
         },
         {
           "at": "1 - Main:9,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 44"
         },
         {
           "at": "1 - Main:8,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 44"
         }
       ],
       "lockedges": [
@@ -951,58 +1068,72 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:18,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 46"
         },
         {
           "at": "1 - Main:17,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 46"
         },
         {
           "at": "1 - Main:16,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 46"
         },
         {
           "at": "1 - Main:15,12",
+          "answered": true,
           "length": 0
         },
         {
           "at": "1 - Main:14,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 46"
         },
         {
           "at": "1 - Main:13,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:13,12"
         },
         {
           "at": "1 - Main:12,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 45"
         },
         {
           "at": "1 - Main:11,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 45"
         },
         {
           "at": "1 - Main:10,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:10,12"
         },
         {
           "at": "1 - Main:10,11/0#0",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:10,11"
         },
         {
           "at": "1 - Main:9,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:9,11"
         },
         {
           "at": "1 - Main:9,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 29"
         },
         {
           "at": "1 - Main:9,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 29"
         }
       ],
       "lockedges": [
@@ -1064,42 +1195,52 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:20,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 50"
         },
         {
           "at": "1 - Main:21,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,13"
         },
         {
           "at": "1 - Main:21,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,12"
         },
         {
           "at": "1 - Main:21,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 42"
         },
         {
           "at": "1 - Main:21,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,10"
         },
         {
           "at": "1 - Main:21,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         }
       ],
       "lockedges": [
@@ -1153,42 +1294,52 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:20,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 50"
         },
         {
           "at": "1 - Main:21,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,13"
         },
         {
           "at": "1 - Main:21,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,12"
         },
         {
           "at": "1 - Main:21,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 42"
         },
         {
           "at": "1 - Main:21,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,10"
         },
         {
           "at": "1 - Main:21,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         }
       ],
       "lockedges": [
@@ -1242,46 +1393,57 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:20,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 51"
         },
         {
           "at": "1 - Main:21,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,14"
         },
         {
           "at": "1 - Main:21,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,13"
         },
         {
           "at": "1 - Main:21,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,12"
         },
         {
           "at": "1 - Main:21,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 42"
         },
         {
           "at": "1 - Main:21,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,10"
         },
         {
           "at": "1 - Main:21,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         }
       ],
       "lockedges": [
@@ -1347,46 +1509,57 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:20,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 51"
         },
         {
           "at": "1 - Main:21,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,14"
         },
         {
           "at": "1 - Main:21,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,13"
         },
         {
           "at": "1 - Main:21,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,12"
         },
         {
           "at": "1 - Main:21,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 42"
         },
         {
           "at": "1 - Main:21,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,10"
         },
         {
           "at": "1 - Main:21,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         }
       ],
       "lockedges": [
@@ -1452,6 +1625,7 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:18,14",
@@ -1475,6 +1649,7 @@
         },
         {
           "at": "1 - Main:13,14",
+          "answered": true,
           "length": 0
         },
         {
@@ -1487,15 +1662,18 @@
         },
         {
           "at": "1 - Main:11,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:11,13"
         },
         {
           "at": "1 - Main:10,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 49"
         },
         {
           "at": "1 - Main:9,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 49"
         }
       ],
       "lockedges": [{
@@ -1513,22 +1691,27 @@
       }]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:1,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:1,1"
         },
         {
           "at": "1 - Main:0,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:0,1"
         },
         {
           "at": "1 - Main:0,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 3"
         },
         {
           "at": "1 - Main:0,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 3"
         }
       ],
       "lockedges": [{
@@ -1552,18 +1735,22 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:1,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:1,1"
         },
         {
           "at": "1 - Main:1,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 4"
         },
         {
           "at": "1 - Main:1,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 4"
         }
       ],
       "lockedges": [{
@@ -1581,58 +1768,72 @@
       }]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:20,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         },
         {
           "at": "1 - Main:20,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         },
         {
           "at": "1 - Main:20,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:20,9"
         },
         {
           "at": "1 - Main:20,10/0#0",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:20,10"
         },
         {
           "at": "1 - Main:19,10/0#1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:19,10"
         },
         {
           "at": "1 - Main:19,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:19,11"
         },
         {
           "at": "1 - Main:18,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 41"
         },
         {
           "at": "1 - Main:17,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:17,11"
         },
         {
           "at": "1 - Main:16,11",
+          "answered": true,
           "length": 0
         },
         {
           "at": "1 - Main:15,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 40"
         },
         {
           "at": "1 - Main:14,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 40"
         },
         {
           "at": "1 - Main:13,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:13,11"
         },
         {
           "at": "1 - Main:12,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 39"
         }
       ],
       "lockedges": [
@@ -1702,58 +1903,72 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:20,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         },
         {
           "at": "1 - Main:20,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         },
         {
           "at": "1 - Main:20,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:20,9"
         },
         {
           "at": "1 - Main:20,10/0#0",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:20,10"
         },
         {
           "at": "1 - Main:19,10/0#1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:19,10"
         },
         {
           "at": "1 - Main:19,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:19,11"
         },
         {
           "at": "1 - Main:18,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 41"
         },
         {
           "at": "1 - Main:17,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:17,11"
         },
         {
           "at": "1 - Main:16,11",
+          "answered": true,
           "length": 0
         },
         {
           "at": "1 - Main:15,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 40"
         },
         {
           "at": "1 - Main:14,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 40"
         },
         {
           "at": "1 - Main:13,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:13,11"
         },
         {
           "at": "1 - Main:12,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 39"
         }
       ],
       "lockedges": [
@@ -1823,38 +2038,47 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:20,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         },
         {
           "at": "1 - Main:20,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         },
         {
           "at": "1 - Main:20,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:20,9"
         },
         {
           "at": "1 - Main:19,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 33"
         },
         {
           "at": "1 - Main:19,10/0#0",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:19,10"
         },
         {
           "at": "1 - Main:18,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:18,10"
         },
         {
           "at": "1 - Main:17,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:17,10"
         },
         {
           "at": "1 - Main:16,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 37"
         }
       ],
       "lockedges": [
@@ -1920,38 +2144,47 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:20,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         },
         {
           "at": "1 - Main:20,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         },
         {
           "at": "1 - Main:20,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:20,9"
         },
         {
           "at": "1 - Main:19,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 33"
         },
         {
           "at": "1 - Main:19,10/0#0",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:19,10"
         },
         {
           "at": "1 - Main:18,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:18,10"
         },
         {
           "at": "1 - Main:17,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:17,10"
         },
         {
           "at": "1 - Main:16,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 37"
         }
       ],
       "lockedges": [
@@ -2017,78 +2250,97 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:20,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:20,4",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:20,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:20,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:19,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:18,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:17,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:16,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:15,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:14,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:13,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:12,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:11,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:10,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:9,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:8,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:7,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:6,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         }
       ],
       "entrySide": "E",
@@ -2097,78 +2349,97 @@
       "end": "TopMainPost (westbound)"
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:20,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:20,4",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:20,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:20,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:19,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:18,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:17,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:16,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:15,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:14,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:13,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:12,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:11,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:10,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:9,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:8,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:7,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:6,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         }
       ],
       "entrySide": "E",
@@ -2177,38 +2448,47 @@
       "end": "TopMainPost (westbound)"
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:21,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,10"
         },
         {
           "at": "1 - Main:21,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 42"
         },
         {
           "at": "1 - Main:21,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,12"
         },
         {
           "at": "1 - Main:20,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 47"
         },
         {
           "at": "1 - Main:19,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 46"
         }
       ],
       "lockedges": [
@@ -2258,38 +2538,47 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:21,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,10"
         },
         {
           "at": "1 - Main:21,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 42"
         },
         {
           "at": "1 - Main:21,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,12"
         },
         {
           "at": "1 - Main:20,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 47"
         },
         {
           "at": "1 - Main:19,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 46"
         }
       ],
       "lockedges": [
@@ -2339,38 +2628,47 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:21,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,10"
         },
         {
           "at": "1 - Main:21,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 42"
         },
         {
           "at": "1 - Main:21,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,12"
         },
         {
           "at": "1 - Main:21,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,13"
         },
         {
           "at": "1 - Main:20,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 50"
         },
         {
           "at": "1 - Main:19,13",
@@ -2428,38 +2726,47 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:21,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 34"
         },
         {
           "at": "1 - Main:21,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,10"
         },
         {
           "at": "1 - Main:21,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 42"
         },
         {
           "at": "1 - Main:21,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,12"
         },
         {
           "at": "1 - Main:21,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:21,13"
         },
         {
           "at": "1 - Main:20,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 50"
         },
         {
           "at": "1 - Main:19,13",
@@ -2517,86 +2824,107 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:21,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:21,4",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:21,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:21,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:21,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:20,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:19,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:18,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:17,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:16,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:15,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:14,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:13,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:12,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:11,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:10,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:9,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:8,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:7,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:6,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         }
       ],
       "entrySide": "E",
@@ -2605,86 +2933,107 @@
       "end": "1 - Main 6,1 (westbound)"
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:21,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:21,4",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:21,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:21,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:21,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:20,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:19,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:18,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:17,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:16,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:15,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:14,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:13,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:12,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:11,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:10,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:9,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:8,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:7,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:6,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         }
       ],
       "entrySide": "E",
@@ -2693,14 +3042,17 @@
       "end": "1 - Main 6,1 (westbound)"
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:3,4",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 9"
         },
         {
           "at": "1 - Main:3,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 9"
         }
       ],
       "entrySide": "N",
@@ -2709,22 +3061,27 @@
       "end": "TopMainR0"
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:3,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:3,2"
         },
         {
           "at": "1 - Main:4,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:4,2"
         },
         {
           "at": "1 - Main:5,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:5,2"
         },
         {
           "at": "1 - Main:6,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         }
       ],
       "lockedges": [
@@ -2770,14 +3127,17 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:3,4",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 9"
         },
         {
           "at": "1 - Main:3,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 5"
         }
       ],
       "entrySide": "S",
@@ -2786,26 +3146,32 @@
       "end": "1 - Main 3,3 (northbound)"
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:4,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 13"
         },
         {
           "at": "1 - Main:4,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 13"
         },
         {
           "at": "1 - Main:4,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 13"
         },
         {
           "at": "1 - Main:4,8",
+          "answered": true,
           "length": 0
         },
         {
           "at": "1 - Main:4,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 35"
         }
       ],
       "entrySide": "N",
@@ -2814,6 +3180,7 @@
       "end": "TopMainR1Pre (southbound)"
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:4,3",
@@ -2821,15 +3188,18 @@
         },
         {
           "at": "1 - Main:4,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:4,2"
         },
         {
           "at": "1 - Main:5,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:5,2"
         },
         {
           "at": "1 - Main:6,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         }
       ],
       "lockedges": [
@@ -2871,18 +3241,22 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:4,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 35"
         },
         {
           "at": "1 - Main:3,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 35"
         },
         {
           "at": "1 - Main:2,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 35"
         },
         {
           "at": "1 - Main:1,10",
@@ -2899,22 +3273,27 @@
       }]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:4,8",
+          "answered": true,
           "length": 0
         },
         {
           "at": "1 - Main:4,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 13"
         },
         {
           "at": "1 - Main:4,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 13"
         },
         {
           "at": "1 - Main:4,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 13"
         },
         {
           "at": "1 - Main:4,4",
@@ -2927,26 +3306,32 @@
       "end": "TopMainR1 (northbound)"
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:5,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 14"
         },
         {
           "at": "1 - Main:5,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 14"
         },
         {
           "at": "1 - Main:5,7",
+          "answered": true,
           "length": 0
         },
         {
           "at": "1 - Main:5,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 14"
         },
         {
           "at": "1 - Main:5,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 38"
         }
       ],
       "entrySide": "N",
@@ -2955,18 +3340,22 @@
       "end": "TopMainR2Pre (southbound)"
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:5,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 10"
         },
         {
           "at": "1 - Main:5,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:5,2"
         },
         {
           "at": "1 - Main:6,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         }
       ],
       "lockedges": [
@@ -3004,30 +3393,37 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:5,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 38"
         },
         {
           "at": "1 - Main:5,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 38"
         },
         {
           "at": "1 - Main:4,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 38"
         },
         {
           "at": "1 - Main:3,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 38"
         },
         {
           "at": "1 - Main:2,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 38"
         },
         {
           "at": "1 - Main:1,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 38"
         },
         {
           "at": "1 - Main:0,11",
@@ -3044,26 +3440,32 @@
       }]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:5,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 14"
         },
         {
           "at": "1 - Main:5,7",
+          "answered": true,
           "length": 0
         },
         {
           "at": "1 - Main:5,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 14"
         },
         {
           "at": "1 - Main:5,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 14"
         },
         {
           "at": "1 - Main:5,4",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 10"
         }
       ],
       "entrySide": "S",
@@ -3072,22 +3474,27 @@
       "end": "TopMainR2 (northbound)"
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:5,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 2"
         },
         {
           "at": "1 - Main:4,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 2"
         },
         {
           "at": "1 - Main:3,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 2"
         },
         {
           "at": "1 - Main:2,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 1"
         }
       ],
       "entrySide": "E",
@@ -3096,86 +3503,107 @@
       "end": "RampUp"
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:7,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:8,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:9,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:10,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:11,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:12,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:13,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:14,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:15,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:16,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:17,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:18,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:19,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:20,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:21,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:21,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:21,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:21,4",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:21,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:21,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         }
       ],
       "entrySide": "N",
@@ -3184,86 +3612,107 @@
       "end": "BottomMainPost (southbound)"
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:7,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:8,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:9,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:10,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:11,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:12,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:13,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:14,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:15,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:16,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:17,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:18,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:19,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:20,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:21,1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:21,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:21,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:21,4",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:21,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         },
         {
           "at": "1 - Main:21,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 21"
         }
       ],
       "entrySide": "N",
@@ -3272,78 +3721,97 @@
       "end": "BottomMainPost (southbound, reverse)"
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:7,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:8,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:9,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:10,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:11,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:12,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:13,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:14,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:15,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:16,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:17,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:18,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:19,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:20,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:20,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:20,4",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:20,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:20,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         }
       ],
       "entrySide": "N",
@@ -3352,78 +3820,97 @@
       "end": "RampDown (southbound)"
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:7,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:8,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:9,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:10,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:11,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:12,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:13,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:14,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:15,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:16,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:17,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:18,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:19,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:20,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:20,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:20,4",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:20,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 15"
         },
         {
           "at": "1 - Main:20,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         }
       ],
       "entrySide": "N",
@@ -3432,22 +3919,27 @@
       "end": "RampDown (southbound, reverse)"
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:5,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:5,2"
         },
         {
           "at": "1 - Main:4,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:4,2"
         },
         {
           "at": "1 - Main:3,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:3,2"
         },
         {
           "at": "1 - Main:3,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 5"
         }
       ],
       "lockedges": [
@@ -3493,14 +3985,17 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:5,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:5,2"
         },
         {
           "at": "1 - Main:4,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:4,2"
         },
         {
           "at": "1 - Main:4,3",
@@ -3550,18 +4045,22 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:5,2",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:5,2"
         },
         {
           "at": "1 - Main:5,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 10"
         },
         {
           "at": "1 - Main:5,4",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 10"
         }
       ],
       "lockedges": [
@@ -3599,54 +4098,67 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:6,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 22"
         },
         {
           "at": "1 - Main:6,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 22"
         },
         {
           "at": "1 - Main:6,4",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 22"
         },
         {
           "at": "1 - Main:6,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,3"
         },
         {
           "at": "1 - Main:7,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 6"
         },
         {
           "at": "1 - Main:8,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 6"
         },
         {
           "at": "1 - Main:9,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 6"
         },
         {
           "at": "1 - Main:10,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:10,3"
         },
         {
           "at": "1 - Main:10,4",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 11"
         },
         {
           "at": "1 - Main:10,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:10,5"
         },
         {
           "at": "1 - Main:10,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 19"
         },
         {
           "at": "1 - Main:10,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 36"
         }
       ],
       "lockedges": [{
@@ -3674,42 +4186,52 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:6,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 22"
         },
         {
           "at": "1 - Main:6,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 22"
         },
         {
           "at": "1 - Main:6,4",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 22"
         },
         {
           "at": "1 - Main:6,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,3"
         },
         {
           "at": "1 - Main:7,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 6"
         },
         {
           "at": "1 - Main:8,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 6"
         },
         {
           "at": "1 - Main:9,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 6"
         },
         {
           "at": "1 - Main:10,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:10,3"
         },
         {
           "at": "1 - Main:11,3",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:11,3"
         },
         {
           "at": "1 - Main:12,3",
@@ -3751,50 +4273,62 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:7,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 17"
         },
         {
           "at": "1 - Main:8,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:8,7"
         },
         {
           "at": "1 - Main:8,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:7,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:6,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,8"
         },
         {
           "at": "1 - Main:6,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,12"
         },
         {
           "at": "1 - Main:7,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 43"
         },
         {
           "at": "1 - Main:8,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 44"
         }
       ],
       "lockedges": [
@@ -3880,58 +4414,72 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:7,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 17"
         },
         {
           "at": "1 - Main:8,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:8,7"
         },
         {
           "at": "1 - Main:8,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:7,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:6,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,8"
         },
         {
           "at": "1 - Main:6,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,12"
         },
         {
           "at": "1 - Main:6,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 48"
         },
         {
           "at": "1 - Main:7,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 48"
         },
         {
           "at": "1 - Main:8,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 48"
         },
         {
           "at": "1 - Main:9,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 49"
         }
       ],
       "lockedges": [
@@ -4017,62 +4565,77 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:9,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 44"
         },
         {
           "at": "1 - Main:10,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:10,12"
         },
         {
           "at": "1 - Main:11,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 45"
         },
         {
           "at": "1 - Main:12,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 45"
         },
         {
           "at": "1 - Main:13,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:13,12"
         },
         {
           "at": "1 - Main:13,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:13,11"
         },
         {
           "at": "1 - Main:14,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 40"
         },
         {
           "at": "1 - Main:15,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 40"
         },
         {
           "at": "1 - Main:16,11",
+          "answered": true,
           "length": 0
         },
         {
           "at": "1 - Main:17,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:17,11"
         },
         {
           "at": "1 - Main:17,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:17,10"
         },
         {
           "at": "1 - Main:17,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 31"
         },
         {
           "at": "1 - Main:17,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 31"
         },
         {
           "at": "1 - Main:17,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 31"
         }
       ],
       "lockedges": [
@@ -4166,50 +4729,62 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:9,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 44"
         },
         {
           "at": "1 - Main:10,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:10,12"
         },
         {
           "at": "1 - Main:11,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 45"
         },
         {
           "at": "1 - Main:12,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 45"
         },
         {
           "at": "1 - Main:13,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:13,12"
         },
         {
           "at": "1 - Main:14,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 46"
         },
         {
           "at": "1 - Main:15,12",
+          "answered": true,
           "length": 0
         },
         {
           "at": "1 - Main:16,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 46"
         },
         {
           "at": "1 - Main:17,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 46"
         },
         {
           "at": "1 - Main:18,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 46"
         },
         {
           "at": "1 - Main:19,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 46"
         }
       ],
       "lockedges": [
@@ -4263,78 +4838,97 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:9,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 44"
         },
         {
           "at": "1 - Main:10,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:10,12"
         },
         {
           "at": "1 - Main:11,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 45"
         },
         {
           "at": "1 - Main:12,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 45"
         },
         {
           "at": "1 - Main:13,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:13,12"
         },
         {
           "at": "1 - Main:13,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:13,11"
         },
         {
           "at": "1 - Main:14,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 40"
         },
         {
           "at": "1 - Main:15,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 40"
         },
         {
           "at": "1 - Main:16,11",
+          "answered": true,
           "length": 0
         },
         {
           "at": "1 - Main:17,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:17,11"
         },
         {
           "at": "1 - Main:18,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 41"
         },
         {
           "at": "1 - Main:19,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:19,11"
         },
         {
           "at": "1 - Main:19,10/0#1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:19,10"
         },
         {
           "at": "1 - Main:20,10/0#0",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:20,10"
         },
         {
           "at": "1 - Main:20,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:20,9"
         },
         {
           "at": "1 - Main:20,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         },
         {
           "at": "1 - Main:20,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         },
         {
           "at": "1 - Main:20,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         }
       ],
       "lockedges": [
@@ -4428,78 +5022,97 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:9,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 44"
         },
         {
           "at": "1 - Main:10,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:10,12"
         },
         {
           "at": "1 - Main:11,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 45"
         },
         {
           "at": "1 - Main:12,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 45"
         },
         {
           "at": "1 - Main:13,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:13,12"
         },
         {
           "at": "1 - Main:13,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:13,11"
         },
         {
           "at": "1 - Main:14,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 40"
         },
         {
           "at": "1 - Main:15,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 40"
         },
         {
           "at": "1 - Main:16,11",
+          "answered": true,
           "length": 0
         },
         {
           "at": "1 - Main:17,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:17,11"
         },
         {
           "at": "1 - Main:18,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 41"
         },
         {
           "at": "1 - Main:19,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:19,11"
         },
         {
           "at": "1 - Main:19,10/0#1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:19,10"
         },
         {
           "at": "1 - Main:20,10/0#0",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:20,10"
         },
         {
           "at": "1 - Main:20,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:20,9"
         },
         {
           "at": "1 - Main:20,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         },
         {
           "at": "1 - Main:20,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         },
         {
           "at": "1 - Main:20,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         }
       ],
       "lockedges": [
@@ -4593,34 +5206,42 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:7,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 43"
         },
         {
           "at": "1 - Main:6,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,12"
         },
         {
           "at": "1 - Main:6,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,8"
         },
         {
           "at": "1 - Main:6,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 22"
         }
       ],
       "lockedges": [
@@ -4698,50 +5319,62 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:7,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 43"
         },
         {
           "at": "1 - Main:6,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,12"
         },
         {
           "at": "1 - Main:6,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,8"
         },
         {
           "at": "1 - Main:7,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:8,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:8,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:8,7"
         },
         {
           "at": "1 - Main:7,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 17"
         },
         {
           "at": "1 - Main:7,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 17"
         }
       ],
       "lockedges": [
@@ -4827,46 +5460,57 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:7,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 43"
         },
         {
           "at": "1 - Main:6,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,12"
         },
         {
           "at": "1 - Main:6,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,8"
         },
         {
           "at": "1 - Main:7,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:8,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:8,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:8,7"
         },
         {
           "at": "1 - Main:8,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 18"
         }
       ],
       "lockedges": [
@@ -4952,50 +5596,62 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:7,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 43"
         },
         {
           "at": "1 - Main:6,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,12"
         },
         {
           "at": "1 - Main:6,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,8"
         },
         {
           "at": "1 - Main:7,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:8,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:8,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:8,7"
         },
         {
           "at": "1 - Main:9,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 23"
         },
         {
           "at": "1 - Main:9,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 23"
         }
       ],
       "lockedges": [
@@ -5081,46 +5737,57 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:8,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:8,7"
         },
         {
           "at": "1 - Main:8,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:7,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:6,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,8"
         },
         {
           "at": "1 - Main:6,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,12"
         },
         {
           "at": "1 - Main:7,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 43"
         },
         {
           "at": "1 - Main:8,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 44"
         }
       ],
       "lockedges": [
@@ -5206,54 +5873,67 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:8,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:8,7"
         },
         {
           "at": "1 - Main:8,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:7,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:6,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,8"
         },
         {
           "at": "1 - Main:6,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,12"
         },
         {
           "at": "1 - Main:6,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 48"
         },
         {
           "at": "1 - Main:7,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 48"
         },
         {
           "at": "1 - Main:8,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 48"
         },
         {
           "at": "1 - Main:9,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 49"
         }
       ],
       "lockedges": [
@@ -5339,14 +6019,17 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:10,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 49"
         },
         {
           "at": "1 - Main:11,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:11,13"
         },
         {
           "at": "1 - Main:12,13",
@@ -5358,6 +6041,7 @@
         },
         {
           "at": "1 - Main:14,13",
+          "answered": true,
           "length": 0
         },
         {
@@ -5406,14 +6090,17 @@
       }]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:10,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 49"
         },
         {
           "at": "1 - Main:11,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:11,13"
         },
         {
           "at": "1 - Main:11,14",
@@ -5425,6 +6112,7 @@
         },
         {
           "at": "1 - Main:13,14",
+          "answered": true,
           "length": 0
         },
         {
@@ -5467,14 +6155,17 @@
       }]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:10,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 49"
         },
         {
           "at": "1 - Main:11,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:11,13"
         },
         {
           "at": "1 - Main:11,14",
@@ -5486,6 +6177,7 @@
         },
         {
           "at": "1 - Main:13,14",
+          "answered": true,
           "length": 0
         },
         {
@@ -5528,42 +6220,52 @@
       }]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:8,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 48"
         },
         {
           "at": "1 - Main:7,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 48"
         },
         {
           "at": "1 - Main:6,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 48"
         },
         {
           "at": "1 - Main:6,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,12"
         },
         {
           "at": "1 - Main:6,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,8"
         },
         {
           "at": "1 - Main:6,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 22"
         }
       ],
       "lockedges": [
@@ -5641,58 +6343,72 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:8,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 48"
         },
         {
           "at": "1 - Main:7,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 48"
         },
         {
           "at": "1 - Main:6,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 48"
         },
         {
           "at": "1 - Main:6,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,12"
         },
         {
           "at": "1 - Main:6,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,8"
         },
         {
           "at": "1 - Main:7,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:8,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:8,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:8,7"
         },
         {
           "at": "1 - Main:7,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 17"
         },
         {
           "at": "1 - Main:7,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 17"
         }
       ],
       "lockedges": [
@@ -5778,54 +6494,67 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:8,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 48"
         },
         {
           "at": "1 - Main:7,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 48"
         },
         {
           "at": "1 - Main:6,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 48"
         },
         {
           "at": "1 - Main:6,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,12"
         },
         {
           "at": "1 - Main:6,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,8"
         },
         {
           "at": "1 - Main:7,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:8,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:8,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:8,7"
         },
         {
           "at": "1 - Main:8,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 18"
         }
       ],
       "lockedges": [
@@ -5911,58 +6640,72 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:8,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 48"
         },
         {
           "at": "1 - Main:7,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 48"
         },
         {
           "at": "1 - Main:6,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 48"
         },
         {
           "at": "1 - Main:6,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,12"
         },
         {
           "at": "1 - Main:6,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,8"
         },
         {
           "at": "1 - Main:7,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:8,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:8,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:8,7"
         },
         {
           "at": "1 - Main:9,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 23"
         },
         {
           "at": "1 - Main:9,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 23"
         }
       ],
       "lockedges": [
@@ -6048,50 +6791,62 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:9,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 23"
         },
         {
           "at": "1 - Main:8,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:8,7"
         },
         {
           "at": "1 - Main:8,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:7,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:6,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,8"
         },
         {
           "at": "1 - Main:6,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,12"
         },
         {
           "at": "1 - Main:7,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 43"
         },
         {
           "at": "1 - Main:8,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 44"
         }
       ],
       "lockedges": [
@@ -6177,58 +6932,72 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:9,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 23"
         },
         {
           "at": "1 - Main:8,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:8,7"
         },
         {
           "at": "1 - Main:8,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:7,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 25"
         },
         {
           "at": "1 - Main:6,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,8"
         },
         {
           "at": "1 - Main:6,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 28"
         },
         {
           "at": "1 - Main:6,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:6,12"
         },
         {
           "at": "1 - Main:6,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 48"
         },
         {
           "at": "1 - Main:7,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 48"
         },
         {
           "at": "1 - Main:8,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 48"
         },
         {
           "at": "1 - Main:9,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 49"
         }
       ],
       "lockedges": [
@@ -6314,70 +7083,87 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:9,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 29"
         },
         {
           "at": "1 - Main:9,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:9,11"
         },
         {
           "at": "1 - Main:10,11/0#0",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:10,11"
         },
         {
           "at": "1 - Main:10,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:10,12"
         },
         {
           "at": "1 - Main:11,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 45"
         },
         {
           "at": "1 - Main:12,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 45"
         },
         {
           "at": "1 - Main:13,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:13,12"
         },
         {
           "at": "1 - Main:13,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:13,11"
         },
         {
           "at": "1 - Main:14,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 40"
         },
         {
           "at": "1 - Main:15,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 40"
         },
         {
           "at": "1 - Main:16,11",
+          "answered": true,
           "length": 0
         },
         {
           "at": "1 - Main:17,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:17,11"
         },
         {
           "at": "1 - Main:17,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:17,10"
         },
         {
           "at": "1 - Main:17,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 31"
         },
         {
           "at": "1 - Main:17,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 31"
         },
         {
           "at": "1 - Main:17,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 31"
         }
       ],
       "lockedges": [
@@ -6479,58 +7265,72 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:9,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 29"
         },
         {
           "at": "1 - Main:9,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:9,11"
         },
         {
           "at": "1 - Main:10,11/0#0",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:10,11"
         },
         {
           "at": "1 - Main:10,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:10,12"
         },
         {
           "at": "1 - Main:11,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 45"
         },
         {
           "at": "1 - Main:12,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 45"
         },
         {
           "at": "1 - Main:13,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:13,12"
         },
         {
           "at": "1 - Main:14,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 46"
         },
         {
           "at": "1 - Main:15,12",
+          "answered": true,
           "length": 0
         },
         {
           "at": "1 - Main:16,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 46"
         },
         {
           "at": "1 - Main:17,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 46"
         },
         {
           "at": "1 - Main:18,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 46"
         },
         {
           "at": "1 - Main:19,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 46"
         }
       ],
       "lockedges": [
@@ -6592,86 +7392,107 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:9,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 29"
         },
         {
           "at": "1 - Main:9,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:9,11"
         },
         {
           "at": "1 - Main:10,11/0#0",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:10,11"
         },
         {
           "at": "1 - Main:10,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:10,12"
         },
         {
           "at": "1 - Main:11,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 45"
         },
         {
           "at": "1 - Main:12,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 45"
         },
         {
           "at": "1 - Main:13,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:13,12"
         },
         {
           "at": "1 - Main:13,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:13,11"
         },
         {
           "at": "1 - Main:14,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 40"
         },
         {
           "at": "1 - Main:15,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 40"
         },
         {
           "at": "1 - Main:16,11",
+          "answered": true,
           "length": 0
         },
         {
           "at": "1 - Main:17,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:17,11"
         },
         {
           "at": "1 - Main:18,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 41"
         },
         {
           "at": "1 - Main:19,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:19,11"
         },
         {
           "at": "1 - Main:19,10/0#1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:19,10"
         },
         {
           "at": "1 - Main:20,10/0#0",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:20,10"
         },
         {
           "at": "1 - Main:20,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:20,9"
         },
         {
           "at": "1 - Main:20,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         },
         {
           "at": "1 - Main:20,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         },
         {
           "at": "1 - Main:20,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         }
       ],
       "lockedges": [
@@ -6773,86 +7594,107 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "1 - Main:9,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 29"
         },
         {
           "at": "1 - Main:9,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:9,11"
         },
         {
           "at": "1 - Main:10,11/0#0",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:10,11"
         },
         {
           "at": "1 - Main:10,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:10,12"
         },
         {
           "at": "1 - Main:11,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 45"
         },
         {
           "at": "1 - Main:12,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 45"
         },
         {
           "at": "1 - Main:13,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:13,12"
         },
         {
           "at": "1 - Main:13,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:13,11"
         },
         {
           "at": "1 - Main:14,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 40"
         },
         {
           "at": "1 - Main:15,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 40"
         },
         {
           "at": "1 - Main:16,11",
+          "answered": true,
           "length": 0
         },
         {
           "at": "1 - Main:17,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:17,11"
         },
         {
           "at": "1 - Main:18,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 41"
         },
         {
           "at": "1 - Main:19,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:19,11"
         },
         {
           "at": "1 - Main:19,10/0#1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:19,10"
         },
         {
           "at": "1 - Main:20,10/0#0",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:20,10"
         },
         {
           "at": "1 - Main:20,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 1 - Main:20,9"
         },
         {
           "at": "1 - Main:20,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         },
         {
           "at": "1 - Main:20,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         },
         {
           "at": "1 - Main:20,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 27"
         }
       ],
       "lockedges": [
@@ -6954,14 +7796,17 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "2 - Bottom:12,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:12,13"
         },
         {
           "at": "2 - Bottom:13,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 70"
         }
       ],
       "lockedges": [
@@ -7009,54 +7854,67 @@
       }]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "2 - Bottom:12,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:12,13"
         },
         {
           "at": "2 - Bottom:12,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:12,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:12,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:13,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:13,10"
         },
         {
           "at": "2 - Bottom:13,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 59"
         },
         {
           "at": "2 - Bottom:13,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 59"
         },
         {
           "at": "2 - Bottom:14,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:14,8"
         },
         {
           "at": "2 - Bottom:14,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:14,7"
         },
         {
           "at": "2 - Bottom:13,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:13,7"
         },
         {
           "at": "2 - Bottom:13,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 55"
         },
         {
           "at": "2 - Bottom:13,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 55"
         }
       ],
       "lockedges": [
@@ -7126,30 +7984,37 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "2 - Bottom:12,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:12,13"
         },
         {
           "at": "2 - Bottom:12,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:12,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:12,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:13,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:13,10"
         },
         {
           "at": "2 - Bottom:14,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 61"
         }
       ],
       "lockedges": [
@@ -7203,54 +8068,67 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "2 - Bottom:12,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:12,13"
         },
         {
           "at": "2 - Bottom:12,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:12,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:12,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:13,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:13,10"
         },
         {
           "at": "2 - Bottom:13,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 59"
         },
         {
           "at": "2 - Bottom:13,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 59"
         },
         {
           "at": "2 - Bottom:14,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:14,8"
         },
         {
           "at": "2 - Bottom:14,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:14,7"
         },
         {
           "at": "2 - Bottom:14,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:14,6"
         },
         {
           "at": "2 - Bottom:14,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:14,5"
         },
         {
           "at": "2 - Bottom:14,4",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 52"
         }
       ],
       "lockedges": [
@@ -7324,58 +8202,72 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "2 - Bottom:12,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:12,13"
         },
         {
           "at": "2 - Bottom:12,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:12,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:12,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:13,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:13,10"
         },
         {
           "at": "2 - Bottom:13,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 59"
         },
         {
           "at": "2 - Bottom:13,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 59"
         },
         {
           "at": "2 - Bottom:14,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:14,8"
         },
         {
           "at": "2 - Bottom:14,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:14,7"
         },
         {
           "at": "2 - Bottom:14,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:14,6"
         },
         {
           "at": "2 - Bottom:14,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:14,5"
         },
         {
           "at": "2 - Bottom:15,5/0#0",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:15,5"
         },
         {
           "at": "2 - Bottom:15,4",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 53"
         }
       ],
       "lockedges": [
@@ -7449,58 +8341,72 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "2 - Bottom:12,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:12,13"
         },
         {
           "at": "2 - Bottom:12,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:12,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:12,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:13,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:13,10"
         },
         {
           "at": "2 - Bottom:13,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 59"
         },
         {
           "at": "2 - Bottom:13,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 59"
         },
         {
           "at": "2 - Bottom:14,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:14,8"
         },
         {
           "at": "2 - Bottom:14,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:14,7"
         },
         {
           "at": "2 - Bottom:14,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:14,6"
         },
         {
           "at": "2 - Bottom:15,6/0#0",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:15,6"
         },
         {
           "at": "2 - Bottom:15,5/0#1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:15,5"
         },
         {
           "at": "2 - Bottom:16,5",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 54"
         }
       ],
       "lockedges": [
@@ -7570,50 +8476,62 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "2 - Bottom:12,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:12,13"
         },
         {
           "at": "2 - Bottom:12,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:12,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:12,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:13,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:13,10"
         },
         {
           "at": "2 - Bottom:13,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 59"
         },
         {
           "at": "2 - Bottom:13,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 59"
         },
         {
           "at": "2 - Bottom:14,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:14,8"
         },
         {
           "at": "2 - Bottom:15,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:15,8"
         },
         {
           "at": "2 - Bottom:15,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 60"
         },
         {
           "at": "2 - Bottom:16,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 60"
         }
       ],
       "lockedges": [
@@ -7675,58 +8593,72 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "2 - Bottom:12,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:12,13"
         },
         {
           "at": "2 - Bottom:12,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:12,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:12,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:13,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:13,10"
         },
         {
           "at": "2 - Bottom:13,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 59"
         },
         {
           "at": "2 - Bottom:13,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 59"
         },
         {
           "at": "2 - Bottom:14,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:14,8"
         },
         {
           "at": "2 - Bottom:14,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:14,7"
         },
         {
           "at": "2 - Bottom:15,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 57"
         },
         {
           "at": "2 - Bottom:15,6/0#1",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:15,6"
         },
         {
           "at": "2 - Bottom:16,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 56"
         },
         {
           "at": "2 - Bottom:17,6",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 56"
         }
       ],
       "lockedges": [
@@ -7792,50 +8724,62 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "2 - Bottom:12,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:12,13"
         },
         {
           "at": "2 - Bottom:12,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:12,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:12,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 64"
         },
         {
           "at": "2 - Bottom:13,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:13,10"
         },
         {
           "at": "2 - Bottom:13,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 59"
         },
         {
           "at": "2 - Bottom:13,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 59"
         },
         {
           "at": "2 - Bottom:14,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:14,8"
         },
         {
           "at": "2 - Bottom:15,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:15,8"
         },
         {
           "at": "2 - Bottom:16,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 58"
         },
         {
           "at": "2 - Bottom:17,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 58"
         }
       ],
       "lockedges": [
@@ -7897,18 +8841,22 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "2 - Bottom:14,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:14,13"
         },
         {
           "at": "2 - Bottom:15,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 71"
         },
         {
           "at": "2 - Bottom:16,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 71"
         }
       ],
       "lockedges": [{
@@ -7932,26 +8880,32 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "2 - Bottom:14,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:14,13"
         },
         {
           "at": "2 - Bottom:14,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 65"
         },
         {
           "at": "2 - Bottom:15,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:15,12"
         },
         {
           "at": "2 - Bottom:16,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 66"
         },
         {
           "at": "2 - Bottom:17,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 66"
         }
       ],
       "lockedges": [{
@@ -7979,26 +8933,32 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "2 - Bottom:12,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 76"
         },
         {
           "at": "2 - Bottom:11,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 76"
         },
         {
           "at": "2 - Bottom:10,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:10,14"
         },
         {
           "at": "2 - Bottom:9,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 75"
         },
         {
           "at": "2 - Bottom:8,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 75"
         }
       ],
       "lockedges": [{
@@ -8016,54 +8976,67 @@
       }]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "2 - Bottom:12,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 76"
         },
         {
           "at": "2 - Bottom:11,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 76"
         },
         {
           "at": "2 - Bottom:10,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:10,14"
         },
         {
           "at": "2 - Bottom:10,13/0#0",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:10,13"
         },
         {
           "at": "2 - Bottom:9,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:9,13"
         },
         {
           "at": "2 - Bottom:8,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 68"
         },
         {
           "at": "2 - Bottom:8,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 68"
         },
         {
           "at": "2 - Bottom:8,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 68"
         },
         {
           "at": "2 - Bottom:8,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 68"
         },
         {
           "at": "2 - Bottom:8,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 68"
         },
         {
           "at": "2 - Bottom:8,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 68"
         },
         {
           "at": "2 - Bottom:8,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 68"
         }
       ],
       "lockedges": [{
@@ -8091,18 +9064,22 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "2 - Bottom:15,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 62"
         },
         {
           "at": "2 - Bottom:16,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 62"
         },
         {
           "at": "2 - Bottom:17,10",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 62"
         }
       ],
       "entrySide": "W",
@@ -8111,58 +9088,72 @@
       "end": "LowerDown"
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "2 - Bottom:22,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 63"
         },
         {
           "at": "2 - Bottom:22,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 63"
         },
         {
           "at": "2 - Bottom:22,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 63"
         },
         {
           "at": "2 - Bottom:22,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 63"
         },
         {
           "at": "2 - Bottom:21,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 63"
         },
         {
           "at": "2 - Bottom:20,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 63"
         },
         {
           "at": "2 - Bottom:19,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 63"
         },
         {
           "at": "2 - Bottom:18,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 63"
         },
         {
           "at": "2 - Bottom:17,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 63"
         },
         {
           "at": "2 - Bottom:16,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 63"
         },
         {
           "at": "2 - Bottom:15,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 63"
         },
         {
           "at": "2 - Bottom:14,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:14,14"
         },
         {
           "at": "2 - Bottom:13,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 76"
         }
       ],
       "entrySide": "E",
@@ -8176,54 +9167,67 @@
       }]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "2 - Bottom:7,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 74"
         },
         {
           "at": "2 - Bottom:6,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:6,14"
         },
         {
           "at": "2 - Bottom:5,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 73"
         },
         {
           "at": "2 - Bottom:4,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:4,14"
         },
         {
           "at": "2 - Bottom:3,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 72"
         },
         {
           "at": "2 - Bottom:3,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 72"
         },
         {
           "at": "2 - Bottom:3,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 72"
         },
         {
           "at": "2 - Bottom:3,11",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 72"
         },
         {
           "at": "2 - Bottom:3,10",
+          "answered": true,
           "length": 0
         },
         {
           "at": "2 - Bottom:3,9",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 72"
         },
         {
           "at": "2 - Bottom:3,8",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 72"
         },
         {
           "at": "2 - Bottom:3,7",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 72"
         }
       ],
       "lockedges": [{
@@ -8247,26 +9251,32 @@
       ]
     },
     {
+      "lengthsAsked": true,
       "places": [
         {
           "at": "2 - Bottom:7,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 74"
         },
         {
           "at": "2 - Bottom:6,14",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:6,14"
         },
         {
           "at": "2 - Bottom:6,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "square 2 - Bottom:6,13"
         },
         {
           "at": "2 - Bottom:7,13",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 67"
         },
         {
           "at": "2 - Bottom:7,12",
-          "length": 0
+          "length": 0,
+          "toMeasure": "piece 67"
         }
       ],
       "lockedges": [{

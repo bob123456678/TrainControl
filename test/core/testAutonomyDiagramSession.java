@@ -3752,6 +3752,10 @@ public class testAutonomyDiagramSession
 
         session.setStation(start, true);
         session.setPointName(start, "Start");
+
+        // A DEAD END TRAINS TURN AT: otherwise a train that came in there can never leave towards the platform, and the
+        // build has no way in from it at all.
+        session.setPointProperty(start, "canReverse", Boolean.TRUE);
         session.setStation(platform, true);
         session.setPointName(platform, "Platform");
         session.setPointProperty(platform, "maxTrainLength", 6);

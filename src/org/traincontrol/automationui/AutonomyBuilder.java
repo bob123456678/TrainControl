@@ -401,21 +401,22 @@ public class AutonomyBuilder
     private Map<TileKey, List<TileKey>> blockingPoints = Collections.emptyMap();
 
     /**
-     * The squares that cut a stretch into pieces - the switches, and the squares two roads cross - which Mass Assign
-     * Lengths asks for one by one (OB-297).  Marked on each edge's places, so the runtime counts what the operator is
-     * asked to measure rather than whole stretches.
+     * What Mass Assign Lengths would ask a length for, square by square: the key of the piece, switch or shared square
+     * each lies in, where that still wants a length (OB-297, ADA-C1).  Marked on each edge's places, so the own-tail note
+     * counts exactly what the operator is asked to measure.
      *
-     * @param cuts the squares
+     * @param asked each square still wanting a length, to its key
      * @return this
      */
-    public AutonomyBuilder withPieceCuts(java.util.Set<TileKey> cuts)
+    public AutonomyBuilder withPiecesToMeasure(Map<TileKey, String> asked)
     {
-        this.pieceCuts = cuts == null ? Collections.<TileKey>emptySet() : cuts;
+        this.piecesToMeasure = asked;
 
         return this;
     }
 
-    private java.util.Set<TileKey> pieceCuts = Collections.emptySet();
+    /** Null when nobody said, and the configuration then says nothing of it */
+    private Map<TileKey, String> piecesToMeasure = null;
 
     public AutonomyBuilder withBarredArrivals(Map<TileKey, Set<TilePorts.Side>> barred)
     {
@@ -1309,13 +1310,18 @@ public class AutonomyBuilder
                 // 2026-09-23: "stop listing answered zeros as missing").  Written only where true.
                 if (place.isAnswered()) at.put("answered", true);
 
-                // AND WHETHER IT CUTS THE STRETCH INTO PIECES (OB-297): a switch, or a square two roads cross.
-                if (place.getTile() != null && pieceCuts.contains(place.getTile())) at.put("cut", true);
+                // AND WHAT MASS ASSIGN ASKS A LENGTH FOR THERE (OB-297, ADA-C1).
+                String asked = place.getTile() == null || piecesToMeasure == null ? null : piecesToMeasure.get(place.getTile());
+
+                if (asked != null) at.put("toMeasure", asked);
 
                 places.put(at);
             }
 
             if (places.length() > 0) json.put("places", places);
+
+            // That the marks were written, so an edge with none reads as "nothing to measure" and not "not known".
+            if (piecesToMeasure != null && places.length() > 0) json.put("lengthsAsked", true);
 
             // AND HOW MUCH OF IT IS AFTER THE LAST SWITCH (Adam's ruling, 2026-09-02).
             //

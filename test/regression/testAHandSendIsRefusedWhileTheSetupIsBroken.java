@@ -223,11 +223,12 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
                     {
                         javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
+                        // Handed the sentence, as the menu hands it where Start is greyed (ADU-C3).
                         Method add = Class.forName("org.traincontrol.gui.HomeLocomotiveMenu").getDeclaredMethod(
-                            "addReturnHomeItem", javax.swing.JComponent.class, TrainControlUI.class);
+                            "addReturnHomeItem", javax.swing.JComponent.class, TrainControlUI.class, String.class);
 
                         add.setAccessible(true);
-                        add.invoke(null, menu, ui[0]);
+                        add.invoke(null, menu, ui[0], ui[0].whyAHandSendIsRefused());
 
                         javax.swing.JMenuItem item = (javax.swing.JMenuItem) menu.getComponent(0);
 

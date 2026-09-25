@@ -449,40 +449,56 @@ public class Edge
     }
 
     /**
-     * The places that cut this edge into pieces - a switch, or a square two roads cross - each a piece of its own, as
-     * Mass Assign Lengths asks for them (OB-297; Adam, 2026-09-24: *"Locations of switches are known."*).
+     * What Mass Assign Lengths would ask a length for on this edge, place by place: the key of the piece, switch or shared
+     * square each place lies in, where that still wants a length (OB-297, ADA-C1; Adam, 2026-09-24: *"Locations of
+     * switches are known."*).  The own-tail note counts these, so it asks for exactly what the editor offers.
      *
-     * Written by the build.  Empty for a configuration built before, whose edges are then one piece each - which is what
-     * the own-tail note counted by until then.
+     * Written by the build.  A configuration built before has none, and says so (`knowsPiecesToMeasure`): its edges are
+     * then read whole, as the note read them until then.
      */
-    private java.util.Set<String> cutPlaces = Collections.emptySet();
+    private java.util.Map<String, String> piecesToMeasure = Collections.emptyMap();
+
+    /** Whether the build said what Mass Assign asks for on this edge - true even where it asks for nothing */
+    private boolean knowsPiecesToMeasure = false;
 
     /**
-     * @param ids the places that cut this edge into pieces
+     * @param marks each place still wanting a length, to the key of what Mass Assign asks for there; null for not known
      */
-    public void setCutPlaces(java.util.Collection<String> ids)
+    public void setPiecesToMeasure(java.util.Map<String, String> marks)
     {
-        this.cutPlaces = ids == null ? Collections.<String>emptySet()
-            : Collections.unmodifiableSet(new java.util.LinkedHashSet<>(ids));
+        this.piecesToMeasure = marks == null ? Collections.<String, String>emptyMap()
+            : Collections.unmodifiableMap(new java.util.LinkedHashMap<>(marks));
+
+        this.knowsPiecesToMeasure = marks != null;
+    }
+
+    /**
+     * @return whether the build said what Mass Assign asks for on this edge
+     */
+    public boolean knowsPiecesToMeasure()
+    {
+        return this.knowsPiecesToMeasure;
     }
 
     /**
      * @param id a place identifier
-     * @return whether that place cuts this edge into pieces - a switch, or a square two roads cross
+     * @return the key of what Mass Assign asks a length for at that place, or null where it asks for nothing
      */
-    public boolean isPlaceACut(String id)
+    public String pieceToMeasure(String id)
     {
-        return id != null && this.cutPlaces.contains(id);
+        return id == null ? null : this.piecesToMeasure.get(id);
     }
 
     /**
      * Whether this edge is measured: it has a length, or every place on it was answered 0 on purpose (Adam, 2026-09-24,
      * TDU-C6: *"0 lengths count as measures, so non-atomic should be allowed"*).
      *
-     * The one question every rule that asks "is this track measured" puts to an edge - the Atomic Routes gate
-     * (`Layout.unmeasuredTrackThatCouldBeReleased`), the release escape it stands for (`Layout.pathIsUnmeasured`) and the
-     * route in (`Layout.measuredRouteIn`) - so the gate cannot let through a railway the escape then treats as
-     * unmeasured.  Without places, which a hand-written configuration has none of, only a length says so.
+     * Asked by the Atomic Routes gate (`Layout.unmeasuredTrackThatCouldBeReleased`) and the release escape it stands for
+     * (`Layout.pathIsUnmeasured`), and by nothing else: the two must ask one question, or the gate lets through a railway
+     * the escape then releases under a train.  Every other length rule - the room walk, the route in, the tail walks and
+     * the tail question - reads an answered 0 as a stretch nobody measured (OB-274, confirmed by Adam on 2026-09-23); the
+     * route in went further for a while and admitted a train whose tail the standing walk never claims (ADA-A1).  Without
+     * places, which a hand-written configuration has none of, only a length says so.
      *
      * @return true when the edge is measured
      */
@@ -849,13 +865,18 @@ public class Edge
 
                 if (this.answeredPlaces.contains(this.placeIds.get(i))) place.put("answered", true);
 
-                // And where it is cut into pieces (OB-297), for the same reason: an export is a configuration.
-                if (this.cutPlaces.contains(this.placeIds.get(i))) place.put("cut", true);
+                // And what Mass Assign asks for there (OB-297), for the same reason: an export is a configuration.
+                if (this.piecesToMeasure.containsKey(this.placeIds.get(i)))
+                {
+                    place.put("toMeasure", this.piecesToMeasure.get(this.placeIds.get(i)));
+                }
 
                 placeList.add(place);
             }
 
             jsonObj.put("places", new JSONArray(placeList));
+
+            if (this.knowsPiecesToMeasure) jsonObj.put("lengthsAsked", true);
         }
 
         if (!commandList.isEmpty())

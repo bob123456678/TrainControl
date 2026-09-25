@@ -835,7 +835,8 @@ public class Point
      * the runtime fenced it behind `isAutoRunning` and only the planner applied it always; reading it
      * now would suggest a hand-driven send is exempt, and none is.
      *
-     * @param destination the station being arrived at; a null destination is held back by nothing
+     * @param destination the square being arrived at - a route's destination or any square on the way (OB-295); a null
+     *        square is held back by nothing
      * @param arriving the locomotive arriving, exempt where it is itself the occupant
      * @param occupancy where to look for who is standing where
      * @return the watched square somebody else is standing on, or null when the destination is free
@@ -861,7 +862,7 @@ public class Point
     /**
      * The rule asked of the live railway, which is what everything outside the staging planner wants.
      *
-     * @param destination the station being arrived at
+     * @param destination the square being arrived at - a route's destination or any square on the way (OB-295)
      * @param arriving the locomotive arriving, exempt where it is itself the occupant
      * @return the watched square somebody else is standing on, or null
      */
