@@ -2040,12 +2040,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Unticks Startup -> Load Autonomy after a legacy autonomy.json has been imported, every time (REG2-C3).
      *
-     * The box is one preference for the whole install.  It shows ticked to anybody who never touched it, and on a layout
-     * with only the old graph it loaded nothing until it had been set by hand, so what it showed and what it did
-     * disagreed for every upgrading user.  Adam, 2026-09-24, choosing among the resets: *"Set the setting to unchecked
-     * when importing a legacy json file, each time.  Simple to track and implement."*  So after an import the box says
-     * what the next start will do - load nothing - and ticking it is one click that means what it shows.  The import's
-     * log says so.
+     * The box is one preference for the whole install, and it shows ticked to anybody who never touched it.  When this was
+     * written, a layout with only the old graph loaded nothing at start until the box had been set by hand, so what it
+     * showed and what it did disagreed for every upgrading user.  Adam, 2026-09-24, choosing among the resets: *"Set the
+     * setting to unchecked when importing a legacy json file, each time.  Simple to track and implement."*
+     *
+     * **What it does now** (TDD-C11).  Since OB-254 took the old graph out of start-up, Load Autonomy resumes the active
+     * diagram setup - and an import makes one.  So the untick is no longer the box catching up with what the next start
+     * would do anyway: it is what makes the next start load nothing, and ticking the box again is what has the imported
+     * setup loaded at start.  The import's log says so, and so does the changelog.  Whether to keep it now that nothing
+     * old is loaded at start is Adam's to say; his ruling stands until he does.
      */
     public void autoLoadOffAfterLegacyImport()
     {
