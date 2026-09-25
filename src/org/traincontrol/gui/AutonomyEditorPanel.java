@@ -9509,6 +9509,9 @@ public class AutonomyEditorPanel extends JPanel
                 tool = Tool.NONE;
                 oneWayFrom = null;
                 oneWayButton.setSelected(false);
+
+                // AND ITS PROMPT (TDD2-C7), which asked for the first square, as putting a tool down says.
+                say(hint, I18n.t("autosetup.ui.hintClickToCycle"));
             }
         }
 
