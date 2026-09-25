@@ -5067,7 +5067,24 @@ public class Layout
             
             for (Object tt : timetable)
             {                
-                timetableList.add(TimetablePath.fromJSON(tt.toString(), control, layout));
+                // Each entry on its own, so one that cannot be read costs ITSELF and nothing else.
+                //
+                // This loop used to let the exception out to the catch below, which discards
+                // timetableList entirely - so a single entry naming a locomotive that had been deleted,
+                // or track that had been removed, lost the WHOLE timetable, with one line in the log to
+                // say so.  The next save then wrote the empty timetable back over the configuration,
+                // and it was gone for good.
+                try
+                {
+                    timetableList.add(TimetablePath.fromJSON(tt.toString(), control, layout));
+                }
+                catch (Exception entry)
+                {
+                    control.logf(
+                        "autolayout.warnTimetable",
+                        entry.getMessage()
+                    );
+                }
             }
             
             layout.setTimetable(timetableList);

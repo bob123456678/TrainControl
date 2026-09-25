@@ -350,4 +350,58 @@ public class testLayoutTimetable
         assertEquals(layout.getUnfinishedTimetablePathIndex(), 0,
             "after a reset the first entry is the one to run next");
     }
+
+    /**
+     * One timetable entry that cannot be read costs itself, not the whole timetable.
+     *
+     * The loader read every entry inside one try, and TimetablePath.fromJSON throws for an entry whose
+     * locomotive or track no longer exists.  The catch then logged one line and kept NOTHING - so
+     * deleting a locomotive the timetable used (or a point or edge an entry crosses) lost every entry
+     * at the next start, and the next save wrote the empty timetable back over the configuration for
+     * good.
+     *
+     * Ported from the 3.0 branch (a2decb01).
+     */
+    @Test
+    public void testOneUnreadableEntryDoesNotLoseTheTimetable() throws Exception
+    {
+        MarklinLocomotive kept = model.newMM2Locomotive("TT kept loc", 74);
+
+        try
+        {
+            String entry = "{\"loc\":\"%s\",\"path\":[{\"start\":\"TT_x\",\"end\":\"%s\"}],"
+                + "\"executionTime\":0,\"secondsToNext\":0}";
+
+            String config = "{"
+                + "\"points\": ["
+                + "  {\"name\":\"TT_x\",\"station\":true,\"s88\":8392},"
+                + "  {\"name\":\"TT_y\",\"station\":true,\"s88\":8393}"
+                + "],"
+                + "\"edges\": [{\"start\":\"TT_x\",\"end\":\"TT_y\"}],"
+                + "\"timetable\": ["
+                    // A locomotive that has since been deleted
+                    + String.format(entry, "TT deleted loc", "TT_y") + ","
+                    // A good entry
+                    + String.format(entry, kept.getName(), "TT_y") + ","
+                    // Track that has since been deleted
+                    + String.format(entry, kept.getName(), "TT_gone")
+                + "],"
+                + "\"minDelay\":1,\"maxDelay\":2,\"defaultLocSpeed\":35}";
+
+            Layout layout = Layout.fromJSON(config, model);
+
+            assertTrue(layout.isValid(), "the fixture itself has to load: " + Layout.getLastError());
+
+            assertEquals(layout.getTimetable().size(), 1,
+                "one timetable entry naming a locomotive or track that no longer exists threw the "
+                + "WHOLE timetable away - and the next save would have made that permanent");
+
+            assertEquals(layout.getTimetable().get(0).getLoc(), kept,
+                "the entry that survived must be the readable one");
+        }
+        finally
+        {
+            model.deleteLoc("TT kept loc");
+        }
+    }
 }
