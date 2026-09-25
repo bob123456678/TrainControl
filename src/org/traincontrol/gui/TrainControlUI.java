@@ -8133,6 +8133,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             final org.traincontrol.automationui.TilePorts.Side facingChosen = facingChosenAtTheLanding;
             final org.traincontrol.automationui.TilePorts.Side facingFound = facingAtTheLanding;
 
+            // SPEC-A1: THE FOURTH ATTEMPT RECORDED THE LANDING COPY'S OWN SIDE, which is not the
+            // train's heading.  `StationIndex.speakerAt` says that on an empty square "any copy will
+            // do", so that side was copy 0 - chosen arbitrarily - and recording it cemented a
+            // direction nobody had picked.  The heading is read before the move instead, in
+            // `facingAtTheLanding`, and handed to the rule.
+            // THE OPERATOR'S ANSWER WINS WHERE THEY GAVE ONE (Adam, 2026-09-13).
+            //
+            // `facingAfterAPaste` is the rule for a paste nobody was asked about: keep the heading
+            // the walk found where the landing can hold it, and MT-377's *"as long as the direction
+            // isnt flipped"* otherwise.  At a may-reverse square the question was put, so the answer
+            // is the heading - it needs no filtering, because the choices offered were the square's
+            // own.
+            // OVER THE COPIES A TRAIN MAY STAND ON (OB-270; Adam, 2026-09-23: *"we shouldn't allow an impossible
+            // facing to be saved"*) - the copies the paste itself chose among, so the record and the copy agree.
+            // WRITTEN BEFORE THE TAIL QUESTION (TDU3-C1), as the locomotive dialog writes it: it was chosen before, and
+            // written after it was dropped with a late answer - where only the road can have gone stale.
+            session.setFacing(tile, facingChosen != null ? facingChosen
+                : org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
+                    placeableFacings(tile), facingFound, point.getName()));
+
             session.setArrivedFrom(tile, tail);
 
             // AND THE RAILWAY, NOT ONLY THE SETUP (VAL8-A2, REG7-B1 - found by both reviewers).
@@ -8154,41 +8174,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.getAutoLayout(), point, tail, point.getCurrentLocomotive().getTrainLength(),
                 point.getCurrentLocomotive().getName(), this, session::baseNameOf, roadBefore);
 
-            // ONLY WHILE THE PLACEMENT STILL STANDS (TDU2-A1): the question waited with the window live, and what stands on
-            // this copy now may be another train, with the road a run brought it by.
-            final boolean stands = org.traincontrol.gui.TailCrossedPrompt.placementStillStands(point, placed, tail,
-                roadAtTheQuestion);
+            // ONLY WHERE THE PLACEMENT STILL STANDS (TDU2-A1, TDU3-B1): the question waited with the window live, and what
+            // stands on this copy now may be another train, with the road a run brought it by - or the railway may have
+            // been rebuilt, and the copy that holds the train is a new one.
+            final org.traincontrol.automation.Point landing = org.traincontrol.gui.TailCrossedPrompt.whereTheAnswerGoes(
+                this.model.getAutoLayout(), point, placed, tail, roadAtTheQuestion, getAutonomySession() == session);
 
             // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY (TLR-C5, TLV-A1, TLW-A1).  Not Known forgets a road; no
             // question, or a closed one, keeps the road the train had where it is still on the same square with the same
             // side - read from the running layout, which a run has told and the setup has not - and both stores are
             // written so they agree, including on another copy of the square the paste moved it onto.
-            if (stands)
+            if (landing != null)
             {
                 java.util.List<org.traincontrol.automation.Edge> road = answer.roadToRecord(roadBefore,
                     sameSquareAsBefore, sideBefore, tail);
 
                 session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(road));
-                point.setArrivedAlong(road);
+                org.traincontrol.gui.TailCrossedPrompt.writeRoad(landing, point, this.model.getAutoLayout(), road);
+            }
+            else
+            {
+                org.traincontrol.gui.TailCrossedPrompt.noteADroppedAnswer(this.model, placed.getName(), point.getName());
             }
 
-            // SPEC-A1: THE FOURTH ATTEMPT RECORDED THE LANDING COPY'S OWN SIDE, which is not the
-            // train's heading.  `StationIndex.speakerAt` says that on an empty square "any copy will
-            // do", so that side was copy 0 - chosen arbitrarily - and recording it cemented a
-            // direction nobody had picked.  The heading is read before the move instead, in
-            // `facingAtTheLanding`, and handed to the rule.
-            // THE OPERATOR'S ANSWER WINS WHERE THEY GAVE ONE (Adam, 2026-09-13).
-            //
-            // `facingAfterAPaste` is the rule for a paste nobody was asked about: keep the heading
-            // the walk found where the landing can hold it, and MT-377's *"as long as the direction
-            // isnt flipped"* otherwise.  At a may-reverse square the question was put, so the answer
-            // is the heading - it needs no filtering, because the choices offered were the square's
-            // own.
-            // OVER THE COPIES A TRAIN MAY STAND ON (OB-270; Adam, 2026-09-23: *"we shouldn't allow an impossible
-            // facing to be saved"*) - the copies the paste itself chose among, so the record and the copy agree.
-            if (stands) session.setFacing(tile, facingChosen != null ? facingChosen
-                : org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
-                    placeableFacings(tile), facingFound, point.getName()));
         }
 
         try
@@ -8922,25 +8930,57 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         java.util.Map<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>> byAddress,
         java.awt.Color wash, int holdMs)
     {
+        return highlightAccessories(byAddress, wash, holdMs, null);
+    }
+
+    /**
+     * The same, leaving out every square one of `notThese` also reaches (OB-286).
+     *
+     * A square a route both commands and checks is drawn as commanded, and the route editor takes the checked out of
+     * the commanded address by address.  A three-way answers to two addresses (GUI-C5), so commanded under one and
+     * checked under the other it was lit twice, the checked wash last - which only a question asked of the SQUARE
+     * can see.
+     *
+     * @param byAddress each logical address, and the protocols it is asked in
+     * @param wash the colour
+     * @param holdMs how long to hold it
+     * @param notThese the addresses whose squares are lit already in a stronger colour, or null
+     * @return how many squares were lit
+     */
+    public int highlightAccessories(
+        java.util.Map<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>> byAddress,
+        java.awt.Color wash, int holdMs,
+        java.util.Map<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>> notThese)
+    {
         if (byAddress == null || byAddress.isEmpty()) return 0;
 
         // THE DECODER, NOT THE NUMBER (GUI-C5): the protocol each address is commanded in, and a three-way's
         // second decoder - both asked of the tile, which is what knows them.
         return lightWhere(tile ->
+            answersTo(tile, AddressedAs.ACCESSORY) && reaches(tile, byAddress)
+                && (notThese == null || !reaches(tile, notThese)), wash, holdMs);
+    }
+
+    /**
+     * Whether an accessory tile answers to any of these addresses in any of its protocols (GUI-C5).
+     *
+     * @param tile the tile
+     * @param byAddress each logical address, and the protocols it is asked in
+     * @return true when one of them reaches it
+     */
+    private static boolean reaches(org.traincontrol.base.LayoutDiagramComponent tile,
+        java.util.Map<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>> byAddress)
+    {
+        for (java.util.Map.Entry<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>>
+            wanted : byAddress.entrySet())
         {
-            if (!answersTo(tile, AddressedAs.ACCESSORY)) return false;
-
-            for (java.util.Map.Entry<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>>
-                wanted : byAddress.entrySet())
+            for (org.traincontrol.base.Accessory.accessoryDecoderType protocol : wanted.getValue())
             {
-                for (org.traincontrol.base.Accessory.accessoryDecoderType protocol : wanted.getValue())
-                {
-                    if (tile.answersToAccessoryAddress(wanted.getKey(), protocol)) return true;
-                }
+                if (tile.answersToAccessoryAddress(wanted.getKey(), protocol)) return true;
             }
+        }
 
-            return false;
-        }, wash, holdMs);
+        return false;
     }
 
     public DiagramTileRegistry getDiagramTileRegistry()
@@ -26811,7 +26851,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // active locomotives to stop", declined at the conditional-route warning, or refused for a train
                 // away from its start switched the running railway to atomic on its way to being refused, and a
                 // refused press should change nothing.
-                keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
+                //
+                // AND A GATE THAT FAILS STOPS THE RUN AND GIVES THE BUTTON BACK (TDU3-C4), as at Start and Return Home.
+                try
+                {
+                    keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
+                }
+                catch (RuntimeException gate)
+                {
+                    this.model.log(gate);
+
+                    this.executeTimetable.setEnabled(true);
+
+                    return;
+                }
 
                 // Capture is left exactly as the operator set it, as the staging button next door already
                 // does.  Forcing it off protected against a run appending itself to the list being walked;

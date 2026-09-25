@@ -9585,6 +9585,24 @@ public class AutonomySession
     }
 
     /**
+     * Whether any square of a leg that takes a length has one - what makes the berth rule judge the leg at all (PRW-B1).
+     *
+     * @param squares the leg's squares
+     * @return true when one is measured
+     */
+    private boolean anythingMeasuredOn(java.util.List<TileKey> squares)
+    {
+        for (TileKey tile : squares)
+        {
+            if (getGraph() != null && takesNoLength(tile)) continue;
+
+            if (store.getTileLength(tile) > 0) return true;
+        }
+
+        return false;
+    }
+
+    /**
      * The track a parking berth's rule spends before it stops, walking back from the berth over one arriving leg: how
      * much of it is measured, and how many of its squares have no length and no answer (OB-288, TDA-C7, TDA2-C6).
      *
@@ -9622,7 +9640,7 @@ public class AutonomySession
     }
 
     /**
-     * Stations whose approach is measured in part and not in whole - the state that closes a berth to every train.
+     * Stations whose approach is measured in part and not in whole - the state that refuses a berth trains that fit.
      *
      * Adam, 2026-09-19, shown RTX-C2: *"as long as lengths are specified on the berth, it will work, right?  We want
      * clear warnings to the user if so, then it's fine."*  It does work: with the whole approach measured, the berth
@@ -9644,7 +9662,8 @@ public class AutonomySession
      *
      * Asked of the legs that ARRIVE at each station, which is what the berth walk reads.
      *
-     * @return the station squares, each mapped to how many squares of its approach still have no length
+     * @return the station squares, each mapped to how many squares of its approach, before the switch or crossing that
+     *         ends the berth's room, still have no length
      */
     public java.util.Map<TileKey, Integer> stationsWithAHalfMeasuredApproach()
     {
@@ -9746,9 +9765,12 @@ public class AutonomySession
      * platform, which is exactly what `Layout.measuredRoomAtTheEndOf` counts when that edge crosses a
      * switch.  A notice quoting a number the refusal would not quote is worse than no notice: the reader
      * measures the wrong stretch.  For a parking berth the number is the berth rule's where that stops first - at a
-     * crossing between the berth and its switch (TDA2-C6).
+     * crossing between the berth and its switch, or on a leg with no switch at all (TDA2-C6, TDA3-C2) - and 0 where
+     * nothing before that stop is measured and its squares were answered 0; unanswered, they are the half-measured
+     * notice's to name, and this says nothing (TDA3-C1).
      *
-     * **An edge crossing no switch is skipped unless the train turns at its far end.**  There the guard
+     * **An edge crossing no switch is skipped unless the train turns at its far end** - or, for a parking berth, a
+     * crossing on it ends the berth rule's room (above).  There the guard
      * carries on backwards through earlier edges, so this edge alone bounds nothing and any number taken
      * from it would be too small - except where the edge begins at a square trains turn round on, which
      * is where the walk stops under his other ruling of the same day.  `unmeasuredAfterTheLastSwitch`
@@ -9799,6 +9821,13 @@ public class AutonomySession
                 // (`boundsTheRoom`), so this quoted room the berth rule does not give, and a berth refusing its own
                 // maximum at the crossing was warned about by neither notice.  A platform autonomy may choose is not
                 // judged by the berth rule, and keeps the room walk's number.
+                //
+                // AND WITH NOTHING SPENT BEFORE THE STOP (TDA3-C1), every train is refused there - once anything on the
+                // approach is measured, which the rule asks first (PRW-B1) - so the room walk's figure is not quoted
+                // either.  Squares nobody has answered are the half-measured notice's to name, and this one says nothing;
+                // answered 0 on purpose, they are named by nothing else, and this one says 0.
+                boolean theBerthRulesFigure = false;
+
                 if (!isAutoDestination(square))
                 {
                     java.util.List<TileKey> squares = new java.util.ArrayList<>();
@@ -9809,7 +9838,13 @@ public class AutonomySession
 
                     int[] before = berthTrackBeforeTheStop(squares);
 
-                    if (before[2] == 1 && before[0] > 0 && (room <= 0 || before[0] < room)) room = before[0];
+                    if (before[2] == 1 && anythingMeasuredOn(squares) && (room <= 0 || before[0] < room))
+                    {
+                        if (before[0] == 0 && before[1] > 0) continue;
+
+                        room = before[0];
+                        theBerthRulesFigure = true;
+                    }
                 }
 
                 if (room == Integer.MIN_VALUE)
@@ -9822,8 +9857,9 @@ public class AutonomySession
                 }
 
                 // UNMEASURED IS UNKNOWN, NOT SHORT - the doctrine the guard itself follows, and `-1` is
-                // the reduction's word for "bounded, and nothing in it is measured".
-                if (room <= 0 || room >= max) continue;
+                // the reduction's word for "bounded, and nothing in it is measured".  Not the berth rule's 0, which is
+                // what it refuses on (TDA3-C1).
+                if ((room <= 0 && !theBerthRulesFigure) || room >= max) continue;
 
                 if (worst < 0 || room < worst) worst = room;
             }

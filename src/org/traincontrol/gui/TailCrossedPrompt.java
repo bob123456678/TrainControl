@@ -525,7 +525,8 @@ public class TailCrossedPrompt
      * copy may hold another train, brought there by a run with the road it drove in by; written anyway, the answer put
      * the first train's road (or none) over it, and that train's tail stopped at the switch with another routed into it.
      * So a door writes only while the copy still holds the train it placed, with the side and the road the placement left
-     * - anything done in the wait that could matter changes one of the three.
+     * - and asks it of the running railway's copy, through `whereTheAnswerGoes`, since a rebuild in the wait changes none
+     * of the three on the copy it replaced (TDU3-B1).
      *
      * @param point the copy the train was put on
      * @param placed the train put there, by reference
@@ -539,6 +540,65 @@ public class TailCrossedPrompt
         return point != null && placed != null && point.getCurrentLocomotive() == placed
             && java.util.Objects.equals(point.getArrivedFrom(), side)
             && java.util.Objects.equals(point.getArrivedAlong(), road);
+    }
+
+    /**
+     * Where a door writes the road a tail question answered, or null when nowhere (TDU2-A1, TDU3-B1).
+     *
+     * The copy the train was put on is the one asked about only while it is still the running railway's.  A rebuild in
+     * the wait - any setup change from the diagram, a page left out, another configuration loaded - builds new copies
+     * and leaves the old one as it was, so asked of the old one the check always passed, and the answer went to a copy
+     * nothing reads.  So the copy of that name on the railway running NOW is asked: after a rebuild of the same setup
+     * the train is put back on it with its side and the road the setup recorded, and the answer belongs there; after
+     * another configuration is loaded the copy holds that configuration's train or none, and the answer goes nowhere.
+     * And nowhere once the door's setup is not the window's any more - a session replaced by a re-download.
+     *
+     * @param running the railway running now, or null to ask the copy itself
+     * @param asked the copy the train was put on when the question was asked
+     * @param placed the train put there, by reference
+     * @param side the side the placement recorded
+     * @param road the road the copy held when the question was asked
+     * @param sameSetup whether the setup the door writes to is still the window's
+     * @return the copy to write to, or null
+     */
+    public static Point whereTheAnswerGoes(Layout running, Point asked, org.traincontrol.base.Locomotive placed,
+        String side, List<Edge> road, boolean sameSetup)
+    {
+        if (!sameSetup || asked == null) return null;
+
+        Point now = running == null ? asked : running.getPoint(asked.getName());
+
+        return placementStillStands(now, placed, side, road) ? now : null;
+    }
+
+    /**
+     * Writes an answered road to the copy `whereTheAnswerGoes` chose - through the running railway's own edges where a
+     * rebuild made that copy a new one, since the answer's road is the old railway's (TDU3-B1).
+     *
+     * @param landing the copy to write to
+     * @param asked the copy the question was asked about
+     * @param running the railway running now
+     * @param road the road to record, or null for none
+     */
+    public static void writeRoad(Point landing, Point asked, Layout running, List<Edge> road)
+    {
+        if (landing == null) return;
+
+        landing.setArrivedAlong(landing == asked || road == null || running == null ? road
+            : running.roadNamed(Layout.namesOfRoad(road)));
+    }
+
+    /**
+     * Says in the log that an answer was not recorded, and why (TDU3-C2): the squares go dark whichever way it went, and
+     * the operator could not tell a dropped answer from one that did not work.
+     *
+     * @param model where the log goes
+     * @param train the train the question was about
+     * @param where the copy it was put on
+     */
+    public static void noteADroppedAnswer(org.traincontrol.model.ViewListener model, String train, String where)
+    {
+        if (model != null) model.logf("autolayout.ui.logTailAnswerDropped", train, where);
     }
 
     /** The question waiting on the diagram for its click, or null (FR-100). */

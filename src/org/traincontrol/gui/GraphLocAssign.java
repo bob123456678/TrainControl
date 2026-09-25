@@ -317,14 +317,23 @@ public class GraphLocAssign extends javax.swing.JPanel
 
             // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY (TLW-A1), as the paste does: OK pressed on a train's own
             // dialog right after a run, with nothing asked, keeps the road it drove in on - in both stores.
-            // ONLY WHILE THE PLACEMENT STILL STANDS (TDU2-A1): the question waited with the window live.
-            if (TailCrossedPrompt.placementStillStands(point, placed, tail, roadAtTheQuestion))
+            // ONLY WHERE THE PLACEMENT STILL STANDS (TDU2-A1, TDU3-B1): the question waited with the window live, and the
+            // copy may hold another train now, or have been replaced by a rebuild.
+            final org.traincontrol.automation.Point landing = TailCrossedPrompt.whereTheAnswerGoes(
+                edit.parent.getModel().getAutoLayout(), point, placed, tail, roadAtTheQuestion,
+                edit.parent.getAutonomySession() == session);
+
+            if (landing != null)
             {
                 java.util.List<org.traincontrol.automation.Edge> road = answer.roadToRecord(roadBefore,
                     tile.equals(squareBefore), sideBefore, tail);
 
                 session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(road));
-                point.setArrivedAlong(road);
+                TailCrossedPrompt.writeRoad(landing, point, edit.parent.getModel().getAutoLayout(), road);
+            }
+            else
+            {
+                TailCrossedPrompt.noteADroppedAnswer(edit.parent.getModel(), placed.getName(), point.getName());
             }
         }
 

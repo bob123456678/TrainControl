@@ -3078,8 +3078,10 @@ public class RouteEditorFrame extends JFrame
         lit += parent.highlightAddresses(commandedRoutes, TrainControlUI.AddressedAs.ROUTE,
             org.traincontrol.util.ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);
 
+        // AND NOT A SQUARE ALREADY LIT AS COMMANDED (OB-286): the rule above is asked per address, and a three-way
+        // answers to two - commanded under one and checked under the other, it was washed orange over the yellow.
         lit += parent.highlightAccessories(checked, org.traincontrol.util.ImageUtil.HIGHLIGHT_CONDITION,
-            HIGHLIGHT_HOLD_MS);
+            HIGHLIGHT_HOLD_MS, commanded);
 
         lit += parent.highlightAddresses(checkedSensors, TrainControlUI.AddressedAs.FEEDBACK,
             org.traincontrol.util.ImageUtil.HIGHLIGHT_CONDITION, HIGHLIGHT_HOLD_MS);

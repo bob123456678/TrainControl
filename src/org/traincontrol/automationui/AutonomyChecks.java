@@ -325,7 +325,8 @@ public class AutonomyChecks
      * **Two rules can refuse a train a platform and they are set by different hands.**  The station's
      * `maxTrainLength` is a number somebody typed - what they believe the platform holds - and the
      * measured run in is what the track says, counted back from the platform to whichever of the last
-     * switch and a reversal is met first.  Where the second is smaller the first never binds: a train
+     * switch and a reversal is met first - and for a parking berth to a crossing, where the berth rule stops there
+     * first, which makes the figure the berth rule's (TDA2-C6, TDA3-C1).  Where the second is smaller the first never binds: a train
      * inside the stated maximum is refused on the track measurement instead, by a rule that names a
      * different number.
      *
@@ -377,7 +378,7 @@ public class AutonomyChecks
     /**
      * A berth whose approach is measured in part and not in whole (Adam, 2026-09-19, on RTX-C2).
      *
-     * A WARNING rather than a notice, because while it stands the berth can refuse a train that fits: the room walk
+     * A WARNING rather than a notice, because while it stands the berth can refuse a train that fits: the berth rule
      * judges as soon as anything on the approach is measured, and the squares that are not measured are worth
      * nothing to it.  Adam's ruling was that the rule is right and the operator should be told - *"we want clear
      * warnings to the user"* - so the sentence says what is happening and what ends it.

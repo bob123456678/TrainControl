@@ -193,6 +193,14 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
 
         // Show custom icon and controls
         displayCustomizationButtons();
+
+        // APPLY ONLY WHILE THERE IS SOMETHING TO APPLY (FR-098; Adam, on MT-466: *"just make sure apply is greyed out
+        // if there is nothing to apply"*).  Asked whenever the icon or the trigger on show changes, and whenever
+        // another function is shown.
+        this.fIcon.addItemListener(event -> refreshApply());
+        this.functionTriggerType.addItemListener(event -> refreshApply());
+
+        refreshApply();
                
         this.customFunctionIcon.setMinimumSize(new Dimension(50, 33));
         
@@ -508,6 +516,8 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         parent.repaintLoc(true, null);
             
         this.fNo.setSelectedIndex((this.fNo.getSelectedIndex() + 1) % this.fNo.getItemCount());
+
+        refreshApply();
     }//GEN-LAST:event_applyButtonActionPerformed
 
     private void resetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetButtonActionPerformed
@@ -574,25 +584,65 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
         if (this.onFunctionChanged != null) this.onFunctionChanged.accept(targetFNo);
 
         this.fIcon.setSelectedIndex(this.loc.sanitizeFIconIndex(this.loc.getFunctionType(targetFNo)));
-        
-        if (loc.isFunctionTimed(targetFNo) > 0)
-        {
-            this.functionTriggerType.setSelectedIndex(Math.min(loc.isFunctionTimed(targetFNo) + 1, this.functionTriggerType.getItemCount() - 1));
-        }
-        else if (loc.isFunctionPulse(targetFNo))
-        {
-            this.functionTriggerType.setSelectedIndex(1);
-        }
-        else
-        {
-            this.functionTriggerType.setSelectedIndex(0);
-        }  
-        
+
+        this.functionTriggerType.setSelectedIndex(triggerShownFor(targetFNo));
+
         this.fIconlabel.setText(
             I18n.f("loc.ui.functionIconLoading", targetFNo, "")
         );
-        
+
         displayCustomizationButtons();
+
+        refreshApply();
+    }
+
+    /**
+     * Where the trigger list shows a function's stored trigger: its timing, momentary, or toggle.
+     *
+     * @param function the function number
+     * @return the index in the trigger list
+     */
+    private int triggerShownFor(int function)
+    {
+        if (loc.isFunctionTimed(function) > 0)
+        {
+            return Math.min(loc.isFunctionTimed(function) + 1, this.functionTriggerType.getItemCount() - 1);
+        }
+
+        return loc.isFunctionPulse(function) ? 1 : 0;
+    }
+
+    /**
+     * Whether the function on show differs from what the locomotive holds for it - what Apply would write (FR-098).
+     *
+     * Its icon, its trigger, and its custom picture: a picture chosen that it does not have, or one it has taken off.
+     *
+     * @return true when Apply has something to write
+     */
+    private boolean somethingToApply()
+    {
+        int function = getFNo();
+
+        if (function < 0) return false;
+
+        if (this.fIcon.getSelectedIndex() != this.loc.sanitizeFIconIndex(this.loc.getFunctionType(function))) return true;
+
+        if (this.functionTriggerType.getSelectedIndex() != triggerShownFor(function)) return true;
+
+        String stored = this.loc.getLocalFunctionImageURL(function);
+
+        if ("reset".equals(this.customIconPath)) return stored != null;
+
+        return this.customIconPath != null && !this.customIconPath.equals(stored);
+    }
+
+    /**
+     * Greys Apply while there is nothing to apply (FR-098).  External applies - `doApply`, the standalone window's OK -
+     * are not affected: they call the handler, not the button.
+     */
+    private void refreshApply()
+    {
+        if (this.applyButton != null) this.applyButton.setEnabled(somethingToApply());
     }
     
     private void fNoItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_fNoItemStateChanged
@@ -652,6 +702,8 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
             this.displayCustomFunctionIcon(customIconPath);
         }
 
+        refreshApply();
+
         this.useCustomFunctionIcon.setEnabled(true);
         this.deleteCustomIcon.setEnabled(true);
         parent.repaintLoc(true, null);
@@ -660,9 +712,11 @@ public class LocomotiveFunctionAssign extends javax.swing.JPanel
     private void deleteCustomIconActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteCustomIconActionPerformed
         
         // This allows us to delay the change until the OK button is pressed
-        this.customIconPath = "reset";       
-        
+        this.customIconPath = "reset";
+
         this.displayCustomFunctionIcon(null);
+
+        refreshApply();
     }//GEN-LAST:event_deleteCustomIconActionPerformed
 
     private void copyCustomizationsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_copyCustomizationsActionPerformed

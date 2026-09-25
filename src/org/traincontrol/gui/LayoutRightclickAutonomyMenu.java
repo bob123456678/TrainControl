@@ -1204,10 +1204,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         if (!ui.getModel().getAutoLayout().moveLocomotive(locName, pointName, false)) return;
 
-        // Whether the placement the tail question was asked for still stands when its answer comes back (TDU2-A1) - true
-        // where nothing was asked.
-        boolean stands = true;
-
         if (session != null)
         {
             // The CONFIGURATION as well as the running layout.  Moving a train in the layout leaves
@@ -1216,6 +1212,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             // invalidating the whole layout.  Every path was then refused as "configuration is
             // invalid", from a placement made minutes earlier.
             session.placeLocomotive(station, locName);
+
+            // THE FACING, BEFORE THE TAIL QUESTION (TDU3-C1), as the locomotive dialog writes it: it was chosen before,
+            // and written after it was dropped with a late answer - where only the road can have gone stale.
+            if (facing != null) session.setFacing(station, facing);
 
             // AND THE TAIL, into BOTH stores (REV9-B2, and VAL8-A2 for the second of them).  The walk
             // that blocks track reads the live Point; the setup value only reaches it at the next
@@ -1239,27 +1239,32 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                             ? null : landing.getCurrentLocomotive().getTrainLength(),
                         locName, ui, session::baseNameOf, roadBefore);
 
-                // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY (TLW-A1), as the paste does - ONLY WHILE THE PLACEMENT
-                // STILL STANDS (TDU2-A1): the question waited with the window live, and the copy may hold another train now.
-                stands = landing == null
-                    || org.traincontrol.gui.TailCrossedPrompt.placementStillStands(landing, placed, tail, roadAtTheQuestion);
+                // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY (TLW-A1), as the paste does - ONLY WHERE THE PLACEMENT
+                // STILL STANDS (TDU2-A1, TDU3-B1): the question waited with the window live, and the copy may hold another
+                // train now, or have been replaced by a rebuild.
+                final org.traincontrol.automation.Point answersTo = landing == null ? null
+                    : org.traincontrol.gui.TailCrossedPrompt.whereTheAnswerGoes(ui.getModel().getAutoLayout(), landing,
+                        placed, tail, roadAtTheQuestion, ui.getAutonomySession() == session);
 
-                if (stands)
+                if (landing == null || answersTo != null)
                 {
                     java.util.List<org.traincontrol.automation.Edge> road = answer.roadToRecord(roadBefore,
                         station != null && station.equals(squareBefore), sideBefore, tail);
 
                     session.setArrivedAlong(station, org.traincontrol.automation.Layout.namesOfRoad(road));
 
-                    if (landing != null) landing.setArrivedAlong(road);
+                    org.traincontrol.gui.TailCrossedPrompt.writeRoad(answersTo, landing, ui.getModel().getAutoLayout(),
+                        road);
+                }
+                else
+                {
+                    org.traincontrol.gui.TailCrossedPrompt.noteADroppedAnswer(ui.getModel(), locName, landing.getName());
                 }
             }
         }
 
-        if (facing != null && session != null && stands)
+        if (facing != null && session != null)
         {
-            session.setFacing(station, facing);
-
             try
             {
                 // The reconciliation the save returns is SHOWN, not dropped (DR-B10).
