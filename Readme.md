@@ -363,6 +363,23 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
+* v2.8.2 [9/25/2026]
+    - Autonomy Bug Fixes
+        - Fixed: renaming a locomotive that was standing at a station took it off that station, so autonomy could send another train there.
+        - Fixed: clearing a station’s priority made autonomy stop sending trains out, and stopped the graph from being saved.
+        - Fixed: a running train could miss its stop sensor and drive through its station while another train’s route was being set.
+        - Fixed: Return Home gave up and stopped every train when one train was standing somewhere that is not a station, or had no speed set.
+        - Fixed: double-clicking Start could start every train twice.
+        - Fixed: one timetable entry that could no longer be loaded, for example after its locomotive was deleted, wiped out the whole timetable.
+    - Route Bug Fixes
+        - Fixed: editing a route, or switching it on or off, removed it from the routes autonomy is set to activate.
+    - Locomotive Bug Fixes
+        - Fixed: if the locomotive list or the keyboard pages could not be read when TrainControl started, they were saved over as empty when it closed.  A copy of the unreadable file is now kept in the tc_backup folder.
+        - Fixed: page names were lost when going back to 2.8 after using TrainControl 3.0 with fewer than ten pages.
+    - Central Station Bug Fixes
+        - Fixed: after a short network drop, TrainControl kept saying the connection was lost until it was restarted, and autonomy could keep turning the track power off.
+        - Fixed: finding the Central Station automatically sometimes missed it when it was slow to answer.
+
 * v2.8.1 [8/17/2026]
     - Autonomy Bug Fixes
         - A locomotive placed on the graph without a speed being chosen is no longer dispatched at speed zero.  It used to wait forever for a sensor it could never reach, which also blocked starting autonomy until the graph was reloaded
