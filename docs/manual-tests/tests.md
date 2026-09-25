@@ -33,9 +33,7 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-492](#mt-492) | 2026-09-24 | Return Home finds a plan on a crowded railway | fixed unvalidated | OB-230, AMH-C1 |
 | [MT-494](#mt-494) | 2026-09-24 | After a run, the Facing menu turns the train that is there | fixed unvalidated | TDY4-C5 |
 | [MT-495](#mt-495) | 2026-09-24 | A train turned at Tunnel is not sent into a parked train's tail | fixed unvalidated | OB-285, AUT2-C2 |
-| [MT-498](#mt-498) | 2026-09-24 | A train facing west at BottomMainA still faces west after it is cut and pasted back | fixed unvalidated | OB-284 |
 | [MT-499](#mt-499) | 2026-09-24 | With autonomy stopped, the locomotive list gives the reasons for a train sent by hand | fixed unvalidated | the REG4 lead of the 2026-09-23 review |
-| [MT-504](#mt-504) | 2026-09-24 | A station's exit guard cannot also be made its entry guard | fixed unvalidated | AUT-C2, MT-493 |
 | [MT-506](#mt-506) | 2026-09-24 | A route fired by its sensor skips only the switch under a train, and runs the rest | fixed unvalidated | MT-247 |
 | [MT-507](#mt-507) | 2026-09-24 | Cancel on a route that would switch track under a train cancels all of it, from either door | fixed unvalidated | MT-247 |
 | [MT-512](#mt-512) | 2026-09-24 | On a layout with nothing set up, the Autonomy menu offers Import | fixed unvalidated | MT-380 |
@@ -46,18 +44,15 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-548](#mt-548) | 2026-09-24 | On a Central Station layout the Autonomy menu opens, and only the download and Documentation can be chosen | fixed unvalidated | OB-254, OB-093, MT-544 |
 | [MT-566](#mt-566) | 2026-09-24 | The locomotive train-length walk is never greyed, and counts | fixed unvalidated | MT-533 |
 | [MT-567](#mt-567) | 2026-09-24 | Train lengths and station maximum lengths are named apart | fixed unvalidated | MT-533 |
-| [MT-568](#mt-568) | 2026-09-24 | One-Way Run is greyed on a page left out of autonomy | fixed unvalidated | OB-235, MT-528 |
 | [MT-569](#mt-569) | 2026-09-24 | The guard items say what each guard does | fixed unvalidated | OB-293 |
 | [MT-570](#mt-570) | 2026-09-24 | Why not Moving? outlines the squares with trains while it waits | fixed unvalidated | FR-102, MT-516 |
 | [MT-575](#mt-575) | 2026-09-24 | From the autonomy editor the tail question is the list | fixed unvalidated | FR-100, TDU-C1 |
 | [MT-576](#mt-576) | 2026-09-24 | A tail answer given after the placement changed is written where the train now stands, or not at all | fixed unvalidated | TDU2-A1, TDU3-B1 |
-| [MT-581](#mt-581) | 2026-09-25 | The right-click Place keeps the train's heading | fixed unvalidated | OB-296, TDU-B4 |
 | [MT-584](#mt-584) | 2026-09-25 | A train standing on the watched square closes a square trains only pass | fixed unvalidated | OB-295, TDA-C9 |
-| [MT-585](#mt-585) | 2026-09-25 | The right-click Place keeps a heading trains may not arrive by | fixed unvalidated | OB-296, ADU-B1, ADD2-C9 |
 | [MT-586](#mt-586) | 2026-09-25 | A stretch answered 0 lets a train in when the total track holds it | fixed unvalidated | ADU-C7, TDU-C6 |
 
-Everything else - 558 of 586 - needs nothing from you unless the area changes again:
-453 **fixed validated** and 105 **superseded**.
+Everything else - 563 of 586 - needs nothing from you unless the area changes again:
+453 **fixed validated** and 110 **superseded**.
 
 ---
 
@@ -25800,7 +25795,7 @@ entry is the Yes answer.
 
 ### MT-498 - 2026-09-24 - A train facing west at BottomMainA still faces west after it is cut and pasted back
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-284
 
 **Written:** 2026-09-24
@@ -25820,6 +25815,10 @@ the direction."*
 - The train is back at BottomMainA, still facing west.
 
 *What this is:* `core.testATrainIsPutOnlyWhereItCanStart.testAPlacementKeepsAHeadingItCanLeaveBy`.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `ui.testThePlaceDoorsKeepTheHeading.testACutAndPasteAtBottomMainAKeepsWest` on the real window over a sandbox copy of your railway, with its bars as you left them, using your own 75 407 DB (from the test run's copy of your locomotive data) made the active locomotive the way the window makes one active; the heading is read where your steps read it, off the diagram's *75 407 DB Is Facing...* menu.  It stands the train at BottomMainA facing west, presses Control+X over it and Control+V over BottomMainA through the diagram's own key door, and asserts it is back at BottomMainA facing west.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -25990,7 +25989,7 @@ unchecked when importing a legacy json file, each time."*
 
 ### MT-504 - 2026-09-24 - A station's exit guard cannot also be made its entry guard
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** AUT-C2, MT-493
 
 **Written:** 2026-09-24
@@ -26010,6 +26009,10 @@ as the exit guard."*
   both the way in and the way out.
 
 *What this is:* `core.testAutonomyDiagramSession.testAStationsEntryGuardIsNeverItsExitGuard`.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testTheEditorSaysWhatItsToolsDo.testHisExitGuardIsRefusedAsTheEntryGuard` on a sandbox copy of your railway.  On a station of yours that has an exit guard, it opens the station's Entry Guard Signal... item, presses Click It on the Diagram in its window, and clicks the exit guard; it asserts the message is the one saying the signal is already the station's exit guard and one signal cannot guard both the way in and the way out, that nothing was added to the entry guards, and that the exit guard is still there.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -28103,7 +28106,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-568 - 2026-09-24 - One-Way Run is greyed on a page left out of autonomy
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-235, MT-528
 
 **Written:** 2026-09-24
@@ -28130,6 +28133,10 @@ Validated on your *Works* of 2026-09-24.
 **Claude, 2026-09-24.**
 
 **Correcting the comment before it, from the third validation round** (2026-09-24).  Do not click a square after unticking Exclude Page: with no tool pressed, a click changes which way trains may run over that stretch.  The check is the message at the top: after ticking Exclude Page it no longer asks for the first square, and One-Way Run is up.  If a square was clicked, click it three more times to bring it back to both ways, or close the editor with Cancel.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `core.testMassAssignLengths.testOneWayRunOnHisRailwayIsGreyedWhereThePageIsLeftOut` on a sandbox copy of your railway, on the steps as the two comments of 2026-09-24 amend them.  On 4 - Combined it asserts the One-Way Run button and the Bulk Tools item are greyed and the item's tooltip says the page is left out; on 1 - Main it presses One-Way Run, ticks the editor's Exclude Page box and answers Yes, and asserts the button is up and greyed and the message at the top no longer asks for the first square.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -28535,7 +28542,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-581 - 2026-09-25 - The right-click Place keeps the train's heading
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-296, TDU-B4
 
 **Written:** 2026-09-25
@@ -28562,6 +28569,10 @@ Validated on your *Works* of 2026-09-24.
 **Claude, 2026-09-25.**
 
 **The BottomMainA step is MT-585 now** (2026-09-25, ADD2-C9).  The comment above added a second outcome to this entry, and its steps could not be run as written.  Judge this entry on BottomMainB alone; BottomMainA is MT-585, in the same sitting.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `ui.testThePlaceDoorsKeepTheHeading.testTheRightClickPlaceAtBottomMainBKeepsTheHeading` on the real window over a sandbox copy of your railway, with its bars as you left them, using your own 75 407 DB (from the test run's copy of your locomotive data) made the active locomotive the way the window makes one active; the heading is read where your steps read it, off the diagram's *75 407 DB Is Facing...* menu.  From a station holding both headings, for each heading in turn, it chooses Place 75 407 DB on BottomMainB's right-click menu (answering Not known to the tail question), asserts the Facing item shows the heading it had, places it back and turns it back if needed - three times each way.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -28671,7 +28682,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-585 - 2026-09-25 - The right-click Place keeps a heading trains may not arrive by
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-296, ADU-B1, ADD2-C9
 
 **Written:** 2026-09-25
@@ -28689,6 +28700,10 @@ Validated on your *Works* of 2026-09-24.
 - Step 3: it faces west, and Why not Moving? says *Trains may not arrive at BottomMainA facing the way this one faces, so autonomy will not start it there.*
 
 *What this is:* `core.testATrainIsPutOnlyWhereItCanStart.testTheRightClickPlaceKeepsTheTrainsHeading`, over every station of the frozen copy of your railway each way.  Run it in the same sitting as MT-581.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `ui.testThePlaceDoorsKeepTheHeading.testTheRightClickPlaceAtBottomMainAKeepsWest` on the real window over a sandbox copy of your railway, with its bars as you left them, using your own 75 407 DB (from the test run's copy of your locomotive data) made the active locomotive the way the window makes one active; the heading is read where your steps read it, off the diagram's *75 407 DB Is Facing...* menu.  It puts the train on BottomMainB, turns it west with the Facing menu, chooses Place 75 407 DB on BottomMainA's right-click menu, asserts it faces west there, and asserts Why not Moving? in the autonomy editor says trains may not arrive at BottomMainA facing the way this one faces, so autonomy will not start it there.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
