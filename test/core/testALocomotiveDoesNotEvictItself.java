@@ -351,8 +351,8 @@ public class testALocomotiveDoesNotEvictItself
     @Test
     public void testReAddressingAMemberOfACentralStationMultiUnitTakesTheStandingTrainOff() throws Exception
     {
-        MarklinLocomotive member = model.newMM2Locomotive(CS_MEMBER, 83);
-        MarklinLocomotive other = model.newMM2Locomotive(CS_OTHER, 84);
+        MarklinLocomotive member = model.newMM2Locomotive(CS_MEMBER, 57);
+        MarklinLocomotive other = model.newMM2Locomotive(CS_OTHER, 58);
         MarklinLocomotive head = model.newMM2Locomotive(CS_HEAD, 1);
 
         try
@@ -388,7 +388,7 @@ public class testALocomotiveDoesNotEvictItself
             layout.getPoint("MU G").setLocomotive(head);
             layout.getPoint("MU H").setLocomotive(other);
 
-            model.changeLocAddress(CS_MEMBER, 84, MarklinLocomotive.decoderType.MM2);
+            model.changeLocAddress(CS_MEMBER, 58, MarklinLocomotive.decoderType.MM2);
 
             // What the window does next.
             layout.sanitizeMultiUnits(model.getLocByName(CS_MEMBER));

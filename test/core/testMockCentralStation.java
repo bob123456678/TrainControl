@@ -424,7 +424,7 @@ public class testMockCentralStation
      * The sync is the fourth writer of a locomotive's address, and the only door a Central Station multi-unit's members
      * come in by; it re-addressed and re-linked and swept nothing, so both trains stood and autonomy would run the second
      * as a train of its own while the multi-unit's commands moved it.  Here the served file's BR 85 006 Gl. is at address
-     * 5, the database has it at 90 in a consist standing on one station, and another train at 5 stands on the other.
+     * 5, the database has it at 70 in a consist standing on one station, and another train at 5 stands on the other.
      *
      * MUTATION: sweep nothing after the sync's locomotive pass, and this fails.
      *
@@ -443,12 +443,12 @@ public class testMockCentralStation
         final int addressWas = made ? -1 : member.getAddress();
         final MarklinLocomotive.decoderType typeWas = made ? null : member.getDecoderType();
 
-        if (made) member = model.newMM2Locomotive(served, 90);
-        else model.changeLocAddress(served, 90, MarklinLocomotive.decoderType.MM2);
+        if (made) member = model.newMM2Locomotive(served, 70);
+        else model.changeLocAddress(served, 70, MarklinLocomotive.decoderType.MM2);
 
         member = model.getLocByName(served);
 
-        MarklinLocomotive head = model.newMM2Locomotive("SYNC head", 91);
+        MarklinLocomotive head = model.newMM2Locomotive("SYNC head", 71);
         MarklinLocomotive other = model.newMM2Locomotive("SYNC other", 5);
 
         try
