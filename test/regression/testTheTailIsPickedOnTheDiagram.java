@@ -468,4 +468,147 @@ public class testTheTailIsPickedOnTheDiagram
             asker.shutdownNow();
         }
     }
+
+    /**
+     * A tail question answered after the square has changed writes nothing onto whatever stands there by then (TDU2-A1).
+     *
+     * Since FR-100 the question waits on the diagram with the window live - Start, the hand doors, another placement all
+     * still work - and the door that asked writes its answer when it comes back.  Answered after a run has brought another
+     * train onto the same copy, Cancel wrote the first train's (empty) road over the second train's driven one, on the
+     * running layout: the second train's tail then stopped at the switch, and a third could be routed into it.  Here the
+     * paste door asks for train A at Tunnel; while it waits, train B is put on the same copy with the road it drove in by,
+     * as a run's arrival puts it; then Cancel.
+     *
+     * MUTATION: write the answer without asking whether the placement still stands, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testALateAnswerDoesNotWriteOverAnotherTrain() throws Exception
+    {
+        TailCrossedPrompt.answerForTests(null);
+
+        final TunnelQuestion q = tunnelQuestion();
+
+        org.traincontrol.base.Locomotive first = model.newMM2Locomotive("TDU2-A1 first", 2303);
+        org.traincontrol.base.Locomotive second = model.newMM2Locomotive("TDU2-A1 second", 2304);
+
+        final java.util.concurrent.atomic.AtomicBoolean returned = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+        try
+        {
+            first.setTrainLength(5);
+            second.setTrainLength(5);
+
+            // TRAIN A PUT DOWN AT TUNNEL, arriving from the north, as the paste door leaves it before it asks.
+            assertTrue(q.layout.moveLocomotive(first.getName(), q.tunnel.getName(), false), "precondition: the first train"
+                + " could not be put at Tunnel");
+
+            q.tunnel.setArrivedFrom("N");
+
+            final TileKey tile = ui.getAutonomySession().getStationIndex().squareOf(q.tunnel.getName());
+
+            java.lang.reflect.Field tailField = TrainControlUI.class.getDeclaredField("tailAtTheLanding");
+            tailField.setAccessible(true);
+            tailField.set(ui, "N");
+
+            final java.lang.reflect.Method remember = TrainControlUI.class.getDeclaredMethod("rememberPlacement",
+                Point.class, TileKey.class);
+            remember.setAccessible(true);
+
+            // THE PASTE DOOR, on the event thread as it runs: it asks, and the question waits on the diagram.
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                try
+                {
+                    remember.invoke(ui, q.tunnel, tile);
+                }
+                catch (Exception failed)
+                {
+                    throw new RuntimeException(failed);
+                }
+                finally
+                {
+                    returned.set(true);
+                }
+            });
+
+            Thread.sleep(2000);
+
+            java.lang.reflect.Field armed = TailCrossedPrompt.class.getDeclaredField("armed");
+            armed.setAccessible(true);
+
+            assertNotNull(armed.get(null), "precondition: the paste door's tail question is not waiting on the diagram");
+
+            // WHILE IT WAITS: train B on the same copy, with the road it drove in by - TunnelPre's.
+            assertTrue(q.layout.moveLocomotive(second.getName(), q.tunnel.getName(), false), "precondition: the second"
+                + " train could not be put at Tunnel");
+
+            q.tunnel.setArrivedFrom("N");
+            q.tunnel.setArrivedAlong(q.tunnelPre.getRoad());
+
+            java.util.List<org.traincontrol.automation.Edge> driven = q.tunnel.getArrivedAlong();
+
+            assertNotNull(driven, "precondition: the second train's road did not take");
+
+            // CANCEL on the small window the question left up.
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
+
+                    if (!org.traincontrol.util.I18n.t("autolayout.ui.askArrivalSideTitle").equals(
+                        ((javax.swing.JDialog) window).getTitle())) continue;
+
+                    javax.swing.JButton cancel = buttonNamed((java.awt.Container) window,
+                        org.traincontrol.util.I18n.t("ui.cancel"));
+
+                    if (cancel != null) cancel.doClick();
+                }
+            });
+
+            long giveUp = System.currentTimeMillis() + 10000;
+
+            while (!returned.get() && System.currentTimeMillis() < giveUp) Thread.sleep(50);
+
+            assertTrue(returned.get(), "precondition: the paste door did not return after Cancel");
+
+            assertEquals(q.tunnel.getArrivedAlong(), driven, "the first train's tail question, answered after a second"
+                + " train came to Tunnel on the same copy, wrote over the second train's road - its tail then stops at the"
+                + " switch and another train can be routed into it (TDU2-A1)");
+        }
+        finally
+        {
+            takeDownDialogs();
+
+            q.tunnel.setLocomotive(null);
+            q.tunnel.setArrivedFrom(null);
+            q.tunnel.setArrivedAlong(null);
+
+            model.deleteLoc("TDU2-A1 first");
+            model.deleteLoc("TDU2-A1 second");
+        }
+    }
+
+    /** The button with this text, anywhere in the container. */
+    private static javax.swing.JButton buttonNamed(java.awt.Container container, String text)
+    {
+        for (java.awt.Component child : container.getComponents())
+        {
+            if (child instanceof javax.swing.JButton && text.equals(((javax.swing.JButton) child).getText()))
+            {
+                return (javax.swing.JButton) child;
+            }
+
+            if (child instanceof java.awt.Container)
+            {
+                javax.swing.JButton found = buttonNamed((java.awt.Container) child, text);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
+    }
 }

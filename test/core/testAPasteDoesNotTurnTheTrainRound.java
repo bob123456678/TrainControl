@@ -649,8 +649,9 @@ public class testAPasteDoesNotTurnTheTrainRound
             + " question one step above it: \"simply don't place the train, leave it on the clipboard"
             + " as if no paste had been done\"");
 
-        assertTrue(flat.contains("session.setFacing(tile, facingChosenAtTheLanding != null"
-            + " ? facingChosenAtTheLanding"),
+        // READ BEFORE THE TAIL QUESTION WAITS (TDU-B2), and written from there.
+        assertTrue(flat.contains("final org.traincontrol.automationui.TilePorts.Side facingChosen ="
+            + " facingChosenAtTheLanding;") && flat.contains("session.setFacing(tile, facingChosen != null ? facingChosen"),
             "the operator's answer is no longer what gets written, so the question is asked and then"
             + " overruled by the walk it exists to replace");
     }
