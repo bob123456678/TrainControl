@@ -1119,7 +1119,9 @@ public class testTheTailIsPickedOnTheDiagram
      * the facing written before the question, the save skipped for a setup let go, only an answer logged, and the square
      * named as the diagram names it - read, as the pins above are, because each door needs a menu or a dialog.
      *
-     * MUTATION: undo any of the four at either door, and this fails naming it.
+     * And that each writes only where the answer goes somewhere (TDU2-A1).
+     *
+     * MUTATION: undo any of the five at either door, and this fails naming it.
      *
      * @throws Exception from the files
      */
@@ -1144,6 +1146,13 @@ public class testTheTailIsPickedOnTheDiagram
 
             assertTrue(facing > 0 && facing < asked, door[0] + " writes the facing after the tail question, where a"
                 + " dropped answer takes it with it (TDU3-C1)");
+
+            // THE WRITE WAITS ON WHERE THE ANSWER GOES (TDU2-A1): nothing is written where it goes nowhere.
+            int where = source.indexOf("whereTheAnswerGoes(", asked);
+            int write = source.indexOf("setArrivedAlong(", where);
+
+            assertTrue(where > 0 && write > where && source.substring(where, write).contains("!= null)"), door[0]
+                + " writes the tail question's answer without asking where it goes (TDU2-A1)");
 
             int noted = source.indexOf("noteADroppedAnswer(", asked);
             int answered = source.lastIndexOf("wasAnswered()", noted);
