@@ -3185,6 +3185,30 @@ public class Layout
 
             this.control.log(e);
 
+            // A path that failed part way stops autonomy, and no train is sent again until the
+            // configuration is reloaded.
+            //
+            // The path stays locked, as above, so every point along it still records this train: it
+            // stands on several points at once, and getLocomotiveLocation answers whichever comes
+            // first.  Autonomy used to carry on sending the other trains, and it, Return Home or a train
+            // sent by hand could then set off from a point this train is not on.  Only a reload clears
+            // those reservations.  So the two levers that already exist: the graceful stop - nothing
+            // new is sent, trains already under way finish their paths - and invalidate, which every
+            // dispatch refuses (executePathInternal's first check) until the configuration is reloaded.
+            // No new path, and no unlock (BPV-C13, SG-A3; Adam's ruling for 2.8.2).
+            final boolean wasRunning = this.running;
+
+            synchronized (this.activeLocomotives)
+            {
+                this.stopLocomotives();
+            }
+
+            this.invalidate(I18n.f(
+                wasRunning ? "autolayout.errorPathFailedAutonomyStopped" : "autolayout.errorPathFailedSentByHand",
+                loc.getName(),
+                I18n.t("ui.main.validateConfigOpenGraphUI")
+            ));
+
             throw e;
         }
     }
