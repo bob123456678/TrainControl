@@ -310,8 +310,18 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
         assertTrue(menu.contains("canStart ? null : ui.whyStartAndAHandSendAreRefused()"), "the right-click menu does"
             + " not work Start's and the hand doors' sentences out together from Start's answer (ADU-C3, ADU2-C5)");
 
-        assertFalse(menu.contains("ui.whyAutonomyWillNotStart()") || menu.contains("ui.whyAHandSendIsRefused()"), "the"
-            + " right-click menu asks the setup again for one of the two sentences, over a broken setup (ADU2-C5)");
+        // Over the block that builds Start's item and Return Home's.  A destination item asks again when it is CLICKED,
+        // which is its guard (MT-263) and stays.
+        int from = menu.indexOf("boolean canStart = ui.canStartAutonomy();");
+        int to = menu.indexOf("HomeLocomotiveMenu.addReturnHomeItem(this, ui, broken)");
+
+        assertTrue(from >= 0 && to > from, "precondition: the block that builds Start's item and Return Home's is not"
+            + " where it was");
+
+        String building = menu.substring(from, to);
+
+        assertFalse(building.contains("ui.whyAutonomyWillNotStart()") || building.contains("ui.whyAHandSendIsRefused()"),
+            "the right-click menu asks the setup again for one of the two sentences, over a broken setup (ADU2-C5)");
 
         assertTrue(menu.contains("HomeLocomotiveMenu.addReturnHomeItem(this, ui, broken)"), "the right-click menu does not"
             + " hand the Return Home item the sentence it worked out (ADU-C3)");
