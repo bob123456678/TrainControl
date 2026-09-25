@@ -167,12 +167,12 @@ public class testASetupMovesToAOnePageLayout
             assertTrue(answerer.chose && answerer.named, "precondition: the import did not show the file chooser and ask"
                 + " for a name");
 
-            assertTrue(answerer.saidStarting(imported), "the import never said it had imported: " + answerer.seen);
+            assertTrue(answerer.saidStarting(imported), "the import never said it had imported: " + answerer.described());
 
             List<String> warnings = answerer.titled(I18n.t("autosetup.ui.titleImportPagesNotHere"));
 
             assertEquals(warnings.size(), 1, "importing his five-page setup onto the one-page layout did not warn exactly"
-                + " once (MT-513): " + answerer.seen);
+                + " once (MT-513): " + answerer.described());
 
             List<String> notHere = new ArrayList<>(hisPages);
 
@@ -189,7 +189,7 @@ public class testASetupMovesToAOnePageLayout
 
             String leftAlone = I18n.t("autosetup.ui.titleSetupNotTidied");
 
-            assertTrue(answerer.titled(leftAlone).isEmpty(), "the import said the setup was left alone: " + answerer.seen);
+            assertTrue(answerer.titled(leftAlone).isEmpty(), "the import said the setup was left alone: " + answerer.described());
 
             // MT-514: THE AUTONOMY EDITOR OPENED, CLOSED AND OPENED AGAIN - with what has been said forgotten first, so a
             // warning already given once in this run cannot be what stays quiet.
@@ -200,7 +200,7 @@ public class testASetupMovesToAOnePageLayout
                 openAndCloseTheEditor(ui[0], "1 - Main");
 
                 assertTrue(answerer.titled(leftAlone).isEmpty(), "opening the autonomy editor after the import (time "
-                    + opening + ") said the setup was left alone (MT-514): " + answerer.seen);
+                    + opening + ") said the setup was left alone (MT-514): " + answerer.described());
             }
         }
         finally
@@ -396,6 +396,19 @@ public class testASetupMovesToAOnePageLayout
                         : Integer.valueOf(JOptionPane.OK_OPTION)));
                 }
             }
+        }
+
+        /** Every dialog seen, as "title: message", for a failure to show. */
+        String described()
+        {
+            List<String> out = new ArrayList<>();
+
+            synchronized (seen)
+            {
+                for (String[] one : seen) out.add(one[0] + ": " + one[1]);
+            }
+
+            return out.toString();
         }
 
         List<String> titled(String title)
