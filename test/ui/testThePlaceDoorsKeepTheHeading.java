@@ -483,27 +483,199 @@ public class testThePlaceDoorsKeepTheHeading
 
             closeEveryDialog();
 
-            if (editor != null)
-            {
-                final java.awt.Window closing = editor;
-
-                // LATER, NOT AND-WAIT: closing may ask whether to keep what was changed, and a question asked inside
-                // invokeAndWait waits for an answer this thread can then never give.
-                SwingUtilities.invokeLater(() -> closing.dispatchEvent(
-                    new java.awt.event.WindowEvent(closing, java.awt.event.WindowEvent.WINDOW_CLOSING)));
-
-                for (long end = System.currentTimeMillis() + 10000; closing.isShowing() && System.currentTimeMillis() < end; )
-                {
-                    Thread.sleep(100);
-
-                    closeEveryDialog();
-                }
-
-                if (closing.isShowing()) SwingUtilities.invokeLater(closing::dispose);
-            }
+            if (editor != null) closeTheEditor(editor);
 
             train.setTrainLength(lengthWas);
         }
+    }
+
+    /**
+     * With the autonomy editor open but minimised, the tail question's list belongs to the main window - where it can be
+     * seen - and not to the minimised editor (RLA-C4).
+     *
+     * MT-575 hung the list from the editor whenever one was open, and a minimised editor is still open: on Windows a
+     * window owned by a minimised frame is hidden, so the question was a modal nobody could see, holding the application
+     * until the editor was restored.  Asked here for his 75 407 DB, 5 long, on Tunnel from the north, as the main
+     * window's own doors ask it.
+     *
+     * MUTATION: hang the list from any editor that is open, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testWithTheEditorMinimisedTheTailQuestionBelongsToTheMainWindow() throws Exception
+    {
+        TileKey tunnel = square("Tunnel");
+
+        Integer lengthWas = train.getTrainLength();
+
+        java.awt.Window editor = null;
+
+        try
+        {
+            train.setTrainLength(5);
+
+            // NO EDITOR LEFT FROM THE CLAIM BEFORE: closing one finishes after the window has gone.
+            for (long end = System.currentTimeMillis() + 20000; (ui.isLayoutEditorOpen()
+                || ui.whyLayoutCannotBeEdited() != null) && System.currentTimeMillis() < end; )
+            {
+                Thread.sleep(100);
+
+                pump();
+            }
+
+            assertFalse(ui.isLayoutEditorOpen(), "precondition: an editor from the claim before is still open");
+
+            assertNull(ui.whyLayoutCannotBeEdited(), "precondition: the layout cannot be edited: "
+                + ui.whyLayoutCannotBeEdited());
+
+            // THE EDITOR, as Autonomy > Edit Autonomy opens it - and then minimised.
+            SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(tunnel.getPage()));
+
+            for (long end = System.currentTimeMillis() + 60000; editor == null && System.currentTimeMillis() < end; )
+            {
+                Thread.sleep(100);
+
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (window.isShowing() && "LayoutEditor".equals(window.getClass().getSimpleName())) editor = window;
+                }
+            }
+
+            assertNotNull(editor, "the autonomy editor did not open on " + tunnel.getPage() + "; showing: " + showing()
+                + "; says: " + messagesShowing());
+
+            final java.awt.Frame minimising = (java.awt.Frame) editor;
+
+            SwingUtilities.invokeAndWait(() -> minimising.setExtendedState(java.awt.Frame.ICONIFIED));
+
+            for (long end = System.currentTimeMillis() + 10000; (minimising.getExtendedState() & java.awt.Frame.ICONIFIED)
+                == 0 && System.currentTimeMillis() < end; ) Thread.sleep(50);
+
+            assertTrue((minimising.getExtendedState() & java.awt.Frame.ICONIFIED) != 0, "precondition: the editor could"
+                + " not be minimised");
+
+            // HIS TRAIN ON TUNNEL FROM THE NORTH, and the question asked as the main window's doors ask it.
+            final Point[] at = new Point[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (Point point : railway().getPoints())
+                {
+                    if (point.getCurrentLocomotive() != null) railway().moveLocomotive(null, point.getName(), false);
+                }
+
+                railway().moveLocomotive(HIS_TRAIN, "Tunnel (southbound)", false);
+
+                at[0] = railway().getPoint("Tunnel (southbound)");
+            });
+
+            assertTrue(at[0] != null && at[0].getCurrentLocomotive() == train, "precondition: " + HIS_TRAIN + " could not"
+                + " be stood on Tunnel");
+
+            TailCrossedPrompt.answerForTests(null);
+
+            SwingUtilities.invokeLater(() -> TailCrossedPrompt.askAfterPlacement(railway(), at[0], "N", 5, HIS_TRAIN, ui,
+                null, null));
+
+            javax.swing.JDialog question = null;
+
+            for (long end = System.currentTimeMillis() + 15000; question == null && System.currentTimeMillis() < end; )
+            {
+                Thread.sleep(50);
+
+                // SHOWING OR NOT: a list hung from the minimised editor is hidden with it.
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (window instanceof javax.swing.JDialog && window.isVisible() && I18n.t("autolayout.ui.askArrivalSideTitle")
+                        .equals(((javax.swing.JDialog) window).getTitle())) question = (javax.swing.JDialog) window;
+                }
+            }
+
+            assertNotNull(question, "precondition: no tail question was asked for " + HIS_TRAIN + " at Tunnel from the"
+                + " north: " + showing());
+
+            assertEquals(question.getOwner(), ui, "with the editor minimised, the tail question's list belongs to "
+                + question.getOwner() + " - hidden with a minimised editor, a modal nobody can see (RLA-C4)");
+        }
+        finally
+        {
+            TailCrossedPrompt.answerForTests(TailCrossedPrompt.NOT_KNOWN);
+
+            // THE QUESTION TAKEN DOWN BY ITS OWN PANE, shown or hidden: a hidden one is past closeEveryDialog.
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (!(window instanceof javax.swing.JDialog) || !window.isVisible()) continue;
+
+                final javax.swing.JOptionPane pane = find(((javax.swing.JDialog) window).getContentPane(),
+                    javax.swing.JOptionPane.class);
+
+                if (pane != null) SwingUtilities.invokeAndWait(() -> pane.setValue(
+                    Integer.valueOf(javax.swing.JOptionPane.CLOSED_OPTION)));
+            }
+
+            closeEveryDialog();
+
+            if (editor != null) closeTheEditor(editor);
+
+            train.setTrainLength(lengthWas);
+        }
+    }
+
+    /**
+     * Closes the editor as its window's close button does, answering Yes to leaving without saving - so the window lets
+     * the layout be edited again.  A close answered with anything else keeps the editor, and one disposed then leaves the
+     * main window believing an editor is still open, which refuses the next claim's.
+     */
+    private static void closeTheEditor(java.awt.Window editor) throws Exception
+    {
+        // LATER, NOT AND-WAIT: closing asks whether to leave without saving, and a question asked inside invokeAndWait
+        // waits for an answer this thread can then never give.
+        SwingUtilities.invokeLater(() -> editor.dispatchEvent(
+            new java.awt.event.WindowEvent(editor, java.awt.event.WindowEvent.WINDOW_CLOSING)));
+
+        String leaving = I18n.t("layout.ui.dialogExitConfirmation");
+
+        for (long end = System.currentTimeMillis() + 15000; (editor.isDisplayable() || ui.whyLayoutCannotBeEdited() != null)
+            && System.currentTimeMillis() < end; )
+        {
+            Thread.sleep(100);
+
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (!(window instanceof javax.swing.JDialog) || !window.isShowing()
+                    || !leaving.equals(((javax.swing.JDialog) window).getTitle())) continue;
+
+                final javax.swing.JOptionPane pane = find(((javax.swing.JDialog) window).getContentPane(),
+                    javax.swing.JOptionPane.class);
+
+                if (pane != null && pane.getOptions() != null && pane.getOptions().length > 0)
+                {
+                    final Object yes = pane.getOptions()[0];
+
+                    SwingUtilities.invokeAndWait(() -> pane.setValue(yes));
+                }
+            }
+        }
+
+        if (editor.isDisplayable()) SwingUtilities.invokeLater(editor::dispose);
+    }
+
+    /** The messages of the dialogs on screen, for a failure to show. */
+    private static String messagesShowing()
+    {
+        StringBuilder out = new StringBuilder();
+
+        for (java.awt.Window window : java.awt.Window.getWindows())
+        {
+            if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
+
+            javax.swing.JOptionPane pane = find(((javax.swing.JDialog) window).getContentPane(), javax.swing.JOptionPane.class);
+
+            if (pane != null) out.append('[').append(pane.getMessage()).append(']');
+        }
+
+        return out.toString();
     }
 
     /** Every item's text on a menu and its submenus, for a failure to show. */
