@@ -1040,6 +1040,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // Import routes
             for (MarklinRoute r : parsedRoutes)
             {
+                // Set only where this loop deletes the same route to re-read it; a route arriving for
+                // the first time was never in the selection and must not be put into it.
+                boolean wasActivated = false;
+
                 // Other existing route with same name but different ID
                 if (this.routeDB.hasName(r.getName()) && r.getId() != this.routeDB.getByName(r.getName()).getId())
                 {
@@ -1058,6 +1062,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 )
                 {   
                     this.logf("route.deletingDuplicateId", this.routeDB.getById(r.getId()).getName());
+
+                    // The SAME route, re-read from the Central Station because something about it
+                    // changed - so the operator's autonomy selection survives it.
+                    wasActivated = this.isRouteActivatedByAutonomy(r.getId());
+
                     this.deleteRoute(this.routeDB.getById(r.getId()).getName());
                 }
                 
@@ -1066,6 +1075,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     // Only report and count the route if it was actually added
                     if (newRoute(r))
                     {
+                        this.restoreRouteActivation(r.getId(), wasActivated);
+
                         this.logf("route.added", r.getName());
                         num++;
                     }
@@ -1479,6 +1490,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         Integer id = existing.getId();
         
+        // Before the delete strips it.  See isRouteActivatedByAutonomy for why the delete is right to
+        // strip it and why this door has to put it back.
+        final boolean wasActivated = this.isRouteActivatedByAutonomy(id);
+
         // Disable the route so that the s88 condition stops firing
         existing.disable();
         
@@ -1489,6 +1504,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
             this.logf("route.notAdded", trimmedNewName);
             return false;
         }
+
+        // And back into the autonomy selection, which the delete above took it out of
+        this.restoreRouteActivation(id, wasActivated);
         
         // Let other routes know this has been renamed
         for (MarklinRoute r : this.getRoutes())
@@ -2859,6 +2877,44 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return true;
     }
     
+    /**
+     * Whether autonomy is set to activate this route, asked BEFORE something deletes it.
+     *
+     * deleteRoute strips the id out of activateRouteIDs, and is right to: ids are reused, so an id
+     * left behind would switch on whichever route inherited it.  What that costs is the doors that
+     * delete and re-add the SAME route - editRoute and the Central Station refresh - where the strip
+     * is collateral and the selection is a setting the operator made.  Asked before rather than
+     * inferred after, because the delete destroys the answer.
+     *
+     * @param id the route's id
+     * @return true when autonomy is set to activate it
+     */
+    private boolean isRouteActivatedByAutonomy(int id)
+    {
+        return this.hasAutoLayout()
+            && this.getAutoLayout().getActivateRouteIDs().contains((Integer) id);
+    }
+
+    /**
+     * Puts a route back into the autonomy selection after it has been deleted and re-added.
+     *
+     * changeRouteId carries this repair inline; editRoute and the Central Station refresh did not, so
+     * every route edit, enable/disable toggle or changed Central Station route silently switched the
+     * route off for autonomy's "activate specified routes".
+     *
+     * @param id the route's id
+     * @param wasActivated what isRouteActivatedByAutonomy said before the delete
+     */
+    private void restoreRouteActivation(int id, boolean wasActivated)
+    {
+        if (!wasActivated || !this.hasAutoLayout()) return;
+
+        if (!this.getAutoLayout().getActivateRouteIDs().contains((Integer) id))
+        {
+            this.getAutoLayout().getActivateRouteIDs().add(id);
+        }
+    }
+
     /**
      * Gets all existing routes
      * @return 

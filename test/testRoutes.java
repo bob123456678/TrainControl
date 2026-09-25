@@ -1199,6 +1199,60 @@ public class testRoutes
     }
 
     /**
+     * Editing a route keeps it in autonomy's "activate specified routes" selection.
+     *
+     * editRoute works by delete-then-re-add, and deleteRoute strips the route's id out of
+     * activateRouteIDs - which is right for a real delete, because ids are reused and a new route
+     * inheriting one would be switched on without being asked.  What was missing is the other half:
+     * nothing put the id back when the same route was added again.  Every route-editor save, the
+     * per-route enable/disable toggle and Bulk Enable/Disable go through editRoute, so each of them
+     * silently took the route out of the selection, and the save on the way out made it stick.
+     *
+     * changeRouteId has always carried exactly this repair.
+     *
+     * Ported from the 3.0 branch (2cef4211).
+     */
+    @Test
+    public void testEditingARouteKeepsItActivated() throws Exception
+    {
+        MarklinRoute route = unusedRoute();
+
+        assertTrue(model.newRoute(route), "precondition: the route must be added");
+
+        final String name = route.getName();
+        final Integer id = route.getId();
+
+        List<Integer> selection = model.getAutoLayout().getActivateRouteIDs();
+
+        final boolean wasThere = selection.contains(id);
+
+        try
+        {
+            if (!wasThere) selection.add(id);
+
+            assertTrue(model.getAutoLayout().getActivateRouteIDs().contains(id),
+                "precondition: the route has to be in the selection, or the assertion below is "
+                + "satisfied by it never having been there");
+
+            assertTrue(model.editRoute(name, name + " edited", route.getRoute(), route.getS88(),
+                route.getTriggerType(), false, null),
+                "precondition: the edit itself must succeed, or nothing below is exercised");
+
+            assertTrue(model.getAutoLayout().getActivateRouteIDs().contains(id),
+                "editing a route dropped it from autonomy's activate-routes selection.  editRoute "
+                + "deletes and re-adds, deleteRoute strips the id, and nothing put it back - so the "
+                + "save on the way out writes the shortened list and the route stays switched off");
+        }
+        finally
+        {
+            if (!wasThere) model.getAutoLayout().getActivateRouteIDs().remove(id);
+
+            model.deleteRoute(name + " edited");
+            model.deleteRoute(name);
+        }
+    }
+
+    /**
      * UC-C6: executing an unknown route name must be a no-op, not an NPE.
      *
      * execRoute is routeDB.getByName(name).execRoute(false) - null dereference.  The UI passes
