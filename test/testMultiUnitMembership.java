@@ -2,8 +2,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
+import org.traincontrol.automation.Layout;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.marklin.MarklinFeedback;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
 import static org.testng.Assert.*;
@@ -312,6 +314,66 @@ public class testMultiUnitMembership
         finally
         {
             deleteAll("MU head G", "MU member G1", "MU member G1 renamed");
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // The multi-unit sweep on the autonomy graph.
+    // ---------------------------------------------------------------------------------------------
+
+    /**
+     * Renaming a locomotive that stands on a station leaves it on that station.
+     *
+     * Both rename doors in the window call Layout.sanitizeMultiUnits straight after renameLoc.  That
+     * sweep clears every point holding a locomotive that is not isSimultaneousMultiUnitCompatible with
+     * the one it was asked about - and that method ends `return !this.hasEquivalentAddress(l)`, so a
+     * locomotive compared with ITSELF has an equivalent address and is declared incompatible.  The
+     * renamed train was therefore taken off its own station: the station read as empty, the panel
+     * showed "?????", and renaming it back brought nothing back, because nothing restores a placement.
+     * Worse, autonomy saw a free platform where a train was standing.
+     *
+     * This does what the window does, in the order it does it - the rename, then the sweep.
+     *
+     * Ported from the 3.0 branch (66c96736).
+     */
+    @Test
+    public void testRenamingAPlacedLocomotiveLeavesItOnItsStation() throws Exception
+    {
+        MarklinLocomotive loc = model.newMM2Locomotive("MU placed H", 73);
+
+        try
+        {
+            Layout layout = new Layout(model);
+
+            MarklinFeedback first = model.newFeedback(8390, null);
+            MarklinFeedback second = model.newFeedback(8391, null);
+
+            model.setFeedbackState(first.getName(), false);
+            model.setFeedbackState(second.getName(), false);
+
+            layout.createPoint("MU station A", true, first.getName());
+            layout.createPoint("MU station B", true, second.getName());
+            layout.createEdge("MU station A", "MU station B");
+
+            layout.getPoint("MU station A").setLocomotive(loc);
+
+            assertEquals(layout.getLocomotiveLocation(loc), layout.getPoint("MU station A"),
+                "precondition: the locomotive has to be standing on the station for the sweep to "
+                + "take it off");
+
+            assertTrue(model.renameLoc("MU placed H", "MU placed H renamed"), "the rename itself failed");
+
+            // What the window does next, and the whole of the fault
+            layout.sanitizeMultiUnits(model.getLocByName("MU placed H renamed"));
+
+            assertEquals(layout.getLocomotiveLocation(loc), layout.getPoint("MU station A"),
+                "renaming the locomotive took it off the station it was standing on, because the "
+                + "multi-unit sweep found it incompatible with itself - so the platform reads as empty "
+                + "and autonomy can send another train into it");
+        }
+        finally
+        {
+            deleteAll("MU placed H", "MU placed H renamed");
         }
     }
 }

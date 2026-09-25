@@ -3561,6 +3561,18 @@ public class Layout
         {
             for (Point p : this.getPoints())
             {
+                // Never the locomotive this was asked about.
+                //
+                // isSimultaneousMultiUnitCompatible ends in `return !this.hasEquivalentAddress(l)`, so
+                // a locomotive compared with ITSELF has an equivalent address and is declared
+                // incompatible.  Both rename doors call this straight after renameLoc, so renaming a
+                // locomotive took it off the station it was standing on - and renaming it back did not
+                // bring it back, because nothing restores a placement.  It bites on rename and not on
+                // placement because moveLocomotive calls this sweep BEFORE putting the locomotive down.
+                //
+                // A locomotive cannot conflict with itself.
+                if (l.equals(p.getCurrentLocomotive())) continue;
+
                 if (
                     // Is the locomotive present in any active multi-unit?
                     p.getCurrentLocomotive() != null && !p.getCurrentLocomotive().isSimultaneousMultiUnitCompatible(l)
