@@ -3636,7 +3636,7 @@ public class testAutonomyDiagramSession
      * from TopR1ParkShort at TopMainR1Inter.  Here the way in from 1,1 measures 4 (2, the switch, 2) and the platform is
      * set to 6: a train of 5 stands across the switch coming from further back, and is refused coming from 1,1.
      *
-     * MUTATION: leave the figure out of the finding, or leave the station behind out of the walk, and this fails.
+     * MUTATION: leave the figure out of the finding, or leave a station copy behind out of it, and this fails.
      *
      * @throws Exception from the fixture or the reflection
      */
@@ -3727,6 +3727,46 @@ public class testAutonomyDiagramSession
 
         assertTrue(refused != null && refused.getThird() == 4, "with the west side open a train set off from the station"
             + " behind is refused above 4, the way in from it, and the notice does not say so: " + session.check());
+    }
+
+    /**
+     * The refusing figure counts back over a sensor no train is started at, as the route in does (ADD-C6, ADA-C4): read
+     * off one leg, it was given only where a station stood straight behind the platform - and on his railway a `...Pre`
+     * sensor stands behind most of them.
+     *
+     * The station is two sensors back: 2 of track to the sensor, then 1, the switch and 2 to the platform.  A train set
+     * off from it is refused above 5; the platform is set to 6.
+     *
+     * MUTATION: read the figure off the leg straight into the platform only, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testTheRefusingFigureCountsBackOverASensor() throws Exception
+    {
+        session.open(Arrays.asList(platformBehindAStationAndASwitch()));
+        session.initialize("BackOverASensor");
+
+        TileKey start = new TileKey("main", 1, 1);
+        TileKey platform = new TileKey("main", 7, 1);
+
+        session.setStation(start, true);
+        session.setPointName(start, "Start");
+        session.setStation(platform, true);
+        session.setPointName(platform, "Platform");
+        session.setPointProperty(platform, "maxTrainLength", 6);
+        session.setTileLength(new TileKey("main", 2, 1), 2);
+        session.setTileLength(new TileKey("main", 4, 1), 1);
+        session.setTileLength(new TileKey("main", 6, 1), 2);
+        session.rebuild();
+
+        assertNotNull(runInNotice(), "precondition: the room past the switch is 2 and the maximum 6, so a run-in notice"
+            + " is due: " + session.check());
+
+        org.traincontrol.automationui.AutonomyChecks.Finding refused = findingFor(RUN_IN_AT_A_PLATFORM_REFUSED);
+
+        assertTrue(refused != null && refused.getThird() == 5, "a train set off from the station two sensors back is"
+            + " refused above 5 - 2, then 1, the switch and 2 - and the notice does not say so: " + session.check());
     }
 
     /** A sensor, a station square, a switch with its branch, and a platform, west to east. */

@@ -87,54 +87,74 @@ public class testATrainIsPutOnlyWhereItCanStart
     }
 
     /**
-     * A facing only a copy trains may not arrive at holds still stands the train on a copy facing that way (AUT2-A1).
+     * The diagram's right-click **Place** keeps the train's heading as the other three placement doors do: over every
+     * copy it could leave by, one trains may not arrive at included, onto the copy the paste would take - the plain one
+     * before its turning twin - and the same copy every time (Adam, 2026-09-24, OB-296: *"Yes, keep the train's
+     * heading."*; ADU-B1, ADU-C1, ADD-B2).
      *
-     * @throws Exception from the build
-     */
-    /**
-     * The diagram's right-click **Place** stands the train on the copy facing the way it already faces, and the same
-     * copy every time - no longer one at random (Adam, 2026-09-24, OB-296: *"Yes, keep the train's heading."*).
+     * On his railway BottomMainA takes no arrivals from the east, so its copy facing west is no station.  The paste, the
+     * dialog and the editor's Place stand a train facing west there on that copy (OB-284: *"for barred arrival
+     * directions, keep the direction"*).  This door chose only among station copies, and turned it round.
      *
-     * The other three placement doors keep the heading over the copies a train can leave by (OB-270, GUI-B1, OB-284);
-     * this one took `usable.get(new Random().nextInt(...))`, so the same train placed the same way faced either way.
-     * The rule is the paste's, `AutonomySession.facingAfterAPaste`: the heading where the square can hold it, the one
-     * heading a single copy has, and otherwise the first copy the build made - never a draw.
+     * MUTATION: choose among the station copies only, take the first copy facing the way rather than the paste's, ignore
+     * the heading at the door, or move with the form of `moveLocomotive` that refuses a barred copy - and this fails.
      *
-     * MUTATION: draw the copy at random again, or ignore the heading, and this fails.
-     *
-     * @throws Exception from the reflection or the files
+     * @throws Exception from the build, the reflection or the files
      */
     @Test
     public void testTheRightClickPlaceKeepsTheTrainsHeading() throws Exception
     {
+        AutonomySession session = session();
+
+        TileKey mainA = square(session, "BottomMainA");
+
+        Layout running = build(session);
+
+        String westbound = copyFacing(session, mainA, Side.W);
+
+        assertNotNull(westbound, "precondition: BottomMainA has no copy facing west");
+        assertFalse(running.getPoint(westbound).isDestination(), "precondition: " + westbound + " is a station here, so"
+            + " nothing below is about a copy trains may not arrive at");
+
+        // What the menu offers Place over - the station copies that reach a station - and the westbound one is not.
+        List<String> usable = new ArrayList<>();
+
+        for (String name : session.facingsFor(mainA).keySet())
+        {
+            Point copy = running.getPoint(name);
+
+            if (copy != null && copy.isDestination() && running.canReachAnyDestination(copy)) usable.add(name);
+        }
+
+        assertTrue(!usable.isEmpty() && !usable.contains(westbound), "precondition: the menu's list is " + usable);
+
         java.lang.reflect.Method rule = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu")
-            .getDeclaredMethod("copyToPlaceOn", List.class, Map.class, Side.class);
+            .getDeclaredMethod("copyToPlaceOn", AutonomySession.class, TileKey.class, Layout.class, Side.class, List.class);
 
         rule.setAccessible(true);
 
-        List<String> usable = java.util.Arrays.asList("Platform (eastbound)", "Platform (westbound)");
+        Object west = rule.invoke(null, session, mainA, running, Side.W, usable);
 
-        Map<String, Side> facings = new java.util.LinkedHashMap<>();
+        assertEquals(session.facingsFor(mainA).get(west), Side.W, "a train facing west, placed at BottomMainA by the"
+            + " right-click Place, was put on " + west + ", facing " + session.facingsFor(mainA).get(west) + " - turned"
+            + " round, where the paste keeps it facing west (OB-296, ADU-B1)");
 
-        facings.put(usable.get(0), Side.E);
-        facings.put(usable.get(1), Side.W);
+        assertEquals(west, session.copyFacing(mainA, Side.W, running).getName(), "the right-click Place and the paste put a"
+            + " train facing west on different copies (ADU-C1)");
 
-        assertEquals(rule.invoke(null, usable, facings, Side.W), "Platform (westbound)", "a train facing west was put on"
-            + " the copy facing east");
+        Object east = rule.invoke(null, session, mainA, running, Side.E, usable);
 
-        assertEquals(rule.invoke(null, usable, facings, Side.E), "Platform (eastbound)", "a train facing east was put on"
-            + " the copy facing west");
+        assertEquals(east, session.copyFacing(mainA, Side.E, running).getName(), "the right-click Place and the paste put a"
+            + " train facing east on different copies (ADU-C1)");
 
         for (int again = 0; again < 8; again++)
         {
-            assertEquals(rule.invoke(null, usable, facings, null), usable.get(0), "a train with no heading recorded was"
-                + " not put on the first copy the build made - the same placement answered differently");
+            assertEquals(rule.invoke(null, session, mainA, running, null, usable), usable.get(0), "a train with no"
+                + " heading recorded was not put on the first copy the menu offers - the same placement answered"
+                + " differently");
         }
 
-        assertEquals(rule.invoke(null, java.util.Arrays.asList(usable.get(1)), facings, Side.E), usable.get(1), "the"
-            + " one copy a train can leave was refused because the train faced the other way");
-
-        // AND THE DOOR ASKS IT, with the heading read before the move.
+        // THE DOOR: the heading read before the move and handed to the rule, and the move onto a barred copy allowed.
         String menu = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
             "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java")), java.nio.charset.StandardCharsets.UTF_8);
 
@@ -146,10 +166,26 @@ public class testATrainIsPutOnlyWhereItCanStart
 
         assertFalse(body.contains("Random"), "the right-click Place still draws the copy at random (OB-296)");
 
-        assertTrue(body.contains("copyToPlaceOn(") && body.contains("facingOf("), "the right-click Place does not ask"
-            + " the heading rule with the train's own heading (OB-296)");
+        int read = body.indexOf("keep = ");
+        int asked = body.indexOf("copyToPlaceOn(session, station, running, keep, usable)");
+        int moved = body.indexOf("placeFacing(");
+
+        assertTrue(read >= 0 && body.indexOf("facingOf(", read) > read && asked > read && moved > asked, "the right-click"
+            + " Place does not read the train's heading, hand it to the rule, and only then move it (ADD-C5)");
+
+        int door = menu.indexOf("private void placeFacing(");
+
+        assertTrue(door > 0 && menu.indexOf("moveLocomotive(locName, pointName, false, true)", door) > door
+            && menu.indexOf("moveLocomotive(locName, pointName, false, true)", door) < menu.indexOf("\n    }", door),
+            "the right-click Place moves with the form of moveLocomotive that refuses a copy trains may not arrive at"
+            + " (ADU-B1, ADU-C2)");
     }
 
+    /**
+     * A facing only a copy trains may not arrive at holds still stands the train on a copy facing that way (AUT2-A1).
+     *
+     * @throws Exception from the build
+     */
     @Test
     public void testTheBuildKeepsTheFacingTheSetupRecords() throws Exception
     {

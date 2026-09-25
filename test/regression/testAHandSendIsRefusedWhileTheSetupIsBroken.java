@@ -168,7 +168,14 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
             // ON THE EVENT THREAD, where the editor makes every setup change - the window's own work reads the setup
             // there, and a change made from this thread raced it.
-            final String[] outcome = new String[6];
+            final String[] outcome = new String[7];
+
+            // RETURN HOME OFFERED BEFORE ANYTHING IS BROKEN (ADU-C6): otherwise the item is greyed for that, and the
+            // greyed state below says nothing about the setup.
+            java.lang.reflect.Method triage = TrainControlUI.class.getDeclaredMethod("awaitReturnHomeTriage", long.class);
+
+            triage.setAccessible(true);
+            triage.invoke(ui[0], 30000L);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
@@ -188,6 +195,19 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
                 String name = session.getStore().getPointName(station);
 
                 outcome[0] = String.valueOf(ui[0].whyAHandSendIsRefused());
+
+                try
+                {
+                    Method offered = TrainControlUI.class.getDeclaredMethod("isReturnHomeOffered");
+
+                    offered.setAccessible(true);
+
+                    outcome[6] = String.valueOf(offered.invoke(ui[0]));
+                }
+                catch (ReflectiveOperationException failed)
+                {
+                    outcome[6] = String.valueOf(failed);
+                }
 
                 // BROKEN: a station with no name is an error.
                 session.getStore().setPointName(station, "");
@@ -242,10 +262,17 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
             // Adam, 2026-09-24, TDU2-C3: "Yes, go with your recommendation" - the item greyed with the setup's sentence,
             // the buttons live and explaining, as Start's is.
+            assertEquals(outcome[6], "true", "precondition: Return Home is not offered on the frozen railway before anything"
+                + " is broken, so its item is greyed for that and nothing below is about the setup (ADU-C6)");
+
             assertEquals(outcome[4], "false", "with the setup broken, the right-click Return Home item is offered and"
                 + " every click refused (TDU2-C3)");
 
-            assertEquals(outcome[5], outcome[2], "the greyed Return Home item does not say what is wrong with the setup"
+            assertTrue(outcome[5].startsWith("<html"), "the greyed Return Home item's tooltip is not wrapped as Start's is"
+                + " (ADU-C4): " + outcome[5]);
+
+            assertEquals(outcome[5].replaceAll("<[^>]*>", "").replace("&lt;", "<").replace("&gt;", ">")
+                .replace("&amp;", "&"), outcome[2], "the greyed Return Home item does not say what is wrong with the setup"
                 + " (TDU2-C3)");
         }
         finally
@@ -259,6 +286,34 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
             if (sandbox != null) sandbox.close();
         }
+    }
+
+    /**
+     * The right-click menu asks the setup once where Start is offered: the Return Home item is handed the hand doors'
+     * sentence, worked out only where Start is greyed (ADU-C3, ADD-C10).
+     *
+     * `AutonomySession.check()` is not cached, and a popup menu is built on the event thread; LD-C6 brought the walks a
+     * right-click costs down to one each, and TDU2-C3's item asked the whole check twice more on every right-click.
+     * Start offered means the setup has no errors, so the hand doors' sentence is then null without asking.
+     *
+     * MUTATION: have the item ask the setup itself again, and this fails.
+     *
+     * @throws Exception from the files
+     */
+    @Test
+    public void testTheMenuAsksTheSetupOnceWhereStartIsOffered() throws Exception
+    {
+        String menu = read("src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java");
+        String item = read("src/org/traincontrol/gui/HomeLocomotiveMenu.java");
+
+        assertTrue(menu.contains("canStart ? null : ui.whyAHandSendIsRefused()"), "the right-click menu does not work the"
+            + " hand doors' sentence out from Start's answer - it is asked again whatever Start said (ADU-C3)");
+
+        assertTrue(menu.contains("HomeLocomotiveMenu.addReturnHomeItem(this, ui, broken)"), "the right-click menu does not"
+            + " hand the Return Home item the sentence it worked out (ADU-C3)");
+
+        assertFalse(item.contains("whyAHandSendIsRefused("), "the Return Home item asks the whole setup check itself, on"
+            + " every right-click (ADU-C3)");
     }
 
     /**

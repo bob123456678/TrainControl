@@ -558,6 +558,35 @@ public class testAutonomyDiagramReducer
     }
 
     /**
+     * The session hands out a reducer only once it is reduced (OB-298, ADA-C2, ADD-C9).
+     *
+     * The application never reduces one reducer twice: `AutonomySession.rebuild` makes a new one - and assigned it to the
+     * field a line before reducing it, so a build asking for it in between walked lists being filled.  Swapping the
+     * lists inside the reducer does not reach that: it answers such a reader with the empty lists a new reducer starts
+     * with, silently.
+     *
+     * MUTATION: assign the field before `reduce()` again, and this fails.
+     *
+     * @throws IOException reading the source
+     */
+    @Test
+    public void testTheSessionPublishesAReducerOnlyOnceReduced() throws IOException
+    {
+        String session = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/automationui/AutonomySession.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        int made = session.indexOf("GraphReducer fresh = new GraphReducer(graph, store.asAuthored());");
+        int reduced = session.indexOf("fresh.reduce();", made);
+        int published = session.indexOf("reducer = fresh;", made);
+
+        assertTrue(made > 0 && reduced > made && published > reduced, "the session's reducer is handed out before it is"
+            + " reduced, so a reader in between walks lists being filled (ADA-C2)");
+
+        assertFalse(session.contains("reducer = new GraphReducer("), "the session still assigns a reducer it has not"
+            + " reduced yet (ADA-C2)");
+    }
+
+    /**
      * Adjacent sensors still make an edge - one with no track in between.
      */
     @Test

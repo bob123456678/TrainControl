@@ -196,26 +196,31 @@ public class testTheOwnTailArithmetic
     }
 
     /**
-     * The note counts the pieces Mass Assign Lengths asks for - a stretch cut at its switches - not whole stretches
-     * (Adam, 2026-09-24, OB-297: *"Locations of switches are known."*); and a piece answered 0 is measured (TDU-C6).
+     * The note counts what Mass Assign Lengths would ask for on the way round - the pieces the build marks on each edge's
+     * places - once each, and nothing where it would ask for nothing (OB-297, ADA-C1).
      *
-     * Out over X (nothing), the switch (3) and Y (nothing), and back onto the body at B.  Counted by stretch, the one out
-     * has its switch's 3 and counts as measured, so the note said nothing between Mass Assign sittings - switches first,
-     * pieces later - while two pieces of the way round had no length.
+     * Out over X, the switch (3) and Y, and back onto the body at B.  With X and Y in two pieces still to measure, the note
+     * says two; in one piece, one; with nothing to measure, nothing - whatever the places themselves measure.
      *
-     * MUTATION: count a stretch as one piece, or an answered piece as unmeasured, and this fails.
+     * MUTATION: count the runtime's own pieces instead of the marks, or count a piece once per place, and this fails.
      *
      * @throws Exception from the rule
      */
     @Test
-    public void testTheNoteCountsPiecesCutAtTheSwitches() throws Exception
+    public void testTheNoteCountsWhatMassAssignAsksFor() throws Exception
     {
         Edge out = edge(Arrays.asList("OT:X7", "OT:SW7", "OT:Y7"), Arrays.asList(0, 3, 0));
         Edge back = edge(Arrays.asList("OT:B7"), Arrays.asList(0));
 
-        Method cuts = Edge.class.getMethod("setCutPlaces", java.util.Collection.class);
+        Method mark = Edge.class.getMethod("setPiecesToMeasure", Map.class);
 
-        cuts.invoke(out, Arrays.asList("OT:SW7"));
+        Map<String, String> asked = new LinkedHashMap<>();
+
+        asked.put("OT:X7", "piece 1");
+        asked.put("OT:Y7", "piece 2");
+
+        mark.invoke(out, asked);
+        mark.invoke(back, new LinkedHashMap<String, String>());
 
         Map<String, Integer> body = new LinkedHashMap<>();
 
@@ -225,16 +230,30 @@ public class testTheOwnTailArithmetic
 
         assertNotNull(said, "precondition: a twenty-unit train is not refused a way round of 3 onto its own body");
 
-        assertTrue(said.contains(I18n.f("autolayout.errorOwnTailPartlyUnmeasured", 2)), "two pieces of the way round -"
-            + " either side of the switch - have no length, and the note does not say two: " + said);
+        assertTrue(said.contains(I18n.f("autolayout.errorOwnTailPartlyUnmeasured", 2)), "two pieces Mass Assign would ask"
+            + " for lie on the way round, and the note does not say two: " + said);
 
-        // ANSWERED 0, one of them is measured.
-        out.setAnsweredPlaces(Arrays.asList("OT:X7"));
+        // ONE PIECE ACROSS THE SWITCH'S TWO SIDES is one thing to measure.
+        asked.put("OT:Y7", "piece 1");
+        mark.invoke(out, asked);
 
         said = ask(Arrays.asList(out, back), 20, body);
 
-        assertTrue(said != null && said.contains(I18n.f("autolayout.errorOwnTailPartlyUnmeasured", 1)), "X was answered"
-            + " 0 on purpose and is still counted as a piece with no length: " + said);
+        assertTrue(said != null && said.contains(I18n.f("autolayout.errorOwnTailPartlyUnmeasured", 1)), "one piece is"
+            + " counted once per place: " + said);
+
+        // NOTHING TO MEASURE, and the note says nothing, though X and Y measure 0.
+        mark.invoke(out, new LinkedHashMap<String, String>());
+
+        said = ask(Arrays.asList(out, back), 20, body);
+
+        assertNotNull(said, "precondition: the refusal went with the marks");
+
+        for (int n = 1; n <= 5; n++)
+        {
+            assertFalse(said.contains(I18n.f("autolayout.errorOwnTailPartlyUnmeasured", n)), "Mass Assign would ask for"
+                + " nothing on the way round, and the note asks for " + n + ": " + said);
+        }
     }
 
     /**

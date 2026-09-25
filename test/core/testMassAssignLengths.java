@@ -1042,6 +1042,123 @@ public class testMassAssignLengths
     }
 
     /**
+     * The build marks, on each edge, the places Mass Assign Lengths would ask a length for - which the own-tail note
+     * counts (OB-297, ADA-C1).
+     *
+     * Counted by the runtime from marks of its own - a stretch cut at its switches, measured where anything on it was -
+     * the note differed from Mass Assign's list two ways.  A piece with a route tile in it read as measured, the route
+     * tile being answered.  And a short piece whose units Mass Assign put on the station's square first read as
+     * unmeasured from the edge leaving the station, which does not carry that square: the note asked for a length the
+     * editor says is there.
+     *
+     * MUTATION: mark the pieces from the runtime's own reading, or mark the route tile, and this fails.
+     *
+     * @throws Exception from the fixture or the reflection
+     */
+    @Test
+    public void testTheBuildMarksWhatMassAssignAsksFor() throws Exception
+    {
+        openARouteTileInARun();
+
+        // BOTH ENDS STATIONS TRAINS TURN AT - two dead ends otherwise - so the leg is one a train is sent along and the
+        // build emits it.
+        session.setStation(key(1, 1), true);
+        session.setPointProperty(key(1, 1), "canReverse", Boolean.TRUE);
+        session.setPointProperty(key(5, 1), "canReverse", Boolean.TRUE);
+        session.rebuild();
+
+        assertFalse(session.stretchesNeedingALength().isEmpty(), "precondition: nothing on the leg is measured, and Mass"
+            + " Assign Lengths asks for nothing");
+
+        org.json.JSONObject built = inspected();
+
+        for (String end : new String[] {"main:5,1", "main:1,1"})
+        {
+            org.json.JSONArray places = placesEndingAt(built, end);
+
+            assertNotNull(places, "precondition: no edge over the route tile ends at " + end);
+
+            String key = null;
+
+            for (int i = 0; i < places.length(); i++)
+            {
+                org.json.JSONObject place = places.getJSONObject(i);
+
+                if (place.getString("at").startsWith("main:3,1"))
+                {
+                    assertFalse(place.has("toMeasure"), "the route tile is marked as track to measure - it takes no"
+                        + " length (OB-273)");
+
+                    continue;
+                }
+
+                assertTrue(place.has("toMeasure"), place.getString("at") + " is in the piece Mass Assign asks for, and the"
+                    + " edge ending at " + end + " does not say so (ADA-C1)");
+
+                if (key == null) key = place.getString("toMeasure");
+
+                assertEquals(place.getString("toMeasure"), key, "one piece is marked as two, on the edge ending at " + end);
+            }
+        }
+
+        // A SHORT PIECE'S UNITS, ON THE STATION'S SQUARE FIRST: Mass Assign then asks for nothing on this leg.
+        AutonomySession.Stretch piece = piece(key(2, 1));
+
+        assertTrue(session.assignStretchLength(piece, 1), "precondition: one unit was refused");
+
+        session.rebuild();
+
+        assertEquals(length(1, 1) + length(5, 1), 1, "precondition: Mass Assign put the unit somewhere other than a"
+            + " station's square");
+
+        built = inspected();
+
+        for (String end : new String[] {"main:5,1", "main:1,1"})
+        {
+            org.json.JSONArray places = placesEndingAt(built, end);
+
+            for (int i = 0; i < places.length(); i++)
+            {
+                assertFalse(places.getJSONObject(i).has("toMeasure"), places.getJSONObject(i).getString("at") + " on the"
+                    + " edge ending at " + end + " is marked as track to measure, where Mass Assign asks for nothing -"
+                    + " the note would ask for a length the editor says is there (ADA-C1)");
+            }
+        }
+    }
+
+    /** The railway this setup builds, as the checks inspect it. */
+    private org.json.JSONObject inspected() throws Exception
+    {
+        java.lang.reflect.Method built = AutonomySession.class.getDeclaredMethod("builtForInspection");
+
+        built.setAccessible(true);
+
+        return (org.json.JSONObject) built.invoke(session);
+    }
+
+    /** The places of the built edge that runs over the route tile at 3,1 and ends at this square, or null. */
+    private static org.json.JSONArray placesEndingAt(org.json.JSONObject built, String end)
+    {
+        org.json.JSONArray edges = built.getJSONArray("edges");
+
+        for (int i = 0; i < edges.length(); i++)
+        {
+            org.json.JSONArray places = edges.getJSONObject(i).optJSONArray("places");
+
+            if (places == null || places.length() == 0) continue;
+
+            if (!end.equals(places.getJSONObject(places.length() - 1).getString("at"))) continue;
+
+            for (int j = 0; j < places.length(); j++)
+            {
+                if (places.getJSONObject(j).getString("at").startsWith("main:3,1")) return places;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * A route tile's length is folded into the track beside it when the setup is opened, keeping the total (Adam,
      * 2026-09-23: *"Fold them, they were likely auto set during the mass assignment run."*).
      *
@@ -2367,6 +2484,13 @@ public class testMassAssignLengths
 
             assertTrue(sentence.contains("{0}") && !sentence.contains("{2}"), bundle.getName() + ": the sentence names the"
                 + " berth, and no figure - there is none but 0: " + sentence);
+
+            // A TRAIN WITH NO LENGTH IS NOT REFUSED THERE (ADU-C8): the berth rule judges only trains with one.
+            if (bundle.getName().equals("messages.properties"))
+            {
+                assertTrue(sentence.contains("every train with a length"), "the warning says every train arriving that way"
+                    + " is refused, and a train with no length is let through: " + sentence);
+            }
         }
     }
 

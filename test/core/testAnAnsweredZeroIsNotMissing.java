@@ -3,6 +3,7 @@ package core;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -133,37 +134,37 @@ public class testAnAnsweredZeroIsNotMissing
     }
 
     /**
-     * The build marks which of an edge's places cut it into pieces - a switch, or a square two roads cross - so the
-     * runtime can count what Mass Assign Lengths asks for (OB-297).
+     * On his railway the build marks exactly the places Mass Assign Lengths would ask a length for (OB-297, ADA-C1).
      *
-     * MUTATION: write no mark, or mark every place, and this fails.
+     * MUTATION: mark nothing, mark every place, or mark from another list, and this fails.
      *
      * @throws Exception from the railway
      */
     @Test
-    public void testTheBuildMarksWhereAStretchIsCut() throws Exception
+    public void testTheBuildMarksWhatMassAssignAsksFor() throws Exception
     {
-        Edge approach = approach(layoutNow());
+        // What Mass Assign Lengths asks for: its pieces, its switches and its shared squares still with no length.
+        Set<TileKey> asked = new LinkedHashSet<>(session.squaresNeedingALength());
 
-        java.lang.reflect.Method isCut = Edge.class.getMethod("isPlaceACut", String.class);
+        java.lang.reflect.Method marked = Edge.class.getMethod("pieceToMeasure", String.class);
 
-        Set<TileKey> cuts = new LinkedHashSet<>(session.switchesALengthRuleReads());
+        int seen = 0;
 
-        cuts.addAll(session.sharedSquaresALengthRuleReads());
-
-        int marked = 0;
-
-        for (String id : approach.getPlaceIds())
+        for (Edge edge : layoutNow().getEdges())
         {
-            boolean expected = cuts.contains(squareOf(id));
+            for (String id : edge.getPlaceIds())
+            {
+                boolean expected = asked.contains(squareOf(id));
 
-            if (expected) marked++;
+                if (expected) seen++;
 
-            assertTrue(isCut.invoke(approach, id).equals(expected), id + " is " + (expected ? "" : "not ") + "a switch or"
-                + " a crossing, and the railway is told otherwise");
+                assertEquals(marked.invoke(edge, id) != null, expected, id + " on " + edge.getName() + " is "
+                    + (expected ? "" : "not ") + "something Mass Assign asks a length for, and the railway is told"
+                    + " otherwise");
+            }
         }
 
-        assertTrue(marked > 0, "precondition: the approach to TunnelLongPark crosses no switch, so nothing here is marked");
+        assertTrue(seen > 0, "precondition: nothing on his frozen railway is left to measure, so nothing here is marked");
     }
 
     /** The square a place identifier names - the tile, before any `/route` of an overpass. */
