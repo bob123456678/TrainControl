@@ -25038,6 +25038,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // same violation one layer down.
         final Exception[] failed = new Exception[1];
         final int[] added = new int[1];
+        final int[] rearmed = new int[1];
 
         // READ HERE, AND ASKED ABOUT BEFORE ANYTHING IS REPLACED (REG2-C7, Adam 2026-09-24: *"save the state in the
         // file on export, and ask the user on import.  if they want them armed, arm them.  otherwise, don't."*).  The
@@ -25060,8 +25061,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             ? java.util.Collections.<String>emptyList() : this.model.routesSavedArmed(json);
 
         // No is the default: an import that starts nothing is the one that cannot surprise anybody (2026-09-10).
+        //
+        // THE ROUTES BY NAME, as the sentence reads in every language - "saved with their automatic firing on: {0}" - and
+        // as MT-496 expects the question to show them.  It was given the count, and read "...on: 1." (found automating
+        // MT-496, 2026-09-25).
         final boolean arm = !savedArmed.isEmpty() && JOptionPane.showOptionDialog(this,
-            I18n.f("route.ui.confirmRearmImported", savedArmed.size()), I18n.t("route.ui.confirmRearmImportedTitle"),
+            I18n.f("route.ui.confirmRearmImported", String.join(", ", savedArmed)),
+            I18n.t("route.ui.confirmRearmImportedTitle"),
             JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, YES_NO_OPTS, YES_NO_OPTS[1])
             == JOptionPane.YES_OPTION;
 
@@ -25075,6 +25081,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 try
                 {
                     added[0] = this.model.importRoutes(json, arm);
+
+                    // COUNTED FROM WHAT THE IMPORT ARMED, as the model counts it for the log (found automating MT-497,
+                    // 2026-09-25).  A route saved armed that has no sensor is not armed - it has nothing to watch, as the
+                    // right-click item says - and counting the file's list told the operator it was on again while the
+                    // log said every route had arrived off.
+                    for (String name : savedArmed)
+                    {
+                        Route imported = this.model.getRoute(name);
+
+                        if (arm && imported != null && imported.isEnabled()) rearmed[0]++;
+                    }
 
                     prefs.put(LAST_USED_FOLDER, chosen.getParent());
 
@@ -25110,9 +25127,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 // THE ROUTES ARRIVE OFF, and the door says so (REG-B3) - the log line alone is not where
                 // somebody restoring a backup is looking.  Or, asked, the ones saved armed come back armed (REG2-C7).
-                JOptionPane.showMessageDialog(this, arm
+                // THE MODEL'S OWN CHOICE OF SENTENCE: re-armed where it armed some, and otherwise the notice that they
+                // arrived off - which is what the log says.
+                JOptionPane.showMessageDialog(this, rearmed[0] > 0
                     ? I18n.f(org.traincontrol.marklin.MarklinControlStation.IMPORTED_ROUTES_REARMED, added[0],
-                        savedArmed.size())
+                        rearmed[0])
                     : I18n.f(org.traincontrol.marklin.MarklinControlStation.IMPORTED_ROUTES_NOTICE, added[0],
                         I18n.t("ui.main.bulkEnable"), I18n.t("route.ui.menuEnableAutoExecution")));
             });
