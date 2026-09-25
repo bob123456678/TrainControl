@@ -1448,10 +1448,10 @@ IND9X-C2	2026-09-22-VD17-records.md	Open - verified 2026-09-22	**VD17-R5**	docum
 IND9X-C2	IND-independent-review.md	Open - verified 2026-09-22	-	the dispatch-choice layer is documented only at user-manual level
 IND9X-C3	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	still true	(listed in a table, no section of its own)
 IND9X-C3	IND-independent-review.md	Open - verified 2026-09-22	-	a third accessory-reading door still creates on a miss
-IND9X-C4	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	still true	(listed in a table, no section of its own)
-IND9X-C4	IND-independent-review.md	Open - verified 2026-09-22	-	the save-reconciliation warning can open unowned, behind the main window
-IND9X-C5	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	still true	(listed in a table, no section of its own)
-IND9X-C5	IND-independent-review.md	Open - verified 2026-09-22	-	right-click refusal dialogs parent on the already-dismissed popup
+IND9X-C4	2026-09-22-GS-backlog.md	Closed	still true	(listed in a table, no section of its own)
+IND9X-C4	IND-independent-review.md	Closed	-	the save-reconciliation warning can open unowned, behind the main window
+IND9X-C5	2026-09-22-GS-backlog.md	Closed	still true	(listed in a table, no section of its own)
+IND9X-C5	IND-independent-review.md	Closed	-	right-click refusal dialogs parent on the already-dismissed popup
 IND9X-C6	2026-09-22-GS-backlog.md	Open - verified 2026-09-21	still true (OB-235)	(listed in a table, no section of its own)
 IND9X-C6	IND-independent-review.md	Open - verified 2026-09-21	-	the One-way tool is not greyed on an excluded page, unlike its two siblings
 IND9X-C7	2026-09-22-GS-backlog.md	Open - verified 2026-09-22	still true (3 parts)	(listed in a table, no section of its own)
@@ -2342,6 +2342,57 @@ RGN-D5	2026-08-31-regression-review.md	Closed	-	`.cs2` page files: HEAD is stric
 RGN-D6	2026-08-31-regression-review.md	Closed	-	route sort order, ids, enable and disable
 RGN-D7	2026-08-31-regression-review.md	Closed	-	the two mechanical sweeps came back almost empty
 RGN-D8	2026-08-31-regression-review.md	Closed	-	preference defaults, diffed mechanically
+RLA-B1	RLA.md	Closed	Fixed - the edit doors' sweep now also sweeps every standing multi-unit that drives the ed	Re-addressing a member of a standing multi-unit onto a standing train's address takes nothing off the graph
+RLA-B2	RLA.md	Closed	Fixed - for an old file into a configuration of that name the door asks to fill in what it	Importing an old autonomy.json into a configuration that exists: "Replace it with the imported one?" merges, and can stand one train on two squares, w
+RLA-C1	RLA.md	Closed	Fixed - the message names the configuration the trains went into and, where another is in 	behaviour.md says the imported configuration is made the one in use; with one loaded it is not, and the dialog does not say where the trains went
+RLA-C2	RLA.md	Closed	Fixed - into the configuration running, by its name, the running layout is captured first 	Importing an old file into the loaded configuration by name: the reload writes the running railway back over what the import just wrote
+RLA-C3	RLA.md	Closed	Fixed - the file is read to its end before anything is saved, and a failure puts the setup	A failed old-file import leaves the new configuration chosen; the bundle door puts everything back
+RLA-C4	RLA.md	Closed	Fixed - the list hangs from the editor only while it is showing and not minimised; otherwi	With the layout editor open, every door's tail question hangs from the editor, a minimised editor included (MT-575)
+RLA-C5	RLA.md	Closed	Fixed - turning round is offered only onto a copy a train may be started from (not barred,	Why not Moving?'s "Turn it round" (OB-299) sends the operator to a copy without asking whether a train may start there
+RLA-C6	RLA.md	Open - deferred	Follow-up - filed as OB-300: judging a return over a way round answered 0 throughout needs	The own-tail rule is the one length rule the answered-0 work did not reach
+RLA-C7	RLA.md	Closed	Fixed in the records - the divisor's floor is right (no division by zero); `ratioOf`'s jav	Balanced priority ties a route answered 0 throughout with a route of one leg nobody measured
+RLA-C8	RLA.md	Closed	Fixed - the question is wrapped to fit the screen. Claim b1b653a0 (red first: a 1058-chara	Routes > Import's question puts every armed route's name on one line
+RLA-D1	RLA.md	Closed	Checked - clean.	The answered-0 rule errs the safe way at every rule it reached, and the planner asks the same rules
+RLA-D2	RLA.md	Closed	Checked - clean.	BPV-A1's rename case and its siblings: three edit doors, one sweep; placing and loading sweep first
+RLA-D3	RLA.md	Closed	Checked - clean.	Every translated message carries English's placeholders; OB-299's sentences are safe for MessageFormat
+RLA-D4	RLA.md	Closed	Checked - clean.	Importing into a named configuration leaves the loaded one loaded and untouched
+RLA-D5	RLA.md	Closed	Checked - clean.	Routes > Import's Yes count now matches what the model armed
+RLD-B1	RLD.md	Closed	Fixed - master's BPV-C7 brought to 3.0: the unreadable mark is cleared only once the copy 	3.0.0 still saves over an unreadable locomotive database when its safety copy fails; 2.8.2 does not (BPV-C7 was never brought across)
+RLD-C1	RLD.md	Open	Open - the entry is replaced by 2.8.2's final one when master's release validation ends, e	The Readme's v2.8.2 entry is master's first draft, not the entry 2.8.2 shipped with
+RLD-C10	RLD.md	Closed	Fixed as RLA-C7.	"Balanced priority counts an answered 0 as 0" is not quite what it does, and ratioOf's javadoc now overstates
+RLD-C11	RLD.md	Closed	Fixed as RLA-C8.	Routes > Import's question now lists every saved-armed route on one unwrapped line
+RLD-C2	RLD.md	Closed	Fixed - the line says a sensor route skips only the switch under a train, and that a route	The 3.0.0 changelog still says a route fired by its sensor sets none of its switches; since MT-247 it skips only the one under the train
+RLD-C3	RLD.md	Closed	Fixed as RLA-C1; and the window it names is shut: the running configuration is chosen agai	behaviour.md says an imported old autonomy.json is "made the one in use"; the door keeps the running configuration in use, and its test asserts that
+RLD-C4	RLD.md	Closed	Fixed as RLA-B2.	Importing an old autonomy.json under a name already taken asks "Replace it with the imported one?", then merges instead
+RLD-C5	RLD.md	Closed	Fixed - the claim ticks Load Autonomy first and asserts the log says nothing about it (26b	The MT-582 claim can pass with its defect back: it never ticks Load Autonomy first, and it does not read the log
+RLD-C6	RLD.md	Closed	Fixed in the tracker - MT-505, MT-571, MT-507 and MT-508 are back on his list as fixed unv	Four supersessions fall short of the rule this session wrote for them
+RLD-C7	RLD.md	Closed	Fixed in the tracker - MT-491, MT-501, MT-502 and MT-582 have a comment naming the method;	Five superseding comments name the class but not the method
+RLD-C8	RLD.md	Closed	Fixed - Danish, Spanish, Italian and Dutch use their neighbours' word (3af66907).	The OB-299 sentences use a different word for autonomy than the Why sentences beside them, in four languages
+RLD-C9	RLD.md	Closed	Fixed - the user guide gives both remedies (3af66907).	The user guide's new "why isn't it moving" entry gives "turn the train round" even where turning cannot help
+RLD-D1	RLD.md	Closed	Checked - clean.	build.xml, the window census and the live-snapshot README list what they should
+RLD-D2	RLD.md	Closed	Checked - clean.	The tests.md ledger agrees with its entries
+RLD-D3	RLD.md	Closed	Checked - clean.	MT-468's mechanical half holds: every key a screen asks for is in the bundles
+RLD-D4	RLD.md	Closed	Checked - clean.	The import-door and Routes-import tests do not have their answers supplied by the fixture
+RLD-D5	RLD.md	Closed	Checked - clean.	The broken-setup, place-door, where-sent and MT-586 window tests answer their MTs at the MTs' own doors
+RLD-D6	RLD.md	Closed	Checked - clean.	BPV-A1: the documents say what the code does
+RLD-D7	RLD.md	Closed	Checked - clean.	MT-575's fix cannot strand a question asked from the main window
+RLD-D8	RLD.md	Closed	Checked - clean.	The answered-0 route length is guarded against division by zero, and the 3.0.0 line about it is still true
+RLU-A1	RLU.md	Closed	Fixed - Routes > Import reads its file as UTF-8. Claim bb197b16 (red first on this machine	Routes > Import reads a UTF-8 file in the machine's own character set: on Java 8 under Windows every accented letter in a route comes back wrong, and
+RLU-B1	RLU.md	Closed	Fixed as RLA-B2.	"Replace it with the imported one?" answered Yes does not replace for an old autonomy.json: the file is gap-filled into that configuration, and a trai
+RLU-B2	RLU.md	Closed	Fixed - every refusal on the right-click menu, and the setup's tidy report, belong to the 	with Preferences > Window Always on Top ticked, which is the default, the unowned modals of IND9X-C4 and IND9X-C5 can open beneath the main window - i
+RLU-C1	RLU.md	Closed	Fixed as RLA-C3.	an old-file import that fails part way leaves its new configuration chosen, and the next save makes it the one the next start resumes
+RLU-C2	RLU.md	Closed	Fixed - the question names only the routes Yes arms (saved armed, with a sensor). Claim b1	Routes > Import names a route that Yes will not arm, and the answer then says the routes armed were the ones saved with it on
+RLU-C3	RLU.md	Closed	Fixed as RLA-C8.	Routes > Import's question puts every route's name and the question itself on one line, so a long list pushes "Turn it on again for them?" off the dia
+RLU-C4	RLU.md	Closed	Fixed - the either-way sentence names what a reachable station needs: switched on, Can Be 	Why not Moving?'s "whichever way" answer offers one remedy of the several a reachable station can need
+RLU-C5	RLU.md	Closed	Fixed - dele (3af66907).	Spanish: "Déle la vuelta" in the new OB-299 sentence, where the bundle writes "dele" four times
+RLU-C6	RLU.md	Closed	Fixed - the stray javadoc is gone (2fa033f3).	a stray javadoc saying the old-file import is "Debug builds only" now heads `activateTheConfigurationNamed`
+RLU-C7	RLU.md	Closed	Fixed as RLA-C1.	behaviour.md says an old file's configuration is "made the one in use"; with a configuration loaded, the door leaves that one in use
+RLU-C8	RLU.md	Closed	Fixed - the every-key check reads keys held in constants too, with a floor of 30 (26b18432	the new every-key-in-every-language test does not see the 59 message keys held in constants, so its mutation claim does not hold for Routes > Import's
+RLU-C9	RLU.md	Closed	Fixed - the question tells its door whether an editor opened while it waited; all three do	a tail question waiting on the diagram can be answered while an editor is open, and the editor's Cancel then takes the answer back out of the setup
+RLU-D1	RLU.md	Closed	Checked - clean.	MT-575: with an editor open the tail question's list is owned by the editor, and no main-window door can reach the question then
+RLU-D2	RLU.md	Closed	Checked - clean.	Routes > Import's re-armed count is the model's count
+RLU-D3	RLU.md	Closed	Checked - clean.	the eight bundles agree: the same 1,831 keys, the same placeholders, ASCII only, and the two OB-299 sentences say the same thing in every language
+RLU-D4	RLU.md	Closed	Checked - clean.	a successful old-file import leaves the configuration in use as it was
 RR-C1	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27** - the rebuild is now staged and swapped under the locomotive's monito	A sync-applied address change rebuilds every consist without the fan-out lock
 RR-C2	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27** - the lock moved inside the shared method, so every entrance inherits	The layout-refresh lock covers half the entrances
 RR-C3	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27**	Danish and German dialogs name an option the menu does not have

@@ -30,14 +30,18 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-291](#mt-291) | 2026-09-07 | The Grid tooltip, in a language you read | needs test | FR-057 (split from MT-274) |
 | [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
 | [MT-492](#mt-492) | 2026-09-24 | Return Home finds a plan on a crowded railway | fixed unvalidated | OB-230, AMH-C1 |
+| [MT-505](#mt-505) | 2026-09-24 | A guard signal that no way into its station passes is noticed | fixed unvalidated | AUT-C2, MT-493 |
+| [MT-507](#mt-507) | 2026-09-24 | Cancel on a route that would switch track under a train cancels all of it, from either door | fixed unvalidated | MT-247 |
+| [MT-508](#mt-508) | 2026-09-24 | OK on a route that would switch track under a train fires all of it | fixed unvalidated | MT-247 |
 | [MT-533](#mt-533) | 2026-09-24 | The train-length prompt takes typing without a click | fixed unvalidated | MT-474 |
 | [MT-548](#mt-548) | 2026-09-24 | On a Central Station layout the Autonomy menu opens, and only the download and Documentation can be chosen | fixed unvalidated | OB-254, OB-093, MT-544 |
 | [MT-566](#mt-566) | 2026-09-24 | The locomotive train-length walk is never greyed, and counts | fixed unvalidated | MT-533 |
 | [MT-567](#mt-567) | 2026-09-24 | Train lengths and station maximum lengths are named apart | fixed unvalidated | MT-533 |
 | [MT-569](#mt-569) | 2026-09-24 | The guard items say what each guard does | fixed unvalidated | OB-293 |
+| [MT-571](#mt-571) | 2026-09-24 | A train is not sent round a loop into its own tail | fixed unvalidated | OB-294 |
 
-Everything else - 578 of 586 - needs nothing from you unless the area changes again:
-453 **fixed validated** and 125 **superseded**.
+Everything else - 574 of 586 - needs nothing from you unless the area changes again:
+453 **fixed validated** and 121 **superseded**.
 
 ---
 
@@ -25566,6 +25570,10 @@ Running this import now also unticks Preferences > Startup > Load Autonomy - tic
 
 **Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testTheImportDoorReadsAnOldFile` presses Import on the Autonomy menu's panel on a real window over a sandbox copy of your railway, chooses the MT-491 file in the file chooser and types a new configuration's name, as the steps do, and asserts the import's message says it placed 4 locomotives, and that the log has no line saying trains had the way they face chosen for them and none saying the old file ran trains a way the diagram does not let them arrive; the imported configuration holds the four trains.  Before today the steps could not have been run safely: on a layout that already had configurations, the import ignored the name typed and wrote into the configuration in use.  It now goes into the one named, on your answer (a), and your configuration in use is left as it was - the test asserts that too.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
+**Claude, 2026-09-25.**
+
+The test above is `regression.testTheImportDoorReadsAnOldFile.testAnOldFileFromTheMenuGoesIntoANewConfiguration` - the comment named the class only (RLD-C7).
+
 ---
 <a id="mt-492"></a>
 
@@ -25921,6 +25929,10 @@ are carried only onto a diagram nobody has set a direction on, and yours is left
 
 **Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testTheImportDoorReadsAnOldFile` presses Import on the Autonomy menu's panel on a real window over a sandbox copy of your railway, chooses the MT-491 file in the file chooser and types a new configuration's name, as the steps do, and asserts the log says the old file ran 176 pieces of track one way that this diagram does not and that they were left as the diagram has them - and that no direction on the diagram changed at all, which covers the track between BottomMainAPre and BottomMainA.  Before today the steps could not have been run safely: on a layout that already had configurations, the import ignored the name typed and wrote into the configuration in use.  It now goes into the one named, on your answer (a), and your configuration in use is left as it was - the test asserts that too.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
+**Claude, 2026-09-25.**
+
+The test above is `regression.testTheImportDoorReadsAnOldFile.testAnOldFileFromTheMenuGoesIntoANewConfiguration` - the comment named the class only (RLD-C7).
+
 ---
 
 <a id="mt-502"></a>
@@ -25954,6 +25966,10 @@ hand either.  Your ruling of 2026-09-24: *"translate as on but not auto destinat
 **Claude, 2026-09-25.**
 
 **Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testTheImportDoorReadsAnOldFile` presses Import on the Autonomy menu's panel on a real window over a sandbox copy of your railway, chooses the MT-491 file in the file chooser and types a new configuration's name, as the steps do, and asserts that in the imported configuration ParkingTrack7 is a station trains can stop at, is not chosen in full autonomy, and is not switched off - read as the file's own translation, because the Station menu's box alone is unticked by ParkingTrack7 being a square trains turn at as well.  Before today the steps could not have been run safely: on a layout that already had configurations, the import ignored the name typed and wrote into the configuration in use.  It now goes into the one named, on your answer (a), and your configuration in use is left as it was - the test asserts that too.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
+
+**Claude, 2026-09-25.**
+
+The test above is `regression.testTheImportDoorReadsAnOldFile.testAnOldFileFromTheMenuGoesIntoANewConfiguration` - the comment named the class only (RLD-C7).
 
 ---
 
@@ -26025,7 +26041,7 @@ as the exit guard."*
 
 ### MT-505 - 2026-09-24 - A guard signal that no way into its station passes is noticed
 
-**Disposition:** superseded
+**Disposition:** fixed unvalidated
 **From:** AUT-C2, MT-493
 
 **Written:** 2026-09-24
@@ -26051,6 +26067,10 @@ autonomy editor."*
 **Claude, 2026-09-25.**
 
 **Superseded by an automated test** (2026-09-25, on your rule of today).  `core.testAutonomyDiagramSession.testAGuardOffTheWayInIsNoticed` sets an entry guard on a signal no way into the station passes, through the method Entry Guard Signal... runs, and asserts the notice appears, is graded a notice (under Worth tidying, not an error), and adds no error - so the setup still saves and runs.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
+
+**Claude, 2026-09-25.**
+
+**Back on your list** (2026-09-25, RLD-C6 of the 3.0.0 release review): an entry stays yours wherever its superseding is in doubt, and this one is - the test runs on a two-line page of its own rather than your railway, and it neither reads the editor's Configuration errors and warnings list, where step 2 looks, nor the sentence the Expected quotes.  The test named above still runs in every battery; your run is the verdict.
 
 ---
 
@@ -26090,7 +26110,7 @@ autonomy editor."*
 
 ### MT-507 - 2026-09-24 - Cancel on a route that would switch track under a train cancels all of it, from either door
 
-**Disposition:** superseded
+**Disposition:** fixed unvalidated
 **From:** MT-247
 
 **Written:** 2026-09-24
@@ -26112,13 +26132,17 @@ autonomy editor."*
 
 **Superseded by an automated test** (2026-09-25, on your rule of today).  `ui.testARouteOverATrainAtItsDoors.testCancelAtEitherDoorRunsNothing` on the real window over a sandbox copy of your railway: a train dispatched over switch A holds it, and the route - switch A, switch B and an emergency stop, as your step 1 builds it - is fired from inside that dispatch, with every command echoed back as the Central Station would, so a switch reads thrown only when its command went out.  **The steps could not pass as written**, for the reason MT-508's comment gives: a route carrying an emergency stop is never asked about (your ruling of 2026-09-01: *"Emergency stop should never conflict or prompt."*), so with the stop there is no question and no Cancel.  The test checks both: with the stop, neither the route list nor the route's tile on the track diagram (one of your own route tiles, given this route) asks, and the route runs guarded - switch A left alone, switch B thrown, the power off; without the stop, both doors ask the one question - that the route would switch track a train is on, run anyway? - starting on Cancel, and after Cancel at each door nothing has run: neither switch thrown, the power still on.  If you want a route with a stop to ask, that is a change to the ruling: say so.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
+**Claude, 2026-09-25.**
+
+**Back on your list** (2026-09-25, RLD-C6 of the 3.0.0 release review): an entry stays yours wherever its superseding is in doubt, and this one is - the steps name a route with an emergency stop in it, and such a route is never asked about (your rule of 2026-09-01), so the test asserted what the code does for it instead of the Expected - a decision the comment made for you.  Run it as written and say which you want for a route with a stop in it: never asked, as now, or asked like any other.  The test named above still runs in every battery; your run is the verdict.
+
 ---
 
 <a id="mt-508"></a>
 
 ### MT-508 - 2026-09-24 - OK on a route that would switch track under a train fires all of it
 
-**Disposition:** superseded
+**Disposition:** fixed unvalidated
 **From:** MT-247
 
 **Written:** 2026-09-24
@@ -26137,6 +26161,10 @@ autonomy editor."*
 **Claude, 2026-09-25.**
 
 **Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testARouteDoesNotThrowSwitchesUnderATrain.testOKFiresEveryCommandOfTheRoute`.  **The steps could not pass as written**: a route carrying an emergency stop is never asked about (your ruling of 2026-09-01: *"Emergency stop should never conflict or prompt."*), so it has no OK.  The test checks what the code does with the route the entry describes - fired without a question, the power goes off and switch B is thrown, while switch A, held by the train, is left alone - and that the same route without the stop is asked about and OK throws both switches.  If you want a route with a stop to ask, or to throw the held switch, that is a change to the ruling: say so.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
+
+**Claude, 2026-09-25.**
+
+**Back on your list** (2026-09-25, RLD-C6 of the 3.0.0 release review): an entry stays yours wherever its superseding is in doubt, and this one is - the steps name a route with an emergency stop in it, and such a route is never asked about (your rule of 2026-09-01), so the test asserted what the code does for it instead of the Expected - a decision the comment made for you; and on 2026-09-06 you answered MT-247, the same shape, *"OK should fire everything"*.  Run it as written and say which you want for a route with a stop in it.  The test named above still runs in every battery; your run is the verdict.
 
 ---
 
@@ -28234,7 +28262,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-571 - 2026-09-24 - A train is not sent round a loop into its own tail
 
-**Disposition:** superseded
+**Disposition:** fixed unvalidated
 **From:** OB-294
 
 **Written:** 2026-09-24
@@ -28272,6 +28300,10 @@ Validated on your *Works* of 2026-09-24.
 **Claude, 2026-09-25.**
 
 **Superseded by an automated test** (2026-09-25, on your rule of today).  `core.testATrainDoesNotRunIntoItsOwnTail`, on the frozen copy of your railway with LowerFront's size raised and a train at BottomSecondary having come down RampDown: at 20 and at 10 units LowerFront is not among what the send doors offer, Why not Moving? gives the own-tail sentence for it, and the refusal names BottomMainAPre -> BottomCrossover and 9 units; at 9 units some way to LowerFront is clear of every rule and it is offered.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
+
+**Claude, 2026-09-25.**
+
+**Back on your list** (2026-09-25, RLD-C6 of the 3.0.0 release review): an entry stays yours wherever its superseding is in doubt, and this one is - the test (`core.testATrainDoesNotRunIntoItsOwnTail.testTheRefusalNamesTheLongestTrainThatGoes`) asks the send doors' filter through the model's own calls rather than pressing the right-click menu, and reads Why not Moving? through the locomotive list's call rather than the editor's button.  The test named above still runs in every battery; your run is the verdict.
 
 ---
 
@@ -28648,6 +28680,10 @@ Validated on your *Works* of 2026-09-24.
 **Claude, 2026-09-25.**
 
 **Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testTheImportDoorReadsAnOldFile` presses Import on the Autonomy menu's panel on a real window over a sandbox copy of your railway, chooses the MT-491 file in the file chooser and types a new configuration's name, as the steps do, and asserts Preferences > Startup > Load Autonomy reads the same after the import as before (the test puts your preference back whatever happens).  Before today the steps could not have been run safely: on a layout that already had configurations, the import ignored the name typed and wrote into the configuration in use.  It now goes into the one named, on your answer (a), and your configuration in use is left as it was - the test asserts that too.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
+
+**Claude, 2026-09-25.**
+
+The test above is `regression.testTheImportDoorReadsAnOldFile.testAnOldFileFromTheMenuGoesIntoANewConfiguration` - the comment named the class only (RLD-C7).  It now ticks Load Autonomy before the import, as your step 1 does, and asserts the log says nothing about it, as your Expected does; read as it was found, an untick on a machine where it was already off passed (RLD-C5).
 
 ---
 

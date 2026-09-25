@@ -1291,6 +1291,18 @@ Seen once, in a test that edited the setup off the event thread while a rebuild 
 
 Since your answer to OB-296 the right-click Place keeps the train's heading, as the paste does, over every copy of the square the train could leave by.  A copy can have a way out and still reach no station autonomy may choose - everything past it is sensors, turning points or parking - and a train stood there facing that way is never started.  For a copy trains may not arrive at, Why not Moving? says so (*"cannot be started there facing that way"*); for one that reaches no station it lists each destination's own reason, not the copy's.  Before, this door turned such a train onto the other copy - the worse fault, since its heading was then wrong.  Left for later: it is a new sentence in eight languages. On the frozen copy of your railway no station has one: the two copies there with a way out that reach no station - BottomInner facing south and TopMainR2Inter facing north - are both ones trains may not arrive at, and Why not Moving? says so at each.
 
+### OB-300 - 2026-09-25 - The own-tail rule does not judge a way round answered 0 throughout
+
+**Kind:** bug  
+**Raised from:** RLA-C6  
+**Filed:** 2026-09-25  
+
+Found by the 3.0.0 release review (RLA-C6), 2026-09-25.  Every length rule the answered-0 work reached treats track answered 0 as measured track of no length, and errs towards refusing.  The own-tail rule (`Layout.whyItWouldMeetItsOwnTail`) judges a return only where the route has run some length since it left the place, and adds only lengths above 0 - so a loop answered 0 all the way round is not judged, and a train of any length is let round it into its own body.  The one length rule that errs towards letting through.
+
+**Why it waits:** fixing it means the rule telling an answered 0 from an unmeasured square place by place - a change to a core safety rule late in a release - and no loop on the railway can reach it: every one passes measured platforms (measured on the frozen railway: no route between stations comes back to a train's own track in fewer than 9 units).
+
+**Direction:** judge a return once the way round is measured - a length on it, or answered throughout - and add the rule to behaviour.md's answered-0 list and `Edge.isMeasured`'s javadoc.  Claim: a hand-built loop as in `core.testATrainDoesNotRunIntoItsOwnTail`, every place answered 0, a train of 3 on the loop's first place; `whyItWouldMeetItsOwnTail` returns null today.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
