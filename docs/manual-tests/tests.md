@@ -27,7 +27,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-263](#mt-263) | 2026-09-03 | The three refusals, when the graph will not build | fixed unvalidated | V31-C1, V32-C1, DY3-C7 |
 | [MT-291](#mt-291) | 2026-09-07 | The Grid tooltip, in a language you read | needs test | FR-057 (split from MT-274) |
 | [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
 | [MT-468](#mt-468) | 2026-09-19 | Every screen still finds its text after 239 unused message keys were removed | fixed unvalidated | UIX-C4 |
@@ -57,17 +56,15 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-568](#mt-568) | 2026-09-24 | One-Way Run is greyed on a page left out of autonomy | fixed unvalidated | OB-235, MT-528 |
 | [MT-569](#mt-569) | 2026-09-24 | The guard items say what each guard does | fixed unvalidated | OB-293 |
 | [MT-570](#mt-570) | 2026-09-24 | Why not Moving? outlines the squares with trains while it waits | fixed unvalidated | FR-102, MT-516 |
-| [MT-573](#mt-573) | 2026-09-24 | Execute Timetable and Return Home refuse a setup with errors | fixed unvalidated | MT-263, TDU-B1 |
 | [MT-575](#mt-575) | 2026-09-24 | From the autonomy editor the tail question is the list | fixed unvalidated | FR-100, TDU-C1 |
 | [MT-576](#mt-576) | 2026-09-24 | A tail answer given after the placement changed is written where the train now stands, or not at all | fixed unvalidated | TDU2-A1, TDU3-B1 |
-| [MT-580](#mt-580) | 2026-09-25 | Over a setup with errors, the right-click Return Home item is greyed and says why | fixed unvalidated | TDU2-C3 |
 | [MT-581](#mt-581) | 2026-09-25 | The right-click Place keeps the train's heading | fixed unvalidated | OB-296, TDU-B4 |
 | [MT-584](#mt-584) | 2026-09-25 | A train standing on the watched square closes a square trains only pass | fixed unvalidated | OB-295, TDA-C9 |
 | [MT-585](#mt-585) | 2026-09-25 | The right-click Place keeps a heading trains may not arrive by | fixed unvalidated | OB-296, ADU-B1, ADD2-C9 |
 | [MT-586](#mt-586) | 2026-09-25 | A stretch answered 0 lets a train in when the total track holds it | fixed unvalidated | ADU-C7, TDU-C6 |
 
-Everything else - 548 of 586 - needs nothing from you unless the area changes again:
-453 **fixed validated** and 95 **superseded**.
+Everything else - 551 of 586 - needs nothing from you unless the area changes again:
+453 **fixed validated** and 98 **superseded**.
 
 ---
 
@@ -149,7 +146,7 @@ What this test is still about is the NOTICES: one per stretch between a switch a
 
 ### MT-263 - 2026-09-03 - The three refusals, when the graph will not build
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** V31-C1, V32-C1, DY3-C7
 
 **Written:** 2026-09-03
@@ -222,6 +219,10 @@ Start autonomy doesn't run autonomy, as expected- I get an error message saying 
 **Claude, 2026-09-25.**
 
 **What Start says over this break** (2026-09-25, ADD2-C1).  The repeated sensor page is an error finding now (OB-150), so Start's tooltip and Start's message name the error count - *Autonomy cannot start while the setup has 1 error(s)* - as you saw on 2026-09-24.  *One thing has to be dealt with first* is what a setup says when it will not build with no finding, which this break no longer gives; steps 2 and 3's expectation is superseded by that.  MT-580 checks the same tooltip, in the same sitting.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testAHandSendIsRefusedWhileTheSetupIsBroken.testTheEntriesBreakIsRefusedAtEveryDoor` opens a real window over a sandbox copy of your railway and breaks the setup as the steps do - 4 - Combined switched back on, through the call the Exclude Page box makes - after first checking that 4 - Combined is off on the copy and that switching it on is an error there.  It then builds the track diagram's right-click menu on a station (as a right-click builds it) and asserts Start is greyed with a tooltip naming the error count - the sentence as amended on 2026-09-25 - and never saying to wait for the trains; then presses the Start Autonomy button and asserts the message it shows is that same sentence, and that the button is still live afterwards.  One note on the steps: the Autonomy menu has no Start item, so step 3's "Start from the autonomy menu" is the Start Autonomy button, which is what the test presses.  Your 2026-09-24 finding - trains could still be sent by hand - is MT-550, which you validated.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -28248,7 +28249,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-573 - 2026-09-24 - Execute Timetable and Return Home refuse a setup with errors
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-263, TDU-B1
 
 **Written:** 2026-09-24
@@ -28281,6 +28282,10 @@ Validated on your *Works* of 2026-09-24.
 **Claude, 2026-09-25.**
 
 **The right-click item greys now** (2026-09-25, TDU2-C3): over the broken setup, the right-click Return Home item is greyed with the setup's sentence, and MT-580 checks it.  This entry's steps press the Return Home and Execute Timetable buttons, which stay live and explain, so they are unchanged.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testAHandSendIsRefusedWhileTheSetupIsBroken.testTheEntriesBreakIsRefusedAtEveryDoor` opens a real window over a sandbox copy of your railway and breaks the setup as the steps do - 4 - Combined switched back on, through the call the Exclude Page box makes - after first checking that 4 - Combined is off on the copy and that switching it on is an error there, and that Return Home is offered on the copy before the break (a train is away from home there, so your 2026-09-24 set-up step is already true).  It presses the Return Home button and asserts the message is the setup's own sentence with the count - "this setup cannot be used yet" - and not Start's; presses Execute Timetable and asserts the same message and that the button is still live afterwards; and then asserts nothing is running, nothing was dispatched, and every train stands where it stood before the presses.  Because it runs on a copy, the backup and restore steps are not needed.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -28474,7 +28479,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-580 - 2026-09-25 - Over a setup with errors, the right-click Return Home item is greyed and says why
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** TDU2-C3
 
 **Written:** 2026-09-25
@@ -28498,6 +28503,10 @@ Validated on your *Works* of 2026-09-24.
 **Claude, 2026-09-25.**
 
 **Two sentences, by design** (2026-09-25, ADU-C5).  Over MT-573's break, Start's greyed item says autonomy cannot start while the setup has 1 error(s); Return Home's says this setup cannot be used yet and how many things have to be dealt with first - the setup's own words, as the hand doors use them.  Step 4 passes when each says its own.  It can be run in the same sitting as MT-263 and MT-573.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testAHandSendIsRefusedWhileTheSetupIsBroken.testTheEntriesBreakIsRefusedAtEveryDoor` opens a real window over a sandbox copy of your railway and breaks the setup as the steps do - 4 - Combined switched back on, through the call the Exclude Page box makes - after first checking that 4 - Combined is off on the copy and that switching it on is an error there, and that Return Home is offered before the break.  It builds the right-click menu on a station and asserts Return Home is greyed with the setup's sentence and the count, Start is greyed with its own sentence, and the two sentences differ - each saying its own, as the 2026-09-25 comment says step 4 passes.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
