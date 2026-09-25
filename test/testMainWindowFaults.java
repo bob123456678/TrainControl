@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,14 +13,19 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComponent;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.plaf.ComponentUI;
+import javax.swing.plaf.basic.BasicOptionPaneUI;
 import static org.testng.Assert.*;
 import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.PositionAwareJFrame;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.Util;
 
@@ -155,6 +161,143 @@ public class testMainWindowFaults
         assertTrue(start.isEnabled(),
             "nothing was started, so the button must be given back - otherwise one refused press "
             + "leaves Start greyed until a restart");
+    }
+
+    /**
+     * Records the thread every option pane is built on.  Installed as the option pane UI for the one
+     * test that needs it, and removed again.
+     */
+    public static final class RecordingOptionPaneUI extends BasicOptionPaneUI
+    {
+        static volatile String builtOn;
+        static volatile boolean builtOnEventThread;
+
+        public static ComponentUI createUI(JComponent pane)
+        {
+            builtOnEventThread = SwingUtilities.isEventDispatchThread();
+            builtOn = Thread.currentThread().getName();
+
+            return new RecordingOptionPaneUI();
+        }
+    }
+
+    /**
+     * The question Start asks when a conditional route is switched on is built and shown on the event
+     * thread.
+     *
+     * Start's checks run on a worker thread, and every other dialog in them is handed to the event
+     * thread.  This one was built and shown straight from the worker: a modal dialog off the event
+     * thread, which mispaints on a good day and deadlocks on a bad one.  Since the press greys Start
+     * until the worker ends, a worker hung in that dialog would also leave Start greyed for the rest
+     * of the session (BPV-C4).
+     *
+     * The stand-in model has one conditional route switched on, which is what raises the question.
+     * The window here has no constructor run, so the dialog cannot actually be built on it - it fails
+     * wherever it is raised, and nothing is shown on screen.  What is asserted is the thread the
+     * question was built on, which the option pane UI records.
+     *
+     * Ported from the 3.0 branch (739c933c, confirmOnEventThread).
+     */
+    @Test
+    public void testTheConditionalRoutesQuestionIsAskedOnTheEventThread() throws Exception
+    {
+        final MarklinRoute conditional = new MarklinRoute(null, "Conditional route", 1);
+
+        Field enabled = MarklinRoute.class.getDeclaredField("enabled");
+        enabled.setAccessible(true);
+        enabled.set(conditional, true);
+
+        ViewListener model = stubModel((method, args) ->
+        {
+            switch (method.getName())
+            {
+                case "getPowerState":
+                    return true;
+
+                case "getRouteList":
+                    return Collections.singletonList(conditional.getName());
+
+                case "getRoute":
+                    return conditional;
+
+                case "getAutoLayout":
+                    // Past the question, which only a yes reaches
+                    throw new StopHere();
+
+                default:
+                    return null;
+            }
+        });
+
+        TrainControlUI ui = windowless();
+        set(ui, "model", model);
+
+        final JButton start = new JButton("Start");
+        set(ui, "startAutonomy", start);
+
+        final Method handler = TrainControlUI.class.getDeclaredMethod(
+            "startAutonomyActionPerformed", java.awt.event.ActionEvent.class);
+        handler.setAccessible(true);
+
+        RecordingOptionPaneUI.builtOn = null;
+
+        UIManager.put(RecordingOptionPaneUI.class.getName(), RecordingOptionPaneUI.class);
+        UIManager.put("OptionPaneUI", RecordingOptionPaneUI.class.getName());
+
+        Thread.UncaughtExceptionHandler previous = Thread.getDefaultUncaughtExceptionHandler();
+
+        // The dialog cannot be built on a window-less instance, so a question raised on the worker ends
+        // the worker with that failure; it is expected, and not what is asserted
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> { });
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                start.setEnabled(true);
+
+                try
+                {
+                    handler.invoke(ui, (java.awt.event.ActionEvent) null);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            long deadline = System.currentTimeMillis() + 5000;
+
+            while (RecordingOptionPaneUI.builtOn == null && System.currentTimeMillis() < deadline)
+            {
+                Thread.sleep(20);
+            }
+
+            // Let the worker end, and the event thread run whatever it handed over
+            Thread.sleep(500);
+
+            SwingUtilities.invokeAndWait(() -> { });
+            SwingUtilities.invokeAndWait(() -> { });
+        }
+        finally
+        {
+            Thread.setDefaultUncaughtExceptionHandler(previous);
+
+            UIManager.put("OptionPaneUI", null);
+            UIManager.put(RecordingOptionPaneUI.class.getName(), null);
+        }
+
+        assertNotNull(RecordingOptionPaneUI.builtOn,
+            "precondition: the Start worker never reached the conditional-routes question, so this "
+            + "test says nothing about where it is asked");
+
+        assertTrue(RecordingOptionPaneUI.builtOnEventThread,
+            "the conditional-routes question was built and shown on thread \"" + RecordingOptionPaneUI.builtOn
+            + "\" - Start's worker - rather than on the event thread: a modal dialog off the event "
+            + "thread, which can hang the worker and leave Start greyed for the session (BPV-C4)");
+
+        assertTrue(start.isEnabled(),
+            "the question could not be asked, which is a no, so Start must be given back");
     }
 
     /**
