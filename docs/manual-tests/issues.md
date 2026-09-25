@@ -1298,6 +1298,10 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-24 | OB-298 | bug | A rebuild builds its lists apart and hands them over whole, so a reader walking them finishes on the railway it began on: `core.testAutonomyDiagramReducer.testARebuildDoesNotChangeWhatAReaderIsWalking`. | fixed unvalidated | - |
+| 2026-09-24 | OB-297 | bug | The own-tail refusal counts the pieces Mass Assign Lengths asks for, the build marking the switches and crossings on each stretch: `core.testTheOwnTailArithmetic.testTheNoteCountsPiecesCutAtTheSwitches`. | fixed unvalidated | - |
+| 2026-09-24 | OB-296 | bug | The right-click Place keeps the train's heading, on your answer. | - | `MT-581` |
+| 2026-09-24 | OB-295 | bug | "Unavailable while occupied" shuts a square to routes through it while a train stands on the square it watches, as well as to arrivals - at runtime, in Why not Moving? and in Return Home's planner: `regression.testStationBlockedByAnotherPoint`, `core.testHomeStaging`.  The frozen copy of your railway has no such restriction, so there is nothing to run by hand. | fixed unvalidated | - |
 | 2026-09-24 | OB-286 | bug | Highlight on Diagram lights a three-way once, as commanded, where a route commands one of its decoders and checks the other. | - | `MT-578` |
 | 2026-09-24 | FR-098 | feature request | Customize Function Icons greys Apply while the function on show is as the locomotive holds it. | - | `MT-577` |
 | 2026-09-24 | OB-287 | bug | The refusal to delete or rename a locomotive a running route drives has its test, at both doors and the name proposal: `regression.testARouteDrivenLocomotiveIsNotEdited`. | fixed unvalidated | - |

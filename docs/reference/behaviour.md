@@ -40,7 +40,10 @@ else. The occupancy restriction below is not a tier question at all any more.
 both the track diagram viewer and the autonomy tab, which should throw an error instead"*). Start is refused while the
 setup has errors, and so are both hand doors, Execute Timetable and Return Home - one question, `autonomyHasErrors`, in
 the setup's own words. The two run doors were added on the rule's own reason (TDU-B1): they drive over the railway the
-same setup built, through the same dispatch. `regression.testAHandSendIsRefusedWhileTheSetupIsBroken`.
+same setup built, through the same dispatch. **The right-click Return Home item is greyed over such a setup, with the
+setup's sentence as its tooltip**, as the right-click Start beside it is; the Return Home, Execute Timetable and Start
+buttons stay live and explain on a click (Adam, 2026-09-24, TDU2-C3: *"Yes, go with your recommendation"*).
+`regression.testAHandSendIsRefusedWhileTheSetupIsBroken`.
 
 **Return Home sits with Manual on the question of where a train may be sent.** This was got wrong
 once and corrected on 2026-09-06: `isAutoDestination` appears nowhere in `HomeStaging`, and Adam's
@@ -58,6 +61,19 @@ Return Home all obey it**. His ruling:
 2026-09-09 and behind `isFullAutonomyRunning` after it, on his earlier ruling that the restriction is
 *"for modifying pathing prioritization"* while the length checks are *"our primary anti collision
 mechanism."* Both fences are gone. One rule, one answer, asked once — in `Layout.isPathClear`.
+
+**Of every square a route arrives at, not only its destination** (Adam, 2026-09-24, OB-295: *"It means
+trains shouldn't be sent to THIS square while trains are STANDING ON or hold a lock on the other specified
+station(s)."*). The setting has two halves. The lock half - the watched square's approach held by a
+route - is built into every edge arriving at the square, so it always closed a square to routes through
+it as well. The standing half - a train standing on the watched square - was asked of the destination
+only, so a square trains only pass, which is never a destination, was shut by a route and not by a
+train standing there. Both halves now ask the same thing of every square on the route, and the notice
+*"{0} is unavailable while {1} is occupied"* is true of such a square. The cost is the one the setting
+names: while that train stands there, the square is shut to routes through it too. Return Home's planner
+asks it of every square a plan passes, against the occupancy the plan has reached.
+`regression.testStationBlockedByAnotherPoint.testATrainStandingOnTheWatchedPointClosesASquareTrainsPass`,
+`core.testHomeStaging.testAHomeBeyondAHeldBackSquareIsNotStagedThroughIt`.
 
 **The planner reads it again, and has to.** `HomeStaging` stopped applying it when the fence narrowed,
 precisely so it would not offer a leg the runtime refuses; with the fence gone it would offer exactly
@@ -675,7 +691,10 @@ otherwise the first copy it could depart from is taken. Adam's 2026-09-06 wordin
 situation determines an answer; it is superseded by his ruling of 2026-09-12 - *"as long as the
 direction isnt flipped (which it was before)"* - because something does determine one, and a
 placement that answers differently each time it is repeated is drift (*"in all your simulations, state
-should never drift"*, 2026-09-07).
+should never drift"*, 2026-09-07). **The diagram's right-click Place follows the same rule** (Adam,
+2026-09-24, OB-296: *"Yes, keep the train's heading."*) - the copy facing the way the train already
+faces, where the square can hold it, and otherwise the first copy the build made; it took one at random
+until then. `core.testATrainIsPutOnlyWhereItCanStart.testTheRightClickPlaceKeepsTheTrainsHeading`.
 
 > *"Simply don’t place the train, leave it on the clipboard as if no paste had been done."* — Adam,
 > 2026-09-07, on a dismissed prompt
@@ -1107,10 +1126,10 @@ The editor notice about turn-round squares with no length is a different questio
     question waits, because the window stays live while it does (TDU-B2).  **An answer is written only where the placement
     still stands when it comes back** (TDU2-A1, TDU3-B1): the square's copy on the railway running then still holds the
     train, with the side it was put down with and the road it had - a railway rebuilt in the wait counts, its new copy
-    being the one asked - and the setup is still the one the question was asked in: the same session, with the same
-    configuration active or the same railway running (TDU4-C1, TDU5-C1).  So a rename, or New Configuration, keeps the
-    answer; loading another configuration, or closing the track-diagram editor, drops it (TDD5-C1 puts the first of those
-    to Adam), and a door whose setup was let go in the wait saves nothing (TDU4-C2).  A dropped answer - Not known
+    being the one asked - and the setup is still the window's: the same session.  **So the answer follows the train**
+    (Adam, 2026-09-24, TDD5-C1: *"Follow the train."*): another configuration loaded in the wait, whose copy holds the
+    train as it was put, gets it, on the railway running and in the configuration now active; closing the track-diagram
+    editor, which replaces the session, drops it, and a door whose setup was let go in the wait saves nothing (TDU4-C2).  A dropped answer - Not known
     included, a Cancel not - is logged, naming the train and the square; the facing was written before the question was
     asked, so only the road waits for it.
     `regression.testTheTailIsPickedOnTheDiagram`.
@@ -1164,9 +1183,11 @@ The editor notice about turn-round squares with no length is a different questio
   over, the measured track run since the head left it. A longer train is refused, and the refusal names the tightest
   such figure on the route - the longest train that goes (TDA-C1). **Only measured track binds**: a return is judged
   only where the route itself - not the body in front of the place - has measured something since the head left it,
-  and where stretches of it have no length the refusal says how many, which is the other way past (TDA-B1).  A
-  stretch here is a leg, sensor to sensor, so one measured only at its switch is not counted - between Mass Assign
-  sittings the count can be short, or missing (TDA2-C1, OB-297).
+  and where pieces of it have no length the refusal says how many, which is the other way past (TDA-B1).  A piece is
+  what Mass Assign Lengths asks for - a leg cut at its switches and at squares two roads cross, each of those a piece
+  of its own - and the build marks which of an edge's places cut it (Adam, 2026-09-24, OB-297: *"Locations of switches
+  are known."*); a piece answered 0 is measured (TDU-C6).  A configuration built before the marks counts whole legs,
+  as TDA2-C1 did.
   **After a turn the body is ahead of the train** and moves with it - a turn on the way, or a train leaving over its
   own tail - so the question starts again. Asked by every tier, Why not Moving? and Return Home's planner. A hand door
   does not offer a destination the rule refuses on every route; the sentence shows where a menu built before the
@@ -1478,9 +1499,19 @@ never binds, and a train inside it is refused by a rule quoting a number nobody 
   berth rule's where that stops first - at a crossing between the berth and its switch, or on a leg with no
   switch (TDA2-C6, TDA3-C2) - and only where the rule refuses: something on the leg is measured, which is when it
   judges at all, and another road runs over the square it stops at, which a switch's other leg into the same berth
-  does not (TDA5-C1).  There, with nothing measured before that switch or crossing, the notice says 0 where those
-  squares were answered 0, and nothing where they were not, which the half-measured warning names instead (TDA3-C1,
-  TDA4-C1).
+  does not (TDA5-C1).  There, with nothing measured before that switch or crossing, the notice says nothing: where
+  those squares were answered 0 the berth takes no train that way, and that is a **warning of its own** - *"the
+  length given for that track adds up to 0"* (Adam, 2026-09-24, TDA4-C2: *"Give it its own sentence as a warning,
+  make it sound intuitive"*) - and where they were not, the half-measured warning names them (TDA3-C1).
+- **At a platform, the figure a train is refused above, where there is one** (Adam, 2026-09-24, TDA-C10: *"Add the
+  refusing figure where there is one."*).  A train longer than the room stands across the switch only as far as the
+  measured route in holds it (FR-087), so one setting off from the station or turn right behind, and longer than the
+  track from there, is refused.  That figure is the sentence's third number, given where it is under the stated
+  maximum, and read off the railway the setup builds: only a copy a train is started at, or turns at, counts - a
+  station square can have a copy heading the platform's way that trains may not arrive at - and a figure a longer way
+  in might lower is left unsaid rather than guessed.  On the frozen railway: TopMainR1Inter 3 (TopR1ParkShort's
+  four-unit train, MT-564) and LowerFront 4, each the railway's own refusal; none at Tunnel, whose shortest way in the
+  railway runs measures 6.
 - An arriving edge crossing no switch is skipped unless trains turn round where it starts - there the
   guard walks on back through earlier edges, so that edge bounds nothing - or, for a parking berth, a crossing on
   it ends the berth rule's room, as above.
@@ -1607,6 +1638,13 @@ rail with measured track between it and every destination does not count either,
 at a destination and so can never be unmeasured end to end - which is enforced where paths are BUILT,
 in `Layout.bfs` and `HomeStaging.firstClearRoute`, not where they are checked.  And a rail is counted
 once, not once per direction.
+
+**Track answered 0 on purpose is measured** (Adam, 2026-09-24, TDU-C6: *"0 lengths count as measures, so
+non-atomic should be allowed"*). The checkbox, the load door and the dispatch doors do not count it, and
+the escape above does not fire over it - all of them ask `Edge.isMeasured`, which is true of an edge
+with a length or with every square answered 0 (a route tile counts as answered, since it takes no
+length). Nothing accumulates over a 0, so a train with a length holds such track until its route ends -
+the safe direction. The route in (FR-087) carries on over it the same way.
 
 So the Unmeasured Track display in the editor is **not** the list to work from: it answers a different
 question, about how far a tail reaches.  The refusal's own list is the one to measure, and it comes
@@ -1935,6 +1973,12 @@ so a square can be closed as a destination and remain open as track, which is ex
 siding he describes. The tile-wide copy a never-split square is emitted as is never barred at all,
 because there is no arrival side to bar and refusing it would make the station unreachable rather than
 restricted.
+
+**A train may still come in the barred way and turn there** (Adam, 2026-09-24, TDA-C8: *"Arrivals THAT STOP
+THERE should only be allowed from the configured side(s).  Turning shouldn't need to factor this in, since the
+former would govern the behavior."*). The turn-round copy of a barred side is still built, so the notice asking
+for the length behind a turn asks about that side as it does any other; the two berth notices, about a train
+that stops, leave it out (MT-552).
 
 **A train can still stand facing the barred way, and is not started there** (the 2026-09-23 review; the
 placement doors' rule was Adam's question, OB-284, ruled 2026-09-24). The copy a train is on is its direction (section 3), so a

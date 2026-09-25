@@ -61,7 +61,7 @@ So an operator who has answered 0s behind a berth will see a new notice, and not
 
 | | |
 |---|---|
-| **Disposition** | Open - Adam's decision, in open-questions.md under Length: keep the run-in notice's 0, give that berth a sentence of its own at the half-measured warning's grade (recommended), or say nothing since the operator answered. |
+| **Disposition** | Fixed - Adam, 2026-09-24: its own sentence, as a warning.  Claims 7dc22256, fix f17f5a5c. |
 
 **Where.** `messages.properties:1396` (`autosetup.ui.checkRunInShorterThanTheBerth`), raised as a NOTICE at `AutonomyChecks.java:1141-1147`. Its grade is argued at `AutonomyChecks.java:333-336` and `behaviour.md:1482-1483`, on the ground that *"his own example is a railway with nothing wrong with it"*. Since `32a75f8d`, the room `{3}` can be 0, and only where every square before the stop was answered 0, the berth's own included. For a berth set to 5, the operator then reads:
 

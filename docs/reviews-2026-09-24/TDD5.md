@@ -43,7 +43,7 @@ Grades are by consequence on the railway:
 
 ### TDD5-C1 - After another configuration is loaded in the wait, the answer is now dropped even where the train it describes stands on the railway that is running; behaviour.md 5c says that answer is written, and nothing records the choice TDU4-C1 left open
 
-| **Disposition** | Open - Adam's decision, in open-questions.md under Setup and start-up: drop an answer asked in one configuration once another is loaded (today), or follow the train onto the railway running (recommended). |
+| **Disposition** | Fixed - Adam, 2026-09-24: *"Follow the train."*  The late answer goes onto the railway running and into the configuration now active; only a replaced session drops it.  Claim 7dc22256, fix f17f5a5c. |
 |---|---|
 
 **Where.** `TailCrossedPrompt.java:615-619` (`sameSetup`, `6c7d5373`) and `:564-572` (`whereTheAnswerGoes`). The three doors: `TrainControlUI.java:8184`, `LayoutRightclickAutonomyMenu.java:1249` and `GraphLocAssign.java:326`. `behaviour.md:1107-1111`. `messages.properties:1861`, the log line as `6c7d5373` rewrote it. TDU4-C1 and its disposition.

@@ -23,7 +23,7 @@ Grades: A is wrong behaviour on the layout, or data lost. B is incorrect results
 
 | | |
 |---|---|
-| **Disposition** | Fixed in part - claim f652c14f (red first), fix baf8856c: the note counts the stretch the place was left in, where the route ran on in it, and the one the train comes back in, where it ran over something of it first.  Mutations R2c, R2d red.  The grain stays the edge, and the rule's javadoc and the claim now say it is coarser than the pieces lengths are given in - an edge measured only at its switch is not counted, so between Mass Assign sittings the note can say fewer or nothing.  Counting pieces needs the build to mark switch places in the configuration; left for later. |
+| **Disposition** | Fixed - OB-297, done on Adam's word (*"Locations of switches are known."*): the build marks the places that cut a stretch into pieces and the note counts pieces.  Claims 7dc22256, fix f17f5a5c. |
 
 **Where.** `Layout.java:10484-10488`, and the count at `10512-10516` (`1cd99bbc`):
 

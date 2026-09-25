@@ -288,7 +288,7 @@ The sibling claim `testTheGuardItemsSayWhatTheGuardsDo` asserts only that a tool
 
 ### TDD-C11 - autoLoadOffAfterLegacyImport's reason stopped being true when OB-254 removed autonomy.json; the untick now causes what it says it only reports
 
-| **Disposition** | Fixed - javadoc 865b4168 says what the untick does since OB-254.  Open - Adam's decision: keep the untick, or drop it now nothing old is loaded at start. |
+| **Disposition** | Fixed - Adam, 2026-09-24: *"Drop it now."*  The untick, its log line and the changelog clause are gone; Load Autonomy itself is not defunct - it resumes the active configuration at start.  Claims 7dc22256, fix f17f5a5c.  MT-582, superseding MT-503. |
 |---|---|
 
 The javadoc of `TrainControlUI.autoLoadOffAfterLegacyImport` (:2041-2049, REG2-C3, `ee407002` at 01:31) justifies the untick like this: "on a layout with only the old graph it loaded nothing until it had been set by hand ... So after an import the box says what the next start will do - load nothing".

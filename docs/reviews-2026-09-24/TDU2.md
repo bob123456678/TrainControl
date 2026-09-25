@@ -63,7 +63,7 @@ TDU-C8 took Execute Timetable as the model - *"GUI-A1 moved the Atomic Routes ga
 
 | | |
 |---|---|
-| **Disposition** | Open - Adam's decision, in open-questions.md under Setup and start-up: grey Return Home and Execute Timetable over a broken setup with the setup's sentence, or keep them live as the hand doors are and say so in behaviour.md section 1. |
+| **Disposition** | Fixed - Adam, 2026-09-24: *"Yes, go with your recommendation."*  The right-click Return Home item greys with the setup's sentence; the buttons stay live and explain.  Claim 7dc22256, fix f17f5a5c.  MT-580. |
 | **Where** | `HomeLocomotiveMenu.java:55-73` (`offered = !busy && isReturnHomeOffered()`); `TrainControlUI.java:24243-24271` (`refreshReturnHomeButton` - no setup question); the right-click Start item greys on `canStartAutonomy` (`:23732-23736`); `492ad392` |
 
 TDU-B1's fix added the refusal and not the affordance.  On the diagram's right-click menu over a broken setup, Start is greyed with the setup's reason, and Return Home beside it is live and answers a click with the refusal; the Return Home button keeps the triage's tooltip.  For the hand destinations this is what Adam asked for (*"which should throw an error instead"*, TDU-D2), and Start's button is deliberately live and explains; but Return Home's item follows the other rule - *"shown always and greyed when there is nothing to do ... and says why it is unavailable"* (its javadoc).  Nothing moves; it is the guard-and-affordance question, for Adam.  Options: grey the item and the button with `whyAHandSendIsRefused()` as the tooltip, or keep them live as the hand doors are and say so in behaviour.md 1.

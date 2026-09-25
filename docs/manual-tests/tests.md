@@ -43,7 +43,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-500](#mt-500) | 2026-09-24 | Starting TrainControl with a train facing west at BottomMainA logs no "placed on a non-station" | fixed unvalidated | GUI4-C5 |
 | [MT-501](#mt-501) | 2026-09-24 | Importing an old autonomy.json leaves your diagram's directions as they are | fixed unvalidated | REG4-A1, the directions ruling of 2026-09-24 |
 | [MT-502](#mt-502) | 2026-09-24 | A station an old autonomy.json switched off arrives as one trains can stop at, not chosen by autonomy | fixed unvalidated | REG-B1 |
-| [MT-503](#mt-503) | 2026-09-24 | Importing an old autonomy.json unticks Load Autonomy | fixed unvalidated | REG2-C3 |
 | [MT-504](#mt-504) | 2026-09-24 | A station's exit guard cannot also be made its entry guard | fixed unvalidated | AUT-C2, MT-493 |
 | [MT-505](#mt-505) | 2026-09-24 | A guard signal that no way into its station passes is noticed | fixed unvalidated | AUT-C2, MT-493 |
 | [MT-506](#mt-506) | 2026-09-24 | A route fired by its sensor skips only the switch under a train, and runs the rest | fixed unvalidated | MT-247 |
@@ -75,9 +74,13 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-577](#mt-577) | 2026-09-24 | Customize Function Icons greys Apply while there is nothing to apply | fixed unvalidated | FR-098 |
 | [MT-578](#mt-578) | 2026-09-24 | Highlight on Diagram lights a three-way once, in the commanded colour | fixed unvalidated | OB-286, GUI2-C4 |
 | [MT-579](#mt-579) | 2026-09-24 | A late tail answer does not write over the road another train drove in by | fixed unvalidated | TDU2-A1, TDD3-C6, TDD4-C4 |
+| [MT-580](#mt-580) | 2026-09-25 | Over a setup with errors, the right-click Return Home item is greyed and says why | fixed unvalidated | TDU2-C3 |
+| [MT-581](#mt-581) | 2026-09-25 | The right-click Place keeps the train's heading | fixed unvalidated | OB-296, TDU-B4 |
+| [MT-582](#mt-582) | 2026-09-25 | Importing an old autonomy.json leaves Load Autonomy as it was | fixed unvalidated | TDD-C11 |
+| [MT-583](#mt-583) | 2026-09-25 | TopMainR1Inter's notice gives the length a train is refused above | fixed unvalidated | TDA-C10 |
 
-Everything else - 531 of 579 - needs nothing from you unless the area changes again:
-454 **fixed validated** and 77 **superseded**.
+Everything else - 532 of 583 - needs nothing from you unless the area changes again:
+454 **fixed validated** and 78 **superseded**.
 
 ---
 
@@ -25574,6 +25577,10 @@ the finished setup.  The log line is what only you can see.
 
 Running this import now also unticks Preferences > Startup > Load Autonomy - tick it again afterwards if you use it (MT-503).  What else 2026-09-24 added is in entries of their own: your directions left alone (MT-501) and switched-off stations (MT-502).
 
+**Claude, 2026-09-25.**
+
+**The untick is gone** (2026-09-25, TDD-C11): an import leaves Preferences > Startup > Load Autonomy as it was, so the note about ticking it again is not needed.  The rest as written.
+
 ---
 <a id="mt-492"></a>
 
@@ -25893,6 +25900,10 @@ are carried only onto a diagram nobody has set a direction on, and yours is left
 
 *What this is:* `core.testAnImportedFacingGuessCanStart.testATunedDiagramGetsNoDirectionsCarried`.
 
+**Claude, 2026-09-25.**
+
+**The untick is gone** (2026-09-25, TDD-C11): an import leaves Preferences > Startup > Load Autonomy as it was, so the last step's "tick it again" is not needed.  The rest as written.
+
 ---
 
 <a id="mt-502"></a>
@@ -25919,13 +25930,17 @@ hand either.  Your ruling of 2026-09-24: *"translate as on but not auto destinat
 
 *What this is:* `core.testAutonomyDiagramSession.testALegacyImportCarriesThePerPointSettings`.
 
+**Claude, 2026-09-25.**
+
+**The untick is gone** (2026-09-25, TDD-C11): an import leaves Preferences > Startup > Load Autonomy as it was, so the last step's "tick it again" is not needed.  The rest as written.
+
 ---
 
 <a id="mt-503"></a>
 
 ### MT-503 - 2026-09-24 - Importing an old autonomy.json unticks Load Autonomy
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** REG2-C3
 
 **Written:** 2026-09-24
@@ -25947,6 +25962,10 @@ unchecked when importing a legacy json file, each time."*
   TrainControl starts.
 
 *What this is:* `regression.testALegacyImportUnticksLoadAutonomy`.
+
+**Claude, 2026-09-25.**
+
+**Superseded by MT-582** (2026-09-25).  Your answer to TDD-C11 - *"Drop it now"* - took the untick out: an import leaves Load Autonomy as it was.  Nothing to run here.
 
 ---
 
@@ -28208,6 +28227,10 @@ Validated on your *Works* of 2026-09-24.
 
 **This replaces the comment before it, from the third validation round** (2026-09-24).  A train sent away after step 1 is sent after the backup, and step 5 puts the backup back - so the setup then records it at the station it left, while it stands somewhere else.  So: **before step 1**, send one train by hand to another station, then do step 1, so the backup records it there.  Steps 2 to 5 as written.  After step 5 and a restart, press Return Home to bring it back.
 
+**Claude, 2026-09-25.**
+
+**The right-click item greys now** (2026-09-25, TDU2-C3): over the broken setup, the right-click Return Home item is greyed with the setup's sentence, and MT-580 checks it.  This entry's steps press the Return Home and Execute Timetable buttons, which stay live and explain, so they are unchanged.
+
 ---
 
 <a id="mt-574"></a>
@@ -28377,5 +28400,107 @@ Validated on your *Works* of 2026-09-24.
 - Step 4: the grey behind the second train at Tunnel still runs back to TunnelPre, the road it drove in by.
 
 *What this is:* `regression.testTheTailIsPickedOnTheDiagram.testALateAnswerDoesNotWriteOverAnotherTrain`.
+
+---
+
+<a id="mt-580"></a>
+
+### MT-580 - 2026-09-25 - Over a setup with errors, the right-click Return Home item is greyed and says why
+
+**Disposition:** fixed unvalidated
+**From:** TDU2-C3
+
+**Written:** 2026-09-25
+
+**What was wrong.**  Since MT-573, Return Home refuses to run over a setup with errors, but its item on the track diagram's right-click menu stayed offered, and a click was answered with the refusal - while the Start item beside it is greyed with the setup's reason.  Your answer: go with the recommendation - the item greyed with the setup's sentence, the buttons live and explaining.
+
+**Steps**
+
+1. Send one train by hand to another station, so a train is away from its home.
+2. Close TrainControl, copy your layout folder's `config/autonomy` folder somewhere safe, and start TrainControl again.
+3. Break the setup as MT-573 does: in the autonomy editor, untick Exclude Page on 4 - Combined, and close the editor saving the change.
+4. Right-click a station on the track diagram, and hover Return Home, then Start.
+5. Close TrainControl and copy the saved `config/autonomy` folder back.
+
+**Expected**
+
+- Step 4: Return Home is greyed, and its tooltip is the sentence Start's greyed item shows - the setup cannot be used yet, and how many things have to be dealt with first.
+
+*What this is:* `regression.testAHandSendIsRefusedWhileTheSetupIsBroken.testABrokenSetupIsRefusedAndAMendedOneIsNot`, on a real window.  It can be run in the same sitting as MT-573, before that entry's last step.
+
+---
+
+<a id="mt-581"></a>
+
+### MT-581 - 2026-09-25 - The right-click Place keeps the train's heading
+
+**Disposition:** fixed unvalidated
+**From:** OB-296, TDU-B4
+
+**Written:** 2026-09-25
+
+**What was wrong.**  The track diagram's right-click Place put the active train on one of the square's copies at random, so the same train placed the same way faced either way.  The paste, the locomotive dialog and the editor's Place already kept the heading.  Your answer: *"Yes, keep the train's heading."*
+
+**Steps**
+
+1. Make 75 407 DB the active locomotive, standing on a station.  Right-click its square and note which way the Facing item says it faces.
+2. Right-click BottomMainB and choose Place 75 407 DB.  If you are asked where its tail lies, answer Not known.
+3. Right-click BottomMainB and read the Facing item.
+4. Place it back on the square it came from, turn it to face the way you noted at step 1 if it does not, and repeat steps 2 and 3 twice more.
+
+**Expected**
+
+- Step 3, every time: it faces the way you noted at step 1 - BottomMainB holds both headings.
+
+*What this is:* `core.testATrainIsPutOnlyWhereItCanStart.testTheRightClickPlaceKeepsTheTrainsHeading`.
+
+---
+
+<a id="mt-582"></a>
+
+### MT-582 - 2026-09-25 - Importing an old autonomy.json leaves Load Autonomy as it was
+
+**Disposition:** fixed unvalidated
+**From:** TDD-C11
+
+**Written:** 2026-09-25
+
+**What was wrong.**  Every import of an old autonomy.json unticked Preferences > Startup > Load Autonomy (MT-503).  Since the old file stopped being read at start, the box loads the configuration you were last using, and an import makes one - so the untick was what kept the imported setup from loading at the next start.  Your answer: *"Drop it now."*  The setting stays: it is what loads your setup when TrainControl starts.
+
+**Steps**
+
+1. Make sure Preferences > Startup > Load Autonomy is ticked.
+2. Import `docs/manual-tests/files/MT-491-autonomy-2.7.4c.json` from the Autonomy menu, into a new configuration, as MT-491 does.
+3. Open Preferences > Startup again, and read the log.
+4. Switch back to your own configuration and delete the imported one.
+
+**Expected**
+
+- Step 3: Load Autonomy is still ticked, and the log says nothing about it.
+
+*What this is:* `regression.testALegacyImportLeavesLoadAutonomyAlone`.  Replaces MT-503.
+
+---
+
+<a id="mt-583"></a>
+
+### MT-583 - 2026-09-25 - TopMainR1Inter's notice gives the length a train is refused above
+
+**Disposition:** fixed unvalidated
+**From:** TDA-C10
+
+**Written:** 2026-09-25
+
+**What was wrong.**  The notice for a platform whose track past its switch is shorter than its maximum said a longer train stands across the switch and may block the layout - but one setting off from the station right behind, and longer than the track from there, is refused instead, and the notice never gave that figure: a four-unit train from TopR1ParkShort is refused at TopMainR1Inter (the MT-564 comment).  Your answer: *"Add the refusing figure where there is one."*
+
+**Steps**
+
+1. Open the autonomy editor and find TopMainR1Inter's notice in the list.
+
+**Expected**
+
+- Step 1: after the sentence about standing across the switch, it says *Coming in the shortest way, over 3 of measured track, a train longer than 3 is refused instead.*  LowerFront's notice says the same with 4.  Tunnel's, BottomMainA's and BottomInnerOtherside's give no such figure: every way into them the railway runs measures at least their maximum.  These are the figures on the copy of your railway frozen for the tests; if you have measured since, yours may differ.
+
+*What this is:* `core.testAutonomyDiagramSession.testThePlatformNoticeNamesTheFigureATrainIsRefusedAbove` and `testNoRefusingFigureFromACopyNoTrainStartsAt`.
 
 ---

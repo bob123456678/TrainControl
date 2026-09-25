@@ -232,7 +232,7 @@ On a half-measured berth approach through either, the count runs past it and add
 
 | | |
 |---|---|
-| **Disposition** | Open - Adam's decision: whether "they only accept arrivals from one side" includes turning there (then the build is wrong to emit a turning copy for a barred side), or not (then the reversal notice should keep asking). |
+| **Disposition** | Fixed - Adam, 2026-09-24: *"Arrivals THAT STOP THERE should only be allowed from the configured side(s).  Turning shouldn't need to factor this in"* - the reversal notice asks about a barred side again.  Claim 7dc22256, fix f17f5a5c. |
 
 **Where.** `AutonomySession.reversalsWithoutLength`, `AutonomySession.java:3294`:
 
@@ -263,7 +263,7 @@ The two berth checks in the same commit are right to skip a barred side, because
 
 | | |
 |---|---|
-| **Disposition** | Follow-up - filed as OB-295; the wording is Adam's. |
+| **Disposition** | Fixed - OB-295, on Adam's answer of 2026-09-24: the standing half of the restriction is asked of every square a route arrives at, at runtime, in Why not Moving? and in Return Home's planner.  Claims 7dc22256, fix f17f5a5c. |
 
 `63c4fdc0` keeps the restriction on a square made pass-through, and lists every restriction as *"{0} is unavailable while {1} is occupied."* (`autosetup.ui.checkUnavailableWhileOccupied`).
 
@@ -281,7 +281,7 @@ Low cost: it is a notice, and the feature name is Adam's. A pass-through variant
 
 | | |
 |---|---|
-| **Disposition** | Open - Adam's decision: MT-555's sentence says a longer train "may block" by his ruling, and a claim pins that it does not say "refused"; the one case on his railway (TopR1ParkShort to TopMainR1Inter) is in the MT-564 comment. |
+| **Disposition** | Fixed - Adam, 2026-09-24: *"Add the refusing figure where there is one."*  The platform notice's third number, read off the railway the setup builds (f17f5a5c, ac4c7567); on the frozen railway TopMainR1Inter 3 and LowerFront 4, each matching the railway's own refusal.  MT-583. |
 
 `e09fe989` (MT-555) adds `RUN_IN_SHORTER_THAN_THE_PLATFORM`: *"a train longer than {3} stands across that switch while it is here, and may block ..."*.
 

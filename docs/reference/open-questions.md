@@ -45,7 +45,7 @@ and FR-095, each fixed, answered or withdrawn by its own text - and eleven had b
 and were still sitting in the Inbox, which `triage.py` already treated as closed.  OB-272 to OB-277 and
 FR-094/FR-095 had been filed that morning, FR-096 was filed after the tidy; FR-094 left it
 when it was built, and OB-208, OB-270, OB-272 to OB-274, OB-276, OB-277 and FR-096 when they were.  Fifty more left it that
-evening on his word - *"anything already reviewed and certified as working should be cleared"*: every entry whose receipt, or the hands-on test it became, is fixed and validated, and OB-218, declined.  OB-283 was filed after that, to carry the open reversal question below (DCN-C14).  OB-284 was filed after it, for the paste question the review's third round raised (AUT3-B2, DCN3-B1).  On 2026-09-24 OB-230, OB-283 and OB-284 were given their receipts on Adam's rulings, and OB-285 and OB-286 were filed from the follow-ups (AUT2-C2, GUI2-C4); OB-287 and FR-098 that evening, from the pass over the waiting tests.  OB-288 to OB-290 came from Adam's round of manual tests the same day, and were given their receipts on it; OB-291 from his next, and given its receipt on it too, and FR-099 with it; OB-292 was filed from the conversation after, and FR-100 and FR-101 from his next round; OB-293 and FR-102 from the one after, and OB-294 with them; OB-295 and OB-296 from the validation round that evening (TDA-C9, TDU-B4), OB-297 from its third round (TDA2-C1), and OB-298 from a test run the same evening.  Every
+evening on his word - *"anything already reviewed and certified as working should be cleared"*: every entry whose receipt, or the hands-on test it became, is fixed and validated, and OB-218, declined.  OB-283 was filed after that, to carry the open reversal question below (DCN-C14).  OB-284 was filed after it, for the paste question the review's third round raised (AUT3-B2, DCN3-B1).  On 2026-09-24 OB-230, OB-283 and OB-284 were given their receipts on Adam's rulings, and OB-285 and OB-286 were filed from the follow-ups (AUT2-C2, GUI2-C4); OB-287 and FR-098 that evening, from the pass over the waiting tests.  OB-288 to OB-290 came from Adam's round of manual tests the same day, and were given their receipts on it; OB-291 from his next, and given its receipt on it too, and FR-099 with it; OB-292 was filed from the conversation after, and FR-100 and FR-101 from his next round; OB-293 and FR-102 from the one after, and OB-294 with them; OB-295 and OB-296 from the validation round that evening (TDA-C9, TDU-B4), OB-297 from its third round (TDA2-C1), and OB-298 from a test run the same evening; all four were given their receipts on 2026-09-25, on his answers.  Every
 earlier figure here was wrong in the same way, by being written rather than recounted: 99, then 111
 counted before six entries that had already been appended, then 118 (IND9X-B3, VD12-R13, VD13-R3).
 Most of them carry a receipt row that says the work was done - the protocol is that an entry is
@@ -62,20 +62,17 @@ otherwise be reported as bugs.
 
 ## Reversals
 
-**Open.** OB-283 was decided on 2026-09-24 (below).  The validation round that evening left two questions that are
-Adam's:
-
-- **A turning copy on a side trains may not arrive by** (TDA-C8).  Of RampDown and BottomMainPost he said *"they only
-  accept arrivals from one side"*.  The build still emits a turning copy for the barred side of a square trains may
-  turn at, and a route can arrive that way and turn there; the notice asking for the length behind a turn has stopped
-  asking about that side.  If "only from one side" includes turning, the build is what is wrong and should not emit
-  the copy; if it does not, the notice should ask again.
-- **The right-click Place item stands a train on a random copy** (OB-296, TDU-B4).  The other three placement doors
-  keep the train's heading and stand it on the copy that faces that way; should this one follow them, or keep choosing
-  for the operator?
+**Open.** Nothing: the two questions the validation round of 2026-09-24 left here were answered the same night.
 
 **Decided, and each of these reversed an implemented behaviour** - which is exactly what this section
 is for.
+
+- **A side no train stops from is still one a train may turn at** (Adam, 2026-09-24, TDA-C8: *"Arrivals THAT STOP
+  THERE should only be allowed from the configured side(s).  Turning shouldn't need to factor this in, since the former
+  would govern the behavior."*).  The build keeps the turning copy of a barred side, and the notice asking for the
+  length behind a turn asks about that side again.
+- **The right-click Place keeps the train's heading** (Adam, 2026-09-24, OB-296: *"Yes, keep the train's heading."*):
+  the copy facing the way the train already faces, the paste's rule - never a draw.
 
 - **A compulsory turn on the way turns the train, and keep/reverse is measured on arrival** (Adam,
   2026-09-24, OB-283: *"if it's a compulsory turn, turn it in the forced direction."*). A journey that
@@ -135,28 +132,25 @@ either.
 
 ## Length, blocking, and the tail
 
-**Open.** Three wordings from the validation rounds of 2026-09-24, all Adam's:
-
-- **What the run-in notice says about a berth that refuses every train with a length** (TDA4-C2, TDA5-C2).  Where
-  something on a parking berth's approach is measured, every square between it and a switch or crossing another
-  road runs over was answered 0, and the berth rule therefore refuses every train with a length there, the run-in
-  notice says so as "only 0 of track is measured ... That may be right" - at the grade of a notice, while the same
-  berth with those squares unanswered is the half-measured warning.  Keep it, give it a sentence of its own at the
-  warning's grade (*"X refuses every train with a length: the track between it and the switch or crossing behind it
-  was given no length"*), or say nothing, since the operator answered.  **Recommended:** its own sentence, at the
-  warning's grade.
-
-- **The platform run-in notice says a longer train "may block"** (TDA-C10).  MT-555's sentence says so by his ruling,
-  and a claim pins that it does not say "refused" - but a train longer than the measured route in is refused there,
-  with a figure the notice never shows.  One case on his railway: a four-unit train from TopR1ParkShort to
-  TopMainR1Inter (the MT-564 comment).
-- **Answered-0 track and the Atomic Routes refusal** (TDU-C6).  A stretch answered 0 is "not missing" to Mass Assign
-  Lengths and the Unmeasured Track display, and the Atomic Routes refusal still names it and says "Measure them", with
-  nothing in the editor offering it.  The refusal is right - a zero-length edge is released under a train.  Either
-  the refusal says that answered-0 track needs a length for non-atomic running, or Unmeasured Track marks it while
-  Atomic Routes is off.
+**Open.** Nothing: the three wordings the validation rounds of 2026-09-24 left here were answered the same night.
 
 **Decided.**
+
+- **A berth given no room is a warning of its own** (Adam, 2026-09-24, TDA4-C2: *"Give it its own sentence as a
+  warning, make it sound intuitive (the effective specified length of the track is 0)"*).  Where every square before a
+  parking berth's stop was answered 0, the berth takes no train that way: *"the length given for that track adds up to
+  0 and every train arriving that way is refused"*, at the half-measured warning's grade, in place of the run-in
+  notice's 0.
+- **The platform run-in notice gives the refusing figure, where there is one** (Adam, 2026-09-24, TDA-C10: *"Add the
+  refusing figure where there is one."*): the shortest measured way in, from the station or turn nearest behind, where
+  it is under the stated maximum - on his railway, TopR1ParkShort's four-unit train at TopMainR1Inter.
+- **An answered 0 is a measure** (Adam, 2026-09-24, TDU-C6: *"0 lengths count as measures, so non-atomic should be
+  allowed"*).  The Atomic Routes gate and the release escape both treat track answered 0 as measured, and the route in
+  carries on over it.  A train with a length holds such track to the end of its route - the safe direction, since
+  nothing accumulates over a 0.
+- **The own-tail note counts the pieces Mass Assign asks for** (OB-297, done on Adam's word: *"Locations of switches
+  are known."*): the build marks the places that cut a leg into pieces, and a leg measured only at its switch is no
+  longer counted as measured.
 
 - *Exactly-fits is admitted.* Otherwise every berth measured to the train that lives in it becomes
   unusable.
@@ -189,11 +183,14 @@ either.
 
 ## Routing tiers
 
-**Open.** One wording, Adam's (OB-295, TDA-C9): a restriction kept on a square made pass-through is listed as *"{0} is
-unavailable while {1} is occupied"*, and on a square no train stops at only the route half of it is live - a train
-standing at {1} holds nothing back there.
+**Open.** Nothing since 2026-09-24.
 
 **Decided.**
+
+- **"Unavailable while occupied" means every square a route arrives at** (Adam, 2026-09-24, OB-295: *"It means trains
+  shouldn't be sent to THIS square while trains are STANDING ON or hold a lock on the other specified station(s)."*).
+  The standing half is asked of every square on a route, at runtime and by Return Home's planner, as the lock half
+  always was; a square trains only pass is shut to routes through it while a train stands on the one it watches.
 
 - *Return Home sits with Manual* on where a train may be sent. `isAutoDestination` appears nowhere in
   `HomeStaging`.
@@ -227,25 +224,18 @@ resume note that has been deleted.
 
 ## Setup and start-up
 
-**Open.** Three questions from the validation rounds of 2026-09-24, Adam's:
+**Open.** Nothing: the three questions the validation rounds of 2026-09-24 left here were answered the same night.
 
-- **A tail answered after another configuration was loaded** (TDD5-C1, TDU4-C1).  If the configuration loaded in the
-  wait stands the same train on the same square, from the same side, the answer is dropped today and the log says so;
-  the running railway's copy then has no road, and its tail stops at the switch.  Round 3 wrote it into the loaded
-  configuration and onto the railway, and the configuration it was asked in never had it.  Drop it (today), or follow
-  the train: write it to the railway and the configuration running now.  **Recommended:** follow the train - the
-  railway in front of the operator is the one a missing tail endangers.
+**Decided** (Adam, 2026-09-24):
 
-- **Return Home and Execute Timetable over a setup with errors** (TDU2-C3).  Since TDU-B1 both refuse a press while
-  the setup has errors, as Start does - but both stay offered, where Start's right-click item is greyed with the
-  setup's reason.  Grey them with the same sentence as their tooltip, or keep them live as the hand doors are, and say
-  so in `behaviour.md` section 1.  **Recommended** (TDU3-C5): each as its Start twin is - the right-click Return Home
-  item greyed with the setup's sentence as its tooltip, as Start's item beside it is, and the Return Home and Execute
-  Timetable buttons live and explaining, as Start's button deliberately is.
-- **The untick after a legacy import** (TDD-C11).  He ruled for it (*"Set the setting to unchecked when importing a
-  legacy json file, each time"*) when Load Autonomy also loaded the old graph at start.  Since OB-254 it resumes the
-  active configuration, which an import makes, so a ticked box would load the imported setup and the untick is what
-  makes the next start load nothing.  Keep it, or drop it now nothing old is loaded at start.
+- **A tail answered after another configuration was loaded follows the train** (TDD5-C1: *"Follow the train."*): where
+  the loaded configuration's copy holds the train as it was put, the answer goes onto the railway running and into the
+  configuration now active.  A session replaced in the wait still drops it.
+- **Over a setup with errors, the right-click Return Home item is greyed with the setup's sentence; the buttons stay
+  live and explain** (TDU2-C3: *"Yes, go with your recommendation."*), as Start's item and button are.
+- **A legacy import leaves Load Autonomy alone** (TDD-C11: *"Drop it now (isn't the setting defunct?)"*).  The setting
+  is not defunct - it resumes the active configuration at start - so only the untick went: after an import the box is
+  as the operator left it, and a ticked box loads the imported setup at the next start.
 
 **Decided while he was away, and reversible** (2026-09-24, TDU-B1): Execute Timetable and Return Home refuse a setup
 with errors, as Start and the hand doors do - they drive over the railway the same setup built.  It extends MT-263 on

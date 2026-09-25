@@ -79,7 +79,7 @@ The first click of a double-click lands on a lit sensor, `clicked` calls `finish
 
 | | |
 |---|---|
-| **Disposition** | Follow-up - older than the range (bd27c357); filed as OB-296 with the question for Adam. |
+| **Disposition** | Fixed - OB-296, Adam, 2026-09-24: *"Yes, keep the train's heading."*  Claim 7dc22256, fix f17f5a5c.  MT-581. |
 | **Where** | `LayoutRightclickAutonomyMenu.java:683-718`, `:1078-1086` (`placeSomewhereLegal`: `usable.get(new java.util.Random().nextInt(usable.size()))`); against `TrainControlUI.java:7235-7247` (paste), `GraphLocAssign.java:239-253` (dialog), `AutonomyEditorPanel.java:5470-5471` (editor Place) |
 
 Three placement doors now keep the train's heading over the copies it could leave by (`departableFacingsFor`, OB-284) and stand it on the copy that faces that way (OB-270: *"no train should inadvertently change direction when pasted"*).  The fourth - the diagram's right-click **Place {0}** for the active locomotive, which moves it from wherever it stands - still takes one of `placeableCopies()` at random and records that copy's heading.  behaviour.md already calls this superseded: *"Adam's 2026-09-06 wording for that arm was 'pick randomly from the allowed departure destinations' ... it is superseded by his ruling of 2026-09-12 - 'as long as the direction isnt flipped' ... a placement that answers differently each time it is repeated is drift"*.
@@ -141,7 +141,7 @@ The doors call the instance `whyAHandSendIsRefused()`.  Its guard is `if (!auton
 
 | | |
 |---|---|
-| **Disposition** | Open - Adam's decision on the wording: say in the Atomic Routes refusal that answered-0 track counts as unmeasured and needs a length for non-atomic running, or have Unmeasured Track mark it while Atomic Routes is off. |
+| **Disposition** | Fixed - Adam, 2026-09-24: *"0 lengths count as measures, so non-atomic should be allowed."*  `Edge.isMeasured` at the Atomic Routes gate, the release escape and the route in.  Claims 7dc22256, fix f17f5a5c. |
 | **Where** | `Layout.java:9523-9534` (`unmeasuredTrackThatCouldBeReleased`: `if (edge.getLength() > 0) continue;`, no `isPlaceAnswered`); `messages.properties:172` (`autolayout.errorNonAtomicNeedsLengths`); against `AutonomyEditorPanel.java:9894` (`needsALength`) and `87361089` (*"an answered 0 is not listed as missing"*) |
 
 OB-274 kept 0 as an answer with *"same meaning to the model"*, and `87361089` took answered zeros off every list of what still needs measuring.  The Atomic Routes gate was not in that sweep: an edge whose squares are all answered 0 still has length 0, is counted, and the checkbox refuses with *"Atomic Routes cannot be switched off while track autonomy runs over has no length, {0} in all ({1}) ... Measure them and you can switch it off again."*  Then Mass Assign Lengths says *"Every stretch of track, every switch and every crossing on this page already has a length"* and Unmeasured Track shows nothing.  The gate is right to refuse - a zero-length edge is released under a train - so this is not over-refusal; it is `error-must-have-a-remedy`: the remedy named has no door, and the editor contradicts the refusal.  The case is Adam's own (*"for adjacent tracks"*).  **Verification request:** frozen railway, answer one stretch 0 with Segment Length, untick Atomic Routes - the refusal names that stretch (proves) and Mass Assign Lengths offers nothing.  Options: say in the refusal that answered-0 track counts as unmeasured and must be given a length for non-atomic running, or have Unmeasured Track mark such track when Atomic Routes is off.
