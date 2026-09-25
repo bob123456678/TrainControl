@@ -2233,7 +2233,10 @@ what the file says.
 user on import.  if they want them armed, arm them.  otherwise, don't."*).  The export writes each route's `auto`, and
 where the file holds any route saved armed, the import asks - before anything is replaced, No the default - whether to
 turn automatic firing back on for those.  A Yes arms exactly those, after every route is in, and only one with a
-sensor to watch; a No, or a file with none saved armed, imports them all off as before.
+sensor to watch; a No, or a file with none saved armed, imports them all off as before.  The question names the
+routes, and the message after a Yes counts the routes the import armed: a route saved armed that has lost its sensor
+is not armed and not counted, and where none was armed the message is the one a No gets (found automating MT-496 and
+MT-497, 2026-09-25 - the question showed a count, and the message counted the file's list).
 
 It is also what makes the import safe.  Building a route ARMS it - a route with a sensor and its flag
 set parks a thread on that sensor as soon as it exists - so before this, a file that failed to parse

@@ -33,8 +33,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-492](#mt-492) | 2026-09-24 | Return Home finds a plan on a crowded railway | fixed unvalidated | OB-230, AMH-C1 |
 | [MT-494](#mt-494) | 2026-09-24 | After a run, the Facing menu turns the train that is there | fixed unvalidated | TDY4-C5 |
 | [MT-495](#mt-495) | 2026-09-24 | A train turned at Tunnel is not sent into a parked train's tail | fixed unvalidated | OB-285, AUT2-C2 |
-| [MT-496](#mt-496) | 2026-09-24 | Importing routes and answering No leaves every route's automatic firing off | fixed unvalidated | REG2-C7, MT-487 |
-| [MT-497](#mt-497) | 2026-09-24 | Importing routes and answering Yes turns automatic firing back on for the routes saved with it | fixed unvalidated | REG2-C7, MT-487 |
 | [MT-498](#mt-498) | 2026-09-24 | A train facing west at BottomMainA still faces west after it is cut and pasted back | fixed unvalidated | OB-284 |
 | [MT-499](#mt-499) | 2026-09-24 | With autonomy stopped, the locomotive list gives the reasons for a train sent by hand | fixed unvalidated | the REG4 lead of the 2026-09-23 review |
 | [MT-504](#mt-504) | 2026-09-24 | A station's exit guard cannot also be made its entry guard | fixed unvalidated | AUT-C2, MT-493 |
@@ -44,11 +42,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-513](#mt-513) | 2026-09-24 | Importing a setup onto a layout with fewer pages warns once, naming the missing pages | fixed unvalidated | MT-380 |
 | [MT-514](#mt-514) | 2026-09-24 | After that import, opening the autonomy editor asks nothing | fixed unvalidated | MT-380 |
 | [MT-517](#mt-517) | 2026-09-24 | Why Not Moving? on Manual says a terminus refuses a train that cannot reverse | fixed unvalidated | MT-444 |
-| [MT-518](#mt-518) | 2026-09-24 | Clear All Max Train Lengths asks first, and No changes nothing | fixed unvalidated | MT-457 |
-| [MT-519](#mt-519) | 2026-09-24 | Clear All Max Train Lengths takes the maximum off every station on every page | fixed unvalidated | MT-457 |
-| [MT-520](#mt-520) | 2026-09-24 | Mass Assign Max Train Lengths asks each station with no maximum, and records the number | fixed unvalidated | MT-456 |
-| [MT-521](#mt-521) | 2026-09-24 | Mass Assign Max Train Lengths refuses 0 | fixed unvalidated | MT-456 |
-| [MT-530](#mt-530) | 2026-09-24 | Mass Assign Lengths asks for crossings on their own, and one answer sets them all | fixed unvalidated | MT-459 |
 | [MT-533](#mt-533) | 2026-09-24 | The train-length prompt takes typing without a click | fixed unvalidated | MT-474 |
 | [MT-548](#mt-548) | 2026-09-24 | On a Central Station layout the Autonomy menu opens, and only the download and Documentation can be chosen | fixed unvalidated | OB-254, OB-093, MT-544 |
 | [MT-566](#mt-566) | 2026-09-24 | The locomotive train-length walk is never greyed, and counts | fixed unvalidated | MT-533 |
@@ -63,8 +56,8 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-585](#mt-585) | 2026-09-25 | The right-click Place keeps a heading trains may not arrive by | fixed unvalidated | OB-296, ADU-B1, ADD2-C9 |
 | [MT-586](#mt-586) | 2026-09-25 | A stretch answered 0 lets a train in when the total track holds it | fixed unvalidated | ADU-C7, TDU-C6 |
 
-Everything else - 551 of 586 - needs nothing from you unless the area changes again:
-453 **fixed validated** and 98 **superseded**.
+Everything else - 558 of 586 - needs nothing from you unless the area changes again:
+453 **fixed validated** and 105 **superseded**.
 
 ---
 
@@ -25739,7 +25732,7 @@ that train has gone.  That the refusal reads right on screen is what only you ca
 
 ### MT-496 - 2026-09-24 - Importing routes and answering No leaves every route's automatic firing off
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** REG2-C7, MT-487
 
 **Written:** 2026-09-24
@@ -25764,13 +25757,17 @@ user on import.  if they want them armed, arm them.  otherwise, don't."*  This e
 *What this is:* `core.testAnImportSaysItsRoutesAreOff`.  The question and the message on screen are what only you
 can check.
 
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testTheRoutesImportDoorAsksByName.testAnsweredNoEveryRouteArrivesOff` on a real window, over the test run's own copy of your locomotive and route data (an import deletes every route, so it never runs on your real file).  The file is what Routes > Export shows and saves; the Export button itself is not pressed because it also copies to the clipboard.  With a route armed as your step 1 arms it, it imports the export through Routes > Import and asserts the question names the route and starts on No, answers No, and asserts the message says the routes came in with automatic firing off, all 86 routes are back, and none has automatic firing on.  Automating this found the question showing a count - "saved with their automatic firing on: 1." - where the sentence, in every language, expects the routes' names, so the Expected could not pass; the question now names them.  The same door's Yes message counted the routes saved armed rather than the ones it armed (a route whose sensor was removed is saved armed but cannot be armed); it now counts what it armed.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
+
 ---
 
 <a id="mt-497"></a>
 
 ### MT-497 - 2026-09-24 - Importing routes and answering Yes turns automatic firing back on for the routes saved with it
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** REG2-C7, MT-487
 
 **Written:** 2026-09-24
@@ -25792,6 +25789,10 @@ entry is the Yes answer.
 - Exactly the routes you noted in step 1 have automatic firing on, and no others.
 
 *What this is:* `core.testAnImportSaysItsRoutesAreOff.testAnImportArmsWhatWasSavedArmedWhenAsked`.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testTheRoutesImportDoorAsksByName.testAnsweredYesTheSavedArmedRoutesAreArmedAgain` on a real window, over the test run's own copy of your locomotive and route data (an import deletes every route, so it never runs on your real file).  The file is what Routes > Export shows and saves; the Export button itself is not pressed because it also copies to the clipboard.  With a route armed as your step 1 arms it, it imports the export and answers Yes, and asserts the message says automatic firing is on again for the routes saved with it on, and exactly the routes armed before the export have it on.  Automating this found the question showing a count - "saved with their automatic firing on: 1." - where the sentence, in every language, expects the routes' names, so the Expected could not pass; the question now names them.  The same door's Yes message counted the routes saved armed rather than the ones it armed (a route whose sensor was removed is saved armed but cannot be armed); it now counts what it armed.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -26388,7 +26389,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-518 - 2026-09-24 - Clear All Max Train Lengths asks first, and No changes nothing
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-457
 
 **Written:** 2026-09-24
@@ -26410,13 +26411,17 @@ Validated on your *Works* of 2026-09-24.
 
 **The item was renamed the same day** (2026-09-24, MT-533): it is now **Clear All Station Max Train Lengths (N)**.  The steps run as written with that label.
 
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `core.testMassAssignLengths.testClearAllMaximaOnHisRailwayAsksAndClearsEveryPage` on a sandbox copy of your railway, so the backup and restore steps are not needed.  It presses Bulk Tools > Clear All Station Max Train Lengths (N) in the autonomy editor on 1 - Main, asserts the confirmation starts on No, answers No, and asserts every station's maximum is as it was - read, as your step 4 reads it, off the Maximum Train Length item of the Station menu of a station on 1 - Main and one on 2 - Bottom.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
+
 ---
 
 <a id="mt-519"></a>
 
 ### MT-519 - 2026-09-24 - Clear All Max Train Lengths takes the maximum off every station on every page
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-457
 
 **Written:** 2026-09-24
@@ -26440,13 +26445,17 @@ Validated on your *Works* of 2026-09-24.
 
 **The item was renamed the same day** (2026-09-24, MT-533): it is now **Clear All Station Max Train Lengths (N)**.  The steps run as written with that label.
 
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `core.testMassAssignLengths.testClearAllMaximaOnHisRailwayAsksAndClearsEveryPage` on a sandbox copy of your railway, so the backup and restore steps are not needed.  After the No of MT-518 it presses the item again and answers Yes; it asserts the item's N was the number of stations with a maximum, the hint line says that N were cleared, no station on any page has a maximum left, and the Station menus of the station on 1 - Main and the one on 2 - Bottom both show Maximum Train Length (any).  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
+
 ---
 
 <a id="mt-520"></a>
 
 ### MT-520 - 2026-09-24 - Mass Assign Max Train Lengths asks each station with no maximum, and records the number
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-456
 
 **Written:** 2026-09-24
@@ -26470,13 +26479,17 @@ Validated on your *Works* of 2026-09-24.
 
 **The item was renamed the same day** (2026-09-24, MT-533): it is now **Mass Assign Station Max Train Lengths...**.  The steps run as written with that label.
 
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `core.testMassAssignLengths.testTheMaximumWalkOnHisRailway` on a sandbox copy of your railway, so the backup and restore steps are not needed.  With every maximum cleared, as MT-519 leaves it, it starts Bulk Tools > Mass Assign Station Max Train Lengths... on 1 - Main and asserts the prompt names the first station and says 1 of how many, and that station is the one outlined; then - after MT-521's 0 - waits for the prompt to give the number box the keyboard (no click), types 7 and presses Enter, asserts the walk moves on to the second station, presses Escape, and asserts the first station's Station menu shows 7, the second was given nothing, and the outline is gone.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
+
 ---
 
 <a id="mt-521"></a>
 
 ### MT-521 - 2026-09-24 - Mass Assign Max Train Lengths refuses 0
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-456
 
 **Written:** 2026-09-24
@@ -26497,6 +26510,10 @@ Validated on your *Works* of 2026-09-24.
 **Claude, 2026-09-24.**
 
 **The item was renamed the same day** (2026-09-24, MT-533): it is now **Mass Assign Station Max Train Lengths...**.  The steps run as written with that label.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `core.testMassAssignLengths.testTheMaximumWalkOnHisRailway` on a sandbox copy of your railway, so the backup and restore steps are not needed.  At the walk's first prompt it types 0 and presses OK, and asserts the message is the one saying 0 means any length, that the same station is asked about again, and that nothing was written.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -26773,7 +26790,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-530 - 2026-09-24 - Mass Assign Lengths asks for crossings on their own, and one answer sets them all
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-459
 
 **Written:** 2026-09-24
@@ -26792,6 +26809,10 @@ Validated on your *Works* of 2026-09-24.
 
 - Step 3: every crossing on the page takes that length and loses its highlight.
 - No stretch prompt before it included a crossing.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `core.testMassAssignLengths.testTheCrossingPromptOnHisBottomPage` on a sandbox copy of your railway, so the backup and restore steps are not needed.  In the editor on 2 - Bottom it presses Bulk Tools > Clear All Track Lengths and answers Yes, then Mass Assign Lengths..., and presses Skip until the crossing prompt, asserting that no stretch prompt before it outlined a crossing; asserts the crossing prompt counts and outlines every square two roads cross on the page; types 3 and OK, Escape; and asserts every one of them has length 3 and none is highlighted.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
