@@ -1063,6 +1063,105 @@ public class testTheTailIsPickedOnTheDiagram
         }
     }
 
+    /**
+     * The configuration renamed in the wait - the railway not rebuilt - keeps the answer (TDU5-C1): the same setup,
+     * under a new name.  Asked only by the configuration's name, the check dropped the answer from the railway and from
+     * the setup, and the log gave another configuration as the reason.
+     *
+     * MUTATION: ask for the configuration's name alone, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testARenameInTheWaitKeepsTheAnswer() throws Exception
+    {
+        org.traincontrol.base.Locomotive train = model.newMM2Locomotive("TDU5-C1 train", 2316);
+
+        final AutonomySession session = ui.getAutonomySession();
+        final String was = session.getStore().getActiveConfiguration();
+        final String renamed = was + " TDU5-C1";
+
+        try
+        {
+            LateAnswer late = pasteAndAnswerLate(train, () ->
+            {
+                session.getStore().renameConfiguration(was, renamed);
+
+                assertEquals(session.getStore().getActiveConfiguration(), renamed, "precondition: the rename did not"
+                    + " take");
+
+                return null;
+            }, true);
+
+            assertEquals(named(late.tunnelNow.getArrivedAlong()), named(late.tunnelPreRoad), "the answer was dropped after"
+                + " the configuration was only renamed in the wait - the railway was not rebuilt, and the train's tail now"
+                + " stops at the switch (TDU5-C1)");
+        }
+        finally
+        {
+            clearTunnel("TDU5-C1 train");
+
+            try
+            {
+                if (renamed.equals(session.getStore().getActiveConfiguration()))
+                {
+                    session.getStore().renameConfiguration(renamed, was);
+                }
+            }
+            catch (Exception back)
+            {
+            }
+        }
+    }
+
+    /**
+     * The right-click and locomotive-dialog doors keep every late-answer rule the paste door is claimed for above (TDU5-C4):
+     * the facing written before the question, the save skipped for a setup let go, only an answer logged, and the square
+     * named as the diagram names it - read, as the pins above are, because each door needs a menu or a dialog.
+     *
+     * MUTATION: undo any of the four at either door, and this fails naming it.
+     *
+     * @throws Exception from the files
+     */
+    @Test
+    public void testTheOtherDoorsKeepTheLateAnswerRules() throws Exception
+    {
+        String[][] doors = {
+            {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "session.setFacing(station, facing)",
+                "if (facing != null && session != null && setupStands)"},
+            {"src/org/traincontrol/gui/GraphLocAssign.java", "session.setFacing(tile,", "if (!setupStands) return;"}};
+
+        for (String[] door : doors)
+        {
+            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(door[0])),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            int asked = source.indexOf("askAfterPlacement(");
+
+            assertTrue(asked > 0, "precondition: " + door[0] + " no longer asks the tail question");
+
+            int facing = source.indexOf(door[1]);
+
+            assertTrue(facing > 0 && facing < asked, door[0] + " writes the facing after the tail question, where a"
+                + " dropped answer takes it with it (TDU3-C1)");
+
+            int noted = source.indexOf("noteADroppedAnswer(", asked);
+            int answered = source.lastIndexOf("wasAnswered()", noted);
+
+            assertTrue(noted > 0 && answered > asked, door[0] + " logs a dropped reply that carried no answer (TDU4-C3)");
+
+            String call = source.substring(noted, source.indexOf(";", noted));
+
+            assertTrue(call.contains("baseNameOf("), door[0] + " names the copy, not the square, when it logs a dropped"
+                + " answer (TDU4-C3): " + call);
+
+            int save = source.indexOf("session.save()", asked);
+            int guard = source.lastIndexOf(door[2], save);
+
+            assertTrue(save > 0 && guard > asked, door[0] + " saves a setup the window let go in the wait (TDU4-C2)");
+        }
+    }
+
     /** Cancel on the small window a waiting tail question leaves up. */
     private static void cancelTheQuestion() throws Exception
     {

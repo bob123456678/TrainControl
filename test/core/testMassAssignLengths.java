@@ -2390,6 +2390,40 @@ public class testMassAssignLengths
     }
 
     /**
+     * No 0 where nothing refuses (TDA5-C1): behind a permanent turnout whose other road ends at the berth, the berth rule
+     * passes that road over, and the room walk, with nothing measured after the turnout, does not judge - so a train is
+     * admitted, and the run-in notice must not say that everything longer than 0 is refused.
+     *
+     * MUTATION: take the berth rule's figure at every switch, turnout and crossing, and this fails.
+     *
+     * @throws Exception from the fixture or the reflection
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testNoZeroWhereNothingRefuses() throws Exception
+    {
+        TileKey berth = key(1, 1);
+
+        openBerthBehindALongerRun(componentType.CUSTOM_PERM_LEFT, berth);
+
+        session.answerTileLengthsZero(Arrays.asList(berth, key(2, 1)));
+        session.setTileLength(key(4, 1), 5);
+        session.setPointProperty(berth, "maxTrainLength", 3);
+        session.rebuild();
+
+        java.lang.reflect.Method runIns = org.traincontrol.automationui.AutonomySession.class.getDeclaredMethod(
+            "runInsShorterThanTheBerth");
+
+        runIns.setAccessible(true);
+
+        java.util.Map<TileKey, int[]> said = (java.util.Map<TileKey, int[]>) runIns.invoke(session);
+
+        assertFalse(said.containsKey(berth), "behind a permanent turnout whose other road ends at the berth nothing refuses"
+            + " a three-unit train, and the run-in notice says everything longer than 0 is (TDA5-C1): "
+            + (said.containsKey(berth) ? Arrays.toString(said.get(berth)) : ""));
+    }
+
+    /**
      * Nothing measured on the leg at all - answered zeros before the crossing, and nothing beyond it on this leg - is not
      * judged by the berth rule, which admits every train, and the run-in notice says nothing (TDA4-C3).  The railway does
      * measure track elsewhere, on the crossing's other road.
