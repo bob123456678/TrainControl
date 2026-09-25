@@ -13481,6 +13481,50 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
+     * Asks a yes/no question on the event thread and waits for the answer.
+     *
+     * For the worker threads that need one: a modal dialog has to be built and shown on the EDT, and
+     * the caller genuinely cannot go on until it is answered.
+     *
+     * @param message the question
+     * @return the JOptionPane option chosen, or NO_OPTION if the dialog could not be shown - refusing
+     *         is the safe reading of "we could not ask"
+     */
+    private int confirmOnEventThread(String message)
+    {
+        final int[] answer = new int[]{JOptionPane.NO_OPTION};
+
+        try
+        {
+            Runnable ask = () -> answer[0] = JOptionPane.showOptionDialog(
+                this,
+                message,
+                I18n.t("ui.dialogConfirm"),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                YES_NO_OPTS,
+                YES_NO_OPTS[0]
+            );
+
+            if (javax.swing.SwingUtilities.isEventDispatchThread())
+            {
+                ask.run();
+            }
+            else
+            {
+                javax.swing.SwingUtilities.invokeAndWait(ask);
+            }
+        }
+        catch (InterruptedException | java.lang.reflect.InvocationTargetException e)
+        {
+            if (this.model != null) this.model.log(e);
+        }
+
+        return answer[0];
+    }
+
+    /**
      * Opens the autonomy UI
      */
     public void ensureGraphUIVisible()
@@ -13531,16 +13575,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                         if (!conditionalRouteWarningShown)
                         {
-                            int dialogResult = JOptionPane.showOptionDialog(
-                                this,
-                                I18n.t("route.ui.confirmConditionalRoutesActiveProceed"), // message
-                                I18n.t("ui.dialogConfirm"),                               // title
-                                JOptionPane.YES_NO_OPTION,
-                                JOptionPane.PLAIN_MESSAGE,
-                                null,
-                                YES_NO_OPTS,
-                                YES_NO_OPTS[0] // default selection
-                            );
+                            // On the event thread, like every other dialog in this method.  This one was
+                            // raised straight from the worker thread - building and showing a modal
+                            // dialog off the event thread, which mispaints on a good day and deadlocks on
+                            // a bad one; and with Start greyed until this worker ends, a hang here would
+                            // leave Start greyed for the session (BPV-C4).
+                            int dialogResult = confirmOnEventThread(
+                                I18n.t("route.ui.confirmConditionalRoutesActiveProceed"));
                             
                             if (dialogResult == JOptionPane.NO_OPTION)
                             {
