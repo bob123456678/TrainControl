@@ -1318,7 +1318,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY (TLW-A1), as the paste does - ONLY WHERE THE PLACEMENT
                 // STILL STANDS (TDU2-A1, TDU3-B1): the question waited with the window live, and the copy may hold another
                 // train now, or have been replaced by a rebuild.
-                setupStands = org.traincontrol.gui.TailCrossedPrompt.sameSetup(session, ui.getAutonomySession());
+                setupStands = org.traincontrol.gui.TailCrossedPrompt.sameSetup(session, ui.getAutonomySession())
+                    && !answer.anEditorOpenedInTheWait();
 
                 final org.traincontrol.automation.Point answersTo = landing == null ? null
                     : org.traincontrol.gui.TailCrossedPrompt.whereTheAnswerGoes(
@@ -1338,7 +1339,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 else if (answer.wasAnswered() && landing != null)
                 {
                     org.traincontrol.gui.TailCrossedPrompt.noteADroppedAnswer(ui.getModel(), locName,
-                        session.baseNameOf(landing.getName()));
+                        session.baseNameOf(landing.getName()), answer);
                 }
             }
         }

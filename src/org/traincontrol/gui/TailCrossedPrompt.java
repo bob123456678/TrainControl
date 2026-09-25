@@ -198,6 +198,9 @@ public class TailCrossedPrompt
     {
         if (!wouldAsk(layout, at, arrivedFrom, trainLength)) return Answer.NOT_ASKED;
 
+        // WHETHER AN EDITOR IS OPEN AS IT IS ASKED, for the door to know whether one opened in the wait (RLU-C9)
+        boolean editorWasOpen = parent instanceof TrainControlUI && ((TrainControlUI) parent).isLayoutEditorOpen();
+
         List<Choice> choices = choicesFor(layout, at, arrivedFrom, trainLength, shown);
 
         // ON THE DIAGRAM WHERE IT CAN BE (FR-100; Adam, 2026-09-24: *"instead of showing the list of points, highlight
@@ -215,7 +218,11 @@ public class TailCrossedPrompt
         Reply reply = pick != null ? pick.ask()
             : reply(over, train, shownName(shown, at), choices, preselectedIndex(choices, recorded));
 
-        return reply.answered ? new Answer(true, reply.choice == null ? null : reply.choice.getRoad()) : Answer.NOT_ASKED;
+        boolean editorOpened = !editorWasOpen && parent instanceof TrainControlUI
+            && ((TrainControlUI) parent).isLayoutEditorOpen();
+
+        return new Answer(reply.answered, reply.answered && reply.choice != null ? reply.choice.getRoad() : null,
+            editorOpened);
     }
 
     /**
@@ -299,11 +306,30 @@ public class TailCrossedPrompt
 
         private final boolean answered;
         private final List<Edge> road;
+        private final boolean editorOpened;
 
         private Answer(boolean answered, List<Edge> road)
         {
+            this(answered, road, false);
+        }
+
+        private Answer(boolean answered, List<Edge> road, boolean editorOpened)
+        {
             this.answered = answered;
             this.road = road;
+            this.editorOpened = editorOpened;
+        }
+
+        /**
+         * Whether an editor was opened while the question waited on the diagram (RLU-C9).  The editor holds the setup as
+         * it was when it opened, and its Cancel puts that back; so the door writes nothing into the setup then - as every
+         * main-window door that writes the setup refuses while an editor is open - and says so.
+         *
+         * @return true where the answer came after an editor opened
+         */
+        public boolean anEditorOpenedInTheWait()
+        {
+            return editorOpened;
         }
 
         /** @return whether the operator answered - a sensor, or Not Known */
@@ -642,6 +668,29 @@ public class TailCrossedPrompt
     public static void noteADroppedAnswer(org.traincontrol.model.ViewListener model, String train, String where)
     {
         if (model != null) model.logf("autolayout.ui.logTailAnswerDropped", train, where);
+    }
+
+    /**
+     * The same, saying why this answer was dropped - an editor opened in the wait (RLU-C9), or the square changed.
+     *
+     * @param model where the log goes
+     * @param train the train the question was about
+     * @param where the copy it was put on
+     * @param answer the answer dropped
+     */
+    public static void noteADroppedAnswer(org.traincontrol.model.ViewListener model, String train, String where,
+        Answer answer)
+    {
+        if (model == null) return;
+
+        if (answer != null && answer.anEditorOpenedInTheWait())
+        {
+            model.logf("autolayout.ui.logTailAnswerDroppedEditorOpened", train, where);
+        }
+        else
+        {
+            noteADroppedAnswer(model, train, where);
+        }
     }
 
     /** The question waiting on the diagram for its click, or null (FR-100). */

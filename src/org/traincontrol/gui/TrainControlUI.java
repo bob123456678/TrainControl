@@ -8217,7 +8217,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // ONLY WHERE THE PLACEMENT STILL STANDS (TDU2-A1, TDU3-B1): the question waited with the window live, and what
             // stands on this copy now may be another train, with the road a run brought it by - or the railway may have
             // been rebuilt, and the copy that holds the train is a new one.
-            setupStands = org.traincontrol.gui.TailCrossedPrompt.sameSetup(session, getAutonomySession());
+            setupStands = org.traincontrol.gui.TailCrossedPrompt.sameSetup(session, getAutonomySession())
+                && !answer.anEditorOpenedInTheWait();
 
             final org.traincontrol.automation.Point landing = org.traincontrol.gui.TailCrossedPrompt.whereTheAnswerGoes(
                 org.traincontrol.gui.TailCrossedPrompt.runningNow(this.model), point, placed, tail, roadAtTheQuestion,
@@ -8239,7 +8240,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             else if (answer.wasAnswered())
             {
                 org.traincontrol.gui.TailCrossedPrompt.noteADroppedAnswer(this.model, placed.getName(),
-                    session.baseNameOf(point.getName()));
+                    session.baseNameOf(point.getName()), answer);
             }
 
         }

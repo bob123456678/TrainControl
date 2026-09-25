@@ -1148,7 +1148,7 @@ The editor notice about turn-round squares with no length is a different questio
     being the one asked - and the setup is still the window's: the same session.  **So the answer follows the train**
     (Adam, 2026-09-24, TDD5-C1: *"Follow the train."*): another configuration loaded in the wait, whose copy holds the
     train as it was put, gets it, on the railway running and in the configuration now active; closing the track-diagram
-    editor, which replaces the session, drops it, and a door whose setup was let go in the wait saves nothing (TDU4-C2).  A dropped answer - Not known
+    editor, which replaces the session, drops it, and a door whose setup was let go in the wait saves nothing (TDU4-C2).  An editor opened in the wait drops it too, and nothing is written into the setup: the editor holds the setup as it was when it opened, and its Cancel would take the answer back out - as every main-window door that writes the setup refuses while an editor is open (RLU-C9).  A dropped answer - Not known
     included, a Cancel not - is logged, naming the train and the square; the facing was written before the question was
     asked, so only the road waits for it.
     `regression.testTheTailIsPickedOnTheDiagram`.
