@@ -927,8 +927,10 @@ public class testSwitchingToACentralStationLayout
         // (FR-100), each opening a sandbox first.
         // 60 on 2026-09-24's validation round: regression.testAHandSendIsRefusedWhileTheSetupIsBroken asks a real window
         // (TDU-C3), opening a sandbox first.
-        assertEquals(checked, 60,
-            checked + " test classes were found to build a window, not the 60 there were when this "
+        // 62 on the third round: regression.testARouteDrivenLocomotiveIsNotEdited (OB-287) and
+        // regression.testApplyIsGreyedWithNothingToApply (FR-098) each build a window, opening a sandbox first.
+        assertEquals(checked, 62,
+            checked + " test classes were found to build a window, not the 62 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating - and "
             + "nothing else in this method is hidden by that any more, because the checks that "

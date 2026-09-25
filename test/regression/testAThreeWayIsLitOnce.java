@@ -52,13 +52,17 @@ public class testAThreeWayIsLitOnce
         }
 
         // BEFORE init, which opens whatever the layout preference names (OB-111).
-        support.LayoutSandbox sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+        support.LayoutSandbox sandbox = null;
 
         MarklinControlStation model = null;
         final RouteEditorFrame[] frame = new RouteEditorFrame[1];
 
         try
         {
+            // OPENED INSIDE THE TRY (TSX-B8, OB-111): anything thrown between the open and the close would leave the
+            // layout preference pointing at a folder under %TEMP%.
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
             // showUI, because the registry of labels is filled by the grid the window mounts.
             model = init(null, true, true, false, true);
 
@@ -172,7 +176,7 @@ public class testAThreeWayIsLitOnce
                 model.stop();
             }
 
-            sandbox.close();
+            if (sandbox != null) sandbox.close();
         }
     }
 

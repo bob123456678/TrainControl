@@ -45,12 +45,16 @@ public class testARouteDrivenLocomotiveIsNotEdited
     @Test
     public void testBothDoorsRefuseWhileTheRouteRuns() throws Exception
     {
-        support.LayoutSandbox sandbox = support.LayoutSandbox.open();
+        support.LayoutSandbox sandbox = null;
         MarklinControlStation model = null;
         TrainControlUI ui = null;
 
         try
         {
+            // OPENED INSIDE THE TRY (TSX-B8, OB-111): anything thrown between the open and the close would leave the
+            // layout preference pointing at a folder under %TEMP%.
+            sandbox = support.LayoutSandbox.open();
+
             model = MarklinControlStation.init(null, true, false, false, false);
 
             final MarklinControlStation m = model;
@@ -147,7 +151,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
             if (model != null) model.stop();
 
-            sandbox.close();
+            if (sandbox != null) sandbox.close();
         }
     }
 

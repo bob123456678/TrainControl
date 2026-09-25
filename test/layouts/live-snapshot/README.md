@@ -144,4 +144,5 @@ not fix it. Name the square.
 - `core.testATailPastASwitchIsAskedAbout`
 - `core.testATrainIsPutOnlyWhereItCanStart`
 - `regression.testTheTailIsPickedOnTheDiagram`
+- `regression.testAThreeWayIsLitOnce`
 - `regression.testANewStraightJoinsTheTrackBesideIt`
