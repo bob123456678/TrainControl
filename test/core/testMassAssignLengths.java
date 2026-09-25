@@ -2451,13 +2451,14 @@ public class testMassAssignLengths
 
     /**
      * The same 0 behind a SWITCH (TDA4-C1): every square between the berth and its switch answered 0, and track beyond
-     * the switch measured - the berth rule judges the approach, claims the switch for nothing, and refuses every train.
+     * the switch measured - the berth rule judges the approach, claims the switch for nothing, and refuses every train;
+     * and that is the berth's own warning, not the run-in notice (TDA4-C2).
      *
      * @throws Exception from the fixture or the reflection
      */
     @Test
     @SuppressWarnings("unchecked")
-    public void testNothingSpentBeforeTheSwitchIsSaidAsNothing() throws Exception
+    public void testNothingSpentBeforeTheSwitchIsAWarningOfItsOwn() throws Exception
     {
         openBerthBehindALongerRun(componentType.SWITCH_LEFT, key(7, 1));
 
@@ -2475,9 +2476,23 @@ public class testMassAssignLengths
 
         java.util.Map<TileKey, int[]> said = (java.util.Map<TileKey, int[]>) runIns.invoke(session);
 
-        assertTrue(said.containsKey(berth) && said.get(berth)[1] == 0, "a parking berth with nothing but answered zeros"
-            + " before its switch refuses every train, and its run-in notice does not say 0: "
+        assertFalse(said.containsKey(berth), "a parking berth with nothing but answered zeros before its switch takes no"
+            + " train, and the run-in notice still says it (TDA4-C2): "
             + (said.containsKey(berth) ? Arrays.toString(said.get(berth)) : "no entry"));
+
+        assertTrue(warnsOfNoRoom(berth), "a parking berth with nothing but answered zeros before its switch refuses every"
+            + " train, and is not warned about (TDA4-C2): " + session.check());
+    }
+
+    /** Whether the setup warns that this berth was given no room before its stop (TDA4-C2). */
+    private boolean warnsOfNoRoom(TileKey berth)
+    {
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (BERTH_GIVEN_NO_ROOM.equals(finding.getMessageKey()) && berth.equals(finding.getTile())) return true;
+        }
+
+        return false;
     }
 
     /**
@@ -2512,6 +2527,9 @@ public class testMassAssignLengths
         assertFalse(said.containsKey(berth), "behind a permanent turnout whose other road ends at the berth nothing refuses"
             + " a three-unit train, and the run-in notice says everything longer than 0 is (TDA5-C1): "
             + (said.containsKey(berth) ? Arrays.toString(said.get(berth)) : ""));
+
+        assertFalse(warnsOfNoRoom(berth), "behind a permanent turnout whose other road ends at the berth nothing refuses a"
+            + " three-unit train, and the berth is warned it takes none (TDA5-C1, TDA4-C2)");
     }
 
     /**
@@ -2546,6 +2564,9 @@ public class testMassAssignLengths
 
         assertFalse(said.containsKey(berth), "a berth on a leg nothing measures - which the berth rule does not judge - is"
             + " said to refuse every train: " + (said.containsKey(berth) ? Arrays.toString(said.get(berth)) : ""));
+
+        assertFalse(warnsOfNoRoom(berth), "a berth on a leg nothing measures - which the berth rule does not judge - is"
+            + " warned it takes no train (TDA4-C3, TDA4-C2)");
     }
 
     /**

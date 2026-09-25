@@ -1188,6 +1188,9 @@ public final class HomeStaging
         // the one that was ever right.
         if (!canRest(loc, to, state) || state.containsKey(to)) return null;
 
+        // Where the plan has put everybody, for the FR-001 question at every square on the way (OB-295).
+        final Point.Occupancy planned = plannedOccupancy(state);
+
         // ITS OWN BODY AS IT STANDS HERE, for the own-tail question below (OB-294): the road this plan moved it along
         // where it has moved it, and what the railway records where it has not - the two bodies the runtime would walk.
         //
@@ -1288,6 +1291,12 @@ public final class HomeStaging
                 boolean turned = current.turned || next.isReversing();
 
                 if (!canEnter(next, loc, blocked, state)) continue;
+
+                // AND NOT THROUGH A SQUARE HELD BACK BY AN OCCUPIED ONE (OB-295).  `isPathClear` asks FR-001 of every
+                // square a route arrives at since Adam's ruling of 2026-09-24 - *"trains shouldn't be sent to THIS
+                // square while trains are STANDING ON ... the other specified station(s)"* - so a plan through one is
+                // OB-073's plan, refused on the move.  Asked of the planned state, as `canRest` asks it of the destination.
+                if (Point.heldBackBy(next, loc, planned) != null) continue;
 
                 // AND THE TRACK A STANDING TRAIN IS LYING ACROSS (OB-184).
                 //

@@ -449,6 +449,58 @@ public class Edge
     }
 
     /**
+     * The places that cut this edge into pieces - a switch, or a square two roads cross - each a piece of its own, as
+     * Mass Assign Lengths asks for them (OB-297; Adam, 2026-09-24: *"Locations of switches are known."*).
+     *
+     * Written by the build.  Empty for a configuration built before, whose edges are then one piece each - which is what
+     * the own-tail note counted by until then.
+     */
+    private java.util.Set<String> cutPlaces = Collections.emptySet();
+
+    /**
+     * @param ids the places that cut this edge into pieces
+     */
+    public void setCutPlaces(java.util.Collection<String> ids)
+    {
+        this.cutPlaces = ids == null ? Collections.<String>emptySet()
+            : Collections.unmodifiableSet(new java.util.LinkedHashSet<>(ids));
+    }
+
+    /**
+     * @param id a place identifier
+     * @return whether that place cuts this edge into pieces - a switch, or a square two roads cross
+     */
+    public boolean isPlaceACut(String id)
+    {
+        return id != null && this.cutPlaces.contains(id);
+    }
+
+    /**
+     * Whether this edge is measured: it has a length, or every place on it was answered 0 on purpose (Adam, 2026-09-24,
+     * TDU-C6: *"0 lengths count as measures, so non-atomic should be allowed"*).
+     *
+     * The one question every rule that asks "is this track measured" puts to an edge - the Atomic Routes gate
+     * (`Layout.unmeasuredTrackThatCouldBeReleased`), the release escape it stands for (`Layout.pathIsUnmeasured`) and the
+     * route in (`Layout.measuredRouteIn`) - so the gate cannot let through a railway the escape then treats as
+     * unmeasured.  Without places, which a hand-written configuration has none of, only a length says so.
+     *
+     * @return true when the edge is measured
+     */
+    public boolean isMeasured()
+    {
+        if (this.getLength() > 0) return true;
+
+        if (this.placeIds.isEmpty()) return false;
+
+        for (String id : this.placeIds)
+        {
+            if (!this.answeredPlaces.contains(id)) return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Returns the edge length
      * @return 
      */
@@ -796,6 +848,9 @@ public class Edge
                 place.put("length", this.placeLengths.get(i));
 
                 if (this.answeredPlaces.contains(this.placeIds.get(i))) place.put("answered", true);
+
+                // And where it is cut into pieces (OB-297), for the same reason: an export is a configuration.
+                if (this.cutPlaces.contains(this.placeIds.get(i))) place.put("cut", true);
 
                 placeList.add(place);
             }

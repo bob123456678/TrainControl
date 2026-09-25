@@ -811,7 +811,8 @@ public class Point
     }
 
     /**
-     * The square holding this destination back, or null when none is (FR-001).
+     * The square holding this one back, or null when none is (FR-001) - asked of every square a route arrives at, not
+     * only its destination (OB-295).
      *
      * ONE expression of the rule.  It used to be written three times - the runtime check in
      * `isPathClear`, the staging planner's `canRest`, and the replay oracle in the staging tests - and

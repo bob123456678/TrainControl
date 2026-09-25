@@ -51,12 +51,20 @@ final class HomeLocomotiveMenu
      * flags and a ConcurrentHashMap - and it can turn true between the last refresh and this menu
      * opening, so asking it makes the item strictly fresher than the button beside it.
      *
+     * **AND A SETUP THAT CANNOT BE USED GREYS IT, with the setup's own sentence** (Adam, 2026-09-24,
+     * TDU2-C3: *"Yes, go with your recommendation"*).  Return Home refuses to run over it (TDU-B1), and
+     * this item is shown always and greyed where there is nothing it can do - so it says why here,
+     * as the right-click Start beside it does.  The buttons stay live and explain on a click, as
+     * Start's does.
+     *
      * @param menu
      * @param ui
      */
     static void addReturnHomeItem(JComponent menu, TrainControlUI ui)
     {
-        boolean offered = !ui.isAutonomyBusy() && ui.isReturnHomeOffered();
+        String broken = ui.whyAHandSendIsRefused();
+
+        boolean offered = broken == null && !ui.isAutonomyBusy() && ui.isReturnHomeOffered();
 
         JMenuItem menuItem = new JMenuItem(I18n.t("autolayout.ui.menuReturnToHome"));
 
@@ -65,7 +73,7 @@ final class HomeLocomotiveMenu
 
         if (!offered)
         {
-            menuItem.setToolTipText(ui.isAutonomyBusy()
+            menuItem.setToolTipText(broken != null ? broken : ui.isAutonomyBusy()
                 ? ui.describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null)
                 : ui.whyReturnHomeIsNotOffered());
         }

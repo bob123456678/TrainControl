@@ -2871,15 +2871,20 @@ public class Layout
             return false;
         }
 
-        // A station held back while another point has a train STANDING on it (FR-001).
+        // A square held back while another has a train STANDING on it (FR-001) - every square the route
+        // arrives at, not only its destination (Adam, 2026-09-24, OB-295: *"It means trains shouldn't be
+        // sent to THIS square while trains are STANDING ON or hold a lock on the other specified
+        // station(s)."*).
         //
         // The other half of this setting is built into the configuration as lock edges, which ask
         // whether that approach is held by a ROUTE - Edge.isLockHeld says so, and says why it stops
         // there: counting a parked train made a locomotive beside a junction a permanent roadblock, and
-        // two could deadlock.  That reasoning is about track a route needs to CROSS.  This is a
-        // different question, asked only of a path DESTINATION and only about squares somebody named,
-        // so neither hazard applies - nothing here can hold up a route that was not going to that
-        // station anyway.
+        // two could deadlock.  Those lock edges are on every edge arriving at the square, so a route
+        // passing through it was already refused while the watched square's approach was held; this
+        // was asked of the destination only, so a route through a square trains only pass went while a
+        // train STOOD on the watched one.  The cost is the one the setting names: while that train
+        // stands there, the square is shut to routes through it as well as to arrivals - somebody named
+        // both squares, and nothing else is held up by it.
         //
         // IN EVERY TIER, and it was fenced twice before (Adam, 2026-09-10).
         //
@@ -2907,8 +2912,6 @@ public class Layout
         // A restriction naming a point that does not exist is dropped when the file is read, which is
         // the one place a name is still involved.
         {
-            Point destination = path.get(path.size() - 1).getEnd();
-
             // The train LEAVING the watched point is exempt; the restriction is about what may ARRIVE
             // at the held-back station.  Adam, asked directly: "The condition should not apply to
             // trains leaving - only departing."
@@ -2928,13 +2931,13 @@ public class Layout
             //
             // In blockingOccupantOf now, so the window that EXPLAINS this can ask the same question
             // rather than trying to read the answer out of a static (DR-B3).
-            Point watched = blockingOccupantOf(destination, loc);
+            Point[] held = heldBackAlong(path, loc);
 
-            if (watched != null)
+            if (held != null)
             {
                 logPathError(loc, path, logFailures,
                     I18n.f("autolayout.errorDestinationBlockedByPoint",
-                        placeNameOf(destination), placeNameOf(watched)));
+                        placeNameOf(held[0]), placeNameOf(held[1])));
 
                 return false;
             }
@@ -4945,6 +4948,27 @@ public class Layout
 
 
     /**
+     * Whether NOTHING on this path is measured - the premise of `tailHasProvablyPassed`'s escape (VAL-A1).
+     *
+     * Asked of each edge by `Edge.isMeasured`, the question the Atomic Routes gate asks of the railway
+     * (`unmeasuredTrackThatCouldBeReleased`): track answered 0 on purpose is measured (Adam, 2026-09-24, TDU-C6: *"0
+     * lengths count as measures"*), so a path over it holds its edges until the tail has provably passed - nothing
+     * accumulates over a 0, so a train with a length holds them to the end of the route, which is the safe direction.
+     *
+     * @param path the route
+     * @return true when no edge on it is measured
+     */
+    static boolean pathIsUnmeasured(List<Edge> path)
+    {
+        for (Edge edge : path)
+        {
+            if (edge != null && edge.isMeasured()) return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Why this locomotive cannot leave, for the tier asking.
      *
      * @param loc the locomotive
@@ -5562,6 +5586,30 @@ public class Layout
     }
 
     /**
+     * The first square this route arrives at that is held back by an occupied one, with the square holding it back - or
+     * null when none is (FR-001, OB-295).
+     *
+     * Every square, not only the destination: Adam, 2026-09-24, *"trains shouldn't be sent to THIS square while trains
+     * are STANDING ON or hold a lock on the other specified station(s)"* - and a square trains only pass is never a
+     * destination.  The one question `isPathClear` refuses on and the why-window explains with.
+     *
+     * @param path the route
+     * @param loc the train, exempt where it is itself the occupant
+     * @return {the square held back, the square holding it}, or null
+     */
+    private Point[] heldBackAlong(List<Edge> path, Locomotive loc)
+    {
+        for (Edge edge : path)
+        {
+            Point watched = edge == null ? null : blockingOccupantOf(edge.getEnd(), loc);
+
+            if (watched != null) return new Point[] {edge.getEnd(), watched};
+        }
+
+        return null;
+    }
+
+    /**
      * Whether this rail is held by the asking train's own path rather than somebody else's (OB-269).
      *
      * **A train never blocks itself** - `behaviour.md` 5c, and `Edge.isOccupied` honours the same rule
@@ -5725,12 +5773,13 @@ public class Layout
                 // NO FENCE, because isPathClear has none since 2026-09-10 - the restriction is
                 // enforced in every tier. A fence here would name a watched square as the reason for a
                 // refusal that tier never made; no fence there means every tier makes it.
-                Point held = blockingOccupantOf(end, loc);
+                // Every square the route arrives at, as `isPathClear` asks it (OB-295).
+                Point[] held = heldBackAlong(path, loc);
 
                 if (held != null)
                 {
                     why = I18n.f("autolayout.errorDestinationBlockedByPoint",
-                        placeNameOf(end), placeNameOf(held));
+                        placeNameOf(held[0]), placeNameOf(held[1]));
 
                     continue;
                 }
@@ -8508,16 +8557,7 @@ public class Layout
         // The escape below means "nothing on this path has a length, so distance can never accumulate
         // and holding would hold until the route ended". That is a fact about the path. Asking a
         // running total instead answered "not yet" for every step before the first measured edge.
-        boolean pathIsUnmeasured = true;
-
-        for (Edge measured : path)
-        {
-            if (measured.getLength() > 0)
-            {
-                pathIsUnmeasured = false;
-                break;
-            }
-        }
+        boolean pathIsUnmeasured = pathIsUnmeasured(path);
 
         for (int i = 0; i < path.size(); i++)
         {
@@ -9541,8 +9581,9 @@ public class Layout
      * requires `isDestination() && isActive()` of its own.  If a path is ever allowed to finish
      * anywhere else, this has to go back to counting every unmeasured edge.
      *
-     * Zero counts as no length, which is the convention every length rule here uses - `getTileLength`
-     * answers 0 for unmeasured, and only positive lengths are determinate.
+     * **An answered 0 is a measure** (Adam, 2026-09-24, TDU-C6: *"0 lengths count as measures, so non-atomic should be
+     * allowed"*).  Track every square of which was answered 0 on purpose is not counted here, and the escape does not
+     * fire over it either - both ask `Edge.isMeasured`.  A 0 nobody answered is still no length.
      *
      * SORTED, because `this.edges` is a `HashMap` and "the graph's own order" is no order at all
      * (VD15-C2): the message names only the first three, and three arbitrary ones that change between
@@ -9558,7 +9599,7 @@ public class Layout
         {
             if (edge == null || edge.getStart() == null || edge.getEnd() == null) continue;
 
-            if (edge.getLength() > 0) continue;
+            if (edge.isMeasured()) continue;
 
             unmeasured.add(edge);
         }
@@ -10084,7 +10125,8 @@ public class Layout
     /**
      * How much measured track the route in holds, counted back from where it ends (FR-087).
      *
-     * Leg by leg while each is measured, and never back past a square the train turns at - Adam, 2026-09-11: the berth
+     * Leg by leg while each is measured - a leg answered 0 on purpose is, and adds 0 (Adam, 2026-09-24, TDU-C6: *"0
+     * lengths count as measures"*) - and never back past a square the train turns at - Adam, 2026-09-11: the berth
      * is *"measured back to whichever of the last switch and the reversal is met first"*, and a train that changed
      * direction on the way does not lie back over the track it drove before the turn.  The same test
      * `measuredRoomAtTheEndOf` makes, so the room rule and this allowance stop at the same square.
@@ -10106,11 +10148,9 @@ public class Layout
         {
             if (i < path.size() - 1 && path.get(i).getEnd() != null && path.get(i).getEnd().isReversing()) break;
 
-            int leg = path.get(i).getLength();
+            if (!path.get(i).isMeasured()) break;
 
-            if (leg <= 0) break;
-
-            held += leg;
+            held += Math.max(0, path.get(i).getLength());
         }
 
         return held;
@@ -10365,10 +10405,11 @@ public class Layout
      * being the route the head drives between leaving the place and coming back to it, not the body in front of it
      * (TDA-B1: judged by the body, a loop with no length on it was refused at every length, though it may be thirty
      * units long).  Unmeasured squares within a measured way round make it shorter than it is, which refuses rather than
-     * permits - so the refusal says how many stretches of the way round have nothing measured on them, and that measuring
-     * them is the way past: the stretch it left the place in, those between, and the one it comes back in, each where the
-     * way round runs over some of it.  A stretch is an edge, sensor to sensor - coarser than the pieces Mass Assign asks
-     * for, so an edge measured only at its switch is not counted (TDA2-C1).
+     * permits - so the refusal says how many pieces of the way round have nothing measured on them, and that measuring
+     * them is the way past: in the stretch it left the place in, the pieces after it; every piece of those between; and
+     * in the one it comes back in, the pieces before the return.  A piece is what Mass Assign Lengths asks for - a
+     * stretch cut at its switches and at squares two roads cross, each of those a piece of its own - and one answered 0
+     * is measured (OB-297, TDU-C6; TDA2-C1 counted whole stretches, and one measured only at its switch was missed).
      *
      * **The tightest return is the one named** (TDA-C1).  A route that comes up behind the body meets it more than once,
      * and a later return can allow less than an earlier one; the refusal's "a train of N units or shorter" has to be true
@@ -10408,16 +10449,14 @@ public class Layout
         Map<String, Integer> routeRunWhenLeft = new HashMap<>();
         Map<String, Integer> edgeWhenLeft = new HashMap<>();
 
-        // And whether the route ran on, in the edge it left each place in, over other places of that edge.
-        Map<String, Boolean> leftAtTheEdgeEnd = new HashMap<>();
+        // And where in that edge the head left each place - after any repeats of the same square that follow it.
+        Map<String, Integer> leftAt = new HashMap<>();
 
-        // Which edges of the route have nothing measured on them.  THE GRAIN IS THE EDGE, sensor to sensor, because a
-        // square with no length inside a measured edge is how a short piece drawn over several squares is stored, not a
-        // gap, and the rule cannot tell the two apart square by square (counted by square, Adam's measured railway had 21
-        // on one way round).  Coarser than the pieces lengths are given in - an edge cut at its switches - so an edge
-        // whose only length is on its switch counts as measured here, and between Mass Assign sittings the note can say
-        // fewer than there are, or nothing (TDA2-C1).  It never counts a measured one.
-        List<Boolean> edgeUnmeasured = new ArrayList<>();
+        // THE PIECES OF EACH EDGE OF THE ROUTE, and which have nothing measured on them (OB-297).  NOT THE SQUARE: a
+        // square with no length inside a measured piece is how a short piece drawn over several squares is stored, not a
+        // gap (counted by square, Adam's measured railway had 21 on one way round).  The piece is what Mass Assign
+        // Lengths asks for, cut at the places the build marks; an edge with no marks is one piece (TDA2-C1).
+        List<List<int[]>> piecesOfEdge = new ArrayList<>();
 
         // LEAVING OVER ITS OWN BODY: the first place the route goes to, other than the square the train stands on, is
         // one its body lies on - a train turned where it stands.  The first place only: a route that comes back round a
@@ -10443,6 +10482,7 @@ public class Layout
                 freeOnceTheTailPasses.put(lying.getKey(), -lying.getValue());
                 routeRunWhenLeft.put(lying.getKey(), 0);
                 edgeWhenLeft.put(lying.getKey(), -1);
+                leftAt.put(lying.getKey(), -1);
             }
         }
 
@@ -10465,14 +10505,7 @@ public class Layout
             // A configuration that describes no places says nothing about where the train is.
             if (ids.size() != spans.size()) return null;
 
-            int edgeMeasured = 0;
-
-            for (Integer span : spans) edgeMeasured += span == null ? 0 : Math.max(0, span);
-
-            edgeUnmeasured.add(edgeMeasured <= 0);
-
-            // How many places of this edge the head has run over before the one it is at.
-            int runInThisEdge = 0;
+            piecesOfEdge.add(piecesOf(edge));
 
             for (int at = 0; at < ids.size(); at++)
             {
@@ -10496,21 +10529,9 @@ public class Layout
                         tightestOn = edge;
                         tightestUnmeasured = 0;
 
-                        // The stretches of the way round with nothing measured on them (TDA2-C1, TDD2-C3): the one the
-                        // place was left in, where the route ran on in it; every one wholly between; and the one it
-                        // comes back in, where it ran over something of it first.  One edge holding both the leaving
-                        // and the return is never judged unmeasured - nothing measured, nothing judged.
-                        int leftIn = edgeWhenLeft.get(place);
-
-                        if (leftIn >= 0 && leftIn < i && edgeUnmeasured.get(leftIn)
-                            && !leftAtTheEdgeEnd.get(place)) tightestUnmeasured++;
-
-                        for (int k = leftIn + 1; k < i; k++)
-                        {
-                            if (edgeUnmeasured.get(k)) tightestUnmeasured++;
-                        }
-
-                        if (leftIn < i && runInThisEdge > 0 && edgeUnmeasured.get(i)) tightestUnmeasured++;
+                        // The pieces of the way round with nothing measured on them (TDA2-C1, TDD2-C3, OB-297).
+                        tightestUnmeasured = unmeasuredPiecesOfTheWayRound(piecesOfEdge, edgeWhenLeft.get(place),
+                            leftAt.get(place), i, at);
                     }
                 }
 
@@ -10520,17 +10541,12 @@ public class Layout
                 routeRunWhenLeft.put(place, travelled);
                 edgeWhenLeft.put(place, i);
 
-                // Left at the edge's end when every place after it in the edge is the same square again.
-                boolean atTheEnd = true;
+                // Left after the last of any repeats of the same square that follow it here.
+                int leftAtIndex = at;
 
-                for (int after = at + 1; after < ids.size(); after++)
-                {
-                    if (!ids.get(after).equals(place)) atTheEnd = false;
-                }
+                while (leftAtIndex + 1 < ids.size() && ids.get(leftAtIndex + 1).equals(place)) leftAtIndex++;
 
-                leftAtTheEdgeEnd.put(place, atTheEnd);
-
-                runInThisEdge++;
+                leftAt.put(place, leftAtIndex);
             }
 
             // A TURN ON THE WAY: the body is ahead of the train from here, and the question starts again.
@@ -10541,7 +10557,7 @@ public class Layout
                 freeOnceTheTailPasses.clear();
                 routeRunWhenLeft.clear();
                 edgeWhenLeft.clear();
-                leftAtTheEdgeEnd.clear();
+                leftAt.clear();
             }
         }
 
@@ -10553,6 +10569,100 @@ public class Layout
         // After a full stop: the sentence before it has none, as every refusal here is written (TDA2-C7).
         return tightestUnmeasured > 0 ? why + ". " + I18n.f("autolayout.errorOwnTailPartlyUnmeasured", tightestUnmeasured)
             : why;
+    }
+
+    /**
+     * The pieces of an edge, in order - each {first place, last place, 1 when nothing on it is measured} (OB-297).
+     *
+     * Cut where the build marked a place (`Edge.isPlaceACut`) - a switch, or a square two roads cross - each of those a
+     * piece of its own, and the runs of places between them pieces too: what Mass Assign Lengths asks for.  A piece is
+     * measured when anything on it has a length or was answered 0 on purpose (TDU-C6).  An edge with no places is one
+     * piece, measured as the edge is.
+     *
+     * @param edge the edge
+     * @return its pieces
+     */
+    static List<int[]> piecesOf(Edge edge)
+    {
+        List<int[]> out = new ArrayList<>();
+
+        List<String> ids = edge.getPlaceIds();
+        List<Integer> spans = edge.getPlaceLengths();
+
+        if (ids.isEmpty() || ids.size() != spans.size())
+        {
+            out.add(new int[] {0, Math.max(0, ids.size() - 1), edge.isMeasured() ? 0 : 1});
+
+            return out;
+        }
+
+        int first = -1;
+        boolean measured = false;
+
+        for (int at = 0; at <= ids.size(); at++)
+        {
+            boolean cut = at < ids.size() && edge.isPlaceACut(ids.get(at));
+
+            if (at == ids.size() || cut)
+            {
+                if (first >= 0) out.add(new int[] {first, at - 1, measured ? 0 : 1});
+
+                first = -1;
+                measured = false;
+
+                if (cut) out.add(new int[] {at, at, isMeasuredAt(edge, at) ? 0 : 1});
+
+                continue;
+            }
+
+            if (first < 0) first = at;
+
+            if (isMeasuredAt(edge, at)) measured = true;
+        }
+
+        return out;
+    }
+
+    /** Whether the place at this index of an edge has a length, or was answered 0 on purpose (TDU-C6). */
+    private static boolean isMeasuredAt(Edge edge, int at)
+    {
+        Integer span = edge.getPlaceLengths().get(at);
+
+        return (span != null && span > 0) || edge.isPlaceAnswered(edge.getPlaceIds().get(at));
+    }
+
+    /**
+     * How many pieces of a way round have nothing measured on them (OB-297): in the edge the place was left in, the
+     * pieces after where it was left; every piece of the edges between; and in the edge the route comes back in, the
+     * pieces before the return.  A place of the body was left before the journey began (edge -1), so the way round is
+     * the route from its start.
+     *
+     * @param pieces the pieces of each edge of the route, as `piecesOf` gives them
+     * @param leftIn the edge the place was left in, -1 for the body
+     * @param leftAt where in that edge
+     * @param backIn the edge the route comes back to it in
+     * @param backAt where in that edge
+     * @return the count
+     */
+    static int unmeasuredPiecesOfTheWayRound(List<List<int[]>> pieces, int leftIn, int leftAt, int backIn, int backAt)
+    {
+        int count = 0;
+
+        for (int k = Math.max(0, leftIn); k <= backIn && k < pieces.size(); k++)
+        {
+            for (int[] piece : pieces.get(k))
+            {
+                if (piece[2] == 0) continue;
+
+                if (k == leftIn && piece[1] <= leftAt) continue;
+
+                if (k == backIn && piece[0] >= backAt) continue;
+
+                count++;
+            }
+        }
+
+        return count;
     }
 
     /**
@@ -12750,6 +12860,9 @@ public class Layout
 
                     List<String> answered = new LinkedList<>();
 
+                    // Where the edge is cut into pieces - a switch, or a square two roads cross (OB-297).
+                    List<String> cut = new LinkedList<>();
+
                     JSONArray places = edge.getJSONArray("places");
 
                     // ALL OF THEM OR NONE OF THEM (SVX-C9).
@@ -12787,6 +12900,8 @@ public class Layout
                         spans.add(Math.max(0, place.optInt("length", 0)));
 
                         if (place.optBoolean("answered", false)) answered.add(place.getString("at"));
+
+                        if (place.optBoolean("cut", false)) cut.add(place.getString("at"));
                     }
 
                     if (whole)
@@ -12794,6 +12909,8 @@ public class Layout
                         e.setPlaces(ids, spans);
 
                         e.setAnsweredPlaces(answered);
+
+                        e.setCutPlaces(cut);
                     }
                     else
                     {

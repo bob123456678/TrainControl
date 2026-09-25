@@ -400,6 +400,23 @@ public class AutonomyBuilder
 
     private Map<TileKey, List<TileKey>> blockingPoints = Collections.emptyMap();
 
+    /**
+     * The squares that cut a stretch into pieces - the switches, and the squares two roads cross - which Mass Assign
+     * Lengths asks for one by one (OB-297).  Marked on each edge's places, so the runtime counts what the operator is
+     * asked to measure rather than whole stretches.
+     *
+     * @param cuts the squares
+     * @return this
+     */
+    public AutonomyBuilder withPieceCuts(java.util.Set<TileKey> cuts)
+    {
+        this.pieceCuts = cuts == null ? Collections.<TileKey>emptySet() : cuts;
+
+        return this;
+    }
+
+    private java.util.Set<TileKey> pieceCuts = Collections.emptySet();
+
     public AutonomyBuilder withBarredArrivals(Map<TileKey, Set<TilePorts.Side>> barred)
     {
         this.barredArrivals = barred == null
@@ -1291,6 +1308,9 @@ public class AutonomyBuilder
                 // AND WHETHER ITS 0 WAS ANSWERED ON PURPOSE, so the runtime does not call it missing (Adam,
                 // 2026-09-23: "stop listing answered zeros as missing").  Written only where true.
                 if (place.isAnswered()) at.put("answered", true);
+
+                // AND WHETHER IT CUTS THE STRETCH INTO PIECES (OB-297): a switch, or a square two roads cross.
+                if (place.getTile() != null && pieceCuts.contains(place.getTile())) at.put("cut", true);
 
                 places.put(at);
             }

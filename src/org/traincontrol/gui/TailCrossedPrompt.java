@@ -550,8 +550,9 @@ public class TailCrossedPrompt
      * and leaves the old one as it was, so asked of the old one the check always passed, and the answer went to a copy
      * nothing reads.  So the copy of that name on the railway running NOW is asked: after a rebuild of the same setup
      * the train is put back on it with its side and the road the running railway had, and the answer belongs there.
-     * And nowhere once the door's setup is not the window's any more (`sameSetup`) - a session replaced, or another
-     * configuration loaded, whose copy can hold the same train from the same side (TDU4-C1).
+     * And nowhere once the door's setup is not the window's any more (`sameSetup`), a session replaced (TDU4-C2).  Another
+     * configuration loaded in the wait keeps the session, and the answer follows the train onto the copy that holds it as
+     * it was put (Adam, 2026-09-24, TDD5-C1: *"Follow the train."*).
      *
      * @param running the railway running now, or null to ask the copy itself
      * @param asked the copy the train was put on when the question was asked
@@ -602,27 +603,24 @@ public class TailCrossedPrompt
 
     /**
      * Whether the setup a door wrote to before its question is still the window's when the answer comes back: the same
-     * session, and either the same configuration active or the same railway running (TDU3-B1, TDU4-C1, TDU5-C1).
-     * Loading another configuration keeps the session and rebuilds the railway, and that configuration's copy of the
-     * square can hold the same train from the same side: the answer was then written into the configuration just
-     * loaded, and the one it was asked for never had it.  A rename, or a copy made active - New Configuration - changes
-     * the name and not the railway: the answer is about what is running, under whatever name.  A door whose setup is not
-     * the window's any more saves nothing either (TDU4-C2): the reset that replaced it wrote what it held.
+     * session (TDU3-B1).
+     *
+     * **Another configuration loaded in the wait is the same setup here** (Adam, 2026-09-24, TDD5-C1: *"Follow the
+     * train."*).  It keeps the session and rebuilds the railway, and where its copy of the square holds the same train
+     * from the same side with the road it had - which `whereTheAnswerGoes` asks - the answer is about the train in front
+     * of the operator, and goes into the configuration loaded now and onto the railway running.  TDU4-C1 had dropped it,
+     * and the tail he had just given was then missing from the railway: the track beyond the switch was free to route
+     * another train over.  A door whose setup is not the window's any more saves nothing (TDU4-C2): the reset that
+     * replaced it wrote what it held.
      *
      * @param asked the session the door wrote to before the question
      * @param now the window's session now
-     * @param configurationAsked the configuration active when the question was asked
-     * @param railwayAsked the railway running when the question was asked
-     * @param railwayNow the railway running now
      * @return true when the answer is about the setup in front of the operator
      */
     public static boolean sameSetup(org.traincontrol.automationui.AutonomySession asked,
-        org.traincontrol.automationui.AutonomySession now, String configurationAsked, Layout railwayAsked,
-        Layout railwayNow)
+        org.traincontrol.automationui.AutonomySession now)
     {
-        return asked != null && asked == now
-            && (java.util.Objects.equals(asked.getStore().getActiveConfiguration(), configurationAsked)
-                || (railwayAsked != null && railwayAsked == railwayNow));
+        return asked != null && asked == now;
     }
 
     /**

@@ -3583,6 +3583,9 @@ public class testAutonomyDiagramSession
         assertEquals(afterATurn.getDetail(), 4,
             "the room is the four measured units between the turn and the platform");
 
+        assertEquals(afterATurn.getThird(), 4, "a train setting off from the turn and longer than the four units to the"
+            + " platform is refused there, and the notice does not give that figure (TDA-C10)");
+
         // AND THE SAME RUN WITH NOTHING TURNING AT ITS FAR END IS NOT ASKED ABOUT, because there the
         // guard walks on back through earlier edges and this edge bounds nothing.
         session.setPointProperty(turns, "canReverse", Boolean.FALSE);
@@ -3608,7 +3611,12 @@ public class testAutonomyDiagramSession
         org.traincontrol.automationui.AutonomyChecks.Finding berth =
             findingFor(org.traincontrol.automationui.AutonomyChecks.RUN_IN_SHORTER_THAN_THE_BERTH);
 
-        return berth != null ? berth : findingFor(RUN_IN_AT_A_PLATFORM);
+        if (berth != null) return berth;
+
+        // A platform's sentence, with the refusing figure where there is one (TDA-C10).
+        org.traincontrol.automationui.AutonomyChecks.Finding platform = findingFor(RUN_IN_AT_A_PLATFORM);
+
+        return platform != null ? platform : findingFor(RUN_IN_AT_A_PLATFORM_REFUSED);
     }
 
     /** The platform's own sentence (MT-555), by its key so the claims compile before it exists. */

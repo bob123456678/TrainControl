@@ -330,9 +330,11 @@ public class GraphReducer
     private final TileGraph graph;
     private final Authored authored;
 
-    private final Map<TileKey, ReducedPoint> points = new LinkedHashMap<>();
-    private final List<ReducedEdge> edges = new ArrayList<>();
-    private final Map<ReducedEdge, Set<ReducedEdge>> locks = new LinkedHashMap<>();
+    // NOT FINAL, AND NEVER CHANGED ONCE HANDED OUT (OB-298): `reduce` builds new ones and swaps them in whole, so a reader
+    // walking these - `AutonomyBuilder.splitSides` was one, on another thread - finishes on the railway it began on.
+    private volatile Map<TileKey, ReducedPoint> points = new LinkedHashMap<>();
+    private volatile List<ReducedEdge> edges = new ArrayList<>();
+    private volatile Map<ReducedEdge, Set<ReducedEdge>> locks = new LinkedHashMap<>();
 
     /**
      * Sensors where a branch was refused because its switch settings contradicted the path to it.
@@ -345,12 +347,12 @@ public class GraphReducer
      * answering no.  So the note is kept and read at the end, when it is known whether anything else
      * got out of that sensor.
      */
-    private final Set<TileKey> refusedForConflict = new LinkedHashSet<>();
-    private final List<TileGraph.Problem> problems = new ArrayList<>();
-    private int isolatedFeedbackTiles = 0;
+    private volatile Set<TileKey> refusedForConflict = new LinkedHashSet<>();
+    private volatile List<TileGraph.Problem> problems = new ArrayList<>();
+    private volatile int isolatedFeedbackTiles = 0;
 
     // One edge per ordered pair of Points, because that is the model's own notion of edge identity.
-    private final Map<String, ReducedEdge> edgeByPair = new LinkedHashMap<>();
+    private volatile Map<String, ReducedEdge> edgeByPair = new LinkedHashMap<>();
 
     /**
      * Two physical routes join the same pair of sensors; only the shorter is used.
@@ -384,18 +386,25 @@ public class GraphReducer
      */
     public void reduce()
     {
-        points.clear();
-        edges.clear();
-        edgeByPair.clear();
-        locks.clear();
-        refusedForConflict.clear();
-        problems.clear();
-        isolatedFeedbackTiles = 0;
+        // BUILT APART AND HANDED OVER WHOLE (OB-298).  This cleared and refilled the lists in place, so a reader walking
+        // them while a rebuild ran - `AutonomyBuilder.splitSides` over `getEdges()`, in a test that edited the setup off
+        // the event thread - threw `ConcurrentModificationException`, or read half a rebuild.  A fresh reducer over the
+        // same diagram and settings does the work, and its lists replace these only once they are complete; a list
+        // handed out before is never changed again.  The edges go last, as the thing most readers start from.
+        GraphReducer fresh = new GraphReducer(graph, authored);
 
-        buildPoints();
-        walkEdges();
-        reportRunsNoSwitchCanServe();
-        deriveLocks();
+        fresh.buildPoints();
+        fresh.walkEdges();
+        fresh.reportRunsNoSwitchCanServe();
+        fresh.deriveLocks();
+
+        this.refusedForConflict = fresh.refusedForConflict;
+        this.problems = fresh.problems;
+        this.isolatedFeedbackTiles = fresh.isolatedFeedbackTiles;
+        this.edgeByPair = fresh.edgeByPair;
+        this.locks = fresh.locks;
+        this.points = fresh.points;
+        this.edges = fresh.edges;
     }
 
     /**
@@ -1512,16 +1521,28 @@ public class GraphReducer
         /** Measures 0 because it was answered 0 on purpose, rather than because nobody has measured it */
         private final boolean answered;
 
+        /** The square the place is on - an overpass's two levels are two places on one square */
+        private final TileKey tile;
+
         Place(String id, int length)
         {
-            this(id, length, false);
+            this(id, length, false, null);
         }
 
-        Place(String id, int length, boolean answered)
+        Place(String id, int length, boolean answered, TileKey tile)
         {
             this.id = id;
             this.length = length;
             this.answered = answered;
+            this.tile = tile;
+        }
+
+        /**
+         * @return the square this place is on, or null where it was not said
+         */
+        public TileKey getTile()
+        {
+            return this.tile;
         }
 
         /**
@@ -1583,19 +1604,24 @@ public class GraphReducer
         {
             for (String id : locationsOf(step))
             {
-                out.add(new Place(id, lengthOf(step.getTile()), answeredAtZero(step.getTile())));
+                out.add(new Place(id, lengthOf(step.getTile()), answeredAtZero(step.getTile()), step.getTile()));
             }
         }
 
-        out.add(new Place(edge.getEnd().toString(), lengthOf(edge.getEnd()), answeredAtZero(edge.getEnd())));
+        out.add(new Place(edge.getEnd().toString(), lengthOf(edge.getEnd()), answeredAtZero(edge.getEnd()),
+            edge.getEnd()));
 
         return out;
     }
 
-    /** Whether a square measures 0 because it was answered 0, which the runtime is told so as not to call it missing */
+    /**
+     * Whether a square measures 0 because it was answered 0, which the runtime is told so as not to call it missing - or
+     * because it takes no length at all, a route tile (OB-273), which nobody is ever asked about.  Unmarked, a leg answered
+     * 0 around a route tile read as unmeasured track to every rule that asks `Edge.isMeasured` (TDU-C6).
+     */
     private boolean answeredAtZero(TileKey tile)
     {
-        return lengthOf(tile) == 0 && authored.isTileLengthAnswered(tile);
+        return lengthOf(tile) == 0 && (takesNoLength(tile) || authored.isTileLengthAnswered(tile));
     }
 
     private void lock(ReducedEdge a, ReducedEdge b)

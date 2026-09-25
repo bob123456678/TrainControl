@@ -1183,8 +1183,9 @@ public class AutonomyViewerPanel extends JPanel
 
             save();
 
-            // AND LOAD AUTONOMY UNTICKED, every time (REG2-C3; Adam, 2026-09-24) - see the method.
-            ui.autoLoadOffAfterLegacyImport();
+            // LOAD AUTONOMY IS LEFT AS IT WAS (Adam, 2026-09-24, TDD-C11: "Drop it now").  REG2-C3 unticked it here, while
+            // the box still loaded the old graph at start; since OB-254 it resumes the active setup, which the import has
+            // just made, so the untick was what kept the imported setup from loading at the next start.
 
             String unmatched = result.unmatched.isEmpty()
                 ? "" : "\n\n" + String.join(", ", result.unmatched);
@@ -1619,7 +1620,7 @@ public class AutonomyViewerPanel extends JPanel
             // this list changes, and lets the two that need a name use {1}.
                 new Object[] {finding.getTile(),
                     describe(finding.getMessageKey(), subject, finding.getSubject(),
-                        finding.getCount(), finding.getDetail())});
+                        finding.getCount(), finding.getDetail(), finding.getThird())});
         }
 
         // a page renumbered under the setup would silently reattach settings to the wrong track, so it

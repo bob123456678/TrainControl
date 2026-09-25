@@ -2038,30 +2038,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Unticks Startup -> Load Autonomy after a legacy autonomy.json has been imported, every time (REG2-C3).
-     *
-     * The box is one preference for the whole install, and it shows ticked to anybody who never touched it.  When this was
-     * written, a layout with only the old graph loaded nothing at start until the box had been set by hand, so what it
-     * showed and what it did disagreed for every upgrading user.  Adam, 2026-09-24, choosing among the resets: *"Set the
-     * setting to unchecked when importing a legacy json file, each time.  Simple to track and implement."*
-     *
-     * **What it does now** (TDD-C11).  Since OB-254 took the old graph out of start-up, Load Autonomy resumes the active
-     * diagram setup - and an import makes one.  So the untick is no longer the box catching up with what the next start
-     * would do anyway: it is what makes the next start load nothing, and ticking the box again is what has the imported
-     * setup loaded at start.  The import's log says so, and so does the changelog.  Whether to keep it now that nothing
-     * old is loaded at start is Adam's to say; his ruling stands until he does.
-     */
-    public void autoLoadOffAfterLegacyImport()
-    {
-        prefs.putBoolean(AUTO_LOAD_AUTONOMY, false);
-
-        if (this.AutoLoadAutonomyMenuItem != null) this.AutoLoadAutonomyMenuItem.setSelected(false);
-
-        if (this.model != null) this.model.log(I18n.f("autosetup.ui.autoLoadOffAfterImport",
-            I18n.t("ui.main.toolbar.startup"), I18n.t("ui.main.toolbar.loadAutonomy")));
-    }
-    
-    /**
      * Returns the key code corresponding to the currently selected locomotive button
      * @return 
      */
@@ -8172,9 +8148,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // AND HOW FAR BACK ITS TAIL REACHES, asked where the answer matters (Adam, 2026-09-14).
             final org.traincontrol.base.Locomotive placed = point.getCurrentLocomotive();
             final java.util.List<org.traincontrol.automation.Edge> roadAtTheQuestion = point.getArrivedAlong();
-            final String configurationAsked = session.getStore().getActiveConfiguration();
-            final org.traincontrol.automation.Layout railwayAsked = org.traincontrol.gui.TailCrossedPrompt.runningNow(
-                this.model);
 
             org.traincontrol.gui.TailCrossedPrompt.Answer answer = org.traincontrol.gui.TailCrossedPrompt.askAfterPlacement(
                 this.model.getAutoLayout(), point, tail, point.getCurrentLocomotive().getTrainLength(),
@@ -8183,8 +8156,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // ONLY WHERE THE PLACEMENT STILL STANDS (TDU2-A1, TDU3-B1): the question waited with the window live, and what
             // stands on this copy now may be another train, with the road a run brought it by - or the railway may have
             // been rebuilt, and the copy that holds the train is a new one.
-            setupStands = org.traincontrol.gui.TailCrossedPrompt.sameSetup(session, getAutonomySession(),
-                configurationAsked, railwayAsked, org.traincontrol.gui.TailCrossedPrompt.runningNow(this.model));
+            setupStands = org.traincontrol.gui.TailCrossedPrompt.sameSetup(session, getAutonomySession());
 
             final org.traincontrol.automation.Point landing = org.traincontrol.gui.TailCrossedPrompt.whereTheAnswerGoes(
                 org.traincontrol.gui.TailCrossedPrompt.runningNow(this.model), point, placed, tail, roadAtTheQuestion,

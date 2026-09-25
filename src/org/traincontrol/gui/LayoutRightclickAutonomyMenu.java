@@ -689,10 +689,11 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         //
                         // Asking was tried and is the wrong question here: on the diagram a user
                         // is pointing at a platform, not at one of the several Points that platform
-                        // became, and the sides mean nothing at that moment.  Any legal copy will
-                        // do - autonomy drives the train out and learns the real facing from where
-                        // it goes - so one is taken at random, and choosing a direction stays in
-                        // the autonomy editor, where directions are what the reader is looking at.
+                        // became, and the sides mean nothing at that moment.  The copy is the one
+                        // facing the way the train already faces, where the square can hold that
+                        // heading, and otherwise the first the build made - never a draw (Adam,
+                        // 2026-09-24, OB-296: "Yes, keep the train's heading.").  Turning it is the
+                        // facing item below.
                         //
                         // And if NO copy can leave, placing here is placing a train that cannot
                         // move.  Refused with a reason, rather than accepted and reported much
@@ -719,7 +720,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                     // Turn the standing train round.
                     //
-                    // Placing picks a way out at random, and a locomotive put down by hand is
+                    // Placing keeps the heading the train had, which may not be the one it has on the
+                    // railway now, and a locomotive put down by hand is
                     // pointing whichever way the setup last recorded - so there has to be a way to say
                     // "no, it faces the other way" without taking it off and putting it back.
                     //
@@ -1067,11 +1069,11 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     }
 
     /**
-     * Places the active locomotive on one of the copies it could leave from, chosen at random.
+     * Places the active locomotive on the copy it could leave from that faces the way it already faces (OB-296).
      *
-     * At random rather than always the first: the first is whichever side the build happened to walk
-     * in by, which is stable but arbitrary, and placing several trains along one platform would face
-     * them all the same way for no reason a reader could see.
+     * Adam, 2026-09-24: *"Yes, keep the train's heading."*  This took a copy at random, so the same train placed the same
+     * way faced either way - the one placement door OB-270, GUI-B1 and OB-284's rule had not reached.  The heading is
+     * read before the move, from the copy the train stands on (`facingOf`, CONF-B1), and the rule is the paste's.
      *
      * @param usable the copies a train can be driven away from
      */
@@ -1079,10 +1081,58 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     {
         if (usable.isEmpty()) return;
 
-        String name = usable.get(new java.util.Random().nextInt(usable.size()));
+        String loc = ui.getActiveLoc() == null ? null : ui.getActiveLoc().getName();
 
-        placeFacing(ui.getActiveLoc() == null ? null : ui.getActiveLoc().getName(), name,
-            session == null ? null : session.facingsFor(station).get(name));
+        java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> facings = session == null
+            ? new java.util.LinkedHashMap<String, org.traincontrol.automationui.TilePorts.Side>()
+            : session.facingsFor(station);
+
+        org.traincontrol.automationui.TilePorts.Side keep = session == null ? null
+            : session.facingOf(loc, org.traincontrol.gui.TailCrossedPrompt.runningNow(ui.getModel()));
+
+        String name = copyToPlaceOn(usable, facings, keep);
+
+        placeFacing(loc, name, facings.get(name));
+    }
+
+    /**
+     * The copy a train is put on by the right-click Place: of those it could leave from, the one facing the way it
+     * already faces, where the square can hold that heading; the one heading a single copy has; and otherwise the first
+     * the build made - the same answer every time (OB-296).  `AutonomySession.facingAfterAPaste` decides the heading, as it
+     * does for the paste.
+     *
+     * @param usable the copies a train can be driven away from, in the build's order
+     * @param facings each copy's heading, by name
+     * @param keep the heading the train has before the move, or null when none is known
+     * @return the copy to put it on, or null when there is none
+     */
+    static String copyToPlaceOn(java.util.List<String> usable,
+        java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> facings,
+        org.traincontrol.automationui.TilePorts.Side keep)
+    {
+        if (usable == null || usable.isEmpty()) return null;
+
+        java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> held = new java.util.LinkedHashMap<>();
+
+        for (String name : usable)
+        {
+            org.traincontrol.automationui.TilePorts.Side side = facings == null ? null : facings.get(name);
+
+            if (side != null) held.put(name, side);
+        }
+
+        org.traincontrol.automationui.TilePorts.Side intended =
+            org.traincontrol.automationui.AutonomySession.facingAfterAPaste(held, keep, null);
+
+        if (intended != null)
+        {
+            for (String name : usable)
+            {
+                if (intended == held.get(name)) return name;
+            }
+        }
+
+        return usable.get(0);
     }
 
     /**
@@ -1235,9 +1285,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 final org.traincontrol.base.Locomotive placed = landing == null ? null : landing.getCurrentLocomotive();
                 final java.util.List<org.traincontrol.automation.Edge> roadAtTheQuestion =
                     landing == null ? null : landing.getArrivedAlong();
-                final String configurationAsked = session.getStore().getActiveConfiguration();
-                final org.traincontrol.automation.Layout railwayAsked =
-                    org.traincontrol.gui.TailCrossedPrompt.runningNow(ui.getModel());
 
                 org.traincontrol.gui.TailCrossedPrompt.Answer answer =
                     org.traincontrol.gui.TailCrossedPrompt.askAfterPlacement(running, landing, tail,
@@ -1248,8 +1295,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY (TLW-A1), as the paste does - ONLY WHERE THE PLACEMENT
                 // STILL STANDS (TDU2-A1, TDU3-B1): the question waited with the window live, and the copy may hold another
                 // train now, or have been replaced by a rebuild.
-                setupStands = org.traincontrol.gui.TailCrossedPrompt.sameSetup(session, ui.getAutonomySession(),
-                    configurationAsked, railwayAsked, org.traincontrol.gui.TailCrossedPrompt.runningNow(ui.getModel()));
+                setupStands = org.traincontrol.gui.TailCrossedPrompt.sameSetup(session, ui.getAutonomySession());
 
                 final org.traincontrol.automation.Point answersTo = landing == null ? null
                     : org.traincontrol.gui.TailCrossedPrompt.whereTheAnswerGoes(

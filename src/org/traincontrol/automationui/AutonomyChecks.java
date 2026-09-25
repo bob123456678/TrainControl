@@ -69,6 +69,7 @@ public class AutonomyChecks
         private final TileKey tile;
         private final int count;
         private final int detail;
+        private final int third;
 
         Finding(Severity severity, String messageKey, String subject, TileKey tile)
         {
@@ -98,12 +99,34 @@ public class AutonomyChecks
         Finding(Severity severity, String messageKey, String subject, TileKey tile, int count,
             int detail)
         {
+            this(severity, messageKey, subject, tile, count, detail, 0);
+        }
+
+        /**
+         * The same, with a THIRD number: the figure a train is refused above at a platform (TDA-C10).
+         *
+         * @param third the third number, or zero when this finding has none
+         */
+        Finding(Severity severity, String messageKey, String subject, TileKey tile, int count,
+            int detail, int third)
+        {
             this.severity = severity;
             this.messageKey = messageKey;
             this.subject = subject;
             this.tile = tile;
             this.count = count;
             this.detail = detail;
+            this.third = third;
+        }
+
+        /**
+         * The third number, rendered as `{4}` - after the other two, so no existing message changes.
+         *
+         * @return the number, or zero when this finding has none
+         */
+        public int getThird()
+        {
+            return third;
         }
 
         /**
@@ -353,6 +376,23 @@ public class AutonomyChecks
     public static final String RUN_IN_SHORTER_THAN_THE_PLATFORM = "autosetup.ui.checkRunInShorterThanThePlatform";
 
     /**
+     * The same, with the figure a train is refused above on the shortest way in, where there is one (Adam, 2026-09-24,
+     * TDA-C10: *"Add the refusing figure where there is one."*).  `Layout.whyTooLongForThisRoute` admits a longer train
+     * only as far as the measured route in holds it (FR-087), so the one sentence was untrue of a train setting off close
+     * behind - on his railway, a four-unit train from TopR1ParkShort at TopMainR1Inter.  `{4}` is the figure.
+     */
+    public static final String RUN_IN_SHORTER_THAN_THE_PLATFORM_REFUSED =
+        "autosetup.ui.checkRunInShorterThanThePlatformRefused";
+
+    /**
+     * A parking berth whose track before its stop - the switch, turnout or crossing behind it - was all answered 0, so it
+     * takes no train that comes in that way (Adam, 2026-09-24, TDA4-C2: *"Give it its own sentence as a warning, make it
+     * sound intuitive (the effective specified length of the track is 0)"*).  A WARNING, as the half-measured berth is:
+     * trains are refused there today.
+     */
+    public static final String BERTH_TRACK_GIVEN_NO_LENGTH = "autosetup.ui.checkBerthTrackGivenNoLength";
+
+    /**
      * The other end of the same sum: a station that will take a train of any length (FR-046).
      *
      * Said separately because the two are set in different places by different people - the length on
@@ -415,7 +455,9 @@ public class AutonomyChecks
      * @param repeatedSensorPages included pages repeating another included page's s88 (OB-150)
      * @param withoutMaxLength station squares with no maximum train length
      * @param shortRunIns stations whose measured run in is shorter than their stated maximum, each
-     *        mapped to {the stated maximum, the smallest measured room} (Adam, 2026-09-11)
+     *        mapped to {the stated maximum, the smallest measured room} (Adam, 2026-09-11), and at a platform the
+     *        figure a train is refused above third, where there is one (TDA-C10)
+     * @param berthsGivenNoRoom parking berths whose track before the stop was all answered 0 (TDA4-C2)
      * @param terminiWithTwoWaysIn stations every train must turn round at that have more than one
      *        unbarred way in, mapped to how many (MT-361)
      *
@@ -430,7 +472,7 @@ public class AutonomyChecks
         Set<TileKey> facingsImpossible, Map<TileKey, Set<TilePorts.Side>> barred,
         Set<TileKey> closed,
         Set<TileKey> withoutTrainLength, Set<TileKey> withoutMaxLength,
-        Map<TileKey, int[]> shortRunIns, Map<TileKey, Integer> halfMeasured,
+        Map<TileKey, int[]> shortRunIns, Set<TileKey> berthsGivenNoRoom, Map<TileKey, Integer> halfMeasured,
         Map<TileKey, Integer> terminiWithTwoWaysIn,
         Map<TileKey, String> repeatedSensorPages, Map<TileKey, Integer> reversalsWithoutLength,
         Set<TileKey> notAutoDestinations,
@@ -445,7 +487,7 @@ public class AutonomyChecks
 
         findings.addAll(checkDuplicateLocomotives(placedLocomotives));
         findings.addAll(checkLengths(reducer, withoutTrainLength, withoutMaxLength, shortRunIns,
-            halfMeasured, placedLocomotives, notAutoDestinations));
+            berthsGivenNoRoom, halfMeasured, placedLocomotives, notAutoDestinations));
         findings.addAll(checkRepeatedSensorPages(repeatedSensorPages));
         findings.addAll(checkTermini(reducer, terminiWithTwoWaysIn));
 
@@ -1091,10 +1133,23 @@ public class AutonomyChecks
      * @return one warning per square
      */
     private static List<Finding> checkLengths(GraphReducer reducer, Set<TileKey> withoutTrainLength,
-        Set<TileKey> withoutMaxLength, Map<TileKey, int[]> shortRunIns,
+        Set<TileKey> withoutMaxLength, Map<TileKey, int[]> shortRunIns, Set<TileKey> berthsGivenNoRoom,
         Map<TileKey, Integer> halfMeasured, Map<TileKey, String> placed, Set<TileKey> notAutoDestinations)
     {
         List<Finding> findings = new ArrayList<>();
+
+        // THE BERTH GIVEN NO ROOM (TDA4-C2): it takes no train that comes in over the track answered 0 - said first with the
+        // half-measured berth, because both stop trains today.
+        if (berthsGivenNoRoom != null)
+        {
+            for (TileKey berth : berthsGivenNoRoom)
+            {
+                GraphReducer.ReducedPoint point = reducer == null ? null : reducer.getPoints().get(berth);
+
+                findings.add(new Finding(Severity.WARNING, BERTH_TRACK_GIVEN_NO_LENGTH,
+                    point == null ? String.valueOf(berth) : point.getName(), berth));
+            }
+        }
 
         // THE BERTH THAT TAKES NOTHING AT ALL, said first because it is the one that stops trains today.
         if (halfMeasured != null)
@@ -1143,10 +1198,14 @@ public class AutonomyChecks
                 // REFUSED AT A BERTH, STANDING ACROSS THE SWITCH AT A PLATFORM (MT-555): the sentence says which.
                 boolean berth = notAutoDestinations != null && notAutoDestinations.contains(station.getKey());
 
+                // AND AT A PLATFORM, THE FIGURE A TRAIN IS REFUSED ABOVE, where there is one (TDA-C10).
+                int refused = !berth && station.getValue().length > 2 ? station.getValue()[2] : 0;
+
                 findings.add(new Finding(Severity.NOTICE,
-                    berth ? RUN_IN_SHORTER_THAN_THE_BERTH : RUN_IN_SHORTER_THAN_THE_PLATFORM,
+                    berth ? RUN_IN_SHORTER_THAN_THE_BERTH
+                        : refused > 0 ? RUN_IN_SHORTER_THAN_THE_PLATFORM_REFUSED : RUN_IN_SHORTER_THAN_THE_PLATFORM,
                     point == null ? String.valueOf(station.getKey()) : point.getName(),
-                    station.getKey(), station.getValue()[0], station.getValue()[1]));
+                    station.getKey(), station.getValue()[0], station.getValue()[1], refused));
             }
         }
 

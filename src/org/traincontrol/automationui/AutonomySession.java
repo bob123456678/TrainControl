@@ -3288,11 +3288,11 @@ public class AutonomySession
             {
                 if (!arriving.getEnd().equals(tile)) continue;
 
-                // NOT A SIDE NO TRAIN ARRIVES BY (MT-552; Adam, 2026-09-24, of RampDown and BottomMainPost: *"they only
-                // accept arrivals from one side"*).  A barred side is an approach no train uses, so nothing about its
-                // track can refuse one - and the walk the rule stands for never starts from it.
-                if (getBarredArrivals(tile).contains(arriving.getEntrySide())) continue;
-
+                // A SIDE NO TRAIN STOPS FROM IS STILL ASKED ABOUT (Adam, 2026-09-24, TDA-C8: *"Arrivals THAT STOP THERE
+                // should only be allowed from the configured side(s).  Turning shouldn't need to factor this in, since
+                // the former would govern the behavior."*).  A barred side keeps its turning copy, so a train may come in
+                // that way and turn, and the room rule judges that turn over this stretch.  The two berth checks skip a
+                // barred side, because nothing stops there; this one does not.
                 anApproachExists = true;
 
                 // AN ANSWERED 0 IS NOT MISSING (Adam, 2026-09-23: "stop listing answered zeros as missing").  The
@@ -4434,7 +4434,23 @@ public class AutonomySession
             .withBarredArrivals(barredArrivals())
             .withProtectingSignals(protectingSignalNames())
             .withEntrySignals(entrySignalNames())
-            .withBlockingPoints(store.getBlockingPoints());
+            .withBlockingPoints(store.getBlockingPoints())
+            .withPieceCuts(pieceCuts());
+    }
+
+    /**
+     * The squares that cut a stretch into the pieces Mass Assign Lengths asks for: every switch and every square two
+     * roads cross (OB-297).
+     *
+     * @return the squares
+     */
+    private java.util.Set<TileKey> pieceCuts()
+    {
+        java.util.Set<TileKey> out = new LinkedHashSet<>(switchesALengthRuleReads());
+
+        out.addAll(sharedSquaresALengthRuleReads());
+
+        return out;
     }
 
     /**
@@ -5992,6 +6008,11 @@ public class AutonomySession
         }
 
 
+        // The run-in notices and the berths given no room, from one walk (TDA4-C2).
+        java.util.Set<TileKey> givenNoRoom = new LinkedHashSet<>();
+
+        java.util.Map<TileKey, int[]> runIns = runInFigures(givenNoRoom);
+
         return AutonomyChecks.run(graph, reducer, termini, getLabelledStationTiles(), pointless,
             trapped, covered, placedLocomotives(), shutStations(),
             mayTurnTiles(), mandatoryTurnTiles(), homeTiles(), signalsThatAreGone(),
@@ -6004,7 +6025,7 @@ public class AutonomySession
             shutTiles(),
             // The two halves of the length rule (FR-046), and the two of them disagreeing about one
             // platform (Adam, 2026-09-11).
-            placedTrainsWithoutLength(), stationsWithoutMaxLength(), runInsShorterThanTheBerth(),
+            placedTrainsWithoutLength(), stationsWithoutMaxLength(), runIns, givenNoRoom,
             // AND THE HALF-MEASURED APPROACH, which closes a berth to everything until it is finished
             // (Adam, 2026-09-19, on RTX-C2: *"we want clear warnings to the user"*).
             stationsWithAHalfMeasuredApproach(),
@@ -9804,8 +9825,14 @@ public class AutonomySession
      * measures the wrong stretch.  For a parking berth the number is the berth rule's where that stops first - at a
      * switch or a crossing between the berth and the room walk's end, or on a leg with no switch at all (TDA2-C6,
      * TDA3-C2) - and only where the rule refuses there: something on the leg is measured, and another road runs over
-     * the square (TDA5-C1).  It is 0 where nothing before that stop is measured and its squares were answered 0;
+     * the square (TDA5-C1).  Where nothing before that stop is measured and its squares were answered 0, the
+     * berth takes no train that way, and that is a warning of its own (`runInFigures`, TDA4-C2), not this notice;
      * unanswered, they are the half-measured notice's to name, and this says nothing (TDA3-C1).
+     *
+     * **And at a platform, the figure a train is refused above, where there is one** (Adam, 2026-09-24, TDA-C10: *"Add the
+     * refusing figure where there is one."*).  A train longer than the room stands across the switch as far as the
+     * measured route in holds it (FR-087), so one longer than the shortest way in - from the station or turn nearest
+     * behind - is refused (`shortestMeasuredWayIn`).  Given only where it is under the stated maximum.
      *
      * **An edge crossing no switch is skipped unless the train turns at its far end** - or, for a parking berth, a
      * crossing on it ends the berth rule's room (above).  There the guard
@@ -9821,11 +9848,30 @@ public class AutonomySession
      * all has decided not to model lengths - Adam's own condition, *"a railway that measures nothing has
      * decided not to model them"*.
      *
-     * @return the station squares, each mapped to {the stated maximum, the smallest measured room}
+     * @return the station squares, each mapped to {the stated maximum, the smallest measured room} - and at a platform
+     *         with a refusing figure under its maximum, that figure third
      */
     java.util.Map<TileKey, int[]> runInsShorterThanTheBerth()
     {
+        return runInFigures(null);
+    }
+
+    /**
+     * The walk behind `runInsShorterThanTheBerth`, and behind the parking berths that take no train on a way in because
+     * every square before the stop there was answered 0 on purpose (Adam, 2026-09-24, TDA4-C2: *"Give it its own sentence
+     * as a warning, make it sound intuitive (the effective specified length of the track is 0)"*) - which the run-in
+     * notice had said as 0, in a sentence written for a berth that holds something, at the grade for nothing wrong.  The
+     * findings take both from one pass.
+     *
+     * @param givenNoRoom where to put the berths given no room, or null when nobody asks
+     * @return what `runInsShorterThanTheBerth` returns
+     */
+    private java.util.Map<TileKey, int[]> runInFigures(java.util.Set<TileKey> givenNoRoom)
+    {
         java.util.Map<TileKey, int[]> out = new LinkedHashMap<>();
+
+        // Each edge's shortest measured way in, worked out once for every platform (TDA-C10).
+        java.util.Map<GraphReducer.ReducedEdge, Integer> waysIn = new java.util.HashMap<>();
 
         if (reducer == null || store == null) return out;
 
@@ -9842,6 +9888,9 @@ public class AutonomySession
             if (max <= 0) continue;
 
             int worst = -1;
+
+            // The figure a train is refused above at a platform, on its shortest way in (TDA-C10).
+            int refusedAbove = -1;
 
             for (GraphReducer.ReducedEdge arriving : reducer.getEdges())
             {
@@ -9883,6 +9932,15 @@ public class AutonomySession
 
                         room = before[0];
                         theBerthRulesFigure = true;
+
+                        // NOTHING BEFORE THE STOP, ANSWERED SO (TDA4-C2): the berth takes no train that comes in this
+                        // way - a warning of its own, not this notice's "that may be right".
+                        if (room == 0)
+                        {
+                            if (givenNoRoom != null) givenNoRoom.add(square);
+
+                            continue;
+                        }
                     }
                 }
 
@@ -9901,12 +9959,104 @@ public class AutonomySession
                 if ((room <= 0 && !theBerthRulesFigure) || room >= max) continue;
 
                 if (worst < 0 || room < worst) worst = room;
+
+                // AND AT A PLATFORM, THE SHORTEST WAY IN (TDA-C10): a train longer than that, setting off from the
+                // station or turn nearest behind, is refused where the notice says it stands across the switch.
+                if (isAutoDestination(square))
+                {
+                    int wayIn = shortestMeasuredWayIn(arriving, waysIn, new java.util.HashSet<GraphReducer.ReducedEdge>());
+
+                    if (wayIn != Integer.MAX_VALUE && (refusedAbove < 0 || wayIn < refusedAbove)) refusedAbove = wayIn;
+                }
             }
 
-            if (worst >= 0) out.put(square, new int[] {max, worst});
+            if (worst >= 0)
+            {
+                out.put(square, refusedAbove > 0 && refusedAbove < max
+                    ? new int[] {max, worst, refusedAbove} : new int[] {max, worst});
+            }
         }
 
         return out;
+    }
+
+    /**
+     * The measured track on the shortest way in along this edge - what `Layout.measuredRouteIn` counts for a train that
+     * sets off from the nearest square it can (TDA-C10).
+     *
+     * Leg by leg back from the edge while each is measured - an answered 0 is (TDU-C6) - and no further than a station,
+     * where a train may set off, or a square trains turn round at, where the route in stops; the smallest over the legs a
+     * train can run through onto this one.  So a train longer than this, setting off from there, is refused, where one
+     * coming from further back over measured track may be admitted.  A way no train can come - no station or turn behind
+     * it on any road - has no figure.
+     *
+     * @param arriving the edge
+     * @param known the answers already worked out, by edge
+     * @param walking the edges on the way back now, so a loop ends the walk
+     * @return the units, or `Integer.MAX_VALUE` when no train can come this way
+     */
+    private int shortestMeasuredWayIn(GraphReducer.ReducedEdge arriving,
+        java.util.Map<GraphReducer.ReducedEdge, Integer> known, java.util.Set<GraphReducer.ReducedEdge> walking)
+    {
+        Integer done = known.get(arriving);
+
+        if (done != null) return done;
+
+        if (!walking.add(arriving)) return Integer.MAX_VALUE;
+
+        boolean measured = legIsMeasured(arriving);
+
+        TileKey from = arriving.getStart();
+
+        int answer;
+
+        if (store.isStation(from) || isTurnAround(from))
+        {
+            answer = measured ? Math.max(0, arriving.getLength()) : 0;
+        }
+        else
+        {
+            int before = Integer.MAX_VALUE;
+
+            for (GraphReducer.ReducedEdge into : reducer.getEdges())
+            {
+                if (!into.getEnd().equals(from)) continue;
+
+                // THROUGH THE SQUARE, not back out of the side it came in by.
+                if (into.getEntrySide() != null && arriving.getExitSide() != null
+                    && into.getEntrySide() != arriving.getExitSide().opposite()) continue;
+
+                before = Math.min(before, shortestMeasuredWayIn(into, known, walking));
+            }
+
+            answer = before == Integer.MAX_VALUE ? Integer.MAX_VALUE
+                : measured ? Math.max(0, arriving.getLength()) + before : 0;
+        }
+
+        walking.remove(arriving);
+
+        known.put(arriving, answer);
+
+        return answer;
+    }
+
+    /**
+     * Whether a leg is measured as the railway will read it: a length, or every place on it answered 0 or taking none -
+     * `Edge.isMeasured` on the built railway (TDU-C6).
+     *
+     * @param leg the leg
+     * @return true when it is measured
+     */
+    private boolean legIsMeasured(GraphReducer.ReducedEdge leg)
+    {
+        if (leg.getLength() > 0) return true;
+
+        for (GraphReducer.Place place : reducer.placesAlong(leg))
+        {
+            if (!place.isAnswered()) return false;
+        }
+
+        return true;
     }
 
     /**
