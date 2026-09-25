@@ -721,6 +721,16 @@ public class testAutoLayout
             assertEquals(Layout.measuredRoomAtTheEndOf(java.util.Arrays.asList(ab), loc), Integer.valueOf(0), "a leg"
                 + " answered 0 is read as a room nobody measured, so nothing is judged there");
 
+            // AND WHERE THE WALK STOPS AT A LEG NOBODY MEASURED, the answered 0 it counted first is still a room of 0.
+            layout.createPoint("AZ_D", true, "9");
+
+            Edge da = layout.createEdge("AZ_D", "AZ_A");
+
+            da.setPlaces(java.util.Arrays.asList("AZ:6"), java.util.Arrays.asList(0));
+
+            assertEquals(Layout.measuredRoomAtTheEndOf(java.util.Arrays.asList(da, ab), loc), Integer.valueOf(0), "the room"
+                + " walk counted a leg answered 0, stopped at one nobody measured, and called the room unknown");
+
             // A LEG NOBODY ANSWERED STILL ENDS BOTH.
             ab.setAnsweredPlaces(java.util.Collections.<String>emptyList());
 
