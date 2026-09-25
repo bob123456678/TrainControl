@@ -32,14 +32,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-468](#mt-468) | 2026-09-19 | Every screen still finds its text after 239 unused message keys were removed | fixed unvalidated | UIX-C4 |
 | [MT-492](#mt-492) | 2026-09-24 | Return Home finds a plan on a crowded railway | fixed unvalidated | OB-230, AMH-C1 |
 | [MT-494](#mt-494) | 2026-09-24 | After a run, the Facing menu turns the train that is there | fixed unvalidated | TDY4-C5 |
-| [MT-495](#mt-495) | 2026-09-24 | A train turned at Tunnel is not sent into a parked train's tail | fixed unvalidated | OB-285, AUT2-C2 |
 | [MT-499](#mt-499) | 2026-09-24 | With autonomy stopped, the locomotive list gives the reasons for a train sent by hand | fixed unvalidated | the REG4 lead of the 2026-09-23 review |
 | [MT-506](#mt-506) | 2026-09-24 | A route fired by its sensor skips only the switch under a train, and runs the rest | fixed unvalidated | MT-247 |
 | [MT-507](#mt-507) | 2026-09-24 | Cancel on a route that would switch track under a train cancels all of it, from either door | fixed unvalidated | MT-247 |
-| [MT-512](#mt-512) | 2026-09-24 | On a layout with nothing set up, the Autonomy menu offers Import | fixed unvalidated | MT-380 |
-| [MT-513](#mt-513) | 2026-09-24 | Importing a setup onto a layout with fewer pages warns once, naming the missing pages | fixed unvalidated | MT-380 |
-| [MT-514](#mt-514) | 2026-09-24 | After that import, opening the autonomy editor asks nothing | fixed unvalidated | MT-380 |
-| [MT-517](#mt-517) | 2026-09-24 | Why Not Moving? on Manual says a terminus refuses a train that cannot reverse | fixed unvalidated | MT-444 |
 | [MT-533](#mt-533) | 2026-09-24 | The train-length prompt takes typing without a click | fixed unvalidated | MT-474 |
 | [MT-548](#mt-548) | 2026-09-24 | On a Central Station layout the Autonomy menu opens, and only the download and Documentation can be chosen | fixed unvalidated | OB-254, OB-093, MT-544 |
 | [MT-566](#mt-566) | 2026-09-24 | The locomotive train-length walk is never greyed, and counts | fixed unvalidated | MT-533 |
@@ -48,11 +43,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-570](#mt-570) | 2026-09-24 | Why not Moving? outlines the squares with trains while it waits | fixed unvalidated | FR-102, MT-516 |
 | [MT-575](#mt-575) | 2026-09-24 | From the autonomy editor the tail question is the list | fixed unvalidated | FR-100, TDU-C1 |
 | [MT-576](#mt-576) | 2026-09-24 | A tail answer given after the placement changed is written where the train now stands, or not at all | fixed unvalidated | TDU2-A1, TDU3-B1 |
-| [MT-584](#mt-584) | 2026-09-25 | A train standing on the watched square closes a square trains only pass | fixed unvalidated | OB-295, TDA-C9 |
 | [MT-586](#mt-586) | 2026-09-25 | A stretch answered 0 lets a train in when the total track holds it | fixed unvalidated | ADU-C7, TDU-C6 |
 
-Everything else - 563 of 586 - needs nothing from you unless the area changes again:
-453 **fixed validated** and 110 **superseded**.
+Everything else - 569 of 586 - needs nothing from you unless the area changes again:
+453 **fixed validated** and 116 **superseded**.
 
 ---
 
@@ -25688,7 +25682,7 @@ the railway's train deliberately different.  That it reads right after a real ru
 
 ### MT-495 - 2026-09-24 - A train turned at Tunnel is not sent into a parked train's tail
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-285, AUT2-C2
 
 **Written:** 2026-09-24
@@ -25720,6 +25714,10 @@ that train has gone.  That the refusal reads right on screen is what only you ca
 **Claude, 2026-09-24.**
 
 **To run now:** in step 3, right-click the turned train on the track diagram and look for BottomMainAPre.  **Expect:** not offered while the train in TunnelRightPark is 3 units; offered again once its length is back.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `ui.testWhereHisTrainsMayBeSent.testATurnedTrainIsNotOfferedTheWayAcrossAParkedTail` on the real window over a sandbox copy of your railway, with your own trains from the test run's copy of your locomotive data; what is offered is read off the track diagram's right-click list, and why off the autonomy editor's Why not Moving?.  It stands a train at Tunnel come in from the south and facing south, and a train in TunnelRightPark come in over the points at column 7.  At one unit (the control) the right-click on the turned train offers a way south through BottomMainAPre; at three units, lying back across the points, it offers none.  Read as every route the right-click offers, because BottomMainAPre is not a station and so is never a destination's name.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -26229,7 +26227,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-512 - 2026-09-24 - On a layout with nothing set up, the Autonomy menu offers Import
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-380
 
 **Written:** 2026-09-24
@@ -26245,13 +26243,17 @@ Validated on your *Works* of 2026-09-24.
 
 - Import... is there and can be chosen.
 
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testASetupMovesToAOnePageLayout.testHisSetupGoesOntoTheOnePageLayout` exports the configuration in use from a sandbox copy of your railway, as Autonomy > Export writes it, and opens the real window on a sandbox COPY of the one-page layout - so the shipped folder is never written into, which running the steps as written would do (the import saves a setup there).  It opens the Autonomy menu and asserts Import... is there and live.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
+
 ---
 
 <a id="mt-513"></a>
 
 ### MT-513 - 2026-09-24 - Importing a setup onto a layout with fewer pages warns once, naming the missing pages
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-380
 
 **Written:** 2026-09-24
@@ -26267,13 +26269,17 @@ Validated on your *Works* of 2026-09-24.
 
 - One warning, naming the four pages this layout does not have.
 
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testASetupMovesToAOnePageLayout.testHisSetupGoesOntoTheOnePageLayout` exports the configuration in use from a sandbox copy of your railway, as Autonomy > Export writes it, and opens the real window on a sandbox COPY of the one-page layout - so the shipped folder is never written into, which running the steps as written would do (the import saves a setup there).  It chooses Import..., your file and the name suggested, and asserts exactly one warning appeared, naming 2 - Bottom, 3 - Top Parking, 4 - Combined and 5 - Test and not 1 - Main, and no message saying the setup was left alone.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
+
 ---
 
 <a id="mt-514"></a>
 
 ### MT-514 - 2026-09-24 - After that import, opening the autonomy editor asks nothing
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-380
 
 **Written:** 2026-09-24
@@ -26289,6 +26295,10 @@ Validated on your *Works* of 2026-09-24.
 **Expected**
 
 - No message saying the setup was left alone, at either opening.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testASetupMovesToAOnePageLayout.testHisSetupGoesOntoTheOnePageLayout` exports the configuration in use from a sandbox copy of your railway, as Autonomy > Export writes it, and opens the real window on a sandbox COPY of the one-page layout - so the shipped folder is never written into, which running the steps as written would do (the import saves a setup there).  After the import it opens the autonomy editor from Autonomy > Edit Autonomy, closes it with its close box, and opens it again, and asserts no message saying the setup was left alone appeared either time - with the once-only memory of that message cleared first, so it could not be quiet only because it had been said before.  **What makes this true today:** the editor, opened and closed without a change, saves nothing, so nothing can be reported at those openings; what the message would be about - a setup the import left holding pages this layout does not have - the test catches at the import itself (made to happen on purpose, it is caught there).  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -26368,7 +26378,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-517 - 2026-09-24 - Why Not Moving? on Manual says a terminus refuses a train that cannot reverse
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-444
 
 **Written:** 2026-09-24
@@ -26385,6 +26395,10 @@ Validated on your *Works* of 2026-09-24.
 
 - Step 2: BottomMainC is under "Stations the train cannot be sent to right now", saying a terminus is not allowed because the train is not reversible.
 - Step 3: the right-click menu does not offer BottomMainC.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `ui.testWhereHisTrainsMayBeSent.testATerminusIsRefusedToATrainThatCannotReverse` on the real window over a sandbox copy of your railway, with your own trains from the test run's copy of your locomotive data; what is offered is read off the track diagram's right-click list, and why off the autonomy editor's Why not Moving?.  It stands EN57-947 at BottomSecondary, sets Path Type to Manual, presses Why Not Moving? and clicks it, and asserts BottomMainC is listed under "Stations the train cannot be sent to right now" with "Terminus disallowed because EN57-947 is not reversible"; and that the right-click list does not offer BottomMainC.  **One thing to know:** in your locomotive data as it is today EN57-947 is marked as able to reverse, so the steps as written would not show the refusal at all; the test marks it unable to reverse first, as the locomotive window would, and puts it back after.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -28649,7 +28663,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-584 - 2026-09-25 - A train standing on the watched square closes a square trains only pass
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-295, TDA-C9
 
 **Written:** 2026-09-25
@@ -28675,6 +28689,10 @@ Validated on your *Works* of 2026-09-24.
 **Claude, 2026-09-25.**
 
 **The dialog's sentence** (2026-09-25, ADU2-C6).  At step 2 the Unavailable While Occupied dialog now reads *Trains will not be routed to or through BottomMainAPre while any of these is occupied or has a route running into it* - what the rule does since your answer.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `ui.testWhereHisTrainsMayBeSent.testATrainOnTheWatchedSquareClosesBottomMainAPre` on the real window over a sandbox copy of your railway, with your own trains from the test run's copy of your locomotive data; what is offered is read off the track diagram's right-click list, and why off the autonomy editor's Why not Moving?.  It opens BottomMainAPre's Unavailable While Occupied window from its right-click menu, ticks TunnelLeftPark and presses OK, and rebuilds the running railway as closing the editor saving does; stands another train on TunnelLeftPark and 75 407 DB on Tunnel facing BottomMainA; asserts BottomMainA is not offered and Why not Moving? says "BottomMainAPre is not available while TunnelLeftPark is occupied."; takes the train off TunnelLeftPark and asserts BottomMainA is offered again.  The setting is put back after, so the backup steps are not needed.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
