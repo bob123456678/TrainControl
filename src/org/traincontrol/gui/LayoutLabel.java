@@ -1786,7 +1786,7 @@ public final class LayoutLabel extends JLabel
         if (getWidth() <= 0 || getHeight() <= 0) return null;
 
         // THE BLOCKED ROADS, NOT THE TRAIN'S (OB-208).  The fade is the grey, and since Adam's ruling of
-        // 2026-09-23 the grey is its own answer - the whole of every covered edge, per road - rather than the
+        // 2026-09-23 the grey is its own answer - the places the tails claim, per road (OB-280) - rather than the
         // orange's squares.  Asking the orange here would fade the whole of a double curve the train is not
         // on, over which a covered edge runs on one arc: the confusion MT-309 was about.
         java.util.Set<org.traincontrol.automationui.TileGraph.RouteId> roads = tcUI.blockedRoutesAt(square);

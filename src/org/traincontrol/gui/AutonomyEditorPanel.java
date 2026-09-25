@@ -3862,8 +3862,9 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * The "farthest sensor the tail crossed" choices for the train standing here, where the answer matters.
      *
-     * Nothing is added unless `TailCrossedPrompt.wouldAsk` says a junction behind the train has two roads back and the
-     * tail has crossed a sensor on at least one of them: elsewhere every answer describes the same track.  The ticked entry is the recorded road -
+     * Nothing is added unless `TailCrossedPrompt.wouldAsk` says a junction behind the train has two roads back that put
+     * the tail on different track - it has crossed a sensor on one of them, or passed the switch where they part
+     * (MT-477): elsewhere every answer describes the same track.  The ticked entry is the recorded road -
      * the running layout's, since that is what blocks track - matched as the longest choice it ends with, because a
      * driven train's road starts wherever it set off.
      *
@@ -9863,8 +9864,8 @@ public class AutonomyEditorPanel extends JPanel
      * session shares it over the piece's squares (Adam, 2026-09-16: per stretch).  Then every switch on the page that has
      * no length is outlined and one turnout length is asked for, given to each (Adam: "One length for all switches").
      *
-     * OK, Skip and Cancel as in Name Everything; Escape stops, like Cancel (MAL-B4).  0 is refused with a sentence
-     * saying why - it is the same as no length at all - and asked again.  `setupChanged` once at the end, for the
+     * OK, Skip and Cancel as in Name Everything; Escape stops, like Cancel (MAL-B4).  0 is an answer - a stretch with
+     * no length, kept apart from one nobody has measured (OB-274).  `setupChanged` once at the end, for the
      * running layout; the session itself rebuilds on every write, as it does when Name Everything names a square.
      */
     private void massAssignLengths()

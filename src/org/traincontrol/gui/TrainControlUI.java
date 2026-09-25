@@ -7411,8 +7411,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         // The session's rule, which every door that puts a train down asks (GUI-B1, TDY2-A1): a copy facing that way,
-        // one trains may arrive at first (MT-394), the plain one before its turning twin.  The doors only ever ask it
-        // for a facing such a copy holds - `placeableFacings` - so for them it never falls back to a barred copy.
+        // one trains may arrive at first (MT-394), the plain one before its turning twin.  The doors ask it for a facing
+        // among `placeableFacings`, which since OB-284 are the copies a train may LEAVE by - so where only a copy no train
+        // arrives at faces that way, this falls back to it, which is how a paste keeps a train facing the way it was.
         return getAutonomySession().copyFacing(square, facing, this.model.getAutoLayout());
     }
 
@@ -7546,9 +7547,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * *"'train is here' should also mean 'track is blocked' - that is the whole point.  it's the same
      * as greying out edges, just in a different way."*  `coveredTrack` above says where a train IS and
-     * is as long as the train; this says what its presence has made unusable, and is the whole edge -
-     * which is what `Layout.edgesCoveredByStandingTrains` actually refuses.  Drawn, the two together
-     * make the picture and the guard agree again.
+     * is as long as the train; this says what its presence has made unusable: the squares its tail
+     * claims, which is what routing refuses (OB-280, `AutonomySession.routesBlockedByStandingTrains`).
+     * Drawn, the two together make the picture and the guard agree again.
      *
      * **AT IDLE AS WELL AS DURING A RUN** (W7B-B1, Adam 2026-09-09: *"yes, this greyout should appear
      * at idle and be regenerated if a placement or train/track length is changed."*).  This was empty
@@ -7557,8 +7558,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * track this said was free.  `workOutCoveredTrack` holds the argument.
      *
      * **Per ROAD, like the covered set** (OB-208).  Since Adam's ruling of 2026-09-23 - *"orange shows where
-     * the train is, gray shows what's blocked"* - this is the whole of every covered edge again rather than
-     * the orange's own squares, and a double curve on such an edge must fade only the arc the edge runs over.
+     * the train is, gray shows what's blocked"* - this is the grey's own answer rather than the orange's
+     * squares: the places the tails claim (OB-280; the whole of every covered edge from OB-208 until then),
+     * and a double curve fades only the road the claim is on.
      *
      * Cached, volatile and replaced wholesale, for the reasons the covered set gives above.
      */

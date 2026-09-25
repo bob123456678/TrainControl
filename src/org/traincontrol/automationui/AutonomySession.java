@@ -6929,22 +6929,14 @@ public class AutonomySession
      * tiles just like blocked edges while autonomy is running?  That plus the line, drawn and
      * refreshed carefully, should do the trick."*
      *
-     * **The whole edge, which is what routing actually refuses.**  `routesCoveredByStandingTrains`
-     * walks back only as far as the train reaches, because it answers "where is the train"; this one
-     * answers "what may not be used", and the railway's answer to that is per EDGE - a train lying
-     * across any part of a segment makes the whole segment impassable.  Between the two marks the
-     * picture and the guard agree again, which they had not since the wash was removed.
+     * **What routing actually refuses: the squares standing trains claim** (OB-280).  `routesCoveredByStandingTrains`
+     * answers "where is the train"; this one answers "what may not be used" - the places the runtime's own tail walk
+     * claims, which is what `isPathClear` refuses a path over.  It was the whole of every covered edge from OB-208 until
+     * OB-280; `routesBlockedByStandingTrains` says why that was wrong.
      *
-     * **Not restated, asked of the railway.**  `Layout.edgesCoveredByStandingTrains` decides which
-     * edges a train covers - one walk, three rulings - and this only translates that answer into the
-     * squares the diagram draws, through the same `pathBetween` the narrow answer uses.  Deriving it a
-     * second time from the reducer would be quicker and would be the mistake this codebase keeps
-     * making: two statements of one question that drift.
-     *
-     * **The endpoint squares are excluded**, which is `pathBetween`'s own rule and Adam's ruling about
-     * the covered set: *"edges, because the points are technically unoccupied"*.  A train standing at
-     * a sensor already shows as standing there, and greying the platform it is on would say the
-     * platform is blocked by something else.
+     * **Not restated, asked of the railway.**  `Layout.placesCoveredByStandingTrains` decides which places a train
+     * claims - one walk - and this only translates them into squares.  Deriving it a second time from the reducer would
+     * be the mistake this codebase keeps making: two statements of one question that drift.
      *
      * WHILE AUTONOMY IS RUNNING is not decided here.  This says what is blocked; whether that is worth
      * drawing is a question about the window's state, and `TrainControlUI.refreshCoveredTrack` is
