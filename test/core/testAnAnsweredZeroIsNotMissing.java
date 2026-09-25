@@ -203,6 +203,118 @@ public class testAnAnsweredZeroIsNotMissing
         assertRefusedAbove("ParkingTrack12", "LowerFront", 4);
     }
 
+    /**
+     * The editor's Worth tidying list, as the autonomy editor builds it over his frozen railway, says what MT-559 and
+     * MT-583 ask Adam to read (Adam, 2026-09-25: automated tests supersede the MTs they answer).
+     *
+     * - MT-559: BottomMainA, Tunnel, BottomInnerOtherside, LowerFront and TopMainR1Inter each say that a longer train
+     *   stands across the switch and may block other parts of the layout; none says it is refused but for the next line.
+     * - MT-583: after that sentence, TopMainR1Inter says a train longer than 3 coming in the shortest way is refused
+     *   instead, and LowerFront the same with 4; the other three give no such figure.
+     *
+     * Read off the list model the panel fills (`refresh`), under the Worth tidying heading - the lines on screen.
+     *
+     * MUTATION: drop the refusing figure from the sentence, put a platform's notice under another heading, or give a
+     * platform the berth's "is refused" notice, and this fails.
+     *
+     * @throws Exception from the panel or the reflection
+     */
+    @Test
+    public void testTheWorthTidyingListSaysWhatEachPlatformDoes() throws Exception
+    {
+        org.testng.SkipException notEnglish = null;
+
+        if (!I18n.t("autosetup.ui.headingNotices").startsWith("Worth tidying"))
+        {
+            notEnglish = new org.testng.SkipException("the sentences are checked in English, and the bundle in use is not");
+        }
+
+        if (notEnglish != null) throw notEnglish;
+
+        org.traincontrol.gui.AutonomyEditorPanel panel = new org.traincontrol.gui.AutonomyEditorPanel(session, null, () -> { });
+
+        panel.refresh();
+
+        java.lang.reflect.Field field = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("findingsModel");
+
+        field.setAccessible(true);
+
+        javax.swing.ListModel<?> model = (javax.swing.ListModel<?>) field.get(panel);
+
+        // THE WORTH TIDYING SECTION: its heading, and the rows under it up to the next heading.
+        java.util.List<String> notices = new java.util.ArrayList<>();
+        java.util.List<String> everything = new java.util.ArrayList<>();
+
+        boolean inNotices = false;
+
+        for (int i = 0; i < model.getSize(); i++)
+        {
+            String row = String.valueOf(model.getElementAt(i));
+
+            everything.add(row);
+
+            if (!row.startsWith("   "))
+            {
+                inNotices = row.startsWith("Worth tidying");
+
+                continue;
+            }
+
+            if (inNotices) notices.add(row);
+        }
+
+        assertFalse(notices.isEmpty(), "precondition: the editor lists nothing under Worth tidying on his railway: "
+            + everything);
+
+        String stands = "stands across that switch while it is here, and may block other parts of the layout until it leaves";
+
+        java.util.Map<String, Integer> figures = new java.util.LinkedHashMap<>();
+
+        figures.put("TopMainR1Inter", 3);
+        figures.put("LowerFront", 4);
+        figures.put("Tunnel", null);
+        figures.put("BottomMainA", null);
+        figures.put("BottomInnerOtherside", null);
+
+        for (java.util.Map.Entry<String, Integer> platform : figures.entrySet())
+        {
+            String line = null;
+
+            for (String row : notices)
+            {
+                if (row.contains(" " + platform.getKey() + " ") || row.contains(platform.getKey() + " is set to take"))
+                {
+                    if (row.contains(stands)) line = row;
+                }
+            }
+
+            assertNotNull(line, platform.getKey() + " has no line under Worth tidying saying a longer train stands across"
+                + " the switch and may block the layout (MT-559): " + notices);
+
+            if (platform.getValue() == null)
+            {
+                assertFalse(line.contains("refused"), platform.getKey() + " says a train is refused (MT-559): " + line);
+            }
+            else
+            {
+                String refused = "Coming in the shortest way, over " + platform.getValue() + " of measured track, a train"
+                    + " longer than " + platform.getValue() + " is refused instead.";
+
+                assertTrue(line.indexOf(refused) > line.indexOf(stands), platform.getKey() + " does not say, after the"
+                    + " sentence about standing across the switch, that a train longer than " + platform.getValue()
+                    + " coming in the shortest way is refused (MT-583): " + line);
+            }
+
+            // AND NOT THE BERTH'S NOTICE ANYWHERE (MT-559): a platform autonomy may choose admits the train.
+            for (String row : everything)
+            {
+                assertFalse((row.contains(" " + platform.getKey() + " ") || row.contains(platform.getKey() + " is"))
+                    && row.contains("is refused here"), platform.getKey() + " is also given the parking berth's notice,"
+                    + " which says a longer train is refused (MT-559): " + row);
+            }
+        }
+    }
+
     /** The run-in notices on his railway, by square name, each to its refusing figure or null where it gives none. */
     private java.util.Map<String, Integer> runInNotices()
     {
