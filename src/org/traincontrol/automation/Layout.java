@@ -5004,9 +5004,10 @@ public class Layout
     /**
      * Why this locomotive cannot leave at all, or null when it can.
      *
-     * The five reasons that have nothing to do with any particular destination - paused, off the graph,
-     * facing a way trains may not arrive, not a station, switched off: they are about the train and the
-     * square it is standing on, and while one of them holds no destination is worth asking about.
+     * The six reasons that have nothing to do with any particular destination - paused, off the graph,
+     * facing a way trains may not arrive, not a station, switched off, and standing where no station autonomy may choose
+     * can be reached (OB-299): they are about the train and the square it is standing on, and while one of them holds no
+     * destination is worth asking about.
      *
      * @param loc the locomotive
      * @return the reason, ready to show, or null when the train is free to be given a route
@@ -5017,7 +5018,45 @@ public class Layout
 
         if (loc.isAutonomyPaused()) return I18n.t("autolayout.why.paused");
 
-        return whyTheStartIsRefused(loc);
+        String refused = whyTheStartIsRefused(loc);
+
+        if (refused != null) return refused;
+
+        return whyItReachesNoStation(this.getLocomotiveLocation(loc));
+    }
+
+    /**
+     * Why autonomy will never start a train standing here: nothing it may choose can be reached from this copy (OB-299).
+     *
+     * A copy of a station can have a way out and still reach no station autonomy may choose - everything past it is
+     * sensors, turning points or parking - and a train stood there facing that way is never started.  Why not Moving?
+     * listed every station's own reason instead, which says nothing about the copy.  Since the right-click Place keeps a
+     * train's heading over every copy it could leave by (OB-296, ADU2-C2), a train can be put down on one.
+     *
+     * The remedy depends on the square's other copies.  Where one reaches a station, turning the train round puts it
+     * there.  Where none does, turning would not help, and what would is a station reachable from here that autonomy may
+     * choose - `canReachAnyDestination` asks for one it may choose, in service and not a turning copy.
+     *
+     * Autonomy's reason only: a train sent by hand may go to a berth autonomy never chooses, so the hand's question,
+     * `explainCannotStart(loc, true)`, does not ask it.
+     *
+     * @param at the copy the train stands on, or null
+     * @return the reason, or null where a station can be reached
+     */
+    private String whyItReachesNoStation(Point at)
+    {
+        if (at == null || canReachAnyDestination(at)) return null;
+
+        for (Point other : this.getPoints())
+        {
+            if (other != at && other.isSamePlaceAs(at) && canReachAnyDestination(other))
+            {
+                return I18n.f("autolayout.why.startReachesNoStation", placeNameOf(at));
+            }
+        }
+
+        return I18n.f("autolayout.why.startReachesNoStationEitherWay", placeNameOf(at),
+            I18n.t("autosetup.ui.menuAutoDestination"));
     }
 
     /**
