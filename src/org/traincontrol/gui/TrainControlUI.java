@@ -1111,6 +1111,40 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Save page names
         l.add(this.pageNames);
         
+        // A file that would not READ is copied aside before it is written over.
+        //
+        // One transient read failure at startup plus an ordinary exit used to destroy everything the
+        // user had set up here, with no undo and no automatic backup.  Writing atomically is no
+        // protection at all against this - a complete successful write of nothing is not a partial
+        // write.  Once, and the save still happens: refusing to save for ever would throw away
+        // whatever the session did instead.
+        if (!backup && this.uiStateLoadFailed)
+        {
+            this.uiStateLoadFailed = false;
+
+            try
+            {
+                File existing = new File(TrainControlUI.DATA_FILE_NAME);
+
+                if (existing.exists())
+                {
+                    File kept = new File(Util.getBackupPath("unreadable"
+                        + Conversion.convertSecondsToDatetime(System.currentTimeMillis())
+                            .replace(':', '-').replace(' ', '_')
+                        + TrainControlUI.DATA_FILE_NAME));
+
+                    java.nio.file.Files.copy(existing.toPath(), kept.toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+                    this.model.logf("ui.uiStateUnreadableKept", kept.getAbsolutePath());
+                }
+            }
+            catch (IOException | RuntimeException keepFailed)
+            {
+                this.model.log(keepFailed);
+            }
+        }
+
         // Backups go into a dedicated folder (falling back to the current directory if it can't be created)
         String statePath = backup
             ? Util.getBackupPath(prefix + TrainControlUI.DATA_FILE_NAME)
@@ -1340,6 +1374,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Whether the UI state file was there and could not be read.
+     *
+     * Not the same as "there was no file", which is an ordinary first launch.  Only the read sets it
+     * and only the next real save clears it, after keeping a copy of what it is about to replace.
+     */
+    private boolean uiStateLoadFailed = false;
+
+    /**
      * Restores list of initialized components from a file
      * @return 
      */
@@ -1365,12 +1407,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         catch (IOException iOException)
         {
+            // A file that is THERE and would not read is not a first launch, and until this was
+            // recorded the two were told apart nowhere.  The message below said "no data file found",
+            // and the save on the way out then wrote the empty state over the real one - every
+            // locomotive-to-key mapping on every page, every page name, and the active page, gone,
+            // with no copy kept.
+            this.uiStateLoadFailed = new File(TrainControlUI.DATA_FILE_NAME).exists();
+
             this.model.logf(
-                "ui.infoUiInitializingDefaultData"
+                this.uiStateLoadFailed ? "ui.errorBadUiDataFile" : "ui.infoUiInitializingDefaultData"
             );
         }
         catch (ClassNotFoundException classNotFoundException)
         {
+            // The same: a file written by another version reads as garbage, and saying so is no use
+            // if the next exit destroys it anyway
+            this.uiStateLoadFailed = new File(TrainControlUI.DATA_FILE_NAME).exists();
+
             this.model.logf(
                 "ui.errorBadUiDataFile"
             );

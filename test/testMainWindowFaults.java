@@ -1,14 +1,26 @@
+import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
+import org.testng.SkipException;
 import org.testng.annotations.Test;
+import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.PositionAwareJFrame;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.model.ViewListener;
+import org.traincontrol.util.Util;
 
 /**
  * Faults in the main window's handlers, backported to 2.8 from the 3.0 branch.
@@ -16,8 +28,9 @@ import org.traincontrol.model.ViewListener;
  * The window is never built here.  Building it opens whatever layout the preferences name, reads the
  * UI state file from the working directory and can raise modal dialogs - none of which these handlers
  * need.  Each test instead takes a TrainControlUI allocated WITHOUT running its constructor, and gives
- * it exactly the few fields the handler under test touches.  Nothing here is shown on screen, and
- * nothing here touches a preference or a file.
+ * it exactly the few fields the handler under test touches.  Nothing here is shown on screen or
+ * writes a preference.  The tests that need the UI state file work on UIState.data in the working
+ * directory, and refuse to run where one is already present.
  */
 public class testMainWindowFaults
 {
@@ -141,6 +154,91 @@ public class testMainWindowFaults
         assertTrue(start.isEnabled(),
             "nothing was started, so the button must be given back - otherwise one refused press "
             + "leaves Start greyed until a restart");
+    }
+
+    /**
+     * A UI state file that is there but will not read is copied aside before it is saved over.
+     *
+     * The window's restoreState reported an unreadable UIState.data as "No data file found", the same
+     * as a first launch, and the save on exit then wrote the empty state over it: every key mapping on
+     * every page, the page names and the active page, gone with no copy kept.  The locomotive database
+     * beside it had the same fault.
+     *
+     * This runs the real restore and the real save, so it needs UIState.data in the working directory
+     * to be one it may replace; it refuses to run where a real one is present.  It also refuses when
+     * this folder remembers window positions, because the save then rewrites the saved diagram window
+     * titles, which are shared with every other folder.
+     *
+     * Ported from the 3.0 branch (d6b9b00c).
+     */
+    @Test
+    public void testAnUnreadableUiStateIsKeptBeforeItIsSavedOver() throws Exception
+    {
+        File live = new File("UIState.data");
+
+        if (live.exists())
+        {
+            throw new SkipException("Not run here: the working directory holds a UI state file ("
+                + live.getAbsolutePath() + "), and this test has to put an unreadable one in its place");
+        }
+
+        if (TrainControlUI.getPrefs().getBoolean(PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, false))
+        {
+            throw new SkipException("Not run here: this folder remembers window positions, so saving "
+                + "the UI state would rewrite the saved diagram window titles");
+        }
+
+        TrainControlUI ui = windowless();
+
+        // What the window's save reads, and nothing more
+        set(ui, "model", stubModel((method, args) -> null));
+        set(ui, "buttonMapping", new HashMap<Integer, JButton>());
+        set(ui, "pageNames", new HashMap<Integer, String>());
+        set(ui, "autosave", new JCheckBox());
+        set(ui, "autonomyJSON", new JTextArea());
+
+        List<HashMap<JButton, Locomotive>> pages = new ArrayList<>();
+        pages.add(new HashMap<>());
+        set(ui, "locMapping", pages);
+
+        byte[] unreadable = testControlStationFaults.truncatedObjectStream();
+
+        File backups = new File(Util.BACKUP_FOLDER);
+        boolean hadBackups = backups.isDirectory();
+        Set<String> before = testControlStationFaults.names(backups);
+
+        try
+        {
+            Files.write(live.toPath(), unreadable);
+
+            // As at startup: the file is there, and will not read
+            ui.restoreState();
+
+            // As on exit
+            ui.saveState(false);
+
+            assertEquals(testControlStationFaults.keptCopies(backups, before, unreadable), 1,
+                "the UI state file could not be read at startup, and the save on exit wrote the empty "
+                + "state over it without keeping a copy - every key mapping and page name would be gone");
+
+            // And a file that reads is a normal save: nothing more is copied aside
+            ui.restoreState();
+            ui.saveState(false);
+
+            assertEquals(testControlStationFaults.names(backups).size(), before.size() + 1,
+                "a readable UI state file was copied aside as though it were unreadable");
+        }
+        finally
+        {
+            Files.deleteIfExists(live.toPath());
+
+            for (String name : testControlStationFaults.names(backups))
+            {
+                if (!before.contains(name)) Files.deleteIfExists(new File(backups, name).toPath());
+            }
+
+            if (!hadBackups) Files.deleteIfExists(backups.toPath());
+        }
     }
 
     // ---------------------------------------------------------------------------------------------

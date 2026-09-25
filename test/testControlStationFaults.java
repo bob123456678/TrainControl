@@ -1,9 +1,16 @@
+import java.io.File;
+import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import static org.testng.Assert.*;
+import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Point;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.util.Util;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
@@ -136,5 +143,116 @@ public class testControlStationFaults
                 + "NullPointerException - which kills every autonomy thread at its next path pick and "
                 + "stops the graph being saved", npe);
         }
+    }
+
+    /**
+     * A locomotive database that is there but will not read is copied aside before it is saved over.
+     *
+     * restoreState reported an unreadable LocDB.data exactly as it reports a first launch: an empty
+     * list and "initializing with default data".  The application then ran with an empty database,
+     * and the normal save on exit wrote that emptiness over the real file - a complete, successful
+     * write, so writing atomically does not help.  One transient lock at startup (antivirus, a cloud
+     * sync placeholder, a second copy of the program) plus an ordinary exit destroyed every locomotive
+     * customization: functions, icons, notes and statistics.
+     *
+     * This runs the real sequence - an unreadable file at startup, then the exit save - so it needs
+     * LocDB.data in the working directory to be one it may replace.  It refuses to run where a real
+     * database is present.
+     *
+     * Ported from the 3.0 branch (df5d291b).
+     */
+    @Test
+    public void testAnUnreadableDatabaseIsKeptBeforeItIsSavedOver() throws Exception
+    {
+        File live = new File(MarklinControlStation.DATA_FILE_NAME);
+
+        if (live.exists())
+        {
+            throw new SkipException("Not run here: the working directory holds a locomotive database ("
+                + live.getAbsolutePath() + "), and this test has to put an unreadable one in its place");
+        }
+
+        byte[] unreadable = truncatedObjectStream();
+
+        File backups = new File(Util.BACKUP_FOLDER);
+        boolean hadBackups = backups.isDirectory();
+        Set<String> before = names(backups);
+
+        try
+        {
+            Files.write(live.toPath(), unreadable);
+
+            // As at startup: the file is there, and will not read
+            model.restoreState(MarklinControlStation.DATA_FILE_NAME);
+
+            // As on exit
+            model.saveState(false);
+
+            assertEquals(keptCopies(backups, before, unreadable), 1,
+                "the locomotive database could not be read at startup, and the save on exit wrote the "
+                + "empty database over it without keeping a copy - every locomotive's functions, "
+                + "icons, notes and statistics would be gone");
+
+            // And a database that reads is a normal save: nothing more is copied aside
+            model.restoreState(MarklinControlStation.DATA_FILE_NAME);
+            model.saveState(false);
+
+            assertEquals(names(backups).size(), before.size() + 1,
+                "a readable database was copied aside as though it were unreadable");
+        }
+        finally
+        {
+            Files.deleteIfExists(live.toPath());
+
+            for (String name : names(backups))
+            {
+                if (!before.contains(name)) Files.deleteIfExists(new File(backups, name).toPath());
+            }
+
+            if (!hadBackups) Files.deleteIfExists(backups.toPath());
+        }
+    }
+
+    /**
+     * A file that stops part way through its first object, as an interrupted copy or sync leaves one.
+     *
+     * A valid stream header, so the reader opens it and fails on the object itself.  Plain garbage
+     * fails in the ObjectInputStream constructor instead, and on Windows the file handle opened for
+     * that constructor then stays open until garbage collection, which stops this test cleaning up.
+     */
+    static byte[] truncatedObjectStream()
+    {
+        return new byte[]{ (byte) 0xAC, (byte) 0xED, 0x00, 0x05, 0x73, 0x72 };
+    }
+
+    /**
+     * The names of the files in a folder, or none if it does not exist.
+     */
+    static Set<String> names(File folder)
+    {
+        Set<String> out = new HashSet<>();
+
+        String[] list = folder.list();
+
+        if (list != null) out.addAll(Arrays.asList(list));
+
+        return out;
+    }
+
+    /**
+     * How many files in the folder, other than those listed before, hold exactly these bytes.
+     */
+    static int keptCopies(File folder, Set<String> before, byte[] content) throws Exception
+    {
+        int kept = 0;
+
+        for (String name : names(folder))
+        {
+            if (before.contains(name)) continue;
+
+            if (Arrays.equals(Files.readAllBytes(new File(folder, name).toPath()), content)) kept++;
+        }
+
+        return kept;
     }
 }
