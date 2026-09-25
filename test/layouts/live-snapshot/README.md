@@ -129,6 +129,7 @@ not fix it. Name the square.
 - `core.testAnAnsweredZeroIsNotMissing`
 - `ui.testACutTrainArrivesTheWayItWouldDrive`
 - `ui.testThePlaceDoorsKeepTheHeading`
+- `ui.testWhereHisTrainsMayBeSent`
 - `ui.testAPastedTrainFacesTheWayTheOperatorChose`
 - `core.testALockReachesTheRailBeingRunOver`
 - `ui.testBulkToolsHoldsTheWholeLayoutTools`
