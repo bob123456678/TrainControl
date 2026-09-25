@@ -2534,6 +2534,22 @@ public class testMassAssignLengths
                 assertFalse(sentence.contains("can take no train"), "the warning opens by saying the berth takes no train"
                     + " at all, and closes by saying only trains with a length are refused (ADU2-C3): " + sentence);
             }
+
+            // AND IN EVERY LANGUAGE (ADU2-C3): none opens as it did, with the berth taking no train at all.
+            java.util.Map<String, String> openedWith = new java.util.HashMap<>();
+
+            openedWith.put("messages_da.properties", "kan ikke tage imod et tog");
+            openedWith.put("messages_de.properties", "kann keinen Zug aufnehmen");
+            openedWith.put("messages_es.properties", "no puede recibir ning");
+            openedWith.put("messages_fr.properties", "ne peut accueillir aucun train");
+            openedWith.put("messages_it.properties", "accogliere alcun treno");
+            openedWith.put("messages_nl.properties", "kan geen trein opnemen");
+            openedWith.put("messages_pl.properties", "nie przyjmie");
+
+            String old = openedWith.get(bundle.getName());
+
+            assertTrue(old == null || !sentence.contains(old), bundle.getName() + " still opens by saying the berth takes no"
+                + " train at all (ADU2-C3): " + sentence);
         }
     }
 
