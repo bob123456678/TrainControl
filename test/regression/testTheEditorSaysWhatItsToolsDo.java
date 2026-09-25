@@ -129,6 +129,99 @@ public class testTheEditorSaysWhatItsToolsDo
             + " nothing there to ask about");
     }
 
+    /**
+     * Where a railway is running, the outline follows the trains on it, not the setup's placements - and once a square
+     * is clicked the outlines go (FR-102; TDU-C11, TDD-C9).
+     *
+     * The javadoc of `whyWaitsOn`: *"The train as the running railway has it where there is one - a run moves trains the
+     * setup has not been told about - and as the setup places it otherwise."*  The claim above builds the panel with no
+     * railway, so only the second arm was asked.
+     *
+     * MUTATION: read the setup's placements while a railway runs, or keep the outlines after the click, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testWhyNotMovingFollowsTheRunningRailway() throws Exception
+    {
+        org.traincontrol.marklin.MarklinControlStation model =
+            org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+
+        org.traincontrol.base.Locomotive moved = model.newMM2Locomotive("FR-102 moved", 2301);
+
+        assertNotNull(moved, "could not create this test's train");
+
+        try
+        {
+            model.parseAuto(session.buildConfiguration());
+
+            final org.traincontrol.automation.Layout railway = model.getAutoLayout();
+
+            assertNotNull(railway, "precondition: the fixture built no railway");
+
+            // ON THE RAILWAY THE TRAIN STANDS AT 1,1, where the setup has none; the setup's train at 3,1 is not there.
+            for (org.traincontrol.automation.Point point : railway.getPoints()) point.setLocomotive(null);
+
+            org.traincontrol.automation.Point atEmpty = null;
+
+            for (org.traincontrol.automation.Point point : railway.getPoints())
+            {
+                if (EMPTY.equals(session.getStationIndex().squareOf(point))) atEmpty = point;
+            }
+
+            assertNotNull(atEmpty, "precondition: the railway has no Point at 1,1");
+
+            atEmpty.setLocomotive(moved);
+
+            final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+            panel.setRunningLayoutSource(() -> railway);
+            panel.setLayoutSource(() -> railway);
+
+            java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("whyButton");
+
+            field.setAccessible(true);
+
+            final javax.swing.AbstractButton why = (javax.swing.AbstractButton) field.get(panel);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> why.doClick());
+
+            assertTrue(panel.annotationFor(EMPTY).isSelected(), "a railway is running with a train at 1,1 and Why Not"
+                + " Moving does not outline it - it read the setup, which has none there");
+
+            assertFalse(panel.annotationFor(WITH_A_TRAIN).isSelected(), "a railway is running with no train at 3,1 and"
+                + " Why Not Moving outlines it - it read the setup's placement, not the railway");
+
+            // AND ONCE A SQUARE IS CLICKED, THE OUTLINES GO: a second train on the railway at 3,1 is outlined while the
+            // tool waits, and not once 1,1 has been asked about.
+            org.traincontrol.base.Locomotive second = model.newMM2Locomotive("FR-102 second", 2302);
+
+            for (org.traincontrol.automation.Point point : railway.getPoints())
+            {
+                if (WITH_A_TRAIN.equals(session.getStationIndex().squareOf(point))) point.setLocomotive(second);
+            }
+
+            // Asked of the waiting outline itself: once a square is asked about, the answer draws outlines of its own.
+            java.lang.reflect.Method waitsOn = AutonomyEditorPanel.class.getDeclaredMethod("whyWaitsOn", TileKey.class);
+
+            waitsOn.setAccessible(true);
+
+            assertTrue((Boolean) waitsOn.invoke(panel, WITH_A_TRAIN), "precondition: the second train at 3,1 is not"
+                + " outlined as somewhere to click while Why Not Moving waits");
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                panel.tileClicked(EMPTY, session.getGraph().getTiles().get(EMPTY), false));
+
+            assertFalse((Boolean) waitsOn.invoke(panel, WITH_A_TRAIN), "Why Not Moving was asked about 1,1 and still"
+                + " outlines the train at 3,1 as somewhere to click");
+        }
+        finally
+        {
+            model.deleteLoc("FR-102 moved");
+            model.deleteLoc("FR-102 second");
+        }
+    }
+
     /** The menu item with this text, anywhere in the menu. */
     private static javax.swing.JMenuItem find(java.awt.Container container, String text)
     {

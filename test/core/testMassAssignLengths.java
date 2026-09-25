@@ -1589,6 +1589,44 @@ public class testMassAssignLengths
             "One-way run is offered on a page left out of autonomy - Adam, MT-528: \"works, but one-way run isn't\"");
     }
 
+    /**
+     * The One-Way Run BUTTON is greyed on a page left out too, and a run armed when the page is left out is put down
+     * (OB-235, TDD-C7) - the parts MT-568 checks that the Bulk Tools claim above does not.
+     *
+     * MUTATION: leave the button enabled on a page left out, or leave it armed, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheOneWayButtonIsGreyedAndPutDownOnAPageLeftOut() throws Exception
+    {
+        openBerthBehindASwitch(key(5, 1));
+
+        final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("oneWayButton");
+
+        field.setAccessible(true);
+
+        final javax.swing.AbstractButton oneWay = (javax.swing.AbstractButton) field.get(panel);
+
+        assertTrue(oneWay.isEnabled(), "precondition: the One-Way Run button is greyed on a page autonomy uses");
+
+        // ARMED, as a person arms it, then the page left out.
+        javax.swing.SwingUtilities.invokeAndWait(() -> oneWay.doClick());
+
+        assertTrue(oneWay.isSelected(), "precondition: One-Way Run did not arm");
+
+        session.setPageExcluded("main", true);
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> panel.refresh());
+
+        assertFalse(oneWay.isEnabled(), "the One-Way Run button is offered on a page left out of autonomy (OB-235)");
+
+        assertFalse(oneWay.isSelected(), "One-Way Run was left armed on a page left out of autonomy - a click there waits"
+            + " for its second square (OB-235)");
+    }
+
     /** The Bulk Tools item with this text. */
     private static javax.swing.JMenuItem bulkItemNamed(AutonomyEditorPanel panel, String text) throws Exception
     {
