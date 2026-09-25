@@ -4,9 +4,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Arrays;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -273,6 +275,327 @@ public class testTheEditorSaysWhatItsToolsDo
         }
 
         return null;
+    }
+
+    /**
+     * On the frozen railway, a station's exit guard chosen as its entry guard is refused, with the sentence saying the
+     * signal is already the exit guard and one signal cannot guard both the way in and the way out (MT-504; Adam,
+     * 2026-09-25: automated tests supersede the MTs they answer).
+     *
+     * Both guards are given as the steps give them: the station's own menu item, the window it opens, Click It on the
+     * Diagram, and a click on the signal.  The exit guard first, because the frozen railway has none and step 1 starts
+     * from a station that has one.  `core.testAutonomyDiagramSession.testAStationsEntryGuardIsNeverItsExitGuard` holds the
+     * store's own refusal below this.
+     *
+     * MUTATION: take the editor's refusal out, or have it say the other guard's sentence, and this fails.
+     *
+     * @throws Exception from the sandbox and the event thread
+     */
+    @Test
+    public void testHisExitGuardIsRefusedAsTheEntryGuard() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the guard window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            org.traincontrol.marklin.MarklinControlStation model =
+                org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+
+            try
+            {
+                AutonomySession his = new AutonomySession(sandbox.getFolder());
+
+                his.open(support.LayoutSandbox.wiredPages(model));
+
+                // STEP 1'S STATION: one of his with an exit guard - or, where none has, one given an exit guard through
+                // Exit Guard Signal..., as a person gives one.
+                TileKey[] pair = aStationWithAnExitGuard(his);
+
+                final boolean hisOwn = pair != null;
+
+                if (pair == null) pair = aStationAndASignalBesideIt(his);
+
+                assertNotNull(pair, "precondition: no page of the frozen railway has both a station and a signal");
+
+                final TileKey station = pair[0];
+                final TileKey signal = pair[1];
+
+                final AutonomyEditorPanel panel = new AutonomyEditorPanel(his, station.getPage(), () -> { });
+
+                if (!hisOwn) pickTheGuard(panel, his, station, signal, "autosetup.ui.menuPairSignal");
+
+                final java.util.List<TileKey> exitGuards = new java.util.ArrayList<>(his.getProtectingSignals(station));
+
+                final java.util.List<TileKey> entryGuards = new java.util.ArrayList<>(his.getEntrySignals(station));
+
+                assertTrue(exitGuards.contains(signal) && !entryGuards.contains(signal), "precondition: " + signal + " is"
+                    + " not the exit guard of " + station + " alone: exit " + exitGuards + ", entry " + entryGuards);
+
+                // STEP 2: Entry Guard Signal..., and the same signal.
+                String said = pickTheGuard(panel, his, station, signal, entryGuards.isEmpty()
+                    ? "autosetup.ui.menuPairEntrySignal" : null);
+
+                assertEquals(said, I18n.f("autosetup.ui.signalIsTheExitGuard", privately(panel, "addressOf", signal),
+                    privately(panel, "describeTile", station)), "choosing the exit guard as the entry guard is not refused"
+                    + " with the sentence saying it is already the exit guard (MT-504)");
+
+                assertEquals(his.getEntrySignals(station), entryGuards, "the exit guard was made the entry guard as well"
+                    + " (MT-504)");
+
+                assertEquals(his.getProtectingSignals(station), exitGuards, "the refusal changed the exit guards");
+            }
+            finally
+            {
+                model.stop();
+            }
+        }
+        finally
+        {
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** The first station, by name, with an exit guard, and that guard. */
+    private static TileKey[] aStationWithAnExitGuard(AutonomySession his)
+    {
+        java.util.List<TileKey> stations = new java.util.ArrayList<>();
+
+        for (TileKey key : his.getStore().getNamedTiles())
+        {
+            if (his.getStore().isStation(key) && !his.getProtectingSignals(key).isEmpty()) stations.add(key);
+        }
+
+        stations.sort(java.util.Comparator.comparing(TileKey::toString));
+
+        for (TileKey station : stations)
+        {
+            for (TileKey signal : his.getProtectingSignals(station))
+            {
+                if (!his.getEntrySignals(station).contains(signal)) return new TileKey[] {station, signal};
+            }
+        }
+
+        return null;
+    }
+
+    /** The first station, by name, on a page that has a pairable signal - and the first such signal on that page. */
+    private static TileKey[] aStationAndASignalBesideIt(AutonomySession his)
+    {
+        java.util.List<TileKey> stations = new java.util.ArrayList<>();
+
+        for (TileKey key : his.getStore().getNamedTiles())
+        {
+            if (his.getStore().isStation(key)) stations.add(key);
+        }
+
+        stations.sort(java.util.Comparator.comparing(TileKey::toString));
+
+        for (TileKey station : stations)
+        {
+            TileKey found = null;
+
+            for (java.util.Map.Entry<TileKey, org.traincontrol.base.LayoutDiagramComponent> entry
+                : his.getGraph().getTiles().entrySet())
+            {
+                org.traincontrol.base.LayoutDiagramComponent component = entry.getValue();
+
+                if (!station.getPage().equals(entry.getKey().getPage()) || component == null
+                    || component.getType() != componentType.SIGNAL || component.getAccessory() == null) continue;
+
+                if (found == null || entry.getKey().toString().compareTo(found.toString()) < 0) found = entry.getKey();
+            }
+
+            if (found != null) return new TileKey[] {station, found};
+        }
+
+        return null;
+    }
+
+    /**
+     * One guard given as a person gives it: the station's menu item, its window, Click It on the Diagram, a click on the
+     * signal - and Done on the window that comes back.  Returns what the editor's hint line said once the signal was
+     * clicked.
+     */
+    private static String pickTheGuard(final AutonomyEditorPanel panel, AutonomySession his, final TileKey station,
+        final TileKey signal, String itemKey) throws Exception
+    {
+        // THE WINDOW'S TITLE is the item's name with nothing paired, whatever the item's label now says.
+        final String title = I18n.t(itemKey != null ? itemKey : "autosetup.ui.menuPairEntrySignal");
+
+        final String label = itemKey != null ? title : I18n.f(his.getEntrySignals(station).size() == 1
+            ? "autosetup.ui.menuPairedEntrySignal" : "autosetup.ui.menuPairedEntrySignals",
+            addressesOf(panel, his.getEntrySignals(station)));
+
+        final javax.swing.JMenuItem[] item = new javax.swing.JMenuItem[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> item[0] = itemNamed(panel.buildTileMenu(station, null), label));
+
+        assertNotNull(item[0], "the station's menu has no " + label + " item");
+
+        javax.swing.SwingUtilities.invokeLater(item[0]::doClick);
+
+        javax.swing.JDialog window = awaitWindowTitled(title, null);
+
+        final javax.swing.AbstractButton byClick = buttonIn(window, I18n.t("autosetup.ui.optionClickSignal"));
+
+        assertNotNull(byClick, "the " + title + " window has no Click It on the Diagram button");
+
+        javax.swing.SwingUtilities.invokeAndWait(byClick::doClick);
+
+        awaitNoWindowTitled(title);
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        final org.traincontrol.base.LayoutDiagramComponent component = his.getGraph().getTiles().get(signal);
+
+        javax.swing.SwingUtilities.invokeLater(() -> panel.tileClicked(signal, component, false));
+
+        // THE WINDOW COMES BACK once the click is answered; the hint line says what the click did.
+        javax.swing.JDialog back = awaitWindowTitled(title, window);
+
+        final String[] said = new String[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> said[0] = hintOf(panel));
+
+        final javax.swing.AbstractButton done = buttonIn(back, I18n.t("autosetup.ui.optionSignalsDone"));
+
+        assertNotNull(done, "the " + title + " window has no Done button");
+
+        javax.swing.SwingUtilities.invokeAndWait(done::doClick);
+
+        awaitNoWindowTitled(title);
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        return said[0];
+    }
+
+    private static javax.swing.JMenuItem itemNamed(java.awt.Container menu, String text)
+    {
+        java.awt.Component[] children = menu instanceof javax.swing.JMenu
+            ? ((javax.swing.JMenu) menu).getMenuComponents() : menu.getComponents();
+
+        for (java.awt.Component child : children)
+        {
+            if (child instanceof javax.swing.JMenu)
+            {
+                javax.swing.JMenuItem found = itemNamed((javax.swing.JMenu) child, text);
+
+                if (found != null) return found;
+            }
+            else if (child instanceof javax.swing.JMenuItem && text.equals(((javax.swing.JMenuItem) child).getText()))
+            {
+                return (javax.swing.JMenuItem) child;
+            }
+        }
+
+        return null;
+    }
+
+    private static javax.swing.AbstractButton buttonIn(java.awt.Container container, String text)
+    {
+        for (java.awt.Component child : container.getComponents())
+        {
+            if (child instanceof javax.swing.AbstractButton && text.equals(((javax.swing.AbstractButton) child).getText()))
+            {
+                return (javax.swing.AbstractButton) child;
+            }
+
+            if (child instanceof java.awt.Container)
+            {
+                javax.swing.AbstractButton found = buttonIn((java.awt.Container) child, text);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
+    }
+
+    private static javax.swing.JDialog awaitWindowTitled(String title, javax.swing.JDialog notThisOne) throws Exception
+    {
+        long giveUp = System.currentTimeMillis() + 10000;
+
+        while (System.currentTimeMillis() < giveUp)
+        {
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (window instanceof javax.swing.JDialog && window != notThisOne && window.isShowing()
+                    && title.equals(((javax.swing.JDialog) window).getTitle())) return (javax.swing.JDialog) window;
+            }
+
+            Thread.sleep(50);
+        }
+
+        fail("no window titled \"" + title + "\" appeared");
+
+        return null;
+    }
+
+    private static void awaitNoWindowTitled(String title) throws Exception
+    {
+        long giveUp = System.currentTimeMillis() + 10000;
+
+        while (System.currentTimeMillis() < giveUp)
+        {
+            boolean showing = false;
+
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (window instanceof javax.swing.JDialog && window.isShowing()
+                    && title.equals(((javax.swing.JDialog) window).getTitle())) showing = true;
+            }
+
+            if (!showing) return;
+
+            Thread.sleep(50);
+        }
+
+        fail("the window titled \"" + title + "\" did not close");
+    }
+
+    private static String hintOf(AutonomyEditorPanel panel)
+    {
+        try
+        {
+            java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("hint");
+
+            field.setAccessible(true);
+
+            String text = ((javax.swing.JLabel) field.get(panel)).getText();
+
+            return text == null ? null : text.replaceAll("<[^>]*>", "").replace("&lt;", "<").replace("&gt;", ">")
+                .replace("&amp;", "&").trim();
+        }
+        catch (ReflectiveOperationException cannot)
+        {
+            throw new IllegalStateException(cannot);
+        }
+    }
+
+    /** The addresses of these signals, as the station's menu lists them in its guard items' labels. */
+    private static String addressesOf(AutonomyEditorPanel panel, java.util.List<TileKey> signals) throws Exception
+    {
+        java.lang.reflect.Method describe = AutonomyEditorPanel.class.getDeclaredMethod("signalAddresses",
+            java.util.List.class);
+
+        describe.setAccessible(true);
+
+        return (String) describe.invoke(panel, signals);
+    }
+
+    /** One of the panel's private one-square describers, as its sentences use them. */
+    private static String privately(AutonomyEditorPanel panel, String method, TileKey tile) throws Exception
+    {
+        java.lang.reflect.Method describe = AutonomyEditorPanel.class.getDeclaredMethod(method, TileKey.class);
+
+        describe.setAccessible(true);
+
+        return (String) describe.invoke(panel, tile);
     }
 
     private static void delete(File file)

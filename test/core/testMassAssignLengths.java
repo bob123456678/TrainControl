@@ -1233,6 +1233,122 @@ public class testMassAssignLengths
         }
     }
 
+    /**
+     * On the frozen railway, One-Way Run is greyed on 4 - Combined, which is left out of autonomy - the button, and the
+     * Bulk Tools item with a tooltip saying the page is left out; and armed on 1 - Main, it is put down and greyed when
+     * Exclude Page is ticked on that page and answered Yes, and the hint stops asking for the first square (MT-568, its
+     * steps as the two comments of 2026-09-24 amend them).
+     *
+     * The page is left out through the editor's own Exclude Page box and its question, as the amended step does.
+     * `testTheOneWayButtonIsGreyedAndPutDownOnAPageLeftOut` holds the same on a fixture, the page left out below the box.
+     *
+     * MUTATION: leave the button live or armed on a page left out, or drop the item's tooltip, and this fails.
+     *
+     * @throws Exception from the sandbox and the event thread
+     */
+    @Test
+    public void testOneWayRunOnHisRailwayIsGreyedWhereThePageIsLeftOut() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the question needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            org.traincontrol.marklin.MarklinControlStation model = openHisRailway(sandbox);
+
+            try
+            {
+                assertTrue(session.getStore().getExcludedPages().contains(LEFT_OUT), "precondition: " + LEFT_OUT + " is not"
+                    + " left out of autonomy on the frozen railway");
+
+                // STEP 2: on 4 - Combined, the button and the Bulk Tools item.
+                final AutonomyEditorPanel there = new AutonomyEditorPanel(session, LEFT_OUT, () -> { });
+
+                assertFalse(oneWayButtonOf(there).isEnabled(), "the One-Way Run button is offered on " + LEFT_OUT + ", which"
+                    + " is left out of autonomy (MT-568 step 2)");
+
+                javax.swing.JMenuItem item = bulkItemNamed(there, org.traincontrol.util.I18n.t("autosetup.ui.toolOneWay"));
+
+                assertFalse(item.isEnabled(), "Bulk Tools > One-Way Run is offered on " + LEFT_OUT + " (MT-568 step 2)");
+
+                assertEquals(stripped(item.getToolTipText()),
+                    org.traincontrol.util.I18n.t("autosetup.ui.infoPageLeftOutNothingToMeasure"), "the greyed One-Way Run"
+                    + " item's tooltip does not say the page is left out (MT-568 step 2)");
+
+                // STEP 3, AS AMENDED: armed on 1 - Main, then Exclude Page ticked on 1 - Main and answered Yes.
+                final AutonomyEditorPanel main = new AutonomyEditorPanel(session, MAIN, () -> { });
+
+                final javax.swing.AbstractButton oneWay = oneWayButtonOf(main);
+
+                javax.swing.SwingUtilities.invokeAndWait(oneWay::doClick);
+
+                String first = org.traincontrol.util.I18n.t("autosetup.ui.promptOneWayFrom");
+
+                assertTrue(oneWay.isSelected() && String.valueOf(hintOf(main)).contains(first), "precondition: One-Way Run"
+                    + " did not arm on " + MAIN + ", or does not ask for the first square: " + hintOf(main));
+
+                java.lang.reflect.Field boxField = AutonomyEditorPanel.class.getDeclaredField("excludePage");
+
+                boxField.setAccessible(true);
+
+                final javax.swing.AbstractButton box = (javax.swing.AbstractButton) boxField.get(main);
+
+                final String question = org.traincontrol.util.I18n.t("autosetup.ui.btnExcludeThisPage");
+
+                javax.swing.SwingUtilities.invokeLater(box::doClick);
+
+                answer(awaitDialogTitled(question), String.valueOf(org.traincontrol.gui.TrainControlUI.YES_NO_OPTS[0]));
+
+                awaitNoDialogTitled(question);
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+                assertTrue(session.getStore().getExcludedPages().contains(MAIN), "precondition: answered Yes, " + MAIN
+                    + " was not left out");
+
+                assertFalse(oneWay.isEnabled(), "with " + MAIN + " left out, the One-Way Run button is still offered"
+                    + " (MT-568 step 3)");
+
+                assertFalse(oneWay.isSelected(), "with " + MAIN + " left out, One-Way Run is still pressed - a click waits"
+                    + " for its second square (MT-568 step 3)");
+
+                assertFalse(String.valueOf(hintOf(main)).contains(first), "with " + MAIN + " left out, the hint still asks"
+                    + " for the first square (MT-568 step 3): " + hintOf(main));
+            }
+            finally
+            {
+                closeEveryDialog();
+
+                model.stop();
+            }
+        }
+        finally
+        {
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** The page of the frozen railway left out of autonomy, which MT-568 opens. */
+    private static final String LEFT_OUT = "4 - Combined";
+
+    private static javax.swing.AbstractButton oneWayButtonOf(AutonomyEditorPanel panel) throws Exception
+    {
+        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("oneWayButton");
+
+        field.setAccessible(true);
+
+        return (javax.swing.AbstractButton) field.get(panel);
+    }
+
+    private static String stripped(String html)
+    {
+        return html == null ? null : html.replaceAll("<[^>]*>", "").replace("&lt;", "<").replace("&gt;", ">")
+            .replace("&amp;", "&").trim();
+    }
+
     /** What a refusal over the walk's prompt says - its message, as read - after closing it as its OK does. */
     private static String refusalMessage(String walkTitleKey) throws Exception
     {
