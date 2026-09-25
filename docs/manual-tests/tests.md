@@ -31,8 +31,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
 | [MT-468](#mt-468) | 2026-09-19 | Every screen still finds its text after 239 unused message keys were removed | fixed unvalidated | UIX-C4 |
 | [MT-492](#mt-492) | 2026-09-24 | Return Home finds a plan on a crowded railway | fixed unvalidated | OB-230, AMH-C1 |
-| [MT-494](#mt-494) | 2026-09-24 | After a run, the Facing menu turns the train that is there | fixed unvalidated | TDY4-C5 |
-| [MT-499](#mt-499) | 2026-09-24 | With autonomy stopped, the locomotive list gives the reasons for a train sent by hand | fixed unvalidated | the REG4 lead of the 2026-09-23 review |
 | [MT-533](#mt-533) | 2026-09-24 | The train-length prompt takes typing without a click | fixed unvalidated | MT-474 |
 | [MT-548](#mt-548) | 2026-09-24 | On a Central Station layout the Autonomy menu opens, and only the download and Documentation can be chosen | fixed unvalidated | OB-254, OB-093, MT-544 |
 | [MT-566](#mt-566) | 2026-09-24 | The locomotive train-length walk is never greyed, and counts | fixed unvalidated | MT-533 |
@@ -42,8 +40,8 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-576](#mt-576) | 2026-09-24 | A tail answer given after the placement changed is written where the train now stands, or not at all | fixed unvalidated | TDU2-A1, TDU3-B1 |
 | [MT-586](#mt-586) | 2026-09-25 | A stretch answered 0 lets a train in when the total track holds it | fixed unvalidated | ADU-C7, TDU-C6 |
 
-Everything else - 572 of 586 - needs nothing from you unless the area changes again:
-453 **fixed validated** and 119 **superseded**.
+Everything else - 574 of 586 - needs nothing from you unless the area changes again:
+453 **fixed validated** and 121 **superseded**.
 
 ---
 
@@ -25645,7 +25643,7 @@ Superseded by MT-504 and MT-505 - it checked two things under one verdict.
 
 ### MT-494 - 2026-09-24 - After a run, the Facing menu turns the train that is there
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** TDY4-C5
 
 **Written:** 2026-09-24
@@ -25672,6 +25670,10 @@ the railway's train deliberately different.  That it reads right after a real ru
 **Claude, 2026-09-24.**
 
 **To run now:** before starting autonomy, note which train stands at BottomInner, which trains reach from both sides; run autonomy until a different train stops there; stop autonomy, right-click BottomInner, open "... Is Facing" and choose the direction not ticked.  **Expect:** the menu is titled with the train there now; that train turns; the earlier one does not move.
+
+**Claude, 2026-09-25.**
+
+**Retired, on your answer of 2026-09-25** (*"OK"*, to the recommendation to retire it).  What the entry checks - after a run, the diagram's *... Is Facing* menu on a station is titled with the train standing there now, choosing the other direction turns that train, and the train that stood there before is not moved - is `regression.testTheFacingMenuIsAboutTheTrainThere.testAfterARunTheMenuTurnsTheTrainTheRailwayHasThere`, on the frozen copy of your railway, with the setup's train and the railway's train deliberately different.  The one thing only a hand run added was reaching that state by a real autonomy run rather than by standing the trains there.  If you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -25821,7 +25823,7 @@ the direction."*
 
 ### MT-499 - 2026-09-24 - With autonomy stopped, the locomotive list gives the reasons for a train sent by hand
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** the REG4 lead of the 2026-09-23 review
 
 **Written:** 2026-09-24
@@ -25841,6 +25843,10 @@ even while autonomy was stopped, so it could say a train could not be sent anywh
 - Any station it cannot be sent to is listed under "Stations the train cannot be sent to right now".
 
 *What this is:* `regression.testTheDestinationDoorsAgree.testEveryWhyNamesItsTier`.
+
+**Claude, 2026-09-25.**
+
+**Retired, on your answer of 2026-09-25** (*"retire"*).  Its steps probably could not be followed: the locomotive list opens its reasons window only while a train reads "No available paths", and a train at BottomMainA facing west has paths by hand, so the click opens nothing.  The answers it asked about are held by tests: `core.testATrainIsPutOnlyWhereItCanStart.testATrainFacingABarredWayIsToldWhy` (by hand, a route may start from where the train stands; autonomy gives the barred-facing sentence) and `regression.testTheDestinationDoorsAgree.testEveryWhyNamesItsTier` (every Why names which of the two it is answering).  If you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
