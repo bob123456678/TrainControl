@@ -175,6 +175,22 @@ public class testATrainDoesNotRunIntoItsOwnTail
         return out;
     }
 
+    /**
+     * Whether the send doors offer LowerFront: the right-click menu and the Auto tab list `getPossiblePaths(train, true)`,
+     * less what `isOfferableToOperator` keeps off them.
+     */
+    private static boolean offersLowerFront() throws Exception
+    {
+        for (List<Edge> path : layout.getPossiblePaths(train, true))
+        {
+            Point end = path.get(path.size() - 1).getEnd();
+
+            if (lowerFront.contains(end) && layout.isOfferableToOperator(end, train)) return true;
+        }
+
+        return false;
+    }
+
     /** The own-tail sentence, as a pattern: the gap it names is group 1, or null where the reason is another. */
     private static Integer gapNamedBy(String reason)
     {
@@ -290,6 +306,27 @@ public class testATrainDoesNotRunIntoItsOwnTail
 
         assertTrue(gap > 0 && gap < 20, "the gap named is " + gap + ", which a 20-unit train would not be refused for");
 
+        // WHAT ADAM SEES AT 20 (MT-571): LowerFront not offered by the send doors, Why not Moving? giving the own-tail
+        // sentence for it, and the refusal naming where the way round comes back.
+        assertFalse(offersLowerFront(), "a 20-unit EN57-203 at BottomSecondary is still offered LowerFront (MT-571)");
+
+        boolean told = false;
+
+        for (Map.Entry<String, String> why : layout.explainDestinations(train, true).entrySet())
+        {
+            for (Point end : lowerFront)
+            {
+                if (end.getName().equals(why.getKey()) && gapNamedBy(why.getValue()) != null) told = true;
+            }
+        }
+
+        assertTrue(told, "Why not Moving? does not give the own-tail sentence for LowerFront at 20 units (MT-571)");
+
+        String tightest = routesToLowerFront().get(route);
+
+        assertTrue(tightest.contains("BottomMainAPre") && tightest.contains("BottomCrossover"), "the refusal does not name"
+            + " BottomMainAPre -> BottomCrossover, where the way round comes back to the train (MT-571): " + tightest);
+
         // THE FIGURE ITSELF, measured on the frozen railway (TDD-C4): from BottomSecondary west round by the tunnel and
         // back to row 11 at 14,11 - 11,8 and 11,7, 11,4 and 10,3, 7,4 and 7,5, 7,11 and 9,12, 12,12 are measured, one
         // unit each.  A claim that the sentence agrees with itself would pass a rule that moved every figure alike.
@@ -309,6 +346,19 @@ public class testATrainDoesNotRunIntoItsOwnTail
         assertNull(gapNamedBy(atTheGap), "the refusal said a train of " + gap + " units or shorter can take this route,"
             + " and a train of exactly " + gap + " is refused for its own tail: " + atTheGap);
 
+        // AND AT THE FIGURE IT GOES (MT-571 step 4): some way to LowerFront is clear of every rule, and it is offered.
+        boolean anyClear = false;
+
+        for (Map.Entry<List<Edge>, String> each : routesToLowerFront().entrySet())
+        {
+            if (each.getValue() == null) anyClear = true;
+        }
+
+        assertTrue(anyClear, "at " + gap + " units every way to LowerFront is refused for some reason, so the train does"
+            + " not go (MT-571)");
+
+        assertTrue(offersLowerFront(), "at " + gap + " units LowerFront is not offered by the send doors (MT-571)");
+
         clearTheRailway();
         standItAsArrived(gap + 1);
 
@@ -321,6 +371,9 @@ public class testATrainDoesNotRunIntoItsOwnTail
 
         assertNotNull(gapNamedBy(pastTheGap), "a train of " + (gap + 1) + " units - one more than the refusal allows - is"
             + " not refused for its own tail: " + pastTheGap);
+
+        assertFalse(offersLowerFront(), "at " + (gap + 1) + " units LowerFront is still offered by the send doors"
+            + " (MT-571)");
 
         // AND EVERY WAY THERE, which is what a person sees (TDA-C2): a destination is offered if any route to it is
         // clear, so a train one unit past the figure is kept off LowerFront only if every route there refuses it.
