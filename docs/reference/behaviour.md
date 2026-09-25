@@ -1947,6 +1947,15 @@ object those sets and already-issued paths hold.
 **Staging counts as running.** The Return Home planner walks these structures with nothing dispatched
 at all, which is exactly the window a bare "is autonomy running" flag waves through.
 
+**A locomotive edit takes a train off the graph only through the edited train's own presence**
+(BPV-A1, 2026-09-25).  Renaming, re-addressing, re-linking or deleting a locomotive is refused while
+autonomy runs - its coast-down and Return Home's planning included - so the edit doors act on a
+stopped railway, and their sweep for multi-unit conflicts asks only when the edited train stands on
+the graph: a train that stands nowhere clashes with nothing that stands.  Renaming a member of a
+multi-unit whose head stood on a station took the head off it - a head is never compatible with its
+own member - and the platform read as empty with the train on it.  Putting a train down still sweeps
+first, before it is placed.
+
 **The greying on the menu is not this guard.** Menu items are greyed when the popup *opens* and the
 action fires when it is *clicked*; starting autonomy from another window in between leaves a live item
 over a running railway. The refusal has to be in the method, and the menu asks the same question so
