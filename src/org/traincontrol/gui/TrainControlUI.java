@@ -6745,6 +6745,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private LayoutEditor openEditor;
 
     /**
+     * The layout editor's window while one is open, or null - for a question that has to open in front of it rather
+     * than over this window, which the editor covers (MT-575).
+     *
+     * @return the editor, or null when none is open
+     */
+    java.awt.Window openLayoutEditorWindow()
+    {
+        return openEditor != null && openEditor.isDisplayable() ? openEditor : null;
+    }
+
+    /**
      * Brings the open editor forward, for a menu item that exists to say "it is over there".
      *
      * Every menu that refuses while an editor is open used to say so with a disabled item, which
