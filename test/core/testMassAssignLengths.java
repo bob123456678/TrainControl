@@ -1593,7 +1593,12 @@ public class testMassAssignLengths
      * The One-Way Run BUTTON is greyed on a page left out too, and a run armed when the page is left out is put down
      * (OB-235, TDD-C7) - the parts MT-568 checks that the Bulk Tools claim above does not.
      *
-     * MUTATION: leave the button enabled on a page left out, or leave it armed, and this fails.
+     * The TOOL, not only its button (TDD2-C7): un-pressing a toggle fires no action, so the button and the tool it arms
+     * are two things, and a tool left armed with its button up waits for the next click once the page is ticked back in.
+     * And the prompt it put up for its first square goes with it.
+     *
+     * MUTATION: leave the button enabled on a page left out, leave it armed, put the button down and leave the tool,
+     * or leave the prompt, and this fails.
      *
      * @throws Exception from the event thread
      */
@@ -1625,6 +1630,24 @@ public class testMassAssignLengths
 
         assertFalse(oneWay.isSelected(), "One-Way Run was left armed on a page left out of autonomy - a click there waits"
             + " for its second square (OB-235)");
+
+        java.lang.reflect.Field toolField = AutonomyEditorPanel.class.getDeclaredField("tool");
+
+        toolField.setAccessible(true);
+
+        assertEquals(String.valueOf(toolField.get(panel)), "NONE", "the One-Way Run button was put down on a page left"
+            + " out, and the tool it arms was not - tick the page back in and the next click starts a one-way run with"
+            + " nothing pressed (TDD2-C7)");
+
+        java.lang.reflect.Field hintField = AutonomyEditorPanel.class.getDeclaredField("hint");
+
+        hintField.setAccessible(true);
+
+        String hint = ((javax.swing.JLabel) hintField.get(panel)).getText();
+
+        assertFalse(hint != null && hint.contains(org.traincontrol.util.I18n.t("autosetup.ui.promptOneWayFrom")),
+            "One-Way Run was put down on a page left out and its prompt still asks for the first square (TDD2-C7): "
+            + hint);
     }
 
     /** The Bulk Tools item with this text. */
