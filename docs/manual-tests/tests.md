@@ -43,10 +43,8 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-501](#mt-501) | 2026-09-24 | Importing an old autonomy.json leaves your diagram's directions as they are | fixed unvalidated | REG4-A1, the directions ruling of 2026-09-24 |
 | [MT-502](#mt-502) | 2026-09-24 | A station an old autonomy.json switched off arrives as one trains can stop at, not chosen by autonomy | fixed unvalidated | REG-B1 |
 | [MT-504](#mt-504) | 2026-09-24 | A station's exit guard cannot also be made its entry guard | fixed unvalidated | AUT-C2, MT-493 |
-| [MT-505](#mt-505) | 2026-09-24 | A guard signal that no way into its station passes is noticed | fixed unvalidated | AUT-C2, MT-493 |
 | [MT-506](#mt-506) | 2026-09-24 | A route fired by its sensor skips only the switch under a train, and runs the rest | fixed unvalidated | MT-247 |
 | [MT-507](#mt-507) | 2026-09-24 | Cancel on a route that would switch track under a train cancels all of it, from either door | fixed unvalidated | MT-247 |
-| [MT-508](#mt-508) | 2026-09-24 | OK on a route that would switch track under a train fires all of it | fixed unvalidated | MT-247 |
 | [MT-512](#mt-512) | 2026-09-24 | On a layout with nothing set up, the Autonomy menu offers Import | fixed unvalidated | MT-380 |
 | [MT-513](#mt-513) | 2026-09-24 | Importing a setup onto a layout with fewer pages warns once, naming the missing pages | fixed unvalidated | MT-380 |
 | [MT-514](#mt-514) | 2026-09-24 | After that import, opening the autonomy editor asks nothing | fixed unvalidated | MT-380 |
@@ -58,7 +56,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-530](#mt-530) | 2026-09-24 | Mass Assign Lengths asks for crossings on their own, and one answer sets them all | fixed unvalidated | MT-459 |
 | [MT-533](#mt-533) | 2026-09-24 | The train-length prompt takes typing without a click | fixed unvalidated | MT-474 |
 | [MT-548](#mt-548) | 2026-09-24 | On a Central Station layout the Autonomy menu opens, and only the download and Documentation can be chosen | fixed unvalidated | OB-254, OB-093, MT-544 |
-| [MT-559](#mt-559) | 2026-09-24 | At a station autonomy may choose, a short run-in says a longer train may block the layout | fixed unvalidated | MT-555 |
 | [MT-566](#mt-566) | 2026-09-24 | The locomotive train-length walk is never greyed, and counts | fixed unvalidated | MT-533 |
 | [MT-567](#mt-567) | 2026-09-24 | Train lengths and station maximum lengths are named apart | fixed unvalidated | MT-533 |
 | [MT-568](#mt-568) | 2026-09-24 | One-Way Run is greyed on a page left out of autonomy | fixed unvalidated | OB-235, MT-528 |
@@ -67,21 +64,17 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-571](#mt-571) | 2026-09-24 | A train is not sent round a loop into its own tail | fixed unvalidated | OB-294 |
 | [MT-572](#mt-572) | 2026-09-24 | Train lengths go to 40, in both lists | fixed unvalidated | OB-294 |
 | [MT-573](#mt-573) | 2026-09-24 | Execute Timetable and Return Home refuse a setup with errors | fixed unvalidated | MT-263, TDU-B1 |
-| [MT-574](#mt-574) | 2026-09-24 | A double-click on a lit sensor answers the tail question and does not flip the sensor | fixed unvalidated | FR-100, TDU-B3 |
 | [MT-575](#mt-575) | 2026-09-24 | From the autonomy editor the tail question is the list | fixed unvalidated | FR-100, TDU-C1 |
 | [MT-576](#mt-576) | 2026-09-24 | A tail answer given after the placement changed is written where the train now stands, or not at all | fixed unvalidated | TDU2-A1, TDU3-B1 |
-| [MT-577](#mt-577) | 2026-09-24 | Customize Function Icons greys Apply while there is nothing to apply | fixed unvalidated | FR-098 |
-| [MT-579](#mt-579) | 2026-09-24 | A late tail answer does not write over the road another train drove in by | fixed unvalidated | TDU2-A1, TDD3-C6, TDD4-C4 |
 | [MT-580](#mt-580) | 2026-09-25 | Over a setup with errors, the right-click Return Home item is greyed and says why | fixed unvalidated | TDU2-C3 |
 | [MT-581](#mt-581) | 2026-09-25 | The right-click Place keeps the train's heading | fixed unvalidated | OB-296, TDU-B4 |
 | [MT-582](#mt-582) | 2026-09-25 | Importing an old autonomy.json leaves Load Autonomy as it was | fixed unvalidated | TDD-C11 |
-| [MT-583](#mt-583) | 2026-09-25 | TopMainR1Inter's notice gives the length a train is refused above | fixed unvalidated | TDA-C10 |
 | [MT-584](#mt-584) | 2026-09-25 | A train standing on the watched square closes a square trains only pass | fixed unvalidated | OB-295, TDA-C9 |
 | [MT-585](#mt-585) | 2026-09-25 | The right-click Place keeps a heading trains may not arrive by | fixed unvalidated | OB-296, ADU-B1, ADD2-C9 |
 | [MT-586](#mt-586) | 2026-09-25 | A stretch answered 0 lets a train in when the total track holds it | fixed unvalidated | ADU-C7, TDU-C6 |
 
-Everything else - 534 of 586 - needs nothing from you unless the area changes again:
-453 **fixed validated** and 81 **superseded**.
+Everything else - 541 of 586 - needs nothing from you unless the area changes again:
+453 **fixed validated** and 88 **superseded**.
 
 ---
 
@@ -26013,7 +26006,7 @@ as the exit guard."*
 
 ### MT-505 - 2026-09-24 - A guard signal that no way into its station passes is noticed
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** AUT-C2, MT-493
 
 **Written:** 2026-09-24
@@ -26035,6 +26028,10 @@ autonomy editor."*
   you meant.  It is a notice, not an error: the setup still saves and runs.
 
 *What this is:* `core.testAutonomyDiagramSession.testAGuardOffTheWayInIsNoticed`.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `core.testAutonomyDiagramSession.testAGuardOffTheWayInIsNoticed` sets an entry guard on a signal no way into the station passes, through the method Entry Guard Signal... runs, and asserts the notice appears, is graded a notice (under Worth tidying, not an error), and adds no error - so the setup still saves and runs.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -26094,7 +26091,7 @@ autonomy editor."*
 
 ### MT-508 - 2026-09-24 - OK on a route that would switch track under a train fires all of it
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-247
 
 **Written:** 2026-09-24
@@ -26109,6 +26106,10 @@ autonomy editor."*
 **Expected**
 
 - Every command runs: switch A and switch B are thrown, and the power goes off.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testARouteDoesNotThrowSwitchesUnderATrain.testOKFiresEveryCommandOfTheRoute`.  **The steps could not pass as written**: a route carrying an emergency stop is never asked about (your ruling of 2026-09-01: *"Emergency stop should never conflict or prompt."*), so it has no OK.  The test checks what the code does with the route the entry describes - fired without a question, the power goes off and switch B is thrown, while switch A, held by the train, is left alone - and that the same route without the stop is asked about and OK throws both switches.  If you want a route with a stop to ask, or to throw the held switch, that is a change to the ruling: say so.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -27765,7 +27766,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-559 - 2026-09-24 - At a station autonomy may choose, a short run-in says a longer train may block the layout
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-555
 
 **Written:** 2026-09-24
@@ -27793,6 +27794,10 @@ Validated on your *Works* of 2026-09-24.
 **Claude, 2026-09-25.**
 
 **Moved back to fixed unvalidated** (2026-09-25, ADD-C2).  Since your answer to TDA-C10, the notices at TopMainR1Inter and LowerFront go on to say a train longer than 3 - or 4 - coming in the shortest way is refused instead (MT-583).  So at those two, *is refused* now appears, by your answer; the other three read as you found them.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `core.testAnAnsweredZeroIsNotMissing.testTheWorthTidyingListSaysWhatEachPlatformDoes` builds the autonomy editor's own Worth tidying list over your frozen railway and reads its lines: BottomMainA, Tunnel, BottomInnerOtherside, LowerFront and TopMainR1Inter each say a longer train *stands across that switch while it is here, and may block other parts of the layout until it leaves*; none says *is refused* except the shortest-way clause MT-583 added at TopMainR1Inter and LowerFront; and none of them is given the parking berth's *is refused here* notice.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -28266,7 +28271,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-574 - 2026-09-24 - A double-click on a lit sensor answers the tail question and does not flip the sensor
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** FR-100, TDU-B3
 
 **Written:** 2026-09-24
@@ -28283,6 +28288,10 @@ Validated on your *Works* of 2026-09-24.
 - Step 2: the question is answered - the lights go out and the tail is drawn back towards TunnelPre - and TunnelPre's sensor shows as it did before the double-click.
 
 *What this is:* `regression.testTheTailIsPickedOnTheDiagram.testADoubleClickAnswersAndDoesNotFlipTheSensor`.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testTheTailIsPickedOnTheDiagram.testADoubleClickAnswersAndDoesNotFlipTheSensor` raises the tail question at Tunnel for a train of 5 on the real window, checks TunnelPre is lit, double-clicks TunnelPre's square, and asserts the question is answered with TunnelPre's road (the road the tail is drawn along), the light goes out, and TunnelPre's sensor shows as it did before.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -28351,7 +28360,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-577 - 2026-09-24 - Customize Function Icons greys Apply while there is nothing to apply
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** FR-098
 
 **Written:** 2026-09-24
@@ -28377,6 +28386,10 @@ Validated on your *Works* of 2026-09-24.
 **Claude, 2026-09-24.**
 
 **Step 1's path, corrected from the fourth validation round** (2026-09-24).  Right-click the locomotive's button on the keyboard and choose Manage Locomotive... then Customize Function Icons - or, in the locomotive database, Customize Function Icons.  The rest as written.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testApplyIsGreyedWithNothingToApply.testApplyFollowsWhetherAnythingChanged` opens Customize Function Icons as the locomotive menu does and asserts every Apply state the entry lists - greyed on opening, live with another icon, greyed with it put back, live with another trigger - then presses Apply and asserts F0 now holds the new trigger, the window has moved to F1, and Apply is greyed there.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -28413,7 +28426,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-579 - 2026-09-24 - A late tail answer does not write over the road another train drove in by
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** TDU2-A1, TDD3-C6, TDD4-C4
 
 **Written:** 2026-09-24
@@ -28433,6 +28446,10 @@ Validated on your *Works* of 2026-09-24.
 - Step 4: the grey behind the second train at Tunnel still runs back to TunnelPre, the road it drove in by.
 
 *What this is:* `regression.testTheTailIsPickedOnTheDiagram.testALateAnswerDoesNotWriteOverAnotherTrain`.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testTheTailIsPickedOnTheDiagram.testALateAnswerDoesNotWriteOverAnotherTrain` asks the question through the paste door for 75 407 DB at Tunnel, stands a second train on the same copy with the road it drove in by over TunnelPre - what the two hand sends in the steps leave behind - presses Cancel on the question's window, and asserts the second train's road is untouched, so its grey still reaches TunnelPre.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -28535,7 +28552,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-583 - 2026-09-25 - TopMainR1Inter's notice gives the length a train is refused above
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** TDA-C10
 
 **Written:** 2026-09-25
@@ -28559,6 +28576,10 @@ Validated on your *Works* of 2026-09-24.
 **Claude, 2026-09-25.**
 
 **All five figures are checked against the railway now** (2026-09-25, ADD2-C8), on the frozen copy of your railway: TopMainR1Inter 3 and LowerFront 4, each the railway's own refusal, and no figure at the other three.  ParkingTrack12 is switched off on it; a train standing there can still be sent into LowerFront by hand, and that is LowerFront's way in.  Held by `core.testAnAnsweredZeroIsNotMissing.testTheRefusingFigureIsTheRailwaysOwn`.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `core.testAnAnsweredZeroIsNotMissing.testTheWorthTidyingListSaysWhatEachPlatformDoes` reads the editor's Worth tidying list on your frozen railway: after the standing-across sentence TopMainR1Inter says *Coming in the shortest way, over 3 of measured track, a train longer than 3 is refused instead.*, LowerFront the same with 4, and Tunnel, BottomMainA and BottomInnerOtherside give no such figure.  `testTheRefusingFigureIsTheRailwaysOwn` checks each figure is the railway's own refusal.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
