@@ -443,4 +443,67 @@ public class testMultiUnitMembership
             deleteAll("MU head J", "MU member J1", "MU member J1 renamed");
         }
     }
+
+    /**
+     * A saved layout in which a multi-unit's head and one of its members both stand is loaded with
+     * only one of them standing: the member is part of the head's train, and one train cannot stand
+     * in two places.
+     *
+     * The loader's half of BPV-A1's fix.  The window's edit doors sweep only for a train that stands
+     * on the graph; the loader asks the sweep before each train is put down, so it must keep asking
+     * regardless - or both would load standing.  A control of the fix, not of the defect: it passes
+     * with and without it, and fails if the loader is given the edit doors' sweep.
+     *
+     * Ported from the 3.0 branch (612d9600).
+     */
+    @Test
+    public void testALoadedLayoutDoesNotStandAHeadAndItsMemberBoth() throws Exception
+    {
+        MarklinLocomotive head = model.newMM2Locomotive("MU head K", 80);
+        MarklinLocomotive member = model.newMM2Locomotive("MU member K1", 81);
+
+        try
+        {
+            link(head, member);
+
+            assertTrue(head.isLinkedTo(member), "precondition: the member could not be linked to the head");
+
+            Layout layout = new Layout(model);
+
+            MarklinFeedback first = model.newFeedback(8394, null);
+            MarklinFeedback second = model.newFeedback(8395, null);
+
+            model.setFeedbackState(first.getName(), false);
+            model.setFeedbackState(second.getName(), false);
+
+            layout.createPoint("MU station E", true, first.getName());
+            layout.createPoint("MU station F", true, second.getName());
+            layout.createEdge("MU station E", "MU station F");
+
+            // Both standing, as a file written by hand, or by an older build, can have them
+            layout.getPoint("MU station E").setLocomotive(head);
+            layout.getPoint("MU station F").setLocomotive(member);
+
+            // A new Layout has no default speed, and the loader refuses a layout without one
+            layout.setDefaultLocSpeed(30);
+
+            Layout loaded = Layout.fromJSON(layout.toJSON(), model);
+
+            assertTrue(loaded.isValid(), "precondition: the saved layout does not load: " + Layout.getLastError());
+
+            boolean headStands = loaded.getLocomotiveLocation(head) != null;
+            boolean memberStands = loaded.getLocomotiveLocation(member) != null;
+
+            assertTrue(headStands || memberStands,
+                "precondition: the load placed neither train, so it says nothing about the two of them");
+
+            assertFalse(headStands && memberStands,
+                "a saved layout loaded with a multi-unit's head and one of its members both standing - "
+                + "one train in two places");
+        }
+        finally
+        {
+            deleteAll("MU head K", "MU member K1");
+        }
+    }
 }
