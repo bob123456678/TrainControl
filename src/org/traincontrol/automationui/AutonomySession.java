@@ -10027,8 +10027,9 @@ public class AutonomySession
      * train, so it gives no figure and hides none.
      *
      * **The route in, walked back as the railway runs it** (`routesIn`): over sensors nobody is started at, to a copy a
-     * train is started at or turns at; stopped at a leg with no length (ADA-A1); never through a point that is switched
-     * off, or from or through another copy of the platform's own square (ADA2-C3).
+     * train is started at or turns at; stopped at a leg with no length (ADA-A1); never through or into a point that is
+     * switched off, though from a station switched off round a train standing there; and never from or through another
+     * copy of the platform's own square (ADA2-C3).
      *
      * @param built the built railway, or null
      * @param named its point names to squares, or null to ask the builder
@@ -10056,13 +10057,11 @@ public class AutonomySession
 
             String name = point.getString("name");
 
-            // SWITCHED OFF, NOTHING PASSES (ADA2-C3): `isPathClear` refuses any route through a point that is not active.
-            if (!point.optBoolean("active", true))
-            {
-                off.add(name);
-
-                continue;
-            }
+            // SWITCHED OFF, NOTHING PASSES OR ARRIVES (ADA2-C3): `isPathClear` refuses a route through a point that is not
+            // active, or into one - and not out of one (Adam, 2026-09-06: *"Just not inactive start points.  Inactive
+            // really means nothing can pass."*).  On his railway ParkingTrack12 is switched off, and a train standing
+            // there is sent into LowerFront by hand and refused above 4.
+            if (!point.optBoolean("active", true)) off.add(name);
 
             if (point.optBoolean("station", false))
             {
@@ -10087,7 +10086,8 @@ public class AutonomySession
         {
             org.json.JSONObject edge = edges.getJSONObject(i);
 
-            if (off.contains(edge.getString("start")) || off.contains(edge.getString("end"))) continue;
+            // Into a switched-off point, no leg runs; out of one, only the first - nothing comes into it to go on.
+            if (off.contains(edge.getString("end"))) continue;
 
             legs.add(edge);
 
