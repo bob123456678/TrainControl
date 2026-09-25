@@ -131,6 +131,7 @@ not fix it. Name the square.
 - `ui.testThePlaceDoorsKeepTheHeading`
 - `ui.testWhereHisTrainsMayBeSent`
 - `regression.testASetupMovesToAOnePageLayout`
+- `ui.testARouteOverATrainAtItsDoors`
 - `ui.testAPastedTrainFacesTheWayTheOperatorChose`
 - `core.testALockReachesTheRailBeingRunOver`
 - `ui.testBulkToolsHoldsTheWholeLayoutTools`

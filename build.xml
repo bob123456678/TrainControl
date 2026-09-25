@@ -292,6 +292,7 @@
         <test-one-class class="testACutTrainArrivesTheWayItWouldDrive"/>
         <test-one-class class="testThePlaceDoorsKeepTheHeading"/>
         <test-one-class class="testWhereHisTrainsMayBeSent"/>
+        <test-one-class class="testARouteOverATrainAtItsDoors"/>
         <test-one-class class="testAnImportKeepsOnlyThisLayoutsPages"/>
         <test-one-class class="testTheLeftAloneWarningIsSaidOnce"/>
         <test-one-class class="testATailFollowsTheRouteItCameIn"/>
