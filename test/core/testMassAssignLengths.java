@@ -2200,6 +2200,11 @@ public class testMassAssignLengths
             + " with 1 measured before a permanent turnout, is not warned about - the count ran on past the turnout and"
             + " counted the 5 beyond it, where the room walk stops (OB-233)");
 
+        // AND THE COUNT IS OF THE ONE SQUARE BEFORE THE TURNOUT (the closing mutation run): the leg from the turnout's
+        // branch is warned about whether the turnout ends the count or not, so only the count tells them apart.
+        assertEquals(session.stationsWithAHalfMeasuredApproach().get(atTheTurnout), Integer.valueOf(1), "the count ran"
+            + " on past the permanent turnout and counted its square as one to measure (OB-233)");
+
         // A CROSSING between the berth and its measured track: another road's square, which the berth rule refuses on.
         openBerthBehindACrossing();
 

@@ -1151,7 +1151,9 @@ public class testTheTailIsPickedOnTheDiagram
             int where = source.indexOf("whereTheAnswerGoes(", asked);
             int write = source.indexOf("setArrivedAlong(", where);
 
-            assertTrue(where > 0 && write > where && source.substring(where, write).contains("!= null)"), door[0]
+            String between = where > 0 && write > where ? source.substring(where, write) : "";
+
+            assertTrue(between.contains("landing != null)") || between.contains("answersTo != null)"), door[0]
                 + " writes the tail question's answer without asking where it goes (TDU2-A1)");
 
             int noted = source.indexOf("noteADroppedAnswer(", asked);
