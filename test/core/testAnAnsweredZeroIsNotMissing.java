@@ -370,15 +370,19 @@ public class testAnAnsweredZeroIsNotMissing
 
             // THE TAIL QUESTION, walked on over the 0.
             boolean crossed = false;
+            StringBuilder offered = new StringBuilder();
 
             for (org.traincontrol.gui.TailCrossedPrompt.Choice choice
-                : org.traincontrol.gui.TailCrossedPrompt.choicesFor(layout, road.get(2).getEnd(), null, 6, null))
+                : org.traincontrol.gui.TailCrossedPrompt.choicesFor(layout, road.get(2).getEnd(),
+                    layout.entrySideOf(road.get(2), road.get(2).getEnd()), 6, null))
             {
+                offered.append(choice.getFarthest().getName()).append(choice.isReached() ? " (crossed)" : "").append("; ");
+
                 if ("BottomSecondary".equals(choice.getFarthest().getName()) && choice.isReached()) crossed = true;
             }
 
             assertTrue(crossed, "a train of 6 at Tunnel has crossed BottomSecondary - 4 to TunnelPre and 0 more - and the"
-                + " tail question does not offer it");
+                + " tail question does not offer it: " + offered);
         }
         finally
         {

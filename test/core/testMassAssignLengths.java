@@ -2685,7 +2685,14 @@ public class testMassAssignLengths
 
         session.answerTileLengthsZero(Arrays.asList(key(2, 1), key(3, 1), key(4, 1), key(5, 1), key(6, 1), berth));
         session.setPointProperty(berth, "maxTrainLength", 5);
+
+        // SOMETHING MEASURED OFF THE APPROACH - on the crossing's other road - or the railway reads as one that models no
+        // lengths at all, where no length notice is given (`measuresAnyTrack`: a deliberate 0 alone does not arm them).
+        session.setTileLength(key(5, 0), 1);
         session.rebuild();
+
+        assertTrue(session.getStore().measuresAnyTrack(), "precondition: the railway measures nothing, so no length notice"
+            + " is given anywhere");
 
         assertTrue(warnsOfNoRoom(berth), "a parking berth whose approach was answered 0 throughout holds no train, and"
             + " is not warned about: " + session.check());
