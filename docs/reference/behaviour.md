@@ -2421,10 +2421,23 @@ The legacy importer behaves the same way and names what it left out, so the two 
 same file.
 
 **An old autonomy.json goes into the configuration named at the Import prompt** (Adam, 2026-09-25, choosing
-between honouring the name typed and not asking for one: *"(a)"*): created where there is none of that name, and
-made the one in use; the configuration in use before is left as it was.  Until then a layout that already had
-configurations took the file's placements, homes and facings into the one in use, and the name asked for was
-thrown away.  `core.testASecondImportFillsGapsAndDoesNotOverwrite.testAnImportGoesIntoTheConfigurationNamed`.
+between honouring the name typed and not asking for one: *"(a)"*), created where there is none of that name.  It is
+chosen only while the import writes into it: the configuration running stays the one in use, and is the one the next
+start resumes, whether or not the reload after the import goes ahead - the imported one is loaded only where nothing
+was running.  The import's message names the configuration its trains went into and, where another is in use, where
+to choose it.  Until then a layout that already had configurations took the file's placements, homes and facings into
+the one in use, and the name asked for was thrown away.
+
+Into a configuration that exists, an old file fills what that configuration does not already say (MT-298), and the
+door asks exactly that - *"Add to it what the file has and {0} does not?"* - where a bundle replaces the
+configuration and asks to replace it.  A train the configuration already has standing somewhere is not placed again,
+and is named in the message; a train that already has a home gets no second one - one train in two places refuses the
+whole configuration (RLA-B2).  Into the configuration running, by its name, what the running layout knows goes in
+first and the reload after the import does not capture again, so the reload cannot write the running railway back
+over what the import brought (RLA-C2); while trains are moving the reload stops them and captures where they stopped,
+as every reload does.  A file the import cannot read to its end leaves the setup as it was: nothing made, chosen or
+saved (RLA-C3).  `core.testASecondImportFillsGapsAndDoesNotOverwrite.testAnImportGoesIntoTheConfigurationNamed`, and
+`regression.testTheImportDoorReadsAnOldFile`.
 
 A MALFORMED entry is still refused - a lock entry the loader cannot read (`errorLockEdgeGeneric`), or a
 placement with no locomotive name at all (`errorLocomotiveConfigMissingName`) - because that is a broken

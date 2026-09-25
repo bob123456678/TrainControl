@@ -673,6 +673,18 @@ public class AutonomyViewerPanel extends JPanel
      */
     private void loadAfterImport(String name)
     {
+        loadAfterImport(name, true);
+    }
+
+    /**
+     * The same, told whether the running layout's state still has to be folded back in first - false where the import
+     * captured it before writing, so the reload does not write it back over what the import brought (RLA-C2).
+     *
+     * @param name the configuration to bring up, or null to leave things alone
+     * @param captureRunningState whether the reload captures the running layout first
+     */
+    private void loadAfterImport(String name, boolean captureRunningState)
+    {
         if (name == null || name.trim().isEmpty()) return;
 
         // The rule lives on AutonomySession, where it can be tested; see the note there for why
@@ -684,7 +696,7 @@ public class AutonomyViewerPanel extends JPanel
 
         session().getStore().setActiveConfiguration(toLoad);
 
-        load(toLoad, true);
+        load(toLoad, true, captureRunningState);
 
         // And then rebuild the diagram, which is what makes the captions live.
         //
@@ -1009,11 +1021,47 @@ public class AutonomyViewerPanel extends JPanel
 
         if (name == null || name.trim().isEmpty()) return;
 
-        // importing over an existing name replaces it, which is sometimes wanted and never silent
+        // READ BEFORE THE QUESTION BELOW, so that it can say what Yes does (RLA-B2, RLU-B1, RLD-C4).  A bundle replaces
+        // the configuration of that name; an old autonomy.json fills in what that configuration does not already say,
+        // as MT-298 rules a second import must.  They shared one question - "Replace it with the imported one?" - and
+        // for an old file Yes did the other thing.
+        org.json.JSONObject file;
+
+        AutonomySession.ImportFormat format;
+
+        try
+        {
+            byte[] bytes = java.nio.file.Files.readAllBytes(chooser.getSelectedFile().toPath());
+
+            file = new org.json.JSONObject(new String(bytes, java.nio.charset.StandardCharsets.UTF_8));
+
+            // Told apart by shape, not by where it came from or what it is called.  A user has one
+            // Import, and an old autonomy.json is as much a thing to import as a bundle is - being
+            // asked to know which menu item their own file belongs to is a question they should never
+            // have to answer.
+            format = AutonomySession.detectImportFormat(file);
+        }
+        catch (IOException | RuntimeException e)
+        {
+            JOptionPane.showMessageDialog(ui,
+                I18n.f("autosetup.ui.errorImportUnreadable", String.valueOf(e.getMessage())));
+
+            refresh();
+            return;
+        }
+
+        if (format == AutonomySession.ImportFormat.UNKNOWN)
+        {
+            JOptionPane.showMessageDialog(ui, I18n.t("autosetup.ui.errorImportUnrecognised"));
+            return;
+        }
+
+        // importing over an existing name replaces it, or fills its gaps, which is sometimes wanted and never silent
         if (session().getStore().getConfigurationNames().contains(name.trim()))
         {
             int replace = JOptionPane.showOptionDialog(ui,
-                I18n.f("autosetup.ui.confirmImportOverwrites", name.trim()),
+                I18n.f(format == AutonomySession.ImportFormat.LEGACY_GRAPH
+                    ? "autosetup.ui.confirmImportFillsGaps" : "autosetup.ui.confirmImportOverwrites", name.trim()),
                 I18n.t("autosetup.ui.title"), JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE, null,
                 TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]);
@@ -1023,23 +1071,6 @@ public class AutonomyViewerPanel extends JPanel
 
         try
         {
-            byte[] bytes = java.nio.file.Files.readAllBytes(chooser.getSelectedFile().toPath());
-
-            org.json.JSONObject file =
-                new org.json.JSONObject(new String(bytes, java.nio.charset.StandardCharsets.UTF_8));
-
-            // Told apart by shape, not by where it came from or what it is called.  A user has one
-            // Import, and an old autonomy.json is as much a thing to import as a bundle is - being
-            // asked to know which menu item their own file belongs to is a question they should never
-            // have to answer.
-            AutonomySession.ImportFormat format = AutonomySession.detectImportFormat(file);
-
-            if (format == AutonomySession.ImportFormat.UNKNOWN)
-            {
-                JOptionPane.showMessageDialog(ui, I18n.t("autosetup.ui.errorImportUnrecognised"));
-                return;
-            }
-
             if (format == AutonomySession.ImportFormat.LEGACY_GRAPH)
             {
                 // WITH the name, which this branch used to discard (OB-106).
@@ -1103,27 +1134,18 @@ public class AutonomyViewerPanel extends JPanel
     private static final String NEWLINES = System.lineSeparator() + System.lineSeparator();
 
     /**
-     * Reads an old autonomy.json onto the squares carrying the same sensors - names, stations,
-     * lengths, and the locomotives that were standing on them.
-     *
-     * The way across for anybody who set their railway up in the graph this replaces: none of it is
-     * derivable from a diagram, so without this it would all be entered again, one square at a time.
-     *
-     * Debug builds only - the sensor match is only as good as the diagram's addresses, so this is for
-     * somebody who will check the result rather than a button on everybody's menu.
-     */
-    /**
-     * Makes the configuration named at the Import prompt the one in use, creating it where there is none of that name -
-     * the configuration an old autonomy.json's per-point half is then written into (Adam, 2026-09-25: *"(a)"*).
+     * Chooses the configuration named at the Import prompt, creating it where there is none of that name - the
+     * configuration an old autonomy.json's per-point half is then written into (Adam, 2026-09-25: *"(a)"*).
      *
      * `importLegacy` writes placements, homes, termini and facings through `setPointProperty`, which addresses the
-     * configuration in use; so choosing it is choosing where they land.  The configuration in use before is not touched:
-     * `setActiveConfiguration` moves the pointer and nothing else.
+     * configuration chosen; so choosing it is choosing where they land.  The configuration chosen before is not touched:
+     * `setActiveConfiguration` moves the pointer and nothing else - and the door moves it back to the configuration that
+     * is running before anything is saved, so the imported one is loaded only where nothing else is.
      *
      * @param store the setup's store
      * @param typed the name typed at the prompt, or null or blank for none
      * @param suggested the name to use where none was typed
-     * @return the configuration now in use
+     * @return the configuration now chosen
      * @throws java.io.IOException where a configuration of that name cannot be created
      */
     static String activateTheConfigurationNamed(AutonomyCompanionStore store, String typed, String suggested)
@@ -1148,6 +1170,12 @@ public class AutonomyViewerPanel extends JPanel
      */
     private void importLegacyGraph(org.json.JSONObject file, String name)
     {
+        // EVERYTHING AS IT WAS, for an import that fails part way (RLA-C3, RLU-C1).  The configuration is created and
+        // chosen before the file is read, and importLegacy writes as it reads; its sibling, the bundle import, puts all of
+        // that back when it fails, and this did not - the new configuration stayed chosen, and the next save made it the
+        // one the next start resumed.
+        org.json.JSONObject was = session().snapshotSetup();
+
         // Somewhere for the import to land, before it starts (OB-106).
         //
         // The shared half of a setup - names, stations, lengths, directions - belongs to the TRACK and
@@ -1161,12 +1189,15 @@ public class AutonomyViewerPanel extends JPanel
         // asking for one: *"(a)"*).  A layout that already had configurations kept importing into the one in use, so the
         // name the door had just asked for - and warned about replacing - was thrown away, and the old file's placements,
         // homes and facings went into the configuration the operator was running.  Now the one named is created where it
-        // does not exist, and made the one in use; the others are left as they were.
+        // does not exist, and chosen while the import writes into it; the configuration running is chosen again before
+        // anything is saved (RLD-C3, below), and the others are left as they were.
+        String into;
+
         try
         {
             // suggestedConfigurationName, not the bundle key directly: that value is "Autonomy {0}" and asking for it
             // with I18n.t would put the placeholder on screen as the configuration's NAME.
-            activateTheConfigurationNamed(session().getStore(), name, suggestedConfigurationName());
+            into = activateTheConfigurationNamed(session().getStore(), name, suggestedConfigurationName());
         }
         catch (java.io.IOException e)
         {
@@ -1194,6 +1225,9 @@ public class AutonomyViewerPanel extends JPanel
                 shut.size(), String.join(", ", shut)));
         }
 
+        // Whether the import reached the save, after which a failure is not rolled back: what was saved stays.
+        boolean saved = false;
+
         try
         {
             // The names this database actually holds, so a placement naming something else is
@@ -1201,7 +1235,44 @@ public class AutonomyViewerPanel extends JPanel
             java.util.Set<String> known = ui.getModel() == null
                 ? null : new java.util.LinkedHashSet<>(ui.getModel().getLocList());
 
+            // INTO THE CONFIGURATION RUNNING, BY ITS NAME (RLA-C2): what the running layout knows goes into it FIRST, and
+            // the reload after the import does not capture again.  Captured on the reload, as every reload does, it
+            // replaced the import's homes and maxima - or removed them, where the running layout carried none - right
+            // after the dialog had counted them.  Captured first, where a train stands is still the running layout's
+            // fact (OB-183), and the import fills only what is left.  Not while trains are moving: the reload stops them
+            // and captures where they stopped, as it always has.
+            boolean captured = false;
+
+            if (into.equals(ui.getActiveDiagramConfiguration()) && !ui.isAutonomyBusy() && ui.getModel() != null
+                && ui.getModel().hasAutoLayout() && ui.getModel().getAutoLayout().isValid())
+            {
+                try
+                {
+                    session().captureFromLayout(ui.getModel().getAutoLayout().toJSON(), into);
+
+                    captured = true;
+                }
+                catch (Exception e)
+                {
+                    // as load() treats it: a courtesy, and failing it leaves the reload to capture, as before
+                    if (ui.getModel().isDebug()) ui.getModel().log(String.valueOf(e.getMessage()));
+                }
+            }
+
             AutonomySession.LegacyImport result = session().importLegacy(file, known);
+
+            // Read to its end before anything is saved, so a file that throws here has changed nothing (RLA-C3).  This
+            // came after the save, and it reads the timetable and the edges strictly.
+            java.util.List<String> left = session().whatALegacyImportLeaves(file);
+
+            // AND THE CONFIGURATION RUNNING CHOSEN AGAIN, BEFORE THE SAVE (RLD-C3).  The save wrote the imported one as
+            // the configuration the next start resumes, and only a reload that finished put the running one back - so
+            // "No" to stopping the trains, or a reload refused, left the next start loading the imported configuration.
+            String inUse = AutonomySession.configurationToLoadAfterImport(ui.getActiveDiagramConfiguration(), into);
+
+            if (inUse != null) session().getStore().setActiveConfiguration(inUse);
+
+            saved = true;
 
             save();
 
@@ -1225,6 +1296,13 @@ public class AutonomyViewerPanel extends JPanel
                     String.join(", ", result.duplicateLocomotives));
             }
 
+            // And the ones this configuration already has standing somewhere, which stay there (RLA-B2)
+            if (!result.alreadyPlaced.isEmpty())
+            {
+                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyAlreadyPlaced",
+                    String.join(", ", result.alreadyPlaced));
+            }
+
             // AND WHAT IT DID NOT BRING (MT-257 item 3).
             //
             // Adam: "yes, but list them in the log and mention that in the dialog."  Four things are
@@ -1234,9 +1312,7 @@ public class AutonomyViewerPanel extends JPanel
             // own comment called that "a gap worth naming rather than papering over".
             //
             // The list goes to the log because it is a list and this is a dialog; the dialog says it
-            // is there, which is the half that was missing.
-            java.util.List<String> left = session().whatALegacyImportLeaves(file);
-
+            // is there, which is the half that was missing.  Read above, before the save.
             if (!left.isEmpty() && ui.getModel() != null)
             {
                 ui.getModel().log(I18n.t("autosetup.ui.leftBehindHeading"));
@@ -1281,20 +1357,35 @@ public class AutonomyViewerPanel extends JPanel
                 ui.getModel().log(I18n.f("autosetup.ui.directionsNotCarried", result.directionsNotCarried));
             }
 
+            // AND WHERE IT WENT (RLA-C1): into the configuration named, which is the one in use only where nothing else
+            // was running - otherwise the dialog counted trains the diagram does not show, and named no configuration.
+            String where = inUse == null || into.equals(inUse)
+                ? I18n.f("autosetup.ui.infoLegacyImportedInto", into)
+                : I18n.f("autosetup.ui.infoLegacyImportedNotInUse", into, inUse,
+                    I18n.t("autosetup.ui.menuAutonomy") + " > " + I18n.f("autosetup.ui.menuConfigurations", inUse));
+
             JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.infoLegacyImported",
                 result.matched, result.placed, result.reversing, result.settings,
                 result.skipped, result.unmatched.size()) + unmatched
-                + (left.isEmpty() ? "" : NEWLINES + I18n.f("autosetup.ui.leftBehind", left.size())));
+                + (left.isEmpty() ? "" : NEWLINES + I18n.f("autosetup.ui.leftBehind", left.size()))
+                + NEWLINES + where);
 
-            // The active one, which after the block above is the one just created when there was
-            // none - so the import is loaded rather than left sitting on disk.
-            loadAfterImport(session().getStore().getActiveConfiguration());
+            // The one just created when nothing was running - so the import is loaded rather than left sitting on disk -
+            // and otherwise the one running, loaded again over the shared half the import merged.
+            loadAfterImport(into, !captured);
         }
         // RuntimeException alone: reading the file moved out to the one Import action that decides
         // what a file IS, so nothing left in here is checked.  A malformed file still lands here, as
         // a JSONException.
         catch (RuntimeException e)
         {
+            // Put back, where nothing has been saved yet (RLA-C3, RLU-C1)
+            if (!saved)
+            {
+                session().getStore().restoreSetup(was);
+                session().rebuild();
+            }
+
             JOptionPane.showMessageDialog(ui,
                 I18n.f("autosetup.ui.errorImportUnreadable", String.valueOf(e.getMessage())));
         }

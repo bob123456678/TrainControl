@@ -593,10 +593,10 @@ public class testTheImportDoorReadsAnOldFile
      * An old file imported into the configuration in use, by its name, keeps what it brought: the reload after it does
      * not write the running railway back over it (RLA-C2).
      *
-     * The reload captured the running layout into that configuration first, and the capture removes a station's maximum
-     * where the running layout carries none - so a maximum the import had just filled in, and counted, was gone again.
-     * Here the station is BottomMainB, whose maximum is taken out of the configuration in use and the railway reloaded
-     * without it, as a station never given one would be.
+     * The reload captured the running layout into that configuration first, and the capture takes a train off every
+     * square where the running layout has none standing - so a train the import had just placed, and counted, was gone
+     * again.  Homes went the same way.  The running layout's state now goes in before the import, which then fills only
+     * what is left, and the reload does not capture again.
      *
      * MUTATION: reload after the import with the capture, and this fails.
      *
@@ -627,34 +627,34 @@ public class testTheImportDoorReadsAnOldFile
 
             assertNotNull(inUse, "precondition: the frozen railway has no configuration in use");
 
-            TileKey station = null;
+            Set<String> before = standingIn(session, inUse);
 
-            for (TileKey key : session.getStore().getNamedTiles())
-            {
-                if ("BottomMainB".equals(session.getStore().getPointName(key))) station = key;
-            }
+            List<String> said = importFromTheMenu(ui[0], MT491, inUse);
 
-            assertNotNull(station, "precondition: no BottomMainB on his railway");
+            Integer placed = placedIn(said);
 
-            // NO MAXIMUM AT BOTTOMMAINB, in the configuration in use and on the railway running it.
-            org.json.JSONObject extras = session.getStore().getConfiguration(inUse).getJSONObject("points")
-                .optJSONObject(station.toString());
+            assertNotNull(placed, "precondition: the import said nothing about what it placed: " + said);
 
-            if (extras != null) extras.remove("maxTrainLength");
-
-            SwingUtilities.invokeAndWait(() -> ui[0].getAutonomyViewerPanel().load(inUse, false, false));
-
-            assertEquals(maxOf(ui[0].getAutonomySession(), station), 0, "precondition: BottomMainB still has a maximum");
-
-            importFromTheMenu(ui[0], MT491, inUse);
+            assertTrue(placed > 0, "precondition: the import placed none of the file's trains in " + inUse + ", so there"
+                + " is nothing for the reload to take back: " + said);
 
             session = ui[0].getAutonomySession();
 
             assertEquals(session.getStore().getActiveConfiguration(), inUse, "precondition: the import left " + inUse
                 + " no longer the one chosen");
 
-            assertEquals(maxOf(session, station), 4, "the old file's maximum of 4 at BottomMainB, imported into " + inUse
-                + " by name, was taken out again by the reload after it (RLA-C2)");
+            Set<String> after = standingIn(session, inUse);
+
+            Set<String> brought = new java.util.TreeSet<>(after);
+
+            brought.removeAll(before);
+
+            assertTrue(after.containsAll(before), "the import into " + inUse + " took off a train that stood there: "
+                + before + " then " + after);
+
+            assertEquals(brought.size(), placed.intValue(), "the import said it placed " + placed + " in " + inUse + ", and"
+                + " after the reload " + inUse + " has " + brought + " more - the reload wrote the running railway back"
+                + " over what the import brought (RLA-C2)");
         }
         finally
         {
@@ -669,6 +669,28 @@ public class testTheImportDoorReadsAnOldFile
 
             if (sandbox != null) sandbox.close();
         }
+    }
+
+    /** The locomotives a configuration has standing somewhere. */
+    private static Set<String> standingIn(AutonomySession session, String configuration)
+    {
+        Set<String> out = new java.util.TreeSet<>();
+
+        org.json.JSONObject points = session.getStore().getConfiguration(configuration).optJSONObject("points");
+
+        if (points == null) return out;
+
+        for (String square : points.keySet())
+        {
+            org.json.JSONObject extras = points.optJSONObject(square);
+
+            if (extras != null && extras.has(AutonomyBuilder.LOCOMOTIVE))
+            {
+                out.add(extras.getJSONObject(AutonomyBuilder.LOCOMOTIVE).optString("name"));
+            }
+        }
+
+        return out;
     }
 
     // ---------------------------------------------------------------- the door

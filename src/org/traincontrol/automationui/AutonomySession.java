@@ -555,6 +555,12 @@ public class AutonomySession
          * an old graph that has drifted can easily name the same one twice.
          */
         public final List<String> duplicateLocomotives = new ArrayList<>();
+
+        /**
+         * Locomotives the file places that the configuration imported into already has standing somewhere.  Not placed
+         * again: the train stays where the configuration has it (RLA-B2).
+         */
+        public final List<String> alreadyPlaced = new ArrayList<>();
     }
 
     /**
@@ -937,6 +943,38 @@ public class AutonomySession
         // are counted so the choice can be reported rather than made silently.
         Set<String> homedAlready = new LinkedHashSet<>();
 
+        // AND ACROSS WHAT THE CONFIGURATION ALREADY SAYS (RLA-B2).  Kept across the file alone, a second import of the
+        // same file, into a configuration where one of its trains had been moved since - by a run and the capture after
+        // it, or by the editor's Place - found the square the train had left empty, and put the train there as well: one
+        // train on two squares, which refuses the whole configuration.  Where a train already stands, and which train
+        // already has a home, are facts about the configuration, and gap-filling does not overrule them.
+        Set<String> standingAlready = new LinkedHashSet<>();
+
+        String into = store.getActiveConfiguration();
+
+        org.json.JSONObject intoConfiguration = into == null ? null : store.getConfiguration(into);
+
+        org.json.JSONObject intoPoints = intoConfiguration == null ? null : intoConfiguration.optJSONObject("points");
+
+        if (intoPoints != null)
+        {
+            for (String square : intoPoints.keySet())
+            {
+                org.json.JSONObject extras = intoPoints.optJSONObject(square);
+
+                if (extras == null) continue;
+
+                org.json.JSONObject stands = extras.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
+
+                if (stands != null && !stands.optString("name", "").trim().isEmpty())
+                {
+                    standingAlready.add(stands.optString("name", "").trim());
+                }
+
+                if (!extras.optString("home", "").trim().isEmpty()) homedAlready.add(extras.optString("home", "").trim());
+            }
+        }
+
         org.json.JSONArray points = legacy.optJSONArray("points");
 
         if (points == null || reducer == null) return result;
@@ -1064,6 +1102,10 @@ public class AutonomySession
                         else if (knownLocomotives != null && !knownLocomotives.contains(locName))
                         {
                             result.unknownLocomotives.add(locName);
+                        }
+                        else if (standingAlready.contains(locName))
+                        {
+                            if (!result.alreadyPlaced.contains(locName)) result.alreadyPlaced.add(locName);
                         }
                         else if (!placedAlready.add(locName))
                         {
