@@ -117,13 +117,92 @@ public class testTheOwnTailArithmetic
     /** The rule, asked of this route for a train of this length. */
     private static String ask(List<Edge> route, int length) throws Exception
     {
+        return ask(route, length, BODY);
+    }
+
+    /** The rule, asked of this route for a train of this length whose body lies on these places. */
+    private static String ask(List<Edge> route, int length, Map<String, Integer> body) throws Exception
+    {
         Method rule = Layout.class.getDeclaredMethod("whyItWouldMeetItsOwnTail", List.class, Locomotive.class, Map.class);
 
         rule.setAccessible(true);
 
         train.setTrainLength(length);
 
-        return (String) rule.invoke(null, route, train, BODY);
+        return (String) rule.invoke(null, route, train, body);
+    }
+
+    /**
+     * A route that comes back over its own earlier track - a reversing loop, out and back through one switch - is judged
+     * like a return to the body: the head may come back to a place the route ran over only once the tail has left it
+     * (TDA2-C3, TDD2-C2).  With no body at all, so nothing but the route's own timing can refuse it.
+     *
+     * Out over Q (2) and the switch, round the loop - L1 (3), L2 (3) - and back through the switch to Q: six units from
+     * leaving the switch to coming back to it.
+     *
+     * MUTATION: stop timing the route's own places, and this fails.
+     *
+     * @throws Exception from the rule
+     */
+    @Test
+    public void testARouteThatComesBackOverItselfIsJudged() throws Exception
+    {
+        List<Edge> loop = Arrays.asList(edge(Arrays.asList("OT:Q2", "OT:SW", "OT:L1"), Arrays.asList(2, 0, 3)),
+            edge(Arrays.asList("OT:L2", "OT:SW", "OT:Q2"), Arrays.asList(3, 0, 2)));
+
+        Map<String, Integer> none = new LinkedHashMap<>();
+
+        String seven = ask(loop, 7, none);
+
+        assertNotNull(seven, "a seven-unit train was cleared round a loop of six back through the switch it left by - its"
+            + " head meets its own tail at the switch");
+
+        assertTrue(seven.contains(" 6 "), "the refusal did not name the loop, 6: " + seven);
+
+        assertNull(ask(loop, 6, none), "a six-unit train - clear of the switch as its head comes back to it - was refused");
+    }
+
+    /**
+     * The stretch the train comes back in counts among those with no length (TDA2-C1, TDD2-C3): the note named only the
+     * stretches wholly between leaving and coming back, and a way round whose last stretch had nothing measured said
+     * nothing of it.
+     *
+     * MUTATION: count only the stretches wholly between, and this fails.
+     *
+     * @throws Exception from the rule
+     */
+    @Test
+    public void testTheStretchTheTrainComesBackInIsCounted() throws Exception
+    {
+        String said = ask(Arrays.asList(edge(Arrays.asList("OT:Q3"), Arrays.asList(1)),
+            edge(Arrays.asList("OT:R3", "OT:B"), Arrays.asList(0, 0))), 20);
+
+        assertNotNull(said, "precondition: a twenty-unit train is not refused a way round of 1 onto its own body");
+
+        String note;
+
+        try
+        {
+            note = I18n.f("autolayout.errorOwnTailPartlyUnmeasured", 1);
+        }
+        catch (java.util.MissingResourceException none)
+        {
+            note = null;
+        }
+
+        assertTrue(note != null && said.contains(note), "the way round comes back to the body in a stretch with nothing"
+            + " measured on it, and the refusal does not say so: " + said);
+
+        // AND THE STRETCH IT LEFT A PLACE IN, where it runs on in it: out of P and on over U, neither measured, round by M
+        // and back to P.
+        String left = ask(Arrays.asList(edge(Arrays.asList("OT:P4", "OT:U4"), Arrays.asList(0, 0)),
+            edge(Arrays.asList("OT:M4"), Arrays.asList(5)), edge(Arrays.asList("OT:P4"), Arrays.asList(0))), 20,
+            new LinkedHashMap<String, Integer>());
+
+        assertNotNull(left, "precondition: a twenty-unit train is not refused a way round of 5 back to where it set out");
+
+        assertTrue(note != null && left.contains(note), "the way round runs on, in the stretch it left P by, over track"
+            + " with nothing measured on it, and the refusal does not say so: " + left);
     }
 
     /**
