@@ -44,8 +44,11 @@ public class CSDetect
      * are pinging the subnet - threw away a station that had just answered its ping ("it works 9 out
      * of 10 times").  Three attempts turn a one-in-ten failure into a one-in-a-thousand one.
      *
-     * Only hosts that answered a ping ever get here, so this does not lengthen the scan: the addresses
-     * with nothing on them fail at the ping and are never asked twice.
+     * In a scan only hosts that answered a ping get here, so the addresses with nothing on them cost
+     * no more than before.  A host that answers a ping but silently drops the web request - a PC, a
+     * phone, a printer - now costs up to three connect timeouts (3 x WEB_TIMEOUT_MS) instead of one;
+     * so does the check made at start-up on a saved address whose host drops it the same way.
+     * A refused connection, or a host that answers without the page, is quick each time (BPV-C10).
      */
     public static final int WEB_RETRY = 3;
     
