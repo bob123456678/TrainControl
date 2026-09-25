@@ -580,6 +580,18 @@ public class testNonAtomicRoutesNeedTheirLengths
 
         assertTrue(asks > busy && asks > empty, "Execute Timetable asks the Atomic Routes gate before it refuses - so a"
             + " refused press still switches the running railway's setting (GUI-A1)");
+
+        // AND AFTER THE TWO REFUSALS BELOW THOSE (TDU2-C2): the conditional-route warning, declined, and a train not at
+        // its entry's start square.
+        int warning = handler.indexOf("route.ui.confirmConditionalRoutesActiveProceed");
+        int notAtStart = handler.indexOf("timetable.ui.infoLocomotiveMustBeMovedToStart");
+
+        assertTrue(warning > 0 && notAtStart > 0, "precondition: the handler no longer warns about conditional routes or"
+            + " refuses a train away from its start");
+
+        assertTrue(asks > warning && asks > notAtStart, "Execute Timetable asks the Atomic Routes gate before its"
+            + " conditional-route warning or its start-square check - a press declined there still switches the setting"
+            + " (TDU2-C2)");
     }
 
     /**
@@ -618,6 +630,14 @@ public class testNonAtomicRoutesNeedTheirLengths
         assertTrue(homeGate > homeBusy && homeGate > homePower, "Return Home asks the Atomic Routes gate before it"
             + " refuses - so a refused press still switches the running railway's setting (TDU-C8, GUI-A1)");
 
+        // AND AFTER ITS PLAN IS KNOWN TO BE POSSIBLE (TDU2-C2): no plan, or an impossible one, is a refusal too.
+        int possible = returnHome.indexOf("plan.isPossible()");
+
+        assertTrue(possible > 0, "precondition: Return Home no longer refuses an impossible plan");
+
+        assertTrue(homeGate > possible, "Return Home asks the Atomic Routes gate before it knows its plan is possible - a"
+            + " press refused for having no plan still switches the setting (TDU2-C2)");
+
         int start = source.indexOf("private void startAutonomyActionPerformed(");
         int end = source.indexOf("GEN-LAST:event_startAutonomyActionPerformed", start);
 
@@ -634,6 +654,13 @@ public class testNonAtomicRoutesNeedTheirLengths
 
         assertTrue(asks > power && asks > none, "Start asks the Atomic Routes gate before it refuses - so a refused press"
             + " still switches the running railway's setting (TDU-C8, GUI-A1)");
+
+        // AND A GATE THAT FAILS STOPS START (TDU2-C2): the gate is what keeps a run atomic over unmeasured track, and a
+        // Start that carried on past a failure of it would run non-atomic over it.
+        int started = startDoor.indexOf("started.set(true)", asks);
+
+        assertTrue(started > asks && startDoor.substring(asks, started).contains("return;"), "Start carries on when its"
+            + " Atomic Routes gate fails - the run starts without the question being answered (TDU2-C2)");
     }
 
     /**
