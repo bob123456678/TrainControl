@@ -9221,10 +9221,34 @@ public class Layout
     }
         
     /**
-     * Ensures that the passed locomotive does not conflict with any other multi-units by removing it from the graph
-     * @param l 
+     * Takes off the graph whatever an edit to this locomotive - its name, its address, its consist, changed from the
+     * window - has made conflict with it; nothing where it stands nowhere (BPV-A1).
+     *
+     * An edit can only make a conflict ON THE GRAPH through the edited train's own presence there: a train that stands
+     * nowhere clashes with nothing that stands.  Swept regardless, a rename of a MEMBER of a multi-unit whose head stands
+     * on a station asked the head whether it was compatible with its own member - never, `isLinkedTo` - and took the
+     * head off its station: the platform read as empty with the train on it, the loss MT-149 filed critical, by the one
+     * rename the self-skip below does not reach.  Found by the validator of the 2.8.2 backports, 2026-09-25, on both
+     * branches.
+     *
+     * Placing a train asks the sweep itself, before the train is put down, through `clearMultiUnitConflictsWith`.
+     *
+     * @param l the locomotive edited
      */
     public void sanitizeMultiUnits(Locomotive l)
+    {
+        if (l == null || this.getLocomotiveLocation(l) == null) return;
+
+        clearMultiUnitConflictsWith(l);
+    }
+
+    /**
+     * Takes off the graph every train that cannot stand on it at the same time as this one - a member of its consist,
+     * or one with an equivalent address - for a locomotive that is on the graph or about to be put there.
+     *
+     * @param l the locomotive
+     */
+    private void clearMultiUnitConflictsWith(Locomotive l)
     {
         if (l != null)
         {
@@ -9524,8 +9548,9 @@ public class Layout
             // square is several since - so a locomotive recorded on two copies of one platform lost
             // one of them and kept the other.
             
-            // Ensure no multi-unit conflicts
-            this.sanitizeMultiUnits(l);
+            // Ensure no multi-unit conflicts - asked before the train is put down, so the sweep itself, not the edit door
+            // that asks only of a train already standing (BPV-A1).
+            this.clearMultiUnitConflictsWith(l);
 
             // Placing by hand DISPLACES whoever was there, and deliberately so: it is a person telling
             // the model where a train actually is, and the previous occupant is by definition no longer
@@ -12617,8 +12642,8 @@ public class Layout
                                 placedOffAStation.add(new String[] {loc, point.getString("name")});
                             }
 
-                            // De-conflict with other multi-units
-                            layout.sanitizeMultiUnits(l);
+                            // De-conflict with other multi-units - before it is put down, as a placement asks (BPV-A1).
+                            layout.clearMultiUnitConflictsWith(l);
 
                             Point placeOn = layout.getPoint(point.getString("name"));
 
