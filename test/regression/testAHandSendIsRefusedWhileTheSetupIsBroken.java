@@ -22,7 +22,8 @@ import org.testng.annotations.Test;
  * claim would have to raise the modal dialog each door shows, which is how a runner was stranded on 2026-09-09.
  *
  * MUTATION: take the refusal out of either door, or ask it after the reversal question, and the second claim fails
- * naming the door; make the rule answer nothing for a broken setup and the first does.
+ * naming the door; make the window's rule answer nothing for a broken setup, or invert its guard, and the window's
+ * claim does (TDD-C8, TDU-C3 - the first claim asks only the words).
  *
  * @author Adam
  */
