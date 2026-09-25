@@ -40,13 +40,12 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-566](#mt-566) | 2026-09-24 | The locomotive train-length walk is never greyed, and counts | fixed unvalidated | MT-533 |
 | [MT-567](#mt-567) | 2026-09-24 | Train lengths and station maximum lengths are named apart | fixed unvalidated | MT-533 |
 | [MT-569](#mt-569) | 2026-09-24 | The guard items say what each guard does | fixed unvalidated | OB-293 |
-| [MT-570](#mt-570) | 2026-09-24 | Why not Moving? outlines the squares with trains while it waits | fixed unvalidated | FR-102, MT-516 |
 | [MT-575](#mt-575) | 2026-09-24 | From the autonomy editor the tail question is the list | fixed unvalidated | FR-100, TDU-C1 |
 | [MT-576](#mt-576) | 2026-09-24 | A tail answer given after the placement changed is written where the train now stands, or not at all | fixed unvalidated | TDU2-A1, TDU3-B1 |
 | [MT-586](#mt-586) | 2026-09-25 | A stretch answered 0 lets a train in when the total track holds it | fixed unvalidated | ADU-C7, TDU-C6 |
 
-Everything else - 569 of 586 - needs nothing from you unless the area changes again:
-453 **fixed validated** and 116 **superseded**.
+Everything else - 570 of 586 - needs nothing from you unless the area changes again:
+453 **fixed validated** and 117 **superseded**.
 
 ---
 
@@ -28182,7 +28181,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-570 - 2026-09-24 - Why not Moving? outlines the squares with trains while it waits
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** FR-102, MT-516
 
 **Written:** 2026-09-24
@@ -28208,6 +28207,10 @@ Validated on your *Works* of 2026-09-24.
 **Claude, 2026-09-24.**
 
 **And the running railway, from the third validation round** (2026-09-24).  Step 1's outlines are the squares with trains on the running railway, where it and the setup disagree - `regression.testTheEditorSaysWhatItsToolsDo.testWhyNotMovingFollowsTheRunningRailway`.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `ui.testWhereHisTrainsMayBeSent.testWhyNotMovingOutlinesHisTrainsWhileItWaits`, on the real window over a sandbox copy of your railway: three of your trains stood on three stations of 1 - Main, the autonomy editor's Why not Moving? pressed, and every square of the page asked - exactly the three with trains are outlined, and none other; then a click on one of them, and the outlines that marked where to click are gone and an answer is drawn.  The trains are read from the running railway, as the entry's third comment says.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
