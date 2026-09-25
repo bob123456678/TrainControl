@@ -517,6 +517,30 @@ public class TailCrossedPrompt
         return true;
     }
 
+    /**
+     * Whether the placement a tail question was asked for still stands when its answer comes back (TDU2-A1).
+     *
+     * Since FR-100 the question waits on the diagram with the window live - Start, the hand doors, another placement,
+     * a removal all still work while it waits - and each door writes its answer when the answer comes back.  By then the
+     * copy may hold another train, brought there by a run with the road it drove in by; written anyway, the answer put
+     * the first train's road (or none) over it, and that train's tail stopped at the switch with another routed into it.
+     * So a door writes only while the copy still holds the train it placed, with the side and the road the placement left
+     * - anything done in the wait that could matter changes one of the three.
+     *
+     * @param point the copy the train was put on
+     * @param placed the train put there, by reference
+     * @param side the side the placement recorded
+     * @param road the road the copy held when the question was asked
+     * @return true when the answer is still about what stands there
+     */
+    public static boolean placementStillStands(Point point, org.traincontrol.base.Locomotive placed, String side,
+        List<Edge> road)
+    {
+        return point != null && placed != null && point.getCurrentLocomotive() == placed
+            && java.util.Objects.equals(point.getArrivedFrom(), side)
+            && java.util.Objects.equals(point.getArrivedAlong(), road);
+    }
+
     /** The question waiting on the diagram for its click, or null (FR-100). */
     private static volatile DiagramPick armed;
 

@@ -8147,19 +8147,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             point.setArrivedFrom(tail);
 
             // AND HOW FAR BACK ITS TAIL REACHES, asked where the answer matters (Adam, 2026-09-14).
+            final org.traincontrol.base.Locomotive placed = point.getCurrentLocomotive();
+            final java.util.List<org.traincontrol.automation.Edge> roadAtTheQuestion = point.getArrivedAlong();
+
             org.traincontrol.gui.TailCrossedPrompt.Answer answer = org.traincontrol.gui.TailCrossedPrompt.askAfterPlacement(
                 this.model.getAutoLayout(), point, tail, point.getCurrentLocomotive().getTrainLength(),
                 point.getCurrentLocomotive().getName(), this, session::baseNameOf, roadBefore);
+
+            // ONLY WHILE THE PLACEMENT STILL STANDS (TDU2-A1): the question waited with the window live, and what stands on
+            // this copy now may be another train, with the road a run brought it by.
+            final boolean stands = org.traincontrol.gui.TailCrossedPrompt.placementStillStands(point, placed, tail,
+                roadAtTheQuestion);
 
             // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY (TLR-C5, TLV-A1, TLW-A1).  Not Known forgets a road; no
             // question, or a closed one, keeps the road the train had where it is still on the same square with the same
             // side - read from the running layout, which a run has told and the setup has not - and both stores are
             // written so they agree, including on another copy of the square the paste moved it onto.
-            java.util.List<org.traincontrol.automation.Edge> road = answer.roadToRecord(roadBefore, sameSquareAsBefore,
-                sideBefore, tail);
+            if (stands)
+            {
+                java.util.List<org.traincontrol.automation.Edge> road = answer.roadToRecord(roadBefore,
+                    sameSquareAsBefore, sideBefore, tail);
 
-            session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(road));
-            point.setArrivedAlong(road);
+                session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(road));
+                point.setArrivedAlong(road);
+            }
 
             // SPEC-A1: THE FOURTH ATTEMPT RECORDED THE LANDING COPY'S OWN SIDE, which is not the
             // train's heading.  `StationIndex.speakerAt` says that on an empty square "any copy will
@@ -8175,7 +8186,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // own.
             // OVER THE COPIES A TRAIN MAY STAND ON (OB-270; Adam, 2026-09-23: *"we shouldn't allow an impossible
             // facing to be saved"*) - the copies the paste itself chose among, so the record and the copy agree.
-            session.setFacing(tile, facingChosen != null ? facingChosen
+            if (stands) session.setFacing(tile, facingChosen != null ? facingChosen
                 : org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
                     placeableFacings(tile), facingFound, point.getName()));
         }

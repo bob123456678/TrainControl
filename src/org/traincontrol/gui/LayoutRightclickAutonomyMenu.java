@@ -1204,6 +1204,10 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         if (!ui.getModel().getAutoLayout().moveLocomotive(locName, pointName, false)) return;
 
+        // Whether the placement the tail question was asked for still stands when its answer comes back (TDU2-A1) - true
+        // where nothing was asked.
+        boolean stands = true;
+
         if (session != null)
         {
             // The CONFIGURATION as well as the running layout.  Moving a train in the layout leaves
@@ -1225,23 +1229,34 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                 // AND HOW FAR BACK ITS TAIL REACHES, asked where the answer matters (Adam, 2026-09-14).  After the
                 // move, because moving the train clears any road the square held.
+                final org.traincontrol.base.Locomotive placed = landing == null ? null : landing.getCurrentLocomotive();
+                final java.util.List<org.traincontrol.automation.Edge> roadAtTheQuestion =
+                    landing == null ? null : landing.getArrivedAlong();
+
                 org.traincontrol.gui.TailCrossedPrompt.Answer answer =
                     org.traincontrol.gui.TailCrossedPrompt.askAfterPlacement(running, landing, tail,
                         landing == null || landing.getCurrentLocomotive() == null
                             ? null : landing.getCurrentLocomotive().getTrainLength(),
                         locName, ui, session::baseNameOf, roadBefore);
 
-                // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY (TLW-A1), as the paste does.
-                java.util.List<org.traincontrol.automation.Edge> road = answer.roadToRecord(roadBefore,
-                    station != null && station.equals(squareBefore), sideBefore, tail);
+                // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY (TLW-A1), as the paste does - ONLY WHILE THE PLACEMENT
+                // STILL STANDS (TDU2-A1): the question waited with the window live, and the copy may hold another train now.
+                stands = landing == null
+                    || org.traincontrol.gui.TailCrossedPrompt.placementStillStands(landing, placed, tail, roadAtTheQuestion);
 
-                session.setArrivedAlong(station, org.traincontrol.automation.Layout.namesOfRoad(road));
+                if (stands)
+                {
+                    java.util.List<org.traincontrol.automation.Edge> road = answer.roadToRecord(roadBefore,
+                        station != null && station.equals(squareBefore), sideBefore, tail);
 
-                if (landing != null) landing.setArrivedAlong(road);
+                    session.setArrivedAlong(station, org.traincontrol.automation.Layout.namesOfRoad(road));
+
+                    if (landing != null) landing.setArrivedAlong(road);
+                }
             }
         }
 
-        if (facing != null && session != null)
+        if (facing != null && session != null && stands)
         {
             session.setFacing(station, facing);
 
