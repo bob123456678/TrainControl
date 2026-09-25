@@ -135,6 +135,83 @@ public class testALocomotiveDoesNotEvictItself
     }
 
     /**
+     * Renaming a MEMBER of a multi-unit whose head stands on a station leaves the multi-unit on its station (BPV-A1, found
+     * by the validator of the 2.8.2 backports, 2026-09-25).
+     *
+     * The self-skip above covers a train renamed where it stands.  A member is not where it stands - its head is - and the
+     * sweep the window runs after a rename asks the head whether it is compatible with the renamed member.  A head is
+     * never compatible with its own member (`isLinkedTo`), so the head was cleared from its station: the same loss as
+     * MT-149, on the one rename the self-skip does not reach.  A rename changes no placement and no membership, so it
+     * cannot make a conflict that was not there.
+     *
+     * Done as the window does it: the rename, then the sweep.  On a stopped railway - every edit door refuses while autonomy
+     * runs, its coast-down and Return Home's planning included (`isAutonomyRunning`).
+     *
+     * MUTATION: sweep for a locomotive that stands nowhere, and this fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testRenamingAMemberLeavesItsMultiUnitOnItsStation() throws Exception
+    {
+        MarklinLocomotive head = model.newMM2Locomotive(HEAD, HEAD_ADDRESS);
+        MarklinLocomotive member = model.newMM2Locomotive(MEMBER, MEMBER_ADDRESS);
+
+        try
+        {
+            java.util.Map<String, Double> consist = new java.util.HashMap<>();
+
+            consist.put(MEMBER, 1.0);
+
+            assertEquals(head.setLinkedLocomotives(consist), 1, "precondition: the member could not be linked to the head");
+
+            assertFalse(head.isSimultaneousMultiUnitCompatible(member), "precondition: a head counts as compatible with"
+                + " its own member, so the sweep had nothing to take it off for");
+
+            Layout layout = new Layout(model);
+
+            MarklinFeedback first = model.newFeedback(8392, null);
+            MarklinFeedback second = model.newFeedback(8393, null);
+
+            model.setFeedbackState(first.getName(), false);
+            model.setFeedbackState(second.getName(), false);
+
+            layout.createPoint("MU A", true, first.getName());
+            layout.createPoint("MU B", true, second.getName());
+            layout.createEdge("MU A", "MU B");
+
+            layout.getPoint("MU A").setLocomotive(head);
+
+            assertTrue(model.renameLoc(MEMBER, MEMBER_RENAMED), "the rename itself failed");
+
+            MarklinLocomotive renamed = model.getLocByName(MEMBER_RENAMED);
+
+            assertNotNull(renamed, "the member is not in the database under its new name");
+
+            // What the window does next.
+            layout.sanitizeMultiUnits(renamed);
+
+            assertNotNull(layout.getLocomotiveLocation(head), "renaming a member of a multi-unit took the multi-unit off"
+                + " its station - the platform now reads as empty with the train standing on it (BPV-A1)");
+
+            assertEquals(layout.getLocomotiveLocation(head).getName(), "MU A", "the multi-unit moved when a member was"
+                + " renamed");
+        }
+        finally
+        {
+            try { model.deleteLoc(MEMBER_RENAMED); } catch (Exception ignored) { }
+            try { model.deleteLoc(MEMBER); } catch (Exception ignored) { }
+            try { model.deleteLoc(HEAD); } catch (Exception ignored) { }
+        }
+    }
+
+    private static final String HEAD = "SM head";
+    private static final String MEMBER = "SM member";
+    private static final String MEMBER_RENAMED = "SM member renamed";
+    private static final int HEAD_ADDRESS = 74;
+    private static final int MEMBER_ADDRESS = 75;
+
+    /**
      * One station with one train standing on it.
      */
     private static Layout layoutWithOnePlacedTrain() throws Exception
