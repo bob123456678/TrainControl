@@ -2667,6 +2667,30 @@ public class testMassAssignLengths
             + " train, and is not warned about (TDA4-C2): " + session.check());
     }
 
+    /**
+     * A parking berth whose approach was answered 0 throughout, nothing measured anywhere on it, is warned about as one
+     * given no room (Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*, and *"Build it"*): the berth rule now judges it, where it used to decline as though nothing were
+     * known, and refuses every train with a length - so the editor says so, as it does where something was measured.
+     *
+     * MUTATION: have the editor's test of a measured approach ignore answered zeros, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testAnApproachAnsweredZeroThroughoutIsWarnedAbout() throws Exception
+    {
+        openBerthBehindACrossing();
+
+        TileKey berth = key(7, 1);
+
+        session.answerTileLengthsZero(Arrays.asList(key(2, 1), key(3, 1), key(4, 1), key(5, 1), key(6, 1), berth));
+        session.setPointProperty(berth, "maxTrainLength", 5);
+        session.rebuild();
+
+        assertTrue(warnsOfNoRoom(berth), "a parking berth whose approach was answered 0 throughout holds no train, and"
+            + " is not warned about: " + session.check());
+    }
+
     /** Whether the setup warns that this berth was given no room before its stop (TDA4-C2). */
     private boolean warnsOfNoRoom(TileKey berth)
     {

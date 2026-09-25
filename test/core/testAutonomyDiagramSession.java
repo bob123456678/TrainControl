@@ -3849,12 +3849,29 @@ public class testAutonomyDiagramSession
 
         assertEquals(order.get("P"), Integer.valueOf(2), "the walk stopped before it had worked back to the station"
             + " behind, with the legs listed into the platform first: " + order);
+
+        // AN ANSWERED 0 IS PASSED, adding nothing, as the railway's route in passes it (Adam, 2026-09-25); a 0 nobody
+        // answered still ends the walk.  S -1-> A -0-> B -1-> P.
+        java.util.Map<String, Integer> answered = figures(
+            new String[][] {{"S", "station"}, {"A", ""}, {"B", ""}, {"P", "station"}},
+            new Object[][] {{"S", "A", 1, null}, {"A", "B", 0, null, true}, {"B", "P", 1, 1}});
+
+        assertEquals(answered.get("P"), Integer.valueOf(2), "the walk stops at a leg answered 0, where the railway's"
+            + " route in counts on past it: " + answered);
+
+        java.util.Map<String, Integer> unanswered = figures(
+            new String[][] {{"S", "station"}, {"A", ""}, {"B", ""}, {"P", "station"}},
+            new Object[][] {{"S", "A", 1, null}, {"A", "B", 0, null}, {"B", "P", 1, 1}});
+
+        assertEquals(unanswered.get("P"), Integer.valueOf(1), "CONTROL: the walk counts on past a leg nobody answered: "
+            + unanswered);
     }
 
     /**
      * The refusing figures of a built railway written by hand: points as {name, kind} - kind "station", "reversing",
      * "terminus" (a station trains turn at), "off" (switched off), "station=X" (a station that is another copy of X's
-     * square), or "" - and legs as {start, end, length, room at the end or null}.
+     * square), or "" - and legs as {start, end, length, room at the end or null}, with true after them for a leg whose one
+     * place was answered 0.
      */
     @SuppressWarnings("unchecked")
     private java.util.Map<String, Integer> figures(String[][] points, Object[][] legs) throws Exception
@@ -3893,6 +3910,17 @@ public class testAutonomyDiagramSession
             json.put("length", leg[2]);
 
             if (leg[3] != null) json.put("roomAtTheEnd", leg[3]);
+
+            if (leg.length > 4 && Boolean.TRUE.equals(leg[4]))
+            {
+                org.json.JSONObject place = new org.json.JSONObject();
+
+                place.put("at", "main:" + leg[0] + leg[1]);
+                place.put("length", 0);
+                place.put("answered", true);
+
+                json.put("places", new org.json.JSONArray().put(place));
+            }
 
             edgeList.put(json);
         }

@@ -634,16 +634,17 @@ public class testAutoLayout
     }
 
     /**
-     * Track answered 0 on purpose is measured track to the Atomic Routes gate and the release escape it stands for - and
-     * to no other length rule (Adam, 2026-09-24, TDU-C6: *"0 lengths count as measures, so non-atomic should be
-     * allowed"*; ADA-A1, ADD-B1).
+     * Track answered 0 on purpose is measured track of no length - to the Atomic Routes gate and the release escape it
+     * stands for (Adam, 2026-09-24, TDU-C6: *"0 lengths count as measures, so non-atomic should be allowed"*), and since
+     * Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*, and *"Build it"*, to every other length rule as well.
      *
      * The gate and the escape ask one question, or the gate lets through a railway the escape then releases under a
-     * train.  Every other length rule reads an answered 0 as a stretch nobody measured (OB-274): for a while the route in
-     * counted on past one, and admitted a train whose tail lay beyond it on track the standing-tail walk never claims.
+     * train.  The route in and the room walk count on past an answered 0, adding nothing, where a stretch nobody
+     * answered still ends them; the walk that claims a standing train's tail walks on over it too, so what the route in
+     * admits is claimed (`testAnAnsweredZeroIsNotMissing.testAStretchAnsweredZeroIsMeasuredTrackOfNoLength`).
      *
-     * MUTATION: count answered track as unmeasured at the gate or at the escape, or as measured in the route in, and this
-     * fails.
+     * MUTATION: count answered track as unmeasured at the gate, at the escape, in the route in or in the room walk, and
+     * this fails.
      *
      * @throws Exception from the model
      */
@@ -689,8 +690,7 @@ public class testAutoLayout
             + " is still taken for one with nothing measured, so `tailHasProvablyPassed` hands its edges back at once -"
             + " the gate and the escape have to ask one question");
 
-        // BUT THE ROUTE IN STOPS AT IT (ADA-A1, ADD-B1).  The walk that claims a standing train's tail stops at a leg answered
-        // 0, so a route in counted on past one admitted a train whose tail then lay on track nothing claims.
+        // AND THE ROUTE IN COUNTS ON PAST IT, adding nothing: 3, then 0, then 2.  A leg nobody answered still ends it.
         layout.createPoint("AZ_P", true, "8");
 
         Edge bp = layout.createEdge("AZ_B", "AZ_P");
@@ -698,9 +698,41 @@ public class testAutoLayout
         bp.setPlaces(java.util.Arrays.asList("AZ:4", "AZ:5"), java.util.Arrays.asList(1, 1));
         bp.setLength(2);
 
-        assertEquals(Layout.measuredRouteIn(java.util.Arrays.asList(ca, ab, bp)), 2, "the route in counted on past a leg"
-            + " answered 0 into the 3 measured behind it - where the tail of the train it admits is claimed by nothing"
-            + " (ADA-A1)");
+        java.util.List<Edge> road = java.util.Arrays.asList(ca, ab, bp);
+
+        assertEquals(Layout.measuredRouteIn(road), 5, "the route in stops at a leg answered 0, so a train the 5 measured"
+            + " end to end holds is refused - Adam, 2026-09-25: \"allow trains in ... if the total track lengths allow\"");
+
+        org.traincontrol.marklin.MarklinLocomotive loc = model.getLocByName("Test loc 1");
+
+        assertNotNull(loc, "precondition: this class's Test loc 1 is gone");
+
+        Integer was = loc.getTrainLength();
+
+        try
+        {
+            loc.setTrainLength(4);
+
+            // THE ROOM WALK TOO: no switch on this road, so the room is the whole of it, over the 0.
+            assertEquals(Layout.measuredRoomAtTheEndOf(road, loc), Integer.valueOf(5), "the room walk stops at a leg"
+                + " answered 0 as if nobody had measured it");
+
+            // AND A ROOM OF 0 IS A ROOM, not an unknown: the leg alone, answered 0, holds nothing.
+            assertEquals(Layout.measuredRoomAtTheEndOf(java.util.Arrays.asList(ab), loc), Integer.valueOf(0), "a leg"
+                + " answered 0 is read as a room nobody measured, so nothing is judged there");
+
+            // A LEG NOBODY ANSWERED STILL ENDS BOTH.
+            ab.setAnsweredPlaces(java.util.Collections.<String>emptyList());
+
+            assertEquals(Layout.measuredRouteIn(road), 2, "CONTROL: the route in counts on past a leg nobody answered");
+
+            assertEquals(Layout.measuredRoomAtTheEndOf(road, loc), Integer.valueOf(2), "CONTROL: the room walk counts on"
+                + " past a leg nobody answered");
+        }
+        finally
+        {
+            loc.setTrainLength(was);
+        }
     }
 
     /**

@@ -289,6 +289,169 @@ public class testAnAnsweredZeroIsNotMissing
         return point.getName().equals(name) || point.getName().startsWith(name + " (");
     }
 
+    /**
+     * A stretch answered 0 is measured track of no length (Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*, and *"Build it"*), shown on his railway's Tunnel.
+     *
+     * RampDown -4-> BottomSecondary -2-> TunnelPre -4-> Tunnel, which takes a train of 5 with 2 measured past its switch.
+     * With the hop BottomSecondary -> TunnelPre answered 0 - every square of it, its switch and crossing too, which is
+     * what Mass Assign Lengths' piece, switch and crossing questions answer between them - 8 is measured end to end, and:
+     *
+     * - a train of 5 from RampDown is admitted - the route in counts on past the 0, where it stopped and refused it
+     *   quoting 4;
+     * - standing there, its tail is claimed over the 0 and onto the leg behind it, as far as its length reaches - what the
+     *   route in admits, the railway claims;
+     * - and the tail question walks on over the 0: a train of 6 there has crossed BottomSecondary.
+     *
+     * MUTATION: stop the route in, the tail walk or the tail question at an answered 0, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAStretchAnsweredZeroIsMeasuredTrackOfNoLength() throws Exception
+    {
+        Edge hop = layoutNow().getEdge("BottomSecondary", "TunnelPre");
+
+        assertNotNull(hop, "precondition: the frozen railway no longer runs BottomSecondary -> TunnelPre");
+
+        java.util.Map<TileKey, Integer> was = new java.util.LinkedHashMap<>();
+        java.util.Set<TileKey> wasAnswered = new java.util.LinkedHashSet<>();
+
+        for (String id : hop.getPlaceIds())
+        {
+            TileKey square = squareOf(id);
+
+            was.put(square, session.getStore().getTileLength(square));
+
+            if (session.getStore().isTileLengthAnswered(square)) wasAnswered.add(square);
+        }
+
+        assertTrue(hop.getLength() == 2, "precondition: BottomSecondary -> TunnelPre measures " + hop.getLength());
+
+        Integer length = train.getTrainLength();
+
+        try
+        {
+            session.answerTileLengthsZero(was.keySet());
+
+            Layout layout = layoutNow();
+
+            java.util.List<Edge> road = Arrays.asList(layout.getEdge("RampDown (southbound)", "BottomSecondary"),
+                layout.getEdge("BottomSecondary", "TunnelPre"), layout.getEdge("TunnelPre", "Tunnel (southbound)"));
+
+            assertFalse(road.contains(null), "precondition: the frozen railway no longer runs RampDown -> BottomSecondary"
+                + " -> TunnelPre -> Tunnel: " + road);
+
+            assertTrue(road.get(1).getLength() == 0 && road.get(1).isMeasured(), "precondition: the hop is not answered 0"
+                + " end to end");
+
+            // THE ROUTE IN, over the 0.
+            assertEquals(Layout.measuredRouteIn(road), 8, "the route in into Tunnel stops at the hop answered 0");
+
+            train.setTrainLength(5);
+
+            org.testng.Assert.assertNull(Layout.whyTooLongForThisRoute(road, train), "a train of 5 from RampDown is refused"
+                + " at Tunnel, where 8 is measured end to end and the platform takes 5");
+
+            // THE TAIL, claimed over the 0 and onto the leg behind it.
+            java.util.Map<String, org.traincontrol.base.Locomotive> claimed =
+                layout.placesATailWouldCover(road.get(2).getEnd(), train, road);
+
+            java.util.List<String> behind = road.get(0).getPlaceIds();
+
+            assertTrue(claimed.containsKey(behind.get(behind.size() - 1)), "a train of 5 standing at Tunnel lies back past"
+                + " the hop answered 0 onto RampDown -> BottomSecondary, and the railway claims none of it - track another"
+                + " train can then be routed over: " + claimed.keySet());
+
+            for (String place : road.get(1).getPlaceIds())
+            {
+                assertTrue(claimed.containsKey(place), "the hop answered 0 is under a train of 5 at Tunnel and is not"
+                    + " claimed: " + place);
+            }
+
+            // THE TAIL QUESTION, walked on over the 0.
+            boolean crossed = false;
+
+            for (org.traincontrol.gui.TailCrossedPrompt.Choice choice
+                : org.traincontrol.gui.TailCrossedPrompt.choicesFor(layout, road.get(2).getEnd(), null, 6, null))
+            {
+                if ("BottomSecondary".equals(choice.getFarthest().getName()) && choice.isReached()) crossed = true;
+            }
+
+            assertTrue(crossed, "a train of 6 at Tunnel has crossed BottomSecondary - 4 to TunnelPre and 0 more - and the"
+                + " tail question does not offer it");
+        }
+        finally
+        {
+            for (java.util.Map.Entry<TileKey, Integer> square : was.entrySet())
+            {
+                if (square.getValue() > 0) session.setTileLength(square.getKey(), square.getValue());
+                else if (wasAnswered.contains(square.getKey())) session.answerTileLengthsZero(Arrays.asList(square.getKey()));
+                else session.setTileLength(square.getKey(), 0);
+            }
+
+            train.setTrainLength(length);
+        }
+    }
+
+    /**
+     * An approach answered 0 throughout is measured, and holds no train (Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*, and *"Build it"*): the berth rule judges it,
+     * where it used to decline as though nothing was known.  TunnelLongPark, a parking berth, with every square of its
+     * approach from BottomMainA answered 0 - its own 2 included - refuses a train of 1, whose tail reaches the road the
+     * approach shares.
+     *
+     * MUTATION: let the berth rule decline an approach answered 0 throughout, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAnApproachAnsweredZeroThroughoutHoldsNoTrain() throws Exception
+    {
+        Edge approach = approach(layoutNow());
+
+        java.util.Map<TileKey, Integer> lengths = new java.util.LinkedHashMap<>();
+        java.util.Set<TileKey> answered = new java.util.LinkedHashSet<>();
+
+        for (String id : approach.getPlaceIds())
+        {
+            TileKey square = squareOf(id);
+
+            lengths.put(square, session.getStore().getTileLength(square));
+
+            if (session.getStore().isTileLengthAnswered(square)) answered.add(square);
+        }
+
+        Integer length = train.getTrainLength();
+
+        try
+        {
+            session.answerTileLengthsZero(lengths.keySet());
+
+            Layout layout = layoutNow();
+
+            Edge zeroed = approach(layout);
+
+            assertTrue(zeroed.getLength() == 0 && zeroed.isMeasured(), "precondition: the approach is not answered 0"
+                + " throughout");
+
+            train.setTrainLength(1);
+
+            assertNotNull(Layout.whyABerthCannotHoldIt(Arrays.asList(zeroed), train), "TunnelLongPark's approach was"
+                + " answered 0 throughout - it holds nothing - and the berth rule admits a train of 1 as though nothing"
+                + " were known about it");
+        }
+        finally
+        {
+            for (java.util.Map.Entry<TileKey, Integer> square : lengths.entrySet())
+            {
+                if (square.getValue() > 0) session.setTileLength(square.getKey(), square.getValue());
+                else if (answered.contains(square.getKey())) session.answerTileLengthsZero(Arrays.asList(square.getKey()));
+                else session.setTileLength(square.getKey(), 0);
+            }
+
+            train.setTrainLength(length);
+        }
+    }
+
     /** The square a place identifier names - the tile, before any `/route` of an overpass. */
     private static TileKey squareOf(String id)
     {

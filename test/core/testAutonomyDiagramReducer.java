@@ -805,6 +805,45 @@ public class testAutonomyDiagramReducer
             "a stretch where nothing at all is measured came back as a number. Zero measured tiles is "
             + "no information, and judging a train against it would refuse every train on every "
             + "layout nobody has measured");
+
+        // BUT A STRETCH ANSWERED 0 THROUGHOUT IS A ROOM OF 0 (Adam, 2026-09-25: "we can't possibly have positive lengths
+        // everywhere ... allow trains in ... if the total track lengths allow").  Answered is measured, at no length.
+        final Set<TileKey> answered = new HashSet<>(Arrays.asList(key("main", 4, 1), key("main", 5, 1),
+            key("main", 6, 1)));
+
+        final GraphReducer.Authored nothingMeasured = authored(nothing, null, null);
+
+        GraphReducer.Authored answeredZero = new GraphReducer.Authored()
+        {
+            @Override
+            public String getPointName(TileKey tile)
+            {
+                return nothingMeasured.getPointName(tile);
+            }
+
+            @Override
+            public boolean isStation(TileKey tile)
+            {
+                return nothingMeasured.isStation(tile);
+            }
+
+            @Override
+            public int getTileLength(TileKey tile)
+            {
+                return 0;
+            }
+
+            @Override
+            public boolean isTileLengthAnswered(TileKey tile)
+            {
+                return answered.contains(tile);
+            }
+        };
+
+        ReducedEdge zero = edgesBetween(reduce(graph(page), answeredZero), key("main", 1, 1), key("main", 6, 1)).get(0);
+
+        assertEquals(zero.getRoomAtTheEnd(), 0, "the stretch past the switch was answered 0 throughout, and the room is"
+            + " still reported as nobody having measured it");
     }
 
     /**
