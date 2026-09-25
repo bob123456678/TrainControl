@@ -307,8 +307,11 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
         String menu = read("src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java");
         String item = read("src/org/traincontrol/gui/HomeLocomotiveMenu.java");
 
-        assertTrue(menu.contains("canStart ? null : ui.whyAHandSendIsRefused()"), "the right-click menu does not work the"
-            + " hand doors' sentence out from Start's answer - it is asked again whatever Start said (ADU-C3)");
+        assertTrue(menu.contains("canStart ? null : ui.whyStartAndAHandSendAreRefused()"), "the right-click menu does"
+            + " not work Start's and the hand doors' sentences out together from Start's answer (ADU-C3, ADU2-C5)");
+
+        assertFalse(menu.contains("ui.whyAutonomyWillNotStart()") || menu.contains("ui.whyAHandSendIsRefused()"), "the"
+            + " right-click menu asks the setup again for one of the two sentences, over a broken setup (ADU2-C5)");
 
         assertTrue(menu.contains("HomeLocomotiveMenu.addReturnHomeItem(this, ui, broken)"), "the right-click menu does not"
             + " hand the Return Home item the sentence it worked out (ADU-C3)");

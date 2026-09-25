@@ -286,7 +286,7 @@ public class testTheRefusalsAreAskedAtTheDoors
      * diagram's right-click Place keep a train's heading where it can leave by it (OB-284, OB-296, ADU-B1).  Any other
      * door passing `true` is a new decision.
      *
-     * MUTATION: pass true from the paste door and this fails.
+     * MUTATION: pass true from any door but these four - the editor's Place, say - and this fails (ADU2-C8).
      *
      * @throws Exception reading the sources
      */

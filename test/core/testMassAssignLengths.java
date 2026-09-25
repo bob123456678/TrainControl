@@ -1126,6 +1126,46 @@ public class testMassAssignLengths
         }
     }
 
+    /**
+     * What the own-tail note counts is what Mass Assign Lengths asks for, grouped as it asks: all a page's switches with
+     * no length are one answer, and so are all its crossings (ADA2-C7, ADU2-C4) - and the note says so in the tool's own
+     * name.
+     *
+     * MUTATION: key each switch on its own, and this fails.
+     *
+     * @throws Exception from the fixture or the reflection
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testTheSwitchesOfAPageAreOneThingToMeasure() throws Exception
+    {
+        openTwoSwitchesBackToBack();
+
+        java.lang.reflect.Method asked = AutonomySession.class.getDeclaredMethod("piecesToMeasure");
+
+        asked.setAccessible(true);
+
+        java.util.Map<TileKey, String> keys = (java.util.Map<TileKey, String>) asked.invoke(session);
+
+        assertTrue(keys.containsKey(key(2, 1)) && keys.containsKey(key(3, 1)), "precondition: the two switches are not"
+            + " both still wanting a length: " + keys);
+
+        assertEquals(keys.get(key(2, 1)), keys.get(key(3, 1)), "Mass Assign Lengths asks one length for all of a page's"
+            + " switches, and the note counts each switch on the way round as one more thing to measure: " + keys);
+
+        java.util.Properties english = new java.util.Properties();
+
+        try (java.io.InputStream in = new java.io.FileInputStream("src/org/traincontrol/resources/messages.properties"))
+        {
+            english.load(in);
+        }
+
+        String note = english.getProperty("autolayout.errorOwnTailPartlyUnmeasured");
+
+        assertTrue(note.contains("Mass Assign Lengths") && !note.contains("stretch"), "the note counts what Mass Assign"
+            + " Lengths asks for and calls it stretches of track (ADU2-C4): " + note);
+    }
+
     /** The railway this setup builds, as the checks inspect it. */
     private org.json.JSONObject inspected() throws Exception
     {
@@ -2485,11 +2525,14 @@ public class testMassAssignLengths
             assertTrue(sentence.contains("{0}") && !sentence.contains("{2}"), bundle.getName() + ": the sentence names the"
                 + " berth, and no figure - there is none but 0: " + sentence);
 
-            // A TRAIN WITH NO LENGTH IS NOT REFUSED THERE (ADU-C8): the berth rule judges only trains with one.
+            // A TRAIN WITH NO LENGTH IS NOT REFUSED THERE (ADU-C8), from its first words (ADU2-C3).
             if (bundle.getName().equals("messages.properties"))
             {
                 assertTrue(sentence.contains("every train with a length"), "the warning says every train arriving that way"
                     + " is refused, and a train with no length is let through: " + sentence);
+
+                assertFalse(sentence.contains("can take no train"), "the warning opens by saying the berth takes no train"
+                    + " at all, and closes by saying only trains with a length are refused (ADU2-C3): " + sentence);
             }
         }
     }

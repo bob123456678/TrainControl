@@ -203,6 +203,10 @@ public class testATrainIsPutOnlyWhereItCanStart
 
         assertFalse(body.contains("Random"), "the right-click Place still draws the copy at random (OB-296)");
 
+        // AND THE ITEM IS OFFERED ON THE ACTION'S OWN QUESTION (ADU2-C2): every copy the train could leave by.
+        assertTrue(menu.contains("menuItem.setEnabled(!departable.isEmpty());"), "the right-click Place is greyed on a"
+            + " list the action no longer chooses from - the guard and the affordance ask different questions (ADU2-C2)");
+
         int read = body.indexOf("keep = ");
         int asked = body.indexOf("copyToPlaceOn(session, station, running, keep, usable)");
         int moved = body.indexOf("placeFacing(");

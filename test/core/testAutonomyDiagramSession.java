@@ -3773,6 +3773,142 @@ public class testAutonomyDiagramSession
             + " refused above 5 - 2, then 1, the switch and 2 - and the notice does not say so: " + session.check());
     }
 
+    /**
+     * The refusing figure over built railways written by hand, one shape each (ADA2-C1, ADA2-C2, ADA2-C3, ADD2-C5,
+     * ADD2-C7): the walk that reads it off the built railway, asked directly.
+     *
+     * - **A loop walked whole**: a leg first reached inside a loop of sensors is not remembered as having no way in.
+     * - **A turn stops it**: behind a copy trains turn at, nothing counts, as the route in stops there.
+     * - **A switched-off point is no way in**: the railway runs no route through one.
+     * - **No way in from the platform itself**, round a loop from another of its copies.
+     * - **A way in with no length hides nothing**: the railway refuses no train on it, and the measured way's figure stands.
+     * - **Never under the room**: a way in with nothing measured after its switch is not the notice's, and gives none.
+     *
+     * MUTATION: remember a leg a loop cut short, count on past a turn, walk through a switched-off point or from the
+     * platform's own copy, take a 0 as the least, or read a way in with no room after its switch - and this fails.
+     *
+     * @throws Exception from the reflection
+     */
+    @Test
+    public void testTheRefusingFigureWalksTheBuiltRailwayAsTheRouteInDoes() throws Exception
+    {
+        // A LOOP WALKED WHOLE: S -> A -> B -> C -> A, and B -> P1, C -> P2, every leg 1.
+        java.util.Map<String, Integer> loop = figures(
+            new String[][] {{"S", "station"}, {"A", ""}, {"B", ""}, {"C", ""}, {"P1", "station"}, {"P2", "station"}},
+            new Object[][] {{"S", "A", 1, null}, {"A", "B", 1, null}, {"B", "C", 1, null}, {"C", "A", 1, null},
+                {"B", "P1", 1, 1}, {"C", "P2", 1, 1}});
+
+        assertEquals(loop.get("P1"), Integer.valueOf(3), "P1's way in from S, over A and B, is 3: " + loop);
+        assertEquals(loop.get("P2"), Integer.valueOf(4), "P2's way in from S, over A, B and C, is 4 - the leg B -> C was"
+            + " remembered as having no way in, because the loop cut it short while P1 was walked (ADA2-C3): " + loop);
+
+        // A TURN STOPS IT: S -> T (5), T turns, T -> X -> P, 1 each.
+        java.util.Map<String, Integer> turn = figures(
+            new String[][] {{"S", "station"}, {"T", "reversing"}, {"X", ""}, {"P", "station"}},
+            new Object[][] {{"S", "T", 5, null}, {"T", "X", 1, null}, {"X", "P", 1, 1}});
+
+        assertEquals(turn.get("P"), Integer.valueOf(2), "a train that turned at T lies back no further than T, so the way in"
+            + " is 2 - the walk counted on past the turn (ADD2-C5): " + turn);
+
+        // A SWITCHED-OFF POINT IS NO WAY IN: S -> A (off) -> P, 1 each, and S2 -> P, 5.
+        java.util.Map<String, Integer> off = figures(
+            new String[][] {{"S", "station"}, {"A", "off"}, {"S2", "station"}, {"P", "station"}},
+            new Object[][] {{"S", "A", 1, null}, {"A", "P", 1, 1}, {"S2", "P", 5, 1}});
+
+        assertEquals(off.get("P"), Integer.valueOf(5), "no route runs through a switched-off point, and the figure came"
+            + " over one (ADA2-C3): " + off);
+
+        // NO WAY IN FROM THE PLATFORM ITSELF: Q is another copy of P's square; Q -> Y -> P, 1 each, and S -> P, 6.
+        java.util.Map<String, Integer> self = figures(
+            new String[][] {{"P", "station"}, {"Q", "station=P"}, {"Y", ""}, {"S", "station"}},
+            new Object[][] {{"Q", "Y", 1, null}, {"Y", "P", 1, 1}, {"S", "P", 6, 1}});
+
+        assertEquals(self.get("P"), Integer.valueOf(6), "a route from a platform round to itself is no journey, and the"
+            + " figure came from the platform's other copy (ADA2-C3): " + self);
+
+        // A WAY IN WITH NO LENGTH HIDES NOTHING: S -> P measured 4; T, a copy trains turn at, -> P with no length.
+        java.util.Map<String, Integer> zero = figures(
+            new String[][] {{"S", "station"}, {"T", "terminus"}, {"P", "station"}},
+            new Object[][] {{"S", "P", 4, 2}, {"T", "P", 0, null}});
+
+        assertEquals(zero.get("P"), Integer.valueOf(4), "the railway refuses no train on a way in with no length, and"
+            + " it took the platform's figure with it (ADA2-C1): " + zero);
+
+        // NEVER UNDER THE ROOM: S -> P measures 3 before its switch and nothing after; T turns, T -> P measures 4.
+        java.util.Map<String, Integer> room = figures(
+            new String[][] {{"S", "station"}, {"T", "terminus"}, {"P", "station"}},
+            new Object[][] {{"S", "P", 3, -1}, {"T", "P", 4, null}});
+
+        assertEquals(room.get("P"), Integer.valueOf(4), "a way in with nothing measured after its switch is none of the"
+            + " notice's, and its 3 made the figure less than the room the notice quotes (ADA2-C2): " + room);
+    }
+
+    /**
+     * The refusing figures of a built railway written by hand: points as {name, kind} - kind "station", "reversing",
+     * "terminus" (a station trains turn at), "off" (switched off), "station=X" (a station that is another copy of X's
+     * square), or "" - and legs as {start, end, length, room at the end or null}.
+     */
+    @SuppressWarnings("unchecked")
+    private java.util.Map<String, Integer> figures(String[][] points, Object[][] legs) throws Exception
+    {
+        org.json.JSONObject built = new org.json.JSONObject();
+        org.json.JSONArray pointList = new org.json.JSONArray();
+        org.json.JSONArray edgeList = new org.json.JSONArray();
+
+        java.util.Map<String, TileKey> named = new java.util.LinkedHashMap<>();
+
+        int x = 0;
+
+        for (String[] point : points)
+        {
+            org.json.JSONObject json = new org.json.JSONObject();
+
+            json.put("name", point[0]);
+            json.put("station", point[1].startsWith("station") || point[1].equals("terminus"));
+
+            if (point[1].equals("reversing")) json.put("reversing", true);
+            if (point[1].equals("terminus")) json.put("terminus", true);
+            if (point[1].equals("off")) json.put("active", false);
+
+            pointList.put(json);
+
+            named.put(point[0], point[1].startsWith("station=") ? named.get(point[1].substring(8))
+                : new TileKey("main", ++x, 0));
+        }
+
+        for (Object[] leg : legs)
+        {
+            org.json.JSONObject json = new org.json.JSONObject();
+
+            json.put("start", leg[0]);
+            json.put("end", leg[1]);
+            json.put("length", leg[2]);
+
+            if (leg[3] != null) json.put("roomAtTheEnd", leg[3]);
+
+            edgeList.put(json);
+        }
+
+        built.put("points", pointList);
+        built.put("edges", edgeList);
+
+        java.lang.reflect.Method read = org.traincontrol.automationui.AutonomySession.class.getDeclaredMethod(
+            "refusingFigures", org.json.JSONObject.class, java.util.Map.class);
+
+        read.setAccessible(true);
+
+        java.util.Map<TileKey, Integer> bySquare = (java.util.Map<TileKey, Integer>) read.invoke(session, built, named);
+
+        java.util.Map<String, Integer> out = new java.util.LinkedHashMap<>();
+
+        for (java.util.Map.Entry<String, TileKey> point : named.entrySet())
+        {
+            if (bySquare.containsKey(point.getValue())) out.put(point.getKey(), bySquare.get(point.getValue()));
+        }
+
+        return out;
+    }
+
     /** A sensor, a station square, a switch with its branch, and a platform, west to east. */
     private LayoutDiagram platformBehindAStationAndASwitch() throws IOException
     {

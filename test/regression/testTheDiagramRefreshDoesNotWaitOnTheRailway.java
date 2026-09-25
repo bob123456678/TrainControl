@@ -347,8 +347,9 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
      * The third door: the diagram's right-click menu asks the same question while it is being built.
      *
      * `HomeLocomotiveMenu.addReturnHomeItem` greys the "Return Locomotives Home" item and says why,
-     * and it reaches `triageReturnToHome` to find out.  A popup menu is built on the event thread by
-     * definition, so this is the same wait with a mouse button behind it rather than an arrival.
+     * reading the button `refreshReturnHomeButton` keeps (OB-192), and handed the setup's sentence by the
+     * menu (ADU-C3).  A popup menu is built on the event thread by definition, so this is the same wait
+     * with a mouse button behind it rather than an arrival.
      */
     @Test
     public void testTheReturnHomeMenuDoesNotWaitOnTheRailway() throws Exception
@@ -359,12 +360,13 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
             {
                 Class<?> menu = Class.forName("org.traincontrol.gui.HomeLocomotiveMenu");
 
+                // The sentence as the menu hands it where Start is offered: none (ADU2-C1).
                 java.lang.reflect.Method door = menu.getDeclaredMethod("addReturnHomeItem",
-                    javax.swing.JComponent.class, TrainControlUI.class);
+                    javax.swing.JComponent.class, TrainControlUI.class, String.class);
 
                 door.setAccessible(true);
 
-                door.invoke(null, new javax.swing.JPanel(), ui);
+                door.invoke(null, new javax.swing.JPanel(), ui, null);
             }
             catch (Exception failed)
             {
