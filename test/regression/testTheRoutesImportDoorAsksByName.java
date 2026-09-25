@@ -153,6 +153,66 @@ public class testTheRoutesImportDoorAsksByName
             run.routesBefore.size(), run.armedBefore.size())), "the door counts a route it could not arm as armed again");
     }
 
+    /**
+     * A route whose name has a letter outside ASCII comes back by the name it was exported with (RLU-A1).
+     *
+     * Export writes the file as UTF-8; the door read it in the machine's own character set, which on Java 8 under
+     * Windows is a code page - so "Ausfahrt Süd" came back as "Ausfahrt SÃ¼d", and a route's locomotive command naming
+     * "Köf II" named no locomotive, and was skipped when the route fired.  On a JVM whose own character set is UTF-8 the
+     * two readings agree and this can see nothing, so there it is skipped rather than passed.
+     *
+     * MUTATION: read the file without a character set, and this fails.
+     *
+     * @throws Exception from the window or the import
+     */
+    @Test
+    public void testARouteNamedOutsideAsciiComesBackByItsName() throws Exception
+    {
+        if (StandardCharsets.UTF_8.equals(java.nio.charset.Charset.defaultCharset()))
+        {
+            throw new SkipException("this JVM reads UTF-8 by default, so a file read without a character set comes back"
+                + " right and this cannot tell the two apart");
+        }
+
+        final String[] renamed = new String[2];
+
+        Imported run = importHisRoutes(true, file ->
+        {
+            // ONE ROUTE SAVED ARMED, RENAMED WITH A LETTER A CODE PAGE READS AS TWO.
+            JSONObject json = new JSONObject(file);
+
+            JSONArray routes = json.getJSONArray("routes");
+
+            for (int i = 0; i < routes.length(); i++)
+            {
+                JSONObject route = routes.getJSONObject(i);
+
+                if (route.optBoolean("auto", false))
+                {
+                    renamed[0] = route.getString("name");
+                    renamed[1] = renamed[0] + " S\u00fcd";
+
+                    route.put("name", renamed[1]);
+
+                    return json.toString();
+                }
+            }
+
+            throw new AssertionError("precondition: no route is saved armed in the file");
+        });
+
+        assertTrue(run.savedArmed.contains(renamed[1]), "precondition: the file does not hold the renamed route");
+
+        Set<String> expected = new TreeSet<>(run.routesBefore);
+
+        expected.remove(renamed[0]);
+        expected.add(renamed[1]);
+
+        assertEquals(run.routesAfter, expected, "Routes > Import did not bring the route back as \"" + renamed[1] + "\":"
+            + " the file is UTF-8, and a letter outside ASCII read in another character set comes back as other letters"
+            + " (RLU-A1)");
+    }
+
     // ---------------------------------------------------------------- the door
 
     /** What one import through the door did. */
