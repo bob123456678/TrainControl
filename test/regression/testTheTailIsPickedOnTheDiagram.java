@@ -294,6 +294,17 @@ public class testTheTailIsPickedOnTheDiagram
 
             assertEquals(model.getFeedbackState(sensor), before, "the second click of a double-click on TunnelPre, the"
                 + " sensor that answered the tail question, flipped the sensor - a faked occupancy change (TDU-B3)");
+
+            // AND ONLY THAT DOUBLE-CLICK (TDU2-C1): a later one on the same sensor, with nothing asked, flips it and flips
+            // it back, as a double-click on a sensor always has - the guard is put down once its double-click is over.
+            click(q.label, 1);
+            click(q.label, 2);
+
+            for (int turn = 0; turn < 4; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+            assertEquals(model.getFeedbackState(sensor), before, "a later double-click on TunnelPre, with no question"
+                + " waiting, flipped it once and not back - the answering click's guard was never put down, and the"
+                + " sensor is left showing a change nobody made (TDU2-C1)");
         }
         finally
         {
