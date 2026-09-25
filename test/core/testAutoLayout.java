@@ -746,6 +746,79 @@ public class testAutoLayout
     }
 
     /**
+     * Where two roads part behind a standing train, a rail answered 0 is covered as far as the tail reaches, like a
+     * measured one (Adam, 2026-09-25: a stretch answered 0 is measured track of no length): the claim up to where the
+     * rails part, and the tail question's reach along a rail.  Two rails into RP_P, answered 0 throughout, sharing their
+     * last two squares.
+     *
+     * MUTATION: have either decline a rail answered 0, as both declined a rail with no length, and this fails.
+     *
+     * @throws Exception from the model or the reflection
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testAnAnsweredRailIsCoveredWhereTheRoadsPart() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.createPoint("RP_X", true, "5");
+        layout.createPoint("RP_Y", true, "6");
+        layout.createPoint("RP_P", true, "7");
+
+        Edge xp = layout.createEdge("RP_X", "RP_P");
+        Edge yp = layout.createEdge("RP_Y", "RP_P");
+
+        xp.setPlaces(java.util.Arrays.asList("RP:x", "RP:s", "RP:p"), java.util.Arrays.asList(0, 0, 0));
+        yp.setPlaces(java.util.Arrays.asList("RP:y", "RP:s", "RP:p"), java.util.Arrays.asList(0, 0, 0));
+
+        xp.setAnsweredPlaces(java.util.Arrays.asList("RP:x", "RP:s", "RP:p"));
+        yp.setAnsweredPlaces(java.util.Arrays.asList("RP:y", "RP:s", "RP:p"));
+
+        org.traincontrol.marklin.MarklinLocomotive loc = model.getLocByName("Test loc 1");
+
+        assertNotNull(loc, "precondition: this class's Test loc 1 is gone");
+
+        Integer was = loc.getTrainLength();
+
+        try
+        {
+            loc.setTrainLength(3);
+
+            java.lang.reflect.Method part = Layout.class.getDeclaredMethod("claimUpToWhereTheRailsPart", List.class,
+                org.traincontrol.base.Locomotive.class, java.util.Map.class, java.util.Set.class, int.class,
+                java.util.Map.class);
+
+            part.setAccessible(true);
+
+            java.util.Map<String, org.traincontrol.base.Locomotive> places = new java.util.LinkedHashMap<>();
+
+            Object parted = part.invoke(null, java.util.Arrays.asList(xp, yp), loc, places,
+                new java.util.HashSet<String>(), 3, null);
+
+            assertEquals(parted, Boolean.TRUE, "two rails answered 0 were declined as rails nobody measured, so the"
+                + " squares they share behind the train are left to the ordinary walk's guess of one road");
+
+            assertEquals(places.keySet(), new java.util.LinkedHashSet<>(java.util.Arrays.asList("RP:p", "RP:s")), "the"
+                + " claim up to where the rails part does not claim the two squares they share: " + places.keySet());
+
+            java.lang.reflect.Method reach = org.traincontrol.gui.TailCrossedPrompt.class.getDeclaredMethod("reachOf",
+                Edge.class, int.class);
+
+            reach.setAccessible(true);
+
+            java.util.Set<String> covered = (java.util.Set<String>) reach.invoke(null, xp, 3);
+
+            assertEquals(covered, new java.util.LinkedHashSet<>(java.util.Arrays.asList("RP:p", "RP:s", "RP:x")), "the"
+                + " tail question reads a rail answered 0 as reaching nothing, where a tail of 3 lies over all of it: "
+                + covered);
+        }
+        finally
+        {
+            loc.setTrainLength(was);
+        }
+    }
+
+    /**
      * A railway can say which track non-atomic mode could release under a train (VD13-B2/B3, VD14-C6).
      *
      * This is the one question the atomic-routes gate asks, at all seven of its doors - the checkbox,
