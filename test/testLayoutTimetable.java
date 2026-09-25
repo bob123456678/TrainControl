@@ -53,7 +53,16 @@ public class testLayoutTimetable
      */
     private MarklinLocomotive dummyLoc()
     {
-        return new MarklinLocomotive(model, 1, MarklinLocomotive.decoderType.MM2, "TT Loc " + (++locCounter));
+        MarklinLocomotive loc = new MarklinLocomotive(model, 1, MarklinLocomotive.decoderType.MM2,
+            "TT Loc " + (++locCounter));
+
+        // WITH A SPEED, which was never what these tests are about.  A fresh locomotive has none, and
+        // the dispatch loop SKIPS an entry whose locomotive has a speed outside 1 to 100 rather than
+        // retrying it - so the retry test below would end at once, by that rule, without ever
+        // reaching the invalidated layout it was written to exercise.
+        loc.setPreferredSpeed(35);
+
+        return loc;
     }
 
     /**

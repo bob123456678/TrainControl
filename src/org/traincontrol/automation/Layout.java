@@ -2935,6 +2935,35 @@ public class Layout
 
                             while (this.running && !this.executePath(ttp.getPath(), ttp.getLoc(), ttp.getLoc().getPreferredSpeed(), ttp))
                             {
+                                // A SPEED IS NOT A BUSY TRACK.
+                                //
+                                // executePath refuses a locomotive whose preferred speed is outside 1
+                                // to 100 and returns false, which is indistinguishable here from a
+                                // path it could not lock - so this loop waited, asked again, and in a
+                                // Return Home run declared the entry stuck after three attempts: "the
+                                // path stayed blocked", which is not what is wrong.  It then stopped
+                                // every train and ended the run, so one locomotive placed on the graph
+                                // and never given a speed abandoned every remaining leg.
+                                //
+                                // runLocomotives already answers this: skip that locomotive, say so in
+                                // the log, and let everything else run.  Same answer here, and the
+                                // same message.
+                                if (ttp.getLoc().getPreferredSpeed() < 1
+                                    || ttp.getLoc().getPreferredSpeed() > 100)
+                                {
+                                    this.control.logf("autolayout.errorFailedToRunLocomotive",
+                                        ttp.getLoc().getName());
+
+                                    // STAMPED, or the run stops here anyway: the next entry waits
+                                    // while this one's executionTime is 0 ("the previous route has not
+                                    // started yet"), so leaving it unstamped would turn the abandonment
+                                    // into a wait that nothing ever ends.  The entry has had its turn;
+                                    // what it has not had is a train.
+                                    ttp.setExecutionTime(System.currentTimeMillis());
+
+                                    break;
+                                }
+
                                 attempts++;
 
                                 if (this.timetableSequential && attempts >= STAGING_MAX_ATTEMPTS)

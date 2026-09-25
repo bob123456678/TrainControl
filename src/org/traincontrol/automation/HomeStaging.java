@@ -317,10 +317,11 @@ public final class HomeStaging
             // search burns its whole budget and then reports "no arrangement found - it may still be
             // possible", which is wrong twice over and sends the operator shunting for nothing.
             // A locomotive that cannot leave where it stands is as unreachable as one with no route:
-            // firstClearRoute refuses an inactive origin, so the search can only exhaust and answer
-            // "maybe".  One flag test turns that into a proof, the same upgrade the pairwise goal scan
-            // below gives conflicting homes.
+            // firstClearRoute refuses an inactive origin, and one that is not a station, so the search
+            // can only exhaust and answer "maybe".  One flag test turns that into a proof, the same
+            // upgrade the pairwise goal scan below gives conflicting homes.
             if (!locationOf(this.start, l).isActive()
+                || !locationOf(this.start, l).isDestination()
                 || !canRest(l, home)
                 || !connected(locationOf(this.start, l), home)) unreachable.add(l);
         }
@@ -660,11 +661,19 @@ public final class HomeStaging
         if (from == null || to == null || from.equals(to)) return null;
 
         // The origin is exempt from every other test here - that is what stops the moving train's own
-        // sensor blocking its own departure - but not from this one.  isPathClear applies its
+        // sensor blocking its own departure - but not from these two.  isPathClear applies its
         // inactive-point rule to every edge start including the first, and staging executes with
         // autonomy running, so a locomotive standing on a deactivated point would be planned home and
         // then refused at its first edge.
         if (!from.isActive()) return null;
+
+        // And the rule in the very next `if` of isPathClear: "Starting point is not a station - do not
+        // pick it in fully autonomous mode", which is in force because executeTimetable sets
+        // `running`.  Missing it cost more than a refused plan: the run started, the leg was refused,
+        // the retry loop asked again every two seconds until it stopped every train and abandoned the
+        // run saying the path stayed blocked - when the track was clear and the train was simply
+        // standing somewhere no automatic path may begin.
+        if (!from.isDestination()) return null;
         if (!canRest(loc, to) || state.containsKey(to)) return null;
 
         Deque<Candidate> queue = new ArrayDeque<>();

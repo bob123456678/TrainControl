@@ -1498,6 +1498,35 @@ public class testHomeStaging
             + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
     }
 
+    /**
+     * HS A - HS P - HS B in a line, with a locomotive standing on the middle point.
+     *
+     * @param pIsAStation whether the middle point is a station, which is the only variable
+     * @return the graph JSON
+     */
+    private static String nonStationOrigin(boolean pIsAStation)
+    {
+        String p = station("HS P", 1, LOC_A);
+
+        if (!pIsAStation)
+        {
+            // Rewritten rather than built by hand, and asserted, so a change to the station fixture
+            // cannot silently leave HS P a station and this fixture testing nothing
+            assertTrue(p.contains("'station': true"), "station JSON shape changed: " + p);
+
+            p = p.replace("'station': true", "'station': false");
+        }
+
+        return json("{'points': ["
+            + station("HS A", 0, null) + ","
+            + p + ","
+            + station("HS B", 2, null)
+            + "],'edges': ["
+            + edge("HS A", "HS P") + "," + edge("HS P", "HS A") + ","
+            + edge("HS P", "HS B") + "," + edge("HS B", "HS P")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
     /** Assigns homes directly, which is clearer here than rewriting fixture JSON per case. */
     private static void assign(Layout layout, String locName, String stationName) throws Exception
     {
@@ -1858,6 +1887,70 @@ public class testHomeStaging
 
         assertTrue(plan.getBlocked().contains(loc(LOC_A)),
             "and it is named, so the operator knows which train to reactivate: " + plan.getBlocked());
+    }
+
+    /**
+     * A locomotive standing on a point that is not a station is not planned home either.
+     *
+     * The rule the planner was missing sits in isPathClear one `if` after the inactive-point rule it
+     * did learn: "Starting point is not a station - do not pick it in fully autonomous mode".  Return
+     * Home executes with autonomy running - executeTimetable sets the flag - so that rule is in force
+     * for every leg.
+     *
+     * What it cost is worse than a refused plan.  The run STARTED, the leg was refused, the retry loop
+     * asked again every two seconds, and after three attempts it stopped every train and abandoned the
+     * whole run saying the path stayed blocked - which is not what was wrong.  A train gets onto such
+     * a point by being left there, or by the point being unmarked as a station while it stands on it.
+     *
+     * The control below is the point of the test: the same graph with the same train in the same
+     * place, differing only in whether that place is a station, must plan perfectly well.
+     *
+     * Ported from the 3.0 branch (fd31d2b2, SG-A2).
+     */
+    @Test
+    public void testALocomotiveOnANonStationIsNotPlannedHome() throws Exception
+    {
+        Layout layout = load(nonStationOrigin(false));
+
+        assertFalse(layout.getPoint("HS P").isDestination(),
+            "precondition: HS P is not a station, which is the whole case");
+
+        assertTrue(layout.getPoint("HS P").isActive(),
+            "precondition: HS P is in service - the inactive rule is the OTHER half, and if it fired "
+            + "here this test would pass without the rule under test existing at all");
+
+        assertEquals(layout.getPoint("HS P").getCurrentLocomotive(), loc(LOC_A),
+            "precondition: the train is standing on HS P");
+
+        assign(layout, LOC_A, "HS A");
+
+        HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+        assertFalse(plan.isPossible(),
+            "the runtime refuses a path that starts anywhere but a station while autonomy runs, so "
+            + "this would be planned, retried every two seconds, and then the whole Return Home run "
+            + "abandoned with every train stopped: " + plan);
+
+        assertEquals(plan.getOutcome(), HomeStaging.Outcome.IMPOSSIBLE,
+            "a locomotive that cannot depart is proved stuck, not searched for: " + plan);
+
+        assertTrue(plan.getBlocked().contains(loc(LOC_A)),
+            "and it is named, so the operator knows which train to move by hand: " + plan.getBlocked());
+
+        // The control.  One flag different, and the plan is ordinary.
+        Layout station = load(nonStationOrigin(true));
+
+        assertTrue(station.getPoint("HS P").isDestination(),
+            "the control did not take: HS P has to be a station in this one");
+
+        assign(station, LOC_A, "HS A");
+
+        HomeStaging.Plan ordinary = HomeStaging.snapshot(station).plan();
+
+        assertTrue(ordinary.isPossible(),
+            "the same train, the same point, the same empty home one edge away - and the only "
+            + "difference is whether the point is a station.  If this fails the fixture is wrong "
+            + "and the assertions above prove nothing: " + ordinary);
     }
 
     /**
