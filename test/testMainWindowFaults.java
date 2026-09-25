@@ -22,6 +22,7 @@ import javax.swing.plaf.basic.BasicOptionPaneUI;
 import static org.testng.Assert.*;
 import org.testng.SkipException;
 import org.testng.annotations.Test;
+import org.traincontrol.automation.Layout;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.PositionAwareJFrame;
 import org.traincontrol.gui.TrainControlUI;
@@ -161,6 +162,122 @@ public class testMainWindowFaults
         assertTrue(start.isEnabled(),
             "nothing was started, so the button must be given back - otherwise one refused press "
             + "leaves Start greyed until a restart");
+    }
+
+    /**
+     * A press that starts the run leaves Start greyed; only a press that starts nothing gives it back.
+     *
+     * The test above ends every worker before it can start anything, so it only ever sees the button
+     * given back.  The other half matters as much: runLocomotives sets the layout running on a thread
+     * of its own, a moment after the worker has finished, and a Start given back in that moment lets a
+     * second press through the busy check - the double start the greying exists to prevent (BPV-C3).
+     *
+     * The stand-in layout is valid, has a train to run and counts the runs it is asked for, without
+     * running anything; it is not running, as a real one is not yet at that moment.
+     */
+    @Test
+    public void testAPressThatStartsTheRunLeavesStartGreyed() throws Exception
+    {
+        final AtomicInteger runs = new AtomicInteger();
+
+        final Layout layout = new Layout(stubModel((method, args) -> null))
+        {
+            @Override
+            public boolean isValid()
+            {
+                return true;
+            }
+
+            @Override
+            public Set<Locomotive> getLocomotivesToRun()
+            {
+                // Start asks only whether there is anything to run
+                return Collections.singleton((Locomotive) null);
+            }
+
+            @Override
+            public void runLocomotives()
+            {
+                runs.incrementAndGet();
+            }
+        };
+
+        ViewListener model = stubModel((method, args) ->
+        {
+            switch (method.getName())
+            {
+                case "getPowerState":
+                case "hasAutoLayout":
+                    return true;
+
+                case "getRouteList":
+                    return Collections.emptyList();
+
+                case "getAutoLayout":
+                    return layout;
+
+                default:
+                    return null;
+            }
+        });
+
+        TrainControlUI ui = windowless();
+        set(ui, "model", model);
+        set(ui, "gracefulStop", new JButton("Graceful stop"));
+        set(ui, "returnHomeButton", new JButton("Return home"));
+
+        final JButton start = new JButton("Start");
+        set(ui, "startAutonomy", start);
+
+        // Wired the way the form wires it
+        final Method handler = TrainControlUI.class.getDeclaredMethod(
+            "startAutonomyActionPerformed", java.awt.event.ActionEvent.class);
+        handler.setAccessible(true);
+
+        start.addActionListener(evt ->
+        {
+            try
+            {
+                handler.invoke(ui, evt);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new RuntimeException(e);
+            }
+        });
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            start.setEnabled(true);
+            start.doClick(0);
+        });
+
+        long deadline = System.currentTimeMillis() + 5000;
+
+        while (runs.get() < 1 && System.currentTimeMillis() < deadline)
+        {
+            Thread.sleep(20);
+        }
+
+        assertEquals(runs.get(), 1, "precondition: the press did not start the run, so this test says "
+            + "nothing about what a started run does to the button");
+
+        // Let the worker end, and the event thread run whatever it handed over
+        Thread.sleep(500);
+
+        SwingUtilities.invokeAndWait(() -> { });
+        SwingUtilities.invokeAndWait(() -> { });
+
+        assertFalse(start.isEnabled(),
+            "the run was started and Start was given back anyway - a second press now passes the "
+            + "busy check before the run has set the layout running, and every train starts twice");
+
+        // And a second press is what the greying is for
+        SwingUtilities.invokeAndWait(() -> start.doClick(0));
+
+        Thread.sleep(500);
+
+        assertEquals(runs.get(), 1, "a second press after the run had started started it again");
     }
 
     /**
