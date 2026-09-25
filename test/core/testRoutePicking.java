@@ -187,6 +187,88 @@ public class testRoutePicking
     }
 
     /**
+     * A stretch answered 0 counts 0 in the length a route is chosen by, and one nobody measured still counts 1 (Adam,
+     * 2026-09-25: *"Yes, count answered 0 as 0"*).
+     *
+     * The floor of 1 is for track nobody has measured, so that an unmeasured railway does not tie every route at 0.  An
+     * answered 0 is a measurement, and counted as 1 it made a route through sensors side by side look longer than it is.
+     * Two ways to one end: 4 + 0 + 0 + 4 over two hops answered 0, and 9.  Shortest takes the first and longest the
+     * second; with the hops unanswered, each counts 1 and the first is 10.
+     *
+     * MUTATION: count an answered 0 as 1, and this fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testAnAnsweredZeroCountsNothingInTheLength() throws Exception
+    {
+        Layout layout = twoWaysAcrossWithAnsweredHops(true);
+        Locomotive loc = placedLocomotive(layout);
+
+        layout.setPathPreference(Layout.PathPreference.SHORTEST_LENGTH);
+
+        assertEquals(wayTaken(layout, loc), "RZ_Plain1", "shortest track takes the 9-long way over the one measured 8 -"
+            + " its two hops answered 0 are counted as 1 each, as if nobody had measured them");
+
+        layout.setPathPreference(Layout.PathPreference.LONGEST_LENGTH);
+
+        assertEquals(wayTaken(layout, loc), "RZ_Via", "longest track takes the way measured 8 over the 9-long one");
+
+        // CONTROL: the same hops unanswered count 1 each, so that way is 10.
+        Layout unanswered = twoWaysAcrossWithAnsweredHops(false);
+        Locomotive other = placedLocomotive(unanswered);
+
+        unanswered.setPathPreference(Layout.PathPreference.SHORTEST_LENGTH);
+
+        assertEquals(wayTaken(unanswered, other), "RZ_Via", "CONTROL: two hops nobody measured no longer count 1 each");
+    }
+
+    /**
+     * Two ways from RP_Start to RZ_End: over RZ_Plain1, RZ_Plain2 and RZ_Plain3, 4 + 0 + 0 + 4 with the two middle hops
+     * answered 0 or not; and over RZ_Via, a station no train is sent to, 5 + 4.
+     */
+    private static Layout twoWaysAcrossWithAnsweredHops(boolean answered) throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        int base = answered ? 221 : 231;
+
+        String[] names = {"RP_Start", "RZ_Via", "RZ_Plain1", "RZ_Plain2", "RZ_Plain3", "RZ_End"};
+
+        for (int i = 0; i < names.length; i++)
+        {
+            MarklinFeedback fb = model.newFeedback(base + i, null);
+
+            model.setFeedbackState(fb.getName(), false);
+
+            boolean station = names[i].equals("RP_Start") || names[i].equals("RZ_Via") || names[i].equals("RZ_End");
+
+            layout.createPoint(names[i], station, fb.getName());
+        }
+
+        layout.createEdge("RP_Start", "RZ_Via").setLength(5);
+        layout.createEdge("RZ_Via", "RZ_End").setLength(4);
+
+        layout.createEdge("RP_Start", "RZ_Plain1").setLength(4);
+        layout.createEdge("RZ_Plain3", "RZ_End").setLength(4);
+
+        for (String[] hop : new String[][] {{"RZ_Plain1", "RZ_Plain2"}, {"RZ_Plain2", "RZ_Plain3"}})
+        {
+            Edge edge = layout.createEdge(hop[0], hop[1]);
+
+            java.util.List<String> ids = java.util.Arrays.asList("RZ:" + hop[0], "RZ:" + hop[1]);
+
+            edge.setPlaces(ids, java.util.Arrays.asList(0, 0));
+
+            if (answered) edge.setAnsweredPlaces(ids);
+        }
+
+        layout.getPoint("RZ_Via").setAutoDestination(false);
+
+        return layout;
+    }
+
+    /**
      * Random takes one of the two, and it is a real route either way.
      *
      * There is nothing to assert about which one - that is the point of it - so what is worth pinning
