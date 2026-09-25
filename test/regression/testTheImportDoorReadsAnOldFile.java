@@ -145,6 +145,15 @@ public class testTheImportDoorReadsAnOldFile
                 assertFalse(session.isAutoDestination(parking), "ParkingTrack7, switched off in the old file, can be chosen"
                     + " in full autonomy in the imported configuration (MT-502)");
 
+                // AND BECAUSE THE OLD FILE SWITCHED IT OFF, not only because it is a square trains turn at, which unticks
+                // the same box: the translation itself, "on, but not one autonomy chooses" (REG-B1).
+                assertEquals(session.getPointProperty(parking, org.traincontrol.automationui.AutonomyBuilder.AUTO_DESTINATION),
+                    Boolean.FALSE, "the old file's switched-off ParkingTrack7 was not carried as a station autonomy does"
+                    + " not choose (MT-502)");
+
+                assertFalse(Boolean.FALSE.equals(session.getPointProperty(parking, "active")), "the old file's switched-off"
+                    + " ParkingTrack7 arrived switched off, where it should arrive as one trains can stop at (MT-502)");
+
                 assertEquals(session.placementsAutonomyWillWrite().size(), 4, "the imported configuration does not hold"
                     + " his four trains (MT-491): " + session.placementsAutonomyWillWrite());
             }
