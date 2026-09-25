@@ -498,13 +498,79 @@ public class testAPlacedTrainRecordsWhereItCameFrom
 
         Point point = putTheTrainOn(junctionPoint);
 
-        train.setTrainLength(TrainControlUI.ROUTE_TRAIN_LENGTH_MAX);
+        Integer lengthBefore = train.getTrainLength();
 
-        GraphLocAssign edit = dialogOn(point);
+        try
+        {
+            // THE LOCOMOTIVE MENU'S LIST, AS IT OPENS (MT-572 steps 1 and 2): 0 to 40, and 40 chosen.
+            train.setTrainLength(0);
 
-        assertEquals(edit.getTrainLength(), Integer.valueOf(TrainControlUI.ROUTE_TRAIN_LENGTH_MAX), "a train of "
-            + TrainControlUI.ROUTE_TRAIN_LENGTH_MAX + " units - the longest the locomotive menu offers - opened in the Edit"
-            + " Locomotive view as " + edit.getTrainLength() + ", which OK would save");
+            SwingUtilities.invokeLater(() -> ui.promptTrainLength(train, null));
+
+            javax.swing.JOptionPane pane = null;
+
+            for (int wait = 0; wait < 100 && pane == null; wait++)
+            {
+                Thread.sleep(100);
+
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (!window.isShowing() || !(window instanceof javax.swing.JDialog)) continue;
+
+                    java.awt.Container content = ((javax.swing.JDialog) window).getContentPane();
+
+                    for (java.awt.Component child : content.getComponents())
+                    {
+                        if (child instanceof javax.swing.JOptionPane
+                            && org.traincontrol.util.I18n.t("autolayout.ui.trainLength").equals(
+                                ((javax.swing.JOptionPane) child).getMessage()))
+                        {
+                            pane = (javax.swing.JOptionPane) child;
+                        }
+                    }
+                }
+            }
+
+            assertNotNull(pane, "precondition: the locomotive menu's train-length question did not open");
+
+            Object[] offered = pane.getSelectionValues();
+
+            assertEquals(offered.length, 41, "the locomotive menu's train-length list does not run 0 to 40 (MT-572): "
+                + java.util.Arrays.toString(offered));
+
+            assertEquals(offered[0], "0", "the locomotive menu's list does not start at 0 (MT-572)");
+            assertEquals(offered[40], "40", "the locomotive menu's list does not end at 40 (MT-572)");
+
+            final javax.swing.JOptionPane answering = pane;
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                answering.setInputValue("40");
+                answering.setValue(Integer.valueOf(javax.swing.JOptionPane.OK_OPTION));
+            });
+
+            for (int wait = 0; wait < 50 && !Integer.valueOf(40).equals(train.getTrainLength()); wait++) Thread.sleep(100);
+
+            assertEquals(train.getTrainLength(), Integer.valueOf(TrainControlUI.ROUTE_TRAIN_LENGTH_MAX), "40 chosen from"
+                + " the locomotive menu's list did not give the train a length of 40 (MT-572)");
+
+            // THE EDIT LOCOMOTIVE VIEW SHOWS IT (step 3), AND OK KEEPS IT.
+            GraphLocAssign edit = dialogOn(point);
+
+            assertEquals(edit.getTrainLength(), Integer.valueOf(TrainControlUI.ROUTE_TRAIN_LENGTH_MAX), "a train of "
+                + TrainControlUI.ROUTE_TRAIN_LENGTH_MAX + " units - the longest the locomotive menu offers - opened in the"
+                + " Edit Locomotive view as " + edit.getTrainLength() + ", which OK would save");
+
+            // OK in that window commits through `commitAndRecord` (AutonomyEditorPanel's Edit Locomotive item).
+            GraphLocAssign.commitAndRecord(edit);
+
+            assertEquals(train.getTrainLength(), Integer.valueOf(TrainControlUI.ROUTE_TRAIN_LENGTH_MAX), "after OK in the"
+                + " Edit Locomotive view the train is no longer 40 long (MT-572)");
+        }
+        finally
+        {
+            train.setTrainLength(lengthBefore == null ? 0 : lengthBefore);
+        }
     }
 
     /**
