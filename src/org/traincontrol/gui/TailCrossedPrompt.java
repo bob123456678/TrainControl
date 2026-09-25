@@ -602,28 +602,34 @@ public class TailCrossedPrompt
 
     /**
      * Whether the setup a door wrote to before its question is still the window's when the answer comes back: the same
-     * session, with the same configuration active (TDU3-B1, TDU4-C1).  Loading another configuration keeps the session,
-     * and that configuration's copy of the square can hold the same train from the same side: the answer was then written
-     * into the configuration just loaded, and the one it was asked for never had it.  A door whose setup is not the
-     * window's any more saves nothing either (TDU4-C2): the reset that replaced it wrote what it held.
+     * session, and either the same configuration active or the same railway running (TDU3-B1, TDU4-C1, TDU5-C1).
+     * Loading another configuration keeps the session and rebuilds the railway, and that configuration's copy of the
+     * square can hold the same train from the same side: the answer was then written into the configuration just
+     * loaded, and the one it was asked for never had it.  A rename, or a copy made active - New Configuration - changes
+     * the name and not the railway: the answer is about what is running, under whatever name.  A door whose setup is not
+     * the window's any more saves nothing either (TDU4-C2): the reset that replaced it wrote what it held.
      *
      * @param asked the session the door wrote to before the question
      * @param now the window's session now
      * @param configurationAsked the configuration active when the question was asked
+     * @param railwayAsked the railway running when the question was asked
+     * @param railwayNow the railway running now
      * @return true when the answer is about the setup in front of the operator
      */
     public static boolean sameSetup(org.traincontrol.automationui.AutonomySession asked,
-        org.traincontrol.automationui.AutonomySession now, String configurationAsked)
+        org.traincontrol.automationui.AutonomySession now, String configurationAsked, Layout railwayAsked,
+        Layout railwayNow)
     {
         return asked != null && asked == now
-            && java.util.Objects.equals(asked.getStore().getActiveConfiguration(), configurationAsked);
+            && (java.util.Objects.equals(asked.getStore().getActiveConfiguration(), configurationAsked)
+                || (railwayAsked != null && railwayAsked == railwayNow));
     }
 
     /**
      * Says in the log that an answer was not recorded, and why (TDU3-C2): the squares go dark whichever way it went, and
-     * the operator could not tell a dropped answer from one that did not work.  Only for an answer (TDU4-C3) - a Cancel
-     * or Not known asked for nothing to be recorded - and naming the square as the diagram does, without a remedy that
-     * the train having moved or another train standing there makes impossible.
+     * the operator could not tell a dropped answer from one that did not work.  Only for an answer (TDU4-C3) - Not known
+     * included, which records that nothing is known; a Cancel asked for nothing to be recorded - and naming the square as
+     * the diagram does, without a remedy that the train having moved or another train standing there makes impossible.
      *
      * @param model where the log goes
      * @param train the train the question was about

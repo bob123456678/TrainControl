@@ -1236,6 +1236,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 final java.util.List<org.traincontrol.automation.Edge> roadAtTheQuestion =
                     landing == null ? null : landing.getArrivedAlong();
                 final String configurationAsked = session.getStore().getActiveConfiguration();
+                final org.traincontrol.automation.Layout railwayAsked =
+                    org.traincontrol.gui.TailCrossedPrompt.runningNow(ui.getModel());
 
                 org.traincontrol.gui.TailCrossedPrompt.Answer answer =
                     org.traincontrol.gui.TailCrossedPrompt.askAfterPlacement(running, landing, tail,
@@ -1247,7 +1249,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 // STILL STANDS (TDU2-A1, TDU3-B1): the question waited with the window live, and the copy may hold another
                 // train now, or have been replaced by a rebuild.
                 setupStands = org.traincontrol.gui.TailCrossedPrompt.sameSetup(session, ui.getAutonomySession(),
-                    configurationAsked);
+                    configurationAsked, railwayAsked, org.traincontrol.gui.TailCrossedPrompt.runningNow(ui.getModel()));
 
                 final org.traincontrol.automation.Point answersTo = landing == null ? null
                     : org.traincontrol.gui.TailCrossedPrompt.whereTheAnswerGoes(

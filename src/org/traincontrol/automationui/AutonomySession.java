@@ -3878,27 +3878,53 @@ public class AutonomySession
     }
 
     /**
-     * Whether a berth's room ends at this square: a switch, a permanent turnout, or a crossing (TDA-C7).
+     * Whether a berth's room ends at this square: a switch or a permanent turnout, where the room walk ends
+     * (`GraphReducer.boundsTheRoom`, OB-233); or a crossing another road runs over, where the berth rule refuses
+     * (TDA-C7, TDA5-C1).
      *
-     * The room walk ends at a switch or a permanent turnout (`GraphReducer.boundsTheRoom`, OB-233), and the berth rule
-     * refuses a train whose spending reaches a place another road runs over - which a crossing's square is.
-     *
-     * **Known limit** (TDA3-C2): the rule refuses there only where a train can drive the crossing's other road - with
-     * nothing leading onto it, the build emits no rail over it and the rule has nothing to refuse on - and this asks the
-     * tile.  So at a crossing no train can cross the notices warn of a refusal that does not come: the warning side, and
-     * a crossing nobody builds.
+     * A crossing no train can drive over stops nothing: with nothing leading onto its other road the build emits no rail
+     * over it, and the rule has nothing to refuse on (TDA3-C2, a stated limit until TDA5-C1 asked the road).
      *
      * @param tile a square
+     * @param berth the berth the room is counted for
      * @return true where the berth's measured room ends
      */
-    private boolean endsTheBerthsRoom(TileKey tile)
+    private boolean endsTheBerthsRoom(TileKey tile, TileKey berth)
     {
         org.traincontrol.base.LayoutDiagramComponent component = getGraph().getTiles().get(tile);
 
         if (component == null) return false;
 
-        return component.isSwitch() || TileGraph.isPermanentTurnout(component.getType())
-            || component.getType() == org.traincontrol.base.LayoutDiagramComponent.componentType.CROSSING;
+        if (component.isSwitch() || TileGraph.isPermanentTurnout(component.getType())) return true;
+
+        return component.getType() == org.traincontrol.base.LayoutDiagramComponent.componentType.CROSSING
+            && anotherRoadRunsOver(tile, berth);
+    }
+
+    /**
+     * Whether a road that neither starts nor ends at this berth runs over this square - the berth rule's own question
+     * (`Layout.whyABerthCannotHoldIt` refuses on a claimed place shared with a road, and passes over a road that starts
+     * or ends at the berth, as a switch's other leg into the same berth does) (TDA5-C1).
+     *
+     * @param tile a square
+     * @param berth the berth
+     * @return true where such a road runs over it
+     */
+    private boolean anotherRoadRunsOver(TileKey tile, TileKey berth)
+    {
+        if (reducer == null) return false;
+
+        for (GraphReducer.ReducedEdge edge : reducer.getEdges())
+        {
+            if (berth.equals(edge.getStart()) || berth.equals(edge.getEnd())) continue;
+
+            for (GraphReducer.TileStep step : edge.getPath())
+            {
+                if (tile.equals(step.getTile())) return true;
+            }
+        }
+
+        return false;
     }
 
     /** By page, then row, then column - pages compared as text, which is how they are named. */
@@ -9619,12 +9645,16 @@ public class AutonomySession
      * measuring them changes nothing, and neither notice about a berth counts them.
      *
      * @param squares the leg's squares in order, the berth last
-     * @return {measured length before the stop, squares before it with no length, 1 when a stop was reached or 0}
+     * @return {measured length before the stop, squares before it with no length, how it stops}: 1 at a square the
+     *         berth rule refuses on - another road runs over it - 2 at one only the room walk ends at, 0 at none
+     *         (TDA5-C1: the berth rule's figure is the berth rule's only where it refuses)
      */
     private int[] berthTrackBeforeTheStop(java.util.List<TileKey> squares)
     {
         int held = 0;
         int unmeasured = 0;
+
+        TileKey berth = squares.isEmpty() ? null : squares.get(squares.size() - 1);
 
         for (int at = squares.size() - 1; at >= 0; at--)
         {
@@ -9633,7 +9663,10 @@ public class AutonomySession
             // Not a route tile, which takes no length (OB-273).
             if (getGraph() != null && takesNoLength(tile)) continue;
 
-            if (getGraph() != null && endsTheBerthsRoom(tile)) return new int[] {held, unmeasured, 1};
+            if (getGraph() != null && berth != null && endsTheBerthsRoom(tile, berth))
+            {
+                return new int[] {held, unmeasured, anotherRoadRunsOver(tile, berth) ? 1 : 2};
+            }
 
             int length = store.getTileLength(tile);
 
@@ -9767,9 +9800,10 @@ public class AutonomySession
      * platform, which is exactly what `Layout.measuredRoomAtTheEndOf` counts when that edge crosses a
      * switch.  A notice quoting a number the refusal would not quote is worse than no notice: the reader
      * measures the wrong stretch.  For a parking berth the number is the berth rule's where that stops first - at a
-     * crossing between the berth and its switch, or on a leg with no switch at all (TDA2-C6, TDA3-C2) - and 0 where
-     * nothing before that stop is measured and its squares were answered 0; unanswered, they are the half-measured
-     * notice's to name, and this says nothing (TDA3-C1).
+     * switch or a crossing between the berth and the room walk's end, or on a leg with no switch at all (TDA2-C6,
+     * TDA3-C2) - and only where the rule refuses there: something on the leg is measured, and another road runs over
+     * the square (TDA5-C1).  It is 0 where nothing before that stop is measured and its squares were answered 0;
+     * unanswered, they are the half-measured notice's to name, and this says nothing (TDA3-C1).
      *
      * **An edge crossing no switch is skipped unless the train turns at its far end** - or, for a parking berth, a
      * crossing on it ends the berth rule's room (above).  There the guard
@@ -9825,7 +9859,8 @@ public class AutonomySession
                 // judged by the berth rule, and keeps the room walk's number.
                 //
                 // AND WITH NOTHING SPENT BEFORE THE STOP (TDA3-C1), every train is refused there - once anything on the
-                // approach is measured, which the rule asks first (PRW-B1) - so the room walk's figure is not quoted
+                // approach is measured, which the rule asks first (PRW-B1), and only where the stop is one the berth
+                // rule refuses on: another road runs over it (TDA5-C1) - so the room walk's figure is not quoted
                 // either.  Squares nobody has answered are the half-measured notice's to name, and this one says nothing;
                 // answered 0 on purpose, they are named by nothing else, and this one says 0.
                 boolean theBerthRulesFigure = false;

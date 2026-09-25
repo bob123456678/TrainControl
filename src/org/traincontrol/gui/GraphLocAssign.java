@@ -314,6 +314,7 @@ public class GraphLocAssign extends javax.swing.JPanel
             final org.traincontrol.base.Locomotive placed = point.getCurrentLocomotive();
             final java.util.List<org.traincontrol.automation.Edge> roadAtTheQuestion = point.getArrivedAlong();
             final String configurationAsked = session.getStore().getActiveConfiguration();
+            final org.traincontrol.automation.Layout railwayAsked = TailCrossedPrompt.runningNow(edit.parent.getModel());
 
             TailCrossedPrompt.Answer answer = TailCrossedPrompt.askAfterPlacement(layout, point, tail,
                 point.getCurrentLocomotive().getTrainLength(), point.getCurrentLocomotive().getName(), edit.parent,
@@ -323,7 +324,8 @@ public class GraphLocAssign extends javax.swing.JPanel
             // dialog right after a run, with nothing asked, keeps the road it drove in on - in both stores.
             // ONLY WHERE THE PLACEMENT STILL STANDS (TDU2-A1, TDU3-B1): the question waited with the window live, and the
             // copy may hold another train now, or have been replaced by a rebuild.
-            setupStands = TailCrossedPrompt.sameSetup(session, edit.parent.getAutonomySession(), configurationAsked);
+            setupStands = TailCrossedPrompt.sameSetup(session, edit.parent.getAutonomySession(), configurationAsked,
+                railwayAsked, TailCrossedPrompt.runningNow(edit.parent.getModel()));
 
             final org.traincontrol.automation.Point landing = TailCrossedPrompt.whereTheAnswerGoes(
                 TailCrossedPrompt.runningNow(edit.parent.getModel()), point, placed, tail, roadAtTheQuestion, setupStands);

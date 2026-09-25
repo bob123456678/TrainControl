@@ -8173,6 +8173,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             final org.traincontrol.base.Locomotive placed = point.getCurrentLocomotive();
             final java.util.List<org.traincontrol.automation.Edge> roadAtTheQuestion = point.getArrivedAlong();
             final String configurationAsked = session.getStore().getActiveConfiguration();
+            final org.traincontrol.automation.Layout railwayAsked = org.traincontrol.gui.TailCrossedPrompt.runningNow(
+                this.model);
 
             org.traincontrol.gui.TailCrossedPrompt.Answer answer = org.traincontrol.gui.TailCrossedPrompt.askAfterPlacement(
                 this.model.getAutoLayout(), point, tail, point.getCurrentLocomotive().getTrainLength(),
@@ -8182,7 +8184,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // stands on this copy now may be another train, with the road a run brought it by - or the railway may have
             // been rebuilt, and the copy that holds the train is a new one.
             setupStands = org.traincontrol.gui.TailCrossedPrompt.sameSetup(session, getAutonomySession(),
-                configurationAsked);
+                configurationAsked, railwayAsked, org.traincontrol.gui.TailCrossedPrompt.runningNow(this.model));
 
             final org.traincontrol.automation.Point landing = org.traincontrol.gui.TailCrossedPrompt.whereTheAnswerGoes(
                 org.traincontrol.gui.TailCrossedPrompt.runningNow(this.model), point, placed, tail, roadAtTheQuestion,

@@ -326,8 +326,9 @@ public class AutonomyChecks
      * `maxTrainLength` is a number somebody typed - what they believe the platform holds - and the
      * measured run in is what the track says, counted back from the platform to whichever of the last
      * switch and a reversal is met first.  For a parking berth the figure is the berth rule's where that stops first - at
-     * a crossing between the berth and its switch, or on a leg with no switch (TDA2-C6, TDA3-C2) - and 0 where every
-     * square before the switch or crossing that ends its room was answered 0 (TDA3-C1, TDA4-C1).  Where the second is
+     * a crossing between the berth and its switch, or on a leg with no switch (TDA2-C6, TDA3-C2) - where the rule judges
+     * the leg (something on it measured) and another road runs over the square it stops at (TDA4-C3, TDA5-C1); and 0
+     * where every square before that stop was answered 0 (TDA3-C1, TDA4-C1).  Where the second is
      * smaller the first never binds: a train inside the stated maximum is refused on the track measurement instead, by
      * a rule that names a different number.
      *

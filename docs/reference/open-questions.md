@@ -137,12 +137,14 @@ either.
 
 **Open.** Three wordings from the validation rounds of 2026-09-24, all Adam's:
 
-- **What the run-in notice says about a berth that takes no train** (TDA4-C2).  Where every square between a
-  parking berth and the switch or crossing that ends its room was answered 0, the berth takes no train, and the run-in
-  notice says so as "only 0 of track is measured ... That may be right" - at the grade of a notice, while the same berth
-  with those squares unanswered is the half-measured warning.  Keep it, give it a sentence of its own at the warning's
-  grade (*"X takes no train: the track between it and the switch or crossing behind it was given no length"*), or say
-  nothing, since the operator answered.  **Recommended:** its own sentence, at the warning's grade.
+- **What the run-in notice says about a berth that refuses every train with a length** (TDA4-C2, TDA5-C2).  Where
+  something on a parking berth's approach is measured, every square between it and a switch or crossing another
+  road runs over was answered 0, and the berth rule therefore refuses every train with a length there, the run-in
+  notice says so as "only 0 of track is measured ... That may be right" - at the grade of a notice, while the same
+  berth with those squares unanswered is the half-measured warning.  Keep it, give it a sentence of its own at the
+  warning's grade (*"X refuses every train with a length: the track between it and the switch or crossing behind it
+  was given no length"*), or say nothing, since the operator answered.  **Recommended:** its own sentence, at the
+  warning's grade.
 
 - **The platform run-in notice says a longer train "may block"** (TDA-C10).  MT-555's sentence says so by his ruling,
   and a claim pins that it does not say "refused" - but a train longer than the measured route in is refused there,
@@ -172,10 +174,6 @@ either.
 - The tail walk **stops at a fork** and **at unmeasured track**. A tail that really does reach past
   either is not blocked. Both under-claim knowingly: blocking on a guess is still a refusal, and it
   stops trains that could have run.
-- **A berth's notices stop at every crossing; the berth rule, only at one a train can cross** (TDA3-C2).  With
-  nothing leading onto a crossing's other road the build emits no rail over it, so the rule does not refuse there,
-  and the half-measured and run-in notices warn of a refusal that does not come.  The warning side, and a crossing
-  nobody builds.
 - The room rule measures **from the last switch**, so track measured on the far side of a switch does
   not count toward a berth. This surprised Adam once and is correct: a train that fits between the
   switch and the berth fits behind any earlier switch too.
@@ -224,7 +222,14 @@ resume note that has been deleted.
 
 ## Setup and start-up
 
-**Open.** Two questions from the validation round of 2026-09-24, Adam's:
+**Open.** Three questions from the validation rounds of 2026-09-24, Adam's:
+
+- **A tail answered after another configuration was loaded** (TDD5-C1, TDU4-C1).  If the configuration loaded in the
+  wait stands the same train on the same square, from the same side, the answer is dropped today and the log says so;
+  the running railway's copy then has no road, and its tail stops at the switch.  Round 3 wrote it into the loaded
+  configuration and onto the railway, and the configuration it was asked in never had it.  Drop it (today), or follow
+  the train: write it to the railway and the configuration running now.  **Recommended:** follow the train - the
+  railway in front of the operator is the one a missing tail endangers.
 
 - **Return Home and Execute Timetable over a setup with errors** (TDU2-C3).  Since TDU-B1 both refuse a press while
   the setup has errors, as Start does - but both stay offered, where Start's right-click item is greyed with the

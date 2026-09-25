@@ -1107,8 +1107,12 @@ The editor notice about turn-round squares with no length is a different questio
     question waits, because the window stays live while it does (TDU-B2).  **An answer is written only where the placement
     still stands when it comes back** (TDU2-A1, TDU3-B1): the square's copy on the railway running then still holds the
     train, with the side it was put down with and the road it had - a railway rebuilt in the wait counts, its new copy
-    being the one asked.  Otherwise the answer is dropped and the log says so, naming the train and the square; the
-    facing was written before the question was asked, so only the road waits for it.
+    being the one asked - and the setup is still the one the question was asked in: the same session, with the same
+    configuration active or the same railway running (TDU4-C1, TDU5-C1).  So a rename, or New Configuration, keeps the
+    answer; loading another configuration, or closing the track-diagram editor, drops it (TDD5-C1 puts the first of those
+    to Adam), and a door whose setup was let go in the wait saves nothing (TDU4-C2).  A dropped answer - Not known
+    included, a Cancel not - is logged, naming the train and the square; the facing was written before the question was
+    asked, so only the road waits for it.
     `regression.testTheTailIsPickedOnTheDiagram`.
     Which sensors are offered is worked out from the
     measured lengths of the roads back and is a suggestion: what blocks track is still this walk, reading the
@@ -1472,9 +1476,11 @@ never binds, and a train inside it is refused by a rule quoting a number nobody 
   platform, which is what `Layout.measuredRoomAtTheEndOf` counts. **A notice quoting a number the refusal
   would not quote sends the reader to measure the wrong stretch.**  So for a parking berth the number is the
   berth rule's where that stops first - at a crossing between the berth and its switch, or on a leg with no
-  switch (TDA2-C6, TDA3-C2) - and with nothing measured before the switch or crossing that ends its room the
-  notice says 0 where those squares were answered 0, and nothing where they were not, which the half-measured
-  warning names instead (TDA3-C1, TDA4-C1).
+  switch (TDA2-C6, TDA3-C2) - and only where the rule refuses: something on the leg is measured, which is when it
+  judges at all, and another road runs over the square it stops at, which a switch's other leg into the same berth
+  does not (TDA5-C1).  There, with nothing measured before that switch or crossing, the notice says 0 where those
+  squares were answered 0, and nothing where they were not, which the half-measured warning names instead (TDA3-C1,
+  TDA4-C1).
 - An arriving edge crossing no switch is skipped unless trains turn round where it starts - there the
   guard walks on back through earlier edges, so that edge bounds nothing - or, for a parking berth, a crossing on
   it ends the berth rule's room, as above.
