@@ -29,10 +29,8 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 |---|---|---|---|---|
 | [MT-263](#mt-263) | 2026-09-03 | The three refusals, when the graph will not build | fixed unvalidated | V31-C1, V32-C1, DY3-C7 |
 | [MT-291](#mt-291) | 2026-09-07 | The Grid tooltip, in a language you read | needs test | FR-057 (split from MT-274) |
-| [MT-298](#mt-298) | 2026-09-07 | A second import fills gaps and does not overwrite | fixed unvalidated | IPR-A1 (split from MT-243) |
 | [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
 | [MT-468](#mt-468) | 2026-09-19 | Every screen still finds its text after 239 unused message keys were removed | fixed unvalidated | UIX-C4 |
-| [MT-491](#mt-491) | 2026-09-23 | An old autonomy.json's trains face the way the old version ran them | fixed unvalidated | REG4-A1, REG4-C1 |
 | [MT-492](#mt-492) | 2026-09-24 | Return Home finds a plan on a crowded railway | fixed unvalidated | OB-230, AMH-C1 |
 | [MT-494](#mt-494) | 2026-09-24 | After a run, the Facing menu turns the train that is there | fixed unvalidated | TDY4-C5 |
 | [MT-495](#mt-495) | 2026-09-24 | A train turned at Tunnel is not sent into a parked train's tail | fixed unvalidated | OB-285, AUT2-C2 |
@@ -40,8 +38,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-497](#mt-497) | 2026-09-24 | Importing routes and answering Yes turns automatic firing back on for the routes saved with it | fixed unvalidated | REG2-C7, MT-487 |
 | [MT-498](#mt-498) | 2026-09-24 | A train facing west at BottomMainA still faces west after it is cut and pasted back | fixed unvalidated | OB-284 |
 | [MT-499](#mt-499) | 2026-09-24 | With autonomy stopped, the locomotive list gives the reasons for a train sent by hand | fixed unvalidated | the REG4 lead of the 2026-09-23 review |
-| [MT-501](#mt-501) | 2026-09-24 | Importing an old autonomy.json leaves your diagram's directions as they are | fixed unvalidated | REG4-A1, the directions ruling of 2026-09-24 |
-| [MT-502](#mt-502) | 2026-09-24 | A station an old autonomy.json switched off arrives as one trains can stop at, not chosen by autonomy | fixed unvalidated | REG-B1 |
 | [MT-504](#mt-504) | 2026-09-24 | A station's exit guard cannot also be made its entry guard | fixed unvalidated | AUT-C2, MT-493 |
 | [MT-506](#mt-506) | 2026-09-24 | A route fired by its sensor skips only the switch under a train, and runs the rest | fixed unvalidated | MT-247 |
 | [MT-507](#mt-507) | 2026-09-24 | Cancel on a route that would switch track under a train cancels all of it, from either door | fixed unvalidated | MT-247 |
@@ -61,20 +57,17 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-568](#mt-568) | 2026-09-24 | One-Way Run is greyed on a page left out of autonomy | fixed unvalidated | OB-235, MT-528 |
 | [MT-569](#mt-569) | 2026-09-24 | The guard items say what each guard does | fixed unvalidated | OB-293 |
 | [MT-570](#mt-570) | 2026-09-24 | Why not Moving? outlines the squares with trains while it waits | fixed unvalidated | FR-102, MT-516 |
-| [MT-571](#mt-571) | 2026-09-24 | A train is not sent round a loop into its own tail | fixed unvalidated | OB-294 |
-| [MT-572](#mt-572) | 2026-09-24 | Train lengths go to 40, in both lists | fixed unvalidated | OB-294 |
 | [MT-573](#mt-573) | 2026-09-24 | Execute Timetable and Return Home refuse a setup with errors | fixed unvalidated | MT-263, TDU-B1 |
 | [MT-575](#mt-575) | 2026-09-24 | From the autonomy editor the tail question is the list | fixed unvalidated | FR-100, TDU-C1 |
 | [MT-576](#mt-576) | 2026-09-24 | A tail answer given after the placement changed is written where the train now stands, or not at all | fixed unvalidated | TDU2-A1, TDU3-B1 |
 | [MT-580](#mt-580) | 2026-09-25 | Over a setup with errors, the right-click Return Home item is greyed and says why | fixed unvalidated | TDU2-C3 |
 | [MT-581](#mt-581) | 2026-09-25 | The right-click Place keeps the train's heading | fixed unvalidated | OB-296, TDU-B4 |
-| [MT-582](#mt-582) | 2026-09-25 | Importing an old autonomy.json leaves Load Autonomy as it was | fixed unvalidated | TDD-C11 |
 | [MT-584](#mt-584) | 2026-09-25 | A train standing on the watched square closes a square trains only pass | fixed unvalidated | OB-295, TDA-C9 |
 | [MT-585](#mt-585) | 2026-09-25 | The right-click Place keeps a heading trains may not arrive by | fixed unvalidated | OB-296, ADU-B1, ADD2-C9 |
 | [MT-586](#mt-586) | 2026-09-25 | A stretch answered 0 lets a train in when the total track holds it | fixed unvalidated | ADU-C7, TDU-C6 |
 
-Everything else - 541 of 586 - needs nothing from you unless the area changes again:
-453 **fixed validated** and 88 **superseded**.
+Everything else - 548 of 586 - needs nothing from you unless the area changes again:
+453 **fixed validated** and 95 **superseded**.
 
 ---
 
@@ -16797,7 +16790,7 @@ The class builds and enables a route of its own rather than relying on the fixtu
 
 ### MT-298 - 2026-09-07 - A second import fills gaps and does not overwrite
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** IPR-A1 (split from MT-243)
 
 **Written:** 2026-09-07
@@ -16825,6 +16818,10 @@ It took two goes to make it mean anything: the first fixture picked a square the
 **Claude, 2026-09-24.**
 
 **To run now:** as written, with step 2 being: change one station's Maximum Train Length by hand - the setting the automated test uses.  **Expect:** the import works, and after the second import your changed maximum is still there.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testTheImportDoorReadsAnOldFile.testASecondImportFromTheMenuKeepsAHandMadeChange` imports the MT-298 file from the Autonomy menu into a configuration of its own, changes a station's Maximum Train Length by hand in it, imports the same file again from the menu into the same configuration (answering Yes to replacing it), and asserts the changed maximum is still there.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -25547,7 +25544,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-491 - 2026-09-23 - An old autonomy.json's trains face the way the old version ran them
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** REG4-A1, REG4-C1
 
 **Written:** 2026-09-23
@@ -25582,6 +25579,10 @@ Running this import now also unticks Preferences > Startup > Load Autonomy - tic
 **Claude, 2026-09-25.**
 
 **The untick is gone** (2026-09-25, TDD-C11): an import leaves Preferences > Startup > Load Autonomy as it was, so the note about ticking it again is not needed.  The rest as written.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testTheImportDoorReadsAnOldFile` presses Import on the Autonomy menu's panel on a real window over a sandbox copy of your railway, chooses the MT-491 file in the file chooser and types a new configuration's name, as the steps do, and asserts the import's message says it placed 4 locomotives, and that the log has no line saying trains had the way they face chosen for them and none saying the old file ran trains a way the diagram does not let them arrive; the imported configuration holds the four trains.  Before today the steps could not have been run safely: on a layout that already had configurations, the import ignored the name typed and wrote into the configuration in use.  It now goes into the one named, on your answer (a), and your configuration in use is left as it was - the test asserts that too.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 <a id="mt-492"></a>
@@ -25881,7 +25882,7 @@ standing on the barred copy of a station - calling BottomMainA, a station, a non
 
 ### MT-501 - 2026-09-24 - Importing an old autonomy.json leaves your diagram's directions as they are
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** REG4-A1, the directions ruling of 2026-09-24
 
 **Written:** 2026-09-24
@@ -25910,13 +25911,17 @@ are carried only onto a diagram nobody has set a direction on, and yours is left
 
 **The untick is gone** (2026-09-25, TDD-C11): an import leaves Preferences > Startup > Load Autonomy as it was, so the last step's "tick it again" is not needed.  The rest as written.
 
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testTheImportDoorReadsAnOldFile` presses Import on the Autonomy menu's panel on a real window over a sandbox copy of your railway, chooses the MT-491 file in the file chooser and types a new configuration's name, as the steps do, and asserts the log says the old file ran 176 pieces of track one way that this diagram does not and that they were left as the diagram has them - and that no direction on the diagram changed at all, which covers the track between BottomMainAPre and BottomMainA.  Before today the steps could not have been run safely: on a layout that already had configurations, the import ignored the name typed and wrote into the configuration in use.  It now goes into the one named, on your answer (a), and your configuration in use is left as it was - the test asserts that too.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
+
 ---
 
 <a id="mt-502"></a>
 
 ### MT-502 - 2026-09-24 - A station an old autonomy.json switched off arrives as one trains can stop at, not chosen by autonomy
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** REG-B1
 
 **Written:** 2026-09-24
@@ -25939,6 +25944,10 @@ hand either.  Your ruling of 2026-09-24: *"translate as on but not auto destinat
 **Claude, 2026-09-25.**
 
 **The untick is gone** (2026-09-25, TDD-C11): an import leaves Preferences > Startup > Load Autonomy as it was, so the last step's "tick it again" is not needed.  The rest as written.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testTheImportDoorReadsAnOldFile` presses Import on the Autonomy menu's panel on a real window over a sandbox copy of your railway, chooses the MT-491 file in the file chooser and types a new configuration's name, as the steps do, and asserts that in the imported configuration ParkingTrack7 is a station trains can stop at, is not chosen in full autonomy, and is not switched off - read as the file's own translation, because the Station menu's box alone is unticked by ParkingTrack7 being a square trains turn at as well.  Before today the steps could not have been run safely: on a layout that already had configurations, the import ignored the name typed and wrote into the configuration in use.  It now goes into the one named, on your answer (a), and your configuration in use is left as it was - the test asserts that too.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -28163,7 +28172,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-571 - 2026-09-24 - A train is not sent round a loop into its own tail
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-294
 
 **Written:** 2026-09-24
@@ -28198,13 +28207,17 @@ Validated on your *Works* of 2026-09-24.
 
 **The note under the refusal** (2026-09-25, OB-297).  Where part of the way round has no length, it now counts what Mass Assign Lengths would ask you for there - pieces, switches and crossings - so measuring those is the way past.
 
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `core.testATrainDoesNotRunIntoItsOwnTail`, on the frozen copy of your railway with LowerFront's size raised and a train at BottomSecondary having come down RampDown: at 20 and at 10 units LowerFront is not among what the send doors offer, Why not Moving? gives the own-tail sentence for it, and the refusal names BottomMainAPre -> BottomCrossover and 9 units; at 9 units some way to LowerFront is clear of every rule and it is offered.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
+
 ---
 
 <a id="mt-572"></a>
 
 ### MT-572 - 2026-09-24 - Train lengths go to 40, in both lists
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-294
 
 **Written:** 2026-09-24
@@ -28224,6 +28237,10 @@ Validated on your *Works* of 2026-09-24.
 - Step 3: it shows 40, and after OK the locomotive is still 40 long.
 
 *What this is:* `regression.testAPlacedTrainRecordsWhereItCameFrom.testTheEditViewOffersEveryLengthTheMenuDoes`.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testAPlacedTrainRecordsWhereItCameFrom.testTheEditViewOffersEveryLengthTheMenuDoes` opens the locomotive menu's train-length question on the real window and asserts its list runs 0 to 40, chooses 40, asserts the train is 40, opens the Edit Locomotive view and asserts it shows 40, presses OK's own method, and asserts the train is still 40.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -28522,7 +28539,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-582 - 2026-09-25 - Importing an old autonomy.json leaves Load Autonomy as it was
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** TDD-C11
 
 **Written:** 2026-09-25
@@ -28545,6 +28562,10 @@ Validated on your *Works* of 2026-09-24.
 **Claude, 2026-09-25.**
 
 **Same sitting** (2026-09-25, ADD-C11): run it with MT-491, MT-501 and MT-502 - the same file, into a new configuration each time.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testTheImportDoorReadsAnOldFile` presses Import on the Autonomy menu's panel on a real window over a sandbox copy of your railway, chooses the MT-491 file in the file chooser and types a new configuration's name, as the steps do, and asserts Preferences > Startup > Load Autonomy reads the same after the import as before (the test puts your preference back whatever happens).  Before today the steps could not have been run safely: on a layout that already had configurations, the import ignored the name typed and wrote into the configuration in use.  It now goes into the one named, on your answer (a), and your configuration in use is left as it was - the test asserts that too.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
