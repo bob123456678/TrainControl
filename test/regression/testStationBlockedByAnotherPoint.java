@@ -812,6 +812,80 @@ public class testStationBlockedByAnotherPoint
     }
 
     /**
+     * A train STANDING on the watched point closes a square trains only pass, as well as a station (Adam, 2026-09-24,
+     * OB-295).
+     *
+     * *"It means trains shouldn't be sent to THIS square while trains are STANDING ON or hold a lock on the other
+     * specified station(s)."*  The lock half was already live on a square passed through - the build gives every edge
+     * arriving at it the watched square's edges - and the standing half was asked only of a path's destination, which a
+     * square trains only pass never is.  So a route through it went while a train stood on the watched square.
+     *
+     * MUTATION: ask the standing half of the destination only, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testATrainStandingOnTheWatchedPointClosesASquareTrainsPass() throws Exception
+    {
+        Layout layout = passingThrough();
+
+        Locomotive driven = model.getLocByName(model.getLocList().get(0));
+        Locomotive other = model.getLocByName(model.getLocList().get(1));
+
+        layout.getPoint("BK A").setLocomotive(driven);
+
+        List<Edge> path = new LinkedList<>();
+        path.add(layout.getEdge("BK A", "BK P"));
+        path.add(layout.getEdge("BK P", "BK B"));
+
+        assertTrue(layout.isPathClear(path, driven, false),
+            "CONTROL: the route through BK P is refused with nothing standing anywhere, so nothing below tests anything");
+
+        layout.getPoint("BK YARD TWIN").setLocomotive(other);
+
+        assertFalse(layout.isPathClear(path, driven, false), "a train is standing on the square BK P is held back by, and"
+            + " a route through BK P still goes (OB-295)");
+
+        String reason = layout.explainDestinations(driven).get("BK B");
+
+        assertTrue(reason != null && reason.contains("BK P") && reason.contains("BK YARD"), "the reason BK B cannot be"
+            + " reached does not name the square passed and the one holding it back: " + reason);
+
+        layout.getPoint("BK YARD TWIN").setLocomotive(null);
+
+        assertTrue(layout.isPathClear(path, driven, false), "the square did not open again when the watched point cleared");
+    }
+
+    /**
+     * A run from A through P to B, where P - no station - is held back by the yard.
+     */
+    private Layout passingThrough() throws Exception
+    {
+        String json = "{"
+            + "\"points\": ["
+            + "  {\"name\": \"BK A\", \"station\": true, \"s88\": 47441},"
+            + "  {\"name\": \"BK P\", \"station\": false, \"s88\": 47444, \"blockedBy\": [\"BK YARD\"]},"
+            + "  {\"name\": \"BK B\", \"station\": true, \"s88\": 47442},"
+            + "  {\"name\": \"BK YARD\", \"station\": true, \"s88\": 47443, \"block\": \"yard\"},"
+            + "  {\"name\": \"BK YARD TWIN\", \"station\": true, \"s88\": 47443, \"block\": \"yard\"}"
+            + "],"
+            + "\"edges\": [{\"start\": \"BK A\", \"end\": \"BK P\", \"length\": " + APPROACH + "},"
+            + "  {\"start\": \"BK P\", \"end\": \"BK B\", \"length\": " + APPROACH + "}],"
+            + "\"minDelay\": 1, \"maxDelay\": 2, \"defaultLocSpeed\": 35}";
+
+        theApproachHoldsTheTrainsUsedHere();
+
+        Layout layout = Layout.fromJSON(json, model);
+
+        assertNotNull(layout, "the fixture did not parse: " + Layout.getLastError());
+        assertTrue(layout.isValid(), "the fixture is invalid: " + Layout.getLastError());
+
+        layout.runLocomotives();
+
+        return layout;
+    }
+
+    /**
      * How long the run into BK B is measured, and it is measured LONGER THAN THE TRAINS on purpose.
      *
      * It was 1 until 2026-09-08, when MT-262 took the fence off the berth-room rule.  Until then
@@ -859,7 +933,7 @@ public class testStationBlockedByAnotherPoint
     {
         model = MarklinControlStation.init(null, true, false, false, true);
 
-        for (int address : new int[]{47441, 47442, 47443})
+        for (int address : new int[]{47441, 47442, 47443, 47444})
         {
             if (!model.isFeedbackSet(Integer.toString(address))) model.newFeedback(address, null);
 

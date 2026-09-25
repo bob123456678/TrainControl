@@ -516,6 +516,48 @@ public class testAutonomyDiagramReducer
     }
 
     /**
+     * A rebuild does not change the lists a reader is already walking (OB-298).
+     *
+     * Seen once in a test: `AutonomyBuilder.splitSides` iterated `getEdges()` while a rebuild on another thread cleared
+     * and refilled that list in place, and threw `ConcurrentModificationException`.  A rebuild now makes new lists and
+     * hands them over when they are whole, so a walk that began before it finishes on the railway it began on.
+     *
+     * MUTATION: clear and refill the lists in place again, and this fails.
+     *
+     * @throws IOException from the fixture
+     */
+    @Test
+    public void testARebuildDoesNotChangeWhatAReaderIsWalking() throws IOException
+    {
+        LayoutDiagram page = page("main", 8, 3);
+        feedback(page, 1, 1, 11);
+        straight(page, 2, 1);
+        feedback(page, 3, 1, 12);
+
+        GraphReducer reducer = reduce(graph(page), null);
+
+        java.util.Iterator<ReducedEdge> edges = reducer.getEdges().iterator();
+        java.util.Iterator<TileKey> points = reducer.getPoints().keySet().iterator();
+
+        edges.next();
+        points.next();
+
+        reducer.reduce();
+
+        try
+        {
+            assertNotNull(edges.next(), "the second edge of the walk begun before the rebuild");
+            assertNotNull(points.next(), "the second point of the walk begun before the rebuild");
+        }
+        catch (java.util.ConcurrentModificationException pulled)
+        {
+            fail("a rebuild changed the lists a reader was walking, which threw mid-walk (OB-298)");
+        }
+
+        assertEquals(reducer.getEdges().size(), 2, "the rebuilt railway is not the one the rebuild made");
+    }
+
+    /**
      * Adjacent sensors still make an edge - one with no track in between.
      */
     @Test

@@ -773,19 +773,19 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * Another configuration loaded in the wait, holding the same train on the same copy: the answer, asked for the
-     * configuration the operator was working in, is not written into the one just loaded (TDU4-C1).
+     * Another configuration loaded in the wait, holding the same train on the same copy: the answer follows the train -
+     * into the configuration loaded now and onto the railway running (Adam, 2026-09-24, TDD5-C1: *"Follow the train."*).
      *
-     * Loading a configuration keeps the session, so the door's same-setup check passed, and the new running copy held the
-     * same train from the same side with no road - so the answer went into the configuration loaded now, and the one it
-     * was asked for never had it.
+     * TDU4-C1 took the other way, dropping it, and the tail the operator had just given was then missing from the
+     * railway in front of him: the running copy held the train with no road, and the track beyond the switch, where he
+     * had said the tail lies, was free to route another train over.
      *
-     * MUTATION: ask only whether the session is the same, and this fails.
+     * MUTATION: ask whether the configuration is the one the question was asked in, and this fails.
      *
      * @throws Exception from the event thread
      */
     @Test
-    public void testAnAnswerIsNotWrittenIntoAnotherConfiguration() throws Exception
+    public void testAnAnswerFollowsTheTrainIntoAnotherConfiguration() throws Exception
     {
         org.traincontrol.base.Locomotive train = model.newMM2Locomotive("TDU4-C1 train", 2312);
 
@@ -820,8 +820,13 @@ public class testTheTailIsPickedOnTheDiagram
                 return null;
             }, true);
 
-            assertNull(ui.getAutonomySession().getArrivedAlong(tile[0]), "the answer asked for one configuration was"
-                + " written into another, loaded while the question waited (TDU4-C1)");
+            assertNotNull(ui.getAutonomySession().getArrivedAlong(tile[0]), "the answer was dropped when another"
+                + " configuration was loaded in the wait, though the train stands there as it did (TDD5-C1: \"Follow the"
+                + " train.\")");
+
+            assertEquals(named(late.tunnelNow.getArrivedAlong()), named(late.tunnelPreRoad), "the running railway's copy"
+                + " does not hold the road the operator gave, so the track beyond the switch is free under the tail"
+                + " (TDD5-C1)");
         }
         finally
         {

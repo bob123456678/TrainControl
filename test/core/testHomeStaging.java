@@ -6263,6 +6263,47 @@ public class testHomeStaging
     }
 
     /**
+     * A home reached only through a square held back by an occupied one is not staged through it (OB-295): the runtime
+     * refuses the route, so a plan through it is OB-073's plan that fails on its first move.
+     *
+     * HS A to HS C runs through HS B, and HS B is held back while HS W1's block is occupied - by LOC_B, on HS W2, with
+     * nowhere to go.
+     *
+     * MUTATION: leave the squares a plan passes out of its FR-001 question, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testAHomeBeyondAHeldBackSquareIsNotStagedThroughIt() throws Exception
+    {
+        Layout layout = load(blockOfTwoWatching(LOC_B, null));
+
+        layout.getPoint("HS B").setBlockedBy(Arrays.asList(layout.getPoint("HS W1")));
+
+        assign(layout, LOC_A, "HS C");
+
+        List<Edge> through = new java.util.LinkedList<>();
+
+        through.add(layout.getEdge("HS A", "HS B"));
+        through.add(layout.getEdge("HS B", "HS C"));
+
+        assertFalse(layout.isPathClear(through, loc(LOC_A), false), "precondition: the railway lets a train through HS"
+            + " B while the square holding it back is occupied, so a plan through it is no plan the runtime refuses");
+
+        assertNotEquals(layout.planReturnToHome().getOutcome(), HomeStaging.Outcome.READY, "Return Home staged a train"
+            + " through a square held back by an occupied one, which the railway refuses (OB-295): "
+            + layout.planReturnToHome());
+
+        // THE CONTROL: the restriction removed, the same arrangement is staged.
+        layout.getPoint("HS B").setBlockedBy(new java.util.LinkedList<Point>());
+
+        HomeStaging.Plan freed = layout.planReturnToHome();
+
+        assertEquals(freed.getOutcome(), HomeStaging.Outcome.READY, "with nothing held back the same arrangement is not"
+            + " staged either, so the refusal above says nothing about the restriction: " + freed);
+    }
+
+    /**
      * Every tier gives the same answer about a held-back arrival (Adam, 2026-09-10).
      *
      * The other half of the ruling, and the half that decides whether the first is worth anything.

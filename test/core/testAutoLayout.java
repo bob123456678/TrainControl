@@ -688,6 +688,53 @@ public class testAutoLayout
      * @throws Exception from the model
      */
     @Test
+    public void testTrackAnsweredZeroIsMeasuredTrack() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.createPoint("AZ_C", true, "5");
+        layout.createPoint("AZ_A", true, "6");
+        layout.createPoint("AZ_B", true, "7");
+
+        Edge ca = layout.createEdge("AZ_C", "AZ_A");
+        Edge ab = layout.createEdge("AZ_A", "AZ_B");
+        Edge ba = layout.createEdge("AZ_B", "AZ_A");
+
+        ca.setPlaces(java.util.Arrays.asList("AZ:1"), java.util.Arrays.asList(3));
+        ca.setLength(3);
+
+        for (Edge adjacent : new Edge[] {ab, ba})
+        {
+            adjacent.setPlaces(java.util.Arrays.asList("AZ:2", "AZ:3"), java.util.Arrays.asList(0, 0));
+        }
+
+        assertEquals(layout.unmeasuredTrackThatCouldBeReleased().size(), 1, "CONTROL: the rail between AZ_A and AZ_B"
+            + " has no length and nobody answered it, so it is the one piece a non-atomic run could release under a"
+            + " train - counted: " + layout.unmeasuredTrackThatCouldBeReleased());
+
+        // ANSWERED 0 ON PURPOSE - his adjacent tracks.
+        ab.setAnsweredPlaces(java.util.Arrays.asList("AZ:2", "AZ:3"));
+        ba.setAnsweredPlaces(java.util.Arrays.asList("AZ:2", "AZ:3"));
+
+        assertEquals(layout.unmeasuredTrackThatCouldBeReleased().size(), 0, "the rail was answered 0 on purpose - Adam,"
+            + " 2026-09-24, TDU-C6: \"0 lengths count as measures, so non-atomic should be allowed\" - and Atomic Routes"
+            + " is still held on for it: " + layout.unmeasuredTrackThatCouldBeReleased());
+
+        // THE ESCAPE AGREES, or the gate lets through a railway the runtime then releases under a train.
+        java.lang.reflect.Method unmeasured = Layout.class.getDeclaredMethod("pathIsUnmeasured", List.class);
+
+        unmeasured.setAccessible(true);
+
+        assertEquals(unmeasured.invoke(null, java.util.Arrays.asList(ab)), Boolean.FALSE, "a path over track answered 0"
+            + " is still taken for one with nothing measured, so `tailHasProvablyPassed` hands its edges back at once -"
+            + " the gate and the escape have to ask one question");
+
+        // AND THE ROUTE IN CARRIES ON OVER IT (FR-087): 0 measured is a measure, so the walk back does not stop there.
+        assertEquals(Layout.measuredRouteIn(java.util.Arrays.asList(ca, ab)), 3, "the route in stops at a leg answered"
+            + " 0, as though nothing were known about it, and the 3 measured before it is not counted");
+    }
+
+    @Test
     public void testARailwayCountsItsUnmeasuredDrivableTrack() throws Exception
     {
         Layout layout = new Layout(model);

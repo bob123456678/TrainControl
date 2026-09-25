@@ -132,6 +132,52 @@ public class testAnAnsweredZeroIsNotMissing
             + " of them have no length: " + after);
     }
 
+    /**
+     * The build marks which of an edge's places cut it into pieces - a switch, or a square two roads cross - so the
+     * runtime can count what Mass Assign Lengths asks for (OB-297).
+     *
+     * MUTATION: write no mark, or mark every place, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testTheBuildMarksWhereAStretchIsCut() throws Exception
+    {
+        Edge approach = approach(layoutNow());
+
+        java.lang.reflect.Method isCut = Edge.class.getMethod("isPlaceACut", String.class);
+
+        Set<TileKey> cuts = new LinkedHashSet<>(session.switchesALengthRuleReads());
+
+        cuts.addAll(session.sharedSquaresALengthRuleReads());
+
+        int marked = 0;
+
+        for (String id : approach.getPlaceIds())
+        {
+            boolean expected = cuts.contains(squareOf(id));
+
+            if (expected) marked++;
+
+            assertTrue(isCut.invoke(approach, id).equals(expected), id + " is " + (expected ? "" : "not ") + "a switch or"
+                + " a crossing, and the railway is told otherwise");
+        }
+
+        assertTrue(marked > 0, "precondition: the approach to TunnelLongPark crosses no switch, so nothing here is marked");
+    }
+
+    /** The square a place identifier names - the tile, before any `/route` of an overpass. */
+    private static TileKey squareOf(String id)
+    {
+        String square = id.indexOf('/') >= 0 ? id.substring(0, id.indexOf('/')) : id;
+
+        int colon = square.lastIndexOf(':');
+        int comma = square.lastIndexOf(',');
+
+        return new TileKey(square.substring(0, colon), Integer.parseInt(square.substring(colon + 1, comma)),
+            Integer.parseInt(square.substring(comma + 1)));
+    }
+
     /** The berth rule's answer for this class's train at TunnelLongPark, on a freshly built railway. */
     private static String whyTheBerthRefuses() throws Exception
     {

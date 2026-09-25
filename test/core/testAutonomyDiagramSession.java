@@ -3614,6 +3614,92 @@ public class testAutonomyDiagramSession
     /** The platform's own sentence (MT-555), by its key so the claims compile before it exists. */
     private static final String RUN_IN_AT_A_PLATFORM = "autosetup.ui.checkRunInShorterThanThePlatform";
 
+    /** The same, with the figure a train is refused above on the shortest way in (TDA-C10), by its key likewise. */
+    private static final String RUN_IN_AT_A_PLATFORM_REFUSED = "autosetup.ui.checkRunInShorterThanThePlatformRefused";
+
+    /**
+     * The platform notice names the figure a train is refused above, where there is one (Adam, 2026-09-24, TDA-C10).
+     *
+     * *"Add the refusing figure where there is one."*  `Layout.whyTooLongForThisRoute` admits a train longer than the
+     * room past the switch only as far as the measured route in holds (FR-087, `theApproachItselfHoldsIt`), so a train
+     * that sets off from the station just behind is refused above that route's length - on his railway, a four-unit train
+     * from TopR1ParkShort at TopMainR1Inter.  Here the way in from 1,1 measures 4 (2, the switch, 2) and the platform is
+     * set to 6: a train of 5 stands across the switch coming from further back, and is refused coming from 1,1.
+     *
+     * MUTATION: leave the figure out of the finding, or leave the station behind out of the walk, and this fails.
+     *
+     * @throws Exception from the fixture or the reflection
+     */
+    @Test
+    public void testThePlatformNoticeNamesTheFigureATrainIsRefusedAbove() throws Exception
+    {
+        session.open(Arrays.asList(platformBehindASwitch()));
+        session.initialize("Refused");
+
+        TileKey platform = new TileKey("main", 5, 1);
+
+        session.setStation(new TileKey("main", 1, 1), true);
+        session.setStation(platform, true);
+        session.setPointProperty(platform, "maxTrainLength", 6);
+        session.setTileLength(new TileKey("main", 2, 1), 2);
+        session.setTileLength(new TileKey("main", 4, 1), 2);
+        session.rebuild();
+
+        org.traincontrol.automationui.AutonomyChecks.Finding notice = findingFor(RUN_IN_AT_A_PLATFORM_REFUSED);
+
+        assertNotNull(notice, "the platform is set to 6 and the way in from the station behind it measures 4, so a train"
+            + " of 5 from there is refused - and the notice does not say so: " + session.check());
+
+        assertEquals(notice.getDetail(), 2, "the room past the switch is still the notice's {3}");
+
+        java.lang.reflect.Method third = notice.getClass().getMethod("getThird");
+
+        assertEquals(third.invoke(notice), Integer.valueOf(4), "the figure a train is refused above is the way in from"
+            + " 1,1: 2, the switch's 0, and 2");
+
+        // AND WHERE THERE IS NONE: the maximum within the shortest way in, the sentence is the one without a figure.
+        session.setPointProperty(platform, "maxTrainLength", 4);
+        session.rebuild();
+
+        assertNull(findingFor(RUN_IN_AT_A_PLATFORM_REFUSED), "a platform set to 4, whose every way in measures 4, was"
+            + " given a figure no train within its maximum is refused above");
+
+        assertNotNull(findingFor(RUN_IN_AT_A_PLATFORM), "precondition: the room past the switch is 2 and the maximum 4,"
+            + " so the notice without a figure is still due");
+    }
+
+    /**
+     * The sentence with the refusing figure is in all eight languages and names it as {4} (TDA-C10).
+     *
+     * @throws Exception reading the bundles
+     */
+    @Test
+    public void testTheRefusingFigureIsInEveryLanguage() throws Exception
+    {
+        java.io.File[] bundles = new java.io.File("src/org/traincontrol/resources").listFiles(
+            (dir, name) -> name.startsWith("messages") && name.endsWith(".properties"));
+
+        assertTrue(bundles != null && bundles.length == 8, "precondition: the eight message bundles are not where"
+            + " this looks for them");
+
+        for (java.io.File bundle : bundles)
+        {
+            java.util.Properties read = new java.util.Properties();
+
+            try (java.io.InputStream in = new java.io.FileInputStream(bundle))
+            {
+                read.load(in);
+            }
+
+            String sentence = read.getProperty(RUN_IN_AT_A_PLATFORM_REFUSED);
+
+            assertNotNull(sentence, bundle.getName() + " has no " + RUN_IN_AT_A_PLATFORM_REFUSED);
+
+            assertTrue(sentence.contains("{2}") && sentence.contains("{3}") && sentence.contains("{4}"), bundle.getName()
+                + ": the sentence names the maximum {2}, the room {3} and the refusing figure {4}: " + sentence);
+        }
+    }
+
     /** How many findings of this key the setup gives about this square. */
     private int findingsAbout(String messageKey, TileKey square)
     {
@@ -3730,17 +3816,20 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A side trains may not arrive by is not asked to be measured for a turn there either (the sibling of MT-552).
+     * A side trains may not stop on is still asked to be measured for a turn there (Adam, 2026-09-24, TDA-C8).
      *
-     * `reversalsWithoutLength` walks the same arriving edges as the two checks MT-552 was about, and asked for the
-     * track after the last switch on a side no train comes in by.
+     * *"Arrivals THAT STOP THERE should only be allowed from the configured side(s).  Turning shouldn't need to factor
+     * this in, since the former would govern the behavior."*  A barred side keeps its turning copy, so a train may come
+     * in that way and turn - and the room rule judges that turn over the track after the last switch, which is what the
+     * reversal notice asks to be measured.  `e09fe989` skipped the barred side here along with the two berth checks,
+     * which are right to: nothing stops there.
      *
-     * MUTATION: judge every arriving edge in `reversalsWithoutLength` again, and this fails.
+     * MUTATION: skip the barred side in `reversalsWithoutLength` again, and this fails.
      *
      * @throws Exception from the fixture
      */
     @Test
-    public void testABarredApproachIsNotAskedToBeMeasuredForATurn() throws Exception
+    public void testABarredApproachIsStillAskedToBeMeasuredForATurn() throws Exception
     {
         session.open(Arrays.asList(platformWithTwoApproaches()));
         session.initialize("BarredTurn");
@@ -3761,8 +3850,9 @@ public class testAutonomyDiagramSession
         session.setBarredArrivals(platform, java.util.EnumSet.of(org.traincontrol.automationui.TilePorts.Side.W));
         session.rebuild();
 
-        assertFalse(session.reversalsWithoutLength().containsKey(platform), "the platform takes no arrivals from the"
-            + " west, and it is still asked for lengths on the west side's track: " + session.reversalsWithoutLength());
+        assertTrue(session.reversalsWithoutLength().containsKey(platform), "the platform takes no train that STOPS"
+            + " from the west, and a train may still come in that way and turn - yet the west side's track is no longer"
+            + " asked for (Adam, TDA-C8: \"Turning shouldn't need to factor this in\"): " + session.reversalsWithoutLength());
     }
 
     /**

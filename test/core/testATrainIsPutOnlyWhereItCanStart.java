@@ -91,6 +91,65 @@ public class testATrainIsPutOnlyWhereItCanStart
      *
      * @throws Exception from the build
      */
+    /**
+     * The diagram's right-click **Place** stands the train on the copy facing the way it already faces, and the same
+     * copy every time - no longer one at random (Adam, 2026-09-24, OB-296: *"Yes, keep the train's heading."*).
+     *
+     * The other three placement doors keep the heading over the copies a train can leave by (OB-270, GUI-B1, OB-284);
+     * this one took `usable.get(new Random().nextInt(...))`, so the same train placed the same way faced either way.
+     * The rule is the paste's, `AutonomySession.facingAfterAPaste`: the heading where the square can hold it, the one
+     * heading a single copy has, and otherwise the first copy the build made - never a draw.
+     *
+     * MUTATION: draw the copy at random again, or ignore the heading, and this fails.
+     *
+     * @throws Exception from the reflection or the files
+     */
+    @Test
+    public void testTheRightClickPlaceKeepsTheTrainsHeading() throws Exception
+    {
+        java.lang.reflect.Method rule = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu")
+            .getDeclaredMethod("copyToPlaceOn", List.class, Map.class, Side.class);
+
+        rule.setAccessible(true);
+
+        List<String> usable = java.util.Arrays.asList("Platform (eastbound)", "Platform (westbound)");
+
+        Map<String, Side> facings = new java.util.LinkedHashMap<>();
+
+        facings.put(usable.get(0), Side.E);
+        facings.put(usable.get(1), Side.W);
+
+        assertEquals(rule.invoke(null, usable, facings, Side.W), "Platform (westbound)", "a train facing west was put on"
+            + " the copy facing east");
+
+        assertEquals(rule.invoke(null, usable, facings, Side.E), "Platform (eastbound)", "a train facing east was put on"
+            + " the copy facing west");
+
+        for (int again = 0; again < 8; again++)
+        {
+            assertEquals(rule.invoke(null, usable, facings, null), usable.get(0), "a train with no heading recorded was"
+                + " not put on the first copy the build made - the same placement answered differently");
+        }
+
+        assertEquals(rule.invoke(null, java.util.Arrays.asList(usable.get(1)), facings, Side.E), usable.get(1), "the"
+            + " one copy a train can leave was refused because the train faced the other way");
+
+        // AND THE DOOR ASKS IT, with the heading read before the move.
+        String menu = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        int start = menu.indexOf("private void placeSomewhereLegal(");
+
+        assertTrue(start > 0, "precondition: placeSomewhereLegal has moved - if so, move this");
+
+        String body = menu.substring(start, menu.indexOf("\n    }", start));
+
+        assertFalse(body.contains("Random"), "the right-click Place still draws the copy at random (OB-296)");
+
+        assertTrue(body.contains("copyToPlaceOn(") && body.contains("facingOf("), "the right-click Place does not ask"
+            + " the heading rule with the train's own heading (OB-296)");
+    }
+
     @Test
     public void testTheBuildKeepsTheFacingTheSetupRecords() throws Exception
     {

@@ -168,7 +168,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
             // ON THE EVENT THREAD, where the editor makes every setup change - the window's own work reads the setup
             // there, and a change made from this thread raced it.
-            final String[] outcome = new String[4];
+            final String[] outcome = new String[6];
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
@@ -197,6 +197,27 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
                 {
                     outcome[1] = String.valueOf(ui[0].autonomyHasErrors());
                     outcome[2] = String.valueOf(ui[0].whyAHandSendIsRefused());
+
+                    // AND THE RIGHT-CLICK RETURN HOME ITEM (TDU2-C3): greyed, with the setup's sentence.
+                    try
+                    {
+                        javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+
+                        Method add = Class.forName("org.traincontrol.gui.HomeLocomotiveMenu").getDeclaredMethod(
+                            "addReturnHomeItem", javax.swing.JComponent.class, TrainControlUI.class);
+
+                        add.setAccessible(true);
+                        add.invoke(null, menu, ui[0]);
+
+                        javax.swing.JMenuItem item = (javax.swing.JMenuItem) menu.getComponent(0);
+
+                        outcome[4] = String.valueOf(item.isEnabled());
+                        outcome[5] = String.valueOf(item.getToolTipText());
+                    }
+                    catch (ReflectiveOperationException failed)
+                    {
+                        outcome[4] = String.valueOf(failed);
+                    }
                 }
                 finally
                 {
@@ -218,6 +239,14 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
                 + " \"trains can still be moved manually ... which should throw an error instead\"");
 
             assertEquals(outcome[3], "null", "with the setup mended, a hand send is still refused");
+
+            // Adam, 2026-09-24, TDU2-C3: "Yes, go with your recommendation" - the item greyed with the setup's sentence,
+            // the buttons live and explaining, as Start's is.
+            assertEquals(outcome[4], "false", "with the setup broken, the right-click Return Home item is offered and"
+                + " every click refused (TDU2-C3)");
+
+            assertEquals(outcome[5], outcome[2], "the greyed Return Home item does not say what is wrong with the setup"
+                + " (TDU2-C3)");
         }
         finally
         {

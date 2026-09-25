@@ -196,6 +196,48 @@ public class testTheOwnTailArithmetic
     }
 
     /**
+     * The note counts the pieces Mass Assign Lengths asks for - a stretch cut at its switches - not whole stretches
+     * (Adam, 2026-09-24, OB-297: *"Locations of switches are known."*); and a piece answered 0 is measured (TDU-C6).
+     *
+     * Out over X (nothing), the switch (3) and Y (nothing), and back onto the body at B.  Counted by stretch, the one out
+     * has its switch's 3 and counts as measured, so the note said nothing between Mass Assign sittings - switches first,
+     * pieces later - while two pieces of the way round had no length.
+     *
+     * MUTATION: count a stretch as one piece, or an answered piece as unmeasured, and this fails.
+     *
+     * @throws Exception from the rule
+     */
+    @Test
+    public void testTheNoteCountsPiecesCutAtTheSwitches() throws Exception
+    {
+        Edge out = edge(Arrays.asList("OT:X7", "OT:SW7", "OT:Y7"), Arrays.asList(0, 3, 0));
+        Edge back = edge(Arrays.asList("OT:B7"), Arrays.asList(0));
+
+        Method cuts = Edge.class.getMethod("setCutPlaces", java.util.Collection.class);
+
+        cuts.invoke(out, Arrays.asList("OT:SW7"));
+
+        Map<String, Integer> body = new LinkedHashMap<>();
+
+        body.put("OT:B7", 0);
+
+        String said = ask(Arrays.asList(out, back), 20, body);
+
+        assertNotNull(said, "precondition: a twenty-unit train is not refused a way round of 3 onto its own body");
+
+        assertTrue(said.contains(I18n.f("autolayout.errorOwnTailPartlyUnmeasured", 2)), "two pieces of the way round -"
+            + " either side of the switch - have no length, and the note does not say two: " + said);
+
+        // ANSWERED 0, one of them is measured.
+        out.setAnsweredPlaces(Arrays.asList("OT:X7"));
+
+        said = ask(Arrays.asList(out, back), 20, body);
+
+        assertTrue(said != null && said.contains(I18n.f("autolayout.errorOwnTailPartlyUnmeasured", 1)), "X was answered"
+            + " 0 on purpose and is still counted as a piece with no length: " + said);
+    }
+
+    /**
      * The stretch the train comes back in counts among those with no length (TDA2-C1, TDD2-C3): the note named only the
      * stretches wholly between leaving and coming back, and a way round whose last stretch had nothing measured said
      * nothing of it.

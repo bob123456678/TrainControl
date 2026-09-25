@@ -1006,6 +1006,42 @@ public class testMassAssignLengths
     }
 
     /**
+     * A route tile's place reaches the railway as answered, so a leg answered 0 around it counts as measured there
+     * (Adam, 2026-09-24, TDU-C6: *"0 lengths count as measures"*; OB-273: a route tile takes no length).
+     *
+     * The build tells the runtime which of an edge's places were answered 0, and a route tile is never asked - so a leg
+     * whose every other square was answered 0 still had one place with no answer, and the Atomic Routes gate counted the
+     * leg as unmeasured track.
+     *
+     * MUTATION: mark only the squares answered 0, and this fails.
+     *
+     * @throws IOException from the fixture
+     */
+    @Test
+    public void testARouteTileReachesTheRailwayAsAnswered() throws IOException
+    {
+        openARouteTileInARun();
+
+        session.answerTileLengthsZero(Arrays.asList(key(1, 1), key(2, 1), key(4, 1), key(5, 1)));
+        session.rebuild();
+
+        GraphReducer.ReducedEdge leg = null;
+
+        for (GraphReducer.ReducedEdge edge : session.getReducer().getEdges())
+        {
+            if (edge.getStart().equals(key(1, 1)) && edge.getEnd().equals(key(5, 1))) leg = edge;
+        }
+
+        assertNotNull(leg, "precondition: no edge from 1,1 to 5,1 through the route tile");
+
+        for (GraphReducer.Place place : session.getReducer().placesAlong(leg))
+        {
+            assertTrue(place.isAnswered(), "the leg's every square was answered 0 and its route tile takes no length, and"
+                + " the railway is told " + place.getId() + " has no answer - so the leg reads as unmeasured track");
+        }
+    }
+
+    /**
      * A route tile's length is folded into the track beside it when the setup is opened, keeping the total (Adam,
      * 2026-09-23: *"Fold them, they were likely auto set during the mass assignment run."*).
      *
@@ -2226,22 +2262,24 @@ public class testMassAssignLengths
     }
 
     /**
-     * With nothing spent before the crossing, a parking berth refuses every train there, and its run-in notice says 0 or
-     * nothing - never the room to the switch (TDA3-C1).
+     * With nothing spent before the crossing, a parking berth refuses every train there: answered 0, it is a warning of
+     * its own; unanswered, the half-measured warning names the squares - and the run-in notice never quotes the room to
+     * the switch (TDA3-C1, TDA4-C2).
      *
      * The berth rule, once anything on the approach is measured, claims the crossing's square before it spends anything
      * on it, so with the two squares between the berth and the crossing at no length every train is refused.  The notice
-     * quoted the room walk's 4, back to the switch, and said a train of up to 4 fits.  Answered 0 on purpose, those
-     * squares are nothing the half-measured notice names, so the run-in notice says 0; left unanswered, the half-measured
-     * notice names them, and the run-in notice says nothing.
+     * quoted the room walk's 4, back to the switch, and said a train of up to 4 fits; then, answered, it said 0 in a
+     * sentence written for a berth that holds something - *"that may be right"*, at the grade for nothing wrong.  Adam,
+     * 2026-09-24: *"Give it its own sentence as a warning, make it sound intuitive (the effective specified length of the
+     * track is 0)."*
      *
-     * MUTATION: take the berth rule's figure only where it spent something, and this fails.
+     * MUTATION: leave the answered berth to the run-in notice, or grade its sentence a notice, and this fails.
      *
      * @throws Exception from the fixture or the reflection
      */
     @Test
     @SuppressWarnings("unchecked")
-    public void testNothingSpentBeforeTheCrossingIsSaidAsNothing() throws Exception
+    public void testNothingSpentBeforeTheCrossingIsAWarningOfItsOwn() throws Exception
     {
         openBerthBehindACrossing();
 
@@ -2262,9 +2300,22 @@ public class testMassAssignLengths
 
         java.util.Map<TileKey, int[]> said = (java.util.Map<TileKey, int[]>) runIns.invoke(session);
 
-        assertTrue(said.containsKey(berth) && said.get(berth)[1] == 0, "a parking berth with nothing but answered zeros"
-            + " before a crossing refuses every train there, and its run-in notice does not say 0: "
+        assertFalse(said.containsKey(berth), "a parking berth with nothing but answered zeros before a crossing takes no"
+            + " train, and the run-in notice - written for a berth that holds something - still says it: "
             + (said.containsKey(berth) ? Arrays.toString(said.get(berth)) : "no entry"));
+
+        org.traincontrol.automationui.AutonomyChecks.Finding own = null;
+
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if (BERTH_GIVEN_NO_ROOM.equals(finding.getMessageKey()) && berth.equals(finding.getTile())) own = finding;
+        }
+
+        assertNotNull(own, "a parking berth whose track before the crossing was all answered 0 takes no train, and has"
+            + " no sentence of its own saying so (TDA4-C2): " + session.check());
+
+        assertEquals(own.getSeverity(), org.traincontrol.automationui.AutonomyChecks.Severity.WARNING, "a berth that"
+            + " takes no train is a warning, as the half-measured berth beside it is (TDA4-C2)");
 
         assertFalse(session.stationsWithAHalfMeasuredApproach().containsKey(berth), "precondition: answered zeros are"
             + " named by the half-measured notice");
@@ -2282,6 +2333,41 @@ public class testMassAssignLengths
         assertFalse(said.containsKey(berth), "with nothing measured before the crossing the run-in notice quotes the room"
             + " to the switch, a figure the berth rule never gives - the half-measured notice beside it names the squares"
             + " (TDA3-C1): " + (said.containsKey(berth) ? Arrays.toString(said.get(berth)) : ""));
+    }
+
+    /** The berth whose track before its stop was all answered 0 (TDA4-C2), by its key so the claims compile first. */
+    private static final String BERTH_GIVEN_NO_ROOM = "autosetup.ui.checkBerthTrackGivenNoLength";
+
+    /**
+     * The berth's own sentence is in all eight languages and says the track was given no length (TDA4-C2).
+     *
+     * @throws Exception reading the bundles
+     */
+    @Test
+    public void testTheBerthGivenNoRoomIsSaidInEveryLanguage() throws Exception
+    {
+        java.io.File[] bundles = new java.io.File("src/org/traincontrol/resources").listFiles(
+            (dir, name) -> name.startsWith("messages") && name.endsWith(".properties"));
+
+        assertTrue(bundles != null && bundles.length == 8, "precondition: the eight message bundles are not where"
+            + " this looks for them");
+
+        for (java.io.File bundle : bundles)
+        {
+            java.util.Properties read = new java.util.Properties();
+
+            try (java.io.InputStream in = new java.io.FileInputStream(bundle))
+            {
+                read.load(in);
+            }
+
+            String sentence = read.getProperty(BERTH_GIVEN_NO_ROOM);
+
+            assertNotNull(sentence, bundle.getName() + " has no " + BERTH_GIVEN_NO_ROOM);
+
+            assertTrue(sentence.contains("{0}") && !sentence.contains("{2}"), bundle.getName() + ": the sentence names the"
+                + " berth, and no figure - there is none but 0: " + sentence);
+        }
     }
 
     /**

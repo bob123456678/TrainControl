@@ -929,8 +929,10 @@ public class testSwitchingToACentralStationLayout
         // (TDU-C3), opening a sandbox first.
         // 62 on the third round: regression.testARouteDrivenLocomotiveIsNotEdited (OB-287) and
         // regression.testApplyIsGreyedWithNothingToApply (FR-098) each build a window, opening a sandbox first.
-        assertEquals(checked, 62,
-            checked + " test classes were found to build a window, not the 62 there were when this "
+        // 61 on 2026-09-25: regression.testALegacyImportUnticksLoadAutonomy became testALegacyImportLeavesLoadAutonomyAlone
+        // (TDD-C11), which reads the import doors and builds no window.
+        assertEquals(checked, 61,
+            checked + " test classes were found to build a window, not the 61 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating - and "
             + "nothing else in this method is hidden by that any more, because the checks that "

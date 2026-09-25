@@ -529,7 +529,7 @@
         <test-one-class class="testAPassingTrainMayStandAcrossThePoints"/>
         <test-one-class class="testTheTailCanBeGivenInTheEditor"/>
         <test-one-class class="testTheFacingMenuIsAboutTheTrainThere"/>
-        <test-one-class class="testALegacyImportUnticksLoadAutonomy"/>
+        <test-one-class class="testALegacyImportLeavesLoadAutonomyAlone"/>
         <test-one-class class="testALocalLayoutNeverWritesAutonomyJson"/>
         <test-one-class class="testTheOldAutonomyTabIsGone"/>
         <test-one-class class="testTheAutonomyMenuLinksItsDocumentation"/>
