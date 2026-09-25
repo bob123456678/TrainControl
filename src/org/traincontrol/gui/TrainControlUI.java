@@ -6759,6 +6759,42 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private LayoutEditor openEditor;
 
     /**
+     * A message with every line longer than a dialog should be broken at spaces, so a dialog showing it fits the screen
+     * however long a list inside it runs (RLU-C3).  A line with no space to break at is left whole.
+     *
+     * @param text the message, its paragraphs on lines of their own
+     * @return the same words, on lines of at most 90 characters where a space allows
+     */
+    static String wrappedToFit(String text)
+    {
+        final int columns = 90;
+
+        if (text == null) return null;
+
+        StringBuilder out = new StringBuilder();
+
+        for (String line : text.split("\n", -1))
+        {
+            if (out.length() > 0) out.append('\n');
+
+            while (line.length() > columns)
+            {
+                int at = line.lastIndexOf(' ', columns);
+
+                if (at <= 0) break;
+
+                out.append(line, 0, at).append('\n');
+
+                line = line.substring(at + 1);
+            }
+
+            out.append(line);
+        }
+
+        return out.toString();
+    }
+
+    /**
      * The layout editor's window while one is open, or null - for a question that has to open in front of it rather
      * than over this window, which the editor covers (MT-575).
      *
@@ -25090,8 +25126,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // THE ROUTES BY NAME, as the sentence reads in every language - "saved with their automatic firing on: {0}" - and
         // as MT-496 expects the question to show them.  It was given the count, and read "...on: 1." (found automating
         // MT-496, 2026-09-25).
+        //
+        // AND WRAPPED (RLU-C3): a question does not wrap a line, and the names go into the middle of the first one - so a
+        // file with many routes saved armed made a dialog wider than the screen, with the question past its edge.
         final boolean arm = !savedArmed.isEmpty() && JOptionPane.showOptionDialog(this,
-            I18n.f("route.ui.confirmRearmImported", String.join(", ", savedArmed)),
+            wrappedToFit(I18n.f("route.ui.confirmRearmImported", String.join(", ", savedArmed))),
             I18n.t("route.ui.confirmRearmImportedTitle"),
             JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, YES_NO_OPTS, YES_NO_OPTS[1])
             == JOptionPane.YES_OPTION;

@@ -4172,10 +4172,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     /**
-     * The routes a route export saved with their automatic firing on, by name (REG2-C7).
+     * The routes a route export saved with their automatic firing on, by name (REG2-C7) - those with a sensor to watch,
+     * which are the ones the import arms again when asked to.
      *
      * Read here rather than out of `parseRoutesFromJson`, which overwrites each route's `auto` before it builds it and
      * must go on doing so (REG2-C6: a route built armed starts watching its sensor at once).
+     *
+     * WITH A SENSOR (RLU-C2).  The import arms only a route that has one, as Enable Auto Execution does; this listed every
+     * route saved armed, so Routes > Import's question named one that Yes then left off, and its answer counted one
+     * fewer than the question had named.
      *
      * @param json the export
      * @return their names, empty when there are none or the file cannot be read
@@ -4193,7 +4198,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 org.json.JSONObject route = routes.optJSONObject(i);
 
-                if (route != null && route.optBoolean("auto", false) && !route.optString("name", "").isEmpty())
+                // `hasS88` of the route the import builds: its s88 is the absolute value of the file's
+                if (route != null && route.optBoolean("auto", false) && !route.optString("name", "").isEmpty()
+                    && Math.abs(route.optInt("s88", 0)) > 0)
                 {
                     out.add(route.optString("name"));
                 }
