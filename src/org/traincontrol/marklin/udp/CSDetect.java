@@ -144,7 +144,13 @@ public class CSDetect
                     if (inetAddress.isSiteLocalAddress() && broadcast != null)
                     {
                         // Check for default gateway by sending a ping
-                        if (isReachable(inetAddress.getHostAddress().substring(0, inetAddress.getHostAddress().lastIndexOf('.')) + ".1"))
+                        //
+                        // Retried, like every other ping in this class.  This one was not, and it is
+                        // upstream of all of them: one dropped reply left this network out of the
+                        // scan, and with no other network hasLocalSubnets() is false and the operator
+                        // is told auto-detect is not possible at all.  A gateway that never answers
+                        // costs one more NET_TIMEOUT_MS wait each time the networks are listed (BPV-C9).
+                        if (isReachable(inetAddress.getHostAddress().substring(0, inetAddress.getHostAddress().lastIndexOf('.')) + ".1", PING_RETRY))
                         {
                             String ip = inetAddress.getHostAddress();
                             out.add(ip.substring(0, ip.lastIndexOf('.') + 1));
