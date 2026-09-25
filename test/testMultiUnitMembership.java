@@ -506,4 +506,55 @@ public class testMultiUnitMembership
             deleteAll("MU head K", "MU member K1");
         }
     }
+
+    /**
+     * Placing a member of a multi-unit by hand while its head stands takes the head off: the member is
+     * part of the head's train, and one train cannot stand in two places.
+     *
+     * The placing half of BPV-A1's fix, beside the loader's.  moveLocomotive asks the sweep before it
+     * puts the train down, when the train stands nowhere, so it must keep the whole sweep rather than
+     * the edit doors' sanitizeMultiUnits, which asks only of a train already standing.  A control of
+     * the fix: it passes with and without it, and fails if placing is given the edit doors' sweep.
+     */
+    @Test
+    public void testPlacingAMemberTakesItsStandingHeadOff() throws Exception
+    {
+        MarklinLocomotive head = model.newMM2Locomotive("MU head L", 82);
+        MarklinLocomotive member = model.newMM2Locomotive("MU member L1", 83);
+
+        try
+        {
+            link(head, member);
+
+            assertTrue(head.isLinkedTo(member), "precondition: the member could not be linked to the head");
+
+            Layout layout = new Layout(model);
+
+            MarklinFeedback first = model.newFeedback(8396, null);
+            MarklinFeedback second = model.newFeedback(8397, null);
+
+            model.setFeedbackState(first.getName(), false);
+            model.setFeedbackState(second.getName(), false);
+
+            layout.createPoint("MU station G", true, first.getName());
+            layout.createPoint("MU station I", true, second.getName());
+            layout.createEdge("MU station G", "MU station I");
+
+            layout.getPoint("MU station G").setLocomotive(head);
+
+            // The call every door that puts a locomotive on the graph makes
+            assertTrue(layout.moveLocomotive("MU member L1", "MU station I", false),
+                "precondition: the member could not be placed");
+
+            assertEquals(layout.getLocomotiveLocation(member), layout.getPoint("MU station I"),
+                "precondition: the member is not where it was placed");
+
+            assertNull(layout.getLocomotiveLocation(head),
+                "placing a member of a multi-unit left its head standing too - one train in two places");
+        }
+        finally
+        {
+            deleteAll("MU head L", "MU member L1");
+        }
+    }
 }
