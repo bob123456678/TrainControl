@@ -385,6 +385,400 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
         }
     }
 
+    /**
+     * Over the break MT-263, MT-573 and MT-580 make - 4 - Combined switched back on, whose sensors repeat the other
+     * pages' - every door that would move a train says why it will not, each in its own words, and no train moves (Adam,
+     * 2026-09-25: automated tests supersede the MTs they answer).
+     *
+     * The claim above reads the Return Home item as `addReturnHomeItem` builds it, over a station left unnamed.  This one
+     * takes the entries' own break and their own gestures: the track diagram's right-click menu on a station, built as
+     * `showFor` builds it for a right-click, with Start and Return Home read off it; then the Start Autonomy,
+     * Return Home and Execute Timetable buttons pressed, with what each says read off the dialog it raises.
+     *
+     * MUTATION: take the refusal out of Return Home or Execute Timetable, hand Return Home's item Start's sentence, offer
+     * Start's item live, or have Start's press say something other than its tooltip, and this fails naming it.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheEntriesBreakIsRefusedAtEveryDoor() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        final Dismisser dismisser = new Dismisser();
+
+        final Thread answering = new Thread(dismisser, "testTheEntriesBreakIsRefusedAtEveryDoor dialogs");
+
+        answering.setDaemon(true);
+
+        final java.util.Map<String, String> seen = new java.util.concurrent.ConcurrentHashMap<>();
+
+        final org.traincontrol.automationui.TileGraph.TileKey[] station = new org.traincontrol.automationui.TileGraph.TileKey[1];
+
+        final boolean[] broke = new boolean[1];
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            final org.traincontrol.marklin.MarklinControlStation model =
+                org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui[0] = new TrainControlUI());
+
+            ui[0].setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+
+            final java.util.concurrent.CountDownLatch settled = new java.util.concurrent.CountDownLatch(1);
+
+            ui[0].whenTilesSettled(() -> settled.countDown());
+
+            settled.await(30, java.util.concurrent.TimeUnit.SECONDS);
+
+            for (int turn = 0; turn < 4; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+            // RETURN HOME OFFERED BEFORE ANYTHING IS BROKEN (ADU-C6, and MT-573's comment of 2026-09-24): a train is away
+            // from its home, so a greyed item or a refused press below is about the setup.
+            Method triage = TrainControlUI.class.getDeclaredMethod("awaitReturnHomeTriage", long.class);
+
+            triage.setAccessible(true);
+            triage.invoke(ui[0], 30000L);
+
+            answering.start();
+
+            // THE ENTRIES' BREAK, on the event thread where the editor makes it: the Exclude Page box's own call.
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                org.traincontrol.automationui.AutonomySession session = ui[0].getAutonomySession();
+
+                if (session == null) return;
+
+                seen.put("excluded", String.valueOf(session.getStore().getExcludedPages().contains(COMBINED)));
+                seen.put("offered", String.valueOf(returnHomeOffered(ui[0])));
+
+                for (org.traincontrol.automationui.TileGraph.TileKey key : session.getStore().getNamedTiles())
+                {
+                    if (session.getStore().isStation(key)) station[0] = key;
+                }
+
+                session.setPageExcluded(COMBINED, false);
+                session.rebuild();
+
+                broke[0] = true;
+
+                seen.put("errors", String.valueOf(ui[0].autonomyErrorCount()));
+                seen.put("start", String.valueOf(ui[0].whyAutonomyWillNotStart()));
+                seen.put("hand", String.valueOf(ui[0].whyAHandSendIsRefused()));
+            });
+
+            assertEquals(seen.get("excluded"), "true", "precondition: the frozen railway does not have " + COMBINED
+                + " switched off, so switching it on is not the entries' break");
+
+            assertEquals(seen.get("offered"), "true", "precondition: Return Home is not offered on the frozen railway"
+                + " before anything is broken, so a greyed item or a refused press says nothing about the setup (ADU-C6)");
+
+            assertNotNull(station[0], "precondition: the frozen railway has no station to right-click");
+
+            final int errors = Integer.parseInt(seen.get("errors"));
+
+            assertTrue(errors > 0, "precondition: switching " + COMBINED + " on is no error on the frozen railway (OB-150),"
+                + " so nothing below is about the entries' break");
+
+            final java.util.Map<String, String> before = whereTheTrainsAre(model);
+
+            // THE RIGHT-CLICK MENU, built as `showFor` - the diagram's own door - builds it: the Point on the square
+            // resolved on the event thread, the paths gathered off it, the menu made on it.  Not shown: the test's window
+            // is not on screen, and `showFor` shows only over a showing window.
+            final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
+
+            final Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class,
+                org.traincontrol.automation.Point.class);
+
+            gather.setAccessible(true);
+
+            final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
+                org.traincontrol.automationui.TileGraph.TileKey.class, org.traincontrol.automationui.TileGraph.TileKey.class,
+                Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
+
+            make.setAccessible(true);
+
+            final org.traincontrol.automation.Point[] standing = new org.traincontrol.automation.Point[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> standing[0] = ui[0].getAutonomyPointForTile(station[0]));
+
+            final Object options = gather.invoke(null, ui[0], standing[0]);
+
+            final javax.swing.JPopupMenu[] menu = new javax.swing.JPopupMenu[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    menu[0] = (javax.swing.JPopupMenu) make.newInstance(ui[0], station[0], station[0], options);
+                }
+                catch (ReflectiveOperationException failed)
+                {
+                    seen.put("shown", String.valueOf(failed));
+                }
+            });
+
+            assertNotNull(menu[0], "the track diagram's right-click menu on a station could not be built over the broken"
+                + " setup: " + seen.get("shown"));
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                seen.put("startItem", itemSays(menu[0], I18n.t("autolayout.ui.menuStartAutonomy")));
+                seen.put("homeItem", itemSays(menu[0], I18n.t("autolayout.ui.menuReturnToHome")));
+
+            });
+
+            // THE BUTTONS, pressed.  Each is left live over a broken setup and explains at the press (TDU2-C3).
+            for (String button : new String[] {"startAutonomy", "returnHomeButton", "executeTimetable"})
+            {
+                press(ui[0], button, dismisser, seen);
+            }
+
+            // NOTHING DISPATCHED: a refused press that had sent a train anyway would show it here by now.
+            Thread.sleep(2000);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+            org.traincontrol.automation.Layout layout = model.getAutoLayout();
+
+            seen.put("running", String.valueOf(layout.isRunning()));
+            seen.put("active", String.valueOf(layout.getActiveLocomotives().keySet()));
+
+            final String start = seen.get("start");
+            final String hand = seen.get("hand");
+
+            // MT-263, as amended on 2026-09-25: Start names the error count, and never says to wait for the trains.
+            assertEquals(start, I18n.f("autolayout.ui.errorCannotStartWithErrors", errors), "over the entries' break Start's"
+                + " sentence does not name the " + errors + " error(s) (MT-263, ADD2-C1)");
+
+            assertNotEquals(start, I18n.t("autolayout.errorUnableToStartAutonomyWaitForTrains"), "over the entries' break"
+                + " Start says to wait for trains that are not running (MT-263)");
+
+            assertEquals(seen.get("startItem"), "false|" + start, "over the entries' break the right-click Start item is"
+                + " not greyed with Start's sentence (MT-263 step 2, MT-580 step 4)");
+
+            assertEquals(seen.get("startAutonomy.pressed"), "true", "precondition: the Start Autonomy button is greyed over"
+                + " a broken setup, where it is left live to explain (OB-050)");
+
+            assertEquals(seen.get("startAutonomy.said"), start, "pressing Start over the entries' break does not say what"
+                + " its greyed item says (MT-263 step 3)");
+
+            assertEquals(seen.get("startAutonomy.after"), "true", "a refused Start press left the button dead");
+
+            // MT-573 and MT-580: the setup's own sentence, which names how many things there are, and not Start's.
+            assertEquals(hand, TrainControlUI.whyAHandSendIsRefused(errors, 0), "over the entries' break the doors that"
+                + " move trains without Start are not refused in the setup's own words, with the count");
+
+            assertNotEquals(hand, start, "Return Home's refusal is Start's sentence, which is about the wrong button"
+                + " (ADU-C5)");
+
+            assertEquals(seen.get("homeItem"), "false|" + hand, "over the entries' break the right-click Return Home item is"
+                + " not greyed with the setup's sentence (MT-580 step 4)");
+
+            assertEquals(seen.get("returnHomeButton.pressed"), "true", "precondition: the Return Home button is greyed with a"
+                + " train away from home, so pressing it says nothing about the setup");
+
+            assertEquals(seen.get("returnHomeButton.said"), hand, "pressing Return Home over the entries' break does not"
+                + " say the setup cannot be used yet (MT-573 step 3)");
+
+            assertEquals(seen.get("executeTimetable.pressed"), "true", "precondition: Execute Timetable is greyed on the"
+                + " frozen railway, so pressing it says nothing about the setup");
+
+            assertEquals(seen.get("executeTimetable.said"), hand, "pressing Execute Timetable over the entries' break does"
+                + " not say what Return Home says (MT-573 step 4)");
+
+            assertEquals(seen.get("executeTimetable.after"), "true", "a refused Execute Timetable press left the button"
+                + " dead (MT-573 step 4)");
+
+            assertEquals(seen.get("running"), "false", "a train is running after every door refused (MT-573 step 3)");
+
+            assertEquals(seen.get("active"), "[]", "a train was dispatched after every door refused (MT-573 step 3)");
+
+            assertEquals(whereTheTrainsAre(model), before, "a train moved after every door refused (MT-573 step 3)");
+
+            assertTrue(dismisser.said.size() == 3, "the three presses raised other dialogs as well, or fewer: "
+                + dismisser.said);
+        }
+        finally
+        {
+            dismisser.running = false;
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    org.traincontrol.automationui.AutonomySession session = closing.getAutonomySession();
+
+                    if (broke[0] && session != null)
+                    {
+                        session.setPageExcluded(COMBINED, true);
+                        session.rebuild();
+                    }
+
+                    closing.dispose();
+                });
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** The page MT-263, MT-573 and MT-580 switch back on to break the setup: it repeats the other pages' sensors. */
+    private static final String COMBINED = "4 - Combined";
+
+    /**
+     * Presses one of the window's buttons as a click does, and records whether it could be pressed, the first thing the
+     * dialog it raised said, and whether it is still live afterwards.
+     */
+    private static void press(TrainControlUI ui, String field, Dismisser dismisser, java.util.Map<String, String> seen)
+        throws Exception
+    {
+        java.lang.reflect.Field found = TrainControlUI.class.getDeclaredField(field);
+
+        found.setAccessible(true);
+
+        final javax.swing.JButton button = (javax.swing.JButton) found.get(ui);
+
+        final boolean[] live = new boolean[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> live[0] = button.isEnabled());
+
+        seen.put(field + ".pressed", String.valueOf(live[0]));
+
+        if (!live[0]) return;
+
+        int count = dismisser.said.size();
+
+        javax.swing.SwingUtilities.invokeLater(button::doClick);
+
+        for (long end = System.currentTimeMillis() + 30000L; dismisser.said.size() <= count
+            && System.currentTimeMillis() < end; ) Thread.sleep(100);
+
+        // The dialog has closed once the event thread is back.
+        for (int turn = 0; turn < 4; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        seen.put(field + ".said", dismisser.said.size() > count ? dismisser.said.get(count) : "nothing");
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> seen.put(field + ".after", String.valueOf(button.isEnabled())));
+    }
+
+    private static boolean returnHomeOffered(TrainControlUI ui)
+    {
+        try
+        {
+            Method offered = TrainControlUI.class.getDeclaredMethod("isReturnHomeOffered");
+
+            offered.setAccessible(true);
+
+            return (Boolean) offered.invoke(ui);
+        }
+        catch (ReflectiveOperationException failed)
+        {
+            return false;
+        }
+    }
+
+    /** Every train autonomy runs, and the Point it stands at. */
+    private static java.util.Map<String, String> whereTheTrainsAre(org.traincontrol.marklin.MarklinControlStation model)
+    {
+        java.util.Map<String, String> where = new java.util.TreeMap<>();
+
+        org.traincontrol.automation.Layout layout = model.getAutoLayout();
+
+        for (org.traincontrol.base.Locomotive loc : layout.getLocomotivesToRun())
+        {
+            org.traincontrol.automation.Point at = layout.getLocomotiveLocation(loc);
+
+            where.put(loc.getName(), at == null ? "nowhere" : at.getName());
+        }
+
+        return where;
+    }
+
+    /** "enabled|tooltip as read", with the tooltip's markup taken off, or "none" where the menu has no such item. */
+    private static String itemSays(javax.swing.JPopupMenu menu, String label)
+    {
+        for (java.awt.Component component : menu.getComponents())
+        {
+            if (!(component instanceof javax.swing.JMenuItem) || !label.equals(((javax.swing.JMenuItem) component).getText()))
+            {
+                continue;
+            }
+
+            javax.swing.JMenuItem item = (javax.swing.JMenuItem) component;
+
+            String tip = item.getToolTipText();
+
+            return item.isEnabled() + "|" + (tip == null ? "null" : tip.replaceAll("<[^>]*>", "").replace("&lt;", "<")
+                .replace("&gt;", ">").replace("&amp;", "&"));
+        }
+
+        return "none";
+    }
+
+    /** Reads every message dialog that opens, and answers it as OK does. */
+    private static final class Dismisser implements Runnable
+    {
+        private final java.util.List<String> said = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+        private final java.util.Set<Object> handled = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        private volatile boolean running = true;
+
+        @Override
+        public void run()
+        {
+            while (running)
+            {
+                try
+                {
+                    Thread.sleep(150);
+                }
+                catch (InterruptedException stop)
+                {
+                    return;
+                }
+
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (!window.isShowing() || !(window instanceof javax.swing.JDialog)) continue;
+
+                    final javax.swing.JOptionPane pane = paneIn(((javax.swing.JDialog) window).getContentPane());
+
+                    if (pane == null || !handled.add(pane)) continue;
+
+                    said.add(String.valueOf(pane.getMessage()));
+
+                    javax.swing.SwingUtilities.invokeLater(() -> pane.setValue(Integer.valueOf(javax.swing.JOptionPane.OK_OPTION)));
+                }
+            }
+        }
+
+        private static javax.swing.JOptionPane paneIn(java.awt.Container container)
+        {
+            for (java.awt.Component component : container.getComponents())
+            {
+                if (component instanceof javax.swing.JOptionPane) return (javax.swing.JOptionPane) component;
+
+                if (component instanceof java.awt.Container)
+                {
+                    javax.swing.JOptionPane found = paneIn((java.awt.Container) component);
+
+                    if (found != null) return found;
+                }
+            }
+
+            return null;
+        }
+    }
+
     private static void door(String file, String handler, String what) throws Exception
     {
         String source = read(file);
