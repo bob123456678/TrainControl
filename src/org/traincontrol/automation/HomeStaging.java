@@ -1335,8 +1335,9 @@ public final class HomeStaging
                 // AND NOT ROUND A LOOP INTO ITS OWN TAIL (Adam, 2026-09-24, OB-294), as `Layout.isPathClear` asks it - the
                 // one rule, not a copy.  A plan that left it out sent a 20-unit train from BottomSecondary round by the
                 // tunnel and back over its own tail, a first move the railway refuses.  Prefix-closed, like the room rule
-                // below: the question stops at the first return, so no extension of a route that meets the tail can clear
-                // it, and pruning here loses nothing.
+                // below: every return is asked and the tightest named (TDA-C1), and an extension keeps every return the
+                // route already has, so its tightest can only be as small or smaller - no extension of a route that meets
+                // the tail can clear it, and pruning here loses nothing.
                 if (Layout.whyItWouldMeetItsOwnTail(route, loc, ownBody) != null) continue;
 
                 // ROOM IS ASKED BEFORE THE ARRIVAL IS RECORDED (WK3-B2, D3F-B1, RT3-B1).

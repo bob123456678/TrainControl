@@ -2691,15 +2691,15 @@ public class Layout
 
         for (Edge e : path)
         {
+            // ITS OWN TAIL IS NOT THE ANSWER, only not an obstacle (OB-285; Adam, 2026-09-24: "Add the refusal") - and
+            // it is not in the maps at all: the walk above leaves the train being routed out (TDD-A1), so each of the
+            // three questions below finds only other trains.  Once it was in them, and taken as the answer it ended
+            // the question: a train turned where it stands - reversed on the throttle, turned with the Facing menu or at
+            // a square trains may turn at - leaves over its own tail, so that tail was the first found on its way out,
+            // and another train's tail on the same stretch was never looked for.  Measured on Adam's railway: a train
+            // turned at Tunnel was cleared south through the points at column 7 with a train in TunnelRightPark lying
+            // across them - 10 such cases on 4 squares.
             Locomotive lyingAcross = coveredTrack.get(e);
-
-            // ITS OWN TAIL IS NOT THE ANSWER, only not an obstacle (OB-285; Adam, 2026-09-24: "Add the refusal").  Taken
-            // as the answer, it ended the question: a train turned where it stands - reversed on the throttle, turned
-            // with the Facing menu or at a square trains may turn at - leaves over its own tail, so that tail is the
-            // first found on its way out, and another train's tail on the same stretch was never looked for.  Measured
-            // on Adam's railway: a train turned at Tunnel was cleared south through the points at column 7 with a train
-            // in TunnelRightPark lying across them - 10 such cases on 4 squares.  So the other two questions are asked.
-            if (lyingAcross != null && lyingAcross.equals(loc)) lyingAcross = null;
 
             // AND THE TRACK IT SHARES WITH SOMETHING COVERED.
             //
@@ -2721,7 +2721,7 @@ public class Layout
                 {
                     Locomotive onShared = coveredTrack.get(sharing);
 
-                    if (onShared == null || onShared.equals(loc)) continue;
+                    if (onShared == null) continue;
 
                     // SHARED METAL ONLY, and lockEdges holds two different relations (RGD-B2).
                     //
@@ -2790,7 +2790,7 @@ public class Layout
             // copy it is.  An edge described in no places keeps the two answers above, which is what it had.
             if (lyingAcross == null) lyingAcross = anotherTailOn(e, loc, coveredPlaces);
 
-            if (lyingAcross == null || lyingAcross.equals(loc)) continue;
+            if (lyingAcross == null) continue;
 
             logPathError(
                 loc,
@@ -7933,31 +7933,6 @@ public class Layout
         }
 
         return null;
-    }
-
-    /**
-     * EVERY train, other than the one being routed, whose tail lies over metal this edge runs on (AUT2-C2).
-     *
-     * `anotherTailOn` answers whether there is one, which is all the runtime asks - it refuses on any.  The planner asks
-     * whether each has MOVED, and a question about the first one found passed an edge a second still lay across.
-     *
-     * @param edge the edge being asked about
-     * @param mover the locomotive being routed, whose own tail never blocks it
-     * @param claimed the places standing trains' tails reach, from `walkStandingTrains`
-     * @return the trains lying there, in the edge's place order - empty when none is
-     */
-    static Set<Locomotive> tailsOn(Edge edge, Locomotive mover, Map<String, Locomotive> claimed)
-    {
-        Set<Locomotive> out = new LinkedHashSet<>();
-
-        for (String place : edge.getPlaceIds())
-        {
-            Locomotive on = claimed.get(place);
-
-            if (on != null && !on.equals(mover)) out.add(on);
-        }
-
-        return out;
     }
 
     /**
