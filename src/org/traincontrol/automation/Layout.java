@@ -5165,8 +5165,11 @@ public class Layout
                 }
                 catch (Exception entry)
                 {
+                    // Its own line, which says the entry was skipped.  autolayout.warnTimetable, below,
+                    // means the whole timetable could not be read; logged with that, one lost entry
+                    // read as a lost timetable (BPV-C12).
                     control.logf(
-                        "autolayout.warnTimetable",
+                        "autolayout.warnTimetableEntry",
                         entry.getMessage()
                     );
                 }
