@@ -1361,6 +1361,144 @@ public class testTheTailIsPickedOnTheDiagram
         }
     }
 
+    /**
+     * An answer given after an editor was opened in the wait is not written into the setup, and the log says why (RLU-C9).
+     *
+     * The editor holds the setup as it was when it opened, and its Cancel puts that back - so a road written into the
+     * setup while it was open was taken back out by the Cancel, silently, and the rail the train lies on stopped being
+     * held.  Every main-window door that writes the setup refuses while an editor is open; this one's late answer did
+     * not ask.  His 75 407 DB, given a length of 5, pasted at Tunnel from the north with the question left waiting; the
+     * autonomy editor opened as Autonomy > Edit Autonomy opens it; TunnelPre clicked on the main window.
+     *
+     * MUTATION: write the late answer whatever opened in the wait, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAnAnswerAfterAnEditorOpenedIsNotWritten() throws Exception
+    {
+        final org.traincontrol.base.Locomotive train = model.getLocByName("75 407 DB");
+
+        assertNotNull(train, "precondition: this data has no 75 407 DB, the train the steps use");
+
+        final Integer lengthWas = train.getTrainLength();
+
+        AutonomySession session = ui.getAutonomySession();
+
+        TileKey tunnel = session.getStationIndex().squareOf("Tunnel (southbound)");
+        TileKey other = squareNamed(session, "BottomMainB");
+
+        assertNotNull(tunnel, "precondition: no Tunnel square");
+        assertNotNull(other, "precondition: no BottomMainB square");
+
+        java.awt.Window editor = null;
+
+        try
+        {
+            train.setTrainLength(5);
+
+            standOn(train, other);
+
+            final java.util.concurrent.atomic.AtomicBoolean pasted = pasteAtTunnelFromTheNorth(train, other, tunnel);
+
+            String roadBefore = ui.getAutonomySession().getArrivedAlong(tunnel);
+
+            // THE EDITOR, OPENED WHILE THE QUESTION WAITS.
+            javax.swing.SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(tunnel.getPage()));
+
+            for (long end = System.currentTimeMillis() + 60000; editor == null && System.currentTimeMillis() < end; )
+            {
+                Thread.sleep(100);
+
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (window.isShowing() && "LayoutEditor".equals(window.getClass().getSimpleName())) editor = window;
+                }
+            }
+
+            assertNotNull(editor, "precondition: the autonomy editor did not open while the question waited");
+
+            for (int turn = 0; turn < 6; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+            int from = logged().length();
+
+            // ON THE MAIN WINDOW'S DIAGRAM: the editor's own squares are lit too, and do not take the click.
+            TileKey pre = null;
+
+            for (TailCrossedPrompt.Choice choice : TailCrossedPrompt.choicesFor(model.getAutoLayout(),
+                model.getAutoLayout().getPoint("Tunnel (southbound)"), "N", 5, null))
+            {
+                if (choice.getFarthest().getName().startsWith("TunnelPre")) pre = session.getStationIndex().squareOf(
+                    choice.getFarthest());
+            }
+
+            assertNotNull(pre, "precondition: no TunnelPre square to click");
+
+            LayoutLabel onTheMainWindow = null;
+
+            for (LayoutLabel label : ui.getDiagramTileRegistry().labelsFor(pre))
+            {
+                if (javax.swing.SwingUtilities.getWindowAncestor(label) == ui) onTheMainWindow = label;
+            }
+
+            assertNotNull(onTheMainWindow, "precondition: TunnelPre is not drawn on the main window's diagram");
+
+            click(onTheMainWindow, 1);
+
+            awaitAnswered(pasted);
+
+            assertEquals(ui.getAutonomySession().getArrivedAlong(tunnel), roadBefore, "TunnelPre, clicked after an editor"
+                + " was opened in the wait, was written into the setup the editor holds a copy of - its Cancel would take it"
+                + " back out (RLU-C9)");
+
+            String dropped = org.traincontrol.util.I18n.f("autolayout.ui.logTailAnswerDroppedEditorOpened",
+                train.getName(), "Tunnel");
+
+            assertTrue(logged().substring(from).contains(dropped), "the log does not say the answer was not recorded"
+                + " because an editor was opened while the question waited (RLU-C9): " + logged().substring(from));
+        }
+        finally
+        {
+            cancelTheQuestion();
+
+            TailCrossedPrompt.answerForTests(null);
+            org.traincontrol.gui.FacingPrompt.answerForTests(null);
+            org.traincontrol.gui.ArrivalSidePrompt.answerForTests(null);
+
+            if (editor != null)
+            {
+                final java.awt.Window closing = editor;
+
+                // LATER, NOT AND-WAIT: closing may ask whether to keep what was changed.
+                javax.swing.SwingUtilities.invokeLater(() -> closing.dispatchEvent(
+                    new java.awt.event.WindowEvent(closing, java.awt.event.WindowEvent.WINDOW_CLOSING)));
+
+                for (long end = System.currentTimeMillis() + 10000; closing.isShowing()
+                    && System.currentTimeMillis() < end; )
+                {
+                    Thread.sleep(100);
+
+                    takeDownDialogs();
+                }
+
+                if (closing.isShowing()) javax.swing.SwingUtilities.invokeLater(closing::dispose);
+            }
+
+            takeDownDialogs();
+
+            train.setTrainLength(lengthWas);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                Point at = model.getAutoLayout().getLocomotiveLocation(train);
+
+                if (at != null) model.getAutoLayout().moveLocomotive(null, at.getName(), false);
+            });
+
+            clearTunnel();
+        }
+    }
+
     /** The square the setup gives this name. */
     private static TileKey squareNamed(AutonomySession session, String name)
     {
