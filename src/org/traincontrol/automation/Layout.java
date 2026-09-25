@@ -5033,9 +5033,13 @@ public class Layout
      * listed every station's own reason instead, which says nothing about the copy.  Since the right-click Place keeps a
      * train's heading over every copy it could leave by (OB-296, ADU2-C2), a train can be put down on one.
      *
-     * The remedy depends on the square's other copies.  Where one reaches a station, turning the train round puts it
-     * there.  Where none does, turning would not help, and what would is a station reachable from here that autonomy may
-     * choose - `canReachAnyDestination` asks for one it may choose, in service and not a turning copy.
+     * The remedy depends on the square's other copies.  Where one reaches a station, and a train may be started from it,
+     * turning the train round puts it there.  Where none does, turning would not help, and what would is a station
+     * reachable from here that autonomy may choose - `canReachAnyDestination` asks for one it may choose, in service and
+     * not a turning copy.
+     *
+     * A COPY A TRAIN MAY BE STARTED FROM (RLA-C5).  Offered wherever another copy reached a station, "turn it round" could
+     * send the operator onto a copy that is switched off, or barred, or no station - whose own refusal then sent him back.
      *
      * Autonomy's reason only: a train sent by hand may go to a berth autonomy never chooses, so the hand's question,
      * `explainCannotStart(loc, true)`, does not ask it.
@@ -5049,7 +5053,9 @@ public class Layout
 
         for (Point other : this.getPoints())
         {
-            if (other != at && other.isSamePlaceAs(at) && canReachAnyDestination(other))
+            // The start rules `whyTheStartIsRefused` asks of the square a train stands on
+            if (other != at && other.isSamePlaceAs(at) && !isABarredCopyOfAStation(other) && other.isDestination()
+                && other.isActive() && canReachAnyDestination(other))
             {
                 return I18n.f("autolayout.why.startReachesNoStation", placeNameOf(at));
             }

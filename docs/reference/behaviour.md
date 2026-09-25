@@ -702,7 +702,7 @@ leave by, a copy trains may not arrive at included, and the copy the paste would
 otherwise the first copy the menu offers.  The item is offered wherever a copy has a way out, as the action
 chooses (ADU2-C2).  It took one at random until then, and for a day chose only among station copies, which turned a
 train facing the barred way round at a square with a barred side (ADU-B1).  A copy with a way out that reaches no
-station autonomy may choose is kept too, and Why not Moving? says why autonomy never starts a train there - turn it round where another copy of the square reaches a station, otherwise drive it off by hand or let autonomy choose a station it can reach (OB-299; by hand it is no reason, since a hand send may go where autonomy never does).  `core.testWhyStuck.testACopyThatReachesNoStationSaysSo`, `core.testATrainIsPutOnlyWhereItCanStart.testTheRightClickPlaceKeepsTheTrainsHeading`.
+station autonomy may choose is kept too, and Why not Moving? says why autonomy never starts a train there - turn it round where another copy of the square reaches a station and a train may be started from that copy (RLA-C5), otherwise drive it off by hand or let autonomy choose a station it can reach - switched on, Can Be Chosen in Full Autonomy ticked, and not one where trains turn round (RLU-C4) (OB-299; by hand it is no reason, since a hand send may go where autonomy never does).  `core.testWhyStuck.testACopyThatReachesNoStationSaysSo`, `core.testWhyStuck.testTurningRoundIsOfferedOnlyOntoACopyATrainMayStartFrom`, `core.testATrainIsPutOnlyWhereItCanStart.testTheRightClickPlaceKeepsTheTrainsHeading`.
 
 > *"Simply don’t place the train, leave it on the clipboard as if no paste had been done."* — Adam,
 > 2026-09-07, on a dismissed prompt
