@@ -1212,6 +1212,395 @@ public class testTheTailIsPickedOnTheDiagram
         });
     }
 
+    /**
+     * A tail answer given after the placement changed is written where the train now stands, or not at all - driven by
+     * the gestures MT-576's steps make (Adam, 2026-09-25: automated tests supersede the MTs they answer).
+     *
+     * His 75 407 DB, given a length of 5, pasted at Tunnel from the north with Control+X and Control+V through the
+     * diagram's own key door, the question left waiting on the diagram.  (a) While it waits, a setting on another station
+     * is changed from the diagram's right-click - which rebuilds the railway - and then TunnelPre is clicked: the new
+     * railway's Tunnel gets TunnelPre's road, made of its own rails.  The setting is put back.  (b) Pasted again; while it
+     * waits the train is taken off Tunnel with its right-click Remove, and TunnelPre is clicked: nothing is written behind
+     * Tunnel, and the log says the tail was not recorded because Tunnel changed while the question waited.
+     *
+     * `testAnAnswerAfterARebuildReachesTheRailway` and `testOnlyADroppedAnswerIsLogged` hold the same two rules with the
+     * wait's events made by the calls the gestures make; this makes them by the gestures.
+     *
+     * MUTATION: write the answer to the copy the paste placed the train on, or write it after the train was taken off, and
+     * this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheLateAnswersOfMT576ByTheirGestures() throws Exception
+    {
+        final org.traincontrol.base.Locomotive train = model.getLocByName("75 407 DB");
+
+        assertNotNull(train, "precondition: this data has no 75 407 DB, the train the steps use");
+
+        final Integer lengthWas = train.getTrainLength();
+
+        AutonomySession session = ui.getAutonomySession();
+
+        TileKey tunnel = session.getStationIndex().squareOf("Tunnel (southbound)");
+        TileKey other = squareNamed(session, "BottomMainB");
+
+        assertNotNull(tunnel, "precondition: no Tunnel square");
+        assertNotNull(other, "precondition: no BottomMainB square");
+
+        try
+        {
+            // STEP 1: a length of 5, standing on BottomMainB, then cut and pasted at Tunnel from the north.
+            train.setTrainLength(5);
+
+            standOn(train, other);
+
+            final java.util.concurrent.atomic.AtomicBoolean pasted = pasteAtTunnelFromTheNorth(train, other, tunnel);
+
+            // (a) STEP 2: a setting on another station, from the diagram's right-click - BottomMainB's "Can Be Chosen in
+            // Full Autonomy" - which rebuilds the railway.
+            Point before = model.getAutoLayout().getPoint("Tunnel (southbound)");
+
+            flipAutoDestination(other);
+
+            Point rebuilt = null;
+
+            for (long end = System.currentTimeMillis() + 20000; System.currentTimeMillis() < end; )
+            {
+                rebuilt = model.getAutoLayout().getPoint("Tunnel (southbound)");
+
+                if (rebuilt != null && rebuilt != before) break;
+
+                Thread.sleep(100);
+            }
+
+            assertTrue(rebuilt != null && rebuilt != before, "precondition: changing BottomMainB's setting from the diagram"
+                + " did not rebuild the railway, so the answer is not late in the way the steps make it");
+
+            assertTrue(rebuilt.getCurrentLocomotive() == train, "precondition: the rebuild did not put 75 407 DB back on"
+                + " Tunnel");
+
+            // STEP 3: TunnelPre clicked.
+            clickTunnelPre(session);
+
+            awaitAnswered(pasted);
+
+            Point tunnelNow = model.getAutoLayout().getPoint("Tunnel (southbound)");
+
+            TailCrossedPrompt.Choice tunnelPre = null;
+
+            for (TailCrossedPrompt.Choice choice : TailCrossedPrompt.choicesFor(model.getAutoLayout(), tunnelNow, "N", 5, null))
+            {
+                if (choice.getFarthest().getName().startsWith("TunnelPre")) tunnelPre = choice;
+            }
+
+            assertNotNull(tunnelPre, "precondition: the rebuilt railway offers a five-unit train at Tunnel no TunnelPre");
+
+            assertEquals(named(tunnelNow.getArrivedAlong()), named(tunnelPre.getRoad()), "TunnelPre was clicked after a"
+                + " setting was changed from the diagram, and the railway's Tunnel did not get the road to TunnelPre - the"
+                + " grey behind Tunnel stops short (MT-576 step 3)");
+
+            for (org.traincontrol.automation.Edge edge : tunnelNow.getArrivedAlong())
+            {
+                assertTrue(model.getAutoLayout().getEdge(edge.getName()) == edge, "the road written after the rebuild is"
+                    + " made of the old railway's rails (MT-576 step 3): " + edge.getName());
+            }
+
+            // STEP 4: the setting put back.
+            flipAutoDestination(other);
+
+            for (int turn = 0; turn < 6; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+            // (b) STEP 5: pasted at Tunnel from the north again, the question waiting.
+            final java.util.concurrent.atomic.AtomicBoolean again = pasteAtTunnelFromTheNorth(train, tunnel, tunnel);
+
+            int from = logged().length();
+
+            // STEP 6: taken off Tunnel with its right-click Remove.
+            removeFromTheDiagram(tunnel, train);
+
+            // STEP 7: TunnelPre clicked.
+            clickTunnelPre(session);
+
+            awaitAnswered(again);
+
+            Point after = model.getAutoLayout().getPoint("Tunnel (southbound)");
+
+            assertTrue(after.getCurrentLocomotive() == null, "precondition: 75 407 DB is still on Tunnel after Remove");
+
+            List<org.traincontrol.automation.Edge> road = after.getArrivedAlong();
+
+            assertTrue(road == null || road.isEmpty(), "an answer given after 75 407 DB was taken off Tunnel was written"
+                + " behind Tunnel anyway (MT-576 step 7): " + (road == null ? "none" : named(road)));
+
+            String dropped = org.traincontrol.util.I18n.f("autolayout.ui.logTailAnswerDropped", train.getName(), "Tunnel");
+
+            assertTrue(logged().substring(from).contains(dropped), "the log does not say where the tail of 75 407 DB lies"
+                + " was not recorded because Tunnel changed while the question waited (MT-576 step 7)");
+        }
+        finally
+        {
+            cancelTheQuestion();
+
+            TailCrossedPrompt.answerForTests(null);
+            org.traincontrol.gui.FacingPrompt.answerForTests(null);
+            org.traincontrol.gui.ArrivalSidePrompt.answerForTests(null);
+
+            takeDownDialogs();
+
+            train.setTrainLength(lengthWas);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                Point at = model.getAutoLayout().getLocomotiveLocation(train);
+
+                if (at != null) model.getAutoLayout().moveLocomotive(null, at.getName(), false);
+            });
+
+            clearTunnel();
+        }
+    }
+
+    /** The square the setup gives this name. */
+    private static TileKey squareNamed(AutonomySession session, String name)
+    {
+        for (TileKey key : session.getStore().getNamedTiles())
+        {
+            if (name.equals(session.getStore().getPointName(key))) return key;
+        }
+
+        return null;
+    }
+
+    /** Stands the train on a copy of the square trains may stand on, as a hand drive leaves it. */
+    private static void standOn(org.traincontrol.base.Locomotive train, TileKey square) throws Exception
+    {
+        AutonomySession session = ui.getAutonomySession();
+
+        String copy = null;
+
+        for (String name : session.getStationIndex().pointNamesAt(square))
+        {
+            Point point = model.getAutoLayout().getPoint(name);
+
+            if (point != null && point.isDestination() && copy == null) copy = name;
+        }
+
+        assertNotNull(copy, "precondition: no copy of " + square + " a train may stand on");
+
+        final String onto = copy;
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            for (Point point : model.getAutoLayout().getPoints())
+            {
+                if (point.getCurrentLocomotive() != null) model.getAutoLayout().moveLocomotive(null, point.getName(), false);
+            }
+
+            model.getAutoLayout().moveLocomotive(train.getName(), onto, false);
+        });
+
+        assertNotNull(model.getAutoLayout().getLocomotiveLocation(train), "precondition: the train could not be stood on "
+            + square);
+    }
+
+    /**
+     * Control+X over one square and Control+V over Tunnel, through the diagram's key door, facing south so it arrives
+     * from the north; returns once the tail question waits on the diagram, with a flag set when the paste door returns.
+     */
+    private static java.util.concurrent.atomic.AtomicBoolean pasteAtTunnelFromTheNorth(
+        org.traincontrol.base.Locomotive train, TileKey from, TileKey tunnel) throws Exception
+    {
+        final java.lang.reflect.Method door = TrainControlUI.class.getDeclaredMethod("locomotiveGestureOnDiagram",
+            int.class, boolean.class);
+
+        door.setAccessible(true);
+
+        final Object[] cut = new Object[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                ui.setHoveredDiagramTile(from.getPage(), from.getX(), from.getY());
+
+                cut[0] = door.invoke(ui, java.awt.event.KeyEvent.VK_X, true);
+            }
+            catch (Exception refused)
+            {
+                cut[0] = refused;
+            }
+        });
+
+        assertEquals(cut[0], Boolean.TRUE, "Control+X over the train was not taken");
+
+        // FACING SOUTH, the way a train that came in from the north faces: what the cut remembered.
+        java.lang.reflect.Field cutFacing = TrainControlUI.class.getDeclaredField("cutFacing");
+
+        cutFacing.setAccessible(true);
+        cutFacing.set(ui, org.traincontrol.automationui.TilePorts.Side.S);
+
+        org.traincontrol.gui.FacingPrompt.answerForTests(org.traincontrol.automationui.TilePorts.Side.S);
+        org.traincontrol.gui.ArrivalSidePrompt.answerForTests("N");
+        TailCrossedPrompt.answerForTests(null);
+
+        final java.util.concurrent.atomic.AtomicBoolean returned = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+        // LATER, NOT AND-WAIT: the paste door waits for the answer, with the window live.
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            try
+            {
+                ui.setHoveredDiagramTile(tunnel.getPage(), tunnel.getX(), tunnel.getY());
+
+                door.invoke(ui, java.awt.event.KeyEvent.VK_V, true);
+            }
+            catch (Exception failed)
+            {
+                throw new RuntimeException(failed);
+            }
+            finally
+            {
+                returned.set(true);
+            }
+        });
+
+        java.lang.reflect.Field armed = TailCrossedPrompt.class.getDeclaredField("armed");
+
+        armed.setAccessible(true);
+
+        for (long end = System.currentTimeMillis() + 15000; armed.get(null) == null && !returned.get()
+            && System.currentTimeMillis() < end; ) Thread.sleep(50);
+
+        assertNotNull(armed.get(null), "precondition: the paste at Tunnel from the north left no tail question waiting on"
+            + " the diagram (returned: " + returned.get() + ")");
+
+        return returned;
+    }
+
+    /** The diagram's right-click on this square, as a right-click builds it. */
+    private static javax.swing.JPopupMenu rightClickMenu(TileKey square) throws Exception
+    {
+        final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
+
+        final java.lang.reflect.Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class,
+            Point.class);
+
+        gather.setAccessible(true);
+
+        final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
+            TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
+
+        make.setAccessible(true);
+
+        final Point[] standing = new Point[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> standing[0] = ui.getAutonomyPointForTile(square));
+
+        final Object options = gather.invoke(null, ui, standing[0]);
+
+        final javax.swing.JPopupMenu[] menu = new javax.swing.JPopupMenu[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                menu[0] = (javax.swing.JPopupMenu) make.newInstance(ui, square, square, options);
+            }
+            catch (ReflectiveOperationException failed)
+            {
+                throw new IllegalStateException(failed);
+            }
+        });
+
+        return menu[0];
+    }
+
+    private static javax.swing.JMenuItem itemNamed(java.awt.Container menu, String text)
+    {
+        java.awt.Component[] children = menu instanceof javax.swing.JMenu
+            ? ((javax.swing.JMenu) menu).getMenuComponents() : menu.getComponents();
+
+        for (java.awt.Component child : children)
+        {
+            if (child instanceof javax.swing.JMenuItem && text.equals(((javax.swing.JMenuItem) child).getText()))
+            {
+                return (javax.swing.JMenuItem) child;
+            }
+
+            if (child instanceof javax.swing.JMenu)
+            {
+                javax.swing.JMenuItem found = itemNamed((javax.swing.JMenu) child, text);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
+    }
+
+    /** "Can Be Chosen in Full Autonomy" on the square's right-click, under its setup menu, flipped. */
+    private static void flipAutoDestination(TileKey square) throws Exception
+    {
+        javax.swing.JPopupMenu menu = rightClickMenu(square);
+
+        final javax.swing.JMenuItem item = itemNamed(menu, org.traincontrol.util.I18n.t("autosetup.ui.menuAutoDestination"));
+
+        assertNotNull(item, "the diagram's right-click on " + square + " has no Can Be Chosen in Full Autonomy item");
+
+        javax.swing.SwingUtilities.invokeLater(item::doClick);
+
+        for (int turn = 0; turn < 6; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /** The train's right-click Remove, on the diagram. */
+    private static void removeFromTheDiagram(TileKey square, org.traincontrol.base.Locomotive train) throws Exception
+    {
+        javax.swing.JPopupMenu menu = rightClickMenu(square);
+
+        final javax.swing.JMenuItem item = itemNamed(menu, org.traincontrol.util.I18n.f("layout.ui.menuRemoveLocomotive",
+            train.getName()));
+
+        assertNotNull(item, "the diagram's right-click on Tunnel has no Remove " + train.getName());
+
+        javax.swing.SwingUtilities.invokeLater(item::doClick);
+
+        for (long end = System.currentTimeMillis() + 10000; model.getAutoLayout().getLocomotiveLocation(train) != null
+            && System.currentTimeMillis() < end; ) Thread.sleep(50);
+    }
+
+    private static void clickTunnelPre(AutonomySession session) throws Exception
+    {
+        TileKey square = null;
+
+        for (TailCrossedPrompt.Choice choice : TailCrossedPrompt.choicesFor(model.getAutoLayout(),
+            model.getAutoLayout().getPoint("Tunnel (southbound)"), "N", 5, null))
+        {
+            if (choice.getFarthest().getName().startsWith("TunnelPre")) square = session.getStationIndex().squareOf(
+                choice.getFarthest());
+        }
+
+        assertNotNull(square, "precondition: no TunnelPre square to click");
+
+        java.util.Set<LayoutLabel> labels = ui.getDiagramTileRegistry().labelsFor(square);
+
+        assertFalse(labels.isEmpty(), "precondition: TunnelPre is not drawn on the diagram");
+
+        click(labels.iterator().next(), 1);
+    }
+
+    private static void awaitAnswered(java.util.concurrent.atomic.AtomicBoolean returned) throws Exception
+    {
+        for (long end = System.currentTimeMillis() + 15000; !returned.get() && System.currentTimeMillis() < end; )
+        {
+            Thread.sleep(50);
+        }
+
+        assertTrue(returned.get(), "the paste door did not return after TunnelPre was clicked");
+
+        for (int turn = 0; turn < 6; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+    }
+
     /** The names a road is written by, for comparing roads of two builds of the railway. */
     private static String named(java.util.List<org.traincontrol.automation.Edge> road)
     {
