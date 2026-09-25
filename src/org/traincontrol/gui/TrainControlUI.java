@@ -25059,7 +25059,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         try
         {
-            read = new String(Files.readAllBytes(Paths.get(chosen.getPath())));
+            read = new String(Files.readAllBytes(Paths.get(chosen.getPath())), java.nio.charset.StandardCharsets.UTF_8);
         }
         catch (Exception unreadable)
         {
