@@ -371,14 +371,16 @@ Tab icons provided by Freepik.
         - Fixed: Return Home started and then stopped every train when one train had no speed set, or was standing somewhere that is not a station.  Now a train with no speed is skipped and the others still go home, and a train that is not at a station is named before anything moves, so it can be moved to a station first.
         - Fixed: double-clicking Start could start every train twice.
         - Fixed: one timetable entry that could no longer be loaded, for example after its locomotive was deleted, wiped out the whole timetable.
+        - Fixed: if a train’s trip failed part way, autonomy carried on with the other trains, and the failed train could later be sent off from the wrong place.  Now autonomy stops itself, and the autonomy configuration has to be reloaded before any train is sent again.
     - Route Bug Fixes
         - Fixed: editing a route, or switching it on or off, removed it from the routes autonomy is set to activate.
     - Locomotive Bug Fixes
-        - Fixed: if the locomotive list or the keyboard pages could not be read when TrainControl started, they were saved over as empty when it closed.  A copy of the unreadable file is now kept in the tc_backup folder.
+        - Fixed: if the locomotive list or the keyboard pages could not be read when TrainControl started, they were saved over as empty when it closed.  A copy of the unreadable file is now kept in the tc_backup folder, and the file is not saved over until that copy has been made.
         - Fixed: page names were lost when going back to 2.8 after using TrainControl 3.0 with fewer than ten pages.
     - Central Station Bug Fixes
         - Fixed: after a short network drop, TrainControl kept saying the connection was lost until it was restarted, and autonomy could keep turning the track power off.
         - Fixed: finding the Central Station automatically sometimes missed it when it was slow to answer.
+        - Fixed: finding the Central Station automatically could say it was not possible after a single lost reply on the network.
 
 * v2.8.1 [8/17/2026]
     - Autonomy Bug Fixes
