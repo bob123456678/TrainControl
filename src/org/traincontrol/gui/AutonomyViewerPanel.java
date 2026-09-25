@@ -1113,6 +1113,32 @@ public class AutonomyViewerPanel extends JPanel
      * somebody who will check the result rather than a button on everybody's menu.
      */
     /**
+     * Makes the configuration named at the Import prompt the one in use, creating it where there is none of that name -
+     * the configuration an old autonomy.json's per-point half is then written into (Adam, 2026-09-25: *"(a)"*).
+     *
+     * `importLegacy` writes placements, homes, termini and facings through `setPointProperty`, which addresses the
+     * configuration in use; so choosing it is choosing where they land.  The configuration in use before is not touched:
+     * `setActiveConfiguration` moves the pointer and nothing else.
+     *
+     * @param store the setup's store
+     * @param typed the name typed at the prompt, or null or blank for none
+     * @param suggested the name to use where none was typed
+     * @return the configuration now in use
+     * @throws java.io.IOException where a configuration of that name cannot be created
+     */
+    static String activateTheConfigurationNamed(AutonomyCompanionStore store, String typed, String suggested)
+        throws java.io.IOException
+    {
+        String name = typed == null || typed.trim().isEmpty() ? suggested : typed.trim();
+
+        if (!store.getConfigurationNames().contains(name)) store.createConfiguration(name, null);
+
+        store.setActiveConfiguration(name);
+
+        return name;
+    }
+
+    /**
      * Reads an old autonomy.json onto the squares carrying the same sensors.
      *
      * Reached from the one Import action, which works out what the file is - so this takes the parsed
@@ -1131,28 +1157,24 @@ public class AutonomyViewerPanel extends JPanel
         // dropped: the dialog still reported everything it had matched, because matching is what it
         // counts, and the setup then would not open.
         //
-        // Created only when there is genuinely nothing. A layout that already has configurations
-        // keeps importing into the one in use, which is what somebody importing onto an existing
-        // railway means by it - and is the behaviour that has been in use.
+        // INTO THE CONFIGURATION NAMED AT THE PROMPT (Adam, 2026-09-25, asked whether to honour the name typed or stop
+        // asking for one: *"(a)"*).  A layout that already had configurations kept importing into the one in use, so the
+        // name the door had just asked for - and warned about replacing - was thrown away, and the old file's placements,
+        // homes and facings went into the configuration the operator was running.  Now the one named is created where it
+        // does not exist, and made the one in use; the others are left as they were.
         try
         {
-            if (session().getStore().getConfigurationNames().isEmpty())
-            {
-                // suggestedConfigurationName, not the bundle key directly: that value is
-                // "Autonomy {0}" and asking for it with I18n.t would put the placeholder on screen
-                // as the configuration's NAME.  The helper fills it with the next free number and
-                // avoids a name already in use, which createConfiguration refuses.
-                String created = name == null || name.trim().isEmpty()
-                    ? suggestedConfigurationName() : name.trim();
-
-                session().getStore().createConfiguration(created, null);
-                session().getStore().setActiveConfiguration(created);
-            }
+            // suggestedConfigurationName, not the bundle key directly: that value is "Autonomy {0}" and asking for it
+            // with I18n.t would put the placeholder on screen as the configuration's NAME.
+            activateTheConfigurationNamed(session().getStore(), name, suggestedConfigurationName());
         }
         catch (java.io.IOException e)
         {
-            JOptionPane.showMessageDialog(ui,
-                I18n.f("autosetup.ui.errorImportUnreadable", String.valueOf(e.getMessage())));
+            // A NAME IN USE IS NOT AN UNREADABLE FILE (GSP-B1): a configuration file of that name already sits beside
+            // the setup.
+            JOptionPane.showMessageDialog(ui, AutonomyCompanionStore.ERROR_NAME_IN_USE.equals(e.getMessage())
+                ? I18n.f("autosetup.ui.errorNameInUse", name == null ? "" : name.trim())
+                : I18n.f("autosetup.ui.errorImportUnreadable", String.valueOf(e.getMessage())));
 
             return;
         }
