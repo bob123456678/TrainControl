@@ -2188,6 +2188,67 @@ public class testMassAssignLengths
         assertTrue(session.stationsWithAHalfMeasuredApproach().containsKey(berth), "a berth taking trains of 3, with 1"
             + " measured before a crossing, is not warned about - the count ran on past the crossing and counted the 3"
             + " beyond it, and the berth rule refuses a three-unit train at the crossing");
+
+        // AND ONLY THE SQUARES BEFORE IT ARE COUNTED (TDA2-C6): the crossing, the switch and 2,1 have no length either,
+        // and measuring them changes nothing - the rule has refused by then.
+        assertEquals(session.stationsWithAHalfMeasuredApproach().get(berth), Integer.valueOf(1), "the half-measured"
+            + " notice counts squares beyond the crossing, which the operator would measure for nothing - only 6,1 lies"
+            + " between the berth and it");
+    }
+
+    /**
+     * A parking berth's run-in notice stops where the berth rule does, at a crossing as well as at a switch (TDA2-C6).
+     *
+     * `runInsShorterThanTheBerth` quoted the room back to the switch - the room rule's number - and the berth rule refuses
+     * earlier, as soon as the train it spends reaches the crossing's square, which is another road's.  With every square
+     * measured and 2 of them before the crossing, a berth set to take a train of 3 refuses that train, and neither
+     * notice said so: nothing was unmeasured, and 6 of room to the switch is not short of 3.  A platform autonomy may
+     * choose is not judged by the berth rule, and keeps the room rule's number.
+     *
+     * MUTATION: take the room to the switch alone again, and this fails.
+     *
+     * @throws Exception from the fixture or the reflection
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testTheRunInNoticeStopsAtACrossingForABerth() throws Exception
+    {
+        openBerthBehindACrossing();
+
+        TileKey berth = key(7, 1);
+
+        // EVERY SQUARE MEASURED: 1 and 1 before the crossing, and 1, 3, 1 and 1 from it back to 2,1.
+        session.setTileLength(berth, 1);
+        session.setTileLength(key(6, 1), 1);
+        session.setTileLength(key(5, 1), 1);
+        session.setTileLength(key(4, 1), 3);
+        session.setTileLength(key(3, 1), 1);
+        session.setTileLength(key(2, 1), 1);
+        session.setPointProperty(berth, "maxTrainLength", 3);
+        session.rebuild();
+
+        java.lang.reflect.Method runIns = org.traincontrol.automationui.AutonomySession.class.getDeclaredMethod(
+            "runInsShorterThanTheBerth");
+
+        runIns.setAccessible(true);
+
+        assertFalse(session.stationsWithAHalfMeasuredApproach().containsKey(berth), "precondition: every square is"
+            + " measured, and the berth is warned about as half measured");
+
+        java.util.Map<TileKey, int[]> said = (java.util.Map<TileKey, int[]>) runIns.invoke(session);
+
+        assertTrue(said.containsKey(berth) && said.get(berth)[1] == 2, "a berth set to take a train of 3, with 2 measured"
+            + " before a crossing, is not warned that a train longer than 2 is refused - the berth rule refuses it at the"
+            + " crossing: " + (said.containsKey(berth) ? Arrays.toString(said.get(berth)) : "no entry"));
+
+        // THE CONTROL: a platform autonomy may choose is judged by the room rule alone, back to the switch - 6.
+        session.setAutoDestination(berth, true);
+        session.rebuild();
+
+        said = (java.util.Map<TileKey, int[]>) runIns.invoke(session);
+
+        assertFalse(said.containsKey(berth), "control: a platform autonomy may choose, with 6 of room to the switch, is"
+            + " warned that a train of 3 is refused - the berth rule does not judge it");
     }
 
     /** The same run with a permanent turnout, or a switch, at 3,1, and the berth where asked. */
