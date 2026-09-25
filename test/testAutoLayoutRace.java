@@ -220,6 +220,52 @@ public class testAutoLayoutRace
     }
 
     /**
+     * A wait for a sensor ends when the sensor is recorded as reached.
+     *
+     * The test above moved updatePendingS88 off the layout monitor and onto its own; the wait in
+     * waitForS88Reached had to move with it, because a wait on one monitor is woken only by a notify
+     * on that same monitor.  The test above never waits, so half of that move could be undone without
+     * it noticing - and then a route whose condition is "locomotive X has reached sensor N" parks its
+     * monitor thread for ever and silently stops firing (BPV-C5).
+     */
+    @Test
+    public void testAWaitForASensorEndsWhenTheSensorIsReached() throws Exception
+    {
+        final Layout layout = model.getAutoLayout();
+        final Locomotive loc = model.getLocByName("Race loc A");
+
+        final AtomicBoolean returned = new AtomicBoolean(false);
+
+        pendingS88(layout, loc, "Race sensor");
+
+        // What a route's condition does: wait while the locomotive is still on its way to the sensor
+        Thread waiter = new Thread(() ->
+        {
+            layout.waitForS88Reached(loc, "Race sensor");
+            returned.set(true);
+        }, "waiting-for-a-sensor");
+
+        // A regression here is a thread waiting for ever; it must not keep the test JVM alive too
+        waiter.setDaemon(true);
+        waiter.start();
+
+        Thread.sleep(300);
+
+        assertFalse(returned.get(), "precondition: the wait ended before the sensor was reached, so "
+            + "nothing was waited for");
+
+        // What the driving loop does when the train reaches it
+        pendingS88(layout, loc, null);
+
+        waiter.join(1000);
+
+        assertTrue(returned.get(),
+            "a wait for a sensor did not end when the sensor was reached - it waits on a different "
+            + "monitor from the one the update notifies, so a route waiting for a locomotive to reach "
+            + "a sensor never fires again");
+    }
+
+    /**
      * updatePendingS88 is private - it is bookkeeping, and nothing outside the driving loop has any
      * business calling it.  Reached by reflection rather than by widening it.
      */
