@@ -205,6 +205,69 @@ public class testALocomotiveDoesNotEvictItself
         }
     }
 
+    /**
+     * A saved layout in which a multi-unit's head and one of its members both stand is loaded with only one of them
+     * standing: the member is part of the head's train, and one train cannot stand in two places.
+     *
+     * The loader's half of BPV-A1's fix.  The edit doors now sweep only for a train that stands on the graph; the loader
+     * asks the sweep before each train is put down, so it must keep asking regardless - or both would load standing.
+     *
+     * MUTATION: have the loader ask the edit doors' sweep, which skips a train not yet down, and this fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testALoadedLayoutDoesNotStandAHeadAndItsMemberBoth() throws Exception
+    {
+        MarklinLocomotive head = model.newMM2Locomotive(HEAD, HEAD_ADDRESS);
+        MarklinLocomotive member = model.newMM2Locomotive(MEMBER, MEMBER_ADDRESS);
+
+        try
+        {
+            java.util.Map<String, Double> consist = new java.util.HashMap<>();
+
+            consist.put(MEMBER, 1.0);
+
+            assertEquals(head.setLinkedLocomotives(consist), 1, "precondition: the member could not be linked to the head");
+
+            Layout layout = new Layout(model);
+
+            MarklinFeedback first = model.newFeedback(8394, null);
+            MarklinFeedback second = model.newFeedback(8395, null);
+
+            model.setFeedbackState(first.getName(), false);
+            model.setFeedbackState(second.getName(), false);
+
+            layout.createPoint("MU C", true, first.getName());
+            layout.createPoint("MU D", true, second.getName());
+            layout.createEdge("MU C", "MU D");
+
+            // BOTH STANDING, as a file written by hand, or by an older build, can have them.
+            layout.getPoint("MU C").setLocomotive(head);
+            layout.getPoint("MU D").setLocomotive(member);
+
+            layout.setDefaultLocSpeed(30);
+
+            Layout loaded = Layout.fromJSON(layout.toJSON(), model);
+
+            assertTrue(loaded.isValid(), "precondition: the saved layout does not load: " + loaded.getInvalidReason());
+
+            boolean headStands = loaded.getLocomotiveLocation(head) != null;
+            boolean memberStands = loaded.getLocomotiveLocation(member) != null;
+
+            assertTrue(headStands || memberStands, "precondition: the load placed neither train, so it says nothing about"
+                + " the two of them");
+
+            assertFalse(headStands && memberStands, "a saved layout loaded with a multi-unit's head and one of its members"
+                + " both standing - one train in two places");
+        }
+        finally
+        {
+            try { model.deleteLoc(MEMBER); } catch (Exception ignored) { }
+            try { model.deleteLoc(HEAD); } catch (Exception ignored) { }
+        }
+    }
+
     private static final String HEAD = "SM head";
     private static final String MEMBER = "SM member";
     private static final String MEMBER_RENAMED = "SM member renamed";
