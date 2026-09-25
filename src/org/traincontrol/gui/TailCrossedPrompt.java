@@ -577,10 +577,19 @@ public class TailCrossedPrompt
 
         if (pick != null) return pick.clicked(label);
 
-        return clickCount > 1 && label != null && label == answeredBy;
+        // ONE DOUBLE-CLICK'S WORTH, then put down (TDU2-C1): the next click on anything ends it, so a later double-click
+        // on the same sensor flips it and flips it back, as a double-click on a sensor always has.
+        LayoutLabel answered = answeredBy;
+
+        answeredBy = null;
+
+        return clickCount > 1 && label != null && label == answered;
     }
 
-    /** The tile whose click last answered a question, for the rest of its double-click (TDU-B3). */
+    /**
+     * The tile whose click last answered a question, for the rest of that one double-click (TDU-B3) - cleared by the next
+     * click on any sensor (TDU2-C1).
+     */
     private static volatile LayoutLabel answeredBy;
 
     /**
