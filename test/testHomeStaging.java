@@ -1527,6 +1527,40 @@ public class testHomeStaging
             + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
     }
 
+    /**
+     * HS A and HS B stations, HS P between them and HS C off HS P as a siding, each edge both ways.
+     * LOC_A stands on HS B, and LOC_B on HS P - which is not a station unless asked for, and is
+     * HS charlie's home, so LOC_B cannot claim it and has no home at all.
+     */
+    private static String blockerOnNonStation(boolean pIsAStation)
+    {
+        String p = station("HS P", 1, LOC_B);
+
+        // Rewritten rather than built by hand, and asserted, so a change to the station fixture cannot
+        // silently drop the assignment or leave HS P a station
+        assertTrue(p.endsWith("}"), "station JSON shape changed: " + p);
+
+        p = p.substring(0, p.length() - 1) + ", 'home': '" + LOC_C + "'}";
+
+        if (!pIsAStation)
+        {
+            assertTrue(p.contains("'station': true"), "station JSON shape changed: " + p);
+
+            p = p.replace("'station': true", "'station': false");
+        }
+
+        return json("{'points': ["
+            + station("HS A", 0, null) + ","
+            + p + ","
+            + station("HS B", 2, LOC_A) + ","
+            + station("HS C", 3, null)
+            + "],'edges': ["
+            + edge("HS A", "HS P") + "," + edge("HS P", "HS A") + ","
+            + edge("HS P", "HS B") + "," + edge("HS B", "HS P") + ","
+            + edge("HS P", "HS C") + "," + edge("HS C", "HS P")
+            + "],'minDelay': 0,'maxDelay': 0,'defaultLocSpeed': 30}");
+    }
+
     /** Assigns homes directly, which is clearer here than rewriting fixture JSON per case. */
     private static void assign(Layout layout, String locName, String stationName) throws Exception
     {
@@ -1951,6 +1985,66 @@ public class testHomeStaging
             "the same train, the same point, the same empty home one edge away - and the only "
             + "difference is whether the point is a station.  If this fails the fixture is wrong "
             + "and the assertions above prove nothing: " + ordinary);
+    }
+
+    /**
+     * A train standing on a point that is not a station is not moved out of the way either.
+     *
+     * The pre-scan the test above pins refuses a HOMED train standing on such a point, before any
+     * search.  But the search can also move a train that has no home, to clear the way for one that
+     * has, and every move it plans must depart from a station for the same runtime rule - or the leg
+     * is refused at run time and the whole run abandoned, exactly as above.  firstClearRoute's own
+     * station test is what stops that, and the test above never reaches it (BPV-C2).
+     *
+     * HS bravo stands on HS P, which is not a station and is already spoken for as HS charlie's home,
+     * so bravo has no home of its own.  HS alpha's only way home runs through HS P.  The control is
+     * the same graph with HS P a station, where moving bravo aside to HS C is the plan.
+     */
+    @Test
+    public void testATrainOnANonStationIsNotMovedOutOfTheWay() throws Exception
+    {
+        Layout layout = load(blockerOnNonStation(false));
+
+        assertFalse(layout.getPoint("HS P").isDestination(),
+            "precondition: HS P is not a station, which is the whole case");
+
+        assertEquals(layout.getPoint("HS P").getCurrentLocomotive(), loc(LOC_B),
+            "precondition: the blocking train is standing on HS P");
+
+        assertNull(layout.getHomeStation(loc(LOC_B)),
+            "precondition: the blocking train has no home - a homed one is refused by the pre-scan "
+            + "before any search, which is the test above");
+
+        assign(layout, LOC_A, "HS A");
+
+        HomeStaging.Plan plan = HomeStaging.snapshot(layout).plan();
+
+        for (HomeStaging.Move move : plan.getMoves())
+        {
+            assertTrue(move.getPath().get(0).getStart().isDestination(),
+                "the plan moves " + move + " off " + move.getPath().get(0).getStart().getName()
+                + ", which is not a station - the runtime refuses that leg while autonomy runs, and the "
+                + "whole Return Home run is abandoned with every train stopped");
+        }
+
+        assertFalse(plan.isPossible(),
+            "HS alpha can only get home if the train on HS P moves, and it cannot: " + plan.getOutcome()
+            + " " + plan.getMoves());
+
+        // The control.  One flag different, and moving bravo aside is the plan.
+        Layout station = load(blockerOnNonStation(true));
+
+        assertTrue(station.getPoint("HS P").isDestination(),
+            "the control did not take: HS P has to be a station in this one");
+
+        assign(station, LOC_A, "HS A");
+
+        HomeStaging.Plan ordinary = HomeStaging.snapshot(station).plan();
+
+        assertTrue(ordinary.isPossible(),
+            "the same trains in the same places, and the only difference is whether HS P is a "
+            + "station.  If this fails the fixture is wrong and the assertions above prove nothing: "
+            + ordinary.getOutcome());
     }
 
     /**

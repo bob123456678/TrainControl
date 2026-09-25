@@ -138,6 +138,89 @@ public class testStagingSkipsALegWithNoSpeed
             + "path stayed blocked - because one locomotive had no speed set");
     }
 
+    /**
+     * And when the leg with no speed comes FIRST, the leg after it still runs.
+     *
+     * A Return Home run starts each leg only once the leg before it has started - its execution time
+     * is set.  A skipped leg never starts, so the skip stamps it; without the stamp the next leg waits
+     * for ever for a train that will never set off, and the run hangs with Start greyed until a
+     * restart.  The test above plans the leg with no speed LAST, where nothing waits on it, so it
+     * cannot see a missing stamp (BPV-C2).  Here the train with no speed stands where its leg is
+     * planned first.
+     *
+     * ON A DEADLINE, as above.
+     */
+    @Test(timeOut = 90000)
+    public void testAnEntryWithNoSpeedPlannedFirstDoesNotHoldUpTheNext() throws Exception
+    {
+        Layout layout = load(ring(LOC_MOVING, null, LOC_STUCK));
+
+        try
+        {
+            layout.setSimulate(true);
+        }
+        catch (Exception e)
+        {
+            throw new SkipException("simulation could not be enabled: " + e.getMessage());
+        }
+
+        assertTrue(layout.isSimulate(), "simulation must be on before anything is asked to move");
+
+        // Each train is one station away from the home it is given
+        layout.setHomeLocomotive("SG B", LOC_MOVING);
+        layout.setHomeLocomotive("SG D", LOC_STUCK);
+
+        loc(LOC_MOVING).setPreferredSpeed(35);
+        loc(LOC_STUCK).setPreferredSpeed(0);
+
+        HomeStaging.Plan plan = layout.loadReturnToHomeTimetable();
+
+        assertTrue(plan.isPossible(), "precondition: Return Home must have a plan: " + plan.getOutcome());
+
+        List<TimetablePath> legs = layout.getTimetable();
+
+        assertEquals(legs.size(), 2, "precondition: one leg for each train: " + legs);
+
+        assertEquals(legs.get(0).getLoc(), loc(LOC_STUCK),
+            "precondition: the leg with no speed has to be planned first, which is the case where the "
+            + "next leg waits on its stamp - the plan's order changed, and this no longer tests it: "
+            + legs);
+
+        final boolean[] ranToTheEnd = new boolean[1];
+        final Throwable[] thrown = new Throwable[1];
+
+        Thread run = new Thread(() ->
+        {
+            try
+            {
+                ranToTheEnd[0] = layout.executeTimetable();
+            }
+            catch (Throwable bad)
+            {
+                thrown[0] = bad;
+            }
+        });
+
+        run.start();
+        run.join(30000);
+
+        assertFalse(run.isAlive(),
+            "the Return Home run did not finish in thirty seconds - the leg after the one with no "
+            + "speed is waiting for that leg to start, which it never will");
+
+        if (thrown[0] != null) throw new RuntimeException(thrown[0]);
+
+        assertEquals(layout.getLocomotiveLocation(loc(LOC_MOVING)).getName(), "SG B",
+            "the train with a speed never got home: the leg with no speed, planned first, held up the "
+            + "one after it");
+
+        assertEquals(layout.getLocomotiveLocation(loc(LOC_STUCK)).getName(), "SG C",
+            "the locomotive with no speed moved, which it must not - a skip is not a dispatch");
+
+        assertTrue(ranToTheEnd[0],
+            "the run reported itself abandoned because one locomotive had no speed set");
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Fixtures
     // ---------------------------------------------------------------------------------------------
