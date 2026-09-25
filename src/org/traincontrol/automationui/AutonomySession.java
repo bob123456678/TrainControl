@@ -3306,8 +3306,9 @@ public class AutonomySession
                 // barred side, because nothing stops there; this one does not.
                 anApproachExists = true;
 
-                // AN ANSWERED 0 IS NOT MISSING (Adam, 2026-09-23: "stop listing answered zeros as missing").  The
-                // guard still reads it as nothing; the operator has answered it, so it is not asked for again.
+                // AN ANSWERED 0 IS NOT MISSING (Adam, 2026-09-23: "stop listing answered zeros as missing").  It is
+                // measured track of no length (Adam, 2026-09-25), and the operator has answered it, so it is not asked for
+                // again.
                 for (TileKey unmeasured : reducer.unmeasuredAfterTheLastSwitch(arriving))
                 {
                     if (!store.isTileLengthAnswered(unmeasured)) missing.add(unmeasured);
@@ -3575,8 +3576,9 @@ public class AutonomySession
     }
 
     /**
-     * The least whole length a piece can be given: 0 since OB-274, where a deliberate 0 is an answer that reads as
-     * unmeasured.  It was one unit, on the reading that 0 is the same as no length at all.
+     * The least whole length a piece can be given: 0 since OB-274, where a deliberate 0 is an answer - measured track of
+     * no length since Adam's answer of 2026-09-25.  It was one unit, on the reading that 0 is the same as no length at
+     * all.
      *
      * @param stretch the piece
      * @return the least whole length `assignStretchLength` accepts; a piece that already has a length, what it holds
@@ -3613,8 +3615,7 @@ public class AutonomySession
         if (stretch == null || wholeLength < 0 || measuredIn(stretch) > 0) return false;
 
         // A DELIBERATE 0 IS AN ANSWER (OB-274): every square of the piece is recorded as answered, so the walk does
-        // not offer it again, and every length rule but the Atomic Routes gate and its escape (TDU-C6) goes on reading it
-        // as unmeasured.
+        // not offer it again, and every length rule reads it as measured track of no length (TDU-C6; Adam, 2026-09-25).
         if (wholeLength == 0)
         {
             for (TileKey tile : stretch.getTiles()) store.answerTileLengthZero(tile);
@@ -3667,8 +3668,8 @@ public class AutonomySession
         {
             if (store.getTileLength(tile) > 0) continue;
 
-            // 0 ANSWERS IT (OB-274) - two switches back to back are his adjacent tracks - and reads as unmeasured to every
-            // length rule but the Atomic Routes gate and its escape (TDU-C6).
+            // 0 ANSWERS IT (OB-274) - two switches back to back are his adjacent tracks - and every length rule reads it as
+            // measured track of no length (TDU-C6; Adam, 2026-09-25).
             if (length == 0)
             {
                 if (store.isTileLengthAnswered(tile)) continue;
@@ -8645,8 +8646,8 @@ public class AutonomySession
      * Answers these squares 0 on purpose, replacing any length they had, and re-derives once (Adam, 2026-09-23).
      *
      * What Segment Length's 0 means since *"no, add a clear button"*: a 0 typed there is the same answer a 0 in Mass
-     * Assign Lengths is (OB-274) - kept, not offered again, and read as unmeasured by every length rule but the Atomic
-     * Routes gate and its escape (TDU-C6).  Clearing a length is
+     * Assign Lengths is (OB-274) - kept, not offered again, and read by every length rule as measured track of no length
+     * (TDU-C6; Adam, 2026-09-25).  Clearing a length is
      * `setTileLength(tile, 0)`, which removes the answer as well.
      *
      * @param tiles the squares
@@ -9680,14 +9681,23 @@ public class AutonomySession
      */
     private boolean anythingMeasuredOn(java.util.List<TileKey> squares)
     {
+        // AND A LEG ANSWERED 0 THROUGHOUT IS MEASURED, at no length - the berth rule judges it (`Edge.isMeasured`; Adam,
+        // 2026-09-25), so an approach he answered 0 end to end is warned about as one given no room.
+        boolean anySquare = false;
+        boolean answeredThroughout = true;
+
         for (TileKey tile : squares)
         {
             if (getGraph() != null && takesNoLength(tile)) continue;
 
+            anySquare = true;
+
             if (store.getTileLength(tile) > 0) return true;
+
+            if (!store.isTileLengthAnswered(tile)) answeredThroughout = false;
         }
 
-        return false;
+        return anySquare && answeredThroughout;
     }
 
     /**
@@ -10027,7 +10037,8 @@ public class AutonomySession
      * train, so it gives no figure and hides none.
      *
      * **The route in, walked back as the railway runs it** (`routesIn`): over sensors nobody is started at, to a copy a
-     * train is started at or turns at; stopped at a leg with no length (ADA-A1); never through or into a point that is
+     * train is started at or turns at; stopped at a leg nobody measured, and on past one answered 0 throughout, adding
+     * nothing (Adam, 2026-09-25); never through or into a point that is
      * switched off, though from a station switched off round a train standing there; and never from or through another
      * copy of the platform's own square (ADA2-C3).
      *
@@ -10136,6 +10147,27 @@ public class AutonomySession
     }
 
     /**
+     * Whether a built leg was answered 0 on purpose at every place - measured track of no length, as `Edge.isMeasured`
+     * reads the same leg on the railway (Adam, 2026-09-25).
+     *
+     * @param leg the built leg
+     * @return true when it has places and every one is answered
+     */
+    private static boolean answeredThroughout(org.json.JSONObject leg)
+    {
+        org.json.JSONArray places = leg.optJSONArray("places");
+
+        if (places == null || places.length() == 0) return false;
+
+        for (int i = 0; i < places.length(); i++)
+        {
+            if (!places.getJSONObject(i).optBoolean("answered", false)) return false;
+        }
+
+        return true;
+    }
+
+    /**
      * The least the route in counts for a train coming along each built leg towards this platform -
      * `Layout.measuredRouteIn` over every way the railway can run it - for the legs a train can come along (TDA-C10).
      *
@@ -10144,7 +10176,8 @@ public class AutonomySession
      * platform whose way in ran back through it lost its figure or took a larger one (ADA2-C3).
      *
      * - From a copy a train is started at or turns at, the leg alone: the route in stops there.
-     * - A leg with no length ends the route in, so nothing behind it counts (ADA-A1): 0.
+     * - A leg nobody measured ends the route in, so nothing behind it counts: 0.  One answered 0 throughout is measured
+     *   track of no length (`answeredThroughout`, as `Edge.isMeasured` asks it), and is passed like any other.
      * - Otherwise the leg and the least way into where it starts.
      *
      * Only from where a train can be got to at all without passing the platform, and never from or through another copy
@@ -10212,7 +10245,7 @@ public class AutonomySession
 
                 Integer least;
 
-                if (length <= 0)
+                if (length <= 0 && !answeredThroughout(leg))
                 {
                     least = 0;
                 }

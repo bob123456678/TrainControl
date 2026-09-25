@@ -425,7 +425,7 @@ public class Edge
     /**
      * The places answered 0 on purpose (Adam, 2026-09-23: *"stop listing answered zeros as missing"*).
      *
-     * They measure 0 and every rule reads them as unmeasured - the walk still claims them for nothing - but a refusal
+     * They measure 0 - track of no length, which a leg answered throughout is measured as (`isMeasured`) - and a refusal
      * that counts the squares with no length leaves them out: the operator has already answered them.
      */
     private java.util.Set<String> answeredPlaces = Collections.emptySet();
@@ -490,15 +490,18 @@ public class Edge
     }
 
     /**
-     * Whether this edge is measured: it has a length, or every place on it was answered 0 on purpose (Adam, 2026-09-24,
-     * TDU-C6: *"0 lengths count as measures, so non-atomic should be allowed"*).
+     * Whether this edge is measured: it has a length, or every place on it was answered 0 on purpose - measured track of
+     * no length (Adam, 2026-09-24, TDU-C6: *"0 lengths count as measures, so non-atomic should be allowed"*; and Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*).
      *
-     * Asked by the Atomic Routes gate (`Layout.unmeasuredTrackThatCouldBeReleased`) and the release escape it stands for
-     * (`Layout.pathIsUnmeasured`), and by nothing else: the two must ask one question, or the gate lets through a railway
-     * the escape then releases under a train.  Every other length rule - the room walk, the route in, the tail walks and
-     * the tail question - reads an answered 0 as a stretch nobody measured (OB-274, confirmed by Adam on 2026-09-23); the
-     * route in went further for a while and admitted a train whose tail the standing walk never claims (ADA-A1).  Without
-     * places, which a hand-written configuration has none of, only a length says so.
+     * **The one question every length rule asks** of a leg with no length: the Atomic Routes gate
+     * (`Layout.unmeasuredTrackThatCouldBeReleased`) and the release escape it stands for (`Layout.pathIsUnmeasured`), the
+     * route in, the room walk, the walk that claims a standing train's tail, the berth rule and the tail question.  An
+     * answered leg is counted, adding nothing, and walked on over; a leg nobody answered still ends each of them.  They
+     * ask it together because they must agree: a route in that counted on past an answered 0 while the tail walk stopped
+     * there admitted a train whose tail lay on track nothing claimed (ADA-A1, before the tail walk asked it too).  Every
+     * place must be answered - a square nobody answered, a switch or crossing on it included, leaves the leg unmeasured,
+     * as Mass Assign Lengths still asks for it.  Without places, which a hand-written configuration has none of, only a
+     * length says so.
      *
      * @return true when the edge is measured
      */

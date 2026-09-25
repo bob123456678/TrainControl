@@ -287,8 +287,8 @@ public class GraphReducer
         int getTileLength(TileKey tile);
 
         /**
-         * Whether this tile's 0 was answered on purpose (OB-274) - read as unmeasured by every length rule but the
-         * Atomic Routes gate and its escape (TDU-C6), and not listed as missing (Adam, 2026-09-23).
+         * Whether this tile's 0 was answered on purpose (OB-274) - measured track of no length to every length rule
+         * (TDU-C6; Adam, 2026-09-25), and not listed as missing (Adam, 2026-09-23).
          *
          * @param tile the square
          * @return true when its length was answered 0; false by default
@@ -1243,9 +1243,9 @@ public class GraphReducer
      *
      * @param path the tiles between the two Points, endpoints excluded
      * @param end the square the edge arrives at, whose own length is part of the room
-     * @return the measured room, `-1` when a tile in that stretch has no length, or
-     *  `Integer.MIN_VALUE` when this edge crosses no switch at all; `-1` when it crosses one and NOT
-     *  ONE tile of the stretch is measured, which is the only case that is genuinely no information
+     * @return the measured room, or `Integer.MIN_VALUE` when this edge crosses no switch at all; `-1` when it crosses one
+     *  and NOT ONE tile of the stretch is measured, which is the only case that is genuinely no information - and 0, not
+     *  `-1`, where every one was answered 0 on purpose, which is a room of no length (Adam, 2026-09-25)
      */
     private int roomAfterTheLastSwitch(List<TileStep> path, TileKey end)
     {
@@ -1274,6 +1274,10 @@ public class GraphReducer
 
         int room = Math.max(0, atTheEnd);
 
+        // AND WHETHER EVERY TILE IS KNOWN - a length, or a 0 answered on purpose.  A stretch answered 0 throughout is a
+        // room of 0, not no information (Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*); the runtime's room walk reads it so.
+        boolean known = atTheEnd > 0 || answeredAtZero(end);
+
         for (int i = path.size() - 1; i >= 0; i--)
         {
             TileKey tile = path.get(i).getTile();
@@ -1282,12 +1286,13 @@ public class GraphReducer
 
             if (boundsTheRoom(component))
             {
-                return room > 0 ? room : -1;
+                return room > 0 ? room : known ? 0 : -1;
             }
 
             int here = authored.getTileLength(tile);
 
             if (here > 0) room += here;
+            else if (!answeredAtZero(tile)) known = false;
         }
 
         return Integer.MIN_VALUE;

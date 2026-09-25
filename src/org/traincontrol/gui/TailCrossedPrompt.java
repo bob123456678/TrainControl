@@ -1006,7 +1006,10 @@ public class TailCrossedPrompt
         // CROSSED WHEN THE TRAIN REACHES IT (OB-226).  Adam, MT-435, 2026-09-15: *"When 75 407 DB is set to length 3, only
         // BottomMainAPre is offered (2 away from the station), but Tunnel should also be offered since it is 3 away."*
         // A train exactly as long as the track to a sensor has its tail at that sensor, and it is offered.
-        int beyond = hop.getLength() <= 0 ? -1 : left - hop.getLength();
+        //
+        // AN ANSWERED 0 IS WALKED ON (Adam, 2026-09-25): measured track of no length, so a tail reaching its near end has
+        // reached its far end too, as the walk that claims the tail has it (`Edge.isMeasured`).
+        int beyond = !hop.isMeasured() ? -1 : left - Math.max(0, hop.getLength());
 
         if (beyond < 0)
         {
@@ -1149,7 +1152,7 @@ public class TailCrossedPrompt
     {
         Set<String> covered = new LinkedHashSet<>();
 
-        if (rail.getLength() <= 0) return covered;
+        if (!rail.isMeasured()) return covered;
 
         List<String> ids = rail.getPlaceIds();
         List<Integer> spans = rail.getPlaceLengths();

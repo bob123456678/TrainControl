@@ -7737,7 +7737,9 @@ public class Layout
             }
 
             // THE MEASUREMENT RULE.  Nothing can be said about an unmeasured segment, including
-            // how much of the train would still be left after it.
+            // how much of the train would still be left after it.  One answered 0 throughout is measured, at no
+            // length (Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*): it is claimed, costs nothing, and the walk goes on
+            // behind it - which is what lets the route in count past it (`Edge.isMeasured`).
             //
             // `getLength()` is the path PLUS the square the edge arrives at, and on the first hop
             // that square is the one the train stands on - which is track, and counts (OB-278).  A
@@ -7745,7 +7747,7 @@ public class Layout
             // a train that fits on the berth is spent there and claims nothing behind, and one
             // longer than it claims the unmeasured squares behind for nothing, which is the
             // refusing side `whyABerthCannotHoldIt` takes on the same approach.
-            if (segment.getLength() <= 0) break;
+            if (segment.getLength() <= 0 && !segment.isMeasured()) break;
 
             // BOTH DIRECTIONS OF THE SAME RAIL (VAL8-A1, REG7-B3).
             //
@@ -9238,8 +9240,8 @@ public class Layout
      *
      * Read from the platform end, as the walk reads an arriving rail: a place is claimed before its length is spent, so
      * a tail that just reaches the switch claims it.  Rails over the same squares - two copies of one neighbour - are
-     * one road, not a fork, and an unmeasured rail says nothing, as the walk's measurement rule has it: both leave the
-     * walk to its ordinary course.
+     * one road, not a fork, and an unmeasured rail says nothing, as the walk's measurement rule has it - one answered 0
+     * throughout is measured (Adam, 2026-09-25): both leave the walk to its ordinary course.
      *
      * @param rails the rails arriving at the platform by the recorded side
      * @param loc the train
@@ -9258,7 +9260,7 @@ public class Layout
         {
             List<String> ids = rail.getPlaceIds();
 
-            if (ids.isEmpty() || ids.size() != rail.getPlaceLengths().size() || rail.getLength() <= 0) return false;
+            if (ids.isEmpty() || ids.size() != rail.getPlaceLengths().size() || !rail.isMeasured()) return false;
 
             roads.add(ids);
         }
@@ -10083,9 +10085,9 @@ public class Layout
      * BottomMainA should be allowed at length 3, since it is not a parking spot, the station allows the length, and the
      * length would be tracked?"*  Asked how far that reaches, he chose the route: the train is accepted if the measured
      * track of the route it drives in on, counted back from the station without a gap, holds it - its tail lies on that
-     * route, a driven train's road is kept (WK7-B1), and the track under it is claimed.  A leg with no length ends the
-     * count - one answered 0 as well, as every walk but the Atomic Routes gate reads it (OB-274, ADA-A1) - so a tail that
-     * would reach track nothing has measured is still refused.  What follows is the method as it was
+     * route, a driven train's road is kept (WK7-B1), and the track under it is claimed.  A leg nobody measured ends the
+     * count - one answered 0 throughout is counted, adding nothing (Adam, 2026-09-25) - so a tail that would reach track
+     * nothing has measured is still refused.  What follows is the method as it was
      * written for the approach.
      *
      * **Adam's relaxation of 2026-09-12, and the reason it is a method rather than a line.**  On a
@@ -10132,9 +10134,9 @@ public class Layout
     /**
      * How much measured track the route in holds, counted back from where it ends (FR-087).
      *
-     * Leg by leg while each has a length - a leg answered 0 on purpose ends it as one nobody measured does (OB-274): the
-     * walk that claims a standing train's tail stops there too, so a count carried on past it admitted a train whose tail
-     * lay on track nothing claims (ADA-A1, ADD-B1; TDU-C6's 0 reaches only the Atomic Routes gate and its escape) - and
+     * Leg by leg while each is measured - a leg nobody measured ends it; one answered 0 on purpose throughout is measured
+     * track of no length and is counted, adding nothing (Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*), as the walk that claims a standing train's
+     * tail walks on over it, so what this admits is claimed (`Edge.isMeasured`; ADA-A1 was the two disagreeing) - and
      * never back past a square the train turns at - Adam, 2026-09-11: the berth
      * is *"measured back to whichever of the last switch and the reversal is met first"*, and a train that changed
      * direction on the way does not lie back over the track it drove before the turn.  The same test
@@ -10159,9 +10161,9 @@ public class Layout
 
             int leg = path.get(i).getLength();
 
-            if (leg <= 0) break;
+            if (leg <= 0 && !path.get(i).isMeasured()) break;
 
-            held += leg;
+            held += Math.max(0, leg);
         }
 
         return held;
@@ -10261,7 +10263,18 @@ public class Layout
             if (span != null && span > 0) anyMeasured = true;
         }
 
-        if (!anyMeasured) return null;
+        // AND AN APPROACH ANSWERED 0 THROUGHOUT IS KNOWN, at no length (Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*): the walk
+        // claims it all for nothing and refuses where it reaches another road.  What the operator answered is no absence
+        // of information, and the room walk and the route in read it the same way (`Edge.isMeasured` - asked here of the
+        // places this walks, every one answered, as its second half asks it).
+        boolean answeredThroughout = true;
+
+        for (String id : ids)
+        {
+            if (!approach.isPlaceAnswered(id)) answeredThroughout = false;
+        }
+
+        if (!anyMeasured && !answeredThroughout) return null;
 
         Set<String> claimed = new LinkedHashSet<>();
 
@@ -10876,6 +10889,10 @@ public class Layout
         // whose earlier half is unmeasured is now judgeable where it was not.
         int room = 0;
 
+        // WHETHER ANY MEASURED TRACK WAS COUNTED - a room of 0 answered on purpose is a room, not an unknown (Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*).
+        // Until then `room > 0` stood for it, which was the same thing while only a length measured anything.
+        boolean counted = false;
+
         for (int i = path.size() - 1; i >= 0; i--)
         {
             Edge segment = path.get(i);
@@ -10916,7 +10933,7 @@ public class Layout
             // turns every locomotive, reversible or not, so in practice there is nothing to exempt.
             if (i < path.size() - 1 && segment.getEnd() != null && segment.getEnd().isReversing())
             {
-                return room > 0 ? room : null;
+                return counted ? room : null;
             }
 
             if (segment.crossesASwitch())
@@ -10966,9 +10983,13 @@ public class Layout
             // switch case above, and the same doctrine Adam gave for the protrusion walk on the same
             // day: "only segments with a positive length are determinate".  Unmeasured track
             // contributes no room.  It does not follow that it contributes no answer.
-            if (segment.getLength() <= 0) return room > 0 ? room : null;
+            //
+            // A SEGMENT ANSWERED 0 ON PURPOSE IS MEASURED (Adam, 2026-09-25): it adds nothing and the count walks on.
+            if (segment.getLength() <= 0 && !segment.isMeasured()) return counted ? room : null;
 
-            room += segment.getLength();
+            room += Math.max(0, segment.getLength());
+
+            counted = true;
         }
 
         // No switch anywhere on the route, so nothing bounds where the train may stand except the
