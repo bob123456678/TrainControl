@@ -660,6 +660,89 @@ public class testWhyStuck
     }
 
     /**
+     * A train on a copy of a station that has a way out but reaches no station autonomy may choose is told so (OB-299,
+     * ADU2-C2) - where Why not Moving? listed every station's own reason instead of the copy's, and the train sat there
+     * with nothing saying why.  Told to turn it round where the square's other copy reaches a station, since turning
+     * puts it on that copy; and where neither does, told what would help instead, since turning round would not.
+     *
+     * By hand it is not a reason: a train sent by hand may go where autonomy never sends one.
+     *
+     * MUTATION: drop the reason, give it by hand, or offer turning round where neither copy reaches a station, and this
+     * fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testACopyThatReachesNoStationSaysSo() throws Exception
+    {
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        // THE OTHER COPY REACHES A STATION: eastbound runs into a siding and stops; westbound reaches WS9 Far.
+        Layout turnable = platformWithASiding("WS9", true);
+
+        turnable.moveLocomotive(loc.getName(), "WS9 Platform (eastbound)", false);
+
+        assertNotNull(turnable.explainCannotStart(loc), "a train on the copy of WS9 Platform that reaches no station"
+            + " autonomy may choose is given no reason of its own - Why not Moving? lists the stations' reasons (OB-299)");
+
+        assertEquals(turnable.explainCannotStart(loc), org.traincontrol.util.I18n.f("autolayout.why.startReachesNoStation",
+            "WS9 Platform"), "a train on the copy of WS9 Platform that reaches no station autonomy may choose is not told"
+            + " so - Why not Moving? lists the stations' reasons, not the copy's (OB-299)");
+
+        assertNull(turnable.explainCannotStart(loc, true), "by hand, reaching no station autonomy may choose is given as a"
+            + " reason not to move - a train sent by hand may go where autonomy never sends one");
+
+        turnable.moveLocomotive(loc.getName(), "WS9 Platform (westbound)", false);
+
+        assertNull(turnable.explainCannotStart(loc), "CONTROL: the copy that reaches WS9 Far is given a reason not to"
+            + " start");
+
+        // NEITHER COPY DOES: both run into sidings.  Turning it round would not help.
+        Layout stranded = platformWithASiding("WS10", false);
+
+        stranded.moveLocomotive(loc.getName(), "WS10 Platform (eastbound)", false);
+
+        assertEquals(stranded.explainCannotStart(loc), org.traincontrol.util.I18n.f(
+            "autolayout.why.startReachesNoStationEitherWay", "WS10 Platform",
+            org.traincontrol.util.I18n.t("autosetup.ui.menuAutoDestination")), "a train on a square where neither copy"
+            + " reaches a station autonomy may choose is told to turn round, which would not help (OB-299)");
+    }
+
+    /**
+     * A platform of two copies, eastbound running into a siding that goes no further; westbound into another siding,
+     * or on to a station of its own where `westReachesAStation`.
+     */
+    private static Layout platformWithASiding(String prefix, boolean westReachesAStation) throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        int base = westReachesAStation ? 3301 : 3311;
+
+        MarklinFeedback platform = model.newFeedback(base, null);
+        MarklinFeedback siding = model.newFeedback(base + 1, null);
+        MarklinFeedback beyond = model.newFeedback(base + 2, null);
+
+        for (MarklinFeedback fb : new MarklinFeedback[] {platform, siding, beyond})
+        {
+            model.setFeedbackState(fb.getName(), false);
+        }
+
+        layout.createPoint(prefix + " Platform (eastbound)", true, platform.getName());
+        layout.createPoint(prefix + " Platform (westbound)", true, platform.getName());
+
+        layout.getPoint(prefix + " Platform (eastbound)").setBlock(prefix + "-P");
+        layout.getPoint(prefix + " Platform (westbound)").setBlock(prefix + "-P");
+
+        layout.createPoint(prefix + " Siding", false, siding.getName());
+        layout.createEdge(prefix + " Platform (eastbound)", prefix + " Siding");
+
+        layout.createPoint(prefix + (westReachesAStation ? " Far" : " Other Siding"), westReachesAStation, beyond.getName());
+        layout.createEdge(prefix + " Platform (westbound)", prefix + (westReachesAStation ? " Far" : " Other Siding"));
+
+        return layout;
+    }
+
+    /**
      * Two stations joined both ways, named with a prefix so the tests cannot collide.
      */
     private static Layout twoStations(String prefix) throws Exception
