@@ -36,6 +36,18 @@ public class CSDetect
     
     // Sometimes pings fail.  How many times do we retry?
     public static final int PING_RETRY = 2;
+
+    /**
+     * How many times the web check is tried on a host.
+     *
+     * The ping was retried and the web request was not, so a single slow reply - while ten threads
+     * are pinging the subnet - threw away a station that had just answered its ping ("it works 9 out
+     * of 10 times").  Three attempts turn a one-in-ten failure into a one-in-a-thousand one.
+     *
+     * Only hosts that answered a ping ever get here, so this does not lengthen the scan: the addresses
+     * with nothing on them fail at the ping and are never asked twice.
+     */
+    public static final int WEB_RETRY = 3;
     
     public static boolean isCentralStation(String host)
     {
@@ -175,7 +187,27 @@ public class CSDetect
         return false;
     }
     
+    /**
+     * Whether there is a Central Station web server on this host, retried.
+     *
+     * The retry lives in the method both callers already use - the subnet scan and isCentralStation -
+     * so neither has to remember it.
+     *
+     * @param host the host
+     * @param path the path that identifies a Central Station
+     * @return whether one answered
+     */
     private static boolean checkWebServer(String host, String path)
+    {
+        for (int tries = 0; tries < WEB_RETRY; tries++)
+        {
+            if (askWebServer(host, path)) return true;
+        }
+
+        return false;
+    }
+
+    private static boolean askWebServer(String host, String path)
     {
         HttpURLConnection connection = null;
 
