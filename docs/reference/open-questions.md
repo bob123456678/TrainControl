@@ -39,13 +39,13 @@ is not one.
 
 The railway defects live in the Inbox of `docs/manual-tests/issues.md`. **It is not empty**, and this
 paragraph said it was for twelve days (IND9X-B3, 2026-09-09).
-Today it holds 83 entries - 51 OB and 32 FR, recounted from the file on 2026-09-24: eighteen entries
+Today it holds 84 entries - 52 OB and 32 FR, recounted from the file on 2026-09-24: eighteen entries
 left it on Adam's word that day.  Seven were given their receipts then - OB-240 to OB-243, OB-271, OB-275
 and FR-095, each fixed, answered or withdrawn by its own text - and eleven had been receipted long before
 and were still sitting in the Inbox, which `triage.py` already treated as closed.  OB-272 to OB-277 and
 FR-094/FR-095 had been filed that morning, FR-096 was filed after the tidy; FR-094 left it
 when it was built, and OB-208, OB-270, OB-272 to OB-274, OB-276, OB-277 and FR-096 when they were.  Fifty more left it that
-evening on his word - *"anything already reviewed and certified as working should be cleared"*: every entry whose receipt, or the hands-on test it became, is fixed and validated, and OB-218, declined.  OB-283 was filed after that, to carry the open reversal question below (DCN-C14).  OB-284 was filed after it, for the paste question the review's third round raised (AUT3-B2, DCN3-B1).  On 2026-09-24 OB-230, OB-283 and OB-284 were given their receipts on Adam's rulings, and OB-285 and OB-286 were filed from the follow-ups (AUT2-C2, GUI2-C4); OB-287 and FR-098 that evening, from the pass over the waiting tests.  OB-288 to OB-290 came from Adam's round of manual tests the same day, and were given their receipts on it; OB-291 from his next, and given its receipt on it too, and FR-099 with it; OB-292 was filed from the conversation after, and FR-100 and FR-101 from his next round; OB-293 and FR-102 from the one after, and OB-294 with them; OB-295 and OB-296 from the validation round that evening (TDA-C9, TDU-B4).  Every
+evening on his word - *"anything already reviewed and certified as working should be cleared"*: every entry whose receipt, or the hands-on test it became, is fixed and validated, and OB-218, declined.  OB-283 was filed after that, to carry the open reversal question below (DCN-C14).  OB-284 was filed after it, for the paste question the review's third round raised (AUT3-B2, DCN3-B1).  On 2026-09-24 OB-230, OB-283 and OB-284 were given their receipts on Adam's rulings, and OB-285 and OB-286 were filed from the follow-ups (AUT2-C2, GUI2-C4); OB-287 and FR-098 that evening, from the pass over the waiting tests.  OB-288 to OB-290 came from Adam's round of manual tests the same day, and were given their receipts on it; OB-291 from his next, and given its receipt on it too, and FR-099 with it; OB-292 was filed from the conversation after, and FR-100 and FR-101 from his next round; OB-293 and FR-102 from the one after, and OB-294 with them; OB-295 and OB-296 from the validation round that evening (TDA-C9, TDU-B4), and OB-297 from its third round (TDA2-C1).  Every
 earlier figure here was wrong in the same way, by being written rather than recounted: 99, then 111
 counted before six entries that had already been appended, then 118 (IND9X-B3, VD12-R13, VD13-R3).
 Most of them carry a receipt row that says the work was done - the protocol is that an entry is
@@ -397,8 +397,8 @@ this document exactly the thing it replaces.
 **2026-09-08: `docs/reviews/` was deleted**, down to its README, once its 2,226 findings were in
 `docs/manual-tests/triage.db`. **2026-09-21: the same for the 65 documents written since** - 44 of them in
 `docs/reviews/` itself and 21 in three dated folders beside it, on Adam's *"I don't want more
-reviews living in the repo"* - 3,726 rows then.  The round of 2026-09-23 added 336 - five reviews and three rounds of validation - and 13 more came on 2026-09-24 with OB-247 (AR-17 to AR-23 and LR-1 to LR-6, which have no document), and the validation rounds of 2026-09-24 added 126 (TDA, TDU and TDD, then TDA2, TDU2 and TDD2), which makes
-4,201 finding rows in the store now, every one of them with a status.
+reviews living in the repo"* - 3,726 rows then.  The round of 2026-09-23 added 336 - five reviews and three rounds of validation - and 13 more came on 2026-09-24 with OB-247 (AR-17 to AR-23 and LR-1 to LR-6, which have no document), and the validation rounds of 2026-09-24 added 173 (TDA, TDU and TDD, then the same three lanes as TDA2 to TDD2 and TDA3 to TDD3), which makes
+4,248 finding rows in the store now, every one of them with a status.
 (This paragraph's figures - 65 documents, 44 of them in `docs/reviews/`, and the finding count - are quoted from the deletion commit and the store.  A correction to 63 and 206 was itself wrong and was reverted; the 208 it was about is in the first paragraph of this file, not here.  `regression.testTheRecordsCountTheStore` now compares the finding and Inbox counts with the store rather than trusting a reader to keep them - VD13-R1, VD14-R2, VD14-R5.) Everything still open above is open in that store too,
 so it can be queried rather than re-read:*
 

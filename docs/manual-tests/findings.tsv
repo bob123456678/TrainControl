@@ -2826,7 +2826,7 @@ TDA-D5	TDA.md	Closed	Checked - clean.	OB-291: a remembered maximum on a demoted 
 TDA-D6	TDA.md	Closed	Checked - clean.	AUT3-C3, MT-477 and OB-285's tail changes are as described
 TDA-D7	TDA.md	Closed	Checked - clean.	e09fe989's barred-side test and FR-101's closed station
 TDA-D8	TDA.md	Closed	Checked - clean.	fab81423's `trainLengths()` and the Return Home own-tail claim's missing floor
-TDA2-C1	TDA2.md	Open - deferred	Fixed in part - claim f652c14f (red first), fix baf8856c: the note counts the stretch the 	The own-tail refusal's "measure them" note counts sensor-to-sensor legs, not the pieces lengths are given in, and skips the leg the return is on - so
+TDA2-C1	TDA2.md	Open	Fixed in part - claim f652c14f (red first), fix baf8856c: the note counts the stretch the 	The own-tail refusal's "measure them" note counts sensor-to-sensor legs, not the pieces lengths are given in, and skips the leg the return is on - so
 TDA2-C2	TDA2.md	Closed	Fixed - pin 7c7a0fb0: a third, unmoved train on a rail of its own is not blamed for the se	The first A1b mutation survived and the record names a different one: nothing checks that Return Home's per-train tail record holds only that train's
 TDA2-C3	TDA2.md	Closed	Fixed - pin testARouteThatComesBackOverItselfIsJudged in f652c14f, the loop asked for: [Q:	The half of the own-tail rule that times the route's own places (a reversing loop, a figure of eight) is checked by no claim, and `1cd99bbc` edited it
 TDA2-C4	TDA2.md	Closed	Measured, not a cost. The four Return Home classes on the frozen railway, at HEAD and with	TDA-C4's disposition covers the body walk; the per-candidate cost it also named, and its timing request, are unanswered, and `1cd99bbc` added to that
@@ -2839,6 +2839,16 @@ TDA2-D2	TDA2.md	Closed	Checked - clean.	TDA-B1 and TDA-C1: the rule change is wh
 TDA2-D3	TDA2.md	Closed	Checked - clean.	TDA-C2, TDA-C3 and TDA-C4's memo: the dispositions hold
 TDA2-D4	TDA2.md	Closed	Checked - clean.	TDA-C7: the fix and its mutations hold; the "red first" record is for a turnout fixture that was replaced
 TDA2-D5	TDA2.md	Closed	Checked - clean.	TDA-C5, TDA-C8, TDA-C9 and TDA-C10: the dispositions are true and the decisions are well posed
+TDA3-C1	TDA3.md	Closed	Fixed - claim testNothingSpentBeforeTheCrossingIsSaidAsNothing in 6bfab5bb (red first), fi	For a parking berth with nothing measured between it and a crossing, the run-in notice still quotes the room walk's figure, which the berth rule never
+TDA3-C2	TDA3.md	Closed	Fixed - the premise asked of the rule itself: testTheBerthRuleRefusesAtTheCrossing (59cf36	The crossing claims check the notices against a model of the berth rule, never against the rule itself; and nothing pins the half of the run-in change
+TDA3-C3	TDA3.md	Closed	Fixed - 32a75f8d and 59cf3645: both AutonomySession javadocs, both AutonomyChecks javadocs	Text that the round-2 fixes left behind or made false
+TDA3-D1	TDA3.md	Closed	Checked - clean.	TDA2-C1, the fixed half: the disposition holds, and the deferred half is recorded where the disposition says
+TDA3-D2	TDA3.md	Closed	Checked - clean.	TDA2-C2, with the pins for TDD2-C4 and TDD2-C5: the disposition holds
+TDA3-D3	TDA3.md	Closed	Checked - clean.	TDA2-C3: the disposition holds
+TDA3-D4	TDA3.md	Closed	Checked - clean.	TDA2-C4: "Measured, not a cost" holds, as far as the times can say it
+TDA3-D5	TDA3.md	Closed	Checked - clean.	TDA2-C5: the disposition holds
+TDA3-D6	TDA3.md	Closed	Checked - clean.	TDA2-C6 and TDA2-C7: the fixes do what the dispositions say, on the findings' own inputs
+TDA3-D7	TDA3.md	Closed	Checked - clean.	TDA2-C8: the disposition holds
 TDD-A1	TDD.md	Closed	Fixed - claim ce9dd7bd (red first, on a hand-built switch shared by two legs; the frozen r	A moving train's own tail claim can overwrite, and so hide, another train's tail on a shared switch square (OB-285, AUT2-C2)
 TDD-B1	TDD.md	Closed	Fixed - as TDA-B1.	The own-tail rule reads a loop with no lengths as zero long, so on a partly measured railway it refuses any return over a measured body (OB-294)
 TDD-C1	TDD.md	Closed	Fixed - comment on MT-571 (LowerFront not offered; the sentence is in Why not Moving? and 	MT-571 expects a refusal dialog that neither send door can show: LowerFront is not offered at all
@@ -2892,6 +2902,28 @@ TDD2-D5	TDD2.md	Closed	Checked - clean.	TDD-C5, TDD-C6, TDD-C10 and TDD-C11 say 
 TDD2-D6	TDD2.md	Closed	Checked - clean.	TDD-C13, TDD-C14 and every count the round wrote
 TDD2-D7	TDD2.md	Closed	Checked - clean.	The range's claims are registered, and the files they depend on agree
 TDD2-D8	TDD2.md	Closed	Checked - clean.	behaviour.md's "no tier moves trains over a setup with errors" names every door that moves trains
+TDD3-B1	TDD3.md	Closed	Fixed - a comment on MT-573 (round 3's tracker commit) that replaces the one before it: se	MT-573's new comment moves a train between the step-1 backup and the step-5 restore, so the restore puts the setup's record of it back at the station
+TDD3-C1	TDD3.md	Closed	Fixed - pin testARouteIsTimedFromTheFarEndOfAPlace in 6bfab5bb, the finding's own route: 4	TDD2-C2's disposition holds only for the deletion: the near-end mutation it named first survives, because the pin's return square has no length
+TDD3-C10	TDD3.md	Closed	Fixed - filed as OB-297 in issues.md with its reason; behaviour.md 5c and Automation.md sa	TDA2-C1's deferred remainder is kept only in a store note cut off before it says what is deferred; behaviour.md 5c and Automation.md still promise the
+TDD3-C11	TDD3.md	Closed	Fixed - 6bfab5bb: the class MUTATION line names each claim, R2b-R2d included.	`testTheOwnTailArithmetic`'s class MUTATION line points at claims by position, and the two new claims went in above them
+TDD3-C2	TDD3.md	Closed	Fixed - 6bfab5bb: the seven sites name Clear All Station Max Train Lengths.	TDD2-C13's disposition says every comment and test message names the renamed items as labelled; the third item, Clear All Station Max Train Lengths, s
+TDD3-C3	TDD3.md	Closed	Fixed - a comment on MT-568 correcting the one before it: do not click a square; the check	MT-568's new comment tells Adam to click a square with no tool pressed, which changes which way trains may run over that stretch of 1 - Main; and it d
+TDD3-C4	TDD3.md	Closed	Fixed - a comment on MT-570 naming testWhyNotMovingFollowsTheRunningRailway.	TDD2-C8's second half, MT-570's citation, was dropped without a word
+TDD3-C5	TDD3.md	Closed	Fixed - 59cf3645: When to set them says to measure round any loop a train can be sent roun	Automation.md's new loop paragraph sits above "When to set them", which still says every rule above asks only about the station stretch and that plain
+TDD3-C6	TDD3.md	Closed	Fixed - behaviour.md 5c states the rule (59cf3645), and MT-576 is its hands-on test.	TDU2-A1's new rule, that a tail question's answer is written only while the placement still stands, is in no document and has no tracker entry
+TDD3-C7	TDD3.md	Closed	Fixed - pins in 6bfab5bb, one per condition: the road alone, the train alone, the side alo	TDU2-A1's claim changes the train and the road at once, so each of the three conditions in `placementStillStands` can be deleted with the class green
+TDD3-C8	TDD3.md	Closed	Fixed - testAGateThatFailsStopsEveryRunDoor in 6bfab5bb names each door; Start's old asser	TDU2-C2's "a gate that fails stops Start" claim was never seen red, and "stops Return Home" has no claim at all
+TDD3-C9	TDD3.md	Closed	Fixed - 59cf3645: behaviour.md's run-in bullet says a parking berth's figure is the berth 	behaviour.md's run-in notice bullet still says the notice quotes the room to the last switch; since `84a89426` a parking berth's notice quotes the ber
+TDD3-D1	TDD3.md	Closed	Checked - clean.	TDD2-C3 (as TDA2-C1): the claim is the finding's own route, and was red first
+TDD3-D10	TDD3.md	Closed	Checked - clean.	TDD2-C10's "not a defect" holds, and MT-571's new comment is right about both windows
+TDD3-D2	TDD3.md	Closed	Checked - clean.	TDD2-C4 and TDD2-C5 (pins `7c7a0fb0`) hold
+TDD3-D3	TDD3.md	Closed	Checked - clean.	TDD2-C6 (as TDA2-C5, `3a8813ca`) holds
+TDD3-D4	TDD3.md	Closed	Checked - clean.	TDD2-C7 (claim `5b656ebe`, fix `4776026a`) holds
+TDD3-D5	TDD3.md	Closed	Checked - clean.	TDD2-C12 and the round's counts hold
+TDD3-D6	TDD3.md	Closed	Checked - clean.	TDD2-C14 (as TDA2-C7, `84a89426`) holds in all eight bundles
+TDD3-D7	TDD3.md	Closed	Checked - clean.	TDD2-C15 (pin in `ef1adfb6`) holds
+TDD3-D8	TDD3.md	Closed	Checked - clean.	TDD2-C16 (as TDU2-C1, `fea75279`) holds
+TDD3-D9	TDD3.md	Closed	Checked - clean.	TDD2-C1's "not a defect" holds, with two notes on the census behind it
 TDR-A1	2026-09-14-TDR-ten-day-review.md	Closed	Fixed	an import from a layout numbered differently re-labels this layout's own pages
 TDR-B1	2026-09-14-TDR-ten-day-review.md	Closed	Fixed (stated in the body)	a train that declines the turn at a may-turn square loses the route its tail follows
 TDR-B2	2026-09-14-TDR-ten-day-review.md	Closed	Fixed (stated in the body)	the facing re-stand dropped the route as well
@@ -2952,6 +2984,21 @@ TDU2-D6	TDU2.md	Closed	Checked - clean.	TDU-C7, TDU-C9, TDU-C10 and TDU-C11 hold
 TDU2-D7	TDU2.md	Closed	Checked - clean.	TDU-B4 and TDU-C6: the open dispositions still describe the code
 TDU2-D8	TDU2.md	Closed	Checked - clean.	the message bundles after the range
 TDU2-D9	TDU2.md	Closed	Checked - clean.	TDU-C8 for the cases it named, and TDD-C11's javadoc
+TDU3-B1	TDU3.md	Closed	Fixed - claim testAnAnswerAfterARebuildReachesTheRailway in 6bfab5bb (red first), fix 32a7	a rebuild while the tail question waits replaces the Point the TDU2-A1 check reads, so the check passes on a Point no longer on the railway: the answe
+TDU3-B2	TDU3.md	Closed	Fixed - as TDD3-B1: a comment on MT-573 replacing the one before it - send the train away 	MT-573's new comment sends a train away after step 1's backup, so step 5's restore leaves the setup saying the train is at home while it stands at ano
+TDU3-C1	TDU3.md	Closed	Fixed - 32a75f8d: the paste and right-click doors write the facing before the question, as	the claims prove less than the dispositions: TDU2-A1's facing half and TDU2-C2's stop at Return Home are unclaimed, and the three doors write the faci
+TDU3-C2	TDU3.md	Closed	Fixed - 32a75f8d: a dropped answer is logged naming the train and the square, in eight lan	an answer the TDU2-A1 check drops is dropped without a word, and behaviour.md does not say it happens
+TDU3-C3	TDU3.md	Closed	Fixed - 59cf3645: Start's handler and its claim say the third door and the file door; test	comments the load-door and hand-door sweeps did not reach
+TDU3-C4	TDU3.md	Closed	Fixed - claim in 6bfab5bb (red first), fix 32a75f8d: Execute Timetable's gate is caught, l	Execute Timetable is still the one run door whose failed gate leaves its button greyed for the session
+TDU3-C5	TDU3.md	Closed	Fixed - 59cf3645: open-questions carries the recommendation - each door as its Start twin 	TDU2-C3 is written as Adam's decision without the recommendation FANOUT asks for
+TDU3-D1	TDU3.md	Closed	Checked - clean.	TDU2-A1 for the three ways it named: a run, a second placement, a removal
+TDU3-D2	TDU3.md	Closed	Checked - clean.	TDU2-C1: the guard is put down by the next sensor click
+TDU3-D3	TDU3.md	Closed	Checked - clean.	TDU2-C2: the three run doors ask the gate after every refusal
+TDU3-D4	TDU3.md	Closed	Checked - clean.	TDU2-C3: the open question is filed and describes the code
+TDU3-D5	TDU3.md	Closed	Checked - clean.	TDU2-C4 and the message bundles after the range
+TDU3-D6	TDU3.md	Closed	Checked - clean.	TDU2-C5 and TDU2-C7 at the sites they named
+TDU3-D7	TDU3.md	Closed	Checked - clean.	TDU2-C6: step 3 of MT-573 can now be reached
+TDU3-D8	TDU3.md	Closed	Checked - clean.	the range's other gui commits: One-Way Run's prompt, the renamed Bulk Tools items, the guard tooltips
 TDY-B1	TDY.md	Closed	Fixed - ac5fe2f2 (claim 8873b0a4, red first): a home held to a facing is home only on a co	Return Home counts the turning twin as home, and the turning twin faces the other way: at a may-reverse home a train can still come home turned round
 TDY-B2	TDY.md	Closed	Fixed - a67452cd: the half-measured notice walks the berth's own square	OB-278 says the half-measured notice now counts the berth's own square; it never looks at it, so the one half-measured state OB-278 creates is not war
 TDY-C1	TDY.md	Closed	Fixed - ce8983ce (claim 273727eb, red first): the pre-check asks `homeCopiesOf`	The IMPOSSIBLE pre-check still asks about any copy of the home square, while the goal now needs the home's arrival

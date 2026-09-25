@@ -71,8 +71,11 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-573](#mt-573) | 2026-09-24 | Execute Timetable and Return Home refuse a setup with errors | fixed unvalidated | MT-263, TDU-B1 |
 | [MT-574](#mt-574) | 2026-09-24 | A double-click on a lit sensor answers the tail question and does not flip the sensor | fixed unvalidated | FR-100, TDU-B3 |
 | [MT-575](#mt-575) | 2026-09-24 | From the autonomy editor the tail question is the list | fixed unvalidated | FR-100, TDU-C1 |
+| [MT-576](#mt-576) | 2026-09-24 | A tail answer given after the placement changed is written where the train now stands, or not at all | fixed unvalidated | TDU2-A1, TDU3-B1 |
+| [MT-577](#mt-577) | 2026-09-24 | Customize Function Icons greys Apply while there is nothing to apply | fixed unvalidated | FR-098 |
+| [MT-578](#mt-578) | 2026-09-24 | Highlight on Diagram lights a three-way once, in the commanded colour | fixed unvalidated | OB-286, GUI2-C4 |
 
-Everything else - 531 of 575 - needs nothing from you unless the area changes again:
+Everything else - 531 of 578 - needs nothing from you unless the area changes again:
 454 **fixed validated** and 77 **superseded**.
 
 ---
@@ -28043,6 +28046,10 @@ Validated on your *Works* of 2026-09-24.
 
 **Step 3 cannot show the fix, from the second validation round** (2026-09-24).  Switching page builds a new editor panel for the page you arrive on, so its One-Way Run button was never pressed, whatever the fix does.  The fix is reached by leaving out the page the tool is armed on.  To check it: on 1 - Main press One-Way Run, then tick Exclude Page on 1 - Main itself and answer Yes - the button comes up and is greyed, and the message no longer asks for the first square.  Untick Exclude Page and click a square: nothing waits for a second click.  The claim is `core.testMassAssignLengths.testTheOneWayButtonIsGreyedAndPutDownOnAPageLeftOut`.
 
+**Claude, 2026-09-24.**
+
+**Correcting the comment before it, from the third validation round** (2026-09-24).  Do not click a square after unticking Exclude Page: with no tool pressed, a click changes which way trains may run over that stretch.  The check is the message at the top: after ticking Exclude Page it no longer asks for the first square, and One-Way Run is up.  If a square was clicked, click it three more times to bring it back to both ways, or close the editor with Cancel.
+
 ---
 
 <a id="mt-569"></a>
@@ -28095,6 +28102,10 @@ Validated on your *Works* of 2026-09-24.
 **Claude, 2026-09-24.**
 
 **Step 2, said more exactly** (2026-09-24): the outlines that mark where to click go once a square has been asked about; the answer then draws what it draws, as before.
+
+**Claude, 2026-09-24.**
+
+**And the running railway, from the third validation round** (2026-09-24).  Step 1's outlines are the squares with trains on the running railway, where it and the setup disagree - `regression.testTheEditorSaysWhatItsToolsDo.testWhyNotMovingFollowsTheRunningRailway`.
 
 ---
 
@@ -28192,6 +28203,10 @@ Validated on your *Works* of 2026-09-24.
 
 **Before step 2, from the second validation round** (2026-09-24).  Return Home is offered only while some train is away from its home, and after a restart every train is at home, so at step 3 the button would be greyed.  Before breaking the setup, send one train by hand to another station - the hand doors refuse once the setup is broken.  Step 3 then shows the refusal.  After step 5, send it back or press Return Home.
 
+**Claude, 2026-09-24.**
+
+**This replaces the comment before it, from the third validation round** (2026-09-24).  A train sent away after step 1 is sent after the backup, and step 5 puts the backup back - so the setup then records it at the station it left, while it stands somewhere else.  So: **before step 1**, send one train by hand to another station, then do step 1, so the backup records it there.  Steps 2 to 5 as written.  After step 5 and a restart, press Return Home to bring it back.
+
 ---
 
 <a id="mt-574"></a>
@@ -28238,5 +28253,89 @@ Validated on your *Works* of 2026-09-24.
 - The question is the list, in front of the editor, and choosing TunnelPre in it answers it.
 
 *What this is:* `regression.testTheTailIsPickedOnTheDiagram.testWithAnEditorOpenTheQuestionIsTheList`.
+
+---
+
+<a id="mt-576"></a>
+
+### MT-576 - 2026-09-24 - A tail answer given after the placement changed is written where the train now stands, or not at all
+
+**Disposition:** fixed unvalidated
+**From:** TDU2-A1, TDU3-B1
+
+**Written:** 2026-09-24
+
+**What was wrong.**  The tail question waits on the diagram with the window live.  An answer given after something changed in the wait was written anyway: after a setting changed from the diagram, which rebuilds the railway, it went to a copy of the square the railway no longer used, so the grey behind the train stopped at the switch; after the train was taken off, it went over whatever stood there next.
+
+**Steps**
+
+1. Give 75 407 DB a length of 5.  Paste it at Tunnel, arriving from the north, and leave the question waiting - TunnelPre and the other sensors lit.
+2. Right-click another station on the diagram and change something you can change back - for example tick or untick one of its settings.
+3. Click TunnelPre on the diagram.
+4. Change back what step 2 changed.
+5. Paste 75 407 DB at Tunnel from the north again, and leave the question waiting.
+6. Take 75 407 DB off Tunnel from its right-click menu.
+7. Click TunnelPre.
+
+**Expected**
+
+- Step 3: the grey behind Tunnel runs back to TunnelPre, as when the question is answered straight away.
+- Step 7: nothing is drawn behind Tunnel, and the log says where the tail of 75 407 DB lies was not recorded, because Tunnel changed while the question waited.
+
+*What this is:* `regression.testTheTailIsPickedOnTheDiagram` - `testAnAnswerAfterARebuildReachesTheRailway`, `testALateAnswerDoesNotWriteOverAnotherTrain` and the three late-answer claims beside them.
+
+---
+
+<a id="mt-577"></a>
+
+### MT-577 - 2026-09-24 - Customize Function Icons greys Apply while there is nothing to apply
+
+**Disposition:** fixed unvalidated
+**From:** FR-098
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Apply was always usable, although closing the window without it keeps nothing and loses nothing only when nothing was changed.
+
+**Steps**
+
+1. Right-click a locomotive in the locomotive list, open Manage Locomotive..., and choose Customize Function Icons.
+2. Choose another icon for F0, then choose the icon it had again.
+3. Choose another trigger for F0.
+4. Press Apply.
+
+**Expected**
+
+- Step 1: Apply is greyed.
+- Step 2: Apply becomes usable when the other icon is chosen, and greyed again when the first is chosen back.
+- Step 3: Apply is usable.
+- Step 4: F0 keeps the new trigger, the window moves on to F1, and Apply is greyed.
+
+*What this is:* `regression.testApplyIsGreyedWithNothingToApply`.
+
+---
+
+<a id="mt-578"></a>
+
+### MT-578 - 2026-09-24 - Highlight on Diagram lights a three-way once, in the commanded colour
+
+**Disposition:** fixed unvalidated
+**From:** OB-286, GUI2-C4
+
+**Written:** 2026-09-24
+
+**What was wrong.**  A route that commands one of a three-way's two decoders and checks the other lit the one square twice - yellow for commanded, then orange for checked over it.
+
+**Steps**
+
+1. Hover over a three-way turnout on 1 - Main: its tooltip gives its two addresses, N and N + 1.
+2. In the route editor, make a route with one command setting accessory N, and one condition on accessory N + 1.
+3. Press Highlight on Diagram, then close the route without saving.
+
+**Expected**
+
+- Step 3: the three-way is lit yellow, as a square the route commands, not orange.
+
+*What this is:* `regression.testAThreeWayIsLitOnce`.
 
 ---

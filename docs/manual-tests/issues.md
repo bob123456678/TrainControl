@@ -1264,6 +1264,15 @@ separately, increase choosable train lengths up to 40 in the dropdown.
 
 Three placement doors keep the train's heading and stand it on the copy that faces that way (OB-270, GUI-B1, OB-284).  The fourth - the diagram's right-click **Place {0}** for the active locomotive - still takes one of the square's usable copies at random (`LayoutRightclickAutonomyMenu.placeSomewhereLegal`), so the same train placed the same way faces either way.  behaviour.md already calls random placement superseded by your ruling of 2026-09-12, *"as long as the direction isnt flipped"*.  The question for you: should this door follow the paste's rule, or keep choosing for the operator?
 
+### OB-297 - 2026-09-24 - the own-tail refusal's count of stretches with no length misses one measured only at its switch
+
+**Kind:** bug  
+**Raised from:** follow-up from the validation round, TDA2-C1  
+**Filed:** 2026-09-24  
+**Build:** found by reading, not on the railway
+
+The own-tail refusal's note says how many stretches of the way round have no length, so that measuring them is a way past.  It counts sensor-to-sensor legs, which is coarser than the pieces Mass Assign Lengths asks for - a leg cut at its switches - so a leg whose only length is its switch counts as measured, and between Mass Assign sittings (switches first, pieces later) the note can say fewer stretches than there are, or nothing.  The rule itself is right: unmeasured track refuses more, not less.  Counting pieces needs the build to mark which of an edge's places are switches, which the configuration does not carry today.  Left for later; the rule's javadoc and behaviour.md 5c say so.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1280,6 +1289,9 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-09-24 | OB-286 | bug | Highlight on Diagram lights a three-way once, as commanded, where a route commands one of its decoders and checks the other. | - | `MT-578` |
+| 2026-09-24 | FR-098 | feature request | Customize Function Icons greys Apply while the function on show is as the locomotive holds it. | - | `MT-577` |
+| 2026-09-24 | OB-287 | bug | The refusal to delete or rename a locomotive a running route drives has its test, at both doors and the name proposal: `regression.testARouteDrivenLocomotiveIsNotEdited`. | - | `MT-531` |
 | 2026-09-24 | OB-294 | bug | A train is not sent round a loop into its own tail: the head may come back to a place only once the tail has left it - every tier, both hand doors, and Return Home.  Train lengths go to 40 in both lists. | - | `MT-571`, `MT-572` |
 | 2026-09-24 | FR-102 | feature request | While Why not Moving? waits for its click, the squares with trains on them are outlined.  Greying everything else - the "consider" - is not done. | - | `MT-570` |
 | 2026-09-24 | OB-293 | bug | The exit- and entry-guard items say what each guard does. | - | `MT-569` |
