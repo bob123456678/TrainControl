@@ -1271,13 +1271,19 @@ public class testMassAssignLengths
         return null;
     }
 
-    /** Closes every dialog still showing, as Escape closes it, until none is left. */
+    /**
+     * Closes every dialog still showing, as Escape closes it, until none is left.
+     *
+     * Asked after the event thread has come back each time: a walk that has just had a refusal closed asks its question
+     * again a moment later, and a look taken in between saw nothing and left that prompt up for the next test.
+     */
     private static void closeEveryDialog() throws Exception
     {
-        long giveUp = System.currentTimeMillis() + 10000;
-
-        while (System.currentTimeMillis() < giveUp)
+        for (int round = 0; round < 50; round++)
         {
+            // Returns once the walk has reached its next modal prompt, or finished: the prompt pumps this task.
+            javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
             boolean any = false;
 
             for (java.awt.Window window : java.awt.Window.getWindows())

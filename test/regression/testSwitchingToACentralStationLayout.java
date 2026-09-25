@@ -933,8 +933,10 @@ public class testSwitchingToACentralStationLayout
         // (TDD-C11), which reads the import doors and builds no window.
         // 62 later that day: regression.testTheImportDoorReadsAnOldFile drives the Autonomy menu's Import on a real
         // window (Adam: automated tests supersede the MTs they answer), opening a sandbox first.
-        assertEquals(checked, 62,
-            checked + " test classes were found to build a window, not the 62 there were when this "
+        // 63 the same day: regression.testTheRoutesImportDoorAsksByName drives Routes > Import on a real window, on
+        // the run's own copy of the data, opening a sandbox first.
+        assertEquals(checked, 63,
+            checked + " test classes were found to build a window, not the 63 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating - and "
             + "nothing else in this method is hidden by that any more, because the checks that "
