@@ -2407,6 +2407,12 @@ the file loads as written - the next save writes it back without the dangling na
 The legacy importer behaves the same way and names what it left out, so the two doors agree about the
 same file.
 
+**An old autonomy.json goes into the configuration named at the Import prompt** (Adam, 2026-09-25, choosing
+between honouring the name typed and not asking for one: *"(a)"*): created where there is none of that name, and
+made the one in use; the configuration in use before is left as it was.  Until then a layout that already had
+configurations took the file's placements, homes and facings into the one in use, and the name asked for was
+thrown away.  `core.testASecondImportFillsGapsAndDoesNotOverwrite.testAnImportGoesIntoTheConfigurationNamed`.
+
 A MALFORMED entry is still refused - a lock entry the loader cannot read (`errorLockEdgeGeneric`), or a
 placement with no locomotive name at all (`errorLocomotiveConfigMissingName`) - because that is a broken
 file rather than one that has outlived its fleet or its track.
