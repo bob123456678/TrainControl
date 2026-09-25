@@ -284,8 +284,10 @@ public class Layout
      * over 7 both come out as zero otherwise, and every route would tie - which is the failure the
      * length rule already had once, for the same reason.
      *
-     * Distance is measured exactly as SHORTEST_LENGTH measures it, floor included, so the two rules
-     * cannot disagree about which of two routes is longer.
+     * Distance is measured as SHORTEST_LENGTH measures it, floor included - except that it divides by at least 1, since
+     * a route answered 0 throughout measures 0.  So between a route of 0 and a route of 1 the two rules disagree: the
+     * shortest track prefers the 0, and this ties them (RLA-C7).  Only stations joined by sensors side by side, with
+     * everything between answered 0, can meet it.
      *
      * @param path the route being weighed
      * @return priority per unit of track, larger being better
