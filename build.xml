@@ -535,6 +535,7 @@
         <test-one-class class="testTheAutonomyMenuLinksItsDocumentation"/>
         <test-one-class class="testTheOrangeIsDrawnWhereTheTailStopsAtTheSwitch"/>
         <test-one-class class="testAHandSendIsRefusedWhileTheSetupIsBroken"/>
+        <test-one-class class="testTheImportDoorReadsAnOldFile"/>
         <test-one-class class="testAThrottleReversalIsFollowedFromItsEcho"/>
         <test-one-class class="testTheDebugMenuSwitchesTheEcho"/>
         <test-one-class class="testTheVisibleElementsHeadingIsSpacedLikeTheOthers"/>

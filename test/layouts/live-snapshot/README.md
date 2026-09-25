@@ -146,3 +146,4 @@ not fix it. Name the square.
 - `regression.testTheTailIsPickedOnTheDiagram`
 - `regression.testAThreeWayIsLitOnce`
 - `regression.testANewStraightJoinsTheTrackBesideIt`
+- `regression.testTheImportDoorReadsAnOldFile`

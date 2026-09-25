@@ -931,8 +931,10 @@ public class testSwitchingToACentralStationLayout
         // regression.testApplyIsGreyedWithNothingToApply (FR-098) each build a window, opening a sandbox first.
         // 61 on 2026-09-25: regression.testALegacyImportUnticksLoadAutonomy became testALegacyImportLeavesLoadAutonomyAlone
         // (TDD-C11), which reads the import doors and builds no window.
-        assertEquals(checked, 61,
-            checked + " test classes were found to build a window, not the 61 there were when this "
+        // 62 later that day: regression.testTheImportDoorReadsAnOldFile drives the Autonomy menu's Import on a real
+        // window (Adam: automated tests supersede the MTs they answer), opening a sandbox first.
+        assertEquals(checked, 62,
+            checked + " test classes were found to build a window, not the 62 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating - and "
             + "nothing else in this method is hidden by that any more, because the checks that "
