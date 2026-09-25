@@ -319,6 +319,140 @@ public class testWhereHisTrainsMayBeSent
             + offered(tunnel));
     }
 
+    /**
+     * On 1 - Main with three of his trains standing on it, Why not Moving? outlines every square with a train on it and
+     * no other while it waits; a click on one answers, and the outlines that marked where to click go (MT-570, step 2 as
+     * its comment of 2026-09-24 says it more exactly).
+     *
+     * Asked of every square of the page, from the running railway, which is where the outlines are read since that
+     * entry's third comment.
+     *
+     * MUTATION: outline a square without a train, miss one with a train, or keep the waiting outlines after the click,
+     * and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testWhyNotMovingOutlinesHisTrainsWhileItWaits() throws Exception
+    {
+        clearTheRailway();
+
+        final String page = "1 - Main";
+
+        // THREE TRAINS ON THREE STATIONS OF THE PAGE.
+        List<TileKey> stations = new ArrayList<>();
+
+        for (TileKey key : session.getStore().getNamedTiles())
+        {
+            if (page.equals(key.getPage()) && session.getStore().isStation(key)) stations.add(key);
+        }
+
+        stations.sort(java.util.Comparator.comparing(TileKey::toString));
+
+        java.util.Set<TileKey> withTrains = new java.util.LinkedHashSet<>();
+
+        List<String> skip = new ArrayList<>();
+
+        for (TileKey station : stations)
+        {
+            if (withTrains.size() == 3) break;
+
+            boolean placeable = false;
+
+            for (String copy : session.facingsFor(station).keySet())
+            {
+                Point point = railway().getPoint(copy);
+
+                if (point != null && point.isDestination()) placeable = true;
+            }
+
+            if (!placeable) continue;
+
+            Locomotive loc = anotherTrain(skip.toArray(new String[0]));
+
+            skip.add(loc.getName());
+
+            standOn(loc, station, null);
+
+            withTrains.add(station);
+        }
+
+        assertEquals(withTrains.size(), 3, "precondition: three trains could not be stood on " + page);
+
+        final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, page, () -> { });
+
+        panel.setRunningLayoutSource(() -> model.getAutoLayout());
+        panel.setLayoutSource(() -> model.getAutoLayout());
+
+        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("whyButton");
+
+        field.setAccessible(true);
+
+        final javax.swing.AbstractButton why = (javax.swing.AbstractButton) field.get(panel);
+
+        // STEP 1.
+        SwingUtilities.invokeAndWait(why::doClick);
+
+        List<String> wrong = new ArrayList<>();
+
+        int asked = 0;
+
+        for (TileKey tile : session.getGraph().getTiles().keySet())
+        {
+            if (!page.equals(tile.getPage())) continue;
+
+            asked++;
+
+            final boolean[] outlined = new boolean[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                org.traincontrol.automationui.TileAnnotation annotation = panel.annotationFor(tile);
+
+                outlined[0] = annotation != null && annotation.isSelected();
+            });
+
+            if (outlined[0] != withTrains.contains(tile)) wrong.add(tile + (outlined[0] ? " outlined" : " not outlined"));
+        }
+
+        assertTrue(asked > withTrains.size(), "precondition: " + page + " has no squares without a train to ask about");
+
+        assertTrue(wrong.isEmpty(), "while Why not Moving? waits, the outlines are not exactly the squares with trains on"
+            + " them (MT-570 step 1) - trains on " + withTrains + ": " + wrong);
+
+        // STEP 2: a click on one.
+        final TileKey clicked = withTrains.iterator().next();
+
+        SwingUtilities.invokeAndWait(() -> panel.tileClicked(clicked, session.getGraph().getTiles().get(clicked), false));
+
+        Method waitsOn = AutonomyEditorPanel.class.getDeclaredMethod("whyWaitsOn", TileKey.class);
+
+        waitsOn.setAccessible(true);
+
+        for (TileKey tile : withTrains)
+        {
+            assertFalse((Boolean) waitsOn.invoke(panel, tile), "after a click, " + tile + " is still outlined as"
+                + " somewhere to click (MT-570 step 2)");
+        }
+
+        String working = I18n.t("autolayout.ui.whyWorking");
+
+        String said = hintOf(panel);
+
+        for (long end = System.currentTimeMillis() + 30000; (said == null || said.contains(working))
+            && System.currentTimeMillis() < end; )
+        {
+            Thread.sleep(100);
+
+            pump();
+
+            said = hintOf(panel);
+        }
+
+        assertTrue(said != null && !said.contains(working) && !said.equals(I18n.t("autosetup.ui.promptWhy").trim()),
+            "after the click no answer was drawn (MT-570 step 2): " + said);
+    }
+
     // ---------------------------------------------------------------- the doors
 
     /** The editor's Unavailable While Occupied window on this square, with one square ticked and OK; then saved. */
