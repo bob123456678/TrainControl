@@ -1,6 +1,9 @@
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
@@ -8,6 +11,7 @@ import org.traincontrol.automation.TimetablePath;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
+import org.traincontrol.model.ViewListener;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import static org.testng.Assert.*;
 import org.testng.annotations.BeforeClass;
@@ -411,6 +415,83 @@ public class testLayoutTimetable
         finally
         {
             model.deleteLoc("TT kept loc");
+        }
+    }
+
+    /**
+     * A timetable entry that is skipped is logged as skipped, on a line of its own - not with the
+     * warning that means the whole timetable could not be read.
+     *
+     * The per-entry loader the test above pins logged a skipped entry with autolayout.warnTimetable,
+     * the line the outer catch still writes when the timetable as a whole cannot be read, and whose
+     * text does not say that anything was skipped.  A reader of the log could not tell one lost entry
+     * from a lost timetable (BPV-C12).
+     *
+     * The model is asked through a stand-in that writes down every message key it is asked to log and
+     * passes each call on.
+     *
+     * Ported from the 3.0 branch (a2decb01, autolayout.warnTimetableEntry).
+     */
+    @Test
+    public void testASkippedEntryIsLoggedAsSkipped() throws Exception
+    {
+        MarklinLocomotive kept = model.newMM2Locomotive("TT logged loc", 75);
+
+        final List<String> keys = Collections.synchronizedList(new ArrayList<>());
+
+        ViewListener recording = (ViewListener) Proxy.newProxyInstance(
+            ViewListener.class.getClassLoader(), new Class<?>[]{ ViewListener.class }, (proxy, method, args) ->
+            {
+                if (method.getName().equals("logf")) keys.add((String) args[0]);
+
+                try
+                {
+                    return method.invoke(model, args);
+                }
+                catch (InvocationTargetException e)
+                {
+                    throw e.getCause();
+                }
+            });
+
+        try
+        {
+            String entry = "{\"loc\":\"%s\",\"path\":[{\"start\":\"TT_x\",\"end\":\"%s\"}],"
+                + "\"executionTime\":0,\"secondsToNext\":0}";
+
+            // The same timetable as the test above: one entry for a deleted locomotive, one good, one
+            // over deleted track
+            String config = "{"
+                + "\"points\": ["
+                + "  {\"name\":\"TT_x\",\"station\":true,\"s88\":8392},"
+                + "  {\"name\":\"TT_y\",\"station\":true,\"s88\":8393}"
+                + "],"
+                + "\"edges\": [{\"start\":\"TT_x\",\"end\":\"TT_y\"}],"
+                + "\"timetable\": ["
+                    + String.format(entry, "TT deleted loc", "TT_y") + ","
+                    + String.format(entry, kept.getName(), "TT_y") + ","
+                    + String.format(entry, kept.getName(), "TT_gone")
+                + "],"
+                + "\"minDelay\":1,\"maxDelay\":2,\"defaultLocSpeed\":35}";
+
+            Layout layout = Layout.fromJSON(config, recording);
+
+            assertTrue(layout.isValid(), "the fixture itself has to load: " + Layout.getLastError());
+
+            assertEquals(layout.getTimetable().size(), 1,
+                "precondition: the two unreadable entries were not the ones skipped");
+
+            assertEquals(Collections.frequency(keys, "autolayout.warnTimetableEntry"), 2,
+                "each skipped timetable entry must be logged as a skipped entry - logged with the "
+                + "warning that means the whole timetable could not be read, one lost entry reads as a "
+                + "lost timetable (BPV-C12); keys logged: " + keys);
+
+            assertFalse(keys.contains("autolayout.warnTimetable"),
+                "the log said the timetable could not be read, when only two of its entries could not");
+        }
+        finally
+        {
+            model.deleteLoc("TT logged loc");
         }
     }
 }
