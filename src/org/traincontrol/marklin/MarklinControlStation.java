@@ -1794,10 +1794,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // is no undo and the backups are manual.  So the old file is copied aside first, once, and
         // said out loud - the save still happens, because refusing it for ever would lose whatever the
         // session did instead.
+        //
+        // But not over a file whose copy could not be made.  The mark is cleared only once the copy is
+        // known to exist; until then this save leaves the file as it is, and the next save tries the
+        // copy again.  Cleared first, a copy that failed was logged and the save went on to write over
+        // the only copy there was (BPV-C7 on 2.8.2, RLD-B1 here).
         if (!backup && this.databaseLoadFailed)
         {
-            this.databaseLoadFailed = false;
-
             try
             {
                 File existing = new File(Util.dataPath(MarklinControlStation.DATA_FILE_NAME));
@@ -1814,10 +1817,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                     this.logf("log.databaseUnreadableKept", kept.getAbsolutePath());
                 }
+
+                // Kept - or nothing is left to keep
+                this.databaseLoadFailed = false;
             }
             catch (IOException | RuntimeException keepFailed)
             {
                 this.log(keepFailed);
+
+                this.logf("log.databaseSaveFailed", keepFailed.toString());
+
+                return;
             }
         }
 
