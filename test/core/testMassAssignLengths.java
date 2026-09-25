@@ -1436,6 +1436,100 @@ public class testMassAssignLengths
     }
 
     /**
+     * In its every-train mode the walk says what is true of the trains it goes through (TDU-C7).
+     *
+     * MT-533 made the item never greyed, and with no train missing a length it goes through every train with the length
+     * it has.  Two sentences written for the other mode came with it: typed 0, it said *"0 means the train has no length,
+     * which is what it has now"* of a train its own prompt had just said has one; and with no train placed at all, the
+     * item's tooltip said every locomotive has a length while a click said none is placed.
+     *
+     * MUTATION: answer 0 in that mode with the missing-length sentence, or choose the tooltip on the missing count alone,
+     * and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheWalkOfEveryTrainSaysWhatIsTrueOfIt() throws Exception
+    {
+        openBerthBehindASwitch(key(5, 1));
+
+        final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+        // NO TRAIN AT ALL: the tooltip says so, as the click does.
+        panel.setTrainLengthDoorForTest(new Lengths());
+
+        javax.swing.JMenuItem item = trainWalkItem(panel);
+
+        assertNotNull(item, "the Bulk Tools menu has no train walk with no trains placed");
+
+        assertEquals(item.getToolTipText().replaceAll("<[^>]*>", ""),
+            org.traincontrol.util.I18n.t("autosetup.ui.infoNoTrainToMeasure"), "with no train placed, the train walk's"
+            + " tooltip does not say so - it says every locomotive has a length, and a click says none is placed");
+
+        if (java.awt.GraphicsEnvironment.isHeadless()) return;
+
+        // EVERY TRAIN MEASURED: 0 typed for one that has a length.
+        panel.setTrainLengthDoorForTest(new Lengths("Charlie", 5));
+
+        invokeTheTrainWalk(panel);
+
+        javax.swing.JDialog first = awaitPrompt(null, TRAINS);
+
+        type(first, "0");
+        answer(first, org.traincontrol.util.I18n.t("ui.ok"));
+
+        String refused = refusalText(TRAINS);
+
+        assertFalse(refused.contains(org.traincontrol.util.I18n.f("autosetup.ui.errorTrainLengthOutOfRange",
+            org.traincontrol.gui.TrainControlUI.ROUTE_TRAIN_LENGTH_MAX).replaceAll("<[^>]*>", "").substring(60)),
+            "0 typed for Charlie, whose prompt says it is 5 long, was answered with the sentence for a train with no"
+            + " length - \"which is what it has now\": " + refused);
+
+        javax.swing.JDialog again = awaitPrompt(null, TRAINS);
+
+        answer(again, org.traincontrol.util.I18n.t("ui.cancel"));
+
+        awaitNoPrompt(TRAINS);
+    }
+
+    /** The text of the refusal the walk shows over its own prompt, which is then closed the way its OK button does. */
+    private static String refusalText(String walkTitleKey) throws Exception
+    {
+        String walkTitle = org.traincontrol.util.I18n.t(walkTitleKey);
+        long giveUp = System.currentTimeMillis() + 10000;
+
+        while (System.currentTimeMillis() < giveUp)
+        {
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
+
+                final javax.swing.JDialog dialog = (javax.swing.JDialog) window;
+
+                if (walkTitle.equals(dialog.getTitle())) continue;
+
+                final JOptionPane[] pane = new JOptionPane[1];
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> pane[0] = findPane(dialog.getContentPane()));
+
+                if (pane[0] == null) continue;
+
+                String text = promptText(dialog);
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> pane[0].setValue(JOptionPane.OK_OPTION));
+
+                return text;
+            }
+
+            Thread.sleep(50);
+        }
+
+        fail("the walk did not refuse the length with a message");
+
+        return null;
+    }
+
+    /**
      * Train lengths and the stations' maximum train lengths are named apart (MT-533).
      *
      * Adam, 2026-09-24: *"better disambiguate labels for 'train lengths' from 'max train lengths', since the latter deals
