@@ -2,6 +2,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import org.traincontrol.automation.Point;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
@@ -91,5 +92,49 @@ public class testControlStationFaults
             "no second ping was ever sent, so nothing could answer it.  One lost packet has ended "
             + "the keepalive for the session: the connection reads as lost for ever, and under "
             + "autonomy the latency cutoff keeps taking the power off every five seconds");
+    }
+
+    /**
+     * Clearing a point's priority leaves it with no priority, rather than with null.
+     *
+     * The priority dialog sends null when the box is emptied, which is the obvious way to say "no
+     * priority" - and null was stored.  Two things then unbox it: getPriority(), which returns int,
+     * and toJSON's `!= 0`.  The first threw inside the comparator that chooses where a train goes
+     * next, on a code path with no try around it, so every autonomy thread died on its next pick and
+     * autonomy silently stopped dispatching.  The second threw on every attempt to save the graph.
+     *
+     * Zero already means no priority, so that is what null becomes.
+     *
+     * Ported from the 3.0 branch (33403b49).
+     */
+    @Test
+    public void testClearingAPriorityDoesNotPoisonThePoint() throws Exception
+    {
+        // Not a station, which is the only kind of point that needs a sensor.  Priority is asked of
+        // every point the search considers, station or not.
+        Point p = new Point("cleared priority", false, null);
+
+        p.setPriority(5);
+        p.setPriority(null);
+
+        try
+        {
+            assertEquals(p.getPriority(), 0,
+                "an emptied priority box means no priority, and no priority is zero");
+
+            // The two unboxing sites, exercised rather than reasoned about
+            assertNotNull(p.toJSON(), "a point with a cleared priority must still be saveable");
+
+            Point other = new Point("other", false, null);
+
+            assertEquals(Integer.compare(p.getPriority(), other.getPriority()), 0,
+                "two points with no priority compare equal, which is what the path comparator asks");
+        }
+        catch (NullPointerException npe)
+        {
+            fail("clearing a point's priority stored null, and reading it back threw "
+                + "NullPointerException - which kills every autonomy thread at its next path pick and "
+                + "stops the graph being saved", npe);
+        }
     }
 }
