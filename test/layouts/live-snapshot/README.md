@@ -128,6 +128,7 @@ not fix it. Name the square.
 - `core.testWhatCountsAsAParkingSquare`
 - `core.testAnAnsweredZeroIsNotMissing`
 - `ui.testACutTrainArrivesTheWayItWouldDrive`
+- `ui.testThePlaceDoorsKeepTheHeading`
 - `ui.testAPastedTrainFacesTheWayTheOperatorChose`
 - `core.testALockReachesTheRailBeingRunOver`
 - `ui.testBulkToolsHoldsTheWholeLayoutTools`

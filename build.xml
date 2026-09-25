@@ -290,6 +290,7 @@
         <test-one-class class="testWhatHasAWayThrough"/>
         <test-one-class class="testAPastedTrainFacesTheWayTheOperatorChose"/>
         <test-one-class class="testACutTrainArrivesTheWayItWouldDrive"/>
+        <test-one-class class="testThePlaceDoorsKeepTheHeading"/>
         <test-one-class class="testAnImportKeepsOnlyThisLayoutsPages"/>
         <test-one-class class="testTheLeftAloneWarningIsSaidOnce"/>
         <test-one-class class="testATailFollowsTheRouteItCameIn"/>
