@@ -40,7 +40,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-497](#mt-497) | 2026-09-24 | Importing routes and answering Yes turns automatic firing back on for the routes saved with it | fixed unvalidated | REG2-C7, MT-487 |
 | [MT-498](#mt-498) | 2026-09-24 | A train facing west at BottomMainA still faces west after it is cut and pasted back | fixed unvalidated | OB-284 |
 | [MT-499](#mt-499) | 2026-09-24 | With autonomy stopped, the locomotive list gives the reasons for a train sent by hand | fixed unvalidated | the REG4 lead of the 2026-09-23 review |
-| [MT-500](#mt-500) | 2026-09-24 | Starting TrainControl with a train facing west at BottomMainA logs no "placed on a non-station" | fixed unvalidated | GUI4-C5 |
 | [MT-501](#mt-501) | 2026-09-24 | Importing an old autonomy.json leaves your diagram's directions as they are | fixed unvalidated | REG4-A1, the directions ruling of 2026-09-24 |
 | [MT-502](#mt-502) | 2026-09-24 | A station an old autonomy.json switched off arrives as one trains can stop at, not chosen by autonomy | fixed unvalidated | REG-B1 |
 | [MT-504](#mt-504) | 2026-09-24 | A station's exit guard cannot also be made its entry guard | fixed unvalidated | AUT-C2, MT-493 |
@@ -58,7 +57,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-521](#mt-521) | 2026-09-24 | Mass Assign Max Train Lengths refuses 0 | fixed unvalidated | MT-456 |
 | [MT-530](#mt-530) | 2026-09-24 | Mass Assign Lengths asks for crossings on their own, and one answer sets them all | fixed unvalidated | MT-459 |
 | [MT-533](#mt-533) | 2026-09-24 | The train-length prompt takes typing without a click | fixed unvalidated | MT-474 |
-| [MT-547](#mt-547) | 2026-09-24 | On a Central Station layout there is no Load Autonomy Configuration tab | fixed unvalidated | OB-254, MT-544 |
 | [MT-548](#mt-548) | 2026-09-24 | On a Central Station layout the Autonomy menu opens, and only the download and Documentation can be chosen | fixed unvalidated | OB-254, OB-093, MT-544 |
 | [MT-559](#mt-559) | 2026-09-24 | At a station autonomy may choose, a short run-in says a longer train may block the layout | fixed unvalidated | MT-555 |
 | [MT-566](#mt-566) | 2026-09-24 | The locomotive train-length walk is never greyed, and counts | fixed unvalidated | MT-533 |
@@ -73,7 +71,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-575](#mt-575) | 2026-09-24 | From the autonomy editor the tail question is the list | fixed unvalidated | FR-100, TDU-C1 |
 | [MT-576](#mt-576) | 2026-09-24 | A tail answer given after the placement changed is written where the train now stands, or not at all | fixed unvalidated | TDU2-A1, TDU3-B1 |
 | [MT-577](#mt-577) | 2026-09-24 | Customize Function Icons greys Apply while there is nothing to apply | fixed unvalidated | FR-098 |
-| [MT-578](#mt-578) | 2026-09-24 | Highlight on Diagram lights a three-way once, in the commanded colour | fixed unvalidated | OB-286, GUI2-C4 |
 | [MT-579](#mt-579) | 2026-09-24 | A late tail answer does not write over the road another train drove in by | fixed unvalidated | TDU2-A1, TDD3-C6, TDD4-C4 |
 | [MT-580](#mt-580) | 2026-09-25 | Over a setup with errors, the right-click Return Home item is greyed and says why | fixed unvalidated | TDU2-C3 |
 | [MT-581](#mt-581) | 2026-09-25 | The right-click Place keeps the train's heading | fixed unvalidated | OB-296, TDU-B4 |
@@ -83,8 +80,8 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-585](#mt-585) | 2026-09-25 | The right-click Place keeps a heading trains may not arrive by | fixed unvalidated | OB-296, ADU-B1, ADD2-C9 |
 | [MT-586](#mt-586) | 2026-09-25 | A stretch answered 0 lets a train in when the total track holds it | fixed unvalidated | ADU-C7, TDU-C6 |
 
-Everything else - 531 of 586 - needs nothing from you unless the area changes again:
-453 **fixed validated** and 78 **superseded**.
+Everything else - 534 of 586 - needs nothing from you unless the area changes again:
+453 **fixed validated** and 81 **superseded**.
 
 ---
 
@@ -25861,7 +25858,7 @@ even while autonomy was stopped, so it could say a train could not be sent anywh
 
 ### MT-500 - 2026-09-24 - Starting TrainControl with a train facing west at BottomMainA logs no "placed on a non-station"
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** GUI4-C5
 
 **Written:** 2026-09-24
@@ -25880,6 +25877,10 @@ standing on the barred copy of a station - calling BottomMainA, a station, a non
 - No line says that train was "placed on a non-station".
 
 *What this is:* `core.testTheLoaderDoesNotCallAStationANonStation`.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `core.testTheLoaderDoesNotCallAStationANonStation.testATrainOnABarredCopyIsNotCalledOffAStation` loads a build of your railway with a train on BottomMainA's westbound copy through `Layout.fromJSON` - the loader start-up runs, through `parseAuto` - taps the log, and asserts no *placed on a non-station* line for it (with a control that a train on BottomMainAPre is still warned about).  The line is written in one place only, inside that loader.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -27335,7 +27336,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-547 - 2026-09-24 - On a Central Station layout there is no Load Autonomy Configuration tab
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-254, MT-544
 
 **Written:** 2026-09-24
@@ -27353,6 +27354,10 @@ Validated on your *Works* of 2026-09-24.
 - Step 2: there is no **Load Autonomy Configuration** tab.
 
 *What this is:* `regression.testTheOldAutonomyTabIsGone.testACentralStationLayoutHasNoOldAutonomyTab`.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testTheOldAutonomyTabIsGone.testACentralStationLayoutHasNoOldAutonomyTab` builds the window in the Central Station state and asserts there is no Load Autonomy Configuration tab.  The tab is gone from the code altogether: its title is in no bundle and no form, so no door can bring it back.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
@@ -28379,7 +28384,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-578 - 2026-09-24 - Highlight on Diagram lights a three-way once, in the commanded colour
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** OB-286, GUI2-C4
 
 **Written:** 2026-09-24
@@ -28397,6 +28402,10 @@ Validated on your *Works* of 2026-09-24.
 - Step 3: the three-way is lit yellow, as a square the route commands, not orange.
 
 *What this is:* `regression.testAThreeWayIsLitOnce`.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testAThreeWayIsLitOnce.testAThreeWayCommandedAndCheckedIsLitAsCommanded`, on your railway's 1 - Main with the whole window up, gives a route a three-way's first decoder and a condition on the second, runs the Highlight on Diagram button's own method, and compares the drawn pixels with the commanded colour - not the checked one washed over it.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 

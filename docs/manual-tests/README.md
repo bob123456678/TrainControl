@@ -54,6 +54,14 @@ tracked in the wrong place, or replaced by a later entry that covers the same gr
 is hard or unwelcome. Say which entry or receipt took it over, by tag, in the Comments. If nothing
 took it over, it is not superseded; it is outstanding.
 
+**Or an automated test that answers it** (Adam, 2026-09-25: *"Yes, let automated tests supersede those MTs (if you are
+100% confident in the result). Include the list in your report so I get a chance to review."*).  Only where the test
+drives the same door the steps do - the menu action or the method it runs, not a helper beneath it - with the same inputs
+(the supplied file, the same squares of the frozen railway), asserts every outcome the Expected names as the Comments
+amend it, and is green in a full battery.  Where any of that is in doubt, or the check is how something looks or reads,
+the entry stays Adam's.  The Comments name the test, class and method, and what it asserts; the session report lists every
+entry superseded this way, for Adam to review, and one he reopens goes back to what it was.
+
 **ONE TEST PER ENTRY.** Adam, 2026-09-07: *"make each MT be one test, not a laundry list of different
 things, so that I can provide clear feedback. Update current MTs to each have one set of steps and one
 outcome being checked. More MTs is OK."*
