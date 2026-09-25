@@ -3882,8 +3882,10 @@ public class AutonomySession
      * (`GraphReducer.boundsTheRoom`, OB-233); or a crossing another road runs over, where the berth rule refuses
      * (TDA-C7, TDA5-C1).
      *
-     * A crossing no train can drive over stops nothing: with nothing leading onto its other road the build emits no rail
-     * over it, and the rule has nothing to refuse on (TDA3-C2, a stated limit until TDA5-C1 asked the road).
+     * **Known limit** (TDA3-C2, narrowed by TDA5-C1): a crossing whose other road runs between two sensors no train can
+     * reach is still taken for a stop.  The reduction has that road, so this finds it; the build emits no rail over it,
+     * so the rule has nothing there to refuse on, and the notices warn of a refusal that does not come.  The warning
+     * side, and a crossing nobody builds.
      *
      * @param tile a square
      * @param berth the berth the room is counted for

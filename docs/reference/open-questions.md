@@ -174,6 +174,11 @@ either.
 - The tail walk **stops at a fork** and **at unmeasured track**. A tail that really does reach past
   either is not blocked. Both under-claim knowingly: blocking on a guess is still a refusal, and it
   stops trains that could have run.
+- **A crossing whose other road no train can reach still ends a berth's room for its notices** (TDA3-C2, narrowed by
+  TDA5-C1).  The notices ask whether another road runs over the square, of the reduction, which has a road between
+  two sensors however unreachable; the build emits no rail over it, so the berth rule does not refuse there, and the
+  half-measured and run-in notices warn of a refusal that does not come.  The warning side, and a crossing nobody
+  builds.
 - The room rule measures **from the last switch**, so track measured on the far side of a switch does
   not count toward a berth. This surprised Adam once and is correct: a train that fits between the
   switch and the berth fits behind any earlier switch too.
