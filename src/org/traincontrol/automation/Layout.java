@@ -360,12 +360,16 @@ public class Layout
      *
      * It would not hold for a railway measured in centimetres. If lengths ever grow, this needs to
      * become a floor proportional to the measured ones rather than a flat 1.
+     *
+     * AN EDGE ANSWERED 0 COUNTS 0 (Adam, 2026-09-25: *"Yes, count answered 0 as 0"*).  The floor is for
+     * track nobody has measured; an answered 0 is a measurement (`Edge.isMeasured`), as every length rule
+     * reads it, and counted as 1 it made a route through sensors side by side look longer than it is.
      */
     private int lengthOf(List<Edge> path)
     {
         int total = 0;
 
-        for (Edge e : path) total += e.getLength() > 0 ? e.getLength() : 1;
+        for (Edge e : path) total += e.getLength() > 0 ? e.getLength() : e.isMeasured() ? 0 : 1;
 
         return total;
     }
