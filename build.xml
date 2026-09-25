@@ -136,6 +136,7 @@
         <test-one-class class="testLoadData"/>
         <test-one-class class="testLocDB"/>
         <test-one-class class="testLocomotive"/>
+        <test-one-class class="testMainWindowFaults"/>
         <test-one-class class="testMessageBundles"/>
         <test-one-class class="testMultiUnitMembership"/>
         <test-one-class class="testNetworkProxy"/>

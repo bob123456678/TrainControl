@@ -13437,7 +13437,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     private void startAutonomyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startAutonomyActionPerformed
 
+        // Greyed here, at the press, before anything is dispatched.  The button used to stay live until
+        // the worker below got round to disabling it, after all of its checks - so a double-click
+        // spawned two workers, both passed the busy check before either had set the layout running,
+        // and both called runLocomotives, which has no reentrancy guard of its own: every train
+        // started twice.
+        this.startAutonomy.setEnabled(false);
+
+        final java.util.concurrent.atomic.AtomicBoolean started =
+            new java.util.concurrent.atomic.AtomicBoolean(false);
+
         new Thread(() ->
+            {
+            try
             {
                 if (!this.model.getPowerState())
                 {
@@ -13495,6 +13507,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (this.model.getAutoLayout().isValid() && !this.isAutonomyBusy())
                 {
+                    started.set(true);
+
                     new Thread( () ->
                     {
                         this.model.getAutoLayout().runLocomotives();
@@ -13533,6 +13547,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null)
                     ));
                 }
+            }
+            finally
+            {
+                // Given back on every path that did not start anything - no power, a refused dialog,
+                // no locomotives, an invalid layout, an error.  Not on the path that did: there the
+                // button stays greyed, and the end of the run is what gives it back.
+                if (!started.get())
+                {
+                    javax.swing.SwingUtilities.invokeLater(() -> this.startAutonomy.setEnabled(true));
+                }
+            }
             }).start();
     }//GEN-LAST:event_startAutonomyActionPerformed
 
