@@ -268,11 +268,81 @@ public class testALocomotiveDoesNotEvictItself
         }
     }
 
+    /**
+     * A member of a standing multi-unit given, in Change Name or Address, the address of another train that stands takes
+     * that other train off the graph - as putting the multi-unit down again would.
+     *
+     * The member stands nowhere, but it is driven: every command to its head reaches its decoder, and now the other
+     * train's too.  BPV-A1's fix swept only for an edited train standing on the graph, so this edit took nothing off,
+     * and autonomy would run the other train as a train of its own while the multi-unit's commands moved it (RLA-B1).
+     *
+     * MUTATION: sweep only for the edited train where it stands, and this fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testReAddressingAMemberOntoAStandingTrainTakesThatTrainOff() throws Exception
+    {
+        MarklinLocomotive head = model.newMM2Locomotive(HEAD, HEAD_ADDRESS);
+        MarklinLocomotive member = model.newMM2Locomotive(MEMBER, MEMBER_ADDRESS);
+        MarklinLocomotive other = model.newMM2Locomotive(OTHER, OTHER_ADDRESS);
+
+        try
+        {
+            java.util.Map<String, Double> consist = new java.util.HashMap<>();
+
+            consist.put(MEMBER, 1.0);
+
+            assertEquals(head.setLinkedLocomotives(consist), 1, "precondition: the member could not be linked to the head");
+
+            Layout layout = new Layout(model);
+
+            MarklinFeedback first = model.newFeedback(8396, null);
+            MarklinFeedback second = model.newFeedback(8397, null);
+
+            model.setFeedbackState(first.getName(), false);
+            model.setFeedbackState(second.getName(), false);
+
+            layout.createPoint("MU E", true, first.getName());
+            layout.createPoint("MU F", true, second.getName());
+            layout.createEdge("MU E", "MU F");
+
+            layout.getPoint("MU E").setLocomotive(head);
+            layout.getPoint("MU F").setLocomotive(other);
+
+            model.changeLocAddress(MEMBER, OTHER_ADDRESS, MarklinLocomotive.decoderType.MM2);
+
+            assertTrue(head.isLinkedTo(member), "precondition: the address change took the member out of its multi-unit,"
+                + " so the head no longer drives the other train's decoder");
+
+            assertFalse(head.isSimultaneousMultiUnitCompatible(other), "precondition: the head still counts as"
+                + " compatible with the train whose address its member now has");
+
+            // What the window does next.
+            layout.sanitizeMultiUnits(member);
+
+            assertNotNull(layout.getLocomotiveLocation(head), "re-addressing a member took its own multi-unit off its"
+                + " station (BPV-A1)");
+
+            assertNull(layout.getLocomotiveLocation(other), "a member of a standing multi-unit now has the address of a"
+                + " train standing on MU F, and both still stand - autonomy would run that train as its own while every"
+                + " command to the multi-unit moves it (RLA-B1)");
+        }
+        finally
+        {
+            try { model.deleteLoc(OTHER); } catch (Exception ignored) { }
+            try { model.deleteLoc(MEMBER); } catch (Exception ignored) { }
+            try { model.deleteLoc(HEAD); } catch (Exception ignored) { }
+        }
+    }
+
     private static final String HEAD = "SM head";
     private static final String MEMBER = "SM member";
     private static final String MEMBER_RENAMED = "SM member renamed";
+    private static final String OTHER = "SM other";
     private static final int HEAD_ADDRESS = 74;
     private static final int MEMBER_ADDRESS = 75;
+    private static final int OTHER_ADDRESS = 76;
 
     /**
      * One station with one train standing on it.
