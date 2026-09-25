@@ -28289,6 +28289,10 @@ Validated on your *Works* of 2026-09-24.
 
 **Two notes, from the fourth validation round** (2026-09-24).  Step 7's log line now reads: *where the tail of 75 407 DB lies was not recorded: Tunnel changed while the question waited - the train was moved, another train stands there, or another configuration was loaded*.  After step 7, put 75 407 DB back on the square it really stands on.  The case with a second train on the square is MT-579.
 
+**Claude, 2026-09-24.**
+
+**Step 7's log line, as it reads after the fifth validation round** (2026-09-24): *where the tail of 75 407 DB lies was not recorded: Tunnel changed while the question waited - the train was moved or turned, another train stands there, or the setup was reloaded*.
+
 ---
 
 <a id="mt-577"></a>
