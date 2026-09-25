@@ -1,6 +1,6 @@
 # TDA - Automation lane, round 1: the railway's rules in the commits of 2026-09-23 and 2026-09-24
 
-**Status:** open
+**Status:** closed
 
 **Prefix:** TDA
 

@@ -1,6 +1,6 @@
 # TDA5 - Automation lane, round 5: the dispositions of TDA4, and what the round-4 fixes left behind
 
-**Status:** open
+**Status:** closed
 
 **Prefix:** TDA5
 

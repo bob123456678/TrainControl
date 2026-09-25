@@ -1,6 +1,6 @@
 # TDD4 - Documents, the tracker, and the tests themselves (round 4, validation)
 
-**Status:** open
+**Status:** closed
 
 **Prefix:** TDD4
 

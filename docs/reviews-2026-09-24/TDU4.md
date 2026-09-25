@@ -1,6 +1,6 @@
 # User interface - validation round 4 of the fixes `67f79912..7c38b51a`
 
-**Status:** open
+**Status:** closed
 
 **Prefix:** `TDU4`
 

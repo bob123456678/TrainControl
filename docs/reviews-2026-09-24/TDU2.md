@@ -1,6 +1,6 @@
 # User interface - validation round 2 of the fixes `fc1ce476..7b0d5c2f`
 
-**Status:** open
+**Status:** closed
 
 **Prefix:** `TDU2`
 

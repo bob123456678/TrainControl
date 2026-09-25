@@ -1,6 +1,6 @@
 # TDD3 - Documents, the tracker, and the tests themselves (round 3, validation)
 
-**Status:** open
+**Status:** closed
 
 **Prefix:** TDD3
 

@@ -1,6 +1,6 @@
 # User interface - the commits of 2026-09-23 and 2026-09-24
 
-**Status:** open
+**Status:** closed
 
 **Prefix:** `TDU`
 
