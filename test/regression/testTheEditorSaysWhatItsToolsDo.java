@@ -66,7 +66,10 @@ public class testTheEditorSaysWhatItsToolsDo
      * Adam, 2026-09-24: *"add brief tooltips on what entry guards and exit guards are to their items in the autonomy
      * right click menu"*.
      *
-     * MUTATION: leave either tooltip out, and this fails.
+     * Each its OWN guard's text (TDD2-C15): the two items sit next to each other and read alike, and a tooltip on the
+     * wrong one tells Adam the exit guard does what the entry guard does.
+     *
+     * MUTATION: leave either tooltip out, or give the two items each other's, and this fails.
      *
      * @throws Exception from the event thread
      */
@@ -80,8 +83,13 @@ public class testTheEditorSaysWhatItsToolsDo
         javax.swing.SwingUtilities.invokeAndWait(() ->
             menu[0] = panel.buildTileMenu(EMPTY, session.getGraph().getTiles().get(EMPTY)));
 
-        for (String key : new String[] {"autosetup.ui.menuPairSignal", "autosetup.ui.menuPairEntrySignal"})
+        String[][] items = {{"autosetup.ui.menuPairSignal", "autosetup.ui.tooltipExitGuard"},
+            {"autosetup.ui.menuPairEntrySignal", "autosetup.ui.tooltipEntryGuard"}};
+
+        for (String[] pair : items)
         {
+            String key = pair[0];
+
             javax.swing.JMenuItem item = find(menu[0], I18n.t(key));
 
             assertNotNull(item, "precondition: a station's menu has no " + I18n.t(key));
@@ -90,6 +98,13 @@ public class testTheEditorSaysWhatItsToolsDo
 
             assertTrue(tip != null && !tip.replaceAll("<[^>]*>", "").trim().isEmpty(), I18n.t(key) + " has no tooltip -"
                 + " Adam, OB-293: \"add brief tooltips on what entry guards and exit guards are\"");
+
+            // ITS OWN GUARD'S TEXT (TDD2-C15), read past the wrapping.
+            String said = tip.replaceAll("<[^>]*>", " ").replace("&nbsp;", " ").replaceAll("\\s+", " ").trim();
+            String own = I18n.t(pair[1]).replaceAll("\\s+", " ").trim();
+
+            assertTrue(said.startsWith(own.substring(0, Math.min(40, own.length()))), I18n.t(key) + " says what the"
+                + " other guard does, or something else: " + said);
         }
     }
 

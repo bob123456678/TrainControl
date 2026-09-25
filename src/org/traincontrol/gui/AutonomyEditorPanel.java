@@ -2306,8 +2306,8 @@ public class AutonomyEditorPanel extends JPanel
 
             bulk.add(massAssign);
 
-            // MASS ASSIGN MAX TRAIN LENGTHS (Adam, 2026-09-17: *"add a similar feature to walk stations that don't have a
-            // max length set up, so I can enter it"*).  Greyed on the walk's own count, as the item above.
+            // MASS ASSIGN STATION MAX TRAIN LENGTHS (Adam, 2026-09-17: *"add a similar feature to walk stations that
+            // don't have a max length set up, so I can enter it"*).  Greyed on the walk's own count, as the item above.
             int stationsToLimit = session == null ? 0 : session.stationsWithoutAMaximumOn(page).size();
 
             javax.swing.JMenuItem massAssignMaximum =
@@ -2323,9 +2323,10 @@ public class AutonomyEditorPanel extends JPanel
 
             bulk.add(massAssignMaximum);
 
-            // MASS ASSIGN TRAIN LENGTHS (FR-094; Adam, 2026-09-23: *"Rather than adding complexity through new menus, add
-            // a bulk tool to the autonomy editor to set missing train lengths, similar to how the station lengths are
-            // set."*).  Not a page's question - a train is not on a page - so a page left out does not change it.
+            // MASS ASSIGN LOCOMOTIVE TRAIN LENGTHS (FR-094; Adam, 2026-09-23: *"Rather than adding complexity through
+            // new menus, add a bulk tool to the autonomy editor to set missing train lengths, similar to how the
+            // station lengths are set."*).  Not a page's question - a train is not on a page - so a page left out does
+            // not change it.
             int trainsToMeasure = trainLengthDoor().trainsWithoutALength().size();
 
             // NEVER GREYED, AND THE COUNT IN ITS LABEL (Adam, 2026-09-24, on MT-533: *"This option should never be greyed
@@ -9964,7 +9965,7 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Goes through every station on this page that will still take a train of any length, asking for its maximum (Mass
-     * Assign Max Train Lengths).
+     * Assign Station Max Train Lengths).
      *
      * Adam, 2026-09-17: *"add a similar feature to walk stations that don't have a max length set up, so I can enter
      * it"*.  **Mass Assign Lengths' walk, for stations**: the same prompt, so the number box has the focus, Enter
@@ -10024,14 +10025,14 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Goes through every locomotive autonomy would run that has no train length, asking for each one's (Mass Assign
-     * Train Lengths, FR-094) - and where none is missing one, through every train with the length it has, which Skip
-     * keeps (MT-533: the item is never greyed).
+     * Locomotive Train Lengths, FR-094) - and where none is missing one, through every train with the length it has,
+     * which Skip keeps (MT-533: the item is never greyed).
      *
      * Adam, 2026-09-23: *"Rather than adding complexity through new menus, add a bulk tool to the autonomy editor to set
-     * missing train lengths, similar to how the station lengths are set."*  **Mass Assign Max Train Lengths' walk, for
-     * trains**: the same prompt - the number box has the focus, Enter submits, each prompt opens where the last was
-     * left; OK, Skip and Cancel, with Escape stopping - and the list asked again before each train rather than trusted
-     * from the start.
+     * missing train lengths, similar to how the station lengths are set."*  **Mass Assign Station Max Train Lengths'
+     * walk, for trains**: the same prompt - the number box has the focus, Enter submits, each prompt opens where the
+     * last was left; OK, Skip and Cancel, with Escape stopping - and the list asked again before each train rather than
+     * trusted from the start.
      *
      * **Which trains: the list the Atomic Routes refusal names**, asked through `TrainControlUI.trainsWithoutALength`,
      * so the refusal cannot name a train this walk does not offer.  That is where FR-094 came from: on MT-470 the
@@ -10152,7 +10153,8 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Where Mass Assign Train Lengths finds the trains to ask about, and where it writes each answer (FR-094).
+     * Where Mass Assign Locomotive Train Lengths finds the trains to ask about, and where it writes each answer
+     * (FR-094).
      *
      * Both halves live on the main window - the run list is the running layout's, and a length is written through
      * `TrainControlUI.applyTrainLength` - and this panel is also built with no window at all.  So the walk asks this

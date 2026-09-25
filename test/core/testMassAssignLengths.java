@@ -633,7 +633,7 @@ public class testMassAssignLengths
     // ------------------------------------------------------------------------------------------------ station maxima
 
     /**
-     * The stations Mass Assign Max Train Lengths asks about: those on this page with no maximum, row by row.
+     * The stations Mass Assign Station Max Train Lengths asks about: those on this page with no maximum, row by row.
      *
      * Adam, 2026-09-17: *"add a similar feature to walk stations that don't have a max length set up, so I can enter
      * it"*.  Nothing on this railway is measured and no locomotive has a length, which is where the `NO_MAX_TRAIN_LENGTH`
@@ -775,7 +775,7 @@ public class testMassAssignLengths
         assertTrue(session.tilesWithAMaxTrainLength().isEmpty());
 
         assertTrue(session.stationsWithoutAMaximumOn("main").contains(key(5, 1)),
-            "Mass Assign Max Train Lengths does not offer the station whose maximum was just cleared");
+            "Mass Assign Station Max Train Lengths does not offer the station whose maximum was just cleared");
     }
 
     /**
@@ -1365,7 +1365,7 @@ public class testMassAssignLengths
 
         javax.swing.JMenuItem item = trainWalkItem(panel);
 
-        assertNotNull(item, "the Bulk Tools menu has no Mass Assign Train Lengths item");
+        assertNotNull(item, "the Bulk Tools menu has no Mass Assign Locomotive Train Lengths item");
         assertTrue(item.isEnabled(), "the item is greyed with two trains to ask about");
         assertEquals(item.getToolTipText().replaceAll("<[^>]*>", ""),
             org.traincontrol.util.I18n.f("autosetup.ui.tooltipMassAssignTrainLengths", 2));
@@ -1374,7 +1374,8 @@ public class testMassAssignLengths
 
         item = trainWalkItem(panel);
 
-        assertNotNull(item, "the Bulk Tools menu has no Mass Assign Train Lengths item when every train has a length");
+        assertNotNull(item, "the Bulk Tools menu has no Mass Assign Locomotive Train Lengths item when every train has a"
+            + " length");
 
         assertTrue(item.isEnabled(), "the item is greyed when every train has a length - Adam, MT-533: \"This option"
             + " should never be greyed out completely\"");
@@ -1718,7 +1719,7 @@ public class testMassAssignLengths
             "the walk sets a length itself, past applyTrainLength");
     }
 
-    /** The Mass Assign Train Lengths item, off the Bulk Tools menu as the right-click menu builds it. */
+    /** The Mass Assign Locomotive Train Lengths item, off the Bulk Tools menu as the right-click menu builds it. */
     private static javax.swing.JMenuItem trainWalkItem(AutonomyEditorPanel panel) throws Exception
     {
         final javax.swing.JMenuItem[] found = new javax.swing.JMenuItem[1];

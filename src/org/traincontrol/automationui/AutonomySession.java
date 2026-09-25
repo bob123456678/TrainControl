@@ -3676,8 +3676,8 @@ public class AutonomySession
     }
 
     /**
-     * The stations on this page that will still take a train of any length, in the order Mass Assign Max Train Lengths
-     * asks about them: row by row, left to right.
+     * The stations on this page that will still take a train of any length, in the order Mass Assign Station Max Train
+     * Lengths asks about them: row by row, left to right.
      *
      * Adam, 2026-09-17: *"add a similar feature to walk stations that don't have a max length set up, so I can enter
      * it"*.  The same stations the `NO_MAX_TRAIN_LENGTH` notice lists, asked through `hasNoMaximumTrainLength` so the

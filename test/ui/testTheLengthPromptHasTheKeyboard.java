@@ -21,8 +21,8 @@ import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Mass Assign Train Lengths' prompt has the keyboard in the real editor window - on the first train, after a length
- * is refused, and on the next train (MT-474).
+ * Mass Assign Locomotive Train Lengths' prompt has the keyboard in the real editor window - on the first train, after a
+ * length is refused, and on the next train (MT-474).
  *
  * Adam, 2026-09-23, on MT-474: *"Works, make sure the text field is focused by default."*
  *
@@ -167,7 +167,7 @@ public class testTheLengthPromptHasTheKeyboard
 
         final javax.swing.JMenuItem item = bulkItem(TRAINS);
 
-        assertNotNull(item, "precondition: Bulk Tools has no Mass Assign Train Lengths item");
+        assertNotNull(item, "precondition: Bulk Tools has no Mass Assign Locomotive Train Lengths item");
         assertTrue(item.isEnabled(), "precondition: the item is greyed with two trains made unmeasured");
 
         SwingUtilities.invokeLater(item::doClick);
