@@ -1472,10 +1472,12 @@ never binds, and a train inside it is refused by a rule quoting a number nobody 
   platform, which is what `Layout.measuredRoomAtTheEndOf` counts. **A notice quoting a number the refusal
   would not quote sends the reader to measure the wrong stretch.**  So for a parking berth the number is the
   berth rule's where that stops first - at a crossing between the berth and its switch, or on a leg with no
-  switch (TDA2-C6, TDA3-C2) - and with nothing measured before that crossing the notice says 0 where its squares
-  were answered 0, and nothing where they were not, which the half-measured warning names instead (TDA3-C1).
+  switch (TDA2-C6, TDA3-C2) - and with nothing measured before the switch or crossing that ends its room the
+  notice says 0 where those squares were answered 0, and nothing where they were not, which the half-measured
+  warning names instead (TDA3-C1, TDA4-C1).
 - An arriving edge crossing no switch is skipped unless trains turn round where it starts - there the
-  guard walks on back through earlier edges, so that edge bounds nothing.
+  guard walks on back through earlier edges, so that edge bounds nothing - or, for a parking berth, a crossing on
+  it ends the berth rule's room, as above.
 - Silent where either side is missing: no typed maximum is `checkNoMaxTrainLength`'s sentence, an
   unmeasured stretch is `checkReversalNeedsLength`'s, and a railway measuring no track at all has decided
   not to model lengths.

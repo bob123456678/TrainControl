@@ -549,9 +549,9 @@ public class TailCrossedPrompt
      * the wait - any setup change from the diagram, a page left out, another configuration loaded - builds new copies
      * and leaves the old one as it was, so asked of the old one the check always passed, and the answer went to a copy
      * nothing reads.  So the copy of that name on the railway running NOW is asked: after a rebuild of the same setup
-     * the train is put back on it with its side and the road the setup recorded, and the answer belongs there; after
-     * another configuration is loaded the copy holds that configuration's train or none, and the answer goes nowhere.
-     * And nowhere once the door's setup is not the window's any more - a session replaced by a re-download.
+     * the train is put back on it with its side and the road the running railway had, and the answer belongs there.
+     * And nowhere once the door's setup is not the window's any more (`sameSetup`) - a session replaced, or another
+     * configuration loaded, whose copy can hold the same train from the same side (TDU4-C1).
      *
      * @param running the railway running now, or null to ask the copy itself
      * @param asked the copy the train was put on when the question was asked
@@ -589,8 +589,41 @@ public class TailCrossedPrompt
     }
 
     /**
+     * The railway running now, or null where autonomy has none - asked without making one, which `getAutoLayout` does
+     * when there is none (TDU4-C2).
+     *
+     * @param model the model
+     * @return the running railway, or null
+     */
+    public static Layout runningNow(org.traincontrol.model.ViewListener model)
+    {
+        return model == null || !model.hasAutoLayout() ? null : model.getAutoLayout();
+    }
+
+    /**
+     * Whether the setup a door wrote to before its question is still the window's when the answer comes back: the same
+     * session, with the same configuration active (TDU3-B1, TDU4-C1).  Loading another configuration keeps the session,
+     * and that configuration's copy of the square can hold the same train from the same side: the answer was then written
+     * into the configuration just loaded, and the one it was asked for never had it.  A door whose setup is not the
+     * window's any more saves nothing either (TDU4-C2): the reset that replaced it wrote what it held.
+     *
+     * @param asked the session the door wrote to before the question
+     * @param now the window's session now
+     * @param configurationAsked the configuration active when the question was asked
+     * @return true when the answer is about the setup in front of the operator
+     */
+    public static boolean sameSetup(org.traincontrol.automationui.AutonomySession asked,
+        org.traincontrol.automationui.AutonomySession now, String configurationAsked)
+    {
+        return asked != null && asked == now
+            && java.util.Objects.equals(asked.getStore().getActiveConfiguration(), configurationAsked);
+    }
+
+    /**
      * Says in the log that an answer was not recorded, and why (TDU3-C2): the squares go dark whichever way it went, and
-     * the operator could not tell a dropped answer from one that did not work.
+     * the operator could not tell a dropped answer from one that did not work.  Only for an answer (TDU4-C3) - a Cancel
+     * or Not known asked for nothing to be recorded - and naming the square as the diagram does, without a remedy that
+     * the train having moved or another train standing there makes impossible.
      *
      * @param model where the log goes
      * @param train the train the question was about

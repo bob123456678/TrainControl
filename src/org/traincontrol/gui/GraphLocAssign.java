@@ -286,6 +286,9 @@ public class GraphLocAssign extends javax.swing.JPanel
         session.placeLocomotive(tile,
             point.getCurrentLocomotive() == null ? null : point.getCurrentLocomotive().getName());
 
+        // Whether the setup this door writes to is still the window's once its tail question is answered (TDU4-C2).
+        boolean setupStands = true;
+
         // After the commit this IS the arriving train, which is why the guard reads the point rather
         // than `arriving`: an assignment that did not take should not write a facing.
         if (point.getCurrentLocomotive() != null)
@@ -310,6 +313,7 @@ public class GraphLocAssign extends javax.swing.JPanel
             // OWNED BY THE MAIN WINDOW (TLV-C3): the dialog's own panel has gone with the dialog.
             final org.traincontrol.base.Locomotive placed = point.getCurrentLocomotive();
             final java.util.List<org.traincontrol.automation.Edge> roadAtTheQuestion = point.getArrivedAlong();
+            final String configurationAsked = session.getStore().getActiveConfiguration();
 
             TailCrossedPrompt.Answer answer = TailCrossedPrompt.askAfterPlacement(layout, point, tail,
                 point.getCurrentLocomotive().getTrainLength(), point.getCurrentLocomotive().getName(), edit.parent,
@@ -319,9 +323,10 @@ public class GraphLocAssign extends javax.swing.JPanel
             // dialog right after a run, with nothing asked, keeps the road it drove in on - in both stores.
             // ONLY WHERE THE PLACEMENT STILL STANDS (TDU2-A1, TDU3-B1): the question waited with the window live, and the
             // copy may hold another train now, or have been replaced by a rebuild.
+            setupStands = TailCrossedPrompt.sameSetup(session, edit.parent.getAutonomySession(), configurationAsked);
+
             final org.traincontrol.automation.Point landing = TailCrossedPrompt.whereTheAnswerGoes(
-                edit.parent.getModel().getAutoLayout(), point, placed, tail, roadAtTheQuestion,
-                edit.parent.getAutonomySession() == session);
+                TailCrossedPrompt.runningNow(edit.parent.getModel()), point, placed, tail, roadAtTheQuestion, setupStands);
 
             if (landing != null)
             {
@@ -329,11 +334,12 @@ public class GraphLocAssign extends javax.swing.JPanel
                     tile.equals(squareBefore), sideBefore, tail);
 
                 session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(road));
-                TailCrossedPrompt.writeRoad(landing, point, edit.parent.getModel().getAutoLayout(), road);
+                TailCrossedPrompt.writeRoad(landing, point, TailCrossedPrompt.runningNow(edit.parent.getModel()), road);
             }
-            else
+            else if (answer.wasAnswered())
             {
-                TailCrossedPrompt.noteADroppedAnswer(edit.parent.getModel(), placed.getName(), point.getName());
+                TailCrossedPrompt.noteADroppedAnswer(edit.parent.getModel(), placed.getName(),
+                    session.baseNameOf(point.getName()));
             }
         }
 
@@ -343,7 +349,9 @@ public class GraphLocAssign extends javax.swing.JPanel
         //
         // Every other door that writes the setup saves it: the paste door, the facing menu, placeFacing
         // beside this one on the same menu.  This is the door for two menus, so it is the one place
-        // that has to.
+        // that has to.  NOT A SETUP THE WINDOW HAS LET GO in the wait (TDU4-C2), which the reset that replaced it wrote.
+        if (!setupStands) return;
+
         try
         {
             session.save();

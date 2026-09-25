@@ -8079,6 +8079,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (session == null) return;
 
+        // Whether the setup this door writes to is still the window's once its tail question is answered (TDU4-C2).
+        boolean setupStands = true;
+
         session.placeLocomotive(tile,
             point.getCurrentLocomotive() == null ? null : point.getCurrentLocomotive().getName());
 
@@ -8169,6 +8172,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // AND HOW FAR BACK ITS TAIL REACHES, asked where the answer matters (Adam, 2026-09-14).
             final org.traincontrol.base.Locomotive placed = point.getCurrentLocomotive();
             final java.util.List<org.traincontrol.automation.Edge> roadAtTheQuestion = point.getArrivedAlong();
+            final String configurationAsked = session.getStore().getActiveConfiguration();
 
             org.traincontrol.gui.TailCrossedPrompt.Answer answer = org.traincontrol.gui.TailCrossedPrompt.askAfterPlacement(
                 this.model.getAutoLayout(), point, tail, point.getCurrentLocomotive().getTrainLength(),
@@ -8177,8 +8181,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // ONLY WHERE THE PLACEMENT STILL STANDS (TDU2-A1, TDU3-B1): the question waited with the window live, and what
             // stands on this copy now may be another train, with the road a run brought it by - or the railway may have
             // been rebuilt, and the copy that holds the train is a new one.
+            setupStands = org.traincontrol.gui.TailCrossedPrompt.sameSetup(session, getAutonomySession(),
+                configurationAsked);
+
             final org.traincontrol.automation.Point landing = org.traincontrol.gui.TailCrossedPrompt.whereTheAnswerGoes(
-                this.model.getAutoLayout(), point, placed, tail, roadAtTheQuestion, getAutonomySession() == session);
+                org.traincontrol.gui.TailCrossedPrompt.runningNow(this.model), point, placed, tail, roadAtTheQuestion,
+                setupStands);
 
             // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY (TLR-C5, TLV-A1, TLW-A1).  Not Known forgets a road; no
             // question, or a closed one, keeps the road the train had where it is still on the same square with the same
@@ -8190,14 +8198,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     sameSquareAsBefore, sideBefore, tail);
 
                 session.setArrivedAlong(tile, org.traincontrol.automation.Layout.namesOfRoad(road));
-                org.traincontrol.gui.TailCrossedPrompt.writeRoad(landing, point, this.model.getAutoLayout(), road);
+                org.traincontrol.gui.TailCrossedPrompt.writeRoad(landing, point,
+                    org.traincontrol.gui.TailCrossedPrompt.runningNow(this.model), road);
             }
-            else
+            else if (answer.wasAnswered())
             {
-                org.traincontrol.gui.TailCrossedPrompt.noteADroppedAnswer(this.model, placed.getName(), point.getName());
+                org.traincontrol.gui.TailCrossedPrompt.noteADroppedAnswer(this.model, placed.getName(),
+                    session.baseNameOf(point.getName()));
             }
 
         }
+
+        // NOT A SETUP THE WINDOW HAS LET GO (TDU4-C2): replaced in the wait, it was captured and written by the reset
+        // that replaced it, and saved now it would reconcile against pages the editor changed in place.
+        if (!setupStands) return;
 
         try
         {

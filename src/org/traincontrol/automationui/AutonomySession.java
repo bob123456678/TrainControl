@@ -9591,6 +9591,8 @@ public class AutonomySession
 
     /**
      * Whether any square of a leg that takes a length has one - what makes the berth rule judge the leg at all (PRW-B1).
+     * Asked by both berth notices (TDA4-C3).  A route tile is passed over, as it takes no length (OB-273): counting it
+     * made TopR1ParkLong and TopR1ParkShort read as half measured when every square that takes a length was measured.
      *
      * @param squares the leg's squares
      * @return true when one is measured
@@ -9718,15 +9720,10 @@ public class AutonomySession
 
                 squares.add(square);
 
-                // MEASURED ANYWHERE ON THE LEG is what makes the rule judge it (PRW-B1) - beyond the stop included.
-                for (TileKey tile : squares)
-                {
-                    // Not a route tile, which takes no length (OB-273): counting it made TopR1ParkLong and
-                    // TopR1ParkShort read as half measured when every square that takes a length was measured.
-                    if (getGraph() != null && takesNoLength(tile)) continue;
-
-                    if (store.getTileLength(tile) > 0) anyMeasured = true;
-                }
+                // MEASURED ANYWHERE ON THE LEG is what makes the rule judge it (PRW-B1) - beyond the stop included,
+                // and the one question the run-in notice asks too (TDA4-C3): the two notices hand a berth to each
+                // other on it, so two copies that drifted would leave a berth with neither.
+                anyMeasured = anythingMeasuredOn(squares);
 
                 if (!anyMeasured) continue;
 

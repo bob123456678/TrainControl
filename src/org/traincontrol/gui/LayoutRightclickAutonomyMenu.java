@@ -1204,6 +1204,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         if (!ui.getModel().getAutoLayout().moveLocomotive(locName, pointName, false)) return;
 
+        // Whether the setup this door writes to is still the window's once its tail question is answered (TDU4-C2).
+        boolean setupStands = true;
+
         if (session != null)
         {
             // The CONFIGURATION as well as the running layout.  Moving a train in the layout leaves
@@ -1232,6 +1235,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 final org.traincontrol.base.Locomotive placed = landing == null ? null : landing.getCurrentLocomotive();
                 final java.util.List<org.traincontrol.automation.Edge> roadAtTheQuestion =
                     landing == null ? null : landing.getArrivedAlong();
+                final String configurationAsked = session.getStore().getActiveConfiguration();
 
                 org.traincontrol.gui.TailCrossedPrompt.Answer answer =
                     org.traincontrol.gui.TailCrossedPrompt.askAfterPlacement(running, landing, tail,
@@ -1242,28 +1246,34 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 // THE ANSWER, OR THE ROAD IT HAD ON THE RAILWAY (TLW-A1), as the paste does - ONLY WHERE THE PLACEMENT
                 // STILL STANDS (TDU2-A1, TDU3-B1): the question waited with the window live, and the copy may hold another
                 // train now, or have been replaced by a rebuild.
-                final org.traincontrol.automation.Point answersTo = landing == null ? null
-                    : org.traincontrol.gui.TailCrossedPrompt.whereTheAnswerGoes(ui.getModel().getAutoLayout(), landing,
-                        placed, tail, roadAtTheQuestion, ui.getAutonomySession() == session);
+                setupStands = org.traincontrol.gui.TailCrossedPrompt.sameSetup(session, ui.getAutonomySession(),
+                    configurationAsked);
 
-                if (landing == null || answersTo != null)
+                final org.traincontrol.automation.Point answersTo = landing == null ? null
+                    : org.traincontrol.gui.TailCrossedPrompt.whereTheAnswerGoes(
+                        org.traincontrol.gui.TailCrossedPrompt.runningNow(ui.getModel()), landing, placed, tail,
+                        roadAtTheQuestion, setupStands);
+
+                if (setupStands && (landing == null || answersTo != null))
                 {
                     java.util.List<org.traincontrol.automation.Edge> road = answer.roadToRecord(roadBefore,
                         station != null && station.equals(squareBefore), sideBefore, tail);
 
                     session.setArrivedAlong(station, org.traincontrol.automation.Layout.namesOfRoad(road));
 
-                    org.traincontrol.gui.TailCrossedPrompt.writeRoad(answersTo, landing, ui.getModel().getAutoLayout(),
-                        road);
+                    org.traincontrol.gui.TailCrossedPrompt.writeRoad(answersTo, landing,
+                        org.traincontrol.gui.TailCrossedPrompt.runningNow(ui.getModel()), road);
                 }
-                else
+                else if (answer.wasAnswered() && landing != null)
                 {
-                    org.traincontrol.gui.TailCrossedPrompt.noteADroppedAnswer(ui.getModel(), locName, landing.getName());
+                    org.traincontrol.gui.TailCrossedPrompt.noteADroppedAnswer(ui.getModel(), locName,
+                        session.baseNameOf(landing.getName()));
                 }
             }
         }
 
-        if (facing != null && session != null)
+        // Not a setup the window has let go in the wait (TDU4-C2), which the reset that replaced it already wrote.
+        if (facing != null && session != null && setupStands)
         {
             try
             {

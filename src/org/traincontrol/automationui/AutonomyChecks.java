@@ -325,10 +325,11 @@ public class AutonomyChecks
      * **Two rules can refuse a train a platform and they are set by different hands.**  The station's
      * `maxTrainLength` is a number somebody typed - what they believe the platform holds - and the
      * measured run in is what the track says, counted back from the platform to whichever of the last
-     * switch and a reversal is met first - and for a parking berth to a crossing, where the berth rule stops there
-     * first, which makes the figure the berth rule's (TDA2-C6, TDA3-C1).  Where the second is smaller the first never binds: a train
-     * inside the stated maximum is refused on the track measurement instead, by a rule that names a
-     * different number.
+     * switch and a reversal is met first.  For a parking berth the figure is the berth rule's where that stops first - at
+     * a crossing between the berth and its switch, or on a leg with no switch (TDA2-C6, TDA3-C2) - and 0 where every
+     * square before the switch or crossing that ends its room was answered 0 (TDA3-C1, TDA4-C1).  Where the second is
+     * smaller the first never binds: a train inside the stated maximum is refused on the track measurement instead, by
+     * a rule that names a different number.
      *
      * **It is a NOTICE and not a warning, and that is his ruling rather than a grading.**  His own
      * example is a four-unit platform whose track is 2 + 2 across a switch - nothing is wrong with it,
