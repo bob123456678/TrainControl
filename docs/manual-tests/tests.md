@@ -74,8 +74,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-576](#mt-576) | 2026-09-24 | A tail answer given after the placement changed is written where the train now stands, or not at all | fixed unvalidated | TDU2-A1, TDU3-B1 |
 | [MT-577](#mt-577) | 2026-09-24 | Customize Function Icons greys Apply while there is nothing to apply | fixed unvalidated | FR-098 |
 | [MT-578](#mt-578) | 2026-09-24 | Highlight on Diagram lights a three-way once, in the commanded colour | fixed unvalidated | OB-286, GUI2-C4 |
+| [MT-579](#mt-579) | 2026-09-24 | A late tail answer does not write over the road another train drove in by | fixed unvalidated | TDU2-A1, TDD3-C6, TDD4-C4 |
 
-Everything else - 531 of 578 - needs nothing from you unless the area changes again:
+Everything else - 531 of 579 - needs nothing from you unless the area changes again:
 454 **fixed validated** and 77 **superseded**.
 
 ---
@@ -28284,6 +28285,10 @@ Validated on your *Works* of 2026-09-24.
 
 *What this is:* `regression.testTheTailIsPickedOnTheDiagram` - `testAnAnswerAfterARebuildReachesTheRailway`, `testALateAnswerDoesNotWriteOverAnotherTrain` and the three late-answer claims beside them.
 
+**Claude, 2026-09-24.**
+
+**Two notes, from the fourth validation round** (2026-09-24).  Step 7's log line now reads: *where the tail of 75 407 DB lies was not recorded: Tunnel changed while the question waited - the train was moved, another train stands there, or another configuration was loaded*.  After step 7, put 75 407 DB back on the square it really stands on.  The case with a second train on the square is MT-579.
+
 ---
 
 <a id="mt-577"></a>
@@ -28313,6 +28318,10 @@ Validated on your *Works* of 2026-09-24.
 
 *What this is:* `regression.testApplyIsGreyedWithNothingToApply`.
 
+**Claude, 2026-09-24.**
+
+**Step 1's path, corrected from the fourth validation round** (2026-09-24).  Right-click the locomotive's button on the keyboard and choose Manage Locomotive... then Customize Function Icons - or, in the locomotive database, Customize Function Icons.  The rest as written.
+
 ---
 
 <a id="mt-578"></a>
@@ -28337,5 +28346,32 @@ Validated on your *Works* of 2026-09-24.
 - Step 3: the three-way is lit yellow, as a square the route commands, not orange.
 
 *What this is:* `regression.testAThreeWayIsLitOnce`.
+
+---
+
+<a id="mt-579"></a>
+
+### MT-579 - 2026-09-24 - A late tail answer does not write over the road another train drove in by
+
+**Disposition:** fixed unvalidated
+**From:** TDU2-A1, TDD3-C6, TDD4-C4
+
+**Written:** 2026-09-24
+
+**What was wrong.**  The tail question waits on the diagram with the window live.  Answered after another train had been brought onto the same copy of the square, the first train's answer - or its Cancel - was written over the road the second train drove in by, and the second train's tail stopped at the switch with another train routable into it.
+
+**Steps**
+
+1. Give 75 407 DB and a second train a length of 5 each.  Paste 75 407 DB at Tunnel, arriving from the north, and leave the question waiting.
+2. Send 75 407 DB away by hand to another station.
+3. Send the second train by hand into Tunnel southbound, so it arrives over TunnelPre.
+4. Press Cancel on the small window the question left up.
+5. Send 75 407 DB back where you want it.
+
+**Expected**
+
+- Step 4: the grey behind the second train at Tunnel still runs back to TunnelPre, the road it drove in by.
+
+*What this is:* `regression.testTheTailIsPickedOnTheDiagram.testALateAnswerDoesNotWriteOverAnotherTrain`.
 
 ---

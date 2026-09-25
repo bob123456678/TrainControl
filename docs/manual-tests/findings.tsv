@@ -2849,6 +2849,16 @@ TDA3-D4	TDA3.md	Closed	Checked - clean.	TDA2-C4: "Measured, not a cost" holds, a
 TDA3-D5	TDA3.md	Closed	Checked - clean.	TDA2-C5: the disposition holds
 TDA3-D6	TDA3.md	Closed	Checked - clean.	TDA2-C6 and TDA2-C7: the fixes do what the dispositions say, on the findings' own inputs
 TDA3-D7	TDA3.md	Closed	Checked - clean.	TDA2-C8: the disposition holds
+TDA4-C1	TDA4.md	Closed	Fixed - pin testNothingSpentBeforeTheSwitchIsSaidAsNothing (665569f3) on the finding's own	The run-in notice's new 0 is said behind a switch as well as behind a crossing, and every document says crossing
+TDA4-C2	TDA4.md	Open - Adam's decision	Open - Adam's decision, in open-questions.md under Length: keep the run-in notice's 0, giv	The 0 arrives in a notice written for a berth that holds something: "that may be right" and "still needs measuring", at the lowest grade, about a bert
+TDA4-C3	TDA4.md	Closed	Fixed - 6c7d5373: both berth notices ask anythingMeasuredOn; pin testALegNothingMeasuresIs	The fix's measured-anywhere gate is a second copy of the half-measured notice's, and no test holds it
+TDA4-C4	TDA4.md	Closed	Fixed - 665569f3 and 6c7d5373: the class javadoc says R2e fails at the control and R2f at 	Text the round-3 fixes left behind or made false
+TDA4-D1	TDA4.md	Closed	Checked - clean.	TDA3-C1: the disposition holds
+TDA4-D2	TDA4.md	Closed	Checked - clean.	TDA3-C2: the disposition holds, and the fixture change leaves the older crossing claims meaning what they say
+TDA4-D3	TDA4.md	Closed	Checked - clean.	TDA3-C3: the disposition holds for every item it lists
+TDA4-D4	TDA4.md	Closed	Checked - clean.	The own-tail work in the range: TDD3-C1's far-end pin, and OB-297
+TDA4-D5	TDA4.md	Closed	Checked - clean.	The late tail answer's write, read as far as the tail walk depends on it
+TDA4-D6	TDA4.md	Closed	Checked - clean.	The records for this lane
 TDD-A1	TDD.md	Closed	Fixed - claim ce9dd7bd (red first, on a hand-built switch shared by two legs; the frozen r	A moving train's own tail claim can overwrite, and so hide, another train's tail on a shared switch square (OB-285, AUT2-C2)
 TDD-B1	TDD.md	Closed	Fixed - as TDA-B1.	The own-tail rule reads a loop with no lengths as zero long, so on a partly measured railway it refuses any return over a measured body (OB-294)
 TDD-C1	TDD.md	Closed	Fixed - comment on MT-571 (LowerFront not offered; the sentence is in Why not Moving? and 	MT-571 expects a refusal dialog that neither send door can show: LowerFront is not offered at all
@@ -2924,6 +2934,29 @@ TDD3-D6	TDD3.md	Closed	Checked - clean.	TDD2-C14 (as TDA2-C7, `84a89426`) holds 
 TDD3-D7	TDD3.md	Closed	Checked - clean.	TDD2-C15 (pin in `ef1adfb6`) holds
 TDD3-D8	TDD3.md	Closed	Checked - clean.	TDD2-C16 (as TDU2-C1, `fea75279`) holds
 TDD3-D9	TDD3.md	Closed	Checked - clean.	TDD2-C1's "not a defect" holds, with two notes on the census behind it
+TDD4-C1	TDD4.md	Closed	Fixed - OB-287's receipt carries a State, fixed unvalidated, with the test named, in place	OB-287's receipt says it became MT-531, which checks F0 to F4 on an MM2 locomotive; the triage app therefore shows OB-287 validated, on Adam's "Works"
+TDD4-C2	TDD4.md	Closed	Fixed - as TDA4-C4.	testATailIsNotHiddenByAnother's new MUTATION line puts R2e's and R2f's failures at the third-train assertion; by reading, R2e fails at the control bef
+TDD4-C3	TDD4.md	Closed	Fixed - as TDA4-C4, behaviour.md's bullet.	behaviour.md's run-in bullets now contradict each other: the new sentence gives a parking berth the berth rule's figure "on a leg with no switch", and
+TDD4-C4	TDD4.md	Closed	Fixed - a comment on MT-576 (the log line as it now reads; put 75 407 DB back) and MT-579 	MT-576's second half cannot show TDU2-A1's fix by what Adam sees, the case TDD3-C6 asked the tracker for is not in it, and it ends with 75 407 DB take
+TDD4-C5	TDD4.md	Closed	Fixed - claims testOnlyADroppedAnswerIsLogged and testTheFacingIsWrittenBeforeTheQuestion 	two round-3 fixes shipped with no claim: the log line for a dropped answer (TDU3-C2) and the facing moved above the question (TDU3-C1); behaviour.md n
+TDD4-C6	TDD4.md	Closed	Fixed - a comment on MT-577 with both real paths.	MT-577 step 1 sends Adam to a Manage Locomotive... submenu on the locomotive list; that submenu exists only on a keyboard button's right-click
+TDD4-D1	TDD4.md	Closed	Checked - clean.	TDD3-B1 (a comment on MT-573) holds
+TDD4-D10	TDD4.md	Closed	Checked - clean.	TDD3-C10 (the deferred count) holds
+TDD4-D11	TDD4.md	Closed	Checked - clean.	TDD3-C11 (testTheOwnTailArithmetic's MUTATION line) holds
+TDD4-D12	TDD4.md	Closed	Checked - clean.	The records commit: counts, the store, the tracker
+TDD4-D13	TDD4.md	Closed	Checked - clean.	The crossing fixture changed under four claims after their mutation run; by reading, none of them proves less
+TDD4-D14	TDD4.md	Closed	Checked - clean.	OB-286: the claim, the fix, MT-578
+TDD4-D15	TDD4.md	Closed	Checked - clean.	FR-098: the claim, and MT-577's steps 2 to 4
+TDD4-D16	TDD4.md	Closed	Checked - clean.	OB-287: the test
+TDD4-D17	TDD4.md	Closed	Checked - clean.	The other text of 59cf3645
+TDD4-D2	TDD4.md	Closed	Checked - clean.	TDD3-C1 (pin testARouteIsTimedFromTheFarEndOfAPlace) holds
+TDD4-D3	TDD4.md	Closed	Checked - clean.	TDD3-C2 (the third renamed item) holds
+TDD4-D4	TDD4.md	Closed	Checked - clean.	TDD3-C3 (a comment on MT-568) holds
+TDD4-D5	TDD4.md	Closed	Checked - clean.	TDD3-C4 (a comment on MT-570) holds
+TDD4-D6	TDD4.md	Closed	Checked - clean.	TDD3-C5 (Automation.md round a loop) holds, with a note
+TDD4-D7	TDD4.md	Closed	Checked - clean.	TDD3-C7 (three pins, one per condition) holds
+TDD4-D8	TDD4.md	Closed	Checked - clean.	TDD3-C8 (testAGateThatFailsStopsEveryRunDoor) holds
+TDD4-D9	TDD4.md	Closed	Checked - clean.	TDD3-C9 (behaviour.md's run-in figure) holds
 TDR-A1	2026-09-14-TDR-ten-day-review.md	Closed	Fixed	an import from a layout numbered differently re-labels this layout's own pages
 TDR-B1	2026-09-14-TDR-ten-day-review.md	Closed	Fixed (stated in the body)	a train that declines the turn at a may-turn square loses the route its tail follows
 TDR-B2	2026-09-14-TDR-ten-day-review.md	Closed	Fixed (stated in the body)	the facing re-stand dropped the route as well
@@ -2999,6 +3032,23 @@ TDU3-D5	TDU3.md	Closed	Checked - clean.	TDU2-C4 and the message bundles after th
 TDU3-D6	TDU3.md	Closed	Checked - clean.	TDU2-C5 and TDU2-C7 at the sites they named
 TDU3-D7	TDU3.md	Closed	Checked - clean.	TDU2-C6: step 3 of MT-573 can now be reached
 TDU3-D8	TDU3.md	Closed	Checked - clean.	the range's other gui commits: One-Way Run's prompt, the renamed Bulk Tools items, the guard tooltips
+TDU4-C1	TDU4.md	Closed	Fixed - claim testAnAnswerIsNotWrittenIntoAnotherConfiguration in 665569f3 (red first), fi	after another configuration is loaded in the wait, the answer is not always dropped: it lands in the other configuration when that configuration holds
+TDU4-C2	TDU4.md	Closed	Fixed - claim testAnAnswerAfterTheSetupIsReplacedIsNotWritten in 665569f3 (red first), fix	a door whose setup was replaced in the wait still saves the old setup, with the reconciling save the reset avoids on purpose; and it asks for the rail
+TDU4-C3	TDU4.md	Closed	Fixed - claim testOnlyADroppedAnswerIsLogged in 665569f3 (red first), fix 6c7d5373: only a	the new "was not recorded" log line has no claim, fires for Cancel and Not Known, and gives a remedy that is impossible or already done in most of the
+TDU4-C4	TDU4.md	Closed	Fixed - pins in 665569f3: the facing before the question (R4g red), a replaced session (R4	the claims still prove less than the dispositions: the facing move, the setup check, the running-railway argument at two of the three doors, and the e
+TDU4-C5	TDU4.md	Closed	Fixed - 6c7d5373: it and pl quote the menu label.	two translations of the half-measured notice still name Mass Assign Lengths by words that are not its menu label
+TDU4-D1	TDU4.md	Closed	Checked - clean.	TDU3-B1: after a rebuild of the same setup the answer reaches the railway's copy, and the claim is red for the finding's reason
+TDU4-D10	TDU4.md	Closed	Checked - clean.	OB-287: both doors and the name proposal refuse a locomotive a running route drives
+TDU4-D11	TDU4.md	Closed	Checked - clean.	the message bundles after the range
+TDU4-D12	TDU4.md	Closed	Checked - clean.	MT-576 to MT-578 against the code
+TDU4-D2	TDU4.md	Closed	Checked - clean.	TDU3-B2: MT-573's replacement comment makes the backup record the train where it stands
+TDU4-D3	TDU4.md	Closed	Checked - clean.	TDU3-C1: the facing is written before the question at both doors, and the gates are claimed door by door
+TDU4-D4	TDU4.md	Closed	Checked - clean.	TDU3-C2: a dropped answer is logged at every door and behaviour.md says so
+TDU4-D5	TDU4.md	Closed	Checked - clean.	TDU3-C3: the door counts and door lists now agree with the code
+TDU4-D6	TDU4.md	Closed	Checked - clean.	TDU3-C4: Execute Timetable's failed gate stops the run and gives the button back
+TDU4-D7	TDU4.md	Closed	Checked - clean.	TDU3-C5: open-questions carries a recommendation that matches the code
+TDU4-D8	TDU4.md	Closed	Checked - clean.	FR-098: Apply is greyed while the function on show is as the locomotive holds it
+TDU4-D9	TDU4.md	Closed	Checked - clean.	OB-286: a three-way commanded under one address and checked under the other is lit once, as commanded
 TDY-B1	TDY.md	Closed	Fixed - ac5fe2f2 (claim 8873b0a4, red first): a home held to a facing is home only on a co	Return Home counts the turning twin as home, and the turning twin faces the other way: at a may-reverse home a train can still come home turned round
 TDY-B2	TDY.md	Closed	Fixed - a67452cd: the half-measured notice walks the berth's own square	OB-278 says the half-measured notice now counts the berth's own square; it never looks at it, so the one half-measured state OB-278 creates is not war
 TDY-C1	TDY.md	Closed	Fixed - ce8983ce (claim 273727eb, red first): the pre-check asks `homeCopiesOf`	The IMPOSSIBLE pre-check still asks about any copy of the home square, while the goal now needs the home's arrival
