@@ -108,6 +108,58 @@ AD-D3	2026-08-17-autonomy-diagram-review.md	Closed	No such attributes exist	Lega
 AD-D4	2026-08-17-autonomy-diagram-review.md	Closed	Not a defect; see B1	Deriving 22 reversible connections against the hand-built 7
 AD-D5	2026-08-17-autonomy-diagram-review.md	Closed	Cannot collide	Length and address labels sharing a colour and colliding
 AD-D6	2026-08-17-autonomy-diagram-review.md	Closed	Clean	`Collection` and `I18n` audits across the branch
+ADA-A1	ADA.md	Closed	Fixed - the narrow reading: the route in stops at a leg answered 0 again, and TDU-C6's 0 r	The route in (FR-087) now carries on over a leg answered 0, but the tail walk still stops at one: a platform admits a train whose tail lies on track n
+ADA-C1	ADA.md	Closed	Fixed - the build marks, place by place, what Mass Assign Lengths asks a length for (`toMe	OB-297's pieces are not the pieces Mass Assign asks for: the note can still undercount, and on a measured railway it can count pieces Mass Assign neve
+ADA-C2	ADA.md	Closed	Fixed - the session hands out a reducer only once reduced, and the field is volatile: whic	OB-298 fixed the shape its claim builds, not the incident's: `AutonomySession.rebuild` publishes the reducer before its first `reduce()`, and a reader
+ADA-C3	ADA.md	Closed	Fixed in the record - behaviour.md section 1, the isPathClear comment and open-questions.m	OB-295 makes a restricted through-square a roadblock for as long as the watched train stands, and two restrictions can now deadlock; the comment that
+ADA-C4	ADA.md	Closed	Fixed - the figure walks back over the built railway to a copy a train is started or turns	TDA-C10's figure is given only for a single leg from a station or turning copy; its javadoc and MT-583 say more than that, and nothing ties the figure
+ADA-C5	ADA.md	Closed	Fixed - the claim has its own javadoc above the other's (2c7a5b47), and its route-in asser	The TDU-C6 claim was inserted under another test's javadoc, and its route-in assertion pins a path the rule never asks the route in about
+ADA-C6	ADA.md	Closed	Fixed - the comments and parameter text in 1098c9b8 and the documents in the round's recor	Comments and documents the range made false, and one rule now stated both ways in behaviour.md
+ADA-D1	ADA.md	Closed	Checked - clean.	OB-295 is carried out as worded in every tier, and the reading of "sent to" holds
+ADA-D2	ADA.md	Closed	Checked - clean.	TDU-C6 at the gate and the escape: one question, asked the same way, in the safe direction
+ADA-D3	ADA.md	Closed	Checked - clean.	TDA-C8: the notice asks about a barred side again; the build was not changed, and the reading holds
+ADA-D4	ADA.md	Closed	Checked - clean.	TDA4-C2: its own sentence, as a warning, only where every square before the stop was answered
+ADA-D5	ADA.md	Closed	Checked - clean.	OB-297: the way-round arithmetic and the marks' round trip
+ADA-D6	ADA.md	Closed	Checked - clean.	OB-298 as far as one reducer is concerned
+ADA-D7	ADA.md	Closed	Checked - clean.	TDA-C10: where a figure is given, it is the railway's own bound for a train setting off from that copy
+ADA-D8	ADA.md	Closed	Checked - clean.	The answers outside this lane, read where they touch the running model
+ADD-B1	ADD.md	Closed	Fixed as ADA-A1, and behaviour.md states one rule now: section 5b's OB-274 paragraph names	Two of Adam's rulings on an answered 0 now stand side by side in behaviour.md; where the new one reaches a length rule (the route in), it admits a tra
+ADD-B2	ADD.md	Closed	Fixed as ADU-B1.	The right-click Place still turns a train whose heading faces a barred side, where the paste, the dialog and the editor's Place keep it; behaviour.md
+ADD-C1	ADD.md	Closed	Fixed as ADU-C5.	MT-580 expects Return Home's tooltip to be "the sentence Start's greyed item shows"; over MT-573's break they are two different sentences
+ADD-C10	ADD.md	Closed	Fixed as ADU-C3.	The right-click menu now asks the whole setup check again on every right-click
+ADD-C11	ADD.md	Closed	Fixed - same-sitting notes on MT-580 and MT-582, and MT-584 for OB-295 on his railway (Bot	Adam's consolidation question was answered by growth, and the one change he can see on his railway got no entry
+ADD-C2	ADD.md	Closed	Fixed - MT-559 moved back to fixed unvalidated with a comment, as the README asks (the rou	MT-559 is validated and its Expected is now false at TopMainR1Inter and LowerFront; it was not moved back or commented
+ADD-C3	ADD.md	Closed	Fixed - Automation.md says the note counts the pieces Mass Assign Lengths asks for (the ro	The user guide still says the own-tail note counts stretches from sensor to sensor, and misses one measured only at its switch
+ADD-C4	ADD.md	Closed	Fixed as ADU-C9 and ADA-C5.	Two new tests were inserted between an existing test's javadoc and its method
+ADD-C5	ADD.md	Closed	Fixed - the claim asks the rule on his railway and checks the door reads the heading, hand	The OB-296 claim holds the door by two substrings; ignoring the heading at the door survives it
+ADD-C6	ADD.md	Closed	Fixed as ADA-C4 - the figure counts back over sensors nobody is started at. MT-583's reaso	TDA-C10's figure is read off direct legs only, which is narrower than "where there is one", and MT-583 explains the missing figures by a property the
+ADD-C7	ADD.md	Closed	Checked by mutation - V14 (the planner's line alone, the runtime fixed) turns `testAHomeBe	Three claims were not seen red for their own reason
+ADD-C8	ADD.md	Closed	Fixed - 1098c9b8 (the MUTATION line, `heldBackBy`'s parameters, the refusing figure's) and	Text the change left behind in comments and test javadocs
+ADD-C9	ADD.md	Closed	Fixed as ADA-C2.	OB-298 hands the lists over one field at a time; the builder reads edges and then locks, so a rebuild between the two now drops lock edges silently wh
+ADD-D1	ADD.md	Closed	Checked - clean.	The records: ten dispositions, the store, the ledger and the counts
+ADD-D2	ADD.md	Closed	Checked - clean.	TDD5-C1: "follow the train" read as he meant it
+ADD-D3	ADD.md	Closed	Checked - clean.	OB-295 / TDA-C9: "sent to THIS square" read as every square a route arrives at
+ADD-D4	ADD.md	Closed	Checked - clean.	TDD-C11, TDU2-C3, TDA-C8, TDA4-C2, OB-297 and the reading of each
+ADD-D5	ADD.md	Closed	Checked - clean.	Test bookkeeping for the renamed class
+ADD-D6	ADD.md	Closed	Checked - clean.	MT-581, MT-582 and MT-583's steps against the app
+ADU-B1	ADU.md	Closed	Fixed - the right-click Place chooses the heading over every copy the train can leave by a	OB-296: the right-click Place keeps the heading only among copies that are stations with a way on, so at a square with a barred side it still turns th
+ADU-C1	ADU.md	Closed	Fixed with ADU-B1 - the paste's copy, `copyFacing`. V3 survived the first claim (BottomMai	OB-296: where more than one copy faces the kept heading, the right-click Place takes the first in build order, and on BottomMainB that is the turning
+ADU-C2	ADU.md	Closed	Fixed with ADU-B1 - the move allows a barred copy (`moveLocomotive(..., false, true)`); RE	OB-296 makes a pre-existing trap deterministic: `placeableCopies`' stranded fallback can hold a copy trains may not arrive at, which `moveLocomotive`
+ADU-C3	ADU.md	Closed	Fixed - the menu works the hand doors' sentence out from Start's answer and hands it to th	TDU2-C3: the Return Home item's setup question adds uncached `AutonomySession.check()` calls to every right-click on the diagram, on the event thread
+ADU-C4	ADU.md	Closed	Fixed - the tooltip is wrapped as Start's is, and the javadocs say the item and the button	TDU2-C3: the item and the button now describe one setup two ways, which two javadocs say cannot happen; and the item's tooltip is not wrapped as Start
+ADU-C5	ADU.md	Closed	Fixed - a comment on MT-580: the two tooltips are different sentences by design, and what 	MT-580's expected result says the Return Home tooltip is "the sentence Start's greyed item shows"; after MT-573's break the two sentences differ, by d
+ADU-C6	ADU.md	Closed	Fixed - the claim waits for the triage and asserts Return Home is offered before anything 	TDU2-C3's claim: its greyed-state assertion can pass without the fix; only the tooltip assertion is sure to be red
+ADU-C7	ADU.md	Closed	Not a defect under the narrow reading (ADA-A1) - an answered 0 is measured to the gate and	TDU-C6's "0 lengths count as measures" did not reach the tail doors: the tail question and the standing-train claim still stop at an edge answered 0 e
+ADU-C8	ADU.md	Closed	Fixed - *every train with a length* in all eight languages, and the bundle claim looks for	TDA4-C2's warning says every train arriving that way is refused; a train with no length is not
+ADU-C9	ADU.md	Closed	Fixed - the orphaned javadoc put back above its test (2c7a5b47), the stale comments (1098c	shapes the range left: an orphaned javadoc in a claim class, and a comment the fix made false
+ADU-D1	ADU.md	Closed	Checked - clean.	TDU2-C3 is carried out as worded, at every door it reaches
+ADU-D2	ADU.md	Closed	Checked - clean.	TDD5-C1: "follow the train" is carried out at all three doors, and the reading holds
+ADU-D3	ADU.md	Closed	Checked - clean.	TDD-C11: the untick is gone everywhere, and the setting is not defunct
+ADU-D4	ADU.md	Closed	Checked - clean.	the message bundles
+ADU-D5	ADU.md	Closed	Checked - clean.	the findings list takes the third number, and nothing in the UI keys on the changed notices
+ADU-D6	ADU.md	Closed	Checked - clean.	no other placement door draws at random, and the Atomic Routes UI doors ask `isMeasured`
+ADU-D7	ADU.md	Closed	Checked - clean.	OB-298 leaves no stale list in the UI
+ADU-D8	ADU.md	Closed	Checked - clean.	OB-295's refusal and its explanation ask one helper
 AMG-B1	2026-09-15-AMG-autonomy-graph-build-review.md	Closed	Fixed	a restriction watching a square off the graph invalidated the whole configuration
 AMG-B2	2026-09-15-AMG-autonomy-graph-build-review.md	Closed	Ruled - Adam, 2026-09-15, asked where the walk should stop: **"Neither"**. Only addressed 	the room walk stops only at addressed switches
 AMG-C1	2026-09-15-AMG-autonomy-graph-build-review.md	Closed	Fixed (stated in the body)	the terminus message could not be chosen

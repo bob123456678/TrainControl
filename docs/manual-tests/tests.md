@@ -60,6 +60,7 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-533](#mt-533) | 2026-09-24 | The train-length prompt takes typing without a click | fixed unvalidated | MT-474 |
 | [MT-547](#mt-547) | 2026-09-24 | On a Central Station layout there is no Load Autonomy Configuration tab | fixed unvalidated | OB-254, MT-544 |
 | [MT-548](#mt-548) | 2026-09-24 | On a Central Station layout the Autonomy menu opens, and only the download and Documentation can be chosen | fixed unvalidated | OB-254, OB-093, MT-544 |
+| [MT-559](#mt-559) | 2026-09-24 | At a station autonomy may choose, a short run-in says a longer train may block the layout | fixed unvalidated | MT-555 |
 | [MT-566](#mt-566) | 2026-09-24 | The locomotive train-length walk is never greyed, and counts | fixed unvalidated | MT-533 |
 | [MT-567](#mt-567) | 2026-09-24 | Train lengths and station maximum lengths are named apart | fixed unvalidated | MT-533 |
 | [MT-568](#mt-568) | 2026-09-24 | One-Way Run is greyed on a page left out of autonomy | fixed unvalidated | OB-235, MT-528 |
@@ -78,9 +79,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-581](#mt-581) | 2026-09-25 | The right-click Place keeps the train's heading | fixed unvalidated | OB-296, TDU-B4 |
 | [MT-582](#mt-582) | 2026-09-25 | Importing an old autonomy.json leaves Load Autonomy as it was | fixed unvalidated | TDD-C11 |
 | [MT-583](#mt-583) | 2026-09-25 | TopMainR1Inter's notice gives the length a train is refused above | fixed unvalidated | TDA-C10 |
+| [MT-584](#mt-584) | 2026-09-25 | A train standing on the watched square closes a square trains only pass | fixed unvalidated | OB-295, TDA-C9 |
 
-Everything else - 532 of 583 - needs nothing from you unless the area changes again:
-454 **fixed validated** and 78 **superseded**.
+Everything else - 531 of 584 - needs nothing from you unless the area changes again:
+453 **fixed validated** and 78 **superseded**.
 
 ---
 
@@ -27748,7 +27750,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-559 - 2026-09-24 - At a station autonomy may choose, a short run-in says a longer train may block the layout
 
-**Disposition:** fixed validated
+**Disposition:** fixed unvalidated
 **From:** MT-555
 
 **Written:** 2026-09-24
@@ -27772,6 +27774,10 @@ Validated on your *Works* of 2026-09-24.
 **Claude, 2026-09-24.**
 
 Validated on your *Works* of 2026-09-24.
+
+**Claude, 2026-09-25.**
+
+**Moved back to fixed unvalidated** (2026-09-25, ADD-C2).  Since your answer to TDA-C10, the notices at TopMainR1Inter and LowerFront go on to say a train longer than 3 - or 4 - coming in the shortest way is refused instead (MT-583).  So at those two, *is refused* now appears, by your answer; the other three read as you found them.
 
 ---
 
@@ -28164,6 +28170,10 @@ Validated on your *Works* of 2026-09-24.
 
 **Re-measured at this build, from the second validation round** (2026-09-24).  The census behind "no train of 9 or less is refused by this anywhere" was taken before the refusal named the tightest return on a route, which could only have lowered it.  Taken again over every station, arrival and route at 40 units, the smallest figure named is still 9 - on 728 routes, none lower - so the sentence stands.  And the windows the comment above names: the locomotive list's Why window opens from the destination label only while it reads No available paths, so if EN57-203 has somewhere else to go, use Why not Moving? on the diagram, clicked on BottomSecondary - it gives the sentence under either Path Type setting.
 
+**Claude, 2026-09-25.**
+
+**The note under the refusal** (2026-09-25, OB-297).  Where part of the way round has no length, it now counts what Mass Assign Lengths would ask you for there - pieces, switches and crossings - so measuring those is the way past.
+
 ---
 
 <a id="mt-572"></a>
@@ -28428,6 +28438,10 @@ Validated on your *Works* of 2026-09-24.
 
 *What this is:* `regression.testAHandSendIsRefusedWhileTheSetupIsBroken.testABrokenSetupIsRefusedAndAMendedOneIsNot`, on a real window.  It can be run in the same sitting as MT-573, before that entry's last step.
 
+**Claude, 2026-09-25.**
+
+**Two sentences, by design** (2026-09-25, ADU-C5).  Over MT-573's break, Start's greyed item says autonomy cannot start while the setup has 1 error(s); Return Home's says this setup cannot be used yet and how many things have to be dealt with first - the setup's own words, as the hand doors use them.  Step 4 passes when each says its own.  It can be run in the same sitting as MT-263 and MT-573.
+
 ---
 
 <a id="mt-581"></a>
@@ -28453,6 +28467,10 @@ Validated on your *Works* of 2026-09-24.
 - Step 3, every time: it faces the way you noted at step 1 - BottomMainB holds both headings.
 
 *What this is:* `core.testATrainIsPutOnlyWhereItCanStart.testTheRightClickPlaceKeepsTheTrainsHeading`.
+
+**Claude, 2026-09-25.**
+
+**And at a square with a barred side** (2026-09-25, ADU-B1).  Repeat steps 1 to 3 at BottomMainA with 75 407 DB facing west - BottomMainA takes no arrivals from the east.  It stays facing west, on the copy trains may not arrive at, and Why not Moving? says it cannot be started there facing that way.  Until round 1's fix the right-click Place turned it round there.
 
 ---
 
@@ -28480,6 +28498,10 @@ Validated on your *Works* of 2026-09-24.
 
 *What this is:* `regression.testALegacyImportLeavesLoadAutonomyAlone`.  Replaces MT-503.
 
+**Claude, 2026-09-25.**
+
+**Same sitting** (2026-09-25, ADD-C11): run it with MT-491, MT-501 and MT-502 - the same file, into a new configuration each time.
+
 ---
 
 <a id="mt-583"></a>
@@ -28502,5 +28524,38 @@ Validated on your *Works* of 2026-09-24.
 - Step 1: after the sentence about standing across the switch, it says *Coming in the shortest way, over 3 of measured track, a train longer than 3 is refused instead.*  LowerFront's notice says the same with 4.  Tunnel's, BottomMainA's and BottomInnerOtherside's give no such figure: every way into them the railway runs measures at least their maximum.  These are the figures on the copy of your railway frozen for the tests; if you have measured since, yours may differ.
 
 *What this is:* `core.testAutonomyDiagramSession.testThePlatformNoticeNamesTheFigureATrainIsRefusedAbove` and `testNoRefusingFigureFromACopyNoTrainStartsAt`.
+
+**Claude, 2026-09-25.**
+
+**The figures, measured** (2026-09-25).  On the frozen copy of your railway a train of 3 set off from TopR1ParkShort is admitted at TopMainR1Inter and one of 4 refused; at LowerFront the same with 4 and 5 from ParkingTrack12.  The figure now counts back over sensors nobody is started at, as the railway's route in does, so a way in with a `...Pre` sensor behind the platform can give one too; on the frozen railway that changes nothing.
+
+---
+
+<a id="mt-584"></a>
+
+### MT-584 - 2026-09-25 - A train standing on the watched square closes a square trains only pass
+
+**Disposition:** fixed unvalidated
+**From:** OB-295, TDA-C9
+
+**Written:** 2026-09-25
+
+**What was wrong.**  Unavailable While Occupied on a square trains only pass held routes through it back only while a route was running over the watched square; a train standing there held nothing back.  Your answer: *"trains shouldn't be sent to THIS square while trains are STANDING ON or hold a lock on the other specified station(s)."*
+
+**Steps**
+
+1. Close TrainControl, copy your layout folder's `config/autonomy` folder somewhere safe, and start it again.
+2. In the autonomy editor, right-click BottomMainAPre, open Advanced Parameters, choose Unavailable While Occupied, tick TunnelLeftPark and press OK.  Close the editor, saving the change.
+3. Put a train on TunnelLeftPark, and put 75 407 DB on Tunnel facing BottomMainA.
+4. Right-click 75 407 DB and look for BottomMainA among the stations it can be sent to.  Then, with autonomy stopped, open Why not Moving? for it.
+5. Take the train off TunnelLeftPark, and look again.
+6. Close TrainControl and copy the saved `config/autonomy` folder back.
+
+**Expected**
+
+- Step 4: BottomMainA is not offered, and Why not Moving? says *BottomMainAPre is not available while TunnelLeftPark is occupied.*
+- Step 5: BottomMainA is offered again - unless something else is in the way, which Why not Moving? then names.
+
+*What this is:* `regression.testStationBlockedByAnotherPoint.testATrainStandingOnTheWatchedPointClosesASquareTrainsPass`.  On the frozen copy of your railway the route from Tunnel into BottomMainA runs through BottomMainAPre, and the rule names it.
 
 ---

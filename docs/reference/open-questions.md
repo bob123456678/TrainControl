@@ -132,7 +132,14 @@ either.
 
 ## Length, blocking, and the tail
 
-**Open.** Nothing: the three wordings the validation rounds of 2026-09-24 left here were answered the same night.
+**Open.** One reach, Adam's (ADD-B1, ADA-A1): **should an answered 0 count as measured beyond the Atomic Routes
+gate?**  Today it does at the gate and the escape only, and every other length rule reads it as unmeasured (OB-274).
+The wider reading - the route in counting on past it - is safe only if the tail walk and the tail question walk on
+over an answered 0 as well, claiming its squares for nothing and the track behind it; that claims more, never less,
+but changes what a standing train blocks on a railway answered that way.  **Recommended:** leave it at the gate - your
+own railway has no stretch answered 0 end to end, and a rule that admits more should wait for a case that needs it.
+
+**Before that:** the three wordings the validation rounds of 2026-09-24 left here were answered the same night.
 
 **Decided.**
 
@@ -144,13 +151,15 @@ either.
 - **The platform run-in notice gives the refusing figure, where there is one** (Adam, 2026-09-24, TDA-C10: *"Add the
   refusing figure where there is one."*): the shortest measured way in, from the station or turn nearest behind, where
   it is under the stated maximum - on his railway, TopR1ParkShort's four-unit train at TopMainR1Inter.
-- **An answered 0 is a measure** (Adam, 2026-09-24, TDU-C6: *"0 lengths count as measures, so non-atomic should be
-  allowed"*).  The Atomic Routes gate and the release escape both treat track answered 0 as measured, and the route in
-  carries on over it.  A train with a length holds such track to the end of its route - the safe direction, since
-  nothing accumulates over a 0.
-- **The own-tail note counts the pieces Mass Assign asks for** (OB-297, done on Adam's word: *"Locations of switches
-  are known."*): the build marks the places that cut a leg into pieces, and a leg measured only at its switch is no
-  longer counted as measured.
+- **An answered 0 is a measure to the Atomic Routes gate** (Adam, 2026-09-24, TDU-C6: *"0 lengths count as measures,
+  so non-atomic should be allowed"*).  The gate and the release escape it guards both treat track answered 0 as
+  measured, so non-atomic running is allowed over it; every other length rule reads it as OB-274 says.  The route in
+  carried on over it for a day, and was put back (ADA-A1): the walk that claims a standing train's tail stops at an
+  answered 0, so a train the route in admitted past one lay on track nothing claimed.
+- **The own-tail note counts what Mass Assign asks for** (OB-297, done on Adam's word: *"Locations of switches are
+  known."*): the build marks, place by place, the piece, switch or shared square the editor still asks a length for,
+  and the note counts those - one list, so a leg measured only at its switch is counted, and a piece the editor calls
+  measured is not (ADA-C1).
 
 - *Exactly-fits is admitted.* Otherwise every berth measured to the train that lives in it becomes
   unusable.
@@ -190,7 +199,9 @@ either.
 - **"Unavailable while occupied" means every square a route arrives at** (Adam, 2026-09-24, OB-295: *"It means trains
   shouldn't be sent to THIS square while trains are STANDING ON or hold a lock on the other specified station(s)."*).
   The standing half is asked of every square on a route, at runtime and by Return Home's planner, as the lock half
-  always was; a square trains only pass is shut to routes through it while a train stands on the one it watches.
+  always was; a square trains only pass is shut to routes through it while a train stands on the one it watches.  The
+  cost the setting names, and one more: two restrictions set against each other can now hold both trains, where each
+  one's only way out passes the square the other holds back (ADA-C3).
 
 - *Return Home sits with Manual* on where a train may be sent. `isAutoDestination` appears nowhere in
   `HomeStaging`.
@@ -404,8 +415,8 @@ this document exactly the thing it replaces.
 **2026-09-08: `docs/reviews/` was deleted**, down to its README, once its 2,226 findings were in
 `docs/manual-tests/triage.db`. **2026-09-21: the same for the 65 documents written since** - 44 of them in
 `docs/reviews/` itself and 21 in three dated folders beside it, on Adam's *"I don't want more
-reviews living in the repo"* - 3,726 rows then.  The round of 2026-09-23 added 336 - five reviews and three rounds of validation - and 13 more came on 2026-09-24 with OB-247 (AR-17 to AR-23 and LR-1 to LR-6, which have no document), and the validation rounds of 2026-09-24 added 258 (TDA, TDU and TDD, then the same three lanes as TDA2 to TDD5), which makes
-4,333 finding rows in the store now, every one of them with a status.
+reviews living in the repo"* - 3,726 rows then.  The round of 2026-09-23 added 336 - five reviews and three rounds of validation - and 13 more came on 2026-09-24 with OB-247 (AR-17 to AR-23 and LR-1 to LR-6, which have no document), and the validation rounds of 2026-09-24 added 258 (TDA, TDU and TDD, then the same three lanes as TDA2 to TDD5), and the validation of the work on Adam's answers of that night added 52 on 2026-09-25 (ADA, ADU and ADD), which makes
+4,385 finding rows in the store now, every one of them with a status.
 (This paragraph's figures - 65 documents, 44 of them in `docs/reviews/`, and the finding count - are quoted from the deletion commit and the store.  A correction to 63 and 206 was itself wrong and was reverted; the 208 it was about is in the first paragraph of this file, not here.  `regression.testTheRecordsCountTheStore` now compares the finding and Inbox counts with the store rather than trusting a reader to keep them - VD13-R1, VD14-R2, VD14-R5.) Everything still open above is open in that store too,
 so it can be queried rather than re-read:*
 
