@@ -110,6 +110,83 @@ public class testWhereHisTrainsMayBeSent
     }
 
     /**
+     * A send the right-click refuses says why in a message that belongs to the main window: with the power off, "-> a
+     * station" on his train's right-click tells him to turn the power on, in front of the window he is using (RLU-B2).
+     *
+     * The refusals were parented on the popup menu, which has left the window by the time its item runs, so the message
+     * belonged to Swing's hidden frame - and with Window Always on Top ticked, the default, it opened beneath the main
+     * window and held every window with nothing to show why.
+     *
+     * MUTATION: parent the refusal on the menu again, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testARefusedSendSaysSoInFrontOfTheWindow() throws Exception
+    {
+        TileKey secondary = square("BottomSecondary");
+
+        standOn(train(HIS_TRAIN), secondary, null);
+
+        List<String> offered = offered(secondary);
+
+        assertFalse(offered.isEmpty(), "precondition: " + HIS_TRAIN + " at BottomSecondary is offered nowhere");
+
+        // PUT BACK AFTER: a stop is not echoed here, and the claims after this one start trains.
+        final boolean powerWas = model.getPowerState();
+
+        final java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
+
+        power.setAccessible(true);
+
+        try
+        {
+            // THE POWER OFF, as the model reads it: a stop is not echoed here, where nothing is on the other end.
+            model.stop();
+
+            if (model.getPowerState()) power.set(model, false);
+
+            assertFalse(model.getPowerState(), "precondition: the power did not go off");
+
+            javax.swing.JMenuItem send = destination(secondary, offered.get(0));
+
+            SwingUtilities.invokeLater(send::doClick);
+
+            String refusal = I18n.t("autolayout.ui.powerOnToStart");
+
+            javax.swing.JDialog said = null;
+
+            for (long end = System.currentTimeMillis() + 10000; said == null && System.currentTimeMillis() < end; )
+            {
+                Thread.sleep(50);
+
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
+
+                    javax.swing.JOptionPane pane = find(((javax.swing.JDialog) window).getContentPane(),
+                        javax.swing.JOptionPane.class);
+
+                    if (pane != null && refusal.equals(String.valueOf(pane.getMessage())))
+                    {
+                        said = (javax.swing.JDialog) window;
+                    }
+                }
+            }
+
+            assertNotNull(said, "with the power off, the send to " + offered.get(0) + " was not refused with \"" + refusal
+                + "\": " + aQuestionShowing());
+
+            assertEquals(said.getOwner(), ui, "the refusal of a send belongs to " + said.getOwner() + ", not the main window,"
+                + " so with Window Always on Top it can open beneath it and hold every window (RLU-B2)");
+        }
+        finally
+        {
+            power.set(model, powerWas);
+        }
+    }
+
+    /**
      * EN57-947, which cannot reverse, at BottomSecondary: Why not Moving? on Manual lists BottomMainC under the stations
      * it cannot be sent to right now, saying a terminus is not allowed because it is not reversible - and the right-click
      * list does not offer BottomMainC (MT-517).
