@@ -63,7 +63,8 @@ public class testTheRoutesImportDoorAsksByName
 
         assertEquals(run.initial, NO, "the question does not start on No (MT-496)");
 
-        assertEquals(run.question, I18n.f("route.ui.confirmRearmImported", String.join(", ", run.savedArmed)),
+        // WORDS, NOT LINES: the question is wrapped to fit the screen (RLU-C3).
+        assertEquals(words(run.question), words(I18n.f("route.ui.confirmRearmImported", String.join(", ", run.savedArmed))),
             "the question does not name the routes saved with automatic firing on (MT-496): " + run.question);
 
         for (String name : run.armedBefore)
@@ -107,20 +108,23 @@ public class testTheRoutesImportDoorAsksByName
 
     /**
      * A route saved armed that has no sensor to watch is not armed by Yes - the model arms only a route with one, as the
-     * right-click item does - and the door does not count it as armed again (found automating MT-497, 2026-09-25).
+     * right-click item does - and the door neither counts it as armed again (found automating MT-497, 2026-09-25) nor
+     * names it in the question as one Yes will arm (RLU-C2).
      *
      * The door said "on again for the N that were saved with it on", N counted from the file, while the model counted
      * the routes it armed; so a file whose saved-armed route had lost its sensor told the operator a route was armed
      * again that was not, and the log said the opposite.  Such a file is what an export gives of a route whose sensor was
      * removed while its automatic firing was on (UXR-B6).
      *
-     * MUTATION: count from the file again, and this fails.
+     * MUTATION: count from the file again, or name every route saved armed, and this fails.
      *
      * @throws Exception from the window or the import
      */
     @Test
     public void testASavedArmedRouteWithNoSensorIsNotCountedAsArmed() throws Exception
     {
+        final String[] noSensor = new String[1];
+
         Imported run = importHisRoutes(true, file ->
         {
             // ONE MORE ROUTE SAVED ARMED, of those with no sensor.
@@ -136,6 +140,8 @@ public class testTheRoutesImportDoorAsksByName
                 {
                     route.put("auto", true);
 
+                    noSensor[0] = route.getString("name");
+
                     return json.toString();
                 }
             }
@@ -143,8 +149,10 @@ public class testTheRoutesImportDoorAsksByName
             throw new SkipException("every route in this data has a sensor, so none can be saved armed without one");
         });
 
-        assertEquals(run.savedArmed.size(), run.armedBefore.size() + 1, "precondition: the file does not hold the routes"
-            + " armed before the export and one more");
+        assertNotNull(noSensor[0], "precondition: no route with no sensor was saved armed in the file");
+
+        assertFalse(run.savedArmed.contains(noSensor[0]), "the question names " + noSensor[0] + ", saved armed with no"
+            + " sensor, among the routes Yes turns automatic firing on for - and Yes does not (RLU-C2): " + run.question);
 
         assertEquals(run.armedAfter, run.armedBefore, "answered Yes, a route saved armed with no sensor was armed, or a"
             + " route with one was not");
@@ -211,6 +219,51 @@ public class testTheRoutesImportDoorAsksByName
         assertEquals(run.routesAfter, expected, "Routes > Import did not bring the route back as \"" + renamed[1] + "\":"
             + " the file is UTF-8, and a letter outside ASCII read in another character set comes back as other letters"
             + " (RLU-A1)");
+    }
+
+    /**
+     * The question fits the screen however many routes it names: no line of it runs past a dialog's width (RLU-C3).
+     *
+     * The names went into the middle of the first line, joined with commas, and a question does not wrap a line - so a
+     * file with many routes saved armed made a dialog wider than the screen, its question past the right-hand edge.
+     * Here every route with a sensor is saved armed.
+     *
+     * MUTATION: put the names on one line again, and this fails.
+     *
+     * @throws Exception from the window or the import
+     */
+    @Test
+    public void testAQuestionNamingManyRoutesFitsTheScreen() throws Exception
+    {
+        Imported run = importHisRoutes(false, file ->
+        {
+            // EVERY ROUTE WITH A SENSOR SAVED ARMED.
+            JSONObject json = new JSONObject(file);
+
+            JSONArray routes = json.getJSONArray("routes");
+
+            for (int i = 0; i < routes.length(); i++)
+            {
+                if (routes.getJSONObject(i).has("s88")) routes.getJSONObject(i).put("auto", true);
+            }
+
+            return json.toString();
+        });
+
+        assertTrue(String.join(", ", run.savedArmed).length() > 200, "precondition: the routes saved armed make a list of"
+            + " only " + String.join(", ", run.savedArmed).length() + " characters, which fits on one line anyway");
+
+        for (String line : run.question.split("\n"))
+        {
+            assertTrue(line.length() <= 100, "a line of the question is " + line.length() + " characters long, so the"
+                + " dialog is as wide as its list of routes and can run off the screen (RLU-C3): " + line);
+        }
+    }
+
+    /** A sentence as its words, whatever lines they are on. */
+    private static String words(String text)
+    {
+        return text.replaceAll("\\s+", " ").trim();
     }
 
     // ---------------------------------------------------------------- the door
