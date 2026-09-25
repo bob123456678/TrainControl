@@ -6795,14 +6795,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The layout editor's window while one is open, or null - for a question that has to open in front of it rather
-     * than over this window, which the editor covers (MT-575).
+     * The layout editor's window while one is open where it can be seen, or null - for a question that has to open in
+     * front of it rather than over this window, which the editor covers (MT-575).
      *
-     * @return the editor, or null when none is open
+     * NOT A MINIMISED ONE (RLA-C4).  A minimised editor is still open, and on Windows a window it owns is hidden with it:
+     * the tail question's list hung from it was a modal nobody could see, holding the application until the editor was
+     * restored.  Then this window is where the operator is.
+     *
+     * @return the editor, or null when none is open and showing
      */
     java.awt.Window openLayoutEditorWindow()
     {
-        return openEditor != null && openEditor.isDisplayable() ? openEditor : null;
+        return openEditor != null && openEditor.isDisplayable() && openEditor.isShowing()
+            && (openEditor.getExtendedState() & java.awt.Frame.ICONIFIED) == 0 ? openEditor : null;
     }
 
     /**
