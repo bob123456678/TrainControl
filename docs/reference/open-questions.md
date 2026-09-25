@@ -165,6 +165,10 @@ either.
 - The tail walk **stops at a fork** and **at unmeasured track**. A tail that really does reach past
   either is not blocked. Both under-claim knowingly: blocking on a guess is still a refusal, and it
   stops trains that could have run.
+- **A berth's notices stop at every crossing; the berth rule, only at one a train can cross** (TDA3-C2).  With
+  nothing leading onto a crossing's other road the build emits no rail over it, so the rule does not refuse there,
+  and the half-measured and run-in notices warn of a refusal that does not come.  The warning side, and a crossing
+  nobody builds.
 - The room rule measures **from the last switch**, so track measured on the far side of a switch does
   not count toward a berth. This surprised Adam once and is correct: a train that fits between the
   switch and the berth fits behind any earlier switch too.
@@ -218,7 +222,9 @@ resume note that has been deleted.
 - **Return Home and Execute Timetable over a setup with errors** (TDU2-C3).  Since TDU-B1 both refuse a press while
   the setup has errors, as Start does - but both stay offered, where Start's right-click item is greyed with the
   setup's reason.  Grey them with the same sentence as their tooltip, or keep them live as the hand doors are, and say
-  so in `behaviour.md` section 1.
+  so in `behaviour.md` section 1.  **Recommended** (TDU3-C5): each as its Start twin is - the right-click Return Home
+  item greyed with the setup's sentence as its tooltip, as Start's item beside it is, and the Return Home and Execute
+  Timetable buttons live and explaining, as Start's button deliberately is.
 - **The untick after a legacy import** (TDD-C11).  He ruled for it (*"Set the setting to unchecked when importing a
   legacy json file, each time"*) when Load Autonomy also loaded the old graph at start.  Since OB-254 it resumes the
   active configuration, which an import makes, so a ticked box would load the imported setup and the untick is what

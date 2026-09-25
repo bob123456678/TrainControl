@@ -2280,6 +2280,85 @@ public class testMassAssignLengths
     }
 
     /**
+     * The berth rule itself refuses at the crossing, which the crossing claims above take as given (TDA3-C2): asked of the
+     * railway built from this page, every square measured, a two-unit train is held before the crossing and a three-unit
+     * one is refused.  The notices model the rule with `endsTheBerthsRoom`; this asks the rule.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testTheBerthRuleRefusesAtTheCrossing() throws Exception
+    {
+        support.LayoutSandbox sandbox = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open();
+
+            org.traincontrol.marklin.MarklinControlStation model =
+                org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+
+            try
+            {
+                openBerthBehindACrossing();
+
+                TileKey berth = key(7, 1);
+
+                for (int x = 2; x <= 7; x++) session.setTileLength(key(x, 1), x == 4 ? 3 : 1);
+
+                session.rebuild();
+
+                model.parseAuto(session.buildConfiguration());
+
+                org.traincontrol.automation.Layout layout = model.getAutoLayout();
+
+                assertNotNull(layout, "precondition: the page did not build a railway");
+
+                String name = session.getStationIndex().nameOf(berth);
+
+                org.traincontrol.automation.Edge in = null;
+
+                for (org.traincontrol.automation.Edge edge : layout.getEdges())
+                {
+                    if (edge.getEnd() != null && edge.getEnd().getName().startsWith(name)
+                        && edge.getPlaceIds().size() > 3) in = edge;
+                }
+
+                assertNotNull(in, "precondition: no rail into the berth over the crossing on the built railway");
+
+                org.traincontrol.base.Locomotive train = model.newMM2Locomotive("TDA3-C2 train", 2310);
+
+                try
+                {
+                    train.setTrainLength(2);
+
+                    assertNull(org.traincontrol.automation.Layout.whyABerthCannotHoldIt(java.util.Arrays.asList(in), train),
+                        "the berth rule refused a two-unit train, which is spent on the berth's own square and the one"
+                        + " before the crossing");
+
+                    train.setTrainLength(3);
+
+                    assertNotNull(org.traincontrol.automation.Layout.whyABerthCannotHoldIt(java.util.Arrays.asList(in),
+                        train), "the berth rule held a three-unit train whose spending reaches the crossing - the two"
+                        + " notices say it refuses there, and it does not (TDA3-C2)");
+                }
+                finally
+                {
+                    model.deleteLoc("TDA3-C2 train");
+                }
+            }
+            finally
+            {
+                model.stop();
+            }
+        }
+        finally
+        {
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
      * A parking berth's crossing on a leg with no switch is said too (TDA3-C2): the room walk finds no switch there and
      * answers nothing, and the berth rule stops at the crossing.
      *
@@ -2393,8 +2472,10 @@ public class testMassAssignLengths
     }
 
     /**
-     * 1,1 sensor - 2,1 - 3,1 switch - 4,1 - 5,1 crossing - 6,1 - 7,1 berth, the crossing's other road from a sensor at 5,0
-     * to one at 5,2.
+     * 1,1 sensor - 2,1 - 3,1 switch - 4,1 - 5,1 crossing - 6,1 - 7,1 berth.  The crossing's other road is one a train can
+     * drive (TDA3-C2): the switch's branch curves north and east at 3,0 to a sensor at 4,0, and round the curve at 5,0
+     * over the crossing to a station at 5,2.  With sensors at 5,0 and 5,2 and nothing leading onto them, the build
+     * emitted no rail over the crossing at all, and the berth rule had nothing there to refuse on.
      */
     private void openBerthBehindACrossing() throws IOException
     {
@@ -2403,7 +2484,7 @@ public class testMassAssignLengths
 
     /**
      * The same, with a plain straight at 3,1 where the switch was when asked - a leg the room walk finds no switch on
-     * (TDA3-C2).
+     * (TDA3-C2) - and the crossing's other road fed from a sensor at 1,0 along row 0 instead.
      */
     private void openBerthBehindACrossing(boolean withTheSwitch) throws IOException
     {
@@ -2415,18 +2496,24 @@ public class testMassAssignLengths
         if (withTheSwitch)
         {
             page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
+            page.addComponent(componentType.CURVE, 3, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
         }
         else
         {
             page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            page.addComponent(componentType.FEEDBACK, 1, 0, 0, 0, 10, 16, accessoryDecoderType.MM2, null);
+            page.addComponent(componentType.STRAIGHT, 2, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            page.addComponent(componentType.STRAIGHT, 3, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
         }
 
         page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.CROSSING, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 0, 1, 0, 8, 14, accessoryDecoderType.MM2, null);
+
+        // THE CROSSING'S OTHER ROAD: a sensor at 4,0, the curve at 5,0, over the crossing to a station at 5,2.
+        page.addComponent(componentType.FEEDBACK, 4, 0, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.CURVE, 5, 0, 3, 0, 0, 0, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.FEEDBACK, 5, 2, 1, 0, 9, 15, accessoryDecoderType.MM2, null);
 
         if (withTheSwitch) wire(page, 3, 1, 7);
@@ -2437,6 +2524,7 @@ public class testMassAssignLengths
         session.initialize("Crossing");
         session.setStation(key(7, 1), true);
         session.setAutoDestination(key(7, 1), false);
+        session.setStation(key(5, 2), true);
         session.rebuild();
     }
 

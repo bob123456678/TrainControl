@@ -26938,8 +26938,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // AND NOT NON-ATOMIC OVER A RAILWAY THAT COULD RELEASE TRACK UNDER A TRAIN (VD16-B2).
         //
-        // THE FOURTH DOOR, and the one the other three cannot cover.  An edge's length is only ever
-        // written by `parseAuto`, and both file doors re-ask this afterwards - but a TRAIN's length is
+        // THE THIRD DOOR, and the one the other two cannot cover.  An edge's length is only ever
+        // written by `parseAuto`, and the file door re-asks this afterwards - but a TRAIN's length is
         // written on the live layout by `applyTrainLength` (whose zero means "not set") and by
         // `GraphLocAssign.commitChanges`, neither of which rebuilds anything.  So the checkbox can be
         // unticked honestly over a measured railway with every train measured, and a length cleared a

@@ -442,8 +442,8 @@ public class testNonAtomicRoutesNeedTheirLengths
     /**
      * AND THE START BUTTON ASKS THE SAME QUESTION, WHICH IS THE DOOR THAT MATTERS (VD16-B2).
      *
-     * The other three doors cannot cover it.  An edge length is only ever written by `parseAuto`, and
-     * both file doors re-ask afterwards - but a TRAIN length is written on the live layout by
+     * The other two doors cannot cover it.  An edge length is only ever written by `parseAuto`, and
+     * the file door re-asks afterwards - but a TRAIN length is written on the live layout by
      * `applyTrainLength` (whose zero means "not set") and by `GraphLocAssign.commitChanges`, neither
      * of which rebuilds anything.  So the checkbox can be unticked honestly over a measured railway
      * and a length cleared a minute later puts `behind >= trainLength` back to `0 >= 0`.

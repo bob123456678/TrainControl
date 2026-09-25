@@ -1104,7 +1104,12 @@ The editor notice about turn-round squares with no length is a different questio
     and **Cancel** in a small window.  The list is asked where a choice is on another page or not drawn, and where an
     editor window is open, whose squares do not take the click (TDU-C1).  The rest of a double-click on the sensor that
     answered is the question's, not the sensor's (TDU-B3), and the paste reads everything about its landing before the
-    question waits, because the window stays live while it does (TDU-B2).  `regression.testTheTailIsPickedOnTheDiagram`.
+    question waits, because the window stays live while it does (TDU-B2).  **An answer is written only where the placement
+    still stands when it comes back** (TDU2-A1, TDU3-B1): the square's copy on the railway running then still holds the
+    train, with the side it was put down with and the road it had - a railway rebuilt in the wait counts, its new copy
+    being the one asked.  Otherwise the answer is dropped and the log says so, naming the train and the square; the
+    facing was written before the question was asked, so only the road waits for it.
+    `regression.testTheTailIsPickedOnTheDiagram`.
     Which sensors are offered is worked out from the
     measured lengths of the roads back and is a suggestion: what blocks track is still this walk, reading the
     road chosen. A road given this way runs along rails laid towards the train, as a run's road does. `core.testTheTailCrossedQuestion`,
@@ -1155,7 +1160,9 @@ The editor notice about turn-round squares with no length is a different questio
   over, the measured track run since the head left it. A longer train is refused, and the refusal names the tightest
   such figure on the route - the longest train that goes (TDA-C1). **Only measured track binds**: a return is judged
   only where the route itself - not the body in front of the place - has measured something since the head left it,
-  and where stretches of it have no length the refusal says how many, which is the other way past (TDA-B1).
+  and where stretches of it have no length the refusal says how many, which is the other way past (TDA-B1).  A
+  stretch here is a leg, sensor to sensor, so one measured only at its switch is not counted - between Mass Assign
+  sittings the count can be short, or missing (TDA2-C1, OB-297).
   **After a turn the body is ahead of the train** and moves with it - a turn on the way, or a train leaving over its
   own tail - so the question starts again. Asked by every tier, Why not Moving? and Return Home's planner. A hand door
   does not offer a destination the rule refuses on every route; the sentence shows where a menu built before the
@@ -1463,7 +1470,10 @@ never binds, and a train inside it is refused by a rule quoting a number nobody 
   numbers - the maximum first, the room second.
 - The room is `ReducedEdge.getRoomAtTheEnd()`: the track from the last switch on the arriving edge to the
   platform, which is what `Layout.measuredRoomAtTheEndOf` counts. **A notice quoting a number the refusal
-  would not quote sends the reader to measure the wrong stretch.**
+  would not quote sends the reader to measure the wrong stretch.**  So for a parking berth the number is the
+  berth rule's where that stops first - at a crossing between the berth and its switch, or on a leg with no
+  switch (TDA2-C6, TDA3-C2) - and with nothing measured before that crossing the notice says 0 where its squares
+  were answered 0, and nothing where they were not, which the half-measured warning names instead (TDA3-C1).
 - An arriving edge crossing no switch is skipped unless trains turn round where it starts - there the
   guard walks on back through earlier edges, so that edge bounds nothing.
 - Silent where either side is missing: no typed maximum is `checkNoMaxTrainLength`'s sentence, an

@@ -637,7 +637,7 @@ public class testAutoLayout
      * A railway can say which track non-atomic mode could release under a train (VD13-B2/B3, VD14-C6).
      *
      * This is the one question the atomic-routes gate asks, at all seven of its doors - the checkbox,
-     * both load doors, and the five that dispatch a train.  It
+     * the load door, and the five that dispatch a train.  It
      * is the hazard in the form the hazard takes: non-atomic mode releases an edge as soon as
      * `tailHasProvablyPassed` returns true, and that happens immediately when `pathIsUnmeasured` - when
      * NO edge on the path has a length.

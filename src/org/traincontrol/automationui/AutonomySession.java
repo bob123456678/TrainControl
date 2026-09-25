@@ -3883,6 +3883,11 @@ public class AutonomySession
      * The room walk ends at a switch or a permanent turnout (`GraphReducer.boundsTheRoom`, OB-233), and the berth rule
      * refuses a train whose spending reaches a place another road runs over - which a crossing's square is.
      *
+     * **Known limit** (TDA3-C2): the rule refuses there only where a train can drive the crossing's other road - with
+     * nothing leading onto it, the build emits no rail over it and the rule has nothing to refuse on - and this asks the
+     * tile.  So at a crossing no train can cross the notices warn of a refusal that does not come: the warning side, and
+     * a crossing nobody builds.
+     *
      * @param tile a square
      * @return true where the berth's measured room ends
      */
