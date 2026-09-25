@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JButton;
@@ -239,6 +240,104 @@ public class testMainWindowFaults
 
             if (!hadBackups) Files.deleteIfExists(backups.toPath());
         }
+    }
+
+    /**
+     * Page names survive a UI state file that has fewer pages than this version shows.
+     *
+     * The file is the key mappings of each page followed by one last entry holding the page names and
+     * the active page.  Restoring that last entry was gated on the file having MORE entries than this
+     * version's ten pages - true for every file 2.8 writes, but not for one written by TrainControl
+     * 3.0, where the number of pages can be changed and is often fewer.  Going back to 2.8 after
+     * trying 3.0 then skipped the page names and the active page, and the save on exit wrote the
+     * empty names over them.  The last entry is the page names whenever there is one.
+     *
+     * The restore is the first thing setViewListener does; everything after it builds the window, so
+     * on a window-less instance the call ends at the first component it needs.  What is asserted is
+     * what the restore left behind.
+     *
+     * Ported from the 3.0 branch (the page-name gate of d6b9b00c, OB-255).
+     */
+    @Test
+    public void testPageNamesSurviveAFileWithFewerPages() throws Exception
+    {
+        File live = new File("UIState.data");
+
+        if (live.exists())
+        {
+            throw new SkipException("Not run here: the working directory holds a UI state file ("
+                + live.getAbsolutePath() + "), and this test has to put its own in its place");
+        }
+
+        try
+        {
+            // The control first: a file as 2.8 writes it, with all ten pages
+            assertEquals(pageNamesAfterRestoring(live, 10).get(1), "Yard",
+                "the fixture does not work even for a file with all ten pages, so the assertion "
+                + "below would prove nothing");
+
+            // And a file as 3.0 writes it for someone using four pages
+            assertEquals(pageNamesAfterRestoring(live, 4).get(1), "Yard",
+                "the page names were not restored from a UI state file with fewer than ten pages, as "
+                + "TrainControl 3.0 writes - so they are lost at the next exit");
+        }
+        finally
+        {
+            Files.deleteIfExists(live.toPath());
+        }
+    }
+
+    /**
+     * Writes a UI state file with the given number of (empty) pages followed by the page names, runs
+     * the window's restore on it, and returns the page names the window ended up with.
+     */
+    private static Map<Integer, String> pageNamesAfterRestoring(File live, int pages) throws Exception
+    {
+        List<Map<Integer, String>> state = new ArrayList<>();
+
+        for (int i = 0; i < pages; i++)
+        {
+            state.add(new HashMap<>());
+        }
+
+        Map<Integer, String> names = new HashMap<>();
+        names.put(1, "Yard");
+        names.put(2, "Mainline");
+        names.put(-1, "1");     // the active page
+        names.put(-2, "-1");    // the active button: none
+        state.add(names);
+
+        try (java.io.ObjectOutputStream out = new java.io.ObjectOutputStream(
+            new java.io.FileOutputStream(live)))
+        {
+            out.writeObject(state);
+        }
+
+        TrainControlUI ui = windowless();
+
+        // What the restore reads, and nothing more
+        set(ui, "buttonMapping", new HashMap<Integer, JButton>());
+        set(ui, "pageNames", new HashMap<Integer, String>());
+
+        try
+        {
+            ui.setViewListener(stubModel((method, args) -> null), null);
+
+            fail("setViewListener finished on a window-less instance, so this test no longer knows "
+                + "where it stops");
+        }
+        catch (NullPointerException windowNotBuilt)
+        {
+            // Expected: the first component the window-building part needs is not there
+        }
+
+        Field field = TrainControlUI.class.getDeclaredField("pageNames");
+        field.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        Map<Integer, String> restored = (Map<Integer, String>) field.get(ui);
+
+        return restored;
     }
 
     // ---------------------------------------------------------------------------------------------

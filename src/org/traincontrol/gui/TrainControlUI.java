@@ -1772,7 +1772,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         boolean savedLocKey = false;
         // Restore page names, active button, and page, which are stored at the end
-        if (saveStates.size() > TrainControlUI.NUM_LOC_MAPPINGS)
+        //
+        // The last entry, whenever there IS one.  saveState always appends the page names after the
+        // pages, so the list is one longer than the page count - but this was gated on the count THIS
+        // version shows.  TrainControl 3.0 lets the number of pages change, so a UI state file it wrote
+        // with fewer than ten pages skipped the page names, the active page and the active button here,
+        // and the exit then saved the empty names over them.
+        if (!saveStates.isEmpty())
         {
             this.pageNames = saveStates.get(saveStates.size() - 1);
             
