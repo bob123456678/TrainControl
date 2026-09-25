@@ -409,6 +409,36 @@ AUT9-C2	AUT-autonomy-review.md	Closed	-	The full-autonomy vs timetable tier spli
 AUT9-D1	AUT-autonomy-review.md	Closed	-	`firstClearRoute` and `isPathClear` agree on lock edges only "by coincidence"; the comment says so but no test guards the coincidence
 AUT9-D2	AUT-autonomy-review.md	Closed	-	`isOfferableToOperator` drops the terminus/reversibility question that `barredFromAutonomy` keeps; both are right, but the asymmetry is documented onl
 B4-B7	2026-08-17-unread-half-review.md	Closed	-	, in brief
+BPV-A1	BPV.md	Closed	Fixed on both branches - an edit sweeps only for a train that stands, so a member's rename	Renaming a member of a multi-unit that stands on a station still takes the multi-unit off it (pre-existing, both branches)
+BPV-C1	BPV.md	Closed	Fixed - the keepalive claim pins the outage clock across a resend (master 39466571).	The keepalive claim does not pin the outage clock that keeps the latency cutoff working
+BPV-C10	BPV.md	Closed	Fixed - the comment says what the retry costs (master c630d22a).	The WEB_RETRY comment says the scan does not get longer; live hosts that drop port 80 now cost three timeouts
+BPV-C11	BPV.md	Open - deferred	Fixed in part - the changelog now says what happens (master 5ecbf918); the message's remed	Return Home with a train off-station now refuses before starting, but its message sends the operator to check the track, and the changelog line reads
+BPV-C12	BPV.md	Closed	Fixed - a skipped timetable entry has its own log line. Claim eeddbf43 (red first), fix 59	The timetable per-entry warning reuses the line that used to mean "the whole timetable was lost"
+BPV-C13	BPV.md	Open - deferred	Fixed in part, on Adam's ruling (2026-09-25: the graceful stop forced, and the invalidate 	Faults left on 2.8 in the same source commits the port drew from (for Adam's decision)
+BPV-C2	BPV.md	Closed	Fixed - each of Return Home's two lines has a claim (master 5055a36b).	Two load-bearing lines of the Return Home fix are not exercised by its tests
+BPV-C3	BPV.md	Closed	Fixed - a press that starts the run is asserted to leave Start greyed (master 03b1576c).	The double-press test stops before the "started" path, so the half that keeps Start greyed during a run is untested
+BPV-C4	BPV.md	Closed	Fixed - Start's conditional-routes question is asked on the event thread. Claim 2f372814 (	The Start press now greys the button for as long as the worker lives, and the dialog the worker can block on is still raised off the event thread
+BPV-C5	BPV.md	Closed	Fixed - a wait for a sensor is asserted to end when the sensor is reached (master cd537ec8	The sensor-monitor test does not guard the wait/notify pairing it moved
+BPV-C6	BPV.md	Closed	Not a defect - the claims refuse to run where a real file is present, which is right; the 	The three file-based claims skip wherever a real LocDB.data or UIState.data exists, which is every folder Adam runs from
+BPV-C7	BPV.md	Closed	Fixed on both branches - the mark is cleared only once the copy exists, and until then the	The unreadable-file flag is cleared before the copy is known to exist, and the operator is told only during the exit save
+BPV-C8	BPV.md	Open	Open - carried to the 2.8.2 release validation: a stream header that will not read leaves 	Both restoreState methods still leak the file handle when the stream header is bad (pre-existing; noted by the porting agent)
+BPV-C9	BPV.md	Closed	Fixed - one lost reply to the gateway ping no longer makes auto-detect say it is impossibl	The gateway-ping retry (2b07376f) is left out, so auto-detect can still say "not possible" after one lost reply
+BPV-D1	BPV.md	Closed	Checked - clean.	Fix 1 (keepalive): faithful, and the UI timer needs no change
+BPV-D10	BPV.md	Closed	Checked - clean.	Fix 11 (auto-detect): faithful; the private retry reaches both callers
+BPV-D11	BPV.md	Closed	Checked - clean.	Fix 12 (page names): faithful; the pre-Dec-2023 file case is harmless; 3.0 still writes the names last
+BPV-D12	BPV.md	Closed	Checked - clean.	testMainWindowFaults' constructor-less window: sound for what it asserts
+BPV-D13	BPV.md	Closed	Checked - clean.	Message bundles clean
+BPV-D14	BPV.md	Closed	Checked - clean.	Changelog v2.8.2: one plain line per port, nothing extra
+BPV-D15	BPV.md	Closed	Checked - clean.	The whitespace rebase changed no content
+BPV-D16	BPV.md	Closed	Checked - clean.	Version bump consistent
+BPV-D2	BPV.md	Closed	Checked - clean.	Fix 2 (rename): faithful; every caller of the sweep checked
+BPV-D3	BPV.md	Closed	Checked - clean.	Fix 3 (timetable): faithful; what a partly loaded timetable does
+BPV-D4	BPV.md	Closed	Checked - clean.	Fix 4 (priority): faithful and complete on master
+BPV-D5	BPV.md	Closed	Checked - clean.	Fix 5 (routes): faithful; both doors; the one behaviour change is the intended one
+BPV-D6	BPV.md	Closed	Checked - clean.	Fix 6 (pending-sensor monitor): no other waiter or notifier on the Layout monitor
+BPV-D7	BPV.md	Closed	Checked - clean.	Fix 7 (Return Home): SG-A2 and SG-A5 faithful; the ordinary-timetable skip and the testLayoutTimetable speed change are sound
+BPV-D8	BPV.md	Closed	Checked - clean.	Fix 8 (Start): every door to the handler is covered by the greyed button
+BPV-D9	BPV.md	Closed	Checked - clean.	Fix 10 (unreadable files): faithful; restore runs once at start-up, save once at exit
 BR-B1	2026-08-17-v2.8.1-backport-review.md	Closed	Fixed (stated in the body)	The speed guard was placed where Start does not go
 BR-C1	2026-08-17-v2.8.1-backport-review.md	Closed	Open	Crash window between the two moves of a case-only rename
 BR-C2	2026-08-17-v2.8.1-backport-review.md	Closed	**Fixed 2026-08-17** (`a673bc7`)	The recorded rationale for synchronizing the device collection was false
