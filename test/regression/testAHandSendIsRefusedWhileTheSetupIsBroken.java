@@ -168,7 +168,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
             // ON THE EVENT THREAD, where the editor makes every setup change - the window's own work reads the setup
             // there, and a change made from this thread raced it.
-            final String[] outcome = new String[7];
+            final String[] outcome = new String[9];
 
             // RETURN HOME OFFERED BEFORE ANYTHING IS BROKEN (ADU-C6): otherwise the item is greyed for that, and the
             // greyed state below says nothing about the setup.
@@ -195,6 +195,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
                 String name = session.getStore().getPointName(station);
 
                 outcome[0] = String.valueOf(ui[0].whyAHandSendIsRefused());
+                outcome[7] = String.valueOf(ui[0].whyStartAndAHandSendAreRefused()[1]);
 
                 try
                 {
@@ -228,7 +229,13 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
                             "addReturnHomeItem", javax.swing.JComponent.class, TrainControlUI.class, String.class);
 
                         add.setAccessible(true);
-                        add.invoke(null, menu, ui[0], ui[0].whyAHandSendIsRefused());
+                        // From the one reading the menu takes (ADU2-C5), checked against the two rules it stands for.
+                        String[] both = ui[0].whyStartAndAHandSendAreRefused();
+
+                        outcome[8] = String.valueOf(both[0].equals(ui[0].whyAutonomyWillNotStart())
+                            && both[1] != null && both[1].equals(ui[0].whyAHandSendIsRefused()));
+
+                        add.invoke(null, menu, ui[0], both[1]);
 
                         javax.swing.JMenuItem item = (javax.swing.JMenuItem) menu.getComponent(0);
 
@@ -255,6 +262,12 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
                 + " broken, so nothing below is about breaking it");
 
             assertEquals(outcome[1], "true", "precondition: an unnamed station is not an error");
+
+            assertEquals(outcome[7], "null", "the menu's one reading refuses a hand send over a setup nothing is wrong"
+                + " with (ADU2-C5)");
+
+            assertEquals(outcome[8], "true", "over a broken setup, the menu's one reading does not say what Start's rule"
+                + " and the hand doors' rule say (ADU2-C5)");
 
             assertNotEquals(outcome[2], "null", "with the setup broken, the window lets a hand send through - MT-263:"
                 + " \"trains can still be moved manually ... which should throw an error instead\"");
@@ -325,6 +338,10 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
         assertTrue(menu.contains("HomeLocomotiveMenu.addReturnHomeItem(this, ui, broken)"), "the right-click menu does not"
             + " hand the Return Home item the sentence it worked out (ADU-C3)");
+
+        // AND EACH SENTENCE GOES WHERE IT BELONGS: Start's to Start's tooltip, the hand doors' to Return Home (ADU2-C5).
+        assertTrue(building.contains("AutonomyEditorPanel.wrapped(why[0])") && menu.contains("String broken = why == null ? null : why[1];"),
+            "the right-click menu hands one of the two sentences to the wrong item, or drops it (ADU2-C5)");
 
         assertFalse(item.contains("whyAHandSendIsRefused("), "the Return Home item asks the whole setup check itself, on"
             + " every right-click (ADU-C3)");

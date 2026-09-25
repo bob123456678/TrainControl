@@ -207,6 +207,10 @@ public class testATrainIsPutOnlyWhereItCanStart
         assertTrue(menu.contains("menuItem.setEnabled(!departable.isEmpty());"), "the right-click Place is greyed on a"
             + " list the action no longer chooses from - the guard and the affordance ask different questions (ADU2-C2)");
 
+        assertTrue(menu.contains("placeSomewhereLegal(offered)"), "the right-click Place is offered over copies it is then"
+            + " not handed: with every copy it could leave by barred, the action gets an empty list and does nothing"
+            + " (ADU2-C2)");
+
         int read = body.indexOf("keep = ");
         int asked = body.indexOf("copyToPlaceOn(session, station, running, keep, usable)");
         int moved = body.indexOf("placeFacing(");

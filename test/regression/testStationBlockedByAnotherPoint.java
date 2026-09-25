@@ -1011,4 +1011,52 @@ public class testStationBlockedByAnotherPoint
             + "a save and load, which makes the railway behave differently after a restart: "
             + station.getBlockedBy());
     }
+
+    /**
+     * The dialog that sets Unavailable While Occupied says what the rule now shuts (ADU2-C6): routes to the square and
+     * through it, for every door that sends a train - not "Autonomy will not send a train to" it.  Since OB-295 a train
+     * standing on a watched square closes routes through a square trains only pass, and a hand send is refused by the
+     * same rule.
+     *
+     * MUTATION: put back the old sentence in any of the eight languages, and this fails.
+     *
+     * @throws IOException from the bundles
+     */
+    @Test
+    public void testTheDialogSaysWhatTheRestrictionShuts() throws IOException
+    {
+        java.util.Map<String, String> said = new java.util.LinkedHashMap<>();
+
+        said.put("messages.properties", "Autonomy will not send a train to");
+        said.put("messages_da.properties", "Automatikken sender ikke et tog til");
+        said.put("messages_de.properties", "Die Automatik schickt keinen Zug nach");
+        said.put("messages_es.properties", "no enviar");
+        said.put("messages_fr.properties", "enverra pas de train");
+        said.put("messages_it.properties", "non mander");
+        said.put("messages_nl.properties", "De automaat stuurt geen trein naar");
+        said.put("messages_pl.properties", "Automatyka nie wy");
+
+        for (java.util.Map.Entry<String, String> bundle : said.entrySet())
+        {
+            java.util.Properties read = new java.util.Properties();
+
+            try (java.io.InputStream in = new java.io.FileInputStream("src/org/traincontrol/resources/" + bundle.getKey()))
+            {
+                read.load(in);
+            }
+
+            String sentence = read.getProperty("autosetup.ui.promptBlockedByPoints");
+
+            assertNotNull(sentence, bundle.getKey() + " has no autosetup.ui.promptBlockedByPoints");
+
+            assertFalse(sentence.contains(bundle.getValue()), bundle.getKey() + " still says only that autonomy will not"
+                + " send a train to the square (ADU2-C6): " + sentence);
+
+            if (bundle.getKey().equals("messages.properties"))
+            {
+                assertTrue(sentence.contains("to or through {0}") && sentence.contains("occupied"), "the dialog does not say"
+                    + " trains are kept from routes to and through the square while a watched one is occupied: " + sentence);
+            }
+        }
+    }
 }

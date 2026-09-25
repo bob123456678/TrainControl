@@ -3841,6 +3841,14 @@ public class testAutonomyDiagramSession
 
         assertEquals(room.get("P"), Integer.valueOf(4), "a way in with nothing measured after its switch is none of the"
             + " notice's, and its 3 made the figure less than the room the notice quotes (ADA2-C2): " + room);
+
+        // IN WHATEVER ORDER THE BUILD LISTS THE LEGS: here the leg into the platform first, the one behind it after.
+        java.util.Map<String, Integer> order = figures(
+            new String[][] {{"S", "station"}, {"X", ""}, {"P", "station"}},
+            new Object[][] {{"X", "P", 1, 1}, {"S", "X", 1, null}});
+
+        assertEquals(order.get("P"), Integer.valueOf(2), "the walk stopped before it had worked back to the station"
+            + " behind, with the legs listed into the platform first: " + order);
     }
 
     /**
