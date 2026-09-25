@@ -1118,10 +1118,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // protection at all against this - a complete successful write of nothing is not a partial
         // write.  Once, and the save still happens: refusing to save for ever would throw away
         // whatever the session did instead.
+        //
+        // But not over a file whose copy could not be made.  The mark is cleared only once the copy is
+        // known to exist; until then this save leaves the file as it is, and the next save tries the
+        // copy again.  Cleared first, a copy that failed was logged and the save went on to write over
+        // the only copy there was (BPV-C7).
         if (!backup && this.uiStateLoadFailed)
         {
-            this.uiStateLoadFailed = false;
-
             try
             {
                 File existing = new File(TrainControlUI.DATA_FILE_NAME);
@@ -1138,10 +1141,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     this.model.logf("ui.uiStateUnreadableKept", kept.getAbsolutePath());
                 }
+
+                // Kept - or nothing is left to keep
+                this.uiStateLoadFailed = false;
             }
             catch (IOException | RuntimeException keepFailed)
             {
                 this.model.log(keepFailed);
+
+                this.model.logf("ui.errorSavingUiState", keepFailed.toString());
             }
         }
 
@@ -1154,28 +1162,34 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // automatic save of the UI state, so a write interrupted part way used to leave nothing behind.
         // try-with-resources inside still matters - without close() the final buffered block never
         // reaches the staging file, and a truncated file would then be moved into place.
-        try
+        //
+        // And not at all while an unreadable file is here whose copy could not be made - see above
+        // (BPV-C7).
+        if (backup || !this.uiStateLoadFailed)
         {
-            Util.writeAtomically(new File(statePath), fileOut ->
+            try
             {
-                try (ObjectOutputStream obj_out = new ObjectOutputStream(fileOut))
+                Util.writeAtomically(new File(statePath), fileOut ->
                 {
-                    // Write object out to disk
-                    obj_out.writeObject(l);
-                }
-            });
+                    try (ObjectOutputStream obj_out = new ObjectOutputStream(fileOut))
+                    {
+                        // Write object out to disk
+                        obj_out.writeObject(l);
+                    }
+                });
 
-            this.model.logf(
-                "ui.logSavingUiState",
-                new File(statePath).getAbsolutePath()
-            );
-        }
-        catch (IOException iOException)
-        {
-            this.model.logf(
-                "ui.errorSavingUiState",
-                iOException.getMessage()
-            );
+                this.model.logf(
+                    "ui.logSavingUiState",
+                    new File(statePath).getAbsolutePath()
+                );
+            }
+            catch (IOException iOException)
+            {
+                this.model.logf(
+                    "ui.errorSavingUiState",
+                    iOException.getMessage()
+                );
+            }
         }
         
         if (this.autosave.isSelected() && this.model.hasAutoLayout() 
