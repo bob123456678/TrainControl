@@ -83,6 +83,65 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
     }
 
     /**
+     * An old autonomy.json is imported into the configuration named at the prompt, and the one in use is left as it was
+     * (Adam, 2026-09-25, choosing between honouring the name and not asking for one: *"(a)"*).
+     *
+     * The Import asks for a configuration name, and warns when it would replace one - and on a layout that already had
+     * configurations the old file's placements, homes and facings were then written into the one in use, the name thrown
+     * away.  On the frozen railway: a second session, its own configuration in use, the file imported under a new name.
+     *
+     * MUTATION: write into the configuration in use, or have the door import before choosing, and this fails.
+     *
+     * @throws Exception from the import or the reflection
+     */
+    @Test
+    public void testAnImportGoesIntoTheConfigurationNamed() throws Exception
+    {
+        AutonomySession fresh = new AutonomySession(sandbox.getFolder());
+
+        fresh.open(support.LayoutSandbox.wiredPages(model));
+
+        String inUse = fresh.getStore().getActiveConfiguration();
+
+        assertNotNull(inUse, "precondition: the frozen railway has no configuration in use");
+
+        String before = fresh.getStore().getConfiguration(inUse).toString();
+
+        java.lang.reflect.Method choose = org.traincontrol.gui.AutonomyViewerPanel.class.getDeclaredMethod(
+            "activateTheConfigurationNamed", org.traincontrol.automationui.AutonomyCompanionStore.class, String.class,
+            String.class);
+
+        choose.setAccessible(true);
+
+        assertEquals(choose.invoke(null, fresh.getStore(), " Imported from 2.7 ", "Autonomy 9"), "Imported from 2.7",
+            "the configuration imported into is not the one named at the prompt");
+
+        assertEquals(fresh.getStore().getActiveConfiguration(), "Imported from 2.7", "the configuration named at the prompt"
+            + " is not the one the import writes into");
+
+        fresh.importLegacy(legacy);
+
+        assertEquals(fresh.getStore().getConfiguration(inUse).toString(), before, "the import wrote into " + inUse + ", the"
+            + " configuration in use, where the name typed was another");
+
+        assertTrue(!fresh.placementsAutonomyWillWrite().isEmpty(), "the configuration named at the prompt got none of"
+            + " the file's placements");
+
+        // AND THE DOOR CHOOSES BEFORE THE IMPORT WRITES: the rule above is only as good as the one call that asks it.
+        String door = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/AutonomyViewerPanel.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        int start = door.indexOf("private void importLegacyGraph(");
+        int chosen = door.indexOf("activateTheConfigurationNamed(session().getStore(), name", start);
+        int writes = door.indexOf("session().importLegacy(", start);
+
+        assertTrue(start > 0 && writes > start, "precondition: the old-file import door is not where it was");
+
+        assertTrue(chosen > start && chosen < writes, "the Import door writes the old file before choosing the"
+            + " configuration named at the prompt, or never asks");
+    }
+
+    /**
      * A change made between two imports of the same file is still there afterwards.
      *
      * @throws Exception from the import
