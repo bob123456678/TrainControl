@@ -165,7 +165,7 @@ The first is a measurement, the second is a preference. Both are checked and eit
 
 **Whether a train can go round a loop without running into its own tail.** A route that leaves a station and comes back round to track the train is still lying on - out round a loop and back along the line it came in by - is allowed only if the back of the train has gone by the time the front gets there. The refusal says how long a train can make the trip ("a train of 9 units or shorter is clear of it in time"): send a shorter train, or send this one another way. Only measured track counts here too: with nothing measured round the loop the trip is not checked at all, and where part of it has no length the message says how many lengths Mass Assign Lengths still has to ask you for on the way round (a piece of track, or all of a page's switches or crossings, is one) - give them, and the trip may turn out to be long enough. Of the rules that stop a train, this is the one that reads the track round a loop, not only the run in to a station.
 
-**Which route is picked**, if you have chosen *Over the shortest track* or *Over the longest track*. Both are measured in your lengths, and a section with no length counts as one - so with nothing measured they pick the route over the fewest, or the most, sections.
+**Which route is picked**, if you have chosen *Over the shortest track* or *Over the longest track*. Both are measured in your lengths, and a section with no length counts as one - so with nothing measured they pick the route over the fewest, or the most, sections. A section you answered 0 counts as 0.
 
 ### When to set them
 
@@ -223,7 +223,7 @@ When more than one route will do, TrainControl has to choose. The **Routing Logi
 | Completely at random | Picks any of them, to any station - station priority is ignored |
 | Past the fewest stations | The most direct route |
 | Past the most stations | Trains call at things on the way rather than going straight there |
-| Over the shortest track | By measured length; a section with no length counts as one |
+| Over the shortest track | By measured length; a section with no length counts as one, one answered 0 as 0 |
 | Over the longest track | The scenic route |
 | Across the fewest sensors | Fewest reporting points on the way |
 | Across the most sensors | The busiest-looking route |

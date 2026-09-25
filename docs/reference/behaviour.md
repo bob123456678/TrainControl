@@ -1031,7 +1031,8 @@ refused quoting 4.  Until then an answered 0 read as a stretch nobody measured (
 the Atomic Routes gate and its escape from 2026-09-24 (TDU-C6, §5d); for a day in between the route in counted past it
 while the tail walk did not (ADA-A1).  `core.testAnAnsweredZeroIsNotMissing.testAStretchAnsweredZeroIsMeasuredTrackOfNoLength`,
 `core.testAutoLayout.testTrackAnsweredZeroIsMeasuredTrack`.  Built 2026-09-23 (MT-476); measured everywhere since
-2026-09-25 (MT-586).
+2026-09-25 (MT-586).  **Route choice by track length counts it 0 too** (Adam, 2026-09-25: *"Yes, count answered 0 as 0"*): *Over the shortest track*, *Over the longest track* and balanced priority count a section nobody measured as 1, so an unmeasured railway does not tie every route at 0, and one answered 0 as 0.
+`core.testRoutePicking.testAnAnsweredZeroCountsNothingInTheLength`.
 
 **Segment Length's 0 is the same answer, and Clear is its own button** (Adam, 2026-09-23, FR-097: *"no, add a clear
 button"*). A 0 typed there records the run - or each selected square - as answered 0; **Clear**, or an emptied field,
