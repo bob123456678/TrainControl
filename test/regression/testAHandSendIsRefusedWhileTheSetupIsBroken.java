@@ -142,12 +142,14 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the window needs a display");
 
-        support.LayoutSandbox sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+        support.LayoutSandbox sandbox = null;
 
         final TrainControlUI[] ui = new TrainControlUI[1];
 
         try
         {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
             org.traincontrol.marklin.MarklinControlStation model =
                 org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
 
@@ -225,7 +227,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
                 javax.swing.SwingUtilities.invokeAndWait(() -> closing.dispose());
             }
 
-            sandbox.close();
+            if (sandbox != null) sandbox.close();
         }
     }
 

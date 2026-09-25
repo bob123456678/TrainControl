@@ -144,15 +144,21 @@ public class testTheEditorSaysWhatItsToolsDo
     @Test
     public void testWhyNotMovingFollowsTheRunningRailway() throws Exception
     {
-        org.traincontrol.marklin.MarklinControlStation model =
-            org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+        support.LayoutSandbox sandbox = null;
 
-        org.traincontrol.base.Locomotive moved = model.newMM2Locomotive("FR-102 moved", 2301);
-
-        assertNotNull(moved, "could not create this test's train");
+        org.traincontrol.marklin.MarklinControlStation model = null;
 
         try
         {
+            // A SANDBOX FIRST, so the model does not load the machine's own railway (OB-111).
+            sandbox = support.LayoutSandbox.open();
+
+            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+
+            org.traincontrol.base.Locomotive moved = model.newMM2Locomotive("FR-102 moved", 2301);
+
+            assertNotNull(moved, "could not create this test's train");
+
             model.parseAuto(session.buildConfiguration());
 
             final org.traincontrol.automation.Layout railway = model.getAutoLayout();
@@ -217,8 +223,18 @@ public class testTheEditorSaysWhatItsToolsDo
         }
         finally
         {
-            model.deleteLoc("FR-102 moved");
-            model.deleteLoc("FR-102 second");
+            try
+            {
+                if (model != null)
+                {
+                    model.deleteLoc("FR-102 moved");
+                    model.deleteLoc("FR-102 second");
+                }
+            }
+            finally
+            {
+                if (sandbox != null) sandbox.close();
+            }
         }
     }
 
