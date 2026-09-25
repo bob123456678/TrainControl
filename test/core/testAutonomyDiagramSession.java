@@ -3560,8 +3560,10 @@ public class testAutonomyDiagramSession
         TileKey berth = new TileKey("main", 4, 1);
 
         session.setStation(turns, true);
+        session.setPointName(turns, "Turns");
         session.setPointProperty(turns, "canReverse", Boolean.TRUE);
         session.setStation(berth, true);
+        session.setPointName(berth, "Berth");
         session.setPointProperty(berth, "maxTrainLength", 9);
         session.setTileLength(new TileKey("main", 2, 1), 2);
         session.setTileLength(new TileKey("main", 3, 1), 2);
@@ -3647,7 +3649,9 @@ public class testAutonomyDiagramSession
         TileKey platform = new TileKey("main", 5, 1);
 
         session.setStation(new TileKey("main", 1, 1), true);
+        session.setPointName(new TileKey("main", 1, 1), "Behind");
         session.setStation(platform, true);
+        session.setPointName(platform, "Platform");
         session.setPointProperty(platform, "maxTrainLength", 6);
         session.setTileLength(new TileKey("main", 2, 1), 2);
         session.setTileLength(new TileKey("main", 4, 1), 2);
@@ -3674,6 +3678,80 @@ public class testAutonomyDiagramSession
 
         assertNotNull(findingFor(RUN_IN_AT_A_PLATFORM), "precondition: the room past the switch is 2 and the maximum 4,"
             + " so the notice without a figure is still due");
+    }
+
+    /**
+     * No refusing figure from a station no train is started at facing the platform's way (TDA-C10, found measuring the
+     * frozen railway: Tunnel's notice said 3, from BottomInnerOtherside, where no route the railway runs into Tunnel
+     * measures under 6).
+     *
+     * The square behind the platform is a station, but trains may not arrive at it from the west, so its copy heading
+     * for the platform is no station and no train is started there - and nothing further back is a station either.  A
+     * figure read off the square said a train setting off from it is refused above 4.
+     *
+     * MUTATION: take a square that is a station as one a train sets off from facing either way, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testNoRefusingFigureFromACopyNoTrainStartsAt() throws Exception
+    {
+        session.open(Arrays.asList(platformBehindAStationAndASwitch()));
+        session.initialize("NoFigure");
+
+        TileKey behind = new TileKey("main", 3, 1);
+        TileKey platform = new TileKey("main", 7, 1);
+
+        session.setStation(behind, true);
+        session.setPointName(behind, "Behind");
+        session.setBarredArrivals(behind, java.util.EnumSet.of(org.traincontrol.automationui.TilePorts.Side.W));
+        session.setStation(platform, true);
+        session.setPointName(platform, "Platform");
+        session.setPointProperty(platform, "maxTrainLength", 6);
+        session.setTileLength(new TileKey("main", 4, 1), 2);
+        session.setTileLength(new TileKey("main", 6, 1), 2);
+        session.rebuild();
+
+        assertNotNull(runInNotice(), "precondition: the room past the switch is 2 and the maximum 6, so a run-in notice"
+            + " is due: " + session.check());
+
+        assertNull(findingFor(RUN_IN_AT_A_PLATFORM_REFUSED), "no train is started at the copy of the station behind"
+            + " that heads for the platform - trains may not arrive at it from the west - and the notice gives a figure"
+            + " for a train setting off from it: " + session.check());
+
+        // THE CONTROL: the west side open, that copy is a station, and a train set off from it is refused above 4.
+        session.setBarredArrivals(behind, java.util.EnumSet.noneOf(org.traincontrol.automationui.TilePorts.Side.class));
+        session.rebuild();
+
+        org.traincontrol.automationui.AutonomyChecks.Finding refused = findingFor(RUN_IN_AT_A_PLATFORM_REFUSED);
+
+        assertTrue(refused != null && refused.getThird() == 4, "with the west side open a train set off from the station"
+            + " behind is refused above 4, the way in from it, and the notice does not say so: " + session.check());
+    }
+
+    /** A sensor, a station square, a switch with its branch, and a platform, west to east. */
+    private LayoutDiagram platformBehindAStationAndASwitch() throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 11, 4, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.SWITCH_LEFT, 5, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 8, 14, accessoryDecoderType.MM2, null);
+
+        // The branch off the switch, lying north-south so that it has a port facing the switch at all.
+        page.addComponent(componentType.FEEDBACK, 5, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
+
+        page.getComponent(5, 1).setAccessory(new org.traincontrol.marklin.MarklinAccessory(
+            null, 7, org.traincontrol.base.Accessory.accessoryType.SWITCH, accessoryDecoderType.MM2,
+            "Switch 7", false, 0));
+
+        page.setPageId("1");
+
+        return page;
     }
 
     /**

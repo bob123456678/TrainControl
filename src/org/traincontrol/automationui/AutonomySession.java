@@ -6011,7 +6011,7 @@ public class AutonomySession
         // The run-in notices and the berths given no room, from one walk (TDA4-C2).
         java.util.Set<TileKey> givenNoRoom = new LinkedHashSet<>();
 
-        java.util.Map<TileKey, int[]> runIns = runInFigures(givenNoRoom);
+        java.util.Map<TileKey, int[]> runIns = runInFigures(givenNoRoom, inspected, namesForInspection);
 
         return AutonomyChecks.run(graph, reducer, termini, getLabelledStationTiles(), pointless,
             trapped, covered, placedLocomotives(), shutStations(),
@@ -9832,7 +9832,7 @@ public class AutonomySession
      * **And at a platform, the figure a train is refused above, where there is one** (Adam, 2026-09-24, TDA-C10: *"Add the
      * refusing figure where there is one."*).  A train longer than the room stands across the switch as far as the
      * measured route in holds it (FR-087), so one longer than the shortest way in - from the station or turn nearest
-     * behind - is refused (`shortestMeasuredWayIn`).  Given only where it is under the stated maximum.
+     * behind - is refused (`refusingFigures`).  Given only where it is under the stated maximum.
      *
      * **An edge crossing no switch is skipped unless the train turns at its far end** - or, for a parking berth, a
      * crossing on it ends the berth rule's room (above).  There the guard
@@ -9853,7 +9853,7 @@ public class AutonomySession
      */
     java.util.Map<TileKey, int[]> runInsShorterThanTheBerth()
     {
-        return runInFigures(null);
+        return runInFigures(null, builtForInspection(), null);
     }
 
     /**
@@ -9864,14 +9864,17 @@ public class AutonomySession
      * findings take both from one pass.
      *
      * @param givenNoRoom where to put the berths given no room, or null when nobody asks
+     * @param built the railway the setup builds, for the refusing figures, or null when it will not build
+     * @param named the built railway's point names to squares, or null to ask the builder
      * @return what `runInsShorterThanTheBerth` returns
      */
-    private java.util.Map<TileKey, int[]> runInFigures(java.util.Set<TileKey> givenNoRoom)
+    private java.util.Map<TileKey, int[]> runInFigures(java.util.Set<TileKey> givenNoRoom, org.json.JSONObject built,
+        java.util.Map<String, TileKey> named)
     {
         java.util.Map<TileKey, int[]> out = new LinkedHashMap<>();
 
-        // Each edge's shortest measured way in, worked out once for every platform (TDA-C10).
-        java.util.Map<GraphReducer.ReducedEdge, Integer> waysIn = new java.util.HashMap<>();
+        // The figure a train is refused above at each platform, off the railway the setup builds (TDA-C10).
+        java.util.Map<TileKey, Integer> refusing = refusingFigures(built, named);
 
         if (reducer == null || store == null) return out;
 
@@ -9888,9 +9891,6 @@ public class AutonomySession
             if (max <= 0) continue;
 
             int worst = -1;
-
-            // The figure a train is refused above at a platform, on its shortest way in (TDA-C10).
-            int refusedAbove = -1;
 
             for (GraphReducer.ReducedEdge arriving : reducer.getEdges())
             {
@@ -9959,20 +9959,15 @@ public class AutonomySession
                 if ((room <= 0 && !theBerthRulesFigure) || room >= max) continue;
 
                 if (worst < 0 || room < worst) worst = room;
-
-                // AND AT A PLATFORM, THE SHORTEST WAY IN (TDA-C10): a train longer than that, setting off from the
-                // station or turn nearest behind, is refused where the notice says it stands across the switch.
-                if (isAutoDestination(square))
-                {
-                    int wayIn = shortestMeasuredWayIn(arriving, waysIn, new java.util.HashSet<GraphReducer.ReducedEdge>());
-
-                    if (wayIn != Integer.MAX_VALUE && (refusedAbove < 0 || wayIn < refusedAbove)) refusedAbove = wayIn;
-                }
             }
+
+            // AND AT A PLATFORM, THE SHORTEST WAY IN (TDA-C10): a train longer than that, setting off from the station or
+            // turn nearest behind, is refused where the notice says it stands across the switch.
+            Integer refusedAbove = isAutoDestination(square) ? refusing.get(square) : null;
 
             if (worst >= 0)
             {
-                out.put(square, refusedAbove > 0 && refusedAbove < max
+                out.put(square, refusedAbove != null && refusedAbove > 0 && refusedAbove < max
                     ? new int[] {max, worst, refusedAbove} : new int[] {max, worst});
             }
         }
@@ -9981,79 +9976,87 @@ public class AutonomySession
     }
 
     /**
-     * The measured track on the shortest way in along this edge - what `Layout.measuredRouteIn` counts for a train that
-     * sets off from the nearest square it can (TDA-C10).
+     * The measured track on the shortest way into each square, read off the railway the setup builds (TDA-C10): what
+     * `Layout.measuredRouteIn` counts for a train that sets off from the copy right behind - a station copy, where a
+     * train is started, or a turning copy, where the route in stops.
      *
-     * Leg by leg back from the edge while each is measured - an answered 0 is (TDU-C6) - and no further than a station,
-     * where a train may set off, or a square trains turn round at, where the route in stops; the smallest over the legs a
-     * train can run through onto this one.  So a train longer than this, setting off from there, is refused, where one
-     * coming from further back over measured track may be admitted.  A way no train can come - no station or turn behind
-     * it on any road - has no figure.
+     * **Off the built railway, not the squares.**  A square's copies are its directions, and which of them a train is
+     * started at is the build's answer: a square that is a station can have a copy heading this way that is not one,
+     * because trains may not arrive at it from behind.  Read off the squares, Tunnel's notice said 3 from
+     * BottomInnerOtherside, where no route the railway runs into Tunnel measures under 6.  Only the leg straight from
+     * such a copy is counted: a way in from further back measures at least as much, so a figure it might lower is left
+     * unsaid rather than guessed - a notice without a figure, never a figure the railway does not refuse at.
      *
-     * @param arriving the edge
-     * @param known the answers already worked out, by edge
-     * @param walking the edges on the way back now, so a loop ends the walk
-     * @return the units, or `Integer.MAX_VALUE` when no train can come this way
+     * @param built the built railway, or null
+     * @param named its point names to squares, or null to ask the builder
+     * @return the squares, each mapped to the smallest such figure, empty when the setup does not build
      */
-    private int shortestMeasuredWayIn(GraphReducer.ReducedEdge arriving,
-        java.util.Map<GraphReducer.ReducedEdge, Integer> known, java.util.Set<GraphReducer.ReducedEdge> walking)
+    private java.util.Map<TileKey, Integer> refusingFigures(org.json.JSONObject built, java.util.Map<String, TileKey> named)
     {
-        Integer done = known.get(arriving);
+        java.util.Map<TileKey, Integer> out = new java.util.HashMap<>();
 
-        if (done != null) return done;
+        if (built == null || !built.has("points") || !built.has("edges")) return out;
 
-        if (!walking.add(arriving)) return Integer.MAX_VALUE;
+        java.util.Map<String, TileKey> byName = named != null ? named : builder(null).tilesByName();
 
-        boolean measured = legIsMeasured(arriving);
+        // Where a train stops, and where it may be started or has turned.
+        java.util.Set<String> stops = new java.util.HashSet<>();
+        java.util.Set<String> setsOff = new java.util.HashSet<>();
 
-        TileKey from = arriving.getStart();
+        org.json.JSONArray points = built.getJSONArray("points");
 
-        int answer;
-
-        if (store.isStation(from) || isTurnAround(from))
+        for (int i = 0; i < points.length(); i++)
         {
-            answer = measured ? Math.max(0, arriving.getLength()) : 0;
-        }
-        else
-        {
-            int before = Integer.MAX_VALUE;
+            org.json.JSONObject point = points.getJSONObject(i);
 
-            for (GraphReducer.ReducedEdge into : reducer.getEdges())
+            if (point.optBoolean("station", false))
             {
-                if (!into.getEnd().equals(from)) continue;
-
-                // THROUGH THE SQUARE, not back out of the side it came in by.
-                if (into.getEntrySide() != null && arriving.getExitSide() != null
-                    && into.getEntrySide() != arriving.getExitSide().opposite()) continue;
-
-                before = Math.min(before, shortestMeasuredWayIn(into, known, walking));
+                stops.add(point.getString("name"));
+                setsOff.add(point.getString("name"));
             }
 
-            answer = before == Integer.MAX_VALUE ? Integer.MAX_VALUE
-                : measured ? Math.max(0, arriving.getLength()) + before : 0;
+            if (point.optBoolean("reversing", false)) setsOff.add(point.getString("name"));
         }
 
-        walking.remove(arriving);
+        org.json.JSONArray edges = built.getJSONArray("edges");
 
-        known.put(arriving, answer);
+        for (int i = 0; i < edges.length(); i++)
+        {
+            org.json.JSONObject edge = edges.getJSONObject(i);
 
-        return answer;
+            if (!stops.contains(edge.getString("end")) || !setsOff.contains(edge.getString("start"))) continue;
+
+            TileKey square = byName.get(edge.getString("end"));
+
+            // Not from another copy of the same square, which is no way in.
+            if (square == null || square.equals(byName.get(edge.getString("start")))) continue;
+
+            if (!isMeasuredOnTheRailway(edge)) continue;
+
+            out.merge(square, Math.max(0, edge.optInt("length", 0)), Math::min);
+        }
+
+        return out;
     }
 
     /**
-     * Whether a leg is measured as the railway will read it: a length, or every place on it answered 0 or taking none -
-     * `Edge.isMeasured` on the built railway (TDU-C6).
+     * Whether a built edge is measured as the railway reads it, `Edge.isMeasured`: a length, or every place on it
+     * answered 0 (TDU-C6).
      *
-     * @param leg the leg
+     * @param edge the edge, as built
      * @return true when it is measured
      */
-    private boolean legIsMeasured(GraphReducer.ReducedEdge leg)
+    private static boolean isMeasuredOnTheRailway(org.json.JSONObject edge)
     {
-        if (leg.getLength() > 0) return true;
+        if (edge.optInt("length", 0) > 0) return true;
 
-        for (GraphReducer.Place place : reducer.placesAlong(leg))
+        org.json.JSONArray places = edge.optJSONArray("places");
+
+        if (places == null || places.length() == 0) return false;
+
+        for (int i = 0; i < places.length(); i++)
         {
-            if (!place.isAnswered()) return false;
+            if (!places.getJSONObject(i).optBoolean("answered", false)) return false;
         }
 
         return true;
