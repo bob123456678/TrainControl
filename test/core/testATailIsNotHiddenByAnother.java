@@ -35,9 +35,10 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * MUTATION: walk the train being routed along with the others in `isPathClear`, and
  * `testTheRailwayAsksAboutEveryTailOnThePlace` fails; give each train Return Home's whole record of the starting tails
- * (R2e), or keep one owner per place in it (R2f), and `testReturnHomeAsksAboutEveryTailOnThePlace` fails where the
- * third train is blamed for the rail the second one's tail lay along, and
- * `testReturnHomeKeepsTheSensorShutWhileEitherTailIsOnIt` fails too.
+ * (R2e), and `testReturnHomeAsksAboutEveryTailOnThePlace` fails at its control, where the unmoved third train is
+ * charged with the first train's own rail; keep one owner per place in it (R2f), and it fails at the two-train claims,
+ * the train that does not own the switch's square losing it.  Both fail
+ * `testReturnHomeKeepsTheSensorShutWhileEitherTailIsOnIt` too (TDA4-C4, TDD4-C2).
  *
  * @author Adam
  */

@@ -772,6 +772,297 @@ public class testTheTailIsPickedOnTheDiagram
         return out;
     }
 
+    /**
+     * Another configuration loaded in the wait, holding the same train on the same copy: the answer, asked for the
+     * configuration the operator was working in, is not written into the one just loaded (TDU4-C1).
+     *
+     * Loading a configuration keeps the session, so the door's same-setup check passed, and the new running copy held the
+     * same train from the same side with no road - so the answer went into the configuration loaded now, and the one it
+     * was asked for never had it.
+     *
+     * MUTATION: ask only whether the session is the same, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testAnAnswerIsNotWrittenIntoAnotherConfiguration() throws Exception
+    {
+        org.traincontrol.base.Locomotive train = model.newMM2Locomotive("TDU4-C1 train", 2312);
+
+        final AutonomySession session = ui.getAutonomySession();
+        final String was = session.getStore().getActiveConfiguration();
+        final String copy = "TDU4-C1 copy";
+
+        try
+        {
+            final TileKey[] tile = new TileKey[1];
+
+            LateAnswer late = pasteAndAnswerLate(train, () ->
+            {
+                // A COPY OF THE CONFIGURATION AS IT STANDS - the train at Tunnel, from the north, no road - and loaded.
+                session.getStore().createConfiguration(copy, was);
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(copy, false));
+
+                for (int turn = 0; turn < 4; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+                assertEquals(ui.getAutonomySession().getStore().getActiveConfiguration(), copy, "precondition: the copy"
+                    + " was not loaded");
+
+                Point now = model.getAutoLayout().getPoint("Tunnel (southbound)");
+
+                assertTrue(now != null && now.getCurrentLocomotive() == train && "N".equals(now.getArrivedFrom())
+                    && now.getArrivedAlong() == null, "precondition: the copy does not hold the same train on Tunnel from"
+                    + " the north with no road");
+
+                tile[0] = ui.getAutonomySession().getStationIndex().squareOf(now.getName());
+
+                return null;
+            }, true);
+
+            assertNull(ui.getAutonomySession().getArrivedAlong(tile[0]), "the answer asked for one configuration was"
+                + " written into another, loaded while the question waited (TDU4-C1)");
+        }
+        finally
+        {
+            clearTunnel("TDU4-C1 train");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(was, false));
+
+            try
+            {
+                ui.getAutonomySession().getStore().deleteConfiguration(copy);
+            }
+            catch (Exception gone)
+            {
+            }
+        }
+    }
+
+    /**
+     * The setup replaced in the wait - what closing the track-diagram editor does: the answer is not written, the new
+     * railway's copy keeps no road, and the old setup is not saved over the new one's file (TDU4-C4, TDU4-C2).
+     *
+     * MUTATION: write where the session is not the window's any more, or save it, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testAnAnswerAfterTheSetupIsReplacedIsNotWritten() throws Exception
+    {
+        org.traincontrol.base.Locomotive train = model.newMM2Locomotive("TDU4-C2 train", 2313);
+
+        final AutonomySession before = ui.getAutonomySession();
+        final String active = before.getStore().getActiveConfiguration();
+        final java.io.File[] file = new java.io.File[1];
+        final long[] saved = new long[1];
+
+        try
+        {
+            LateAnswer late = pasteAndAnswerLate(train, () ->
+            {
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    ui.resetAutonomySession();
+                    ui.getAutonomyViewerPanel().load(active, false);
+                });
+
+                for (int turn = 0; turn < 4; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+                assertTrue(ui.getAutonomySession() != before, "precondition: the setup was not replaced");
+
+                java.lang.reflect.Method fileOf = before.getStore().getClass().getDeclaredMethod("configurationFile",
+                    String.class);
+
+                fileOf.setAccessible(true);
+
+                file[0] = (java.io.File) fileOf.invoke(before.getStore(), active);
+                saved[0] = file[0].lastModified();
+
+                Thread.sleep(1100);
+
+                return null;
+            }, true);
+
+            assertNull(late.tunnelNow.getArrivedAlong(), "an answer given after the setup was replaced was written to the"
+                + " new railway's copy, through a setup nothing reads (TDU4-C4)");
+
+            assertEquals(file[0].lastModified(), saved[0], "the setup replaced in the wait was saved over the new one's"
+                + " file, with the reconciling save the reset avoids (TDU4-C2)");
+        }
+        finally
+        {
+            clearTunnel("TDU4-C2 train");
+        }
+    }
+
+    /**
+     * The facing is written before the question, so an answer dropped in the wait does not take it with it (TDU3-C1,
+     * TDU4-C4).
+     *
+     * MUTATION: write the facing with the road, after the question, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheFacingIsWrittenBeforeTheQuestion() throws Exception
+    {
+        org.traincontrol.base.Locomotive train = model.newMM2Locomotive("TDU4-C4 facing", 2314);
+
+        try
+        {
+            final TileKey tile = ui.getAutonomySession().getStationIndex().squareOf("Tunnel (southbound)");
+
+            ui.getAutonomySession().setFacing(tile, null);
+
+            // A HEADING CHOSEN AT THE LANDING, as the paste door's own question leaves it.
+            facingField().set(ui, org.traincontrol.automationui.TilePorts.Side.S);
+
+            pasteAndAnswerLate(train, () ->
+            {
+                // TAKEN OFF IN THE WAIT: the answer is dropped.
+                model.getAutoLayout().moveLocomotive(null, "Tunnel (southbound)", true);
+
+                return null;
+            }, false);
+
+            assertNotNull(ui.getAutonomySession().getFacing(tile), "a paste whose tail answer was dropped recorded no"
+                + " facing - it waited for the answer, which only the road should (TDU3-C1)");
+        }
+        finally
+        {
+            facingField().set(ui, null);
+
+            clearTunnel("TDU4-C4 facing");
+        }
+    }
+
+    private static java.lang.reflect.Field facingField() throws Exception
+    {
+        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("facingChosenAtTheLanding");
+
+        field.setAccessible(true);
+
+        return field;
+    }
+
+    /**
+     * A dropped ANSWER is logged, naming the train and the square; a Cancel of a question made stale is not (TDU4-C3).
+     *
+     * MUTATION: log every dropped reply, or none, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testOnlyADroppedAnswerIsLogged() throws Exception
+    {
+        org.traincontrol.base.Locomotive train = model.newMM2Locomotive("TDU4-C3 log", 2315);
+
+        try
+        {
+            String dropped = org.traincontrol.util.I18n.f("autolayout.ui.logTailAnswerDropped", train.getName(), "Tunnel");
+
+            String first = dropped.substring(0, Math.min(25, dropped.length()));
+
+            // CANCELLED: nothing to say.
+            pasteAndAnswerLate(train, () ->
+            {
+                model.getAutoLayout().moveLocomotive(null, "Tunnel (southbound)", true);
+
+                return null;
+            }, false);
+
+            assertFalse(logged().contains(dropped), "a Cancel of a question made stale in the wait was logged as an"
+                + " answer not recorded (TDU4-C3)");
+
+            clearTunnel();
+
+            // ANSWERED: said, naming the square as the diagram does.
+            pasteAndAnswerLate(train, () ->
+            {
+                model.getAutoLayout().moveLocomotive(null, "Tunnel (southbound)", true);
+
+                return null;
+            }, true);
+
+            assertTrue(logged().contains(dropped), "an answer dropped because the train was taken off in the wait was not"
+                + " logged, naming the train and Tunnel (TDU4-C3): " + logged().substring(0, Math.min(400,
+                    logged().length())) + " - looked for: " + first);
+        }
+        finally
+        {
+            clearTunnel("TDU4-C3 log");
+        }
+    }
+
+    /** What the model has logged since the listener below was put on - every line the operator's log shows. */
+    private static final StringBuilder LOGGED = new StringBuilder();
+
+    static
+    {
+        java.util.logging.Logger.getLogger(org.traincontrol.marklin.MarklinControlStation.class.getName()).addHandler(
+            new java.util.logging.Handler()
+            {
+                @Override
+                public void publish(java.util.logging.LogRecord record)
+                {
+                    synchronized (LOGGED)
+                    {
+                        LOGGED.append(record.getMessage()).append('\n');
+                    }
+                }
+
+                @Override
+                public void flush()
+                {
+                }
+
+                @Override
+                public void close()
+                {
+                }
+            });
+    }
+
+    /** The model's log, as the operator reads it. */
+    private static String logged() throws Exception
+    {
+        for (int turn = 0; turn < 3; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        synchronized (LOGGED)
+        {
+            return LOGGED.toString();
+        }
+    }
+
+    /**
+     * The right-click and locomotive-dialog doors ask the railway running when the answer comes back, not the one they
+     * held before the question (TDU4-C4) - read, as the pin above is, because each needs a menu or a dialog to reach.
+     *
+     * MUTATION: pass either door the railway it held before the question, and this fails naming it.
+     *
+     * @throws Exception from the files
+     */
+    @Test
+    public void testEveryDoorAsksTheRailwayRunningAtTheAnswer() throws Exception
+    {
+        for (String file : new String[] {"src/org/traincontrol/gui/TrainControlUI.java",
+            "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "src/org/traincontrol/gui/GraphLocAssign.java"})
+        {
+            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(file)),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            int asked = source.indexOf("whereTheAnswerGoes(");
+
+            assertTrue(asked > 0, "precondition: " + file + " no longer asks where the answer goes");
+
+            String first = source.substring(asked, source.indexOf(",", asked));
+
+            assertTrue(first.contains("runningNow("), file + " asks where the answer goes of a railway other than the one"
+                + " running when it comes back (TDU4-C4): " + first);
+        }
+    }
+
     /** Cancel on the small window a waiting tail question leaves up. */
     private static void cancelTheQuestion() throws Exception
     {
@@ -856,6 +1147,14 @@ public class testTheTailIsPickedOnTheDiagram
             assertEquals(named(late.tunnelNow.getArrivedAlong()), named(late.tunnelPreRoad), "TunnelPre was clicked after"
                 + " the railway was rebuilt, and the railway's Tunnel copy did not get the road - the train's tail stops at"
                 + " the switch and another train can be routed into it (TDU3-B1)");
+
+            // AND IN THE NEW RAILWAY'S OWN EDGES (TDU4-C4): the answer's road is the old railway's, whose edges end at
+            // copies nothing runs on any more.
+            for (org.traincontrol.automation.Edge edge : late.tunnelNow.getArrivedAlong())
+            {
+                assertTrue(model.getAutoLayout().getEdge(edge.getName()) == edge, "the road written after a rebuild is"
+                    + " made of the old railway's edges, not the running railway's (TDU4-C4): " + edge.getName());
+            }
         }
         finally
         {

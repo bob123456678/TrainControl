@@ -2359,6 +2359,71 @@ public class testMassAssignLengths
     }
 
     /**
+     * The same 0 behind a SWITCH (TDA4-C1): every square between the berth and its switch answered 0, and track beyond
+     * the switch measured - the berth rule judges the approach, claims the switch for nothing, and refuses every train.
+     *
+     * @throws Exception from the fixture or the reflection
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testNothingSpentBeforeTheSwitchIsSaidAsNothing() throws Exception
+    {
+        openBerthBehindALongerRun(componentType.SWITCH_LEFT, key(7, 1));
+
+        TileKey berth = key(7, 1);
+
+        session.answerTileLengthsZero(Arrays.asList(key(4, 1), key(5, 1), key(6, 1), berth));
+        session.setTileLength(key(2, 1), 1);
+        session.setPointProperty(berth, "maxTrainLength", 3);
+        session.rebuild();
+
+        java.lang.reflect.Method runIns = org.traincontrol.automationui.AutonomySession.class.getDeclaredMethod(
+            "runInsShorterThanTheBerth");
+
+        runIns.setAccessible(true);
+
+        java.util.Map<TileKey, int[]> said = (java.util.Map<TileKey, int[]>) runIns.invoke(session);
+
+        assertTrue(said.containsKey(berth) && said.get(berth)[1] == 0, "a parking berth with nothing but answered zeros"
+            + " before its switch refuses every train, and its run-in notice does not say 0: "
+            + (said.containsKey(berth) ? Arrays.toString(said.get(berth)) : "no entry"));
+    }
+
+    /**
+     * Nothing measured on the leg at all - answered zeros before the crossing, and nothing beyond it on this leg - is not
+     * judged by the berth rule, which admits every train, and the run-in notice says nothing (TDA4-C3).  The railway does
+     * measure track elsewhere, on the crossing's other road.
+     *
+     * MUTATION: take the berth rule's figure without asking whether it judges the leg, and this fails - the notice then
+     * says a train longer than 0 is refused at a berth that refuses nothing.
+     *
+     * @throws Exception from the fixture or the reflection
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testALegNothingMeasuresIsNotSaidAsNothing() throws Exception
+    {
+        openBerthBehindACrossing();
+
+        TileKey berth = key(7, 1);
+
+        session.answerTileLengthsZero(Arrays.asList(berth, key(6, 1)));
+        session.setTileLength(key(5, 2), 1);
+        session.setPointProperty(berth, "maxTrainLength", 5);
+        session.rebuild();
+
+        java.lang.reflect.Method runIns = org.traincontrol.automationui.AutonomySession.class.getDeclaredMethod(
+            "runInsShorterThanTheBerth");
+
+        runIns.setAccessible(true);
+
+        java.util.Map<TileKey, int[]> said = (java.util.Map<TileKey, int[]>) runIns.invoke(session);
+
+        assertFalse(said.containsKey(berth), "a berth on a leg nothing measures - which the berth rule does not judge - is"
+            + " said to refuse every train: " + (said.containsKey(berth) ? Arrays.toString(said.get(berth)) : ""));
+    }
+
+    /**
      * A parking berth's crossing on a leg with no switch is said too (TDA3-C2): the room walk finds no switch there and
      * answers nothing, and the berth rule stops at the crossing.
      *
