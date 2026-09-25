@@ -2325,8 +2325,7 @@ public class AutonomyEditorPanel extends JPanel
 
             // MASS ASSIGN TRAIN LENGTHS (FR-094; Adam, 2026-09-23: *"Rather than adding complexity through new menus, add
             // a bulk tool to the autonomy editor to set missing train lengths, similar to how the station lengths are
-            // set."*).  Greyed on the walk's own count, as the two above it.  Not a page's question - a train is not on
-            // a page - so a page left out does not change it.
+            // set."*).  Not a page's question - a train is not on a page - so a page left out does not change it.
             int trainsToMeasure = trainLengthDoor().trainsWithoutALength().size();
 
             // NEVER GREYED, AND THE COUNT IN ITS LABEL (Adam, 2026-09-24, on MT-533: *"This option should never be greyed
@@ -2337,8 +2336,11 @@ public class AutonomyEditorPanel extends JPanel
 
             massAssignTrains.setName("massAssignTrainLengths");
 
+            // WHAT A CLICK WILL DO (TDU-C7): the missing ones, every train, or - with none placed - nothing, as the click
+            // itself says.
             massAssignTrains.setToolTipText(wrapped(trainsToMeasure > 0
                 ? I18n.f("autosetup.ui.tooltipMassAssignTrainLengths", trainsToMeasure)
+                : trainLengthDoor().trainLengths().isEmpty() ? I18n.t("autosetup.ui.infoNoTrainToMeasure")
                 : I18n.t("autosetup.ui.infoEveryTrainHasALength")));
 
             bulk.add(massAssignTrains);
@@ -10018,7 +10020,8 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Goes through every locomotive autonomy would run that has no train length, asking for each one's (Mass Assign
-     * Train Lengths, FR-094).
+     * Train Lengths, FR-094) - and where none is missing one, through every train with the length it has, which Skip
+     * keeps (MT-533: the item is never greyed).
      *
      * Adam, 2026-09-23: *"Rather than adding complexity through new menus, add a bulk tool to the autonomy editor to set
      * missing train lengths, similar to how the station lengths are set."*  **Mass Assign Max Train Lengths' walk, for
@@ -10032,7 +10035,8 @@ public class AutonomyEditorPanel extends JPanel
      *
      * **A length is 1 to `TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`**, the range the locomotive menu's own dropdown
      * offers - two places that set one number must not disagree about what a legal value is.  0 is refused with a
-     * sentence saying why: it is what a train with no length already holds.  Skip leaves the train as it was.
+     * sentence saying why: it is what a train with no length already holds - and where the train has one, a sentence
+     * that does not say otherwise (TDU-C7).  Skip leaves the train as it was.
      *
      * **Written through `applyTrainLength`**, the one door every other train-length gesture uses, so the findings and
      * the grey follow the number exactly as they do from the locomotive menu.  A train length belongs to the
@@ -10099,7 +10103,8 @@ public class AutonomyEditorPanel extends JPanel
 
             while (units != null && units >= 0 && !acceptsATrainLength(units))
             {
-                JOptionPane.showMessageDialog(owner(), wrapped(I18n.f("autosetup.ui.errorTrainLengthOutOfRange",
+                JOptionPane.showMessageDialog(owner(), wrapped(I18n.f(known != null
+                    ? "autosetup.ui.errorTrainLengthOutOfRangeKnown" : "autosetup.ui.errorTrainLengthOutOfRange",
                     TrainControlUI.ROUTE_TRAIN_LENGTH_MAX)));
 
                 units = askForWholeLength(question, TRAINS_TITLE);
