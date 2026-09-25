@@ -591,6 +591,38 @@ public class testTheTailIsPickedOnTheDiagram
         }
     }
 
+    /**
+     * Every placement door asks whether its placement still stands between the question and its writes (TDU2-A1) - the
+     * paste door is asked by the claim above; the right-click Place and the locomotive dialog are asked here, of their
+     * source, because each needs a menu or a dialog to reach.
+     *
+     * MUTATION: write either door's answer without asking, and this fails naming it.
+     *
+     * @throws Exception from the files
+     */
+    @Test
+    public void testEveryPlacementDoorAsksWhetherItStillStands() throws Exception
+    {
+        for (String file : new String[] {"src/org/traincontrol/gui/TrainControlUI.java",
+            "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "src/org/traincontrol/gui/GraphLocAssign.java"})
+        {
+            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(file)),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+            int asked = source.indexOf("askAfterPlacement(");
+
+            assertTrue(asked > 0, "precondition: " + file + " no longer asks the tail question");
+
+            int checked = source.indexOf("placementStillStands(", asked);
+            int writes = source.indexOf("setArrivedAlong(", asked);
+
+            assertTrue(writes > asked, "precondition: " + file + " no longer writes the answer's road");
+
+            assertTrue(checked > asked && checked < writes, file + " writes the tail question's answer without asking"
+                + " whether its placement still stands - a late answer goes over the train now there (TDU2-A1)");
+        }
+    }
+
     /** The button with this text, anywhere in the container. */
     private static javax.swing.JButton buttonNamed(java.awt.Container container, String text)
     {
