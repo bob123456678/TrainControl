@@ -88,7 +88,10 @@ public class testTheImportDoorReadsAnOldFile
 
             String inUseBefore = session.getStore().getConfiguration(inUse).toString();
             String directionsBefore = directionsHeld(session);
-            String loadAutonomyBefore = TrainControlUI.getPrefs().get(TrainControlUI.AUTO_LOAD_AUTONOMY, "unset");
+
+            // MT-582 STEP 1: LOAD AUTONOMY TICKED - read as found, an untick on a machine where it is already off would
+            // leave it as it was, and pass (RLD-C5).  Put back in the finally.
+            TrainControlUI.getPrefs().putBoolean(TrainControlUI.AUTO_LOAD_AUTONOMY, true);
 
             List<String> said = importFromTheMenu(ui[0], MT491, "MT-491 import");
 
@@ -170,9 +173,14 @@ public class testTheImportDoorReadsAnOldFile
                 session.getStore().setActiveConfiguration(inUse);
             }
 
-            // MT-582: LOAD AUTONOMY AS IT WAS.
-            assertEquals(TrainControlUI.getPrefs().get(TrainControlUI.AUTO_LOAD_AUTONOMY, "unset"), loadAutonomyBefore,
-                "the import changed Preferences > Startup > Load Autonomy (MT-582)");
+            // MT-582: LOAD AUTONOMY STILL TICKED, AND THE LOG SAYS NOTHING ABOUT IT.
+            assertTrue(TrainControlUI.getPrefs().getBoolean(TrainControlUI.AUTO_LOAD_AUTONOMY, false), "the import"
+                + " unticked Preferences > Startup > Load Autonomy (MT-582)");
+
+            String loadAutonomy = I18n.t("ui.main.toolbar.loadAutonomy");
+
+            assertFalse(log.contains(loadAutonomy), "the import's log says something about " + loadAutonomy + " (MT-582): "
+                + log);
         }
         finally
         {

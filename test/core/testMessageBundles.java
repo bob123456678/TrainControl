@@ -899,7 +899,9 @@ public class testMessageBundles
      * that scan does not see them.  A key missing there throws MissingResourceException when the window is built, which
      * is MT-468's "an error about a missing resource"; a key whose value is empty in some language shows a blank where a
      * label should be, which is the other thing its walk looked for.  Every bundle, every key a screen asks for, by any
-     * of the three roads.
+     * of the four roads - the fourth being a key held in a constant, `static final String X = "..."`, and handed to I18n
+     * by name: Routes > Import's own two messages and every setup check's sentence are asked for that way, and the other
+     * three did not see them (RLU-C8).
      *
      * MUTATION: take a form's key out of any bundle, or give any asked-for key an empty value in one language, and this
      * fails naming it.
@@ -918,6 +920,11 @@ public class testMessageBundles
         Pattern generated = Pattern.compile("(?:\\bbundle|getBundle\\([^)]*\\))\\.getString\\(\\s*\"([^\"]+)\"\\s*\\)");
         Pattern form = Pattern.compile("<ResourceString bundle=\"org/traincontrol/resources/messages\\.properties\""
             + " key=\"([^\"]+)\"");
+
+        // THE FOURTH: a key held in a constant (RLU-C8).
+        Pattern constant = Pattern.compile("static\\s+final\\s+String\\s+\\w+\\s*=\\s*\"([^\"]+)\"");
+
+        Set<String> inConstants = new TreeSet<>();
 
         List<String> built = Arrays.asList(
             "route.kind.", "autosetup.ui.side", "autosetup.ui.facing",
@@ -941,7 +948,29 @@ public class testMessageBundles
             m = generated.matcher(text);
 
             while (m.find()) asked.add(m.group(1));
+
+            m = constant.matcher(text);
+
+            while (m.find()) inConstants.add(m.group(1));
         }
+
+        // A CONSTANT COUNTS ONLY WHERE IT HOLDS A KEY OF THE ENGLISH BUNDLE, so one holding anything else - a file name, a
+        // preference - is not taken for one.
+        java.util.Properties english = null;
+
+        for (File bundle : bundles()) if (bundle.getName().equals("messages.properties")) english = valuesOf(bundle);
+
+        assertNotNull(english, "precondition: no messages.properties among the bundles");
+
+        int keysInConstants = 0;
+
+        for (String held : inConstants)
+        {
+            if (english.getProperty(held) != null && asked.add(held)) keysInConstants++;
+        }
+
+        assertTrue(keysInConstants > 30, "precondition: the constants gave only " + keysInConstants + " keys the other roads"
+            + " do not see");
 
         File[] forms = new File("src/org/traincontrol/gui").listFiles((dir, name) -> name.endsWith(".form"));
 
