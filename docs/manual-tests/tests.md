@@ -33,8 +33,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-492](#mt-492) | 2026-09-24 | Return Home finds a plan on a crowded railway | fixed unvalidated | OB-230, AMH-C1 |
 | [MT-494](#mt-494) | 2026-09-24 | After a run, the Facing menu turns the train that is there | fixed unvalidated | TDY4-C5 |
 | [MT-499](#mt-499) | 2026-09-24 | With autonomy stopped, the locomotive list gives the reasons for a train sent by hand | fixed unvalidated | the REG4 lead of the 2026-09-23 review |
-| [MT-506](#mt-506) | 2026-09-24 | A route fired by its sensor skips only the switch under a train, and runs the rest | fixed unvalidated | MT-247 |
-| [MT-507](#mt-507) | 2026-09-24 | Cancel on a route that would switch track under a train cancels all of it, from either door | fixed unvalidated | MT-247 |
 | [MT-533](#mt-533) | 2026-09-24 | The train-length prompt takes typing without a click | fixed unvalidated | MT-474 |
 | [MT-548](#mt-548) | 2026-09-24 | On a Central Station layout the Autonomy menu opens, and only the download and Documentation can be chosen | fixed unvalidated | OB-254, OB-093, MT-544 |
 | [MT-566](#mt-566) | 2026-09-24 | The locomotive train-length walk is never greyed, and counts | fixed unvalidated | MT-533 |
@@ -44,8 +42,8 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-576](#mt-576) | 2026-09-24 | A tail answer given after the placement changed is written where the train now stands, or not at all | fixed unvalidated | TDU2-A1, TDU3-B1 |
 | [MT-586](#mt-586) | 2026-09-25 | A stretch answered 0 lets a train in when the total track holds it | fixed unvalidated | ADU-C7, TDU-C6 |
 
-Everything else - 570 of 586 - needs nothing from you unless the area changes again:
-453 **fixed validated** and 117 **superseded**.
+Everything else - 572 of 586 - needs nothing from you unless the area changes again:
+453 **fixed validated** and 119 **superseded**.
 
 ---
 
@@ -26050,7 +26048,7 @@ autonomy editor."*
 
 ### MT-506 - 2026-09-24 - A route fired by its sensor skips only the switch under a train, and runs the rest
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-247
 
 **Written:** 2026-09-24
@@ -26072,13 +26070,17 @@ autonomy editor."*
 
 *What this is:* The rule is in behaviour.md 7a; this is the half that needs a sensor.
 
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `ui.testARouteOverATrainAtItsDoors.testFiredByItsSensorItSkipsOnlyTheSwitchUnderTheTrain` on the real window over a sandbox copy of your railway: a train dispatched over switch A holds it, and the route - switch A, switch B and an emergency stop, as your step 1 builds it - is fired from inside that dispatch, with every command echoed back as the Central Station would, so a switch reads thrown only when its command went out.  The route is given an s88 trigger and armed, and its sensor set; the test asserts no question appeared, switch A was not thrown, switch B was, the power went off, and the log names switch A as held back.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
+
 ---
 
 <a id="mt-507"></a>
 
 ### MT-507 - 2026-09-24 - Cancel on a route that would switch track under a train cancels all of it, from either door
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-247
 
 **Written:** 2026-09-24
@@ -26095,6 +26097,10 @@ autonomy editor."*
 
 - Both doors ask the same question - that the route would switch track a train is on, and whether to run it anyway.
 - After each Cancel nothing has run: no switch thrown, the power still on.
+
+**Claude, 2026-09-25.**
+
+**Superseded by an automated test** (2026-09-25, on your rule of today).  `ui.testARouteOverATrainAtItsDoors.testCancelAtEitherDoorRunsNothing` on the real window over a sandbox copy of your railway: a train dispatched over switch A holds it, and the route - switch A, switch B and an emergency stop, as your step 1 builds it - is fired from inside that dispatch, with every command echoed back as the Central Station would, so a switch reads thrown only when its command went out.  **The steps could not pass as written**, for the reason MT-508's comment gives: a route carrying an emergency stop is never asked about (your ruling of 2026-09-01: *"Emergency stop should never conflict or prompt."*), so with the stop there is no question and no Cancel.  The test checks both: with the stop, neither the route list nor the route's tile on the track diagram (one of your own route tiles, given this route) asks, and the route runs guarded - switch A left alone, switch B thrown, the power off; without the stop, both doors ask the one question - that the route would switch track a train is on, run anyway? - starting on Cancel, and after Cancel at each door nothing has run: neither switch thrown, the power still on.  If you want a route with a stop to ask, that is a change to the ruling: say so.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
