@@ -10261,7 +10261,7 @@ public class Layout
 
                 // AND WHY THE WHOLE APPROACH WAS CLAIMED, when that is what happened (RTX-C2).
                 return unmeasured > 0
-                    ? why + " " + I18n.f("autolayout.errorBerthApproachPartlyUnmeasured", unmeasured)
+                    ? why + ". " + I18n.f("autolayout.errorBerthApproachPartlyUnmeasured", unmeasured)
                     : why;
             }
         }
@@ -10550,7 +10550,8 @@ public class Layout
         String why = I18n.f("autolayout.errorWouldMeetItsOwnTail", loc.getName(), placeNameOf(tightestOn), tightest, length);
 
         // AND WHAT IS NOT MEASURED ON THE WAY ROUND, which is the other way past: measured, it may be long enough.
-        return tightestUnmeasured > 0 ? why + " " + I18n.f("autolayout.errorOwnTailPartlyUnmeasured", tightestUnmeasured)
+        // After a full stop: the sentence before it has none, as every refusal here is written (TDA2-C7).
+        return tightestUnmeasured > 0 ? why + ". " + I18n.f("autolayout.errorOwnTailPartlyUnmeasured", tightestUnmeasured)
             : why;
     }
 

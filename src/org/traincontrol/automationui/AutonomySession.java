@@ -9585,18 +9585,55 @@ public class AutonomySession
     }
 
     /**
+     * The track a parking berth's rule spends before it stops, walking back from the berth over one arriving leg: how
+     * much of it is measured, and how many of its squares have no length and no answer (OB-288, TDA-C7, TDA2-C6).
+     *
+     * `Layout.whyABerthCannotHoldIt` spends a train from the berth backwards, its own square first (OB-278), passes a
+     * square with no length for nothing, and refuses the train once its spending reaches a square `endsTheBerthsRoom` -
+     * a switch, a permanent turnout or a crossing.  Squares beyond that can neither hold the train nor refuse it, so
+     * measuring them changes nothing, and neither notice about a berth counts them.
+     *
+     * @param squares the leg's squares in order, the berth last
+     * @return {measured length before the stop, squares before it with no length, 1 when a stop was reached or 0}
+     */
+    private int[] berthTrackBeforeTheStop(java.util.List<TileKey> squares)
+    {
+        int held = 0;
+        int unmeasured = 0;
+
+        for (int at = squares.size() - 1; at >= 0; at--)
+        {
+            TileKey tile = squares.get(at);
+
+            // Not a route tile, which takes no length (OB-273).
+            if (getGraph() != null && takesNoLength(tile)) continue;
+
+            if (getGraph() != null && endsTheBerthsRoom(tile)) return new int[] {held, unmeasured, 1};
+
+            int length = store.getTileLength(tile);
+
+            held += Math.max(0, length);
+
+            // AN ANSWERED 0 IS NOT MISSING (Adam, 2026-09-23: "stop listing answered zeros as missing").
+            if (length <= 0 && !store.isTileLengthAnswered(tile)) unmeasured++;
+        }
+
+        return new int[] {held, unmeasured, 0};
+    }
+
+    /**
      * Stations whose approach is measured in part and not in whole - the state that closes a berth to every train.
      *
      * Adam, 2026-09-19, shown RTX-C2: *"as long as lengths are specified on the berth, it will work, right?  We want
      * clear warnings to the user if so, then it's fine."*  It does work: with the whole approach measured, the berth
      * walk spends real lengths and admits a train that fits.  Half measured is the trap.
      *
-     * **Why half measured refuses everything.**  `Layout.whyABerthCannotHoldIt` declines to judge only when NOTHING
+     * **Why half measured refuses trains that fit.**  `Layout.whyABerthCannotHoldIt` declines to judge only when NOTHING
      * is measured, the berth's own square included (PRW-B1, and since OB-278 the berth's square counts).  One measured
      * square is enough to make it
      * judge, and it then walks backwards CLAIMING each place before spending the train's length on it - so an
      * unmeasured square, worth 0, is claimed for nothing, and a train whose length is not spent on the measured squares
-     * before the switch reaches it and is refused, quoting the road rather than the hole in the measurements.  Since
+     * before the switch or crossing reaches it and is refused, quoting the road rather than the hole in the measurements.  Since
      * OB-278 the berth's own square is spent first, so a train short enough to be spent there is not refused - which is
      * why the count below asks about the station's longest train (OB-288, MT-552).  It is the refusing direction of a
      * ruled rounding, so it is right; it is just not something anybody would guess at from the outside.
@@ -9645,7 +9682,6 @@ public class AutonomySession
                 if (getBarredArrivals(square).contains(arriving.getEntrySide())) continue;
 
                 boolean anyMeasured = false;
-                int unmeasured = 0;
 
                 // THE PATH AND THE BERTH ITSELF.  The path is the squares between the leg's two ends, endpoints
                 // excluded: the start is where a train would be coming FROM, and the end - the berth - is rail the walk
@@ -9658,6 +9694,7 @@ public class AutonomySession
 
                 squares.add(square);
 
+                // MEASURED ANYWHERE ON THE LEG is what makes the rule judge it (PRW-B1) - beyond the stop included.
                 for (TileKey tile : squares)
                 {
                     // Not a route tile, which takes no length (OB-273): counting it made TopR1ParkLong and
@@ -9665,42 +9702,29 @@ public class AutonomySession
                     if (getGraph() != null && takesNoLength(tile)) continue;
 
                     if (store.getTileLength(tile) > 0) anyMeasured = true;
-
-                    // AN ANSWERED 0 IS NOT MISSING (Adam, 2026-09-23: "stop listing answered zeros as missing").
-                    else if (!store.isTileLengthAnswered(tile)) unmeasured++;
                 }
 
-                // NOT WHERE THE BERTH'S MEASURED TRACK BEFORE THE SWITCH HOLDS ITS LONGEST TRAIN (OB-288; corrected on
+                if (!anyMeasured) continue;
+
+                // NOT WHERE THE BERTH'S MEASURED TRACK BEFORE THE STOP HOLDS ITS LONGEST TRAIN (OB-288; corrected on
                 // MT-552).  `Layout.whyABerthCannotHoldIt` spends a train from the berth backwards, its own square first
                 // (OB-278), passes a square with no length for nothing, and refuses the train only when its spending
-                // reaches track another road runs over - the switch.  So a berth whose measured track before the switch
-                // holds its longest train refuses none for the holes in it, and is not warned about.  Counted the walk's
-                // way: a square that takes no length is passed over, a square with no length - answered 0 or not answered
-                // at all - is worth nothing and passed, and the switch ends the count.  The first version of this ended it
-                // at the first unanswered square, which the walk does not: Adam, 2026-09-24, of BottomMainPost - 1 on its
-                // own square, nothing on 22,7, 1 each on 22,8 and 22,9 - *"trains of length 3 can hold there"*.  With no
-                // longest train set, any train could reach the switch.
-                if (longest > 0 && anyMeasured && unmeasured > 0)
-                {
-                    int held = 0;
+                // reaches track another road runs over - a switch, a permanent turnout or a crossing (TDA-C7).  So a
+                // berth whose measured track before the stop holds its longest train refuses none for the holes in it,
+                // and is not warned about.  Counted the walk's way, in `berthTrackBeforeTheStop`: a square that takes no
+                // length is passed over, a square with no length - answered 0 or not answered at all - is worth nothing
+                // and passed, and the stop ends the count.  The first version of this ended it at the first unanswered
+                // square, which the walk does not: Adam, 2026-09-24, of BottomMainPost - 1 on its own square, nothing on
+                // 22,7, 1 each on 22,8 and 22,9 - *"trains of length 3 can hold there"*.  With no longest train set, any
+                // train could reach the stop.
+                //
+                // AND ONLY THE HOLES BEFORE THE STOP ARE COUNTED (TDA2-C6): the rule has refused by the time it gets past
+                // it, so a square beyond is one the operator would measure for nothing.
+                int[] before = berthTrackBeforeTheStop(squares);
 
-                    for (int at = squares.size() - 1; at >= 0; at--)
-                    {
-                        TileKey tile = squares.get(at);
+                if (longest > 0 && before[0] >= longest) continue;
 
-                        if (getGraph() != null && takesNoLength(tile)) continue;
-
-                        // WHERE THE RULE STOPS (TDA-C7): a switch, a permanent turnout - the room walk's `boundsTheRoom`,
-                        // OB-233 - or a crossing, whose square is another road's and which the berth rule refuses on.
-                        if (getGraph() != null && endsTheBerthsRoom(tile)) break;
-
-                        held += Math.max(0, store.getTileLength(tile));
-                    }
-
-                    if (held >= longest) continue;
-                }
-
-                if (anyMeasured && unmeasured > worst) worst = unmeasured;
+                if (before[1] > worst) worst = before[1];
             }
 
             if (worst > 0) out.put(square, worst);
@@ -9721,7 +9745,8 @@ public class AutonomySession
      * `ReducedEdge.getRoomAtTheEnd()` - the track from the last switch on the arriving edge to the
      * platform, which is exactly what `Layout.measuredRoomAtTheEndOf` counts when that edge crosses a
      * switch.  A notice quoting a number the refusal would not quote is worse than no notice: the reader
-     * measures the wrong stretch.
+     * measures the wrong stretch.  For a parking berth the number is the berth rule's where that stops first - at a
+     * crossing between the berth and its switch (TDA2-C6).
      *
      * **An edge crossing no switch is skipped unless the train turns at its far end.**  There the guard
      * carries on backwards through earlier edges, so this edge alone bounds nothing and any number taken
@@ -9768,6 +9793,24 @@ public class AutonomySession
                 if (getBarredArrivals(square).contains(arriving.getEntrySide())) continue;
 
                 int room = arriving.getRoomAtTheEnd();
+
+                // A PARKING BERTH'S ROOM ENDS WHERE THE BERTH RULE STOPS (TDA2-C6): at a crossing as well as a switch, and
+                // a crossing between the berth and its switch is nearer.  The room walk runs on past a crossing
+                // (`boundsTheRoom`), so this quoted room the berth rule does not give, and a berth refusing its own
+                // maximum at the crossing was warned about by neither notice.  A platform autonomy may choose is not
+                // judged by the berth rule, and keeps the room walk's number.
+                if (!isAutoDestination(square))
+                {
+                    java.util.List<TileKey> squares = new java.util.ArrayList<>();
+
+                    for (GraphReducer.TileStep step : arriving.getPath()) squares.add(step.getTile());
+
+                    squares.add(square);
+
+                    int[] before = berthTrackBeforeTheStop(squares);
+
+                    if (before[2] == 1 && before[0] > 0 && (room <= 0 || before[0] < room)) room = before[0];
+                }
 
                 if (room == Integer.MIN_VALUE)
                 {
