@@ -839,6 +839,789 @@ public class testMassAssignLengths
         return found[0];
     }
 
+    // ---------------------------------------------------------------- on his railway (MT-518, 519, 520, 521, 530)
+
+    private static final String MAIN = "1 - Main";
+    private static final String BOTTOM = "2 - Bottom";
+
+    /**
+     * On the frozen copy of Adam's railway, Clear All Station Max Train Lengths asks first; No changes nothing, and Yes
+     * takes the maximum off every station on every page and says how many (MT-518, MT-519; Adam, 2026-09-25: automated
+     * tests supersede the MTs they answer).
+     *
+     * Pressed from the Bulk Tools menu as the editor builds it, its confirmation answered as its buttons answer it, and
+     * each station's maximum read where the steps read it: the label of the Maximum Train Length item on the Station menu
+     * of its own page.  `testClearAllMaxTrainLengthsClearsEveryPage` asks the same rule on a two-page fixture, below the
+     * dialog.
+     *
+     * MUTATION: clear on No, clear one page only, or say a count other than the item's, and this fails naming it.
+     *
+     * @throws Exception from the sandbox and the event thread
+     */
+    @Test
+    public void testClearAllMaximaOnHisRailwayAsksAndClearsEveryPage() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the confirmation needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            org.traincontrol.marklin.MarklinControlStation model = openHisRailway(sandbox);
+
+            try
+            {
+                java.util.Map<TileKey, Object> before = maxima();
+
+                TileKey onMain = firstOn(before.keySet(), MAIN);
+                TileKey onBottom = firstOn(before.keySet(), BOTTOM);
+
+                assertNotNull(onMain, "precondition: no station on " + MAIN + " has a maximum on the frozen railway, so"
+                    + " the steps' first right-click has nothing to show: " + before);
+
+                assertNotNull(onBottom, "precondition: no station on " + BOTTOM + " has a maximum on the frozen railway,"
+                    + " so \"every page\" is not asked: " + before);
+
+                final int count = before.size();
+
+                final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, MAIN, () -> { });
+
+                final javax.swing.JMenuItem item = clearMaximaItem(panel);
+
+                assertNotNull(item, "the Bulk Tools menu has no Clear All Station Max Train Lengths item");
+
+                // MT-519 STEP 2: the number in the item's name.
+                assertEquals(item.getText(), org.traincontrol.util.I18n.f("autolayout.ui.menuClearAllMaxTrainLengths",
+                    count), "the item does not carry the number of stations with a maximum");
+
+                final String title = item.getText();
+                final String no = String.valueOf(org.traincontrol.gui.TrainControlUI.YES_NO_OPTS[1]);
+                final String yes = String.valueOf(org.traincontrol.gui.TrainControlUI.YES_NO_OPTS[0]);
+
+                // MT-518: ANSWERED NO.
+                javax.swing.SwingUtilities.invokeLater(item::doClick);
+
+                javax.swing.JDialog asked = awaitDialogTitled(title);
+
+                assertEquals(String.valueOf(initialValueOf(asked)), no, "the confirmation does not start on No");
+
+                answer(asked, no);
+
+                awaitNoDialogTitled(title);
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+                assertEquals(maxima(), before, "answered No, Clear All Station Max Train Lengths changed a maximum (MT-518)");
+
+                assertEquals(maximumShown(MAIN, onMain), shownAs(before.get(onMain)), "answered No, the Station menu of "
+                    + session.getStore().getPointName(onMain) + " does not show its maximum (MT-518 step 4)");
+
+                assertEquals(maximumShown(BOTTOM, onBottom), shownAs(before.get(onBottom)), "answered No, the Station menu"
+                    + " of " + session.getStore().getPointName(onBottom) + " does not show its maximum (MT-518 step 4)");
+
+                // MT-519: ANSWERED YES.
+                javax.swing.SwingUtilities.invokeLater(item::doClick);
+
+                asked = awaitDialogTitled(title);
+
+                answer(asked, yes);
+
+                awaitNoDialogTitled(title);
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+                assertEquals(hintOf(panel), org.traincontrol.util.I18n.f("autosetup.ui.infoMaxTrainLengthsCleared", count),
+                    "the hint line does not say the " + count + " stations the item named were cleared (MT-519 step 3)");
+
+                assertTrue(session.tilesWithAMaxTrainLength().isEmpty(), "answered Yes, a maximum survived - Clear All is"
+                    + " across every page (MT-519): " + session.tilesWithAMaxTrainLength());
+
+                String any = shownAs(0);
+
+                assertEquals(maximumShown(MAIN, onMain), any, "answered Yes, the Station menu of "
+                    + session.getStore().getPointName(onMain) + " on " + MAIN + " does not show any length (MT-519 step 4)");
+
+                assertEquals(maximumShown(BOTTOM, onBottom), any, "answered Yes, the Station menu of "
+                    + session.getStore().getPointName(onBottom) + " on " + BOTTOM + " does not show any length (MT-519"
+                    + " step 4)");
+            }
+            finally
+            {
+                // NOTHING LEFT OPEN FOR THE NEXT TEST: a claim that fails with a prompt up leaves it modal on the screen.
+                closeEveryDialog();
+
+                model.stop();
+            }
+        }
+        finally
+        {
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * On the frozen railway with every maximum cleared, as MT-519 leaves it, Mass Assign Station Max Train Lengths on
+     * 1 - Main asks about each station in turn - naming it, saying which of how many, with it outlined - refuses 0 and
+     * asks again, takes a number typed without a click and entered with Enter, and ends on Escape (MT-520, MT-521).
+     *
+     * Started from its Bulk Tools item.  The keys are pressed on the field the prompt gave the keyboard to, which is the
+     * steps' "without clicking the box"; a desktop that gives the prompt no focus cannot show that, and this then skips
+     * rather than passes, as `testTheNumberFieldHasFocusAndEnterSubmits` does.
+     *
+     * MUTATION: write the refused 0, stop outlining the station, or name another in the prompt, and this fails.
+     *
+     * @throws Exception from the sandbox and the event thread
+     */
+    @Test
+    public void testTheMaximumWalkOnHisRailway() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the walk's prompt needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            org.traincontrol.marklin.MarklinControlStation model = openHisRailway(sandbox);
+
+            try
+            {
+                // MT-520 AND MT-521 STEP 1: "Run MT-519 first, so every station has no maximum".
+                session.clearEveryMaxTrainLength();
+
+                List<TileKey> stations = session.stationsWithoutAMaximumOn(MAIN);
+
+                assertTrue(stations.size() >= 2, "precondition: " + MAIN + " has fewer than two stations to ask about, so"
+                    + " the walk moving on is not seen: " + stations);
+
+                final TileKey first = stations.get(0);
+                final TileKey second = stations.get(1);
+
+                final Object firstBefore = session.getPointProperty(first, "maxTrainLength");
+                final Object secondBefore = session.getPointProperty(second, "maxTrainLength");
+
+                final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, MAIN, () -> { });
+
+                final javax.swing.JMenuItem item = bulkItemNamed(panel, org.traincontrol.util.I18n.t(MAXIMA));
+
+                javax.swing.SwingUtilities.invokeLater(item::doClick);
+
+                javax.swing.JDialog prompt = awaitPrompt(null, MAXIMA);
+
+                String question = org.traincontrol.util.I18n.f("autosetup.ui.promptMassAssignMaxTrainLength", 1,
+                    stations.size(), nameForPrompt(panel, first));
+
+                assertEquals(promptText(prompt).trim(), question, "the first prompt does not name the station and which of"
+                    + " how many it is (MT-520)");
+
+                assertEquals(selectionOf(panel), java.util.Collections.singleton(first), "the station asked about is not"
+                    + " the one outlined (MT-520)");
+
+                // MT-521: 0, AND OK.
+                type(prompt, "0");
+                answer(prompt, org.traincontrol.util.I18n.t("ui.ok"));
+
+                assertEquals(refusalMessage(MAXIMA), org.traincontrol.util.I18n.t("autosetup.ui.errorMaxTrainLengthZero"),
+                    "0 was not refused with the sentence that says 0 means any length (MT-521)");
+
+                prompt = awaitPrompt(prompt, MAXIMA);
+
+                assertEquals(promptText(prompt).trim(), question, "after refusing 0 the walk did not ask about the same"
+                    + " station again (MT-521)");
+
+                assertEquals(session.getPointProperty(first, "maxTrainLength"), firstBefore, "a refused 0 was written"
+                    + " (MT-521)");
+
+                // MT-520: TYPED WITHOUT A CLICK, AND ENTER.
+                final javax.swing.JTextField field = awaitTheKeyboard(prompt);
+
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    field.setText("7");
+
+                    press(field, java.awt.event.KeyEvent.VK_ENTER);
+                });
+
+                javax.swing.JDialog next = awaitPrompt(prompt, MAXIMA);
+
+                assertEquals(promptText(next).trim(), org.traincontrol.util.I18n.f("autosetup.ui.promptMassAssignMaxTrainLength",
+                    2, stations.size(), nameForPrompt(panel, second)), "after Enter the walk did not move on to the next"
+                    + " station (MT-520 step 3)");
+
+                // MT-520 STEP 4: ESCAPE.
+                final javax.swing.JTextField nextField = awaitTheKeyboard(next);
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> press(nextField, java.awt.event.KeyEvent.VK_ESCAPE));
+
+                awaitNoPrompt(MAXIMA);
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+                assertEquals(session.getPointProperty(first, "maxTrainLength"), 7, "the number typed and entered was not"
+                    + " recorded for " + session.getStore().getPointName(first) + " (MT-520)");
+
+                assertEquals(maximumShown(MAIN, first), shownAs(7), "the Station menu of "
+                    + session.getStore().getPointName(first) + " does not show the number typed (MT-520 step 5)");
+
+                assertEquals(session.getPointProperty(second, "maxTrainLength"), secondBefore, "Escape gave the next station"
+                    + " a maximum");
+
+                assertTrue(selectionOf(panel).isEmpty(), "the outline stayed on the diagram after the walk ended");
+            }
+            finally
+            {
+                // NOTHING LEFT OPEN FOR THE NEXT TEST: a claim that fails with a prompt up leaves it modal on the screen.
+                closeEveryDialog();
+
+                model.stop();
+            }
+        }
+        finally
+        {
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * On the frozen railway's 2 - Bottom, after Clear All Track Lengths, Mass Assign Lengths asks for the squares two
+     * roads cross on their own - no stretch before them includes one - and one length typed there goes to every one of
+     * them and takes their highlight away (MT-530).
+     *
+     * Both tools started from their Bulk Tools items and answered as their buttons answer them; Skip pressed until the
+     * crossing prompt, as the steps say.
+     *
+     * MUTATION: put a crossing back into a stretch, give the answer to one crossing only, or leave it highlighted, and
+     * this fails.
+     *
+     * @throws Exception from the sandbox and the event thread
+     */
+    @Test
+    public void testTheCrossingPromptOnHisBottomPage() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the walk's prompt needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            org.traincontrol.marklin.MarklinControlStation model = openHisRailway(sandbox);
+
+            try
+            {
+                final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, BOTTOM, () -> { });
+
+                // STEP 1: Clear All Track Lengths, answered Yes.
+                final javax.swing.JMenuItem clear = bulkItemStarting(panel, org.traincontrol.util.I18n.f(
+                    "autolayout.ui.menuClearAllTrackLengths", 0).replaceAll("\\s*\\(.*$", ""));
+
+                final String title = clear.getText();
+
+                javax.swing.SwingUtilities.invokeLater(clear::doClick);
+
+                answer(awaitDialogTitled(title), String.valueOf(org.traincontrol.gui.TrainControlUI.YES_NO_OPTS[0]));
+
+                awaitNoDialogTitled(title);
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+                Set<TileKey> crossings = new java.util.TreeSet<>(java.util.Comparator.comparing(TileKey::toString));
+
+                for (TileKey square : session.sharedSquaresALengthRuleReads())
+                {
+                    if (BOTTOM.equals(square.getPage())) crossings.add(square);
+                }
+
+                assertFalse(crossings.isEmpty(), "precondition: " + BOTTOM + " has no square two roads cross, so there is"
+                    + " no crossing prompt to reach");
+
+                for (TileKey crossing : crossings)
+                {
+                    assertEquals(session.getStore().getTileLength(crossing), 0, "precondition: Clear All Track Lengths left"
+                        + " crossing " + crossing + " with a length");
+                }
+
+                assertTrue(session.squaresNeedingALength().containsAll(crossings), "precondition: the cleared crossings"
+                    + " are not highlighted, so losing the highlight would say nothing");
+
+                // STEP 2: Mass Assign Lengths, Skip until the crossing prompt.
+                final javax.swing.JMenuItem walk = bulkItemNamed(panel, org.traincontrol.util.I18n.t(LENGTHS));
+
+                javax.swing.SwingUtilities.invokeLater(walk::doClick);
+
+                String crossingPrompt = org.traincontrol.util.I18n.f("autosetup.ui.promptMassAssignCrossings",
+                    crossings.size());
+
+                String stretchPrompt = org.traincontrol.util.I18n.t("autosetup.ui.promptMassAssignLength");
+
+                stretchPrompt = stretchPrompt.substring(0, stretchPrompt.indexOf('{')).trim();
+
+                javax.swing.JDialog prompt = null;
+
+                String text = null;
+
+                int stretches = 0;
+
+                for (int asked = 0; asked < 400; asked++)
+                {
+                    prompt = awaitPrompt(prompt, LENGTHS);
+
+                    text = promptText(prompt).trim();
+
+                    if (text.equals(crossingPrompt)) break;
+
+                    if (text.startsWith(stretchPrompt))
+                    {
+                        stretches++;
+
+                        Set<TileKey> outlined = new HashSet<>(selectionOf(panel));
+
+                        outlined.retainAll(crossings);
+
+                        assertTrue(outlined.isEmpty(), "a stretch prompt before the crossings included " + outlined
+                            + " (MT-530): " + text);
+                    }
+
+                    answer(prompt, org.traincontrol.util.I18n.t("autosetup.ui.btnSkipOne"));
+                }
+
+                assertEquals(text, crossingPrompt, "the walk did not come to a prompt for the " + crossings.size()
+                    + " squares two roads cross on " + BOTTOM);
+
+                assertTrue(stretches > 0, "CONTROL: no stretch prompt came before the crossings, so none of them including"
+                    + " a crossing says nothing");
+
+                assertEquals(new HashSet<>(selectionOf(panel)), new HashSet<>(crossings), "the crossing prompt does not"
+                    + " outline the squares it asks about");
+
+                // STEP 3: one length, and OK.
+                type(prompt, "3");
+                answer(prompt, org.traincontrol.util.I18n.t("ui.ok"));
+
+                // STEP 4: Escape, on whatever the walk asks next.
+                stopTheWalk(prompt);
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+                for (TileKey crossing : crossings)
+                {
+                    assertEquals(session.getStore().getTileLength(crossing), 3, "crossing " + crossing + " did not take the"
+                        + " one length typed (MT-530)");
+                }
+
+                Set<TileKey> still = new HashSet<>(session.squaresNeedingALength());
+
+                still.retainAll(crossings);
+
+                assertTrue(still.isEmpty(), "crossings still highlighted after they took a length (MT-530): " + still);
+            }
+            finally
+            {
+                // NOTHING LEFT OPEN FOR THE NEXT TEST: a claim that fails with a prompt up leaves it modal on the screen.
+                closeEveryDialog();
+
+                model.stop();
+            }
+        }
+        finally
+        {
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** What a refusal over the walk's prompt says - its message, as read - after closing it as its OK does. */
+    private static String refusalMessage(String walkTitleKey) throws Exception
+    {
+        String walkTitle = org.traincontrol.util.I18n.t(walkTitleKey);
+        long giveUp = System.currentTimeMillis() + 10000;
+
+        while (System.currentTimeMillis() < giveUp)
+        {
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
+
+                final javax.swing.JDialog dialog = (javax.swing.JDialog) window;
+
+                if (walkTitle.equals(dialog.getTitle())) continue;
+
+                final JOptionPane[] pane = new JOptionPane[1];
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> pane[0] = findPane(dialog.getContentPane()));
+
+                if (pane[0] == null) continue;
+
+                String text = String.valueOf(pane[0].getMessage()).replaceAll("<[^>]*>", "").replace("&lt;", "<")
+                    .replace("&gt;", ">").replace("&amp;", "&").trim();
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> pane[0].setValue(JOptionPane.OK_OPTION));
+
+                return text;
+            }
+
+            Thread.sleep(50);
+        }
+
+        fail("the walk did not refuse with a message");
+
+        return null;
+    }
+
+    /** Closes every dialog still showing, as Escape closes it, until none is left. */
+    private static void closeEveryDialog() throws Exception
+    {
+        long giveUp = System.currentTimeMillis() + 10000;
+
+        while (System.currentTimeMillis() < giveUp)
+        {
+            boolean any = false;
+
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
+
+                final javax.swing.JDialog dialog = (javax.swing.JDialog) window;
+
+                final JOptionPane[] pane = new JOptionPane[1];
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> pane[0] = findPane(dialog.getContentPane()));
+
+                if (pane[0] == null) continue;
+
+                any = true;
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> pane[0].setValue(Integer.valueOf(JOptionPane.CLOSED_OPTION)));
+            }
+
+            if (!any) return;
+
+            Thread.sleep(100);
+        }
+    }
+
+    /** The frozen copy of his railway, opened into this class's session as the window opens it. */
+    private org.traincontrol.marklin.MarklinControlStation openHisRailway(support.LayoutSandbox sandbox) throws Exception
+    {
+        org.traincontrol.marklin.MarklinControlStation model =
+            org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+
+        session = new AutonomySession(sandbox.getFolder());
+
+        session.open(support.LayoutSandbox.wiredPages(model));
+
+        return model;
+    }
+
+    /** Every station with a maximum, and that maximum. */
+    private java.util.Map<TileKey, Object> maxima()
+    {
+        java.util.Map<TileKey, Object> out = new java.util.HashMap<>();
+
+        for (TileKey station : session.tilesWithAMaxTrainLength())
+        {
+            out.put(station, session.getPointProperty(station, "maxTrainLength"));
+        }
+
+        return out;
+    }
+
+    private static TileKey firstOn(java.util.Collection<TileKey> keys, String page)
+    {
+        TileKey first = null;
+
+        for (TileKey key : keys)
+        {
+            if (page.equals(key.getPage()) && (first == null || key.toString().compareTo(first.toString()) < 0)) first = key;
+        }
+
+        return first;
+    }
+
+    /** The Maximum Train Length item's label for this maximum, as the Station menu writes it. */
+    private static String shownAs(Object maximum)
+    {
+        int value = maximum instanceof Number ? ((Number) maximum).intValue() : 0;
+
+        return org.traincontrol.util.I18n.f("autolayout.ui.menuMaxTrainLength",
+            value == 0 ? org.traincontrol.util.I18n.t("autolayout.ui.any") : String.valueOf(value));
+    }
+
+    /** The label of the Maximum Train Length item on this station's Station menu, on an editor showing its page. */
+    private String maximumShown(String page, TileKey station) throws Exception
+    {
+        final String[] label = new String[1];
+
+        final AutonomyEditorPanel onItsPage = new AutonomyEditorPanel(session, page, () -> { });
+
+        String pattern = org.traincontrol.util.I18n.t("autolayout.ui.menuMaxTrainLength");
+
+        final String prefix = pattern.substring(0, pattern.indexOf("{0}"));
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            javax.swing.JMenuItem found = itemStarting(onItsPage.buildTileMenu(station, null), prefix);
+
+            label[0] = found == null ? "no Maximum Train Length item" : found.getText();
+        });
+
+        return label[0];
+    }
+
+    private static javax.swing.JMenuItem itemStarting(java.awt.Container menu, String prefix)
+    {
+        java.awt.Component[] children = menu instanceof javax.swing.JMenu
+            ? ((javax.swing.JMenu) menu).getMenuComponents() : menu.getComponents();
+
+        for (java.awt.Component child : children)
+        {
+            if (child instanceof javax.swing.JMenu)
+            {
+                javax.swing.JMenuItem found = itemStarting((javax.swing.JMenu) child, prefix);
+
+                if (found != null) return found;
+            }
+            else if (child instanceof javax.swing.JMenuItem && ((javax.swing.JMenuItem) child).getText() != null
+                && ((javax.swing.JMenuItem) child).getText().startsWith(prefix))
+            {
+                return (javax.swing.JMenuItem) child;
+            }
+        }
+
+        return null;
+    }
+
+    /** The Bulk Tools item whose text starts so - for an item that carries a count. */
+    private static javax.swing.JMenuItem bulkItemStarting(AutonomyEditorPanel panel, String start) throws Exception
+    {
+        final javax.swing.JMenuItem[] found = new javax.swing.JMenuItem[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            javax.swing.JMenu bulk = panel.buildBulkMenuForTest();
+
+            for (int i = 0; i < bulk.getItemCount(); i++)
+            {
+                javax.swing.JMenuItem item = bulk.getItem(i);
+
+                if (item != null && item.getText() != null && item.getText().startsWith(start)) found[0] = item;
+            }
+        });
+
+        assertNotNull(found[0], "precondition: Bulk Tools has no item starting " + start);
+
+        return found[0];
+    }
+
+    private static String hintOf(AutonomyEditorPanel panel) throws Exception
+    {
+        java.lang.reflect.Field hintField = AutonomyEditorPanel.class.getDeclaredField("hint");
+
+        hintField.setAccessible(true);
+
+        String text = ((javax.swing.JLabel) hintField.get(panel)).getText();
+
+        return text == null ? null : text.replaceAll("<[^>]*>", "").replace("&lt;", "<").replace("&gt;", ">")
+            .replace("&amp;", "&").trim();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Set<TileKey> selectionOf(AutonomyEditorPanel panel) throws Exception
+    {
+        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("selection");
+
+        field.setAccessible(true);
+
+        final Set<TileKey> out = new java.util.LinkedHashSet<>();
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                out.addAll((Set<TileKey>) field.get(panel));
+            }
+            catch (IllegalAccessException cannot)
+            {
+                throw new IllegalStateException(cannot);
+            }
+        });
+
+        return out;
+    }
+
+    private static String nameForPrompt(AutonomyEditorPanel panel, TileKey tile) throws Exception
+    {
+        java.lang.reflect.Method name = AutonomyEditorPanel.class.getDeclaredMethod("nameForPrompt", TileKey.class);
+
+        name.setAccessible(true);
+
+        return (String) name.invoke(panel, tile);
+    }
+
+    private static Object initialValueOf(final javax.swing.JDialog dialog) throws Exception
+    {
+        final Object[] value = new Object[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            JOptionPane pane = findPane(dialog.getContentPane());
+
+            value[0] = pane == null ? null : pane.getInitialValue();
+        });
+
+        return value[0];
+    }
+
+    private static javax.swing.JDialog awaitDialogTitled(String title) throws Exception
+    {
+        long giveUp = System.currentTimeMillis() + 10000;
+
+        while (System.currentTimeMillis() < giveUp)
+        {
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (window instanceof javax.swing.JDialog && window.isShowing()
+                    && title.equals(((javax.swing.JDialog) window).getTitle()))
+                {
+                    return (javax.swing.JDialog) window;
+                }
+            }
+
+            Thread.sleep(50);
+        }
+
+        fail("no dialog titled \"" + title + "\" appeared");
+
+        return null;
+    }
+
+    private static void awaitNoDialogTitled(String title) throws Exception
+    {
+        long giveUp = System.currentTimeMillis() + 10000;
+
+        while (System.currentTimeMillis() < giveUp)
+        {
+            boolean showing = false;
+
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (window instanceof javax.swing.JDialog && window.isShowing()
+                    && title.equals(((javax.swing.JDialog) window).getTitle())) showing = true;
+            }
+
+            if (!showing) return;
+
+            Thread.sleep(50);
+        }
+
+        fail("the dialog titled \"" + title + "\" did not close");
+    }
+
+    /**
+     * The prompt's number field once the prompt has the keyboard; skips where this desktop gives it none, after
+     * stopping the walk, as `testTheNumberFieldHasFocusAndEnterSubmits` does.
+     */
+    private static javax.swing.JTextField awaitTheKeyboard(final javax.swing.JDialog prompt) throws Exception
+    {
+        final java.awt.Component[] owner = new java.awt.Component[1];
+        final boolean[] focused = new boolean[1];
+
+        long giveUp = System.currentTimeMillis() + 5000;
+
+        while (System.currentTimeMillis() < giveUp)
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                focused[0] = prompt.isFocused();
+                owner[0] = prompt.getFocusOwner();
+            });
+
+            if (focused[0] && owner[0] instanceof javax.swing.JTextField) return (javax.swing.JTextField) owner[0];
+
+            Thread.sleep(50);
+        }
+
+        String title = prompt.getTitle();
+
+        answer(prompt, org.traincontrol.util.I18n.t("ui.cancel"));
+
+        if (!focused[0])
+        {
+            throw new org.testng.SkipException("this desktop did not give the \"" + title + "\" prompt the keyboard, so"
+                + " typing without a click cannot be seen");
+        }
+
+        fail("the prompt has the keyboard but its number field does not - it is on " + owner[0]);
+
+        return null;
+    }
+
+    /** One key pressed on the component, as the keyboard presses it. */
+    private static void press(java.awt.Component on, int key)
+    {
+        on.dispatchEvent(new java.awt.event.KeyEvent(on, java.awt.event.KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0,
+            key, java.awt.event.KeyEvent.CHAR_UNDEFINED));
+    }
+
+    /** Escape on whatever Mass Assign Lengths asks after this prompt, until it asks nothing. */
+    private static void stopTheWalk(javax.swing.JDialog answered) throws Exception
+    {
+        String title = org.traincontrol.util.I18n.t(LENGTHS);
+
+        long giveUp = System.currentTimeMillis() + 10000;
+
+        while (System.currentTimeMillis() < giveUp)
+        {
+            javax.swing.JDialog next = null;
+            boolean answeredShowing = false;
+
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (!(window instanceof javax.swing.JDialog) || !window.isShowing()
+                    || !title.equals(((javax.swing.JDialog) window).getTitle())) continue;
+
+                if (window == answered) answeredShowing = true;
+                else next = (javax.swing.JDialog) window;
+            }
+
+            if (next != null)
+            {
+                // WHAT ESCAPE DOES: the option pane's close action gives it CLOSED_OPTION.
+                final javax.swing.JDialog closing = next;
+
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                    findPane(closing.getContentPane()).setValue(Integer.valueOf(JOptionPane.CLOSED_OPTION)));
+
+                awaitNoPrompt(LENGTHS);
+
+                return;
+            }
+
+            if (!answeredShowing)
+            {
+                // Nothing more was asked once the event thread has come back to it.
+                javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+                boolean more = false;
+
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (window instanceof javax.swing.JDialog && window.isShowing()
+                        && title.equals(((javax.swing.JDialog) window).getTitle())) more = true;
+                }
+
+                if (!more) return;
+            }
+
+            Thread.sleep(50);
+        }
+
+        fail("the walk did not stop");
+    }
+
     // ------------------------------------------------------------------------------ OB-273: route tiles take no length
 
     /**
