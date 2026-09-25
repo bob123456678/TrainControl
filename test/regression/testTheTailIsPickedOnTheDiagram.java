@@ -285,13 +285,26 @@ public class testTheTailIsPickedOnTheDiagram
 
             Thread.sleep(2000);
 
+            // THE QUESTION IS ON THE DIAGRAM: TunnelPre lit (MT-574).
+            assertTrue(q.label.isFlashOutstanding(), "precondition: TunnelPre is not lit while the tail question waits,"
+                + " so the lights going out below would say nothing");
+
             click(q.label, 1);
             click(q.label, 2);
 
-            assertTrue(asked.get(10, TimeUnit.SECONDS).wasAnswered(), "precondition: the click on TunnelPre did not"
-                + " answer the question");
+            TailCrossedPrompt.Answer answer = asked.get(10, TimeUnit.SECONDS);
+
+            assertTrue(answer.wasAnswered(), "precondition: the click on TunnelPre did not answer the question");
+
+            // THE TAIL BACK TO TUNNELPRE (MT-574): the road the placement draws the tail along.
+            assertEquals(answer.getRoad(), q.tunnelPre.getRoad(), "the double-click on TunnelPre recorded another road, so"
+                + " the tail is drawn somewhere else (MT-574)");
 
             for (int turn = 0; turn < 4; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+            // AND THE LIGHTS GO OUT (MT-574).
+            assertFalse(q.label.isFlashOutstanding(), "TunnelPre is still lit after the double-click answered the tail"
+                + " question (MT-574)");
 
             assertEquals(model.getFeedbackState(sensor), before, "the second click of a double-click on TunnelPre, the"
                 + " sensor that answered the tail question, flipped the sensor - a faked occupancy change (TDU-B3)");

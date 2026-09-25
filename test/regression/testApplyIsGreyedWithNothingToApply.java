@@ -117,6 +117,15 @@ public class testApplyIsGreyedWithNothingToApply
 
             SwingUtilities.invokeAndWait(() -> apply.doClick());
 
+            // AND F0 KEPT THE TRIGGER APPLIED (MT-577): the second entry is a pulse, the first a plain switch.
+            final boolean pulse = (triggerWas == 0 ? 1 : 0) == 1;
+
+            assertEquals(loc.isFunctionPulse(0), pulse, "Apply moved on without writing F0's new trigger - the locomotive"
+                + " still holds the old one (MT-577)");
+
+            assertEquals(loc.isFunctionTimed(0), 0, "Apply wrote F0 as timed, where a " + (pulse ? "pulse" : "switch")
+                + " was chosen (MT-577)");
+
             assertEquals(number.getSelectedIndex(), 1, "precondition: Apply did not move on to F1");
 
             assertFalse(on(apply), "Apply is live on the function Apply moved on to, which nothing has changed (FR-098)");
