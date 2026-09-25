@@ -539,6 +539,7 @@
         <test-one-class class="testAHandSendIsRefusedWhileTheSetupIsBroken"/>
         <test-one-class class="testTheImportDoorReadsAnOldFile"/>
         <test-one-class class="testTheRoutesImportDoorAsksByName"/>
+        <test-one-class class="testASetupMovesToAOnePageLayout"/>
         <test-one-class class="testAThrottleReversalIsFollowedFromItsEcho"/>
         <test-one-class class="testTheDebugMenuSwitchesTheEcho"/>
         <test-one-class class="testTheVisibleElementsHeadingIsSpacedLikeTheOthers"/>
