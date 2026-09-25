@@ -747,7 +747,7 @@ public class testMassAssignLengths
     }
 
     /**
-     * Clear All Max Train Lengths takes every maximum off, on every page, and counts only the ones above 0.
+     * Clear All Station Max Train Lengths takes every maximum off, on every page, and counts only the ones above 0.
      *
      * Adam, 2026-09-17: *"Add a right click menu open to clear all max station train lengths (grouped with the other
      * clear options)"*.  The second page is the half a per-page clear would fail; the 0 is the half that would count
@@ -796,7 +796,7 @@ public class testMassAssignLengths
 
         javax.swing.JMenuItem item = clearMaximaItem(panel);
 
-        assertNotNull(item, "the Bulk Tools menu has no Clear All Max Train Lengths item");
+        assertNotNull(item, "the Bulk Tools menu has no Clear All Station Max Train Lengths item");
         assertTrue(item.isEnabled(), "the item is greyed with two maxima to clear");
         assertEquals(item.getText(), org.traincontrol.util.I18n.f("autolayout.ui.menuClearAllMaxTrainLengths", 2));
         assertEquals(item.getToolTipText().replaceAll("<[^>]*>", ""),
@@ -1555,7 +1555,7 @@ public class testMassAssignLengths
             + " it is about stations: " + english.getProperty(MAXIMA));
 
         assertTrue(String.valueOf(english.getProperty("autolayout.ui.menuClearAllMaxTrainLengths")).contains("Station"),
-            "Clear All Max Train Lengths does not say it is about stations: "
+            "Clear All Station Max Train Lengths does not say it is about stations: "
             + english.getProperty("autolayout.ui.menuClearAllMaxTrainLengths"));
     }
 
@@ -1944,7 +1944,7 @@ public class testMassAssignLengths
      *
      * `promptNumber` is shared with `priority`, where a negative is meaningful, so the refusal is asked per key.  The
      * layer below does not clamp: `Layout.fromJSON` invalidates the WHOLE configuration for a maximum below 0, so a
-     * number typed here took the railway out of autonomy with only a log line - and Clear All Max Train Lengths, which
+     * number typed here took the railway out of autonomy with only a log line - and Clear All Station Max Train Lengths, which
      * counted only maxima above 0, greyed itself on the one setting that needed taking off.
      *
      * Measured before the fix, on the fixture below: `Layout.fromJSON` came back `isValid() == false` and
@@ -1968,7 +1968,7 @@ public class testMassAssignLengths
         session.setPointProperty(key(5, 1), "maxTrainLength", -3);
 
         assertEquals(session.tilesWithAMaxTrainLength(), Arrays.asList(key(5, 1)),
-            "Clear All Max Train Lengths cannot see a negative maximum, so it greys itself on the setting that is"
+            "Clear All Station Max Train Lengths cannot see a negative maximum, so it greys itself on the setting that is"
             + " stopping the railway loading");
 
         assertEquals(session.clearEveryMaxTrainLength(), 1, "the clear did not take it off");
@@ -2221,6 +2221,98 @@ public class testMassAssignLengths
     }
 
     /**
+     * With nothing spent before the crossing, a parking berth refuses every train there, and its run-in notice says 0 or
+     * nothing - never the room to the switch (TDA3-C1).
+     *
+     * The berth rule, once anything on the approach is measured, claims the crossing's square before it spends anything
+     * on it, so with the two squares between the berth and the crossing at no length every train is refused.  The notice
+     * quoted the room walk's 4, back to the switch, and said a train of up to 4 fits.  Answered 0 on purpose, those
+     * squares are nothing the half-measured notice names, so the run-in notice says 0; left unanswered, the half-measured
+     * notice names them, and the run-in notice says nothing.
+     *
+     * MUTATION: take the berth rule's figure only where it spent something, and this fails.
+     *
+     * @throws Exception from the fixture or the reflection
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testNothingSpentBeforeTheCrossingIsSaidAsNothing() throws Exception
+    {
+        openBerthBehindACrossing();
+
+        TileKey berth = key(7, 1);
+
+        session.setTileLength(key(5, 1), 1);
+        session.setTileLength(key(4, 1), 3);
+        session.setTileLength(key(3, 1), 1);
+        session.setTileLength(key(2, 1), 1);
+        session.answerTileLengthsZero(Arrays.asList(berth, key(6, 1)));
+        session.setPointProperty(berth, "maxTrainLength", 5);
+        session.rebuild();
+
+        java.lang.reflect.Method runIns = org.traincontrol.automationui.AutonomySession.class.getDeclaredMethod(
+            "runInsShorterThanTheBerth");
+
+        runIns.setAccessible(true);
+
+        java.util.Map<TileKey, int[]> said = (java.util.Map<TileKey, int[]>) runIns.invoke(session);
+
+        assertTrue(said.containsKey(berth) && said.get(berth)[1] == 0, "a parking berth with nothing but answered zeros"
+            + " before a crossing refuses every train there, and its run-in notice does not say 0: "
+            + (said.containsKey(berth) ? Arrays.toString(said.get(berth)) : "no entry"));
+
+        assertFalse(session.stationsWithAHalfMeasuredApproach().containsKey(berth), "precondition: answered zeros are"
+            + " named by the half-measured notice");
+
+        // UNANSWERED: the half-measured notice names the two squares, and the run-in notice says nothing.
+        session.setTileLength(berth, 0);
+        session.setTileLength(key(6, 1), 0);
+        session.rebuild();
+
+        said = (java.util.Map<TileKey, int[]>) runIns.invoke(session);
+
+        assertTrue(session.stationsWithAHalfMeasuredApproach().containsKey(berth), "precondition: two unanswered squares"
+            + " before the crossing are not named by the half-measured notice");
+
+        assertFalse(said.containsKey(berth), "with nothing measured before the crossing the run-in notice quotes the room"
+            + " to the switch, a figure the berth rule never gives - the half-measured notice beside it names the squares"
+            + " (TDA3-C1): " + (said.containsKey(berth) ? Arrays.toString(said.get(berth)) : ""));
+    }
+
+    /**
+     * A parking berth's crossing on a leg with no switch is said too (TDA3-C2): the room walk finds no switch there and
+     * answers nothing, and the berth rule stops at the crossing.
+     *
+     * MUTATION: take the berth rule's figure only where the room walk found a switch, and this fails.
+     *
+     * @throws Exception from the fixture or the reflection
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testACrossingOnALegWithNoSwitchIsSaid() throws Exception
+    {
+        openBerthBehindACrossing(false);
+
+        TileKey berth = key(7, 1);
+
+        for (int x = 2; x <= 7; x++) session.setTileLength(key(x, 1), x == 4 ? 3 : 1);
+
+        session.setPointProperty(berth, "maxTrainLength", 3);
+        session.rebuild();
+
+        java.lang.reflect.Method runIns = org.traincontrol.automationui.AutonomySession.class.getDeclaredMethod(
+            "runInsShorterThanTheBerth");
+
+        runIns.setAccessible(true);
+
+        java.util.Map<TileKey, int[]> said = (java.util.Map<TileKey, int[]>) runIns.invoke(session);
+
+        assertTrue(said.containsKey(berth) && said.get(berth)[1] == 2, "a parking berth set to take a train of 3, with 2"
+            + " measured before a crossing on a leg with no switch, is not warned: "
+            + (said.containsKey(berth) ? Arrays.toString(said.get(berth)) : "no entry"));
+    }
+
+    /**
      * A parking berth's run-in notice stops where the berth rule does, at a crossing as well as at a switch (TDA2-C6).
      *
      * `runInsShorterThanTheBerth` quoted the room back to the switch - the room rule's number - and the berth rule refuses
@@ -2306,11 +2398,29 @@ public class testMassAssignLengths
      */
     private void openBerthBehindACrossing() throws IOException
     {
+        openBerthBehindACrossing(true);
+    }
+
+    /**
+     * The same, with a plain straight at 3,1 where the switch was when asked - a leg the room walk finds no switch on
+     * (TDA3-C2).
+     */
+    private void openBerthBehindACrossing(boolean withTheSwitch) throws IOException
+    {
         LayoutDiagram page = new LayoutDiagram("main", 11, 4, null, null);
 
         page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
+
+        if (withTheSwitch)
+        {
+            page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
+        }
+        else
+        {
+            page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        }
+
         page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.CROSSING, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
@@ -2319,7 +2429,7 @@ public class testMassAssignLengths
         page.addComponent(componentType.FEEDBACK, 5, 0, 1, 0, 8, 14, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.FEEDBACK, 5, 2, 1, 0, 9, 15, accessoryDecoderType.MM2, null);
 
-        wire(page, 3, 1, 7);
+        if (withTheSwitch) wire(page, 3, 1, 7);
 
         page.setPageId("1");
 
@@ -2737,7 +2847,7 @@ public class testMassAssignLengths
             + " non-station\"");
 
         assertTrue(session.tilesWithAMaxTrainLength().isEmpty(), "a square that is no longer a station is counted by"
-            + " Clear All Max Train Lengths, which says \"on {0} stations\" (SET-C2) - \"it is still to be ignored for"
+            + " Clear All Station Max Train Lengths, which says \"on {0} stations\" (SET-C2) - \"it is still to be ignored for"
             + " non-stations\"");
 
         session.setStation(key(5, 1), true);
@@ -2769,7 +2879,7 @@ public class testMassAssignLengths
         assertEquals(session.getPointProperty(key(5, 1), "maxTrainLength"), -1, "precondition: the negative was not kept");
 
         assertEquals(session.tilesWithAMaxTrainLength(), Arrays.asList(key(5, 1)), "a negative maximum on a square that"
-            + " is not a station stops the railway loading, and Clear All Max Train Lengths does not offer to clear it");
+            + " is not a station stops the railway loading, and Clear All Station Max Train Lengths does not offer to clear it");
 
         assertEquals(session.clearEveryMaxTrainLength(), 1);
 

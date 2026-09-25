@@ -654,13 +654,67 @@ public class testNonAtomicRoutesNeedTheirLengths
 
         assertTrue(asks > power && asks > none, "Start asks the Atomic Routes gate before it refuses - so a refused press"
             + " still switches the running railway's setting (TDU-C8, GUI-A1)");
+    }
 
-        // AND A GATE THAT FAILS STOPS START (TDU2-C2): the gate is what keeps a run atomic over unmeasured track, and a
-        // Start that carried on past a failure of it would run non-atomic over it.
-        int started = startDoor.indexOf("started.set(true)", asks);
+    /**
+     * A gate that fails stops every run door, and gives its button back (TDU2-C2, TDD3-C8, TDU3-C4).
+     *
+     * The gate is what keeps a run atomic over unmeasured track, and a door that carried on past a failure of it would run
+     * non-atomic over it.  One door at a time, each named when it fails: Start's claim sat after Return Home's ordering
+     * in one method and was never seen failing on its own, and Return Home's had none.  Execute Timetable's gate had no
+     * catch at all, so a failure left its button greyed for the session.
+     *
+     * MUTATION: take the `return` out of any door's catch, or Execute Timetable's `setEnabled(true)`, and this fails
+     * naming the door.
+     *
+     * @throws Exception reading the source
+     */
+    @Test
+    public void testAGateThatFailsStopsEveryRunDoor() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(
+            new java.io.File("src/org/traincontrol/gui/TrainControlUI.java").toPath()), java.nio.charset.StandardCharsets.UTF_8);
 
-        assertTrue(started > asks && startDoor.substring(asks, started).contains("return;"), "Start carries on when its"
-            + " Atomic Routes gate fails - the run starts without the question being answered (TDU2-C2)");
+        String gate = "keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack()";
+
+        String[][] doors = {
+            {"Start", "private void startAutonomyActionPerformed(", "GEN-LAST:event_startAutonomyActionPerformed", null},
+            {"Return Home", "public void requestReturnToHome()", "\n    }", null},
+            {"Execute Timetable", "private void executeTimetableActionPerformed(",
+                "GEN-LAST:event_executeTimetableActionPerformed", "this.executeTimetable.setEnabled(true);"}};
+
+        for (String[] door : doors)
+        {
+            int from = source.indexOf(door[1]);
+            int to = source.indexOf(door[2], from);
+
+            assertTrue(from > 0 && to > from, "precondition: " + door[0] + "'s door is not where this looks for it");
+
+            String region = source.substring(from, to);
+
+            int asks = region.indexOf(gate);
+
+            assertTrue(asks > 0, "precondition: " + door[0] + " no longer asks the Atomic Routes gate");
+
+            int caught = region.indexOf("catch (", asks);
+
+            assertTrue(caught > asks && caught - asks < 400, door[0] + " does not catch a failure of its Atomic Routes gate"
+                + " (TDU2-C2, TDU3-C4)");
+
+            int body = region.indexOf("{", caught);
+            int closes = region.indexOf("}", body);
+
+            String handler = region.substring(body, closes);
+
+            assertTrue(handler.contains("return;"), door[0] + " carries on when its Atomic Routes gate fails - the run goes"
+                + " on without the question answered (TDU2-C2)");
+
+            if (door[3] != null)
+            {
+                assertTrue(handler.contains(door[3]), door[0] + " keeps its button greyed when its Atomic Routes gate fails"
+                    + " (TDU3-C4)");
+            }
+        }
     }
 
     /**

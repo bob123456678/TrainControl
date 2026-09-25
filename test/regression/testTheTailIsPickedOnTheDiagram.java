@@ -625,7 +625,7 @@ public class testTheTailIsPickedOnTheDiagram
 
             assertTrue(asked > 0, "precondition: " + file + " no longer asks the tail question");
 
-            int checked = source.indexOf("placementStillStands(", asked);
+            int checked = source.indexOf("whereTheAnswerGoes(", asked);
             int writes = source.indexOf("setArrivedAlong(", asked);
 
             assertTrue(writes > asked, "precondition: " + file + " no longer writes the answer's road");
@@ -654,5 +654,322 @@ public class testTheTailIsPickedOnTheDiagram
         }
 
         return null;
+    }
+
+    /**
+     * What a late answer finds, and what it leaves: the Tunnel copy the answer went to, and TunnelPre's road.
+     */
+    private static final class LateAnswer
+    {
+        Point tunnelNow;
+        java.util.List<org.traincontrol.automation.Edge> tunnelPreRoad;
+    }
+
+    /**
+     * The paste door asks for a five-unit train at Tunnel from the north; `meanwhile` runs while the question waits;
+     * then TunnelPre is clicked - read again from the diagram, since a rebuild may have drawn it anew - or the small
+     * window is cancelled; and the door returns.
+     *
+     * @param train the train pasted
+     * @param meanwhile what happens in the wait
+     * @param click true to click TunnelPre, false to cancel
+     * @return what the answer found
+     * @throws Exception from the event thread
+     */
+    private LateAnswer pasteAndAnswerLate(org.traincontrol.base.Locomotive train, java.util.concurrent.Callable<Void> meanwhile,
+        boolean click) throws Exception
+    {
+        TailCrossedPrompt.answerForTests(null);
+
+        final TunnelQuestion q = tunnelQuestion();
+
+        LateAnswer out = new LateAnswer();
+
+        out.tunnelPreRoad = q.tunnelPre.getRoad();
+
+        train.setTrainLength(5);
+
+        assertTrue(q.layout.moveLocomotive(train.getName(), q.tunnel.getName(), false), "precondition: the train could"
+            + " not be put at Tunnel");
+
+        q.tunnel.setArrivedFrom("N");
+
+        final TileKey tile = ui.getAutonomySession().getStationIndex().squareOf(q.tunnel.getName());
+
+        java.lang.reflect.Field tailField = TrainControlUI.class.getDeclaredField("tailAtTheLanding");
+        tailField.setAccessible(true);
+        tailField.set(ui, "N");
+
+        final java.lang.reflect.Method remember = TrainControlUI.class.getDeclaredMethod("rememberPlacement",
+            Point.class, TileKey.class);
+        remember.setAccessible(true);
+
+        final java.util.concurrent.atomic.AtomicBoolean returned = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            try
+            {
+                remember.invoke(ui, q.tunnel, tile);
+            }
+            catch (Exception failed)
+            {
+                throw new RuntimeException(failed);
+            }
+            finally
+            {
+                returned.set(true);
+            }
+        });
+
+        Thread.sleep(2000);
+
+        java.lang.reflect.Field armed = TailCrossedPrompt.class.getDeclaredField("armed");
+        armed.setAccessible(true);
+
+        assertNotNull(armed.get(null), "precondition: the paste door's tail question is not waiting on the diagram");
+
+        // WHATEVER HAPPENS IN THE WAIT, the question is put down and the door let go, so a failure here cannot leave it
+        // waiting for the next claim's click.
+        try
+        {
+            meanwhile.call();
+        }
+        catch (Throwable failed)
+        {
+            cancelTheQuestion();
+
+            long giveUp = System.currentTimeMillis() + 10000;
+
+            while (!returned.get() && System.currentTimeMillis() < giveUp) Thread.sleep(50);
+
+            throw failed;
+        }
+
+        if (click)
+        {
+            TileKey square = ui.getAutonomySession().getStationIndex().squareOf(q.tunnelPre.getFarthest().getName());
+
+            java.util.Set<LayoutLabel> labels = ui.getDiagramTileRegistry().labelsFor(square);
+
+            assertFalse(labels.isEmpty(), "precondition: TunnelPre is not drawn after the wait");
+
+            click(labels.iterator().next(), 1);
+        }
+        else
+        {
+            cancelTheQuestion();
+        }
+
+        long giveUp = System.currentTimeMillis() + 10000;
+
+        while (!returned.get() && System.currentTimeMillis() < giveUp) Thread.sleep(50);
+
+        assertTrue(returned.get(), "precondition: the paste door did not return after the answer");
+
+        out.tunnelNow = model.getAutoLayout().getPoint(q.tunnel.getName());
+
+        return out;
+    }
+
+    /** Cancel on the small window a waiting tail question leaves up. */
+    private static void cancelTheQuestion() throws Exception
+    {
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
+
+                if (!org.traincontrol.util.I18n.t("autolayout.ui.askArrivalSideTitle").equals(
+                    ((javax.swing.JDialog) window).getTitle())) continue;
+
+                javax.swing.JButton cancel = buttonNamed((java.awt.Container) window,
+                    org.traincontrol.util.I18n.t("ui.cancel"));
+
+                if (cancel != null) cancel.doClick();
+            }
+        });
+    }
+
+    /** The names a road is written by, for comparing roads of two builds of the railway. */
+    private static String named(java.util.List<org.traincontrol.automation.Edge> road)
+    {
+        return org.traincontrol.automation.Layout.namesOfRoad(road);
+    }
+
+    /** Takes a train off every copy and out of the setup, so the next claim starts from an empty Tunnel. */
+    private static void clearTunnel(String... names) throws Exception
+    {
+        takeDownDialogs();
+
+        Point tunnel = model.getAutoLayout().getPoint("Tunnel (southbound)");
+
+        if (tunnel != null)
+        {
+            tunnel.setLocomotive(null);
+            tunnel.setArrivedFrom(null);
+            tunnel.setArrivedAlong(null);
+        }
+
+        for (String name : names) model.deleteLoc(name);
+    }
+
+    /**
+     * An answer given after the running railway was rebuilt reaches the railway (TDU3-B1).
+     *
+     * A rebuild in the wait - any setup change from the diagram, a page left out - builds new copies of every square and
+     * puts each train back on its new one.  The door asked the copy it had placed the train on, which the rebuild leaves
+     * as it was, so its check passed and the answer went to that copy and to the setup: the railway's own copy of Tunnel
+     * never got the road, and the train's tail stopped at the switch with another train routable into it.
+     *
+     * MUTATION: ask the copy the door placed the train on rather than the running railway's, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testAnAnswerAfterARebuildReachesTheRailway() throws Exception
+    {
+        org.traincontrol.base.Locomotive train = model.newMM2Locomotive("TDU3-B1 train", 2305);
+
+        try
+        {
+            final Point before = model.getAutoLayout().getPoint("Tunnel (southbound)");
+
+            LateAnswer late = pasteAndAnswerLate(train, () ->
+            {
+                // WHAT A SETUP CHANGE FROM THE DIAGRAM POSTS.
+                javax.swing.SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
+
+                for (int turn = 0; turn < 4; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+                Point now = model.getAutoLayout().getPoint("Tunnel (southbound)");
+
+                assertTrue(now != null && now != before, "precondition: the rebuild did not build a new Tunnel copy");
+
+                assertTrue(now.getCurrentLocomotive() == train, "precondition: the rebuild did not put the train back"
+                    + " on Tunnel");
+
+                return null;
+            }, true);
+
+            assertEquals(named(late.tunnelNow.getArrivedAlong()), named(late.tunnelPreRoad), "TunnelPre was clicked after"
+                + " the railway was rebuilt, and the railway's Tunnel copy did not get the road - the train's tail stops at"
+                + " the switch and another train can be routed into it (TDU3-B1)");
+        }
+        finally
+        {
+            clearTunnel("TDU3-B1 train");
+        }
+    }
+
+    /**
+     * The same train on the copy, from the same side, with a road it did not have when the question was asked - the
+     * road a run brings it back by: a late Cancel leaves that road (TDD3-C7, the road condition alone).
+     *
+     * MUTATION: drop the road from `placementStillStands`, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testALateAnswerLeavesTheRoadARunBroughtTheSameTrainBy() throws Exception
+    {
+        org.traincontrol.base.Locomotive train = model.newMM2Locomotive("TDD3-C7 road", 2306);
+
+        try
+        {
+            final String[] driven = new String[1];
+
+            LateAnswer late = pasteAndAnswerLate(train, () ->
+            {
+                Point tunnel = model.getAutoLayout().getPoint("Tunnel (southbound)");
+
+                // THE ROAD ALONE: the same train, the same side, and the road a run drove it back in by.
+                tunnel.setArrivedAlong(tunnelQuestion().tunnelPre.getRoad());
+
+                driven[0] = named(tunnel.getArrivedAlong());
+
+                return null;
+            }, false);
+
+            assertEquals(named(late.tunnelNow.getArrivedAlong()), driven[0], "a late Cancel wrote over the road a run"
+                + " brought the same train back by - its tail stops at the switch (TDD3-C7)");
+        }
+        finally
+        {
+            clearTunnel("TDD3-C7 road");
+        }
+    }
+
+    /**
+     * Another train put on the copy by hand, with no road, the same side: a late click on TunnelPre does not give it
+     * the first train's road (TDD3-C7, the train condition alone).
+     *
+     * MUTATION: drop the train from `placementStillStands`, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testALateAnswerDoesNotGiveAnotherTrainItsRoad() throws Exception
+    {
+        org.traincontrol.base.Locomotive first = model.newMM2Locomotive("TDD3-C7 first", 2307);
+        org.traincontrol.base.Locomotive second = model.newMM2Locomotive("TDD3-C7 second", 2308);
+
+        try
+        {
+            second.setTrainLength(5);
+
+            LateAnswer late = pasteAndAnswerLate(first, () ->
+            {
+                Layout layout = model.getAutoLayout();
+                Point tunnel = layout.getPoint("Tunnel (southbound)");
+
+                assertTrue(layout.moveLocomotive(second.getName(), tunnel.getName(), false), "precondition: the second"
+                    + " train could not be put at Tunnel");
+
+                tunnel.setArrivedFrom("N");
+                tunnel.setArrivedAlong(null);
+
+                return null;
+            }, true);
+
+            assertNull(late.tunnelNow.getArrivedAlong(), "the first train's late answer gave the second train, put on the"
+                + " copy by hand, the first train's road (TDD3-C7)");
+        }
+        finally
+        {
+            clearTunnel("TDD3-C7 first", "TDD3-C7 second");
+        }
+    }
+
+    /**
+     * The same train, turned in the wait: a late click on TunnelPre - a road for a train that came in from the north -
+     * is not written for a train now recorded from the south (TDD3-C7, the side condition alone).
+     *
+     * MUTATION: drop the side from `placementStillStands`, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testALateAnswerIsNotWrittenForTheOtherSide() throws Exception
+    {
+        org.traincontrol.base.Locomotive train = model.newMM2Locomotive("TDD3-C7 side", 2309);
+
+        try
+        {
+            LateAnswer late = pasteAndAnswerLate(train, () ->
+            {
+                model.getAutoLayout().getPoint("Tunnel (southbound)").setArrivedFrom("S");
+
+                return null;
+            }, true);
+
+            assertNull(late.tunnelNow.getArrivedAlong(), "a late click on TunnelPre was written for a train recorded"
+                + " since as having come in from the other side (TDD3-C7)");
+        }
+        finally
+        {
+            clearTunnel("TDD3-C7 side");
+        }
     }
 }

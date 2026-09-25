@@ -33,9 +33,11 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * A third train stands on a rail of its own, unmoved, so a record that blamed every train for every tail has somebody to
  * blame (TDA2-C2, TDD2-C4).
  *
- * MUTATION: walk the train being routed along with the others in `isPathClear`, and the first claim fails; give each
- * train Return Home's whole record of the starting tails, and the second fails at its control; keep one owner per place
- * in it, and the second and the third fail.
+ * MUTATION: walk the train being routed along with the others in `isPathClear`, and
+ * `testTheRailwayAsksAboutEveryTailOnThePlace` fails; give each train Return Home's whole record of the starting tails
+ * (R2e), or keep one owner per place in it (R2f), and `testReturnHomeAsksAboutEveryTailOnThePlace` fails where the
+ * third train is blamed for the rail the second one's tail lay along, and
+ * `testReturnHomeKeepsTheSensorShutWhileEitherTailIsOnIt` fails too.
  *
  * @author Adam
  */

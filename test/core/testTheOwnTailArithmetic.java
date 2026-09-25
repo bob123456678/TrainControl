@@ -18,14 +18,19 @@ import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * The own-tail rule's arithmetic, on routes built by hand (OB-294; TDA-B1, TDA-C1, TDD-B1, TDD-C3).
+ * The own-tail rule's arithmetic, on routes built by hand (OB-294; TDA-B1, TDA-C1, TDD-B1, TDD-C3; TDA2-C1, TDA2-C3,
+ * TDD3-C1).
  *
  * `Layout.whyItWouldMeetItsOwnTail` asked with a body and a route written out square by square, so each claim is about
  * the arithmetic alone.  The body lies behind the head on X (the standing square), A and B, measured 1, 2 and 1: A
  * begins 1 unit behind the head and B 3.
  *
- * MUTATION: judge a return whose way round has nothing measured on it, and the first claim fails; refuse at the first
- * return rather than the tightest, and the second does; leave the unmeasured stretches out of the sentence, and the third.
+ * MUTATION: judge a return whose way round has nothing measured on it, and `testAWayRoundWithNothingMeasuredIsNotJudged`
+ * fails; refuse at the first return rather than the tightest, and `testTheRefusalNamesTheTightestReturn` does; leave
+ * the unmeasured stretches out of the sentence, and `testAPartlyMeasuredWayRoundSaysSo`; stop timing the route's own
+ * places (R2b), or time them from the near end, and `testARouteThatComesBackOverItselfIsJudged` or
+ * `testARouteIsTimedFromTheFarEndOfAPlace`; count neither the stretch the train comes back in (R2c) nor the one it left
+ * a place in (R2d), and `testTheStretchTheTrainComesBackInIsCounted`.
  *
  * @author Adam
  */
@@ -160,6 +165,34 @@ public class testTheOwnTailArithmetic
         assertTrue(seven.contains(" 6 "), "the refusal did not name the loop, 6: " + seven);
 
         assertNull(ask(loop, 6, none), "a six-unit train - clear of the switch as its head comes back to it - was refused");
+    }
+
+    /**
+     * A place the route ran over is free once the tail passes its FAR end, the end the head left by (TDD3-C1): timed from
+     * the near end, a return to a measured square was allowed that square's length more than there is.  One edge over Q
+     * (1), D (2), E (3) and back to D, nothing behind the head: from leaving D to coming back to it the head runs E's 3.
+     *
+     * MUTATION: time a route's own place from where the head reached it, and this fails - the figure is 5, and a
+     * four-unit train goes.
+     *
+     * @throws Exception from the rule
+     */
+    @Test
+    public void testARouteIsTimedFromTheFarEndOfAPlace() throws Exception
+    {
+        List<Edge> route = Arrays.asList(edge(Arrays.asList("OT:Q5", "OT:D5", "OT:E5", "OT:D5"),
+            Arrays.asList(1, 2, 3, 0)));
+
+        Map<String, Integer> none = new LinkedHashMap<>();
+
+        String four = ask(route, 4, none);
+
+        assertNotNull(four, "a four-unit train was cleared back onto D, 3 units after its head left it - its head meets"
+            + " its own tail there");
+
+        assertTrue(four.contains(" 3 "), "the refusal did not name 3, the track from leaving D to coming back: " + four);
+
+        assertNull(ask(route, 3, none), "a three-unit train - clear of D as its head comes back - was refused");
     }
 
     /**

@@ -297,6 +297,9 @@
         <test-one-class class="testTheTailCrossedQuestion"/>
         <test-one-class class="testATailPastASwitchIsAskedAbout"/>
         <test-one-class class="testTheTailIsPickedOnTheDiagram"/>
+        <test-one-class class="testARouteDrivenLocomotiveIsNotEdited"/>
+        <test-one-class class="testApplyIsGreyedWithNothingToApply"/>
+        <test-one-class class="testAThreeWayIsLitOnce"/>
         <test-one-class class="testReturnHomeKeepsClearOfTheTailsItLeaves"/>
         <test-one-class class="testATestedPathStaysOnItsRail"/>
         <test-one-class class="testBulkToolsHoldsTheWholeLayoutTools"/>
