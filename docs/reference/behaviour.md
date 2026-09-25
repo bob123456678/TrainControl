@@ -36,6 +36,12 @@ document exists to prevent comes from assuming they do.
 The middle column is about the **parking marking** — *Can Be Chosen in Full Autonomy* — and nothing
 else. The occupancy restriction below is not a tier question at all any more.
 
+**No tier moves trains over a setup with errors** (Adam, 2026-09-24, MT-263: *"trains can still be moved manually via
+both the track diagram viewer and the autonomy tab, which should throw an error instead"*). Start is refused while the
+setup has errors, and so are both hand doors, Execute Timetable and Return Home - one question, `autonomyHasErrors`, in
+the setup's own words. The two run doors were added on the rule's own reason (TDU-B1): they drive over the railway the
+same setup built, through the same dispatch. `regression.testAHandSendIsRefusedWhileTheSetupIsBroken`.
+
 **Return Home sits with Manual on the question of where a train may be sent.** This was got wrong
 once and corrected on 2026-09-06: `isAutoDestination` appears nowhere in `HomeStaging`, and Adam's
 earlier ruling stands — *"Return Home still fills it; only full autonomy leaves it alone."* The Path
@@ -1007,16 +1013,22 @@ are cut at it and it is asked for on its own, one length for all such squares on
 length to each road, which is the ruling.  A square whose geometry carries two roads but which only one leg runs over
 is ordinary track and stays in its piece.
 
-**The bulk doors on Bulk Tools.**  **Mass Assign Train Lengths** (FR-094; Adam, 2026-09-23: *"add a bulk tool to
-the autonomy editor to set missing train lengths, similar to how the station lengths are set"*) walks every train
-autonomy would run that has no length, in the same prompt, writing each answer to the locomotive itself - so Cancel in
-the editor does not take it back, and the prompt says so; a length is 1 to 20.  **Mass Assign Lengths** (FR-089) walks the pieces of the page, then its
-switches, then its crossings.  **Mass Assign Max Train Lengths** (FR-091; Adam, 2026-09-17: *"add a similar feature to
+**The bulk doors on Bulk Tools.**  **Mass Assign Locomotive Train Lengths (N missing)** (FR-094; Adam, 2026-09-23: *"add a
+bulk tool to the autonomy editor to set missing train lengths, similar to how the station lengths are set"*) walks every
+train autonomy would run that has no length, in the same prompt, writing each answer to the locomotive itself - so
+Cancel in the editor does not take it back, and the prompt says so; a length is 1 to 40, the one limit both train-length
+lists read (`TrainControlUI.ROUTE_TRAIN_LENGTH_MAX`; Adam, 2026-09-24, OB-294: *"increase choosable train lengths up to
+40 in the dropdown"*).  **It is never greyed, and its label counts the trains missing a length** (Adam, 2026-09-24, on
+MT-533: *"This option should never be greyed out completely (show the number of missing trains in parens)"*); with none
+missing it goes through every train with the length it has, which Skip keeps.  Train lengths and station maxima are named
+apart - *Locomotive* and *Station* in the labels (*"better disambiguate labels for 'train lengths' from 'max train
+lengths'"*).  **Mass Assign Lengths** (FR-089) walks the pieces of the page, then its
+switches, then its crossings.  **Mass Assign Station Max Train Lengths** (FR-091; Adam, 2026-09-17: *"add a similar feature to
 walk stations that don't have a max length set up, so I can enter it"*) walks the stations on the page that will take
 a train of any length, row by row, and asks each one's maximum - the walk refuses 0, because 0 IS "any length" and the station already has it.  A
 NEGATIVE is refused at the single door as well (SET-B1): `Layout.fromJSON` will not load a configuration
 carrying one, and the bulk clear counts any non-zero maximum so that one already stored can be taken off.  **Clear All Track Lengths** (FR-069)
-and **Clear All Max Train Lengths** (FR-092) each take their setting off every page after a confirmation that says how
+and **Clear All Station Max Train Lengths** (FR-092) each take their setting off every page after a confirmation that says how
 many.  The three WALKS - track lengths, station maxima and train lengths - share one prompt: the number box has the keyboard focus, Enter submits,
 Skip leaves the square as it was, Cancel or Escape stops, and the prompt opens where the last one was left
 until a new round is started.  The number box is asked for by name whenever the prompt gains the keyboard (Adam,
@@ -1086,7 +1098,14 @@ The editor notice about turn-round squares with no length is a different questio
     offered - the walk back takes rails that run towards the train - so a road it could only have reversed along is
     not one (OB-227, Adam: *"that isn't a realistic path"*). The same list is in
     the right-click menu under **Farthest sensor the tail crossed**, and in the autonomy editor **Pick on the
-    diagram...** outlines the sensors to click instead. Which sensors are offered is worked out from the
+    diagram...** outlines the sensors to click instead. **On the main window the question itself is put on the diagram**
+    (FR-100; Adam, 2026-09-24: *"highlight possible squares on the diagram and ask the user to click one.  only show the
+    list if there are options on another page"*): the sensors are lit and a click on one answers it, with **Not known**
+    and **Cancel** in a small window.  The list is asked where a choice is on another page or not drawn, and where an
+    editor window is open, whose squares do not take the click (TDU-C1).  The rest of a double-click on the sensor that
+    answered is the question's, not the sensor's (TDU-B3), and the paste reads everything about its landing before the
+    question waits, because the window stays live while it does (TDU-B2).  `regression.testTheTailIsPickedOnTheDiagram`.
+    Which sensors are offered is worked out from the
     measured lengths of the roads back and is a suggestion: what blocks track is still this walk, reading the
     road chosen. A road given this way runs along rails laid towards the train, as a run's road does. `core.testTheTailCrossedQuestion`,
     `regression.testTheTailCanBeGivenInTheEditor`.
@@ -1127,6 +1146,23 @@ The editor notice about turn-round squares with no length is a different questio
   further. On his railway a train turned at Tunnel was cleared south through the points at column 7 with a train in
   TunnelRightPark lying across them; 10 such cases on 4 squares. Now the other trains are asked about there too, by
   the railway and by Return Home alike. `core.testATurnedTrainIsNotSentIntoAnotherTail`.
+- **Except round a loop into its own tail** (OB-294; Adam, 2026-09-24: *"make sure the model factors in whether the
+  train will clear the area before it crosses over"*, and *"the check should pass if the train would be gone (i.e. if
+  that one was only length 4, for example)"*). **The head may come back to a place only once the tail has left it.**
+  The body as it stands is the one the walk above claims; the route's own places are timed as the head runs them. A
+  train longer than the measured track run between leaving a place and coming back to it is refused, and the refusal
+  names the tightest such figure on the route - the longest train that goes (TDA-C1). **Only measured track binds**: a
+  way round with nothing measured on it is not judged, and where stretches of it have no length the refusal says how
+  many, which is the other way past (TDA-B1). **After a turn the body is ahead of the train** and moves with it - a turn
+  on the way, or a train leaving over its own tail - so the question starts again. Asked by every tier, both hand doors
+  (with the sentence), Why not Moving? and Return Home's planner. On his railway the way round from BottomSecondary by
+  the tunnel back to row 11 measures nine units, so a four-unit train goes and a twenty-unit one does not.
+  `core.testATrainDoesNotRunIntoItsOwnTail`, `core.testTheOwnTailArithmetic`.
+- **Every other train's tail is asked about, not only the one the record kept** (TDD-A1). The claims record one train
+  per place - the last walked, in an order nobody chose - and two tails fouling one switch from its two legs both claim
+  its square. Walked with the others, the moving train's own claim could stand where another's was, and its way out
+  through the switch was cleared into that train. So a train's route is judged against every OTHER train walked without
+  it, and Return Home keeps each train's claims apart. `core.testATailIsNotHiddenByAnother`.
 - **One tail per train, and a running train's starts at its head** (Adam, 2026-09-21, OB-243: *"the
   tail is certain at departure and shouldn't change.  You also know which way the train went ... Just
   unlock the rest of the diagram once the tail by length is far enough away"*). A locked path reserves
@@ -1527,7 +1563,7 @@ of the edge, and how long the train is.
   its platforms and nowhere else is in this state for most of its paths.
 - **A train whose length is 0**, which is what `Locomotive.trainLength` holds until somebody sets it.
   `behind >= trainLength` is then true the first time every edge is asked about, so the whole railway
-  is handed back under the train however well the track is measured.  **Mass Assign Train Lengths** on
+  is handed back under the train however well the track is measured.  **Mass Assign Locomotive Train Lengths** on
   Bulk Tools (§5b, FR-094) asks every train autonomy would run that has none.
 
 In either state the edge behind a moving train is released while the train is still lying across it,
@@ -2060,6 +2096,9 @@ editor through the same dialog - the list, **Click It on the Diagram**, **Enter 
 comma-separated), **Remove Selected**, **Done** - and each may hold several signals, because a platform reachable from
 two ends needs one on each approach.
 
+Each of the two items says what its guard does in a tooltip (OB-293; Adam, 2026-09-24: *"add brief tooltips on what
+entry guards and exit guards are"*).
+
 **The exit guard** - *Exit Guard Signal...* on the menu (Adam, 2026-09-23: *"rename it, but add Signal at the end
 (Exit Guard Signal, Entry Guard Signal)"*; it was *Signal Protecting This Station*).  Its signals are RED while the platform is claimed - a train
 standing there, or a locked path that has reserved it - and GREEN when it is free.  An aspect DERIVED from the
@@ -2304,7 +2343,7 @@ Comments in this codebase cite review findings constantly - `RGD-B2`, `MON-C6`, 
 locomotive but `DY3-C7` is a finding - because that is how a comment says *why* rather than *what*.
 The documents those ids came from are gone. **The findings are not.**
 
-All of them are in `docs/manual-tests/triage.db`, in the `finding` table - **4,075 rows for 3,718
+All of them are in `docs/manual-tests/triage.db`, in the `finding` table - **4,146 rows for 3,789
 findings**, because a finding written up in two documents has a row for each, and reading the row count
 as a finding count is a mistake three documents have made (VD15-T5) - with the document they
 came from, the line in it, the severity, what it was about, the file and line of the evidence, the

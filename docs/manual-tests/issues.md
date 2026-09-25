@@ -1246,6 +1246,24 @@ EN57-203 from bottomsecondary to lowerfront may run over its own tail. make sure
 
 separately, increase choosable train lengths up to 40 in the dropdown.
 
+### OB-295 - 2026-09-24 - the 'unavailable while occupied' notice describes a standing train on a square trains only pass
+
+**Kind:** bug  
+**Raised from:** follow-up from the validation round, TDA-C9  
+**Filed:** 2026-09-24  
+**Build:** commit b62f1976 and later - found by reading, not on the railway
+
+`63c4fdc0` keeps a restriction on a square made pass-through, and lists every restriction as *"{0} is unavailable while {1} is occupied."*  On a square that is not a station only the half the build writes into lock edges is live: a ROUTE running into the watched square holds it back, and a train STANDING there holds nothing back, because the standing half is asked only of a path's destination, which a pass-through square never is.  So the sentence describes the half that does not apply.  A notice, and the wording is yours; a pass-through variant might read *"... cannot be passed while a train is being sent to {1}"*.
+
+### OB-296 - 2026-09-24 - the right-click Place item stands a train on a random copy of the square
+
+**Kind:** bug  
+**Raised from:** follow-up from the validation round, TDU-B4 - older than the range (`bd27c357`, 2026-08-18)  
+**Filed:** 2026-09-24  
+**Build:** commit b62f1976 and later - found by reading, not on the railway
+
+Three placement doors keep the train's heading and stand it on the copy that faces that way (OB-270, GUI-B1, OB-284).  The fourth - the diagram's right-click **Place {0}** for the active locomotive - still takes one of the square's usable copies at random (`LayoutRightclickAutonomyMenu.placeSomewhereLegal`), so the same train placed the same way faces either way.  behaviour.md already calls random placement superseded by your ruling of 2026-09-12, *"as long as the direction isnt flipped"*.  The question for you: should this door follow the paste's rule, or keep choosing for the operator?
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
@@ -1265,7 +1283,7 @@ not, never both.
 | 2026-09-24 | OB-294 | bug | A train is not sent round a loop into its own tail: the head may come back to a place only once the tail has left it - every tier, both hand doors, and Return Home.  Train lengths go to 40 in both lists. | - | `MT-571`, `MT-572` |
 | 2026-09-24 | FR-102 | feature request | While Why not Moving? waits for its click, the squares with trains on them are outlined.  Greying everything else - the "consider" - is not done. | - | `MT-570` |
 | 2026-09-24 | OB-293 | bug | The exit- and entry-guard items say what each guard does. | - | `MT-569` |
-| 2026-09-24 | OB-235 | bug | One-Way Run is greyed, and disarmed, on a page left out, as Test Route and Why not Moving? are (MT-528's note). | - | `MT-568` |
+| 2026-09-21 | OB-235 | bug | One-Way Run is greyed, and disarmed, on a page left out, as Test Route and Why not Moving? are (MT-528's note). | - | `MT-568` |
 | 2026-09-24 | FR-100 | feature request | The tail question is asked on the diagram: its sensors lit, a click on one answers it; the list where a sensor is on another page. | - | `MT-565` |
 | 2026-09-24 | FR-099 | feature request | prettify usage graph - **for v3.1.0**, on Adam's word of 2026-09-24 (*"FR-099 for later (mark it as for v3.1.0)"*).  Picked up and not built. | pending | - |
 | 2026-09-24 | FR-101 | feature request | A station set to No - Nothing Can Pass is said to be, once, in place of the two reachability sentences. | - | `MT-562` |

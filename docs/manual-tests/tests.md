@@ -68,8 +68,11 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-570](#mt-570) | 2026-09-24 | Why not Moving? outlines the squares with trains while it waits | fixed unvalidated | FR-102, MT-516 |
 | [MT-571](#mt-571) | 2026-09-24 | A train is not sent round a loop into its own tail | fixed unvalidated | OB-294 |
 | [MT-572](#mt-572) | 2026-09-24 | Train lengths go to 40, in both lists | fixed unvalidated | OB-294 |
+| [MT-573](#mt-573) | 2026-09-24 | Execute Timetable and Return Home refuse a setup with errors | fixed unvalidated | MT-263, TDU-B1 |
+| [MT-574](#mt-574) | 2026-09-24 | A double-click on a lit sensor answers the tail question and does not flip the sensor | fixed unvalidated | FR-100, TDU-B3 |
+| [MT-575](#mt-575) | 2026-09-24 | From the autonomy editor the tail question is the list | fixed unvalidated | FR-100, TDU-C1 |
 
-Everything else - 531 of 572 - needs nothing from you unless the area changes again:
+Everything else - 531 of 575 - needs nothing from you unless the area changes again:
 454 **fixed validated** and 77 **superseded**.
 
 ---
@@ -26356,6 +26359,10 @@ Validated on your *Works* of 2026-09-24.
 
 - Step 4: both still show their maximum.
 
+**Claude, 2026-09-24.**
+
+**The item was renamed the same day** (2026-09-24, MT-533): it is now **Clear All Station Max Train Lengths (N)**.  The steps run as written with that label.
+
 ---
 
 <a id="mt-519"></a>
@@ -26381,6 +26388,10 @@ Validated on your *Works* of 2026-09-24.
 
 - Step 3: the hint line says how many were cleared - the N from step 2.
 - Step 4: both stations show Maximum Train Length (any).
+
+**Claude, 2026-09-24.**
+
+**The item was renamed the same day** (2026-09-24, MT-533): it is now **Clear All Station Max Train Lengths (N)**.  The steps run as written with that label.
 
 ---
 
@@ -26408,6 +26419,10 @@ Validated on your *Works* of 2026-09-24.
 - The prompt names the station and says which of how many it is, and the station is outlined.
 - Step 5: its Station menu shows the number you typed.
 
+**Claude, 2026-09-24.**
+
+**The item was renamed the same day** (2026-09-24, MT-533): it is now **Mass Assign Station Max Train Lengths...**.  The steps run as written with that label.
+
 ---
 
 <a id="mt-521"></a>
@@ -26431,6 +26446,10 @@ Validated on your *Works* of 2026-09-24.
 **Expected**
 
 - Step 3: it says 0 means any length and asks again; nothing is written.
+
+**Claude, 2026-09-24.**
+
+**The item was renamed the same day** (2026-09-24, MT-533): it is now **Mass Assign Station Max Train Lengths...**.  The steps run as written with that label.
 
 ---
 
@@ -27967,6 +27986,10 @@ Validated on your *Works* of 2026-09-24.
 
 *What this is:* `core.testMassAssignLengths.testTheTrainWalkItemCountsAndIsNeverGreyed` and `testWithEveryTrainMeasuredTheWalkShowsEachAndSkipKeepsIt`.
 
+**Claude, 2026-09-24.**
+
+**Two sentences corrected in the validation round** (2026-09-24): with no train placed at all, the item's tooltip now says so, as a click does; and typing 0 for a train that has a length says a length is 1 to 40 and Skip keeps the one it has, not that 0 is "what it has now".
+
 ---
 
 <a id="mt-567"></a>
@@ -28065,6 +28088,10 @@ Validated on your *Works* of 2026-09-24.
 
 *What this is:* `regression.testTheEditorSaysWhatItsToolsDo.testWhyNotMovingOutlinesTheTrains`.
 
+**Claude, 2026-09-24.**
+
+**Step 2, said more exactly** (2026-09-24): the outlines that mark where to click go once a square has been asked about; the answer then draws what it draws, as before.
+
 ---
 
 <a id="mt-571"></a>
@@ -28094,6 +28121,10 @@ Validated on your *Works* of 2026-09-24.
 
 *What this is:* `core.testATrainDoesNotRunIntoItsOwnTail`: 20 refused and 4 clear on the frozen railway, the refusal's figure true at the figure and false one past it, a train leaving over its own tail and a turn on the way not refused, and Return Home planning no such route - all red under their own mutations.  Measured on the frozen railway, no route between stations comes back to a train's own track in fewer than 9 units, so no train of 9 or less is refused by this anywhere.
 
+**Claude, 2026-09-24.**
+
+**What you will see at steps 2 and 3, from the validation round** (2026-09-24).  LowerFront is not offered at all for a 20- or a 10-unit EN57-203: both send doors list only routes the railway would accept, and every way to LowerFront is refused.  The sentence the steps quote is shown by Why not Moving? on the diagram, clicked on BottomSecondary, and in the locomotive list's Why window.  At step 4 LowerFront is offered.  Two changes since the entry was written: the figure named is the tightest return on the route, and a way round with nothing measured on it is not judged at all - on your railway the figure is still 9.
+
 ---
 
 <a id="mt-572"></a>
@@ -28120,5 +28151,80 @@ Validated on your *Works* of 2026-09-24.
 - Step 3: it shows 40, and after OK the locomotive is still 40 long.
 
 *What this is:* `regression.testAPlacedTrainRecordsWhereItCameFrom.testTheEditViewOffersEveryLengthTheMenuDoes`.
+
+---
+
+<a id="mt-573"></a>
+
+### MT-573 - 2026-09-24 - Execute Timetable and Return Home refuse a setup with errors
+
+**Disposition:** fixed unvalidated
+**From:** MT-263, TDU-B1
+
+**Written:** 2026-09-24
+
+**What was wrong.**  MT-263 made the two hand doors refuse to send a train while the setup has errors, as Start is refused.  The two run doors that move trains without Start - Execute Timetable and Return Home - still drove trains over the railway the broken setup had last built.  They drive over the same railway, through the same dispatch, so they ask the same question.
+
+**Steps**
+
+1. Close TrainControl and copy your layout folder's `config/autonomy` folder somewhere safe.
+2. Break the setup as MT-263 did: in the autonomy editor, untick Exclude Page on 4 - Combined, and close the editor saving the change.
+3. Press Return Home.
+4. If you have a captured timetable, press Execute Timetable.
+5. Close TrainControl and copy the saved `config/autonomy` folder back.
+
+**Expected**
+
+- Step 3: no train moves; a message says the setup cannot be used yet and how many things have to be dealt with.
+- Step 4: the same message, and the button is still usable afterwards.
+
+*What this is:* `regression.testAHandSendIsRefusedWhileTheSetupIsBroken.testTheRunDoorsAskItToo`, and `testABrokenSetupIsRefusedAndAMendedOneIsNot` on a real window.
+
+---
+
+<a id="mt-574"></a>
+
+### MT-574 - 2026-09-24 - A double-click on a lit sensor answers the tail question and does not flip the sensor
+
+**Disposition:** fixed unvalidated
+**From:** FR-100, TDU-B3
+
+**Written:** 2026-09-24
+
+**What was wrong.**  The first click of a double-click answered the question and took it down; the second then reached the sensor's own click and flipped it - a faked occupancy change, which an armed route acts on.
+
+**Steps**
+
+1. Give 75 407 DB a length of 5 and place it on Tunnel, southbound, as for MT-565.
+2. Double-click TunnelPre on the diagram.
+
+**Expected**
+
+- Step 2: the question is answered - the lights go out and the tail is drawn back towards TunnelPre - and TunnelPre's sensor shows as it did before the double-click.
+
+*What this is:* `regression.testTheTailIsPickedOnTheDiagram.testADoubleClickAnswersAndDoesNotFlipTheSensor`.
+
+---
+
+<a id="mt-575"></a>
+
+### MT-575 - 2026-09-24 - From the autonomy editor the tail question is the list
+
+**Disposition:** fixed unvalidated
+**From:** FR-100, TDU-C1
+
+**Written:** 2026-09-24
+
+**What was wrong.**  Placed from the autonomy editor, a train's tail question was put on the main window's diagram - its squares lit in the editor too, but a click there answers nothing, and the question's small window sat under the editor.
+
+**Steps**
+
+1. Give 75 407 DB a length of 5.  In the autonomy editor on 1 - Main, right-click Tunnel and place 75 407 DB there, arriving from the north.
+
+**Expected**
+
+- The question is the list, in front of the editor, and choosing TunnelPre in it answers it.
+
+*What this is:* `regression.testTheTailIsPickedOnTheDiagram.testWithAnEditorOpenTheQuestionIsTheList`.
 
 ---

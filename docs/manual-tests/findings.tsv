@@ -2807,6 +2807,53 @@ TD-6	2026-08-23-three-day-history.md	Closed	High	the three-way point order test 
 TD-7	2026-08-23-three-day-history.md	Closed	High (both packaged) / Medium (which wins)	the release jar packages the superseded libraries
 TD-8	2026-08-23-three-day-history.md	Closed	High	one locomotive, one station: enforced at one door of two
 TD-9	2026-08-23-three-day-history.md	Closed	High	the extraction that left the original behind, and then had to be fixed twice
+TDA-B1	TDA.md	Closed	Fixed - claim c2251ace (red first), fix 1cd99bbc: a return is judged only where the route 	OB-294 refuses a loop that has no measured square on it, judging it by the train's own measured body, and gives no way past
+TDA-C1	TDA.md	Closed	Fixed - claim c2251ace (red first), fix 1cd99bbc: every return is asked and the tightest n	The own-tail refusal names the first return's figure, not the tightest, so its remedy can be false
+TDA-C10	TDA.md	Open - Adam's decision	Open - Adam's decision: MT-555's sentence says a longer train "may block" by his ruling, a	The platform run-in notice promises a longer train is admitted, where the railway refuses one longer than the measured route in
+TDA-C2	TDA.md	Closed	Fixed - pinned in c2251ace: at one unit past the figure every route to LowerFront is refus	MT-571's step 3 (length 10 refused) depends on every route to LowerFront, and the class measures only the shortest
+TDA-C3	TDA.md	Closed	Fixed - claim testReturnHomeJudgesAMovedTrainByTheRoadItCameAlong in 7ecc2c65; mutation H1	Return Home's own-tail check for a train the plan has already moved is not pinned by any test
+TDA-C4	TDA.md	Closed	Fixed - 7ecc2c65: the body is walked after the three cheap refusals and memoised per train	Return Home walks the mover's body before its three cheap refusals, once per destination, inside a time-limited search
+TDA-C5	TDA.md	Closed	Fixed - behaviour.md 5c states the rule (this round's documents commit).	`behaviour.md` does not state the OB-294 rule
+TDA-C6	TDA.md	Closed	Fixed - as TDD-A1: claim ce9dd7bd (red first), fix e501b56d.	The tail-claim map records one train per square, so the moving train's own claim can hide another train's tail
+TDA-C7	TDA.md	Closed	Fixed - claim 22cf6fa7 (red first), fix 10d7f523: the count stops at a switch, a permanent	The MT-552 half-measured count stops only at a switch; both rules it mirrors also stop at permanent turnouts and crossings. The method's javadoc and m
+TDA-C8	TDA.md	Open - Adam's decision	Open - Adam's decision: whether "they only accept arrivals from one side" includes turning	`e09fe989` stops asking for lengths on a barred approach at a turn-round square, but the build still lets trains arriving that way turn there
+TDA-C9	TDA.md	Open	Follow-up - filed as OB-295; the wording is Adam's.	The new "unavailable while occupied" notice describes a standing-train rule that a non-station never applies
+TDA-D1	TDA.md	Closed	Checked - clean.	OB-294's arithmetic holds in the cases hand-checked
+TDA-D2	TDA.md	Closed	Checked - clean.	OB-294's siblings are all asked, in the same order, and the event thread takes no monitor
+TDA-D3	TDA.md	Closed	Checked - clean.	A train with no known side is not judged, which is consistent with every tail rule
+TDA-D4	TDA.md	Closed	Checked - clean.	OB-230's Return Home estimate never overstates the moves left, and its budget shares are as documented
+TDA-D5	TDA.md	Closed	Checked - clean.	OB-291: a remembered maximum on a demoted station is read nowhere
+TDA-D6	TDA.md	Closed	Checked - clean.	AUT3-C3, MT-477 and OB-285's tail changes are as described
+TDA-D7	TDA.md	Closed	Checked - clean.	e09fe989's barred-side test and FR-101's closed station
+TDA-D8	TDA.md	Closed	Checked - clean.	fab81423's `trainLengths()` and the Return Home own-tail claim's missing floor
+TDD-A1	TDD.md	Closed	Fixed - claim ce9dd7bd (red first, on a hand-built switch shared by two legs; the frozen r	A moving train's own tail claim can overwrite, and so hide, another train's tail on a shared switch square (OB-285, AUT2-C2)
+TDD-B1	TDD.md	Closed	Fixed - as TDA-B1.	The own-tail rule reads a loop with no lengths as zero long, so on a partly measured railway it refuses any return over a measured body (OB-294)
+TDD-C1	TDD.md	Closed	Fixed - comment on MT-571 (LowerFront not offered; the sentence is in Why not Moving? and 	MT-571 expects a refusal dialog that neither send door can show: LowerFront is not offered at all
+TDD-C10	TDD.md	Closed	Fixed - as TDU-C7.	Stale comment, javadoc and message in the train-length walk after MT-533
+TDD-C11	TDD.md	Open - Adam's decision	Fixed - javadoc 865b4168 says what the untick does since OB-254. Open - Adam's decision: k	autoLoadOffAfterLegacyImport's reason stopped being true when OB-254 removed autonomy.json; the untick now causes what it says it only reports
+TDD-C12	TDD.md	Closed	Not a defect - mutation H2 (any plan first) turns testAnEasyArrangementStillGetsTheShortes	OB-230's control carries a MUTATION line that was never run and may not hold
+TDD-C13	TDD.md	Closed	Fixed - open-questions.md names the 13 rows OB-247 added.	open-questions.md's store arithmetic does not add up
+TDD-C14	TDD.md	Closed	Fixed - the receipt says 2026-09-21.	The OB-235 receipt gives the wrong filing date
+TDD-C2	TDD.md	Closed	Fixed - behaviour.md 5c.	behaviour.md has no own-tail rule, and section 5c still says a train never blocks itself
+TDD-C3	TDD.md	Closed	Fixed - as TDA-C1.	The own-tail refusal names the first return's gap, not the tightest, so its remedy can be false on a route that comes back twice
+TDD-C4	TDD.md	Closed	Fixed - the 9 pinned in c2251ace; mutation OT4 (body left one unit late) red. The census s	OB-294's claims pin that the sentence agrees with itself, not the measured figure; "9 units" and "no train of 9 or less is refused anywhere" are unpin
+TDD-C5	TDD.md	Closed	Fixed - behaviour.md's Bulk Tools paragraph.	behaviour.md's Bulk Tools paragraph is stale since 2026-09-24: "a length is 1 to 20", three renamed items, and the train walk's new every-train mode
+TDD-C6	TDD.md	Closed	Fixed - comments on MT-518 to MT-521 giving the labels.	MT-518 to MT-521, unrun, send Adam to menu items by labels that were renamed the same day
+TDD-C7	TDD.md	Closed	Fixed - pin testTheOneWayButtonIsGreyedAndPutDownOnAPageLeftOut in a961695e; mutations P1,	OB-235's claim covers the Bulk Tools item only; the toolbar button, the disarm and the click guard that MT-568 checks are unclaimed
+TDD-C8	TDD.md	Closed	Fixed - as TDU-C3; the class javadoc says which claim sees which mutation.	testAHandSendIsRefusedWhileTheSetupIsBroken's MUTATION line claims a mutation its claims cannot see
+TDD-C9	TDD.md	Closed	Fixed - as TDU-C11.	FR-102's claim reaches only the no-railway branch of whyWaitsOn, and nothing claims the outlines go after the click
+TDD-D1	TDD.md	Closed	Checked - clean.	OB-294's arithmetic checked: ends of places, the standing square, turns, and the planner's use
+TDD-D10	TDD.md	Closed	Checked - clean.	OB-230's budget shares, and the lowered precondition in testReturnHomeKeepsClearOfTheTailsItLeaves
+TDD-D11	TDD.md	Closed	Checked - clean.	Receipts name the right tests
+TDD-D12	TDD.md	Closed	Checked - clean.	The checker-oracle change in 4c5c8702 is sound
+TDD-D2	TDD.md	Closed	Checked - clean.	OB-294 test class: its MUTATION lines match what its claims can see
+TDD-D3	TDD.md	Closed	Checked - clean.	MT-477's stop-at-the-switch claim, and its behaviour.md entry
+TDD-D4	TDD.md	Closed	Checked - clean.	Counts quoted against the file and the store
+TDD-D5	TDD.md	Closed	Checked - clean.	live-snapshot README against the sources
+TDD-D6	TDD.md	Closed	Checked - clean.	Pointers left for the documents 827d3444 deleted
+TDD-D7	TDD.md	Closed	Checked - clean.	Labels the new MT entries quote
+TDD-D8	TDD.md	Closed	Checked - clean.	The forty-unit maximum reaches every consumer
+TDD-D9	TDD.md	Closed	Checked - clean.	OB-291: a remembered maximum is ignored everywhere it could act
 TDR-A1	2026-09-14-TDR-ten-day-review.md	Closed	Fixed	an import from a layout numbered differently re-labels this layout's own pages
 TDR-B1	2026-09-14-TDR-ten-day-review.md	Closed	Fixed (stated in the body)	a train that declines the turn at a may-turn square loses the route its tail follows
 TDR-B2	2026-09-14-TDR-ten-day-review.md	Closed	Fixed (stated in the body)	the facing re-stand dropped the route as well
@@ -2826,6 +2873,30 @@ TDR-C6	2026-09-14-TDR-ten-day-review.md	Closed	Fixed	an import made while no pag
 TDR-C7	2026-09-14-TDR-ten-day-review.md	Closed	Fixed	a field this version does not model was saved in the exporter's numbering
 TDR-C8	2026-09-14-TDR-ten-day-review.md	Closed	Fixed	Return Home's reasons named the builder's copies
 TDR-C9	2026-09-14-TDR-ten-day-review.md	Closed	Fixed	Return Home's plan lines still name the builder's copies
+TDU-B1	TDU.md	Closed	Fixed - claim 664fe577 (red first), fix 492ad392: Execute Timetable and Return Home ask th	MT-263 refuses a hand send while the setup has errors at two of the four doors that move trains outside Start; Execute Timetable and Return Home still
+TDU-B2	TDU.md	Closed	Fixed - claim ce2c908f (red first), fix fc574093: the paste reads its landing into locals 	FR-100 made the tail question non-modal: while it waits on the diagram the whole window is live, and the paste door reads its landing back from instan
+TDU-B3	TDU.md	Closed	Fixed - claim ce2c908f (red first), fix fc574093: the rest of a double-click on the answer	a double-click on a lit sensor answers the tail question and then flips the sensor, which is the faked occupancy change `takesTheClick` exists to prev
+TDU-B4	TDU.md	Open	Follow-up - older than the range (bd27c357); filed as OB-296 with the question for Adam.	the right-click "Place {0}" item stands a train on a random copy of the square, the one placement door that OB-270, GUI-B1 and OB-284's facing rule ne
+TDU-C1	TDU.md	Closed	Fixed - claim ce2c908f (red first), fix fc574093: with an editor window open the question 	the autonomy editor's Place / Edit Locomotive... door now puts the tail question on the main window's diagram, where the editor's own lit squares cann
+TDU-C10	TDU.md	Closed	Fixed - behaviour.md (this round's documents commit): OB-294, MT-263 with the run doors, F	behaviour.md does not yet describe the range's UI rules, and names two walks by their old labels
+TDU-C11	TDU.md	Closed	Fixed - pin testWhyNotMovingFollowsTheRunningRailway in a961695e; mutations P3 (setup read	FR-102's claim reaches only the fallback arm of `whyWaitsOn`
+TDU-C2	TDU.md	Closed	Fixed - pin testAQuestionAskedOnTheEventThreadIsAnsweredByAClick in ce2c908f (green, the p	FR-100's claim drives only the off-thread latch; every real placement door asks on the event thread, through the secondary loop nothing tests
+TDU-C3	TDU.md	Closed	Fixed - pin testABrokenSetupIsRefusedAndAMendedOneIsNot on a real window in 664fe577; muta	MT-263's claim pins the static sentence and a substring of the method the doors call; turning the doors' method off survives both tests
+TDU-C4	TDU.md	Closed	Fixed - pin testBothHandDoorsSayWhenATrainWouldMeetItsOwnTail in 664fe577; mutation D3 red	OB-294's sentence at the two hand doors has no claim; either door's block can be deleted with the battery green
+TDU-C5	TDU.md	Closed	Not a defect - on a built graph a rail's length includes the square it arrives at, so a tr	MT-477's "the roads part" treats an unmeasured rail as covering nothing, so any junction with one measured and one unmeasured rail back asks every tra
+TDU-C6	TDU.md	Open - Adam's decision	Open - Adam's decision on the wording: say in the Atomic Routes refusal that answered-0 tr	a deliberate 0 is "not missing" to the editor's walk and its Unmeasured Track display, but the Atomic Routes refusal still names that track and says "
+TDU-C7	TDU.md	Closed	Fixed - claim 26bdd47b (red first), fix 858317f2: the tooltip with no train placed, and th	the train walk's second mode (MT-533) reuses sentences that are false in it
+TDU-C8	TDU.md	Closed	Fixed - claim 664fe577 (red first), fix 492ad392: Return Home asks the gate after its refu	GUI-A1 moved the Atomic Routes gate after Execute Timetable's refusals; Start and Return Home still switch the railway to atomic on a press they then
+TDU-C9	TDU.md	Closed	Fixed - b62f1976, and a fifth: tilesBlockedByStandingTrains' javadoc said the same.	comments the range left describing the code before it
+TDU-D1	TDU.md	Closed	Checked - clean.	OB-294 at the hand doors asks the railway's own method, in the same place at both
+TDU-D2	TDU.md	Closed	Checked - clean.	MT-263's two doors ask in the right order
+TDU-D3	TDU.md	Closed	Checked - clean.	the MT-467 sync sweep is complete
+TDU-D4	TDU.md	Closed	Checked - clean.	the message bundles
+TDU-D5	TDU.md	Closed	Checked - clean.	the old autonomy tab's removal took only the JSON handlers
+TDU-D6	TDU.md	Closed	Checked - clean.	Echo Sent Commands cannot reach a live railway
+TDU-D7	TDU.md	Closed	Checked - clean.	Import Routes' re-arm question
+TDU-D8	TDU.md	Closed	Checked - clean.	the orange and grey marks across a route tile, and per road
+TDU-D9	TDU.md	Closed	Checked - clean.	smaller changes read and found as described
 TDY-B1	TDY.md	Closed	Fixed - ac5fe2f2 (claim 8873b0a4, red first): a home held to a facing is home only on a co	Return Home counts the turning twin as home, and the turning twin faces the other way: at a may-reverse home a train can still come home turned round
 TDY-B2	TDY.md	Closed	Fixed - a67452cd: the half-measured notice walks the berth's own square	OB-278 says the half-measured notice now counts the berth's own square; it never looks at it, so the one half-measured state OB-278 creates is not war
 TDY-C1	TDY.md	Closed	Fixed - ce8983ce (claim 273727eb, red first): the pre-check asks `homeCopiesOf`	The IMPOSSIBLE pre-check still asks about any copy of the home square, while the goal now needs the home's arrival
