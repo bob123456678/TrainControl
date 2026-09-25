@@ -10391,7 +10391,9 @@ public class Layout
      * (TDA-B1: judged by the body, a loop with no length on it was refused at every length, though it may be thirty
      * units long).  Unmeasured squares within a measured way round make it shorter than it is, which refuses rather than
      * permits - so the refusal says how many stretches of the way round have nothing measured on them, and that measuring
-     * them is the way past.
+     * them is the way past: the stretch it left the place in, those between, and the one it comes back in, each where the
+     * way round runs over some of it.  A stretch is an edge, sensor to sensor - coarser than the pieces Mass Assign asks
+     * for, so an edge measured only at its switch is not counted (TDA2-C1).
      *
      * **The tightest return is the one named** (TDA-C1).  A route that comes up behind the body meets it more than once,
      * and a later return can allow less than an earlier one; the refusal's "a train of N units or shorter" has to be true
@@ -10431,8 +10433,15 @@ public class Layout
         Map<String, Integer> routeRunWhenLeft = new HashMap<>();
         Map<String, Integer> edgeWhenLeft = new HashMap<>();
 
-        // Which edges of the route have nothing measured on them - the grain lengths are given at, a stretch between two
-        // sensors; a square with no length inside a measured stretch is how a stretch's length is stored, not a gap.
+        // And whether the route ran on, in the edge it left each place in, over other places of that edge.
+        Map<String, Boolean> leftAtTheEdgeEnd = new HashMap<>();
+
+        // Which edges of the route have nothing measured on them.  THE GRAIN IS THE EDGE, sensor to sensor, because a
+        // square with no length inside a measured edge is how a short piece drawn over several squares is stored, not a
+        // gap, and the rule cannot tell the two apart square by square (counted by square, Adam's measured railway had 21
+        // on one way round).  Coarser than the pieces lengths are given in - an edge cut at its switches - so an edge
+        // whose only length is on its switch counts as measured here, and between Mass Assign sittings the note can say
+        // fewer than there are, or nothing (TDA2-C1).  It never counts a measured one.
         List<Boolean> edgeUnmeasured = new ArrayList<>();
 
         // LEAVING OVER ITS OWN BODY: the first place the route goes to, other than the square the train stands on, is
@@ -10487,6 +10496,9 @@ public class Layout
 
             edgeUnmeasured.add(edgeMeasured <= 0);
 
+            // How many places of this edge the head has run over before the one it is at.
+            int runInThisEdge = 0;
+
             for (int at = 0; at < ids.size(); at++)
             {
                 String place = ids.get(at);
@@ -10509,11 +10521,21 @@ public class Layout
                         tightestOn = edge;
                         tightestUnmeasured = 0;
 
-                        // The stretches wholly between leaving the place and coming back to it.
-                        for (int k = edgeWhenLeft.get(place) + 1; k < i; k++)
+                        // The stretches of the way round with nothing measured on them (TDA2-C1, TDD2-C3): the one the
+                        // place was left in, where the route ran on in it; every one wholly between; and the one it
+                        // comes back in, where it ran over something of it first.  One edge holding both the leaving
+                        // and the return is never judged unmeasured - nothing measured, nothing judged.
+                        int leftIn = edgeWhenLeft.get(place);
+
+                        if (leftIn >= 0 && leftIn < i && edgeUnmeasured.get(leftIn)
+                            && !leftAtTheEdgeEnd.get(place)) tightestUnmeasured++;
+
+                        for (int k = leftIn + 1; k < i; k++)
                         {
                             if (edgeUnmeasured.get(k)) tightestUnmeasured++;
                         }
+
+                        if (leftIn < i && runInThisEdge > 0 && edgeUnmeasured.get(i)) tightestUnmeasured++;
                     }
                 }
 
@@ -10522,6 +10544,18 @@ public class Layout
                 freeOnceTheTailPasses.put(place, travelled);
                 routeRunWhenLeft.put(place, travelled);
                 edgeWhenLeft.put(place, i);
+
+                // Left at the edge's end when every place after it in the edge is the same square again.
+                boolean atTheEnd = true;
+
+                for (int after = at + 1; after < ids.size(); after++)
+                {
+                    if (!ids.get(after).equals(place)) atTheEnd = false;
+                }
+
+                leftAtTheEdgeEnd.put(place, atTheEnd);
+
+                runInThisEdge++;
             }
 
             // A TURN ON THE WAY: the body is ahead of the train from here, and the question starts again.
@@ -10532,6 +10566,7 @@ public class Layout
                 freeOnceTheTailPasses.clear();
                 routeRunWhenLeft.clear();
                 edgeWhenLeft.clear();
+                leftAtTheEdgeEnd.clear();
             }
         }
 

@@ -254,9 +254,10 @@ public class testTheOwnTailArithmetic
      * Where a stretch of the way round has nothing measured on it, the refusal says how many, and that measuring them is
      * the way past - and a stretch whose length is stored on one of its squares is not one of them.
      *
-     * The grain is the stretch between two sensors, as lengths are given: on a fully measured railway most squares carry
-     * no length of their own, their stretch's being on one square of it, and counting squares told Adam's that 21 of its
-     * squares on the way round had none.
+     * The grain is the edge, sensor to sensor: on a fully measured railway many squares carry no length of their own, a
+     * short piece drawn over several squares having fewer units than squares, and counting squares told Adam's that 21
+     * of its squares on the way round had none.  Coarser than the pieces lengths are given in (TDA2-C1): an edge
+     * measured only at its switch is not counted.
      *
      * @throws Exception from the rule
      */
