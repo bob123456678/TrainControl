@@ -1,8 +1,13 @@
 import com.sun.net.httpserver.HttpServer;
+import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import static org.testng.Assert.*;
+import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.marklin.udp.CSDetect;
@@ -118,6 +123,55 @@ public class testCentralStationDetection
         finally
         {
             server.stop(0);
+        }
+    }
+
+    /**
+     * One lost reply from a network's gateway does not make auto-detect impossible.
+     *
+     * Before it scans, auto-detect pings the gateway of each local network - its .1 address - to
+     * decide which networks to scan.  That ping was the one in this class that was not retried, and
+     * it gates the whole scan: one dropped reply left no network to scan, and the operator was told
+     * auto-detect is not possible at all (BPV-C9).
+     *
+     * The network here is a stand-in that drops the first reply from every address and answers after
+     * that; the local networks are this machine's own.  Nothing is sent on the network.
+     *
+     * Ported from the 3.0 branch (2b07376f, W21-C2).
+     */
+    @Test
+    public void testOneLostReplyFromTheGatewayStillFindsTheNetwork() throws Exception
+    {
+        Field ping = CSDetect.class.getDeclaredField("ping");
+        ping.setAccessible(true);
+
+        Object real = ping.get(null);
+
+        try
+        {
+            // The control: a network that always answers.  A machine with no local network has no
+            // gateway to ask, and the assertion below would prove nothing.
+            ping.set(null, (Predicate<String>) host -> true);
+
+            if (!CSDetect.hasLocalSubnets())
+            {
+                throw new SkipException("Not run here: this machine has no local network with a "
+                    + "broadcast address, so there is no gateway to ping");
+            }
+
+            // Every address drops its first reply, then answers
+            Map<String, AtomicInteger> asked = new ConcurrentHashMap<>();
+
+            ping.set(null, (Predicate<String>) host ->
+                asked.computeIfAbsent(host, h -> new AtomicInteger()).incrementAndGet() > 1);
+
+            assertTrue(CSDetect.hasLocalSubnets(),
+                "one lost reply to the gateway ping left no local network to scan, so auto-detect "
+                + "would say it is not possible - that ping was the only one in the class not retried");
+        }
+        finally
+        {
+            ping.set(null, real);
         }
     }
 

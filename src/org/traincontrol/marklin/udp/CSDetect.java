@@ -161,7 +161,19 @@ public class CSDetect
         return out;
     }
     
+    /**
+     * The one ping every reachability check in this class is made of: a single attempt, waiting
+     * NET_TIMEOUT_MS.  A field rather than a call so a test can stand in for a network that drops a
+     * reply; nothing in the application sets it.
+     */
+    private static java.util.function.Predicate<String> ping = CSDetect::pingOnce;
+
     public static boolean isReachable(String host)
+    {
+        return ping.test(host);
+    }
+
+    private static boolean pingOnce(String host)
     {
         try
         {
