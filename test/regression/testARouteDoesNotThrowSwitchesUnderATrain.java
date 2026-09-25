@@ -930,6 +930,175 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     }
 
     /**
+     * OK on a route that would switch track under a train fires all of it (MT-508) - and a route that also carries an
+     * emergency stop is not asked about at all, so it has no OK: it fires the ordinary way (Adam, 2026-09-01: *"Emergency
+     * stop should never conflict or prompt."*).
+     *
+     * MT-508's route has switch A under the train, switch B elsewhere and an emergency stop.  With the stop, the route
+     * list's question (`askAboutRouteConflict`, over `conflictingAccessoryAndReason`) answers that there is nothing to
+     * confirm, and the route runs guarded: the stop and switch B go out, and switch A, held by the train, is skipped.
+     * Without the stop the question is asked, and OK - `execRouteOverridingConflicts`, what the route list runs on OK -
+     * throws both switches.
+     *
+     * MUTATION: have the override skip the held switch, have a route with a stop ask, or have the guarded run throw the
+     * held switch or drop the stop, and this fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testOKFiresEveryCommandOfTheRoute() throws Exception
+    {
+        final boolean[] askedWithAStop = {true};
+        final boolean[] withAStop = {true, false, true};
+        final boolean[] askedWithout = {false};
+        final boolean[] withoutAStop = {false, false};
+
+        final int elsewhere = SWITCH_ADDRESS + 9;
+
+        MarklinAccessory present = model.getAccessoryByAddressIfPresent(elsewhere, Accessory.accessoryDecoderType.MM2);
+
+        final MarklinAccessory otherSwitch = present != null ? present
+            : model.newSwitch(elsewhere, Accessory.accessoryDecoderType.MM2, false);
+
+        // MT-508'S ROUTE: A, B AND A STOP - no question, fired guarded.
+        onARouteOverATrain((route, underTheTrain) ->
+        {
+            askedWithAStop[0] = route.conflictingAccessoryAndReason() != null;
+
+            route.execRoute(false);
+
+            try
+            {
+                settle();
+
+                model.waitForPowerState(false, POWER_PATIENCE_MS);
+            }
+            catch (InterruptedException interrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
+
+            withAStop[0] = underTheTrain.isSwitched();
+            withAStop[1] = otherSwitch.isSwitched();
+            withAStop[2] = model.getPowerState();
+        }, elsewhere, otherSwitch, true);
+
+        assertFalse(askedWithAStop[0], "a route carrying an emergency stop put the question up - Adam, 2026-09-01:"
+            + " \"Emergency stop should never conflict or prompt.\"");
+
+        assertFalse(withAStop[0], "the route with a stop, fired without a question, threw switch A under the train");
+        assertTrue(withAStop[1], "the route with a stop, fired without a question, did not throw switch B (MT-508)");
+        assertFalse(withAStop[2], "the route's emergency stop did not run - the power is still on (MT-508)");
+
+        // THE SAME WITHOUT THE STOP: asked, and OK throws both.
+        onARouteOverATrain((route, underTheTrain) ->
+        {
+            askedWithout[0] = route.conflictingAccessoryAndReason() != null;
+
+            // OK.
+            route.execRouteOverridingConflicts();
+
+            try
+            {
+                settle();
+            }
+            catch (InterruptedException interrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
+
+            withoutAStop[0] = underTheTrain.isSwitched();
+            withoutAStop[1] = otherSwitch.isSwitched();
+        }, elsewhere, otherSwitch, false);
+
+        assertTrue(askedWithout[0], "precondition: a route over the switch under the train was not questioned, so there"
+            + " is no OK to press");
+
+        assertTrue(withoutAStop[0], "OK did not throw switch A, the one under the train (MT-508)");
+        assertTrue(withoutAStop[1], "OK did not throw switch B, elsewhere on the railway (MT-508)");
+    }
+
+    /** What is done with the route, from inside the dispatch that holds switch A. */
+    private interface WithTheRoute
+    {
+        void run(MarklinRoute route, MarklinAccessory underTheTrain);
+    }
+
+    /**
+     * A train dispatched over switch A, and inside that dispatch a route commanding A and B, with an emergency stop where
+     * asked - handed to `probe`.  The power is on before, and put back after.
+     */
+    private void onARouteOverATrain(WithTheRoute probe, int elsewhere, MarklinAccessory otherSwitch, boolean stop)
+        throws Exception
+    {
+        if (!model.isFeedbackSet(S88)) model.newFeedback(Integer.parseInt(S88), null);
+
+        model.setFeedbackState(S88, false);
+
+        model.clearAutoLayout();
+
+        Layout layout = model.getAutoLayout();
+
+        layout.setSimulate(true);
+
+        layout.createPoint("OK_A", false, null);
+        layout.createPoint("OK_B", true, S88);
+
+        Edge ab = layout.createEdge("OK_A", "OK_B");
+
+        final MarklinAccessory underTheTrain =
+            model.newSwitch(SWITCH_ADDRESS, Accessory.accessoryDecoderType.MM2, false);
+
+        underTheTrain.setSwitched(false);
+
+        otherSwitch.setSwitched(false);
+
+        ab.addConfigCommand(underTheTrain.getName(), Accessory.accessorySetting.STRAIGHT);
+
+        Locomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        layout.getPoint("OK_A").setLocomotive(loc);
+
+        model.go();
+
+        assertTrue(model.waitForPowerState(true, POWER_PATIENCE_MS), "precondition: the power has to be ON, or the"
+            + " route's stop has nothing to turn off");
+
+        layout.setCallback("OK probe", (edges, l, started) ->
+        {
+            if (!Boolean.TRUE.equals(started)) return null;
+
+            List<RouteCommand> commands = new ArrayList<>();
+
+            commands.add(RouteCommand.RouteCommandAccessory(SWITCH_ADDRESS, Accessory.accessoryDecoderType.MM2, true));
+            commands.add(RouteCommand.RouteCommandAccessory(elsewhere, Accessory.accessoryDecoderType.MM2, true));
+
+            if (stop) commands.add(RouteCommand.RouteCommandStop());
+
+            probe.run(new MarklinRoute(model, "MT-508 route", 84908, commands, 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null), underTheTrain);
+
+            return null;
+        });
+
+        try
+        {
+            assertTrue(layout.executePath(Arrays.asList(ab), loc, 30, null),
+                "the dispatch did not complete, so nothing below tests anything");
+        }
+        finally
+        {
+            model.go();
+
+            model.waitForPowerState(true, POWER_PATIENCE_MS);
+
+            otherSwitch.setSwitched(false);
+
+            model.clearAutoLayout();
+        }
+    }
+
+    /**
      * A refused route still cuts the power, if that is what it also says.
      *
      * **The first version of the guard did not, and it is the worst thing this round produced.** The

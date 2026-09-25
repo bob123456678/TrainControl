@@ -7360,10 +7360,28 @@ public class testAutonomyDiagramSession
 
         session.setStation(station, true);
 
+        int errorsBefore = session.errorCount();
+        boolean brokenBefore = session.hasErrors();
+
         session.setEntrySignals(station, Arrays.asList(new TileKey("main", 2, 3)));
 
         assertTrue(noticesAGuardOffTheWayIn(session), "an entry guard on track no train reaching the station runs over"
             + " is not noticed (AUT-C2)");
+
+        // A NOTICE, NOT AN ERROR (MT-505): the setup still saves and runs.
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if ("autosetup.ui.checkGuardOffTheWayIn".equals(finding.getMessageKey()))
+            {
+                assertEquals(finding.getSeverity(), org.traincontrol.automationui.AutonomyChecks.Severity.NOTICE, "a guard"
+                    + " off the way in is graded " + finding.getSeverity() + ", not a notice (MT-505)");
+            }
+        }
+
+        assertEquals(session.errorCount(), errorsBefore, "an entry guard off the way in added an error, so the setup no"
+            + " longer runs (MT-505)");
+
+        assertEquals(session.hasErrors(), brokenBefore, "an entry guard off the way in stops the setup running (MT-505)");
 
         session.setEntrySignals(station, Arrays.asList(new TileKey("main", 2, 1)));
 
