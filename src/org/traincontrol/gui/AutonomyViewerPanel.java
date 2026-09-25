@@ -1553,7 +1553,7 @@ public class AutonomyViewerPanel extends JPanel
             // setting on a page that is no longer there, a pairing whose partner has gone. Thrown away,
             // those changes happen silently and the operator finds out later from a railway that behaves
             // differently, with nothing connecting it to the edit that caused it.
-            AutonomyReport.show(this, session().save());
+            AutonomyReport.show(ui, session().save());
         }
         catch (IOException e)
         {

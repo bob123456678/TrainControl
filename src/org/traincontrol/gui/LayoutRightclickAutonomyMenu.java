@@ -460,7 +460,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     }
                     catch (Exception e)
                     {
-                        JOptionPane.showMessageDialog(this, e.getMessage());
+                        JOptionPane.showMessageDialog(ui, e.getMessage());
                     }
                 });
 
@@ -578,7 +578,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                                     }
                                     catch (Exception e)
                                     {
-                                        JOptionPane.showMessageDialog(this, e.getMessage());
+                                        JOptionPane.showMessageDialog(ui, e.getMessage());
                                     }
                                 });    
 
@@ -866,7 +866,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     }
                     catch (Exception e)
                     {
-                        JOptionPane.showMessageDialog(this, e.getMessage());
+                        JOptionPane.showMessageDialog(ui, e.getMessage());
                     }
                 });    
 
@@ -1405,9 +1405,14 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 //
                 // Cheap and non-blocking, so it belongs on the event thread beside the dialog rather
                 // than inside the worker.
+                //
+                // EVERY MESSAGE HERE BELONGS TO THE MAIN WINDOW, not to this menu (RLU-B2).  By the time an
+                // item's action runs the menu has left its window, so a message parented on it belonged to
+                // Swing's hidden frame - and with Window Always on Top, the default, it opened beneath the
+                // main window and held every window with nothing to show why.
                 if (!ui.getModel().getPowerState())
                 {
-                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart"));
+                    JOptionPane.showMessageDialog(ui, I18n.t("autolayout.ui.powerOnToStart"));
 
                     return;
                 }
@@ -1420,7 +1425,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                 if (broken != null)
                 {
-                    JOptionPane.showMessageDialog(this, broken);
+                    JOptionPane.showMessageDialog(ui, broken);
 
                     return;
                 }
@@ -1446,7 +1451,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                 if (tooLong != null)
                 {
-                    JOptionPane.showMessageDialog(this, tooLong);
+                    JOptionPane.showMessageDialog(ui, tooLong);
 
                     return;
                 }
@@ -1469,7 +1474,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                 if (foulsARoad != null)
                 {
-                    JOptionPane.showMessageDialog(this, foulsARoad);
+                    JOptionPane.showMessageDialog(ui, foulsARoad);
 
                     return;
                 }
@@ -1479,7 +1484,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                 if (ownTail != null)
                 {
-                    JOptionPane.showMessageDialog(this, ownTail);
+                    JOptionPane.showMessageDialog(ui, ownTail);
 
                     return;
                 }
@@ -1533,14 +1538,14 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                         if (!success)
                         {
                             javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                                this, I18n.t("autolayout.ui.autoFailedCheckLog")));
+                                ui, I18n.t("autolayout.ui.autoFailedCheckLog")));
                         }
                     }
                 }).start();
             }
             catch (Exception e)
             {
-                JOptionPane.showMessageDialog(this, e.getMessage());
+                JOptionPane.showMessageDialog(ui, e.getMessage());
             }
         });
 
