@@ -23974,12 +23974,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
-        // AND THE SAME QUESTION THE OTHER RUN DOORS ASK (GS-B1).  This is the run where it costs most: several trains
-        // move at once, so one of them with no train length hands back the track under itself while the others are being
-        // routed around it.  After the refusals above, not before them (TDU-C8, GUI-A1's rule): a refused press should
-        // change nothing, and this one writes the setting.
-        keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
-
         // THE CHEAP TRIAGE IS NOT ASKED HERE ANY MORE (OB-192, second round).
         //
         // It used to be, and this is the event thread: `triageReturnToHome` builds a
@@ -24063,6 +24057,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     javax.swing.SwingUtilities.invokeLater(() ->
                         JOptionPane.showMessageDialog(this, message));
+
+                    return;
+                }
+
+                // AND THE SAME QUESTION THE OTHER RUN DOORS ASK (GS-B1).  This is the run where it costs most: several
+                // trains move at once, so one of them with no train length hands back the track under itself while the
+                // others are being routed around it.  After every refusal, the plan's included (TDU-C8, TDU2-C2, GUI-A1's
+                // rule): a refused press should change nothing, and this writes the setting - which the planner does
+                // not read.  On the event thread, where the setting's checkbox lives; a gate that fails stops the run,
+                // and the finally hands the timetable back.
+                try
+                {
+                    javax.swing.SwingUtilities.invokeAndWait(() -> keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack());
+                }
+                catch (InterruptedException | java.lang.reflect.InvocationTargetException gate)
+                {
+                    this.model.log(gate);
 
                     return;
                 }
@@ -26711,15 +26722,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     return;
                 }
 
-                // AND NOT NON-ATOMIC OVER A RAILWAY THAT COULD RELEASE TRACK UNDER A TRAIN (GS-B1).  This
-                // door dispatches without going near Start, and a train length cleared on the live layout
-                // since the checkbox was unticked is not something anything here would otherwise notice.
-                //
-                // After every refusal above, not before them (GUI-A1): a press refused as "wait for active
-                // locomotives to stop" switched the running railway to atomic on its way to being refused, and
-                // a refused press should change nothing.
-                keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
-
                 // Conditional route warning
                 for (String routeName : this.model.getRouteList())
                 {
@@ -26798,6 +26800,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         seen.add(ttp.getLoc());
                     }
                 }
+
+                // AND NOT NON-ATOMIC OVER A RAILWAY THAT COULD RELEASE TRACK UNDER A TRAIN (GS-B1).  This
+                // door dispatches without going near Start, and a train length cleared on the live layout
+                // since the checkbox was unticked is not something anything here would otherwise notice.
+                //
+                // After every refusal above, not before them (GUI-A1, TDU2-C2): a press refused as "wait for
+                // active locomotives to stop", declined at the conditional-route warning, or refused for a train
+                // away from its start switched the running railway to atomic on its way to being refused, and a
+                // refused press should change nothing.
+                keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
 
                 // Capture is left exactly as the operator set it, as the staging button next door already
                 // does.  Forcing it off protected against a run appending itself to the list being walked;
@@ -26968,7 +26980,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     if (this.model.getAutoLayout().isValid() && !this.isAutonomyBusy())
                     {
                         // THE ATOMIC ROUTES GATE, after every refusal (TDU-C8) and on the event thread, which the setting's
-                        // checkbox lives on.
+                        // checkbox lives on.  A gate that fails stops Start (TDU2-C2): it is what keeps a run atomic over
+                        // unmeasured track, and the finally below gives the button back.
                         try
                         {
                             javax.swing.SwingUtilities.invokeAndWait(() -> keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack());
@@ -26976,6 +26989,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         catch (InterruptedException | java.lang.reflect.InvocationTargetException gate)
                         {
                             this.model.log(gate);
+
+                            return;
                         }
 
                         started.set(true);
