@@ -2625,6 +2625,18 @@ RLU5-D5	RLU5.md	Closed	Checked - clean.	The eight bundles at HEAD hold 1,848 key
 RLU5-D6	RLU5.md	Closed	Checked - clean.	The emergency-stop rule at every door that makes, changes, loads or syncs a route: no door the program offers leaves a stop among other commands, a sp
 RLU5-D7	RLU5.md	Closed	Checked - clean.	Every message the round added belongs to a window that is showing, and the owner census reads the three files it names
 RLU5-D8	RLU5.md	Closed	Checked - clean.	MT-507 and MT-508 are superseded on Adam's answer by tests that exist and assert what their comments say; the tail question's list (MT-575) is untouch
+RLV6-B1	RLV6.md	Closed	Fixed - while a declined edit waits, every load carries each train across and lowers the f	RLA5-B1's fix reaches one of the four doors round 5 named; three still put every moved train back on its pre-run square and leave the flag up
+RLV6-C1	RLV6.md	Closed	Fixed - the carried load is the one asked for, interactive or not, so a train driven by ha	With the flag up, the Autonomy menu's, a page tick's and an import's reload of the configuration running is the editor doors' quiet one: hand-driven t
+RLV6-C2	RLV6.md	Closed	Fixed - the walk remembers the path, not every route asked. claims 528fd305 (red first), f	`hasEmergencyStop` shares one visited set across every branch it walks, so a route that reaches a split route by two paths, the longer first, is count
+RLV6-C3	RLV6.md	Closed	Fixed in the records - the comma, and "Until then" named for what it follows (04b1b204).	Two sentences the round wrote now read wrongly: open-questions.md's list of store additions has lost a conjunction, and behaviour.md's "Until then" no
+RLV6-D1	RLV6.md	Closed	Checked - clean.	RLA5-A1, RLU5-A1 and RLD5-A1: a stop-only route runs at any depth, a route that fires a split route counts as cutting the power, and the claim builds
+RLV6-D2	RLV6.md	Closed	Checked - clean.	RLU5-B1, RLA5-C5 and RLD5-C2's id half: the stop route is numbered from 1000, and the claim imports his route alone at id 7
+RLV6-D3	RLV6.md	Closed	Checked - clean.	RLA5-C4 and RLD5-C3: the stop's wait rides on the Route command in its place, and the route runs as it did
+RLV6-D4	RLV6.md	Closed	Checked - clean.	The messages round 5 changed say what each finding asked, in eight languages, and each claim reads the whole sentence
+RLV6-D5	RLV6.md	Closed	Checked - clean.	Bookkeeping and the claims: RLA5-C2, RLU5-C6, RLD5-C1 and RLU5-C5, and each round-5 claim red at `ebf4f919`
+RLV6-D6	RLV6.md	Closed	Checked - clean.	RLA5-B1's fix at the door it covers: the configuration running, reloaded idle with the flag up, keeps every train where the run left it and lowers the
+RLV6-D7	RLV6.md	Closed	Checked - clean.	The records round 5 wrote: the counts match the store, MT-508's comment is in both tests.md and the store, and the three deferrals are open
+RLV6-D8	RLV6.md	Closed	Checked - clean.	The emergency-stop change as a change of its own: no door the program offers makes a mixed route, and the split keeps his route whole
 RR-C1	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27** - the rebuild is now staged and swapped under the locomotive's monito	A sync-applied address change rebuilds every consist without the fan-out lock
 RR-C2	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27** - the lock moved inside the shared method, so every entrance inherits	The layout-refresh lock covers half the entrances
 RR-C3	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27**	Danish and German dialogs name an option the menu does not have
