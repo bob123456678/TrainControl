@@ -1323,6 +1323,36 @@ Found by the 3.0.0 release review's second round (RLU2-C12), 2026-09-25.  The im
 
 **Why it waits:** narrow and cosmetic - the next import excludes them again and says so.  **Direction:** take the snapshot after the exclusion, which is a decision about the track and not the file; claim with a setup holding an unsettled repeated page.
 
+### OB-303 - 2026-09-25 - The Central Station sync's multi-unit sweep: members that change during a run, its claims, and the redraw
+
+**Kind:** bug  
+**Raised from:** RLA3-C1  
+**Filed:** 2026-09-25  
+
+Found by the 3.0.0 release review's third round (RLA3-C1, RLA3-C2, RLA3-C3, RLD3-C3), 2026-09-25.  RLA2-B2 made the sync sweep what it changes when autonomy is not running.  Three gaps are left.  (1) A Central Station multi-unit's new members that arrive during a run are taken at once and the sweep is skipped; no later sync sees a change, so a standing train added to a standing multi-unit stays standing until the next load or Place.  (2) Only the address half has a claim: the members half and the not-while-running guard can be deleted with every test green - the mock station serves no multi-unit.  (3) The sweep refreshes nothing the autonomy panels draw, where the window's doors call refreshUI, updateVisiblePoints and repaintAutoLocList after the same call.
+
+**Why it waits:** each needs a Central Station edit colliding with a standing train, and the next load or Place clears it.  **Direction:** remember the locomotives whose sweep was skipped and sweep them when the run stops; serve a multi-unit from the mock station for the claims; fire the layout's refresh after a sweep that took something off.
+
+### OB-304 - 2026-09-25 - An old-file import's silent skips, and the facing it keeps where the file cannot say
+
+**Kind:** bug  
+**Raised from:** RLA3-C5  
+**Filed:** 2026-09-25  
+
+Found by the 3.0.0 release review's third round (RLA3-C4, RLA3-C5, RLD3-C6), 2026-09-25.  Three skips are still not said: a home the file names twice (counted, never shown), a placement onto a square holding another train, and a home onto a square already homing another train.  And where the file cannot say which way a placed train faces, the square's last occupant's facing is kept without being counted as a guess and without REG3-C1's preference for a way trains may arrive.
+
+**Why it waits:** information only - nothing is placed or homed twice - and on his railway the file states a facing for 88 of 90 edges.  **Direction:** name the skips in the message as the others are; keep a recorded facing only where trains may arrive, and count it with the guesses.
+
+### OB-305 - 2026-09-25 - A placement is saved only after its tail question, so a crash while the question waits loses it
+
+**Kind:** bug  
+**Raised from:** RLU3-C5  
+**Filed:** 2026-09-25  
+
+Found by the 3.0.0 release review (RLU2-C13, RLU3-C5), 2026-09-25.  Each placement door writes the placement, facing and side into the setup in memory, asks the tail question, and saves once at the end; after an editor opened in the wait nothing is saved (RLU-C9), and in any case nothing is saved while the question waits.  A crash then starts the next session without the train where it stands.
+
+**Why it waits:** the next save writes it - the editor's own, any later one, or the exit - so only a crash in that window loses it.  **Direction:** save what the door wrote before asking, when no editor is open, and keep 'save nothing' for the late answer only.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

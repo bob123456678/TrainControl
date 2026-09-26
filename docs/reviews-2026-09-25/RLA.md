@@ -77,7 +77,7 @@ behaviour.md: an old autonomy.json goes into the configuration named, *"created 
 
 | | |
 |---|---|
-| **Disposition** | Fixed - into the configuration running, by its name, the running layout is captured first and the reload after the import does not capture again, so placements and homes the import brought stay.  A maximum stays as the running configuration has it: the capture writes 0 for every square the railway holds, and the gap-fill keeps a stated value (MT-298), so the claim was reworked to a placement - red against e7a2f1fa's door (placed 3, the reload took all 3 back).  Claims 01cf0d72 (red first, each for its own reason), fix 2fa033f3; mutation R9 red. |
+| **Disposition** | Fixed - into the configuration running, by its name, the running layout is captured first and the reload after the import does not capture again, so placements and homes the import brought stay.  A maximum stays as the running configuration has it: the capture writes 0 for every square the railway holds, and the gap-fill keeps a stated value (MT-298), so the claim was reworked to a placement - red against e7a2f1fa's door (placed 3, the reload took all 3 back).  Claims 01cf0d72 (red first, each for its own reason), fix 2fa033f3; mutation R9 red.  Superseded 2026-09-25: round 2 refused the name (RLA2-B1), and round 3 took an old file back in without its trains, capturing first (RLD3-C1). |
 | **Grade** | C |
 | **Where** | `AutonomyViewerPanel.importLegacyGraph` -> `loadAfterImport` -> `load(name, true)` -> `AutonomySession.captureFromLayout` (`POINT_OPERATIONAL_KEYS`, AutonomySession.java:3167) |
 | **Needs execution** | yes - see the request |

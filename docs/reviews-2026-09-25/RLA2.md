@@ -128,7 +128,7 @@ The disposition and 2fa033f3's message: a train the configuration already has st
 
 | | |
 |---|---|
-| **Disposition** | Fixed as RLA2-B1 for placements - nothing is imported into the configuration running.  For maxima, not a defect: a 0 is how a configuration states "no limit", by hand or by a capture, and the gap-fill keeps a stated value as it keeps any other; behaviour.md now says so. |
+| **Disposition** | Fixed as RLA2-B1 for placements - nothing is imported into the configuration running.  For maxima, not a defect: a 0 is how a configuration states "no limit", by hand or by a capture, and the gap-fill keeps a stated value as it keeps any other; behaviour.md now says so.  Superseded 2026-09-25: its premise was false - the editor stores a default as nothing, only a capture writes 0 (RLA3-B1, RLU3-C4) - and the question is put to Adam. |
 | **Grade** | C |
 | **Names** | RLA-C2 - "Fixed" overstates, and the placement half was decided in the fix commit |
 | **Where** | `AutonomyViewerPanel.importLegacyGraph` :1239-1263, :1375; `AutonomySession.importLegacy`'s zero rule (:1148-1160); `Point.toJSON` (`maxTrainLength` written for every station); claim `testAnImportIntoTheConfigurationInUseKeepsWhatItBrought` as reworked in 2fa033f3 |

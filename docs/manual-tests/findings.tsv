@@ -2393,7 +2393,7 @@ RLA2-B3	RLA2.md	Closed	Fixed - on the running railway by RLA2-B1's refusal; and 
 RLA2-C1	RLA2.md	Closed	Fixed in the records - behaviour.md states the rule the code has (cc56a7a8).	behaviour.md still says a locomotive edit sweeps only where the edited train stands
 RLA2-C2	RLA2.md	Open - deferred	Follow-up - filed as OB-301: pre-existing, and it needs two mistakes in one dialog; the ne	Change Name or Address: a refused new name returns after the address has changed, before the sweep
 RLA2-C3	RLA2.md	Closed	Fixed - a home the configuration already has is kept and named in the message. claims 5322	A home the configuration already has is skipped without a word, and nothing claims the home half
-RLA2-C4	RLA2.md	Closed	Fixed as RLA2-B1 for placements - nothing is imported into the configuration running. For 	RLA-C2 is fixed for homes, reversed for placements, and not fixed for maxima
+RLA2-C4	RLA2.md	Open - Adam's decision	Fixed as RLA2-B1 for placements - nothing is imported into the configuration running. For 	RLA-C2 is fixed for homes, reversed for placements, and not fixed for maxima
 RLA2-C5	RLA2.md	Closed	Fixed in the records - RLA-C4 is recorded as hardening no door reaches today, and its clai	RLA-C4 fixed a state no door reaches, and its claim builds that state by calling the prompt directly
 RLA2-C6	RLA2.md	Closed	Fixed - one rule for a copy a train may be started from, asked by the start and by "turn i	RLA-C5's claim pins the one clause the builder never lets differ between copies; the barred-copy clause is unpinned
 RLA2-C7	RLA2.md	Closed	Fixed - the clause is gone from the sentence in all eight languages, the user guide and be	The either-way sentence says "a station where trains turn round is never chosen"; autonomy chooses a terminus
@@ -2406,6 +2406,20 @@ RLA2-D4	RLA2.md	Closed	Checked - clean.	RLA-C3: a failed old-file import puts ba
 RLA2-D5	RLA2.md	Closed	Checked - clean.	RLA-C7's records are true, and Routes > Import's question names exactly the routes the model re-arms
 RLA2-D6	RLA2.md	Closed	Checked - clean.	The eight bundles agree after the round's five new keys
 RLA2-D7	RLA2.md	Closed	Checked - clean.	RLU-C9's drop: the question asks about an editor as it is put and as it is answered, and all three doors read it
+RLA3-B1	RLA3.md	Open - Adam's decision	Open - Adam's decision: a gap-fill cannot tell a setting returned to its default from one 	A second import puts the file's setting back wherever the operator returned one to its default, because every editor door stores a default as nothing
+RLA3-C1	RLA3.md	Open - deferred	Follow-up - filed as OB-303.	RLA2-B2's membership half: a Central Station multi-unit's new members that arrive during a run are applied and never swept
+RLA3-C2	RLA3.md	Open - deferred	Follow-up - filed as OB-303.	RLA2-B2's claim covers the address half only: the membership half and the running guard can go with every test green
+RLA3-C3	RLA3.md	Open - deferred	Follow-up - filed as OB-303.	The sync's new sweep takes a train off the graph and refreshes nothing autonomy draws; the window doors it copies refresh three things after the same
+RLA3-C4	RLA3.md	Closed	Fixed in the records - behaviour.md says where the file cannot say the last occupant's fac	behaviour.md says an imported train faces the way the file ran it "whatever facing the square's last occupant left there"; where the file cannot say,
+RLA3-C5	RLA3.md	Open - deferred	Follow-up - filed as OB-304.	Three skips of an old-file import are still silent: a home the file names twice, a placement onto a square that has another train, and a home onto a s
+RLA3-C6	RLA3.md	Closed	Fixed - the six comments and open-questions.md name the own-tail exception (81a9fffa); RLA	Records the round's fixes left saying the opposite: RLA-C2's and RLU-C4's round-1 dispositions, and six comments that still say an answered 0 is measu
+RLA3-D1	RLA3.md	Closed	Checked - clean.	RLA2-B1: Import refuses the configuration in use at its one door, for both kinds of file, before anything is read; case and sanitised twins are refuse
+RLA3-D2	RLA3.md	Closed	Checked - clean.	RLA2-B2's address half, and RLD2-C6's Central Station pin: the sync asks the window doors' question of each re-addressed locomotive under the railway'
+RLA3-D3	RLA3.md	Closed	Checked - clean.	RLA2-B3 where the file can say: the file's facing wins over the square's, and the claim is red with the old rule
+RLA3-D4	RLA3.md	Closed	Checked - clean.	RLA2-C3: a home the configuration has is kept and named in all eight languages, and the claim holds both halves
+RLA3-D5	RLA3.md	Closed	Checked - clean.	RLA2-C6 and RLA2-C7 (with RLU2-C10): one predicate for the start and for "turn it round", a pin that bites, and the either-way sentence the same in ei
+RLA3-D6	RLA3.md	Closed	Checked - clean.	The round's other records in this lane are true: RLA2-C1, RLA2-C5, RLA2-C8 (the two places it named), RLA2-C9, and RLA2-C2's follow-up
+RLA3-D7	RLA3.md	Closed	Checked - clean.	The length rules, the tail and berth rules and the Return Home planner are untouched this round, so RLA-D1 still holds
 RLD-B1	RLD.md	Closed	Fixed - master's BPV-C7 brought to 3.0: the unreadable mark is cleared only once the copy 	3.0.0 still saves over an unreadable locomotive database when its safety copy fails; 2.8.2 does not (BPV-C7 was never brought across)
 RLD-C1	RLD.md	Open	Open - the entry is replaced by 2.8.2's final one when master's release validation ends, e	The Readme's v2.8.2 entry is master's first draft, not the entry 2.8.2 shipped with
 RLD-C10	RLD.md	Closed	Fixed as RLA-C7.	"Balanced priority counts an answered 0 as 0" is not quite what it does, and ratioOf's javadoc now overstates
@@ -2444,6 +2458,22 @@ RLD2-D3	RLD2.md	Closed	Checked - clean.	RLD-C5, RLD-C7 and RLD-C6's tracker half
 RLD2-D4	RLD2.md	Closed	Checked - clean.	The bundle and record fixes of RLD-C2 (its sensor half), RLD-C8, RLD-C10 and RLD-C11
 RLD2-D5	RLD2.md	Closed	Checked - clean.	RLU-C9's fix reaches all three doors, and RLA-C4's minimised editor is a state no door reaches
 RLD2-D6	RLD2.md	Closed	Checked - clean.	build.xml, the window census and the live-snapshot README need nothing this round, and Routes > Import was the only file read without a character set
+RLD3-C1	RLD3.md	Closed	Fixed - a bundle is refused under the name of the configuration in use; an old file is imp	RLD2-C2 was closed without the ruling it asked for: the refusal takes MT-298's second import away from the configuration being run, and MT-298's super
+RLD3-C2	RLD3.md	Closed	Fixed - the refusal's claim imports a bundle (cca48e96); mutation U1 red.	RLA2-B1's claim imports an old file; the case RLA2-B1 is about - a bundle, the backup of the configuration running - has no claim
+RLD3-C3	RLD3.md	Closed	Fixed in the records (81a9fffa); the member half's claim is filed as OB-303.	RLA2-B2's member half has no claim, and a Central Station multi-unit's members changed during a run are never swept afterwards
+RLD3-C4	RLD3.md	Open - deferred	Fixed in part - the viewer panel's report is pinned (cca48e96); the right-click menu's two	RLU2-C5's pin reads `JOptionPane` on the two right-click menus only: the setup-tidy reports, and every message of the panel that is never shown, can g
+RLD3-C5	RLD3.md	Closed	Fixed in the records (81a9fffa).	behaviour.md says a placed train faces the file's way "whatever facing the square's last occupant left there"; where the file cannot say, the last occ
+RLD3-C6	RLD3.md	Closed	Fixed - the comments, the ratchet's line, the class javadoc and the MUTATION line (cca48e9	Comments and bookkeeping the round left behind
+RLD3-D1	RLD3.md	Closed	Checked - clean.	RLD2-C1: behaviour.md and `sanitizeMultiUnits`' summary now state the rule the code has
+RLD3-D10	RLD3.md	Closed	Checked - clean.	RLA2-C5's test javadoc and RLU2-D8 disagree about whether the editor's Place can reach a minimised editor; the owner rule holds either way
+RLD3-D2	RLD3.md	Closed	Checked - clean.	RLD2-C3: the capture it asked to pin is gone, and the reload after an import captures as every reload does
+RLD3-D3	RLD3.md	Closed	Checked - clean.	RLD2-C4 (as RLU2-C7): the Routes claim reads the question on screen
+RLD3-D4	RLD3.md	Closed	Checked - clean.	RLD2-C5 (as RLU2-C3): every key has a value in every language, and the eight bundles agree at HEAD
+RLD3-D5	RLD3.md	Closed	Checked - clean.	RLD2-C6, and the round's other new claims: their fixtures cannot supply the answer
+RLD3-D6	RLD3.md	Closed	Checked - clean.	RLD2-C7, RLD2-C9, RLD2-C10 and RLD2-C11, and the round's records and counts
+RLD3-D7	RLD3.md	Closed	Checked - clean.	RLD2-C12 (as RLU2-C6): the editor's right-click messages belong to the editor
+RLD3-D8	RLD3.md	Closed	Checked - clean.	RLD2-C8: the battery the disposition cites predates round 2; nothing in round 2 moves either method, and the final battery has to say so again
+RLD3-D9	RLD3.md	Closed	Checked - clean.	build.xml, the window census, the live-snapshot README and the javadoc ratchet need nothing; round 2's D findings still hold
 RLU-A1	RLU.md	Closed	Fixed - Routes > Import reads its file as UTF-8. Claim bb197b16 (red first on this machine	Routes > Import reads a UTF-8 file in the machine's own character set: on Java 8 under Windows every accented letter in a route comes back wrong, and
 RLU-B1	RLU.md	Closed	Fixed as RLA-B2.	"Replace it with the imported one?" answered Yes does not replace for an old autonomy.json: the file is gap-filled into that configuration, and a trai
 RLU-B2	RLU.md	Closed	Fixed - every refusal on the right-click menu, and the setup's tidy report, belong to the 	with Preferences > Window Always on Top ticked, which is the default, the unowned modals of IND9X-C4 and IND9X-C5 can open beneath the main window - i
@@ -2462,7 +2492,7 @@ RLU-D3	RLU.md	Closed	Checked - clean.	the eight bundles agree: the same 1,831 ke
 RLU-D4	RLU.md	Closed	Checked - clean.	a successful old-file import leaves the configuration in use as it was
 RLU2-C1	RLU2.md	Closed	Fixed - the ratchet is 86 with AutonomyViewerPanel at 2 (5322fb65); green in the fix run.	`regression.testJavadocsAreAttached` is red at HEAD: RLU-C6's fix removed an orphan the exact ratchet still counts (86 found, 87 pinned)
 RLU2-C10	RLU2.md	Closed	Fixed - the either-way sentence names the side a train would arrive on, under the arrivals	RLU-C4's either-way sentence still has no remedy for a station reachable only on a side trains may not arrive at
-RLU2-C11	RLU2.md	Closed	Not a defect - a 0 is how a configuration states "no limit", by hand or by a capture; the 	"Add to it what the file has and {0} does not?" brings no station maximum into a configuration that has ever run: every station there states 0
+RLU2-C11	RLU2.md	Open - Adam's decision	Not a defect - a 0 is how a configuration states "no limit", by hand or by a capture; the 	"Add to it what the file has and {0} does not?" brings no station maximum into a configuration that has ever run: every station there states 0
 RLU2-C12	RLU2.md	Open - deferred	Follow-up - filed as OB-302: narrow and cosmetic; the next import excludes the pages again	an old-file import that fails puts back the page exclusions its first dialog has just announced
 RLU2-C13	RLU2.md	Closed	Not a defect - the placement is in memory and in the editor's copy, and the next save writ	RLU-C9's "save nothing" also leaves unsaved the placement the door wrote before its question: after an editor opened in the wait, nothing writes where
 RLU2-C2	RLU2.md	Closed	Fixed - the call is gone with the round-1 capture (cc56a7a8); the census is green in the f	`regression.testNothingOnTheEventThreadTakesTheRailwaysMonitor` is red at HEAD: RLA-C2's capture in `importLegacyGraph` is a door onto `Layout.toJSON`
@@ -2482,6 +2512,21 @@ RLU2-D6	RLU2.md	Closed	Checked - clean.	RLU-C2 and RLU-C3: the question names ex
 RLU2-D7	RLU2.md	Closed	Checked - clean.	RLU-C9: all three doors drop a late answer from both stores and save nothing; the editor's own door is untouched
 RLU2-D8	RLU2.md	Closed	Checked - clean.	RLU-D1's "the two cannot disagree" is out of date since `b5226b46`, and the disagreement is the fix
 RLU2-D9	RLU2.md	Closed	Checked - clean.	the eight bundles at HEAD: 1,836 keys, identical in every language; the five new keys and the reworded OB-299 sentences say the same thing everywhere
+RLU3-C1	RLU3.md	Closed	Fixed - the either-way sentence no longer names a side to open. claims cca48e96 (red first	RLU2-C10's new remedy tells the operator to open a closed side even at a station every train turns round at - the remedy Adam ruled out at GUI4-C3, wh
+RLU3-C2	RLU3.md	Closed	Fixed - where the other way reaches a station but autonomy starts no train there, the sent	Since RLA-C5 the either-way sentence is also what a train gets where the other way does reach a station, and there it is untrue: the barred copy, pinn
+RLU3-C3	RLU3.md	Closed	Fixed - the setup's tidy report is pinned with the menus (cca48e96).	RLU2-C5 is pinned at ten of its eleven messages: the setup's tidy report in `AutonomyViewerPanel.save` - IND9X-C4's site - has no pin, and `this` put
+RLU3-C4	RLU3.md	Open - Adam's decision	Open - Adam's decision: a gap-fill cannot tell a setting returned to its default from one 	RLU2-C11's "not a defect" rests on a 0 nobody types: by hand "no limit" is stored as no key, only the capture writes 0, and every other reader of a ma
+RLU3-C5	RLU3.md	Open - deferred	Follow-up - filed as OB-305.	RLU2-C13's disposition answers a save when the late answer comes back, which RLU2-C13 did not propose; its direction - save before the question, when
+RLU3-C6	RLU3.md	Closed	Fixed - the ratchet's dated line, and the old every-key test's javadoc (cca48e96).	Two records round 2 left: the ratchet's history has no line for 87 -> 86, and the old every-key test still promises to catch an emptied key it cannot
+RLU3-D1	RLU3.md	Closed	Checked - clean.	RLU2-C1 and RLU2-C2: both battery classes, re-run by their own rules in memory, are green at HEAD, and the census was red at the claims commit on exac
+RLU3-D2	RLU3.md	Closed	Checked - clean.	RLU2-C3: the new every-key test asks the bundle, not the callers, and would name an emptied key
+RLU3-D3	RLU3.md	Closed	Checked - clean.	RLU2-C4: the pin reads each door's own gate
+RLU3-D4	RLU3.md	Closed	Checked - clean.	RLU2-C6 (and RLD2-C12): every message of the editor's right-click belongs to the editor, and no popup under `gui/` owns one
+RLU3-D5	RLU3.md	Closed	Checked - clean.	RLU2-C7: the claim reads the question on screen
+RLU3-D6	RLU3.md	Closed	Checked - clean.	RLU2-C8: the records now say what `b5226b46` does
+RLU3-D7	RLU3.md	Closed	Checked - clean.	Import refuses the configuration in use at the one door all three menu entries share, before it reads the file, over the main window, with the way on
+RLU3-D8	RLU3.md	Closed	Checked - clean.	The eight bundles at HEAD: 1,838 keys each, round 2's three keys in all eight with English's placeholders, and the dropped clause gone everywhere
+RLU3-D9	RLU3.md	Closed	Checked - clean.	RLU2-C12's follow-up is filed as its disposition says, and waiting is justified
 RR-C1	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27** - the rebuild is now staged and swapped under the locomotive's monito	A sync-applied address change rebuilds every consist without the fan-out lock
 RR-C2	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27** - the lock moved inside the shared method, so every entrance inherits	The layout-refresh lock covers half the entrances
 RR-C3	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27**	Danish and German dialogs name an option the menu does not have

@@ -230,7 +230,7 @@ Nord"; the question's dialog width against the screen width.  **Refutes:** the d
 
 | | |
 |---|---|
-| **Disposition** | Fixed - the either-way sentence names what a reachable station needs: switched on, Can Be Chosen ticked, not one where trains turn round; eight languages (3af66907). |
+| **Disposition** | Fixed - the either-way sentence names what a reachable station needs: switched on, Can Be Chosen ticked, not one where trains turn round; eight languages (3af66907).  Superseded 2026-09-25: the "trains turn round" clause was false and went (RLA2-C7), and the sentence now names only switching on and ticking (RLU3-C1). |
 | **Grade** | C - a refusal whose remedy is incomplete. |
 | **Where** | `Layout.java:5058`; `autolayout.why.startReachesNoStationEitherWay` in all eight bundles |
 

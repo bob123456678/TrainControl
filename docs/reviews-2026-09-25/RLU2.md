@@ -154,7 +154,7 @@ RLU-A1's disposition ends "2.7.4 read it the same way; carried to 2.8.2."  Maste
 
 | | |
 |---|---|
-| **Disposition** | Not a defect - a 0 is how a configuration states "no limit", by hand or by a capture; the gap-fill cannot tell the two apart and keeps both, so "nothing already set in it is changed" is true of it.  behaviour.md says so. |
+| **Disposition** | Not a defect - a 0 is how a configuration states "no limit", by hand or by a capture; the gap-fill cannot tell the two apart and keeps both, so "nothing already set in it is changed" is true of it.  behaviour.md says so.  Superseded 2026-09-25: its premise was false - the editor stores a default as nothing, only a capture writes 0 (RLA3-B1, RLU3-C4) - and the question is put to Adam. |
 | **Grade** | C - a question that promises more than the door does; the dialog's count stays true.  Needs execution. |
 | **Where** | `autosetup.ui.confirmImportFillsGaps` (`messages.properties:1523`); `AutonomySession.java:1146` (the gap test), `:3209` (`POINT_OPERATIONAL_KEYS`); `Point.java:1196`; `AutonomyViewerPanel.java:1246-1260` |
 

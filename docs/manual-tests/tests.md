@@ -16809,6 +16809,10 @@ It took two goes to make it mean anything: the first fixture picked a square the
 
 The comment above says the second import answers Yes to replacing the configuration.  Since 2fa033f3 the door asks instead whether to add what the file has and the configuration does not, and the test answers Yes to that (RLD2-C7).
 
+**Claude, 2026-09-25.**
+
+Now also run as its steps run it (RLD3-C1): `regression.testTheImportDoorReadsAnOldFile.testASecondImportIntoTheConfigurationInUseKeepsAHandMadeChange` chooses the imported configuration, changes a station's maximum by hand in it, imports the same file into it again by name, and asserts the import happened and kept the hand change.  An old file into the configuration in use places none of its trains - where a train stands on the railway running is the railway's to say - and names them.
+
 ---
 
 <a id="mt-299"></a>
