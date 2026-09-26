@@ -490,6 +490,22 @@ public class Point
      * @throws java.lang.NoSuchFieldException 
      */
     public JSONObject toJSON() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
+    {
+        return this.toJSON(this.currentLoc);
+    }
+
+    /**
+     * Converts this point to a JSON representation, with the given locomotive as the one standing on it.
+     *
+     * For Layout.toJSON(keptAt), which keeps a train at the last point whose sensor it tripped even when a
+     * non-atomic route has already released that point behind it, so that it no longer records the train
+     * (MRV4-C2).
+     * @param placed the locomotive to write as standing here; null for none
+     * @return
+     * @throws java.lang.IllegalAccessException
+     * @throws java.lang.NoSuchFieldException
+     */
+    public JSONObject toJSON(Locomotive placed) throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
     {		
         JSONObject jsonObj = new JSONObject();
         Field map = jsonObj.getClass().getDeclaredField("map");
@@ -540,7 +556,7 @@ public class Point
             jsonObj.put("home", this.homeLoc);
         }
         
-        if (this.currentLoc != null)
+        if (placed != null)
         {
             JSONObject locObj = new JSONObject();
             
@@ -549,23 +565,23 @@ public class Point
             map.set(locObj, new LinkedHashMap<>());
             map.setAccessible(false);
             
-            locObj.put("name", this.currentLoc.getName());
-            locObj.put("reversible", this.currentLoc.isReversible());
-            locObj.put("speed", this.currentLoc.getPreferredSpeed());
+            locObj.put("name", placed.getName());
+            locObj.put("reversible", placed.isReversible());
+            locObj.put("speed", placed.getPreferredSpeed());
             
-            if (this.currentLoc.getArrivalFunc() != null)
+            if (placed.getArrivalFunc() != null)
             {
-                locObj.put("arrivalFunc", this.currentLoc.getArrivalFunc());
+                locObj.put("arrivalFunc", placed.getArrivalFunc());
             }
         
-            if (this.currentLoc.getDepartureFunc() != null)
+            if (placed.getDepartureFunc() != null)
             {
-                locObj.put("departureFunc", this.currentLoc.getDepartureFunc());
+                locObj.put("departureFunc", placed.getDepartureFunc());
             }
             
-            if (this.currentLoc.getTrainLength() > 0)
+            if (placed.getTrainLength() > 0)
             {
-                locObj.put("trainLength", this.currentLoc.getTrainLength());
+                locObj.put("trainLength", placed.getTrainLength());
             }
             
             jsonObj.put("loc", locObj);

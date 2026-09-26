@@ -150,6 +150,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                             ui.repaintAutoLocList(false);
                         });
 
+                        ui.offerGraphEdit(menuItem);
                         add(menuItem);
                     }
 
@@ -168,6 +169,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                             ui.repaintAutoLocList(false);
                         });
 
+                        ui.offerGraphEdit(menuItem);
                         add(menuItem); 
                     }
                     
@@ -198,6 +200,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                             }
                         }); 
 
+                        ui.offerGraphEdit(menuItem);
                         add(menuItem);
                     }
 

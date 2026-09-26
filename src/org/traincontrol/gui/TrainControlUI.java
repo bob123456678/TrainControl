@@ -1169,6 +1169,34 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Why no locomotive can be placed on the graph or taken off it now - a path failed part way and the
+     * configuration has not been reloaded since (Layout.getPlacementRefusal) - or null when it can.  Asked by
+     * every door that places or removes one, before it does anything, so that it says so rather than doing
+     * nothing (MRV4).
+     * @return
+     */
+    String getGraphEditRefusal()
+    {
+        return this.model != null && this.model.hasAutoLayout() ? this.model.getAutoLayout().getPlacementRefusal() : null;
+    }
+
+    /**
+     * Greys a menu item that places or removes a locomotive on the graph while getGraphEditRefusal says no,
+     * with the reason as its tooltip: the item that offers the action asks the guard's question (MRV4).
+     * @param item
+     */
+    void offerGraphEdit(javax.swing.JMenuItem item)
+    {
+        String refusal = this.getGraphEditRefusal();
+
+        if (refusal != null)
+        {
+            item.setEnabled(false);
+            item.setToolTipText(refusal);
+        }
+    }
+
+    /**
      * Saves initialized component database to a file
      * @param backup
      */

@@ -70,6 +70,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                     }
                 );    
 
+                ui.offerGraphEdit(menuItem);
                 add(menuItem);
             }
             
@@ -87,6 +88,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                     }
                 );    
 
+                ui.offerGraphEdit(menuItem);
                 add(menuItem);
             }
 
@@ -133,6 +135,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                 }
             }); 
 
+            ui.offerGraphEdit(menuItem);
             add(menuItem);
 
             addSeparator();
@@ -143,6 +146,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                     I18n.f("autolayout.ui.menuRemoveLocomotiveFromNode", p.getCurrentLocomotive().getName())
                 );
                 menuItem.addActionListener(event -> { ui.getModel().getAutoLayout().moveLocomotive(null, nodeName, false); ui.updateVisiblePoints(); ui.repaintAutoLocList(false);});    
+                ui.offerGraphEdit(menuItem);
                 add(menuItem);
 
                 menuItem = new JMenuItem(
@@ -150,6 +154,7 @@ final class GraphRightClickPointMenu extends JPopupMenu
                 );
                 menuItem.setToolTipText("Delete");
                 menuItem.addActionListener(event -> { ui.getModel().getAutoLayout().moveLocomotive(null, nodeName, true); ui.updateVisiblePoints(); ui.repaintAutoLocList(false); });    
+                ui.offerGraphEdit(menuItem);
                 add(menuItem);
 
                 addSeparator();

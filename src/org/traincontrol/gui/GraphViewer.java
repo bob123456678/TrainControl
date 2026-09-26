@@ -343,6 +343,15 @@ final public class GraphViewer extends PositionAwareJFrame
                                 
                                 if (p != null && p.isDestination() && !parent.getModel().getLocomotives().isEmpty())
                                 {    
+                                    // Nothing is placed between a failed trip and the reload, and the double-click says why (MRV4)
+                                    String refusal = parent.getGraphEditRefusal();
+
+                                    if (refusal != null)
+                                    {
+                                        JOptionPane.showMessageDialog((Component) swingView, refusal);
+                                        return;
+                                    }
+
                                     // Select the active locomotive
                                     GraphLocAssign edit = new GraphLocAssign(parent, p, 
                                         // If no locs in list, add new
@@ -544,6 +553,15 @@ final public class GraphViewer extends PositionAwareJFrame
 
             if (toPlace != null && this.getLastHoveredNode() != null)
             {
+                // Nothing is placed between a failed trip and the reload, and the key says why (MRV4)
+                String refusal = parent.getGraphEditRefusal();
+
+                if (refusal != null)
+                {
+                    JOptionPane.showMessageDialog(this, refusal);
+                    return;
+                }
+
                 parent.getModel().getAutoLayout().moveLocomotive(toPlace.getName(), this.getLastHoveredNode(), false);
                 this.clipboard = null;
                 parent.updateVisiblePoints();
@@ -554,6 +572,15 @@ final public class GraphViewer extends PositionAwareJFrame
         {
             if (this.getLastHoveredNode() != null)
             {
+                // Nothing is removed between a failed trip and the reload, and the key says why (MRV4)
+                String refusal = parent.getGraphEditRefusal();
+
+                if (refusal != null)
+                {
+                    JOptionPane.showMessageDialog(this, refusal);
+                    return;
+                }
+
                 this.clipboard = null;
                 if (controlPressed && keyCode == KeyEvent.VK_X)
                 {

@@ -155,6 +155,7 @@ final class GraphRightClickGeneralMenu extends JPopupMenu
                 }
             });
 
+            ui.offerGraphEdit(menuItem);
             add(menuItem);
 
             HomeLocomotiveMenu.addClearAllItem(this, ui, (Component) parent.getSwingView(),
