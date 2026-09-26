@@ -1767,7 +1767,10 @@ public class AutonomyViewerPanel extends JPanel
     {
         roster.clear();
 
-        Layout layout = ui.getModel() == null ? null : ui.getModel().getAutoLayout();
+        // ASKED, NOT BUILT (RLV7-C2, CS3-C4).  `getAutoLayout` makes a Layout where there is none, and this runs as the
+        // panel is made - after Unload, a deleted setup and a switch of railway, and at every start with nothing loaded
+        // - so there was never a moment with no Layout, and `hasAutoLayout` answered yes about an empty one.
+        Layout layout = ui.getModel() == null ? null : ui.getModel().getAutoLayoutIfLoaded();
 
         if (layout == null) return;
 

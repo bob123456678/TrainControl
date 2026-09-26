@@ -2117,11 +2117,13 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Unload forgets the railway it unloads (RLV7-C2): the flag, and the name the reset forgot.  And a carry with no
-     * railway loaded brings none into being - it asked the model for its layout, which builds an empty one, and
-     * `hasAutoLayout` then answered yes about nothing (CS3-C4).
+     * Unload forgets the railway it unloads (RLV7-C2): the flag, and the name the reset forgot.  And nothing brings an
+     * empty railway into being afterwards - asking the model for its layout builds one, and `hasAutoLayout` then answered
+     * yes about nothing (CS3-C4): the autonomy panel's list of where the trains are did, as Unload remade the panel, and
+     * so would the carry.
      *
-     * MUTATION: leave the flag up at Unload, or ask `getAutoLayout` for the layout before the carry, and this fails.
+     * MUTATION: leave the flag up at Unload, or ask `getAutoLayout` for the layout in the panel's list or before the
+     * carry, and this fails.
      *
      * @throws Exception from the window
      */
@@ -2201,7 +2203,8 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * An edit a run declined, as RLD4-C3's claim makes one: a priority written into the configuration and not into the
-     * running layout, on a station of his railway.
+     * running layout, on a station of his railway - and to the file, as a declined edit is, so a reset that reads the
+     * setup again finds it.
      *
      * @return the square and the priority written
      */
@@ -2232,7 +2235,19 @@ public class testTheImportDoorReadsAnOldFile
 
         final TileKey at = square;
 
-        SwingUtilities.invokeAndWait(() -> session.setPointProperty(at, "priority", edit));
+        SwingUtilities.invokeAndWait(() ->
+        {
+            session.setPointProperty(at, "priority", edit);
+
+            try
+            {
+                session.getStore().save();
+            }
+            catch (java.io.IOException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
 
         assertEquals(priorityIn(session, configuration, square), Integer.valueOf(edit), "precondition: the edit was not"
             + " written into " + configuration);
