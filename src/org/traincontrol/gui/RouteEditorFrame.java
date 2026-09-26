@@ -3372,10 +3372,13 @@ public class RouteEditorFrame extends JFrame
             parent.refreshRouteList();
             parent.repaintLayout();
 
-            // A route that a diagram tile triggers has to tell the main window, the way the old
-            // editor does: the tile carries the route's name, and renaming one here left the tile
-            // pointing at a route that no longer answers to it.
-            parent.layoutEditingComplete();
+            // NO DIAGRAM EDIT TO COMPLETE (RLV7-A1).  This called `layoutEditingComplete`, from when a route
+            // tile carried its route's name and a rename here left it pointing at nothing.  A tile follows its
+            // route by number now - `rebindRouteTiles` runs after every write to the route database - and
+            // `repaintLayout` above redraws it.  The call re-read every page and reset autonomy, and during a run
+            // the reload after the reset asked to abandon it: Yes stood every train the run had moved back where
+            // it set off, with the square it stood on reading free, and No left the run going with no
+            // configuration to fold it into.  A route is no page of the diagram.
 
             // A sync only when the route is NEW, which is what the old editor settled on years ago
             // and what this one copied without reading the comment beside it.

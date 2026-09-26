@@ -596,6 +596,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private boolean setupEditDeclinedDuringRun;
 
     /**
+     * The configuration whose name the last reset forgot, while its layout is still the one in the model (RLV7-C2).
+     *
+     * The reset after a diagram edit forgets the name of the configuration running and then reloads it, and a load
+     * that has to carry the trains across - while an edit waits, or while a train is under way - carries them from the
+     * configuration running.  With the name gone it read "nothing running" as "the one the reset forgot", and three
+     * other doors forget it too: Unload, a deleted setup, and a switch of railway.  So the name is remembered here at
+     * the reset, and those three forget the railway with it (`forgetTheRailway`).
+     */
+    private String forgottenByTheReset;
+
+    /**
      * The route editor, which is now the only one.
      *
      * Still called routeEditor because that is what it is: the old text-based one it replaces has
@@ -2975,6 +2986,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * The configuration whose name the last reset forgot, while its layout is still the one loaded (RLV7-C2).
+     *
+     * @return its name, or null once another railway, or none, has replaced it
+     */
+    String getConfigurationTheResetForgot()
+    {
+        return forgottenByTheReset;
+    }
+
+    /**
+     * Forgets the railway that was loaded, at the doors that replace it with another or with none: Unload, a deleted
+     * setup, a switch of railway (RLV7-C2).  An edit waiting for its rebuild belonged to that railway's setup, and a
+     * load afterwards has nothing of it to carry - it carried the previous railway's trains across by Point name onto
+     * stations of the new one that shared a name.
+     */
+    private void forgetTheRailway()
+    {
+        setupEditDeclinedDuringRun = false;
+
+        forgottenByTheReset = null;
+    }
+
+    /**
      * Runs a load while a setup edit a run declined waits for its rebuild, carrying where every train stands across it
      * (RLA5-B1, RLV6-B1).
      *
@@ -2994,7 +3028,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         java.util.Map<String, String> pendingTurns = takeThePendingTurns();
 
-        final Object runningBefore = this.model == null ? null : this.model.getAutoLayout();
+        // ASKED, NOT BUILT (RLV7-C2): `getAutoLayout` makes a Layout where there is none, and hasAutoLayout then answers
+        // yes about nothing (CS3-C4)
+        final Object runningBefore = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
 
         boolean carried = false;
 
@@ -3121,6 +3157,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // layout no longer corresponds to any configuration of the new session, so nothing should be
         // captured into one at exit.
         autonomyViewerPanel = null;
+
+        // Remembered, for a load of it to carry its trains across (RLV7-C2)
+        if (activeDiagramConfiguration != null) forgottenByTheReset = activeDiagramConfiguration;
+
         activeDiagramConfiguration = null;
 
         autonomyTileMenus = null;
@@ -6358,14 +6398,36 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (layout == null) return standing;
 
+        // A TRAIN UNDER WAY IS WHERE IT WAS LAST KNOWN TO BE (RLV7-C1): the last station on its path whose sensor it has
+        // tripped, or where it set off - `Layout.getLastPointsReached` says the rule.  Its locked path holds every point
+        // on it for it, so read point by point it stood in several places, and this kept whichever the layout's map
+        // yielded last: its destination, often, with the square it really stood on reading free.  A carry reads a train
+        // under way because a reload confirmed during a run stops the trains and releases nothing (RLV7-B1).
+        java.util.Map<org.traincontrol.base.Locomotive, org.traincontrol.automation.Point> underWay =
+            layout.getLastPointsReached();
+
         for (org.traincontrol.automation.Point point : layout.getPoints())
         {
             org.traincontrol.base.Locomotive loc = point.getCurrentLocomotive();
 
             if (loc == null || loc.getName() == null) continue;
 
+            if (underWay.containsKey(loc) && underWay.get(loc) != point) continue;
+
             standing.put(loc.getName(), new String[]{point.getName(), point.getArrivedFrom(),
                 org.traincontrol.automation.Layout.namesOfRoad(point.getArrivedAlong())});
+        }
+
+        // AND WHERE A RELEASE HAS ALREADY CLEARED THAT POINT BEHIND IT - atomic routes off - still there, unless another
+        // train stands on it now, whom putting this one back would displace
+        for (java.util.Map.Entry<org.traincontrol.base.Locomotive, org.traincontrol.automation.Point> kept
+            : underWay.entrySet())
+        {
+            String name = kept.getKey().getName();
+
+            if (name == null || standing.containsKey(name) || kept.getValue().getCurrentLocomotive() != null) continue;
+
+            standing.put(name, new String[]{kept.getValue().getName(), null, null});
         }
 
         return standing;
@@ -6744,7 +6806,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // did is a fact, and the file is a record of it.
             java.util.Map<String, String> pendingTurns = takeThePendingTurns();
 
-            final Object runningBefore = this.model == null ? null : this.model.getAutoLayout();
+            // Asked, not built, as the carry asks (RLV7-C2, CS3-C4)
+            final Object runningBefore = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
 
             try
             {
@@ -8784,6 +8847,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         resetAutonomySession();
 
+        forgetTheRailway();
+
         autonomyMenuActed();
 
         return true;
@@ -8820,6 +8885,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (this.model != null) this.model.clearAutoLayout();
 
         resetAutonomySession();
+
+        forgetTheRailway();
 
         autonomyMenuActed();
     }
@@ -10738,6 +10805,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // the pages just changed wholesale, so a session describing the old ones - and anything
             // still monitoring or capturing against it - has to go
             this.resetAutonomySession();
+
+            // and the railway with it: every door here is a switch of layout source (RLV7-C2)
+            this.forgetTheRailway();
 
             // OB-093, Adam: "when using a CS2 layout and the autonomy tab is greyed out, the autonomy
             // checkbox is still visible on the track diagram page." resetAutonomySession greys the Auto

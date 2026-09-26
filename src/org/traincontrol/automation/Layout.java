@@ -1566,6 +1566,76 @@ public class Layout
     }
     
     /**
+     * Where each train under way is last known to be (RLV7-B1, RLV7-C1): the last station on its path whose sensor it
+     * has tripped, or where it set off.
+     *
+     * A locked path holds every point on it for its train - `configureAndLockPath` reserves each - so read point by
+     * point, a train under way stands in several places at once, which a configuration refuses as one locomotive in two
+     * places.  A reload that stops the trains releases nothing, so this is what a carry across it has to read.
+     *
+     * - A point with no sensor is never a position: `executePath` passes one without waiting, so it is a milestone the
+     *   moment the loop reaches it, ahead of the train.
+     * - Nor is a point that is no station: nothing can put a train back on one (`moveLocomotive`).
+     *
+     * No rule can know where a train stopped between two sensors is.  This one keeps the last place it was known to
+     * be held, as 2.8.2 keeps a train after a failed trip.
+     *
+     * Read without the railway's monitor, which the event thread must not take: the maps are concurrent, and a train
+     * setting off or arriving as this runs is read on one side of it or the other.
+     *
+     * @return each train under way, or still locking its path, against that point; a copy
+     */
+    public Map<Locomotive, Point> getLastPointsReached()
+    {
+        Map<Locomotive, Point> out = new HashMap<>();
+
+        // Still locking its path: points reserved, none reached
+        for (Entry<Locomotive, List<Edge>> taking : this.takingPath.entrySet())
+        {
+            if (taking.getValue() != null && !taking.getValue().isEmpty())
+            {
+                out.put(taking.getKey(), taking.getValue().get(0).getStart());
+            }
+        }
+
+        for (Entry<Locomotive, List<Edge>> running : this.activeLocomotives.entrySet())
+        {
+            Point known = this.lastKnownPoint(this.locomotiveMilestones.get(running.getKey()), running.getValue());
+
+            if (known != null) out.put(running.getKey(), known);
+        }
+
+        return out;
+    }
+
+    /**
+     * The last of these milestones that is a station whose sensor was tripped - its start not counted - or the start.
+     *
+     * @param milestones the points reached, in order, its start first; may be null
+     * @param path the path; may be null
+     * @return the point, or null where there is neither
+     */
+    private Point lastKnownPoint(List<Point> milestones, List<Edge> path)
+    {
+        if (milestones != null && !milestones.isEmpty())
+        {
+            for (int i = milestones.size() - 1; i > 0; i--)
+            {
+                Point reached = milestones.get(i);
+
+                if (reached.hasS88() && (reached.isDestination() || this.isABarredCopyOfAStation(reached)))
+                {
+                    return reached;
+                }
+            }
+
+            return milestones.get(0);
+        }
+
+        return path == null || path.isEmpty() ? null : path.get(0).getStart();
+    }
+
+    /**
      * Gets the S88 of the latest milestone reached by a locomotive
      * @param loc the locomotive to check.
      * @return the S88 sensor of the latest milestone, or null if none found.

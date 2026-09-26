@@ -311,6 +311,9 @@ public class DiagramMonitorDriver
 
     private Layout currentLayout()
     {
-        return ui == null || ui.getModel() == null ? null : ui.getModel().getAutoLayout();
+        // ASKED, NOT BUILT (RLV7-C2, CS3-C4).  `getAutoLayout` makes a Layout where there is none, so after Unload the
+        // monitor's next look built an empty one, and `hasAutoLayout` then answered yes about nothing.  The monitor
+        // reads no layout as nothing to show.
+        return ui == null || ui.getModel() == null ? null : ui.getModel().getAutoLayoutIfLoaded();
     }
 }

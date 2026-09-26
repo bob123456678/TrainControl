@@ -2202,6 +2202,11 @@ message.  The stop route is numbered from 1000, as a route made in the editor is
 replaces its own routes by number, cannot replace it (RLU5-B1).  A route that is only a stop runs however deep in a
 chain of routes it is fired - it fires nothing further, so the limit that keeps a chain from running away has nothing
 to hold back - and a route that fires a split route still cuts the power, and counts as a route that does (RLA5-A1).
+
+**Saving a route leaves autonomy alone** (RLV7-A1).  A route is no page of the diagram - its tiles follow it by number -
+so the route editor's Save refreshes the routes and redraws the diagram, and does not rebuild the autonomy setup.  It
+did, and during a run the rebuild asked to abandon it: Yes stood every train the run had moved back where it set off,
+and No left the run going with no configuration to save it into.
 `core.testAStopRouteStandsAlone`, `ui.testCommandTableMarks.testAnEmergencyStopStandsAlone`,
 `ui.testARouteOverATrainAtItsDoors`.
 
@@ -2459,7 +2464,10 @@ and the reload's capture took back what the import had just brought.  And no imp
 setup while a setup edit a run declined waits for its rebuild - neither the capture first nor the reload (RLD4-C3,
 WKW-B2); every load then carries each train across from the running layout and lowers the flag once a layout carries
 the edit, and choosing another configuration first carries the one running, which is then folded as any configuration
-left is (RLA5-B1, RLV6-B1).  Before the import went into the configuration named, a layout that already had configurations took the file's placements, homes and facings into
+left is (RLA5-B1, RLV6-B1).  A load confirmed while a train is under way carries the trains the same way and folds
+nothing, since a train under way holds every point of its path: it is kept at the last station on its path whose sensor
+it has tripped, or where it set off (RLV7-B1, RLV7-C1).  Unload, a deleted setup and a switch of railway forget the
+railway loaded, so a load after them carries nothing across (RLV7-C2).  Before the import went into the configuration named, a layout that already had configurations took the file's placements, homes and facings into
 the one in use, and the name asked for was thrown away.
 
 Into a configuration that exists, an old file fills what that configuration does not already say (MT-298), and the

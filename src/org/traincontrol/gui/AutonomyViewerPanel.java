@@ -766,19 +766,33 @@ public class AutonomyViewerPanel extends JPanel
             return;
         }
 
-        // WHILE A SETUP EDIT A RUN DECLINED WAITS FOR ITS REBUILD (RLD4-C3, RLA5-B1, RLV6-B1).  The running layout is the
-        // older of the two, so nothing folds it into the setup - but where its trains stand is still the railway's to say
-        // (OB-183), and a load that rebuilt from the setup stood each train the run moved back where it set off, with the
-        // square it really stands on reading free.  So every load carries them across (`carryTheTrainsAcross`), and the
-        // load itself is the one asked for, interactive or not (RLV6-C1), after the question above rather than through a
-        // door that refuses while autonomy reads busy (RLV6-B1, c).
-        if (captureRunningState && ui.isSetupNewerThanTheRunningLayout())
-        {
-            final String running = ui.getActiveDiagramConfiguration();
+        // WHERE A FOLD WOULD LOSE SOMETHING, THE TRAINS ARE CARRIED ACROSS INSTEAD (RLD4-C3, RLA5-B1, RLV6-B1, RLV7-B1).
+        // Where its trains stand is the railway's to say (OB-183), and a load that rebuilt from the setup without a fold
+        // stood each train the run moved back where it set off, with the square it really stands on reading free.  So
+        // these loads carry them across (`carryTheTrainsAcross`), and the load itself is the one asked for, interactive
+        // or not (RLV6-C1), after the question above rather than through a door that refuses while autonomy reads busy
+        // (RLV6-B1, c).  A fold is not made:
+        //
+        // - while a setup edit a run declined waits for its rebuild: the running layout is the older of the two, and
+        //   folding it would take the edit away;
+        // - while the running layout holds a path: Yes above stops the trains and releases nothing, and a locked path
+        //   holds every point on it for its train, so folded, a train under way stood on each of those squares and the
+        //   configuration refused to load as one locomotive in two places (RLV7-B1).  The carry keeps it at the last
+        //   station whose sensor it tripped, or where it set off (RLV7-C1).
+        final org.traincontrol.automation.Layout loaded = ui.getModel() == null ? null
+            : ui.getModel().getAutoLayoutIfLoaded();
 
-            // The configuration running - or, where the reset after an edit has just forgotten its name, the one it
-            // reloads (RLV6-B1, a)
-            if (running == null || running.equals(name))
+        final boolean holdsAPath = loaded != null && loaded.isRunning();
+
+        if (captureRunningState && (ui.isSetupNewerThanTheRunningLayout() || holdsAPath))
+        {
+            // The configuration running - or, where a reset has forgotten its name, the one it forgot (RLV6-B1, a).  Not
+            // "nothing running" read as that: Unload, a deleted setup and a switch of railway forget the name too, and a
+            // load after a switch carried the previous railway's trains across (RLV7-C2).
+            final String running = ui.getActiveDiagramConfiguration() != null ? ui.getActiveDiagramConfiguration()
+                : ui.getConfigurationTheResetForgot();
+
+            if (running != null && running.equals(name))
             {
                 ui.carryTheTrainsAcross(() -> loadPrepared(name, interactive, false));
 
@@ -787,8 +801,9 @@ public class AutonomyViewerPanel extends JPanel
             }
 
             // Another configuration (RLV6-B1, b): the one running first, with the edit and where the trains stand, so
-            // it is folded below as any configuration left is
-            ui.carryTheTrainsAcross(() -> loadPrepared(running, false, false));
+            // it is folded below as any configuration left is.  With nothing running there is nothing to carry, and
+            // nothing to fold.
+            if (running != null) ui.carryTheTrainsAcross(() -> loadPrepared(running, false, false));
         }
 
         loadPrepared(name, interactive, captureRunningState);
@@ -811,8 +826,13 @@ public class AutonomyViewerPanel extends JPanel
         //
         // NOT WHILE A SETUP EDIT A RUN DECLINED WAITS FOR ITS REBUILD (RLD4-C3, WKW-B2): the running layout is then the
         // older of the two, and folding it in would take the edit away - the exit save and the editor doors ask the same.
+        //
+        // NOR WHILE IT HOLDS A PATH (RLV7-B1): a train under way is on every point of its path, and folded it stands on
+        // each of those squares.  `load` carries those trains instead; the exit save and `captureRunningLayout` ask the
+        // same.
         if (captureRunningState && !ui.isSetupNewerThanTheRunningLayout() && ui.getActiveDiagramConfiguration() != null
-            && ui.getModel() != null && ui.getModel().hasAutoLayout() && ui.getModel().getAutoLayout().isValid())
+            && ui.getModel() != null && ui.getModel().hasAutoLayout() && ui.getModel().getAutoLayout().isValid()
+            && !ui.getModel().getAutoLayout().isRunning())
         {
             try
             {

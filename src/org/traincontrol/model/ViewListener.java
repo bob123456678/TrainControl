@@ -98,6 +98,13 @@ public interface ViewListener
     public void parseAuto(String s);
     public void applyAutonomyRouteActivations();
     public Layout getAutoLayout();
+
+    /**
+     * The auto layout if one is loaded, or null - never making one, as getAutoLayout does (RLV7-C2, CS3-C4).  In one
+     * step, so a clear cannot fall between asking and getting.
+     * @return the layout, or null
+     */
+    public Layout getAutoLayoutIfLoaded();
     public boolean hasAutoLayout();
 
     /**

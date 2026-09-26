@@ -1003,6 +1003,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
     }
     
+    @Override
+    public Layout getAutoLayoutIfLoaded()
+    {
+        synchronized (this.autoLayoutLock)
+        {
+            return this.autoLayout;
+        }
+    }
+
     /**
      * Returns the auto layout class (and creates it if it does not yet exist)
      * @return 
