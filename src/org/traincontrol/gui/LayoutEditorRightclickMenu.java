@@ -16,8 +16,18 @@ import org.traincontrol.util.I18n;
  */
 final class LayoutEditorRightclickMenu extends JPopupMenu
 {        
+    /**
+     * The editor this menu belongs to, and every message it shows: by the time an item runs the menu has left its
+     * window, so a message parented on the menu belonged to Swing's hidden frame - and under an editor that takes
+     * the main window's Always on Top, it opened beneath the editor while holding every window (MRV1-C2, as
+     * RLU-B2 was for the autonomy menu).
+     */
+    private final LayoutEditor owner;
+
     public LayoutEditorRightclickMenu(LayoutEditor edit, TrainControlUI ui, LayoutLabel label, LayoutDiagramComponent component)
     {        
+        this.owner = edit;
+
         JMenuItem menuItem;
         
         // Show the name of the component
@@ -41,7 +51,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
             catch (Exception e)
             {
-                JOptionPane.showMessageDialog(this, e.getMessage());
+                JOptionPane.showMessageDialog(owner, e.getMessage());
             }
         });
         pasteMenuItem.setToolTipText("Control+V");
@@ -57,7 +67,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
             catch (Exception e)
             {
-                JOptionPane.showMessageDialog(this, e.getMessage());
+                JOptionPane.showMessageDialog(owner, e.getMessage());
             }
         });
         pasteColumnMenuItem.setToolTipText("Shift+C");
@@ -78,7 +88,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
             catch (Exception e)
             {
-                JOptionPane.showMessageDialog(this, e.getMessage());
+                JOptionPane.showMessageDialog(owner, e.getMessage());
             }
         });
         pasteRowMenuItem.setToolTipText("Shift+R");
@@ -106,7 +116,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
             catch (Exception e)
             {
-                JOptionPane.showMessageDialog(this, e.getMessage());
+                JOptionPane.showMessageDialog(owner, e.getMessage());
             }
         });
         
@@ -124,7 +134,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
             catch (Exception e)
             {
-                JOptionPane.showMessageDialog(this, e.getMessage());
+                JOptionPane.showMessageDialog(owner, e.getMessage());
             }
         });
         
@@ -146,7 +156,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 }
                 catch (Exception e)
                 {
-                    JOptionPane.showMessageDialog(this, e.getMessage());
+                    JOptionPane.showMessageDialog(owner, e.getMessage());
                 }
             });
             menuItem.setToolTipText("Control+X");
@@ -162,7 +172,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 }
                 catch (Exception e)
                 {
-                    JOptionPane.showMessageDialog(this, e.getMessage());
+                    JOptionPane.showMessageDialog(owner, e.getMessage());
                 }
             });
             menuItem.setToolTipText("Control+C");
@@ -184,7 +194,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                     }
                     catch (Exception e)
                     {
-                        JOptionPane.showMessageDialog(this, e.getMessage());
+                        JOptionPane.showMessageDialog(owner, e.getMessage());
                     }
                 });
                 menuItem.setToolTipText("Control+R");
@@ -235,7 +245,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                     }
                     catch (Exception e)
                     {
-                        JOptionPane.showMessageDialog(this, e.getMessage());
+                        JOptionPane.showMessageDialog(owner, e.getMessage());
                     }
                 });
                 menuItem.setToolTipText("Control+A");
@@ -262,7 +272,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                             }
                             catch (Exception e)
                             {
-                                JOptionPane.showMessageDialog(this, e.getMessage());
+                                JOptionPane.showMessageDialog(owner, e.getMessage());
                             }
                         });
                         
@@ -285,7 +295,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 }
                 catch (Exception e)
                 {
-                    JOptionPane.showMessageDialog(this, e.getMessage());
+                    JOptionPane.showMessageDialog(owner, e.getMessage());
                 }
             });
             menuItem.setToolTipText("Control+T");
@@ -302,7 +312,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                     }
                     catch (Exception e)
                     {
-                        JOptionPane.showMessageDialog(this, e.getMessage());
+                        JOptionPane.showMessageDialog(owner, e.getMessage());
                     }
                 });
                 menuItem.setToolTipText("Control+S");
@@ -320,7 +330,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 }
                 catch (Exception e)
                 {
-                    JOptionPane.showMessageDialog(this, e.getMessage());
+                    JOptionPane.showMessageDialog(owner, e.getMessage());
                 }
             });
             
@@ -350,7 +360,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
             catch (Exception e)
             {
-                JOptionPane.showMessageDialog(this, e.getMessage());
+                JOptionPane.showMessageDialog(owner, e.getMessage());
             }
         });
         
@@ -368,7 +378,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
             catch (Exception e)
             {
-                JOptionPane.showMessageDialog(this, e.getMessage());
+                JOptionPane.showMessageDialog(owner, e.getMessage());
             }
         });
         
@@ -386,7 +396,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
             catch (Exception e)
             {
-                JOptionPane.showMessageDialog(this, e.getMessage());
+                JOptionPane.showMessageDialog(owner, e.getMessage());
             }
         });
         
@@ -404,7 +414,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
             catch (Exception e)
             {
-                JOptionPane.showMessageDialog(this, e.getMessage());
+                JOptionPane.showMessageDialog(owner, e.getMessage());
             }
         });
         
@@ -422,7 +432,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
             catch (Exception e)
             {
-                JOptionPane.showMessageDialog(this, e.getMessage());
+                JOptionPane.showMessageDialog(owner, e.getMessage());
             }
         });
         
@@ -442,7 +452,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
             catch (Exception e)
             {
-                JOptionPane.showMessageDialog(this, e.getMessage());
+                JOptionPane.showMessageDialog(owner, e.getMessage());
             }
         });
         

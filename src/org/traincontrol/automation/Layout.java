@@ -75,6 +75,12 @@ public class Layout
     // Layout, same as pathValidationFailureCount.
     private boolean pathValidationAlertShown = false;
 
+    // Every locomotive whose path failed part way on this Layout, in the order they failed, each with the
+    // message its failure logged - see executePath.  Such a train is still recorded on every point of its
+    // locked path, and nothing knows where along it the train stands; the window reads this to keep the
+    // graph without it and to say why no train can be sent (MRV1-A1, MRV1-B1).  Guarded by itself.
+    private final Map<Locomotive, String> failedPaths = new LinkedHashMap<>();
+
     // Maximum number of seconds another locomotive should yield for to the inactive locomotive
     public static final int YIELD_SECONDS = 30;
 
@@ -2130,6 +2136,37 @@ public class Layout
     }
 
     /**
+     * Every locomotive whose path failed part way on this Layout, in the order they failed - see
+     * executePath.  Each is still recorded on every point of its locked path, so a graph written with it
+     * places it several times and does not load, and nothing knows which of those points it stands on.
+     * Empty unless a path has failed; a Layout a failure made invalid is never made valid again, only
+     * replaced (MRV1-A1).
+     * @return a copy
+     */
+    public List<Locomotive> getLocomotivesLeftOnAFailedPath()
+    {
+        synchronized (this.failedPaths)
+        {
+            return new ArrayList<>(this.failedPaths.keySet());
+        }
+    }
+
+    /**
+     * Why no train can be sent on this Layout when a path failed part way: the message each failure
+     * logged, in order, one paragraph each - or null when no path has failed, and the Layout is valid or
+     * invalid for some other reason.  Kept here because Layout.getLastError is shared by every Layout and
+     * cleared by the next one built (MRV1-B1).
+     * @return the message, or null
+     */
+    public String getPathFailedMessage()
+    {
+        synchronized (this.failedPaths)
+        {
+            return this.failedPaths.isEmpty() ? null : String.join("\n\n", this.failedPaths.values());
+        }
+    }
+
+    /**
      * Marks all the edges in a path as unoccupied,
      * unlocking it so that other trains may pass
      * @param path
@@ -3203,11 +3240,40 @@ public class Layout
                 this.stopLocomotives();
             }
 
-            this.invalidate(I18n.f(
+            final String message = I18n.f(
                 wasRunning ? "autolayout.errorPathFailedAutonomyStopped" : "autolayout.errorPathFailedSentByHand",
                 loc.getName(),
                 I18n.t("ui.main.validateConfigOpenGraphUI")
-            ));
+            );
+
+            // Recorded before the layout reads as invalid, so that nothing which sees it invalid can miss
+            // why: the window keeps the graph without this train, and every door that then refuses says
+            // this message rather than a reason of its own (MRV1-A1, MRV1-B1).
+            final boolean first;
+
+            synchronized (this.failedPaths)
+            {
+                first = this.failedPaths.isEmpty();
+                this.failedPaths.put(loc, message);
+            }
+
+            this.invalidate(message);
+
+            // Said once as a dialog, not only in the log - once per Layout, as the path-validation alert
+            // is: a second train already under way failing too adds its paragraph to what the doors say,
+            // not a second dialog.  Guarded like the stop above, so that a failure to show it cannot
+            // replace the exception that explains what went wrong (MRV1-B1).
+            if (first)
+            {
+                try
+                {
+                    this.control.showAutonomyAlert(I18n.t("autolayout.ui.pathFailedTitle"), message);
+                }
+                catch (RuntimeException alertFailure)
+                {
+                    this.control.log(alertFailure);
+                }
+            }
 
             throw e;
         }
@@ -4329,7 +4395,24 @@ public class Layout
      * @throws java.lang.NoSuchFieldException 
      */
     synchronized public String toJSON() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
-    {        
+    {
+        return this.toJSON(Collections.emptySet());
+    }
+
+    /**
+     * Returns the layout configuration as a JSON string, with the given locomotives on no point.
+     *
+     * For a train the graph cannot place: one whose path failed part way, or one stopped part way along
+     * a path, is recorded on every point of that path, and a configuration that places one locomotive
+     * twice does not load.  Left off, it is simply not on the graph - it is never sent anywhere until it
+     * is put back - and everything else about the graph is kept (MRV1-A1).
+     * @param unplaced the locomotives to leave off every point
+     * @return
+     * @throws java.lang.IllegalAccessException
+     * @throws java.lang.NoSuchFieldException
+     */
+    synchronized public String toJSON(Collection<Locomotive> unplaced) throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
+    {
         List<JSONObject> pointJson = new LinkedList<>();
         List<JSONObject> edgeJson = new LinkedList<>();
         List<JSONObject> timeTableJson = new LinkedList<>();
@@ -4347,7 +4430,15 @@ public class Layout
         
         for (Point p : pointList)
         {
-            pointJson.add(p.toJSON());
+            JSONObject point = p.toJSON();
+
+            // The "loc" key is what places a locomotive; the point keeps everything else
+            if (p.getCurrentLocomotive() != null && unplaced.contains(p.getCurrentLocomotive()))
+            {
+                point.remove("loc");
+            }
+
+            pointJson.add(point);
         }
         
         for (Edge e : edgeList)

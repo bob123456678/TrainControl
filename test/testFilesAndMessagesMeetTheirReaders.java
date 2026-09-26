@@ -23,7 +23,8 @@ public class testFilesAndMessagesMeetTheirReaders
     private static final File ROOT = new File(System.getProperty("traincontrol.projectRoot", "."));
 
     /**
-     * Every file read into a String names its character set (RLU-A1).
+     * Every file read into a String names its character set, or is read by the main window's decodeText, which reads
+     * UTF-8 and falls back to the machine's own only for bytes that are not UTF-8 (RLU-A1, MRV1-B2).
      *
      * Routes > Import read its file as `new String(Files.readAllBytes(...))` - the machine's own character set, which on
      * Java 8 under Windows is a code page - while Routes > Export and the backup write UTF-8.  So "Ausfahrt Sud" with an
@@ -41,6 +42,9 @@ public class testFilesAndMessagesMeetTheirReaders
         for (File source : javaSources(new File(ROOT, "src")))
         {
             String text = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
+
+            // Read by decodeText: a character set is chosen, strictly
+            reads += text.split("decodeText\\(\\s*Files\\.readAllBytes", -1).length - 1;
 
             Matcher m = Pattern.compile("new String\\(\\s*Files\\.readAllBytes").matcher(text);
 

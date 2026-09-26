@@ -58,6 +58,14 @@ public interface View
      */
     public void showAutonomyAlert(String message);
 
+    /**
+     * As showAutonomyAlert(message), under the given title - for an alert that is not about a path's
+     * accessories, such as a path that failed part way.  Must not block the calling thread.
+     * @param title the dialog's title
+     * @param message the message to display
+     */
+    public void showAutonomyAlert(String title, String message);
+
     // Tells us which key(s) a locomotive is bound to
     public List<String> getAllLocButtonMappings(Locomotive l);
 }

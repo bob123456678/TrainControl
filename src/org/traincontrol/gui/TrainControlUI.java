@@ -1057,6 +1057,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Decodes stored autonomy JSON bytes.  Current files are raw JSON; files written by older versions
      * (and their backups) are ObjectOutputStream-serialized Strings, detected by the 0xAC 0xED magic header.
+     * Raw JSON is read as UTF-8, as TrainControl writes it, unless it is not valid UTF-8 - a file saved in
+     * the machine's own character set - which is read in that; it was read as UTF-8 only, and its accented
+     * letters garbled (MRV1-B2).
      * @param bytes the raw file contents
      * @return the JSON string
      * @throws IOException
@@ -1074,7 +1077,95 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         }
 
-        return new String(bytes, StandardCharsets.UTF_8);
+        return decodeText(bytes);
+    }
+
+    /**
+     * Decodes a text file a user picked to import: as UTF-8, which every export has written since 2.7.4,
+     * or - when the bytes are not valid UTF-8 - in this computer's own character set.
+     *
+     * The routes export wrote the computer's own character set from October 2023 until 2.7.4 (windows-1252
+     * on a Western European Windows), and 2.8.1 read the import the same way.  Read as UTF-8 only, every
+     * accented letter of such a backup became the replacement character: route names garbled, and a route
+     * command naming a locomotive with an accent named no locomotive.  Accented text in windows-1252 is
+     * almost never valid UTF-8, so a strict decode tells the two apart (MRV1-B2).
+     * @param bytes the file's contents
+     * @return the text
+     */
+    private static String decodeText(byte[] bytes)
+    {
+        try
+        {
+            return StandardCharsets.UTF_8.newDecoder()
+                .onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
+                .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT)
+                .decode(java.nio.ByteBuffer.wrap(bytes))
+                .toString();
+        }
+        catch (java.nio.charset.CharacterCodingException notUtf8)
+        {
+            return new String(bytes, java.nio.charset.Charset.defaultCharset());
+        }
+    }
+
+    /**
+     * Whether the autonomy graph has a state worth keeping - see getAutonomyGraphToKeep, which asks this
+     * first.  The exit save, the exit question and Backup ask it, rather than isValid, so that a layout a
+     * failed path stopped is saved and asked about as a valid one is (MRV1-A1).
+     * @return
+     */
+    private boolean hasAutonomyGraphToKeep()
+    {
+        if (this.model == null || !this.model.hasAutoLayout()) return false;
+
+        Layout layout = this.model.getAutoLayout();
+
+        return layout.isValid() || !layout.getLocomotivesLeftOnAFailedPath().isEmpty();
+    }
+
+    /**
+     * The autonomy graph to keep - what Validate reloads, and what the exit save and Backup write - or
+     * null when there is none, and each of them does what it always did.
+     *
+     * On a valid layout, the graph as it stands.  On a layout a path failed part way on (see
+     * Layout.executePath), the graph as it stands with that train taken off every point, and any train
+     * still part way along a path with it: each is recorded on every point of its path, a graph placing a
+     * train twice does not load, and nothing knows which of those points it stands on.  Unplaced, it is
+     * never sent anywhere until it is put back where it stands.  Every other train stays where the run
+     * left it.
+     *
+     * Those three used to skip the graph of any invalid layout and use the configuration text as it was
+     * last loaded - so after a failed trip, the reload the message asks for put every train back where it
+     * stood when the session began, and closing TrainControl saved that over the session's graph
+     * (MRV1-A1).  Every other invalid state still gets nothing here: its graph did not load, or was
+     * replaced, and there is nothing of the session's to keep.
+     * @return the graph as JSON, or null
+     * @throws IllegalAccessException
+     * @throws NoSuchFieldException
+     */
+    private String getAutonomyGraphToKeep() throws IllegalAccessException, NoSuchFieldException
+    {
+        if (!this.hasAutonomyGraphToKeep()) return null;
+
+        Layout layout = this.model.getAutoLayout();
+
+        if (layout.isValid()) return layout.toJSON();
+
+        Set<Locomotive> unplaced = new HashSet<>(layout.getLocomotivesLeftOnAFailedPath());
+        unplaced.addAll(layout.getActiveLocomotives().keySet());
+
+        return layout.toJSON(unplaced);
+    }
+
+    /**
+     * Why no train can be sent, when a path failed part way on the current layout: the message that
+     * failure logged, for the doors that refuse to show - or null, and each door says what it always did
+     * (MRV1-B1).
+     * @return
+     */
+    private String getPathFailedMessage()
+    {
+        return this.model != null && this.model.hasAutoLayout() ? this.model.getAutoLayout().getPathFailedMessage() : null;
     }
 
     /**
@@ -1192,8 +1283,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         }
         
-        if (this.autosave.isSelected() && this.model.hasAutoLayout() 
-                && this.model.getAutoLayout().isValid()
+        // Not only on a valid layout: after a path failed part way, the graph as the run left it, with the
+        // failed train taken off - see getAutonomyGraphToKeep.  Skipped, this wrote the configuration as
+        // last loaded over the session's graph (MRV1-A1).
+        if (this.autosave.isSelected() && this.hasAutonomyGraphToKeep()
                 && !this.model.getAutoLayout().getPoints().isEmpty())
         {
             if (this.model.getAutoLayout().isRunning())
@@ -1206,11 +1299,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 try
                 {
-                    this.autonomyJSON.setText(this.getModel().getAutoLayout().toJSON());
+                    // Asked again rather than assumed: the layout may have been replaced since
+                    String graph = this.getAutonomyGraphToKeep();
 
-                    this.model.logf(
-                        "autolayout.infoAutoSavingState"
-                    );
+                    if (graph != null)
+                    {
+                        this.autonomyJSON.setText(graph);
+
+                        this.model.logf(
+                            "autolayout.infoAutoSavingState"
+                        );
+                    }
                 }
                 catch (IllegalAccessException | IllegalArgumentException | NoSuchFieldException ex)
                 {
@@ -9895,9 +9994,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void WindowClosed(java.awt.event.WindowEvent evt)//GEN-FIRST:event_WindowClosed
     {//GEN-HEADEREND:event_WindowClosed
-        // Auto-save confirmation
-        if (this.autosave.isSelected() && this.model.hasAutoLayout() 
-                && this.model.getAutoLayout().isValid()
+        // Auto-save confirmation.  Asked on a layout a failed path stopped too, as the save below writes
+        // its graph: the trains already under way still finish their paths, and closing without the
+        // question left nothing to stop them at their stations (MRV1-A1).
+        if (this.autosave.isSelected() && this.hasAutonomyGraphToKeep()
                 && !this.model.getAutoLayout().getPoints().isEmpty())
         {
             if (this.model.getAutoLayout().isRunning())
@@ -12262,6 +12362,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
+            // Refused up front when a path failed part way, in that failure's words.  Nothing here checked
+            // it: every entry was refused and retried for as long as the run lasted, four times a second,
+            // with nothing on screen (MRV1-B1).
+            String pathFailed = this.getPathFailedMessage();
+
+            if (pathFailed != null)
+            {
+                JOptionPane.showMessageDialog(this, pathFailed);
+                this.executeTimetable.setEnabled(true);
+                return;
+            }
+
             if (!this.getModel().getPowerState())
             {
                 JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart"));
@@ -13035,6 +13147,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     this.model.log(e);
                 }
             }
+            // A layout a path failed part way on: the graph as the run left it is reloaded, with the failed
+            // train taken off - see getAutonomyGraphToKeep.  The configuration text is as last loaded or
+            // saved, and reloading it put every train back where it stood when the session began, though
+            // each is physically wherever the run left it, and Start would plan from there (MRV1-A1).  No
+            // question: nothing of the session's is thrown away.
+            else if (this.model.hasAutoLayout() && !this.model.getAutoLayout().isValid()
+                && !this.model.getAutoLayout().getLocomotivesLeftOnAFailedPath().isEmpty())
+            {
+                try
+                {
+                    String graph = this.getAutonomyGraphToKeep();
+
+                    if (graph != null) this.autonomyJSON.setText(graph);
+                }
+                catch (IllegalAccessException | NoSuchFieldException e)
+                {
+                    this.model.log(e);
+                }
+            }
 
             // Offer to load a blank graph if there is no JSON
             if (this.autonomyJSON.getText().trim().equals(""))
@@ -13153,6 +13284,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void requestStartAutonomy() throws Exception
     {
+        // First, as Start does - and Start is still greyed from the run the failure ended, so this item
+        // used to say "wait for all trains to reach their stations" after they had (MRV1-B1)
+        String pathFailed = this.getPathFailedMessage();
+
+        if (pathFailed != null)
+        {
+            throw new Exception(pathFailed);
+        }
+
         if (this.startAutonomy.isEnabled())
         {
             startAutonomyActionPerformed(null);
@@ -13177,6 +13317,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void requestReturnToHome()
     {
         final Layout layout = this.model.getAutoLayout();
+
+        // Refused up front when a path failed part way, in that failure's words.  Every leg would be
+        // refused, and the run ended "a train's path stayed blocked - move it out of the way by hand",
+        // sending the operator to shunt trains for a fault that is not on the track (MRV1-B1).
+        String pathFailed = this.getPathFailedMessage();
+
+        if (pathFailed != null)
+        {
+            JOptionPane.showMessageDialog(this, pathFailed);
+            return;
+        }
 
         if (this.isAutonomyBusy())
         {
@@ -13571,6 +13722,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
             try
             {
+                // A path that failed part way stopped autonomy until the configuration is reloaded: said in
+                // its own words, first, since nothing else here can help.  Start used to say the Central
+                // Station had sent new data, which is never the reason on 2.8 (MRV1-B1).
+                final String pathFailed = this.getPathFailedMessage();
+
+                if (pathFailed != null)
+                {
+                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, pathFailed));
+                    return;
+                }
+
                 if (!this.model.getPowerState())
                 {
                     javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart")));
@@ -13881,11 +14043,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     {
                         File f = fc.getSelectedFile();
 
-                        // UTF-8, as every door writes the file (RLU-A1): in the machine's own character set, Java 8 on Windows
-                        // turned a route's accented letters into others, and a locomotive command naming such a
-                        // locomotive named none.
-                        this.model.importRoutes(new String(Files.readAllBytes(Paths.get(f.getPath())),
-                            java.nio.charset.StandardCharsets.UTF_8));
+                        // UTF-8, as every door has written the file since 2.7.4 (RLU-A1): in the machine's own
+                        // character set, Java 8 on Windows turned a route's accented letters into others, and a
+                        // locomotive command naming such a locomotive named none.  But a file that is not valid
+                        // UTF-8 is an export from before 2.7.4, written in the machine's own character set, and
+                        // is read in it - see decodeText (MRV1-B2).
+                        this.model.importRoutes(decodeText(Files.readAllBytes(Paths.get(f.getPath()))));
 
                         prefs.put(LAST_USED_FOLDER, f.getParent());
 
@@ -15961,13 +16124,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     @Override
     public void showAutonomyAlert(String message)
     {
+        this.showAutonomyAlert(I18n.t("autolayout.ui.pathConfigErrorTitle"), message);
+    }
+
+    @Override
+    public void showAutonomyAlert(String title, String message)
+    {
         // Non-blocking so the autonomy thread that raised the alert is not held up
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             JOptionPane.showMessageDialog(
                 this,
                 message,
-                I18n.t("autolayout.ui.pathConfigErrorTitle"),
+                title,
                 JOptionPane.WARNING_MESSAGE
             );
         });
