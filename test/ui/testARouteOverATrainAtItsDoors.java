@@ -39,7 +39,10 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  *
  * A route carrying an emergency stop is never asked about - Adam, 2026-09-01: *"Emergency stop should never conflict or
  * prompt."* - so the question MT-507 describes is asked of the same route without its stop, and the route with its stop
- * is fired too, to show what each door does with it.
+ * is fired too, to show what each door does with it.  Since 2026-09-25 a stop stands in a route of its own (Adam: *"if a
+ * route has emergency stop, it cannot have any other types of commands"*; MT-507, MT-508: *"routes with an emergency stop
+ * should still fire"*), so the entry's route is built as it now must be: switches A and B, then a Route command firing a
+ * route that is only the stop - which is what a mixed route is split into (`core.testAStopRouteStandsAlone`).
  *
  * @author Adam
  */
@@ -51,6 +54,7 @@ public class testARouteOverATrainAtItsDoors
     private static final String S88 = "48401";
     private static final String ROUTE_S88 = "48409";
     private static final String ROUTE = "MT-507 route";
+    private static final String STOP_ROUTE = "MT-507 route - the stop";
 
     private static support.LayoutSandbox sandbox;
     private static MarklinControlStation model;
@@ -132,13 +136,17 @@ public class testARouteOverATrainAtItsDoors
         });
 
         if (model.getRoute(ROUTE) != null) model.deleteRoute(ROUTE);
+        if (model.getRoute(STOP_ROUTE) != null) model.deleteRoute(STOP_ROUTE);
     }
 
     /**
      * Fired by its sensor while a train holds switch A: nothing is asked, switch A is not thrown, switch B is, the power
-     * goes off, and the log names switch A as held back (MT-506).
+     * goes off, the log names switch A as held back (MT-506), and the stop route's notice is shown, as it was when the
+     * stop stood in the route itself (Adam, 2026-09-25: *"As before, notify the user in a popup when the emergency stop
+     * route fires."*).
      *
-     * MUTATION: have the automatic door ask, refuse the whole route, or throw the held switch, and this fails.
+     * MUTATION: have the automatic door ask, refuse the whole route, throw the held switch, or fire a chained route
+     * without saying it was fired by its sensor, and this fails.
      *
      * @throws Exception from the model or the window
      */
@@ -185,6 +193,15 @@ public class testARouteOverATrainAtItsDoors
                 seen[0] = underTheTrain.isSwitched();
                 seen[1] = otherSwitch.isSwitched();
                 seen[2] = model.getPowerState();
+
+                String notice = I18n.f("route.ui.infoPowerAutomaticallyTurnedOffBecauseRouteTriggered", STOP_ROUTE);
+
+                for (long end = System.currentTimeMillis() + 5000; !seen[3] && System.currentTimeMillis() < end; )
+                {
+                    seen[3] = messageShowing(notice);
+
+                    Thread.sleep(100);
+                }
             }
             finally
             {
@@ -199,6 +216,8 @@ public class testARouteOverATrainAtItsDoors
         assertFalse(seen[0], "the route fired by its sensor threw switch A, under the train (MT-506)");
         assertTrue(seen[1], "the route fired by its sensor did not throw switch B (MT-506)");
         assertFalse(seen[2], "the route fired by its sensor did not cut the power (MT-506)");
+        assertTrue(seen[3], "the route fired by its sensor cut the power through its stop route and said nothing - the"
+            + " notice that a route cut the power was not shown");
 
         String held = I18n.f("route.refusedAccessoryOnActivePath", ROUTE, accessoryName(SWITCH_A));
 
@@ -417,6 +436,7 @@ public class testARouteOverATrainAtItsDoors
             underTheTrain.setSwitched(false);
 
             if (model.getRoute(ROUTE) != null) model.deleteRoute(ROUTE);
+            if (model.getRoute(STOP_ROUTE) != null) model.deleteRoute(STOP_ROUTE);
 
             model.clearAutoLayout();
         }
@@ -427,7 +447,10 @@ public class testARouteOverATrainAtItsDoors
         if (failed[0] != null) throw failed[0];
     }
 
-    /** A, B and - where asked - an emergency stop. */
+    /**
+     * A, B and - where asked - an emergency stop, as a route must now carry one: a Route command firing a route that is
+     * only the stop, which is made here if it is not in the route list.
+     */
     private static List<RouteCommand> commands(boolean stop)
     {
         List<RouteCommand> commands = new ArrayList<>();
@@ -435,9 +458,35 @@ public class testARouteOverATrainAtItsDoors
         commands.add(RouteCommand.RouteCommandAccessory(SWITCH_A, Accessory.accessoryDecoderType.MM2, true));
         commands.add(RouteCommand.RouteCommandAccessory(SWITCH_B, Accessory.accessoryDecoderType.MM2, true));
 
-        if (stop) commands.add(RouteCommand.RouteCommandStop());
+        if (stop)
+        {
+            if (model.getRoute(STOP_ROUTE) == null)
+            {
+                List<RouteCommand> alone = new ArrayList<>();
+
+                alone.add(RouteCommand.RouteCommandStop());
+
+                assertTrue(model.newRoute(new MarklinRoute(model, STOP_ROUTE, 84908, alone, 0,
+                    MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null)), "precondition: the stop route could not be"
+                    + " added to the route list");
+            }
+
+            commands.add(RouteCommand.RouteCommandRoute(STOP_ROUTE));
+        }
 
         return commands;
+    }
+
+    /** Whether a message showing exactly this text is on screen. */
+    private static boolean messageShowing(String text)
+    {
+        for (java.awt.Window window : java.awt.Window.getWindows())
+        {
+            if (window instanceof javax.swing.JDialog && window.isShowing()
+                && text.equals(textOf((javax.swing.JDialog) window))) return true;
+        }
+
+        return false;
     }
 
     private static MarklinAccessory switchAt(int address)

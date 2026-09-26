@@ -6,6 +6,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.RouteEditorFrame;
+import org.traincontrol.util.I18n;
 
 /**
  * The three marks at the end of a command row do exactly what they say.
@@ -112,6 +113,56 @@ public class testCommandTableMarks
     private void act(final RouteEditorFrame frame, final int row, final String mark) throws Exception
     {
         javax.swing.SwingUtilities.invokeAndWait(() -> frame.clickCommandMarkForTest(row, mark));
+    }
+
+    /**
+     * An emergency stop stands alone: the editor will not save a route that has one among other commands, and says how to
+     * split it - Adam, 2026-09-25: *"if a route has emergency stop, it cannot have any other types of commands.  Reject
+     * it from being created or imported as such."*
+     *
+     * MUTATION: drop the rule from the editor's Save, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAnEmergencyStopStandsAlone() throws Exception
+    {
+        needsADisplay();
+
+        final RouteEditorFrame frame = open();
+
+        try
+        {
+            final String alone = I18n.t("route.ui.frameStopStandsAlone");
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+                frame.appendCommand(RouteCommand.RouteCommandStop().toLine(null).trim()));
+
+            assertEquals(frame.commandRowCountForTest(), 1, "precondition: the stop was not added");
+
+            final java.util.List<java.util.List<String>> problems = new java.util.ArrayList<>();
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> problems.add(frame.problemsForTest()));
+
+            assertFalse(problems.get(0).contains(alone), "CONTROL: an emergency stop on its own is refused");
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.appendCommand(RouteCommand.RouteCommandAccessory(11, Accessory.accessoryDecoderType.MM2, true)
+                    .toLine(null).trim());
+
+                problems.add(frame.problemsForTest());
+            });
+
+            assertEquals(frame.commandRowCountForTest(), 2, "precondition: the switch was not added");
+
+            assertTrue(problems.get(1).contains(alone), "the editor would save an emergency stop among other commands: "
+                + problems.get(1));
+        }
+        finally
+        {
+            close(frame);
+        }
     }
 
     private static RouteEditorFrame open() throws Exception
