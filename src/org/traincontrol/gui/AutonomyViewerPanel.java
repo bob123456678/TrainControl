@@ -803,7 +803,36 @@ public class AutonomyViewerPanel extends JPanel
             // Another configuration (RLV6-B1, b): the one running first, with the edit and where the trains stand, so
             // it is folded below as any configuration left is.  With nothing running there is nothing to carry, and
             // nothing to fold.
-            if (running != null) ui.carryTheTrainsAcross(() -> loadPrepared(running, false, false));
+            if (running != null)
+            {
+                // Quietly: its failure is said below, in words about this choice rather than a start-up (RLV7-C4)
+                final boolean carried = ui.carryTheTrainsAcross(() -> loadPrepared(running, false, false, false));
+
+                // NOT WHILE THE ONE RUNNING CANNOT BE USED WITH THE EDIT THAT WAITS (RLV7-C4).  The choice went ahead:
+                // the configuration left kept where its trains stood before the run, with nothing said, and the flag
+                // stayed up over the one chosen.  Refused, the one running stays loaded - as it was, where the edit stops
+                // it building, or with its errors where it builds with them (SVN-B10: a setup with errors loads, so it
+                // can be fixed) - the edit is kept, and what stops it is in the list the refresh shows.
+                if (!carried && ui.isSetupNewerThanTheRunningLayout())
+                {
+                    int things = Math.max(countBlocking(), session().errorCount());
+
+                    String why = I18n.f("autosetup.ui.errorCannotKeepTrainsBeforeChoosing", running, name);
+
+                    if (things > 0)
+                    {
+                        why += "\n\n" + (things == 1 ? I18n.t("autosetup.ui.errorCannotBuildDetailOne")
+                            : I18n.f("autosetup.ui.errorCannotBuildDetail", things));
+                    }
+
+                    refresh();
+
+                    if (interactive) JOptionPane.showMessageDialog(ui, why);
+                    else if (ui.getModel() != null) ui.getModel().log(why);
+
+                    return;
+                }
+            }
         }
 
         loadPrepared(name, interactive, captureRunningState);
@@ -818,6 +847,20 @@ public class AutonomyViewerPanel extends JPanel
      * @param captureRunningState whether to fold the running layout's state back in first
      */
     private void loadPrepared(String name, boolean interactive, boolean captureRunningState)
+    {
+        loadPrepared(name, interactive, captureRunningState, true);
+    }
+
+    /**
+     * The same, told whether a load that is not interactive says in the log that it failed - not where its caller says
+     * so itself, in words about what was asked for (RLV7-C4).
+     *
+     * @param name the configuration to load
+     * @param interactive whether the user asked for this, and so should be told when it fails
+     * @param captureRunningState whether to fold the running layout's state back in first
+     * @param logAFailure whether a failure that is not interactive goes to the log as a start-up's would
+     */
+    private void loadPrepared(String name, boolean interactive, boolean captureRunningState, boolean logAFailure)
     {
         // What was set while the outgoing configuration ran - placements, homes, settings - goes back
         // into THAT configuration, by name, before anything is replaced.  By name because store-active
@@ -868,7 +911,7 @@ public class AutonomyViewerPanel extends JPanel
                     ? I18n.t("autosetup.ui.errorCannotBuildDetailOne")
                     : I18n.f("autosetup.ui.errorCannotBuildDetail", blocking));
             }
-            else if (ui.getModel() != null)
+            else if (logAFailure && ui.getModel() != null)
             {
                 ui.getModel().log(I18n.f("autosetup.ui.infoResumeFailed", name));
             }

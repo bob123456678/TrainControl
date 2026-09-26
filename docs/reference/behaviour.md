@@ -2467,7 +2467,9 @@ the edit, and choosing another configuration first carries the one running, whic
 left is (RLA5-B1, RLV6-B1).  A load confirmed while a train is under way carries the trains the same way and folds
 nothing, since a train under way holds every point of its path: it is kept at the last station on its path whose sensor
 it has tripped, or where it set off (RLV7-B1, RLV7-C1).  Unload, a deleted setup and a switch of railway forget the
-railway loaded, so a load after them carries nothing across (RLV7-C2).  Before the import went into the configuration named, a layout that already had configurations took the file's placements, homes and facings into
+railway loaded, so a load after them carries nothing across (RLV7-C2).  Another configuration is not chosen while the
+one running cannot be used with the edit that waits: the choice is refused, and says so, and the one running stays
+loaded - with its errors, where it builds with them, since a setup with errors loads so that it can be fixed (RLV7-C4).  Before the import went into the configuration named, a layout that already had configurations took the file's placements, homes and facings into
 the one in use, and the name asked for was thrown away.
 
 Into a configuration that exists, an old file fills what that configuration does not already say (MT-298), and the

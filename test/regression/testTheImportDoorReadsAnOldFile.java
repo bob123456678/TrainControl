@@ -2031,8 +2031,9 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Choosing another configuration while a setup edit waits, where the configuration running cannot be rebuilt with that
-     * edit, is refused and says why (RLV7-C4).
+     * Choosing another configuration while a setup edit waits, where the configuration running cannot be used with that
+     * edit, is refused and says why (RLV7-C4).  Here the edit places a train twice: an error, and a setup with errors
+     * still loads so that it can be fixed (SVN-B10), so the configuration running stays loaded with its errors.
      *
      * The choice went ahead: the configuration left kept where its trains stood before the run, with nothing said; the
      * log said it "could not be loaded at startup", about a load nobody made at start-up; and the flag stayed up over the
@@ -2100,9 +2101,11 @@ public class testTheImportDoorReadsAnOldFile
                 }
             });
 
-            declined.set(ui[0], true);
+            assertEquals(squaresPlacing(session, inUse, move[0]), 2, "precondition: the edit did not place " + move[0]
+                + " a second time in " + inUse + " - the store's active configuration is "
+                + session.getStore().getActiveConfiguration());
 
-            final Object before = ui[0].getModel().getAutoLayout();
+            declined.set(ui[0], true);
 
             final int logFrom = logged().length();
 
@@ -2117,9 +2120,11 @@ public class testTheImportDoorReadsAnOldFile
             assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "MT-491 other was loaded, and " + inUse + " was left"
                 + " with its trains where they stood before the run (RLV7-C4)");
 
-            assertTrue(ui[0].getModel().getAutoLayout() == before, "the running layout was replaced (RLV7-C4)");
+            assertFalse(asked.stream().anyMatch(said -> said.contains(" 0 ")), "the refusal counts nothing to deal with: "
+                + asked);
 
-            assertStandsWhereItWasMoved(ui[0], move, "after the refused choice (RLV7-C4)");
+            assertEquals(squaresPlacing(ui[0].getAutonomySession(), inUse, move[0]), 2, "the edit that waits in " + inUse
+                + " was folded away by the refused choice");
 
             assertTrue((Boolean) declined.get(ui[0]), "the flag came down, though the edit it guards still waits");
 
