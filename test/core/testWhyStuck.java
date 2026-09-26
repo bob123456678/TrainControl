@@ -667,8 +667,8 @@ public class testWhyStuck
      *
      * By hand it is not a reason: a train sent by hand may go where autonomy never sends one.
      *
-     * MUTATION: drop the reason, give it by hand, or offer turning round where neither copy reaches a station, and this
-     * fails.
+     * MUTATION: drop the reason, give it by hand, offer turning round where neither copy reaches a station, or leave the
+     * closed side out of the either-way sentence, and this fails.
      *
      * @throws Exception from the railway
      */
@@ -708,11 +708,19 @@ public class testWhyStuck
             org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")), "a train on a square where neither copy"
             + " reaches a station autonomy may choose is told to turn round, which would not help (OB-299)");
 
-        // AND IT DOES NOT SEND THE OPERATOR TO OPEN A CLOSED SIDE (RLU3-C1): where every train turns round at the station
-        // beyond, that raises the terminus error and refuses the whole setup (GUI4-C3), and this sentence cannot know.
-        assertFalse(stranded.explainCannotStart(loc).contains(org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")),
-            "the either-way sentence tells the operator to open a side under Trains May Arrive..., which at a station every"
-            + " train turns round at makes the setup refuse to load (RLU3-C1): " + stranded.explainCannotStart(loc));
+        // AND THE SIDE A TRAIN WOULD ARRIVE ON, WITH GUI4-C3'S EXCEPTION (RLU4-C4, RLU3-C1).  At a station trains pass
+        // through, a closed side is what keeps it out of reach, and switching it on and ticking - true there already - is
+        // no remedy (RLU2-C10); where every train turns round, opening it is the terminus error that refuses the whole
+        // setup.  The sentence does not know which station is meant, so it names the side with the exception.
+        assertTrue(stranded.explainCannotStart(loc).contains(org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")),
+            "the either-way sentence gives only remedies already true of a station reached across a closed side (RLU4-C4,"
+            + " RLU2-C10): " + stranded.explainCannotStart(loc));
+
+        // The exception in the words, read from the English bundle: no placeholder carries it.
+        assertTrue(java.util.ResourceBundle.getBundle("org.traincontrol.resources.messages", java.util.Locale.ROOT)
+            .getString("autolayout.why.startReachesNoStationEitherWay").contains("unless every train turns round there"),
+            "the either-way sentence sends the operator to open a side under Trains May Arrive... without GUI4-C3's"
+            + " exception - at a station every train turns round at, that makes the setup refuse to load (RLU3-C1)");
     }
 
     /**
@@ -782,6 +790,52 @@ public class testWhyStuck
             org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")), "a train on the copy of WS12 Platform that"
             + " reaches no station is told to turn round onto a copy trains may not arrive at (RLA-C5), or told no station"
             + " can be reached whichever way it faces, where the other way reaches WS12 Far (RLU3-C2)");
+    }
+
+    /**
+     * Where the other way reaches a station only across a side trains may not arrive by, and every train turns round at
+     * that square, the train is told that side is closed and not told to open it (RLU4-C6, RLU4-C7, RLA4-C4, RLD4-C6):
+     * opened there, a terminus reached from two sides is the error that refuses the whole setup (GUI4-C3).
+     *
+     * The claims beside this one build no square whose every copy turns a train, so the exception had no claim; and the
+     * sentence chosen here said only that autonomy starts no train that way, without the reason.
+     *
+     * MUTATION: offer "open that side" wherever the other copy is barred, or give the refusal without its reason, and
+     * this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testOpeningASideIsNotOfferedWhereEveryTrainTurns() throws Exception
+    {
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        Layout layout = platformWithASiding("WS13", true, false);
+
+        // EVERY COPY TURNS A TRAIN: the station copy a terminus, the barred one a reversing point.
+        layout.getPoint("WS13 Platform (eastbound)").setTerminus(true);
+        layout.getPoint("WS13 Platform (westbound)").setReversing(true);
+
+        Point barred = layout.getPoint("WS13 Platform (westbound)");
+
+        assertTrue(layout.turnsEveryTrainAt(barred), "precondition: a copy of WS13 Platform lets a train through");
+
+        assertTrue(layout.isABarredCopyOfAStation(barred), "precondition: the westbound copy is not a copy of the station"
+            + " trains may not arrive at");
+
+        assertTrue(layout.canReachAnyDestination(barred), "precondition: the westbound copy reaches no station");
+
+        layout.moveLocomotive(loc.getName(), "WS13 Platform (eastbound)", false);
+
+        String said = layout.explainCannotStart(loc);
+
+        assertEquals(said, org.traincontrol.util.I18n.f("autolayout.why.startReachesNoStationOtherWayBarredMustTurn",
+            "WS13 Platform"), "a train at a square every train turns round at, whose other way reaches a station only"
+            + " across a closed side, is not told the side is closed, or is told to open it (RLU4-C6, RLU4-C7)");
+
+        assertFalse(said.contains(org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")), "a train at a square"
+            + " every train turns round at is told to open a side under Trains May Arrive..., which makes the setup refuse to"
+            + " load (GUI4-C3): " + said);
     }
 
     /**

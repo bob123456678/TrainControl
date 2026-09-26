@@ -188,13 +188,14 @@ public class testWhereHisTrainsMayBeSent
 
     /**
      * No message on either right-click menu - the diagram's autonomy menu, or the track-diagram editor's - belongs to the
-     * menu itself (RLU-B2, RLU2-C5, RLU2-C6).
+     * menu itself, and none on the autonomy viewer panel to the panel (RLU-B2, RLU2-C5, RLU2-C6, RLD4-C9).  The setup's
+     * tidy report is a message too (IND9X-C4, RLD3-C4).
      *
      * The claim above drives one refusal; the rest are read here.  A menu has left its window by the time its item runs,
      * so a message parented on it belongs to Swing's hidden frame and, with Window Always on Top, opens beneath the
      * window it holds.
      *
-     * MUTATION: put `this` back as any one of their owners, and this fails naming the line.
+     * MUTATION: put `this` back as any one of their owners, a tidy report's included, and this fails naming the line.
      *
      * @throws Exception from the files
      */
@@ -204,20 +205,25 @@ public class testWhereHisTrainsMayBeSent
         List<String> onAMenu = new ArrayList<>();
         int messages = 0;
 
+        // The panel is built and never shown, so a message parented on it belongs to the hidden frame as a menu's does
         for (String path : new String[] {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java",
-            "src/org/traincontrol/gui/LayoutEditorRightclickMenu.java"})
+            "src/org/traincontrol/gui/LayoutEditorRightclickMenu.java", "src/org/traincontrol/gui/AutonomyViewerPanel.java"})
         {
             String[] lines = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(path)),
                 java.nio.charset.StandardCharsets.UTF_8).split("\n");
 
             for (int i = 0; i < lines.length; i++)
             {
-                if (!lines[i].contains("JOptionPane.show")) continue;
+                // A message, or the setup's tidy report, which is one (RLD3-C4, RLD4-C9)
+                String shows = lines[i].contains("JOptionPane.show") ? "JOptionPane.show"
+                    : lines[i].contains("AutonomyReport.show(") ? "AutonomyReport.show(" : null;
+
+                if (shows == null) continue;
 
                 messages++;
 
                 // The owner is the first argument: on this line, or the next where the call breaks after its bracket.
-                String call = lines[i].substring(lines[i].indexOf("JOptionPane.show"))
+                String call = lines[i].substring(lines[i].indexOf(shows))
                     + (i + 1 < lines.length ? " " + lines[i + 1].trim() : "");
 
                 String owner = call.substring(call.indexOf('(') + 1).trim();

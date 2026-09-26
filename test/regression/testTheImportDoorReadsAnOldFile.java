@@ -603,13 +603,13 @@ public class testTheImportDoorReadsAnOldFile
      * another name and chosen from there (RLA2-B1, RLD3-C2).  The case is the backup round trip: Export suggests the
      * configuration's name and Import suggests the file's.
      *
-     * The reload after an import into the configuration running captured the running railway over what the import had
-     * just written - an old file's homes, a bundle's settings and timetable - and capturing first instead stood the old
-     * file's trains on the running railway, facing the way the square's last occupant faced, while nothing knew where
-     * those trains really were.  Where a train stands on the railway running is the railway's to say (OB-183); a file
-     * belongs in a configuration of its own, chosen when the operator means to run it.
+     * A bundle replaces the configuration it is imported into, and the reload after it captured the running railway
+     * straight back over its settings and timetable - so "Replace it?" answered Yes did not replace; and its placements
+     * are not where the running railway's trains stand, which is the railway's to say (OB-183).  An old file under that
+     * name is not refused: it fills gaps and places no train (RLD3-C1), as the claims below say.
      *
-     * MUTATION: import into the configuration in use again, and this fails.
+     * MUTATION: import into the configuration in use again, or refuse and then ask to replace it anyway (RLD4-C4), and
+     * this fails.
      *
      * @throws Exception from the window or the import
      */
@@ -669,6 +669,10 @@ public class testTheImportDoorReadsAnOldFile
 
             assertTrue(said.contains(refused), "the door did not say it will not import into the configuration in use,"
                 + " and what to do instead: " + said);
+
+            // A bundle of the configuration itself changes nothing the comparisons above can see, so the question is read
+            assertFalse(said.contains(I18n.f("autosetup.ui.confirmImportOverwrites", inUse)), "the door refused " + inUse
+                + " and then asked to replace it (RLD4-C4): " + said);
         }
         finally
         {
@@ -693,8 +697,12 @@ public class testTheImportDoorReadsAnOldFile
      * Round 2 refused the name outright, which MT-298's own steps cannot get past: a hand change is made in the
      * configuration chosen, and the second import is into that one.
      *
-     * MUTATION: refuse the name again, place the file's trains on the running railway, or leave out the capture that
-     * keeps a moved train where it stands, and this fails.
+     * And what the file brings to it stays: a priority the configuration had lost is there after the reload, which does
+     * not capture again (RLU4-C2, RLA4-C2, RLD4-C2) - the moved train is kept by either capture, so it pins neither.  The
+     * question asked says the file's trains are not placed (RLU4-C3).
+     *
+     * MUTATION: refuse the name again, place the file's trains on the running railway, leave the capture to the reload,
+     * or ask the question any configuration is asked, and this fails.
      *
      * @throws Exception from the window or the import
      */
@@ -722,6 +730,26 @@ public class testTheImportDoorReadsAnOldFile
             final String inUse = session.getStore().getActiveConfiguration();
 
             assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+
+            // A SETTING THE FILE CARRIES, taken out of the configuration in use and the railway rebuilt without a capture:
+            // what the import brings is then visible, and a capture after the import would take it away again.
+            final Object[] carried = priorityTheFileCarries(session, MT491);
+
+            assertNotNull(carried, "precondition: the MT-491 file gives no named square of his railway a priority");
+
+            final TileKey prioritised = (TileKey) carried[0];
+            final AutonomySession clearing = session;
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                clearing.setPointProperty(prioritised, "priority", null);
+                ui[0].getAutonomyViewerPanel().load(inUse, false, false);
+            });
+
+            session = ui[0].getAutonomySession();
+
+            assertEquals(priorityIn(session, inUse, prioritised), null, "precondition: the priority could not be taken out"
+                + " of " + inUse);
 
             // ONE STANDING TRAIN MOVED ON THE RUNNING RAILWAY, to an empty station - as a run leaves it, not written to
             // the configuration.
@@ -783,6 +811,14 @@ public class testTheImportDoorReadsAnOldFile
 
             assertTrue(said.stream().anyMatch(message -> message.contains(notPlaced)), "the import did not say why it"
                 + " placed none of the file's trains: " + said);
+
+            // WHAT THE IMPORT BROUGHT STAYS: the reload after it does not capture the railway back over it (RLA-C2)
+            assertEquals(priorityIn(session, inUse, prioritised), carried[1], "the priority the old file carried into "
+                + inUse + " was captured over by the reload after the import (RLU4-C2, RLA-C2): " + said);
+
+            // AND THE QUESTION SAID NONE WOULD BE PLACED (RLU4-C3)
+            assertTrue(said.contains(I18n.f("autosetup.ui.confirmImportFillsGapsInUse", inUse)), "the question into "
+                + inUse + ", the configuration in use, promised the file's trains, and Yes placed none (RLU4-C3): " + said);
         }
         finally
         {
@@ -875,6 +911,274 @@ public class testTheImportDoorReadsAnOldFile
         }
         finally
         {
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * A configuration of the older, bare shape - the setup folder's own configuration file, or an export from before
+     * bundles - imported into the configuration in use by its name is refused as a bundle is, before anything is asked
+     * or written (RLU4-B1, RLA2-B1).  It replaces the configuration as a bundle does, and the reload after it captured
+     * the running railway straight back over it, after a message saying it was imported.
+     *
+     * MUTATION: refuse only a bundle, and this fails.
+     *
+     * @throws Exception from the window or the import
+     */
+    @Test
+    public void testABareConfigurationIntoTheConfigurationInUseIsRefused() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in docs/manual-tests/files");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            AutonomySession session = ui[0].getAutonomySession();
+
+            final String inUse = session.getStore().getActiveConfiguration();
+
+            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+
+            String before = session.getStore().getConfiguration(inUse).toString();
+            List<String> namesBefore = new ArrayList<>(session.getStore().getConfigurationNames());
+            String onDiskBefore = setupOnDisk(session).toString();
+
+            // HIS CONFIGURATION AS ITS OWN FILE HOLDS IT, with one change the running layout does not carry.
+            org.json.JSONObject bare = new org.json.JSONObject(before);
+
+            String first = bare.getJSONObject("points").keys().next();
+
+            bare.getJSONObject("points").getJSONObject(first).put("priority", 7);
+
+            assertEquals(AutonomySession.detectImportFormat(bare), AutonomySession.ImportFormat.CONFIGURATION,
+                "precondition: the configuration's own shape is not read as a configuration on its own");
+
+            File file = File.createTempFile("tc-configuration", ".json");
+
+            file.deleteOnExit();
+
+            java.nio.file.Files.write(file.toPath(), bare.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            List<String> said = importFromTheMenu(ui[0], file, inUse);
+
+            session = ui[0].getAutonomySession();
+
+            assertTrue(said.contains(I18n.f("autosetup.ui.errorImportIntoConfigurationInUse", inUse, whereChosen(inUse))),
+                "a configuration of the older shape was imported over " + inUse + ", the configuration in use - the reload"
+                + " then captured the running railway back over it (RLU4-B1): " + said);
+
+            assertFalse(said.contains(I18n.f("autosetup.ui.confirmImportOverwrites", inUse)), "the door asked to replace "
+                + inUse + " after refusing it: " + said);
+
+            assertEquals(session.getStore().getConfiguration(inUse).toString(), before, "an import refused changed " + inUse);
+
+            assertEquals(new ArrayList<>(session.getStore().getConfigurationNames()), namesBefore, "an import refused"
+                + " left a configuration behind");
+
+            assertEquals(setupOnDisk(session).toString(), onDiskBefore, "an import refused changed the setup on disk");
+        }
+        finally
+        {
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * An old file into the configuration in use while autonomy runs is refused, as Delete beside it is, and changes
+     * nothing (RLU4-C1, RLA4-C1, RLD4-C1).
+     *
+     * The capture before the import is skipped while autonomy is busy - the reload stops the trains and captures where
+     * they stopped - so the reload's capture took back the homes and settings the import had just written and counted;
+     * and with the stop declined, the next fold did the same.
+     *
+     * The trains are "moving" as a Return Home in progress makes them: the flag the window asks.
+     *
+     * MUTATION: let it in while autonomy runs, and this fails.
+     *
+     * @throws Exception from the window or the import
+     */
+    @Test
+    public void testAnOldFileIntoTheConfigurationInUseIsRefusedWhileAutonomyRuns() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in docs/manual-tests/files");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
+
+        staging.setAccessible(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            AutonomySession session = ui[0].getAutonomySession();
+
+            final String inUse = session.getStore().getActiveConfiguration();
+
+            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+
+            String before = session.getStore().getConfiguration(inUse).toString();
+            List<String> namesBefore = new ArrayList<>(session.getStore().getConfigurationNames());
+            String onDiskBefore = setupOnDisk(session).toString();
+
+            staging.set(ui[0], true);
+
+            String stopsThem = I18n.t("autolayout.ui.confirmReloadJsonStopsRunningLocomotives");
+
+            List<String> said = importFromTheMenu(ui[0], MT491, inUse, Collections.singleton(stopsThem));
+
+            session = ui[0].getAutonomySession();
+
+            assertTrue(said.contains(I18n.t("autolayout.errorCannotEditWhileRunning")), "an old file was taken into " + inUse
+                + ", the configuration in use, while autonomy runs - and what it brought was captured over by the reload,"
+                + " or by the next fold (RLU4-C1): " + said);
+
+            assertEquals(session.getStore().getConfiguration(inUse).toString(), before, "an import refused changed " + inUse);
+
+            assertEquals(new ArrayList<>(session.getStore().getConfigurationNames()), namesBefore, "an import refused"
+                + " left a configuration behind");
+
+            assertEquals(setupOnDisk(session).toString(), onDiskBefore, "an import refused changed the setup on disk");
+        }
+        finally
+        {
+            if (ui[0] != null) staging.set(ui[0], false);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * A setup edit a run declined to apply - written to the file, not to the running layout, and waiting for the rebuild
+     * that carries it - survives an old file's import, into the configuration in use or beside it (RLD4-C3, ACC-B3,
+     * WKW-B2).
+     *
+     * The import into the configuration in use captured the running layout into it first, and the reload after an import
+     * into another captured it into the one running: each a fold of the layout built before the edit back over it, which
+     * the exit save and the editor doors refuse while such an edit waits.
+     *
+     * MUTATION: fold without asking whether an edit waits - before the import, or at the reload - and this fails.
+     *
+     * @throws Exception from the window or the import
+     */
+    @Test
+    public void testAnImportDoesNotFoldAnEditWaitingForItsRebuild() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in docs/manual-tests/files");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
+
+        declined.setAccessible(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            AutonomySession session = ui[0].getAutonomySession();
+
+            final String inUse = session.getStore().getActiveConfiguration();
+
+            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+
+            final TileKey edited = aStationTheFileGivesNoPriority(session, MT491);
+
+            assertNotNull(edited, "precondition: the MT-491 file gives a priority to every station of his railway");
+
+            // THE EDIT A RUN DECLINED: written into the configuration, the running layout not rebuilt, the flag up.
+            final AutonomySession editing = session;
+
+            SwingUtilities.invokeAndWait(() -> editing.setPointProperty(edited, "priority", 5));
+
+            declined.set(ui[0], true);
+
+            List<String> said = importFromTheMenu(ui[0], MT491, inUse);
+
+            session = ui[0].getAutonomySession();
+
+            assertNotNull(placedIn(said), "precondition: the old file was not imported into " + inUse + ": " + said);
+
+            assertEquals(priorityIn(session, inUse, edited), Integer.valueOf(5), "an edit waiting for its rebuild was"
+                + " folded away by the import into " + inUse + ", the configuration in use (RLD4-C3): " + said);
+
+            // AND BESIDE IT: the reload of the configuration in use, after an import into another.
+            final AutonomySession again = session;
+
+            SwingUtilities.invokeAndWait(() -> again.setPointProperty(edited, "priority", 6));
+
+            declined.set(ui[0], true);
+
+            said = importFromTheMenu(ui[0], MT491, "MT-491 beside");
+
+            session = ui[0].getAutonomySession();
+
+            assertTrue(session.getStore().getConfigurationNames().contains("MT-491 beside"), "precondition: the import"
+                + " made no configuration of the name given: " + said);
+
+            assertEquals(priorityIn(session, inUse, edited), Integer.valueOf(6), "an edit waiting for its rebuild was"
+                + " folded away by the reload of " + inUse + " after an import into another configuration (RLD4-C3): "
+                + said);
+        }
+        finally
+        {
+            if (ui[0] != null) declined.set(ui[0], false);
+
             putTheFolderBack(folderWas);
 
             if (ui[0] != null)
@@ -1112,6 +1416,65 @@ public class testTheImportDoorReadsAnOldFile
 
             if (!homed.delete()) homed.deleteOnExit();
         }
+    }
+
+    /**
+     * The first square of his railway the old file gives a priority - by the name the file and the setup share - and
+     * that priority, or null.
+     */
+    private static Object[] priorityTheFileCarries(AutonomySession session, File file) throws Exception
+    {
+        org.json.JSONArray points = new org.json.JSONObject(new String(java.nio.file.Files.readAllBytes(file.toPath()),
+            java.nio.charset.StandardCharsets.UTF_8)).getJSONArray("points");
+
+        for (int i = 0; i < points.length(); i++)
+        {
+            org.json.JSONObject point = points.getJSONObject(i);
+
+            if (point.optInt("priority", 0) == 0) continue;
+
+            for (TileKey key : session.getStore().getNamedTiles())
+            {
+                if (point.optString("name").equals(session.getStore().getPointName(key)))
+                {
+                    return new Object[] {key, Integer.valueOf(point.getInt("priority"))};
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /** A station of his railway the old file names with no priority, or null. */
+    private static TileKey aStationTheFileGivesNoPriority(AutonomySession session, File file) throws Exception
+    {
+        org.json.JSONArray points = new org.json.JSONObject(new String(java.nio.file.Files.readAllBytes(file.toPath()),
+            java.nio.charset.StandardCharsets.UTF_8)).getJSONArray("points");
+
+        Set<String> prioritised = new java.util.HashSet<>();
+
+        for (int i = 0; i < points.length(); i++)
+        {
+            if (points.getJSONObject(i).optInt("priority", 0) != 0) prioritised.add(points.getJSONObject(i).optString("name"));
+        }
+
+        for (TileKey key : session.getStore().getNamedTiles())
+        {
+            String name = session.getStore().getPointName(key);
+
+            if (name != null && !prioritised.contains(name) && session.getStore().isStation(key)) return key;
+        }
+
+        return null;
+    }
+
+    /** The priority a configuration gives a square, or null where it states none. */
+    private static Integer priorityIn(AutonomySession session, String configuration, TileKey square)
+    {
+        org.json.JSONObject point = session.getStore().getConfiguration(configuration).getJSONObject("points")
+            .optJSONObject(square.toString());
+
+        return point == null || !point.has("priority") ? null : Integer.valueOf(point.getInt("priority"));
     }
 
     /** The squares a configuration gives this train as its home. */
