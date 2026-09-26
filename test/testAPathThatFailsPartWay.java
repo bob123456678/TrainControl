@@ -949,6 +949,26 @@ public class testAPathThatFailsPartWay
     }
 
     /**
+     * Ctrl+X on a failed train's station, then Ctrl+V on another, keeps it where it was pasted (MRV2-C1,
+     * MRV3-B1): the cut takes it off every point, and the paste puts it on one.
+     */
+    @Test(timeOut = 120000)
+    public void testCuttingAFailedTrainAndPastingItElsewhereKeepsItThere() throws Exception
+    {
+        Layout layout = aDepartureThatFails("CP", 8850);
+
+        assertTrue(layout.moveLocomotive(null, "CP S3", true), "precondition: the cut was refused");
+        assertTrue(layout.moveLocomotive(FAILING, "CP M", false), "precondition: the paste was refused");
+
+        Layout reloaded = Layout.fromJSON(graphTheWindowKeeps(layout), model);
+
+        assertTrue(reloaded.isValid(), "after a cut and a paste the graph kept does not load: " + Layout.getLastError());
+
+        assertEquals(where(reloaded, model.getLocByName(FAILING)), Collections.singletonList("CP M"),
+            "a failed train cut and pasted elsewhere was not kept where it was pasted");
+    }
+
+    /**
      * Clear all locomotives takes a failed train off the graph that is kept (MRV3-B1).
      *
      * The door takes each train off the station getLocomotiveLocation finds it at - for a failed train, any
