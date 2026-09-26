@@ -373,12 +373,15 @@ Tab icons provided by Freepik.
         - Double-clicking Start no longer starts every train twice
         - One timetable entry that can no longer be loaded, such as after its locomotive was deleted, no longer wipes out the whole timetable
         - If a train’s trip fails part way, autonomy now stops itself, and the graph has to be validated again before any train is sent.  Previously the other trains carried on, and the failed train could later be sent off from the wrong place
-        - Messages from the graph’s right-click menu, such as asking for the track power to be turned on, no longer open behind the main window when Window Always on Top is ticked
+        - After such a stop, validating the graph again or closing TrainControl keeps the other trains where they are.  The failed train is taken off the graph, to be put back once it stands at a station
+        - After such a stop, a message says what happened, and Start, Return Home and Execute Timetable say why they cannot run
+        - Messages from the track diagram’s right-click autonomy menu, such as asking for the track power to be turned on, no longer open behind the main window when Window Always on Top is ticked
     - Route Bug Fixes
         - Fixed bug where editing a route, or switching it on or off, removed it from the routes autonomy is set to activate
         - Importing routes no longer garbles accented letters in route and locomotive names, which stopped a route’s commands for such a locomotive from working
+        - Routes and autonomy files exported by TrainControl 2.7.3 or earlier also import with their accented letters intact
     - Locomotive Bug Fixes
-        - If the locomotive list or the keyboard pages cannot be read when TrainControl starts, they are no longer saved over as empty when it closes.  A copy of the unreadable file is kept in the tc_backup folder, and the file is not saved over until that copy has been made
+        - If the locomotive list or the keyboard pages cannot be read when TrainControl starts, a copy of the unreadable file is now kept in the tc_backup folder before it is saved over.  Previously it was saved over as empty when TrainControl closed
         - Page names are no longer lost when going back to 2.8 after using TrainControl 3.0 with fewer than ten pages
     - Central Station Bug Fixes
         - After a short network drop, TrainControl no longer keeps reporting the connection as lost until it is restarted, and autonomy no longer keeps turning the track power off because of it
