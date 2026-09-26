@@ -3,6 +3,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,6 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
+import javax.swing.JFileChooser;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -692,25 +694,306 @@ public class testMainWindowFaults
         return restored;
     }
 
+    /**
+     * The name of a route and of a locomotive as a German layout has them: every accented letter that
+     * windows-1252 and UTF-8 write differently.
+     */
+    private static final String ACCENTED = "Stra\u00dfe G\u00fcterzug";
+
+    /**
+     * Routes > Import reads a routes file exported before 2.7.4, in the computer's own character set, as
+     * written - and a UTF-8 one, as every export since writes, still reads as written (MRV1-B2).
+     *
+     * From October 2023 until 2.7.4 the routes export wrote the computer's own character set -
+     * windows-1252 on a Western European Windows - and 2.8.1 read the import the same way, so an older
+     * backup came back as it went out.  2.8.2 read every file as UTF-8, and each accented letter of such
+     * a backup became the replacement character: route names garbled, and a route command naming a
+     * locomotive with an accent named no locomotive.
+     *
+     * The window's own handler, with the file chooser answered by the test and the model a stand-in
+     * that keeps what it is asked to import and then stops the handler, before it records the folder
+     * in the preferences.  Only meaningful where the computer's own character set is not UTF-8, which
+     * is where such files were written; skipped elsewhere.
+     */
+    @Test
+    public void testRoutesImportReadsAnOlderExportAsWritten() throws Exception
+    {
+        byte[] older = olderExport();
+
+        assertEquals(importedByTheRoutesDoor(older), ACCENTED,
+            "a routes file exported before 2.7.4, in this computer's own character set, was imported "
+            + "with its accented letters garbled - route names and the locomotives its commands name "
+            + "(MRV1-B2)");
+
+        assertEquals(importedByTheRoutesDoor(ACCENTED.getBytes(StandardCharsets.UTF_8)), ACCENTED,
+            "a routes file in UTF-8, as every export since 2.7.4 writes, no longer imports as written");
+    }
+
+    /**
+     * Autonomy > Load JSON reads an autonomy file exported in the computer's own character set as
+     * written - and a UTF-8 one still reads as written (MRV1-B2's sibling, older than 2.8.2).
+     *
+     * The same one-way decode as the routes import: everything was read as UTF-8, so a hand-exported or
+     * older graph with accented station or locomotive names came back garbled.  The window's own
+     * handler, as above; the stand-in text box keeps what the door decoded and stops the handler before
+     * it records the folder or validates.
+     */
+    @Test
+    public void testAutonomyImportReadsAnOlderExportAsWritten() throws Exception
+    {
+        byte[] older = olderExport();
+
+        assertEquals(importedByTheAutonomyDoor(older), ACCENTED,
+            "an autonomy file in this computer's own character set was loaded with its accented letters "
+            + "garbled (MRV1-B2)");
+
+        assertEquals(importedByTheAutonomyDoor(ACCENTED.getBytes(StandardCharsets.UTF_8)), ACCENTED,
+            "an autonomy file in UTF-8, as TrainControl writes it, no longer loads as written");
+    }
+
+    /**
+     * The accented text as an export before 2.7.4 wrote it on this computer: getBytes() with no
+     * character set named.
+     */
+    private static byte[] olderExport() throws Exception
+    {
+        byte[] older = ACCENTED.getBytes(java.nio.charset.Charset.defaultCharset());
+
+        if (java.util.Arrays.equals(older, ACCENTED.getBytes(StandardCharsets.UTF_8)))
+        {
+            throw new SkipException("Not run here: this computer's own character set is UTF-8, so its "
+                + "older exports were UTF-8 too");
+        }
+
+        // The fallback is only reached by bytes that are not UTF-8; windows-1252 accents never are
+        try
+        {
+            StandardCharsets.UTF_8.newDecoder()
+                .onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
+                .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT)
+                .decode(java.nio.ByteBuffer.wrap(older));
+
+            throw new SkipException("Not run here: this computer's own character set writes the fixture "
+                + "as valid UTF-8, so it cannot tell the two readings apart");
+        }
+        catch (java.nio.charset.CharacterCodingException expected)
+        {
+            return older;
+        }
+    }
+
+    /**
+     * A window whose file chooser picks the file the test names, without building or showing anything.
+     */
+    public static class ChoosingWindow extends TrainControlUI
+    {
+        static volatile File chosen;
+
+        @Override
+        public JFileChooser getFileChooser(int type, String extension)
+        {
+            try
+            {
+                return windowless(PickingChooser.class);
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    /**
+     * A file chooser, never built, that answers "open" with the test's file.
+     */
+    public static class PickingChooser extends JFileChooser
+    {
+        @Override
+        public int showOpenDialog(java.awt.Component parent)
+        {
+            return APPROVE_OPTION;
+        }
+
+        @Override
+        public File getSelectedFile()
+        {
+            return ChoosingWindow.chosen;
+        }
+    }
+
+    /**
+     * What Routes > Import hands the model to import, for a file holding the given bytes.
+     */
+    private static String importedByTheRoutesDoor(byte[] contents) throws Exception
+    {
+        final java.util.concurrent.atomic.AtomicReference<String> imported =
+            new java.util.concurrent.atomic.AtomicReference<>();
+
+        File file = File.createTempFile("routes", ".json");
+
+        try
+        {
+            Files.write(file.toPath(), contents);
+            ChoosingWindow.chosen = file;
+
+            ChoosingWindow ui = windowless(ChoosingWindow.class);
+
+            set(ui, "model", stubModel((method, args) ->
+            {
+                if (method.getName().equals("importRoutes"))
+                {
+                    imported.set((String) args[0]);
+
+                    // Before the handler records the folder in the preferences
+                    throw new StopHere();
+                }
+
+                return null;
+            }));
+
+            final javax.swing.JMenuItem item = new javax.swing.JMenuItem("Import");
+            set(ui, "importRoutesMenuItem", item);
+
+            Method handler = TrainControlUI.class.getDeclaredMethod(
+                "importRoutesMenuItemActionPerformed", java.awt.event.ActionEvent.class);
+            handler.setAccessible(true);
+
+            runSwallowingItsEnd(() -> handler.invoke(ui, (java.awt.event.ActionEvent) null),
+                () -> imported.get() != null && item.isEnabled());
+
+            assertNotNull(imported.get(), "precondition: the routes import never reached the model");
+
+            return imported.get();
+        }
+        finally
+        {
+            ChoosingWindow.chosen = null;
+            Files.deleteIfExists(file.toPath());
+        }
+    }
+
+    /**
+     * What Autonomy > Load JSON puts in the configuration text box, for a file holding the given bytes.
+     */
+    private static String importedByTheAutonomyDoor(byte[] contents) throws Exception
+    {
+        final java.util.concurrent.atomic.AtomicReference<String> loaded =
+            new java.util.concurrent.atomic.AtomicReference<>();
+
+        File file = File.createTempFile("autonomy", ".json");
+
+        try
+        {
+            Files.write(file.toPath(), contents);
+            ChoosingWindow.chosen = file;
+
+            ChoosingWindow ui = windowless(ChoosingWindow.class);
+
+            set(ui, "model", stubModel((method, args) -> null));
+            set(ui, "loadJSONButton", new JButton("Load"));
+
+            set(ui, "autonomyJSON", new JTextArea()
+            {
+                @Override
+                public void setText(String text)
+                {
+                    loaded.set(text);
+
+                    // Before the handler records the folder in the preferences, or validates
+                    throw new StopHere();
+                }
+            });
+
+            Method handler = TrainControlUI.class.getDeclaredMethod(
+                "loadJSONButtonActionPerformed", java.awt.event.ActionEvent.class);
+            handler.setAccessible(true);
+
+            runSwallowingItsEnd(() -> handler.invoke(ui, (java.awt.event.ActionEvent) null),
+                () -> loaded.get() != null);
+
+            assertNotNull(loaded.get(), "precondition: the autonomy import never reached the text box");
+
+            return loaded.get();
+        }
+        finally
+        {
+            ChoosingWindow.chosen = null;
+            Files.deleteIfExists(file.toPath());
+        }
+    }
+
+    private interface Step
+    {
+        void run() throws Exception;
+    }
+
+    private interface Condition
+    {
+        boolean holds();
+    }
+
+    /**
+     * Runs a handler whose worker the test ends on purpose, waits until the condition holds, and lets the
+     * event thread run whatever the worker handed it.  The worker's end, and a dialog that cannot be
+     * built on a window-less instance, are expected and not reported.
+     */
+    private static void runSwallowingItsEnd(Step step, Condition done) throws Exception
+    {
+        Thread.UncaughtExceptionHandler previous = Thread.getDefaultUncaughtExceptionHandler();
+
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> { });
+
+        try
+        {
+            step.run();
+
+            long deadline = System.currentTimeMillis() + 5000;
+
+            while (!done.holds() && System.currentTimeMillis() < deadline)
+            {
+                Thread.sleep(20);
+            }
+
+            Thread.sleep(200);
+
+            SwingUtilities.invokeAndWait(() -> { });
+            SwingUtilities.invokeAndWait(() -> { });
+        }
+        finally
+        {
+            Thread.setDefaultUncaughtExceptionHandler(previous);
+        }
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Fixtures
     // ---------------------------------------------------------------------------------------------
 
     /**
      * A TrainControlUI with no constructor run: no window, no components, no preferences, no files.
+     * Package-private, as testAPathThatFailsPartWay drives the window's doors the same way.
      */
-    private static TrainControlUI windowless() throws Exception
+    static TrainControlUI windowless() throws Exception
+    {
+        return windowless(TrainControlUI.class);
+    }
+
+    /**
+     * An instance of the given class with no constructor run - a window, or anything else whose constructor
+     * would build or show something the test does not want.
+     */
+    static <T> T windowless(Class<T> type) throws Exception
     {
         // Reached reflectively so that the compiler does not warn about the internal class
         Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
         Field theUnsafe = unsafeClass.getDeclaredField("theUnsafe");
         theUnsafe.setAccessible(true);
 
-        return (TrainControlUI) unsafeClass.getMethod("allocateInstance", Class.class)
-            .invoke(theUnsafe.get(null), TrainControlUI.class);
+        return type.cast(unsafeClass.getMethod("allocateInstance", Class.class)
+            .invoke(theUnsafe.get(null), type));
     }
 
-    private static void set(Object target, String name, Object value) throws Exception
+    static void set(Object target, String name, Object value) throws Exception
     {
         Field field = TrainControlUI.class.getDeclaredField(name);
         field.setAccessible(true);
@@ -720,7 +1003,7 @@ public class testMainWindowFaults
     /**
      * What a stand-in model answers.  Returning null means "the type's default".
      */
-    private interface Answer
+    interface Answer
     {
         Object answer(Method method, Object[] args) throws Throwable;
     }
@@ -729,7 +1012,7 @@ public class testMainWindowFaults
      * A ViewListener that answers through the given function, with each return type's default for
      * everything the function leaves as null.
      */
-    private static ViewListener stubModel(Answer answer)
+    static ViewListener stubModel(Answer answer)
     {
         InvocationHandler handler = (proxy, method, args) ->
         {

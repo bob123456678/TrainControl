@@ -10,8 +10,8 @@ import org.testng.annotations.Test;
 
 /**
  * Two things a reader of the source can check whole, found by the 3.0.0 release review and carried to 2.8.2: a file read
- * into text is read in the character set it was written in, and the graph's right-click menu hangs its messages from the
- * main window.
+ * into text is read in the character set it was written in, and the track diagram's right-click menus hang their
+ * messages from the window they belong to.
  *
  * Read from the source because both doors sit behind a file chooser and a popup menu, which a test cannot open without
  * a screen; the 3.0 branch drives both doors on a real window (regression.testTheRoutesImportDoorAsksByName,
@@ -62,34 +62,40 @@ public class testFilesAndMessagesMeetTheirReaders
     }
 
     /**
-     * No message on the graph's right-click menu is hung from the menu itself (RLU-B2).
+     * No message on the track diagram's right-click menus is hung from the menu itself: the autonomy menu's belong to
+     * the main window (RLU-B2), and the track diagram editor's to the editor window (MRV1-C2).
      *
      * By the time an item's action runs the menu has left its window, so a message parented on it belongs to Swing's
      * hidden frame - and with Window Always on Top ticked, the default, it opened beneath the main window and held every
-     * window with nothing to show why: "power on to start", and every other refusal there.
+     * window with nothing to show why: "power on to start", and every other refusal there.  The editor window follows
+     * the main window's Always on Top, so the editor's menu, which reports every failed editor action this way, had the
+     * same fault.
      *
      * MUTATION: parent one of them on the menu again, and this fails naming it.
      */
     @Test
-    public void testTheGraphMenusMessagesBelongToTheMainWindow() throws Exception
+    public void testTheTrackDiagramMenusHangTheirMessagesFromTheirWindow() throws Exception
     {
-        File menu = new File(ROOT, "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java");
-
-        assertTrue(menu.isFile(), "precondition: the graph's right-click menu is not at " + menu);
-
-        String text = new String(Files.readAllBytes(menu.toPath()), StandardCharsets.UTF_8);
-
-        Matcher m = Pattern.compile("JOptionPane\\.show\\w*\\(\\s*this\\s*,").matcher(text);
-
         List<String> onTheMenu = new ArrayList<>();
 
-        while (m.find()) onTheMenu.add("line " + (text.substring(0, m.start()).split("\n", -1).length));
+        for (String name : new String[]{ "LayoutRightclickAutonomyMenu", "LayoutEditorRightclickMenu" })
+        {
+            File menu = new File(ROOT, "src/org/traincontrol/gui/" + name + ".java");
 
-        assertTrue(text.contains("JOptionPane"), "precondition: the menu shows no message at all");
+            assertTrue(menu.isFile(), "precondition: the track diagram's right-click menu is not at " + menu);
 
-        assertTrue(onTheMenu.isEmpty(), "a message on the graph's right-click menu is hung from the menu, which has left "
-            + "its window by the time it shows - with Window Always on Top it opens beneath the main window (RLU-B2): "
-            + onTheMenu);
+            String text = new String(Files.readAllBytes(menu.toPath()), StandardCharsets.UTF_8);
+
+            Matcher m = Pattern.compile("JOptionPane\\.show\\w*\\(\\s*this\\s*,").matcher(text);
+
+            while (m.find()) onTheMenu.add(name + " line " + (text.substring(0, m.start()).split("\n", -1).length));
+
+            assertTrue(text.contains("JOptionPane"), "precondition: " + name + " shows no message at all");
+        }
+
+        assertTrue(onTheMenu.isEmpty(), "a message on the track diagram's right-click menus is hung from the menu, which "
+            + "has left its window by the time it shows - with Window Always on Top it opens beneath the window it "
+            + "belongs to (RLU-B2, MRV1-C2): " + onTheMenu);
     }
 
     private static List<File> javaSources(File folder)
