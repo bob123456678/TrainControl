@@ -4548,7 +4548,8 @@ public class Layout
      * twice does not load.  Kept on the last point it is known to have reached (getLastPointsReached), it
      * loads, that place stays held, and everything else about the graph is kept (MRV1-A1, MRV2-B3).  A kept
      * point that records no train - one a non-atomic route has already released behind it - is written with
-     * it (MRV4-C2).  One where another train now stands is not, and the train is then on no point.
+     * it (MRV4-C2), while the graph still shows that train elsewhere and the database has it (MRV5-B1).  One
+     * where another train now stands is not, and the train is then on no point.
      * @param keptAt for each locomotive to keep on one point, that point
      * @return
      * @throws java.lang.IllegalAccessException
@@ -4571,12 +4572,32 @@ public class Layout
                 (Edge p1, Edge p2) -> p1.getName().compareTo(p2.getName())
         );
         
-        // Each kept point, with the train kept on it
+        // Each kept point, with the train kept on it - only a train the graph still shows on some point, and the
+        // database still has (MRV5-B1).  An empty kept point is written with its train for one case: a non-atomic
+        // route has released it behind a train still recorded on the rest of its path (MRV4-C2).  A train that has
+        // left the graph by a door that is not moveLocomotive - Delete Locomotive, or a locomotive edit's multi-unit
+        // sweep - is not written back: that wrote a locomotive the database no longer had, or one beside the train the
+        // sweep kept, and the reload then failed or kept the wrong one.
+        Set<Locomotive> onTheGraph = new HashSet<>();
+
+        for (Point p : pointList)
+        {
+            if (p.getCurrentLocomotive() != null) onTheGraph.add(p.getCurrentLocomotive());
+        }
+
         Map<Point, Locomotive> keptHere = new HashMap<>();
 
         for (Entry<Locomotive, Point> kept : keptAt.entrySet())
         {
-            keptHere.put(kept.getValue(), kept.getKey());
+            Locomotive train = kept.getKey();
+
+            if (!onTheGraph.contains(train) || train.getName() == null
+                || this.control.getLocByName(train.getName()) == null)
+            {
+                continue;
+            }
+
+            keptHere.put(kept.getValue(), train);
         }
 
         for (Point p : pointList)
