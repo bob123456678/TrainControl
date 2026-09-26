@@ -243,6 +243,61 @@ public class testAStopRouteStandsAlone
     }
 
     /**
+     * A route that reaches a split route by two paths - the longer listed first - still counts as cutting the power
+     * (RLV6-C2).  The walk remembered every route it had asked, so the split route, first met too deep to fire its stop,
+     * was not asked again by the shorter path that does; the route was then asked about at the human doors, and Cancel
+     * called off the power cut.
+     *
+     * MUTATION: remember every route asked rather than the path walked, and this fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testAStopReachedByTwoPathsIsCounted() throws Exception
+    {
+        String stop = "SA two - the stop";
+        String split = "SA two - split";
+        String longer = "SA two - the longer way";
+        String both = "SA two - both ways";
+
+        try
+        {
+            List<RouteCommand> alone = new ArrayList<>();
+            alone.add(RouteCommand.RouteCommandStop());
+
+            List<RouteCommand> firesTheStop = new ArrayList<>();
+            firesTheStop.add(RouteCommand.RouteCommandRoute(stop));
+
+            List<RouteCommand> firesTheSplit = new ArrayList<>();
+            firesTheSplit.add(RouteCommand.RouteCommandRoute(split));
+
+            List<RouteCommand> twoWays = new ArrayList<>();
+            twoWays.add(RouteCommand.RouteCommandRoute(longer));
+            twoWays.add(RouteCommand.RouteCommandRoute(split));
+
+            assertTrue(model.newRoute(new MarklinRoute(model, stop, 84961, alone, 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null)), "precondition: the stop route was not added");
+            assertTrue(model.newRoute(new MarklinRoute(model, split, 84962, firesTheStop, 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null)), "precondition: the split route was not added");
+            assertTrue(model.newRoute(new MarklinRoute(model, longer, 84963, firesTheSplit, 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null)), "precondition: the longer way was not added");
+            assertTrue(model.newRoute(new MarklinRoute(model, both, 84964, twoWays, 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null)), "precondition: the route was not added");
+
+            assertTrue(model.getRoute(both).hasEmergencyStop(), "a route that fires the split route directly, after a"
+                + " longer way to it, is not counted as cutting the power - so it is asked about, and Cancel calls the power"
+                + " cut off (RLV6-C2)");
+        }
+        finally
+        {
+            for (String each : new String[] {both, longer, split, stop})
+            {
+                if (model.getRoute(each) != null) model.deleteRoute(each);
+            }
+        }
+    }
+
+    /**
      * Neither creating nor editing a route puts an emergency stop among other commands; a stop on its own is made.
      *
      * @throws Exception from the model
