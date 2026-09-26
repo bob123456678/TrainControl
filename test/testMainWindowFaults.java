@@ -804,7 +804,7 @@ public class testMainWindowFaults
     }
 
     /**
-     * A file chooser, never built, that answers "open" with the test's file.
+     * A file chooser, never built, that answers "open" and "save" with the test's file.
      */
     public static class PickingChooser extends JFileChooser
     {
@@ -812,6 +812,18 @@ public class testMainWindowFaults
         public int showOpenDialog(java.awt.Component parent)
         {
             return APPROVE_OPTION;
+        }
+
+        @Override
+        public int showSaveDialog(java.awt.Component parent)
+        {
+            return APPROVE_OPTION;
+        }
+
+        @Override
+        public void setSelectedFile(File file)
+        {
+            // The test's file is the answer, whatever name the door suggests
         }
 
         @Override

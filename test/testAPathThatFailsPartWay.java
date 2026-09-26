@@ -5,6 +5,7 @@ import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -18,6 +19,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
+import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.plaf.ComponentUI;
@@ -55,10 +57,12 @@ import org.traincontrol.util.Util;
  * finish theirs - and marks the layout invalid, which every dispatch refuses until the configuration is
  * reloaded (BPV-C13, SG-A3; Adam's ruling of 2026-09-25).
  *
- * And what follows from that (MRV1): the reload, the exit save and a backup keep the graph as the run
- * left it, with the failed train taken off it, rather than the configuration as it was last loaded;
- * and the failure is said once as a dialog, and again by every door that then refuses.  The window's
- * doors are driven on a window that is never built, as testMainWindowFaults drives them.
+ * And what follows from that (MRV1, MRV2): the reload, the exit save, a backup and Export JSON keep the
+ * graph as the run left it rather than the configuration as it was last loaded, with each train that
+ * stands on several points - the failed one, and any still part way along a path - kept at the last
+ * point it is known to have reached, so its place stays held; and the failure is said once as a dialog,
+ * and again by every door that then refuses.  The window's doors are driven on a window that is never
+ * built, as testMainWindowFaults drives them.
  */
 public class testAPathThatFailsPartWay
 {
@@ -68,6 +72,7 @@ public class testAPathThatFailsPartWay
     private static final String OTHER = "PF other";
     private static final String MOVER = "PF mover";
     private static final String LATE = "PF late";
+    private static final String HOMER = "PF homer";
 
     /** The project folder: the working directory, as NetBeans runs the tests, unless a run names another. */
     private static final File ROOT = new File(System.getProperty("traincontrol.projectRoot", "."));
@@ -83,6 +88,7 @@ public class testAPathThatFailsPartWay
         model.newMM2Locomotive(OTHER, 98);
         model.newMM2Locomotive(MOVER, 96);
         model.newMM2Locomotive(LATE, 95);
+        model.newMM2Locomotive(HOMER, 94);
     }
 
     @AfterClass
@@ -94,6 +100,7 @@ public class testAPathThatFailsPartWay
             model.deleteLoc(OTHER);
             model.deleteLoc(MOVER);
             model.deleteLoc(LATE);
+            model.deleteLoc(HOMER);
         }
     }
 
@@ -215,14 +222,15 @@ public class testAPathThatFailsPartWay
 
     /**
      * The exit save, and a backup, keep the graph as the run left it after a path failed part way: every
-     * other train where it stands, and the failed train on no point (MRV1-A1).
+     * other train where it stands, and the failed train at the last point it is known to have reached
+     * (MRV1-A1, MRV2-B3).
      *
      * Both skipped the graph of a layout that is not valid, and wrote the configuration text as it was
      * last loaded instead - so closing TrainControl after a failed trip put every train back where it
      * stood when the session began, and threw away every change made to the graph since.  The live
      * graph cannot simply be written either: the failed train is still recorded on every point of its
-     * locked path, and a graph that places one train twice does not load.  Nothing knows where along
-     * that path it stands, so it is taken off - and an unplaced train is never sent.
+     * locked path, and a graph that places one train twice does not load.  So it is kept on one of them:
+     * the last it is known to have reached - here its start, as its departure failed.
      *
      * The window's own save, on a window that is never built.  It needs the UI state and autonomy files
      * in the working directory to be its own, so it refuses to run where either is present, or where
@@ -308,15 +316,16 @@ public class testAPathThatFailsPartWay
 
     /**
      * Validate - the button the failure's message names - reloads the graph as the run left it, with the
-     * failed train taken off, rather than the configuration as it was last loaded (MRV1-A1).
+     * failed train at the last point it is known to have reached, rather than the configuration as it was
+     * last loaded (MRV1-A1, MRV2-B3).
      *
      * On a layout that is not valid Validate skipped its "unsaved changes" question and reloaded the
      * configuration text, which only a load, an exit save or a backup ever sets: every train went back to
      * the station it stood on when the session began, though they were physically wherever the run had
      * left them, and Start would then plan from there.
      *
-     * The window's own handler; the stand-in model keeps what it is asked to reload and stops the handler
-     * there, before anything is built.
+     * The window's own handler, pressed as the button presses it - with an event; the stand-in model keeps
+     * what it is asked to reload and stops the handler there, before anything is built.
      */
     @Test(timeOut = 120000)
     public void testValidateReloadsWhereTheRunLeftTheTrains() throws Exception
@@ -344,7 +353,11 @@ public class testAPathThatFailsPartWay
             "validateButtonActionPerformed", java.awt.event.ActionEvent.class);
         handler.setAccessible(true);
 
-        shownWhile(() -> handler.invoke(ui, (java.awt.event.ActionEvent) null), () -> reloaded.get() != null);
+        // As the button fires it: with an event of its own
+        java.awt.event.ActionEvent press = new java.awt.event.ActionEvent(new JButton("Validate"),
+            java.awt.event.ActionEvent.ACTION_PERFORMED, "");
+
+        shownWhile(() -> handler.invoke(ui, press), () -> reloaded.get() != null);
 
         assertNotNull(reloaded.get(), "precondition: Validate never reached the reload");
 
@@ -388,19 +401,21 @@ public class testAPathThatFailsPartWay
 
     /**
      * A path that fails part way says why once, as a dialog - not only in the log - and a second failure on
-     * the same layout does not say it again; the graph kept then leaves off every train whose path failed,
-     * and every train still part way along a path (MRV1-B1, MRV1-A1).
+     * the same layout does not say it again (MRV1-B1).  The graph kept keeps a train still part way along
+     * its path, and a train whose path failed after it had left, at the last point it is known to have
+     * reached (MRV2-C2, MRV2-B3).
      *
-     * LATE's path is locked, and held there, before FAILING's fails; it then fails too, as a train already
-     * under way can.  While LATE is still on its path it is recorded on each of that path's points too, so
-     * a graph kept at that moment - a reload pressed while it is still finishing - leaves it off as well.
+     * LATE sets off on PF S5 - PF S6 - PF S8 before FAILING's path fails, passes PF S6, and is held as it
+     * arrives; then it fails too, as a train already under way can.  Until then it is recorded on every point
+     * of its path, as a train is that a reload stops part way.  It used to be taken off the graph - stopped
+     * between stations, off the graph, and not named anywhere.
      */
     @Test(timeOut = 120000)
     public void testAFailedPathSaysWhyOnceAsADialog() throws Exception
     {
         final MarklinLocomotive late = model.getLocByName(LATE);
 
-        final CountDownLatch locked = new CountDownLatch(1);
+        final CountDownLatch arriving = new CountDownLatch(1);
         final CountDownLatch go = new CountDownLatch(1);
         final AtomicReference<Thread> lateTrip = new AtomicReference<>();
 
@@ -408,9 +423,9 @@ public class testAPathThatFailsPartWay
         {
             Run run = aRunWithAFailedPath(8620, layout ->
             {
-                late.setCallback(Layout.CB_ROUTE_START, l ->
+                late.setCallback(Layout.CB_PRE_ARRIVAL, l ->
                 {
-                    locked.countDown();
+                    arriving.countDown();
 
                     try
                     {
@@ -428,7 +443,8 @@ public class testAPathThatFailsPartWay
                 {
                     try
                     {
-                        layout.executePath(Collections.singletonList(layout.getEdge("PF S5", "PF S6")), late, 30, null);
+                        layout.executePath(Arrays.asList(layout.getEdge("PF S5", "PF S6"), layout.getEdge("PF S6", "PF S8")),
+                            late, 30, null);
                     }
                     catch (IllegalStateException expected)
                     {
@@ -439,20 +455,21 @@ public class testAPathThatFailsPartWay
                 lateTrip.set(trip);
                 trip.start();
 
-                assertTrue(locked.await(30, TimeUnit.SECONDS), "precondition: " + LATE + "'s path was never locked");
+                assertTrue(arriving.await(30, TimeUnit.SECONDS), "precondition: " + LATE + " never reached its last stretch");
             });
 
             assertEquals(run.dialogs, Collections.singletonList(run.said),
                 "a path that failed part way was only written to the log - no dialog said why autonomy stopped, "
                 + "and every door then refused with a reason of its own, or none (MRV1-B1)");
 
-            // LATE is still part way along its path
+            // LATE is still part way along its path, past PF S6
+            assertEquals(where(Layout.fromJSON(graphTheWindowKeeps(run.layout), model), late),
+                Collections.singletonList("PF S6"), "a train still part way along its path, as a reload stops it, was not "
+                + "kept at the last point it is known to have reached - it was left off the graph, stopped between "
+                + "stations with nothing holding its place and nothing naming it (MRV2-C2)");
+
             assertKeptWhereTheRunLeftThem(graphTheWindowKeeps(run.layout), "the graph kept while " + LATE
                 + " is still on its path");
-
-            assertEquals(where(Layout.fromJSON(graphTheWindowKeeps(run.layout), model), late), Collections.emptyList(),
-                "a train still part way along its path was kept on the graph - it is recorded on every point of "
-                + "that path, so the graph does not load");
 
             go.countDown();
             lateTrip.get().join(30000);
@@ -462,16 +479,180 @@ public class testAPathThatFailsPartWay
 
             String kept = graphTheWindowKeeps(run.layout);
 
-            assertKeptWhereTheRunLeftThem(kept, "the graph kept after two failed paths");
+            assertEquals(where(Layout.fromJSON(kept, model), late), Collections.singletonList("PF S6"),
+                "the second train whose path failed, after it had passed PF S6, was not kept there (MRV2-B3)");
 
-            assertEquals(where(Layout.fromJSON(kept, model), late), Collections.emptyList(),
-                "the second train whose path failed was kept on the graph");
+            assertKeptWhereTheRunLeftThem(kept, "the graph kept after two failed paths");
         }
         finally
         {
             go.countDown();
 
-            late.setCallback(Layout.CB_ROUTE_START, l -> { });
+            late.setCallback(Layout.CB_PRE_ARRIVAL, l -> { });
+        }
+    }
+
+    /**
+     * The graph kept holds the failed train's place: reloaded, it still stands at the last point it is known
+     * to have reached, and no other train can be sent there (MRV2-B3).
+     *
+     * It used to be taken off every point, so after the reload - Validate, or the next start after an exit
+     * save - its station read free, and Start, Return Home or a train sent by hand could send another train
+     * onto track it was standing on.  Here its departure failed, so it never left PF S3; OTHER at PF S7 has
+     * an edge into PF S3.
+     */
+    @Test(timeOut = 120000)
+    public void testTheFailedTrainsPlaceStaysHeldAfterTheReload() throws Exception
+    {
+        Run run = aRunWithAFailedPath(8660, null);
+
+        Layout reloaded = Layout.fromJSON(graphTheWindowKeeps(run.layout), model);
+
+        assertTrue(reloaded.isValid(), "precondition: the graph kept does not load: " + Layout.getLastError());
+
+        assertEquals(where(reloaded, model.getLocByName(FAILING)), Collections.singletonList("PF S3"),
+            "after the reload the failed train, whose departure failed at PF S3, is not at PF S3 - its station reads "
+            + "free (MRV2-B3)");
+
+        assertFalse(reloaded.isPathClear(Collections.singletonList(reloaded.getEdge("PF S7", "PF S3")),
+            model.getLocByName(OTHER), false),
+            "after the reload another train can be sent into PF S3, where the failed train is standing (MRV2-B3)");
+    }
+
+    /**
+     * The failure's message names the last point the train is known to have reached, where the reload keeps
+     * it (MRV2-B3).
+     */
+    @Test(timeOut = 120000)
+    public void testTheMessageNamesWhereTheTrainIsKept() throws Exception
+    {
+        Run run = aRunWithAFailedPath(8670, null);
+
+        assertTrue(run.said.contains("PF S3"),
+            "the failure's message does not name PF S3, the last point " + FAILING + " is known to have reached and "
+            + "where the reload keeps it: " + run.said);
+    }
+
+    /**
+     * A graph kept while the failure is still being recorded loads, with the failed train at its last point
+     * (MRV2-C4).
+     *
+     * The failure took the train out of the running trains before it recorded it as failed, and did a
+     * network command, a log line and the graceful stop in between.  A Validate, Backup or exit save landing
+     * there found it in neither: kept on every point of its path, the graph did not load.  The layout's
+     * control keeps the graph the window would keep at the moment the failure is logged, which is in that
+     * window.
+     */
+    @Test(timeOut = 120000)
+    public void testAGraphKeptWhileTheFailureIsRecordedLoads() throws Exception
+    {
+        Run run = aRunWithAFailedPath(8680, null);
+
+        assertNotNull(run.keptWhileRecorded, "precondition: the failure was never logged");
+
+        assertKeptWhereTheRunLeftThem(run.keptWhileRecorded, "a graph kept while the failure was being recorded");
+    }
+
+    /**
+     * Autonomy > Load JSON loads the file chosen, on a layout a failed path stopped (MRV2-B1).
+     *
+     * Load JSON, like the new-graph button, puts its graph in the configuration text box and then runs
+     * Validate's handler.  The handler's failed-path branch, meant for Validate's own press, replaced that text
+     * with the session's graph, so the chosen file was never loaded, and nothing said so.
+     *
+     * The window's own handler, with the file chooser answered by the test and the reload captured.
+     */
+    @Test(timeOut = 120000)
+    public void testLoadJsonLoadsTheChosenFileAfterAPathFailed() throws Exception
+    {
+        Run run = aRunWithAFailedPath(8690, null);
+
+        final String chosen = "{\"points\": [], \"edges\": [], \"note\": \"the graph the operator chose\"}";
+        final AtomicReference<String> reloaded = new AtomicReference<>();
+
+        File file = File.createTempFile("chosen", ".json");
+        String recorded = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            Files.write(file.toPath(), chosen.getBytes(StandardCharsets.UTF_8));
+            testMainWindowFaults.ChoosingWindow.chosen = leavingThePreferencesAlone(file, recorded);
+
+            TrainControlUI ui = aWindowOn(testMainWindowFaults.ChoosingWindow.class, run.layout, (method, args) ->
+            {
+                if (method.getName().equals("parseAuto"))
+                {
+                    reloaded.set((String) args[0]);
+
+                    throw new StopHere();
+                }
+
+                return null;
+            });
+
+            testMainWindowFaults.set(ui, "autonomyJSON", new JTextArea(run.asLoaded));
+            testMainWindowFaults.set(ui, "loadJSONButton", new JButton("Load JSON"));
+            testMainWindowFaults.set(ui, "layoutStations", new HashMap<String, Set<JLabel>>());
+
+            Method handler = TrainControlUI.class.getDeclaredMethod(
+                "loadJSONButtonActionPerformed", java.awt.event.ActionEvent.class);
+            handler.setAccessible(true);
+
+            shownWhile(() -> handler.invoke(ui, (java.awt.event.ActionEvent) null), () -> reloaded.get() != null);
+
+            assertNotNull(reloaded.get(), "precondition: Load JSON never reached the reload");
+
+            assertEquals(reloaded.get(), chosen, "Load JSON, on a layout a failed path stopped, did not load the file "
+                + "chosen - the session's graph was loaded in its place, and nothing said so (MRV2-B1)");
+        }
+        finally
+        {
+            testMainWindowFaults.ChoosingWindow.chosen = null;
+            Files.deleteIfExists(file.toPath());
+            forgetTheFolderIfNoneWasRecorded(recorded);
+        }
+    }
+
+    /**
+     * Export JSON writes the graph that is kept, which loads, as Backup does (MRV2-C3).
+     *
+     * It wrote the graph as it stands, with the failed train on every point of its locked path, which is
+     * refused on load for a duplicate locomotive - so an operator who exported "to be safe" after a failure
+     * had a file that would not import.
+     *
+     * The window's own handler; its export panel saves at once, to the file the test's chooser answers with.
+     */
+    @Test(timeOut = 120000)
+    public void testExportJsonWritesTheGraphThatIsKept() throws Exception
+    {
+        Run run = aRunWithAFailedPath(8700, null);
+
+        File file = File.createTempFile("exported", ".json");
+        String recorded = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            testMainWindowFaults.ChoosingWindow.chosen = leavingThePreferencesAlone(file, recorded);
+
+            TrainControlUI ui = aWindowOn(testMainWindowFaults.ChoosingWindow.class, run.layout, null);
+
+            Method handler = TrainControlUI.class.getDeclaredMethod(
+                "exportJSONActionPerformed", java.awt.event.ActionEvent.class);
+            handler.setAccessible(true);
+
+            shownWhile(() -> handler.invoke(ui, (java.awt.event.ActionEvent) null), () -> file.length() > 0);
+
+            String exported = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+
+            assertFalse(exported.isEmpty(), "precondition: Export JSON wrote nothing");
+
+            assertKeptWhereTheRunLeftThem(exported, "Export JSON");
+        }
+        finally
+        {
+            testMainWindowFaults.ChoosingWindow.chosen = null;
+            Files.deleteIfExists(file.toPath());
+            forgetTheFolderIfNoneWasRecorded(recorded);
         }
     }
 
@@ -534,10 +715,13 @@ public class testAPathThatFailsPartWay
 
     /**
      * Return Home refuses a layout a failed path has stopped up front, with the failure's own words
-     * (MRV1-B1).
+     * (MRV1-B1); and a trip that fails during a Return Home run is said once, in the failure's words
+     * (MRV2-B2).
      *
      * It planned, had every leg refused, and ended "a train's path stayed blocked - move it out of the way
-     * by hand", which sends the operator to shunt trains for a fault that is not on the track.
+     * by hand", which sends the operator to shunt trains for a fault that is not on the track.  After the
+     * up-front refusal, a failure during the run still ended with that line, just after the failure's own
+     * dialog said the opposite.
      */
     @Test(timeOut = 120000)
     public void testReturnHomeSaysWhyAfterAPathFailed() throws Exception
@@ -565,6 +749,119 @@ public class testAPathThatFailsPartWay
 
         assertEquals(shown, Collections.singletonList(run.said),
             "Return Home, on a layout a failed path has stopped, did not say so up front (MRV1-B1)");
+
+        // And a trip that fails during the run
+        aReturnHomeWhoseLegFailsSaysItOnce(8710);
+    }
+
+    /**
+     * One homed train, one station from home, sent home by the window's Return Home; its departure fails.
+     * The layout raises its dialog through the window, as the model does, so every dialog is recorded in one
+     * list: it must be the failure's, and only it.
+     */
+    private static void aReturnHomeWhoseLegFailsSaysItOnce(int firstSensor) throws Exception
+    {
+        quietCallbacks();
+
+        final AtomicReference<TrainControlUI> window = new AtomicReference<>();
+
+        ViewListener control = (ViewListener) Proxy.newProxyInstance(
+            ViewListener.class.getClassLoader(), new Class<?>[]{ ViewListener.class }, (proxy, method, args) ->
+            {
+                if (method.getName().equals("showAutonomyAlert"))
+                {
+                    if (args.length == 2) window.get().showAutonomyAlert((String) args[0], (String) args[1]);
+                    else window.get().showAutonomyAlert((String) args[0]);
+
+                    return null;
+                }
+
+                try
+                {
+                    return method.invoke(model, args);
+                }
+                catch (InvocationTargetException e)
+                {
+                    throw e.getCause();
+                }
+            });
+
+        final Layout layout = new Layout(control);
+
+        for (int i = 1; i <= 2; i++)
+        {
+            MarklinFeedback sensor = model.newFeedback(firstSensor + i, null);
+            model.setFeedbackState(sensor.getName(), false);
+
+            layout.createPoint(i == 1 ? "PF HOME" : "PF AWAY", true, sensor.getName());
+        }
+
+        layout.createEdge("PF AWAY", "PF HOME");
+        layout.createEdge("PF HOME", "PF AWAY");
+        layout.setDefaultLocSpeed(30);
+
+        MarklinLocomotive homer = model.getLocByName(HOMER);
+        homer.setPreferredSpeed(30);
+
+        layout.getPoint("PF AWAY").setLocomotive(homer);
+        layout.setHomeLocomotive("PF HOME", HOMER);
+        layout.setSimulate(true);
+
+        homer.setCallback(Layout.CB_ROUTE_START, l ->
+        {
+            throw new IllegalStateException("the departure function failed during Return Home");
+        });
+
+        try
+        {
+            TrainControlUI ui = aWindowOn(layout, null);
+            window.set(ui);
+
+            testMainWindowFaults.set(ui, "returnHomeButton", new JButton("Return home"));
+            testMainWindowFaults.set(ui, "executeTimetable", new JButton("Execute timetable"));
+            testMainWindowFaults.set(ui, "startAutonomy", new JButton("Start"));
+            testMainWindowFaults.set(ui, "gracefulStop", new JButton("Graceful stop"));
+            testMainWindowFaults.set(ui, "timetableCapture", new JToggleButton("Capture"));
+
+            final java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
+            staging.setAccessible(true);
+
+            List<String> shown = shownWhile(() ->
+            {
+                try
+                {
+                    SwingUtilities.invokeAndWait(ui::requestReturnToHome);
+                }
+                catch (InvocationTargetException dialogNotBuilt)
+                {
+                    // A message that cannot be shown on a window that was never built; it has been recorded
+                }
+            }, () ->
+            {
+                try
+                {
+                    // The run's worker has finished: whatever it says is handed to the event thread by then
+                    return !layout.isValid() && !staging.getBoolean(ui);
+                }
+                catch (IllegalAccessException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }, 60000);
+
+            assertFalse(layout.isValid(), "precondition: the Return Home leg did not fail");
+
+            assertEquals(shown, Collections.singletonList(layout.getPathFailedMessage()),
+                "a trip that failed during Return Home was not said once, in the failure's own words - the run also "
+                + "ended with \"a train's path stayed blocked, move it out of the way by hand\", the opposite of what "
+                + "the failure's dialog had just said (MRV2-B2)");
+        }
+        finally
+        {
+            homer.setCallback(Layout.CB_ROUTE_START, l -> { });
+
+            layout.stopLocomotives();
+        }
     }
 
     /**
@@ -652,35 +949,64 @@ public class testAPathThatFailsPartWay
 
         /** The dialogs the layout raised */
         final List<String> dialogs = Collections.synchronizedList(new ArrayList<>());
+
+        /** FAILING's failure */
+        final IllegalStateException departure = new IllegalStateException("the departure function failed");
+
+        /** The graph the window would have kept at the moment the failure was logged, part way through recording it */
+        volatile String keptWhileRecorded;
     }
 
     /**
-     * A small graph with a run behind it.  MOVER stands at PF S1, FAILING at PF S3, LATE at PF S5 and
-     * OTHER at PF S7.  The configuration is taken as the window would have loaded it; then MOVER runs to
-     * PF S2 and arrives, beforeTheFailure runs, and FAILING's path to PF S4 fails part way - its
-     * route-start callback throws once the path is locked, as testAPathThatFailsPartWayStopsAutonomyUntilReloaded
-     * does.  The layout's control is the model, with every dialog it raises written down.
+     * Loading a graph gives each of its locomotives callbacks of its own, and the one run at a path's end
+     * asks the model for its layout - which builds one when the model has none, and so retires the test's
+     * layout part way through.  A graph an earlier test loaded must not reach into the next one.
      */
-    private static Run aRunWithAFailedPath(int firstSensor, Step beforeTheFailure) throws Exception
+    private static void quietCallbacks()
     {
-        final Run run = new Run();
-
-        // Loading a graph gives each of its locomotives callbacks of its own, and the one run at a path's
-        // end asks the model for its layout - which builds one when the model has none, and so retires
-        // this one part way through.  A graph an earlier test loaded must not reach into this one.
-        for (String name : new String[]{ MOVER, FAILING, LATE, OTHER })
+        for (String name : new String[]{ MOVER, FAILING, LATE, OTHER, HOMER })
         {
             for (String callback : new String[]{ Layout.CB_ROUTE_START, Layout.CB_PRE_ARRIVAL, Layout.CB_ROUTE_END })
             {
                 model.getLocByName(name).setCallback(callback, l -> { });
             }
         }
+    }
+
+    /**
+     * A small graph with a run behind it.  MOVER stands at PF S1, FAILING at PF S3, LATE at PF S5 and
+     * OTHER at PF S7, which has an edge into PF S3.  The configuration is taken as the window would have
+     * loaded it; then MOVER runs to PF S2 and arrives, beforeTheFailure runs, and FAILING's path to PF S4
+     * fails part way - its route-start callback throws once the path is locked, as
+     * testAPathThatFailsPartWayStopsAutonomyUntilReloaded does, so it never leaves PF S3.  The layout's
+     * control is the model, with every dialog it raises written down, and the graph the window would keep
+     * taken at the moment the failure is logged.
+     */
+    private static Run aRunWithAFailedPath(int firstSensor, Step beforeTheFailure) throws Exception
+    {
+        final Run run = new Run();
+
+        quietCallbacks();
 
         ViewListener control = (ViewListener) Proxy.newProxyInstance(
             ViewListener.class.getClassLoader(), new Class<?>[]{ ViewListener.class }, (proxy, method, args) ->
             {
                 // The message is the last argument, whether or not a title comes first
                 if (method.getName().equals("showAutonomyAlert")) run.dialogs.add((String) args[args.length - 1]);
+
+                // The failure's own log line, which executePath writes while it records the failure
+                if (method.getName().equals("log") && args[0] == run.departure && run.keptWhileRecorded == null)
+                {
+                    // Never thrown from here: it would replace the failure the catch is handling
+                    try
+                    {
+                        run.keptWhileRecorded = graphTheWindowKeeps(run.layout);
+                    }
+                    catch (Exception | Error keptFailed)
+                    {
+                        run.keptWhileRecorded = "the window could not keep a graph: " + keptFailed;
+                    }
+                }
 
                 try
                 {
@@ -693,6 +1019,7 @@ public class testAPathThatFailsPartWay
             });
 
         Layout layout = new Layout(control);
+        run.layout = layout;
 
         for (int i = 1; i <= 8; i++)
         {
@@ -705,6 +1032,8 @@ public class testAPathThatFailsPartWay
         layout.createEdge("PF S1", "PF S2");
         layout.createEdge("PF S3", "PF S4");
         layout.createEdge("PF S5", "PF S6");
+        layout.createEdge("PF S6", "PF S8");
+        layout.createEdge("PF S7", "PF S3");
 
         // A graph that loads needs a default speed
         layout.setDefaultLocSpeed(30);
@@ -728,7 +1057,7 @@ public class testAPathThatFailsPartWay
 
         failing.setCallback(Layout.CB_ROUTE_START, l ->
         {
-            throw new IllegalStateException("the departure function failed");
+            throw run.departure;
         });
 
         try
@@ -749,7 +1078,6 @@ public class testAPathThatFailsPartWay
         }
 
         run.said = Layout.getLastError();
-        run.layout = layout;
 
         assertFalse(layout.isValid(), "precondition: the failed path did not stop the layout");
 
@@ -757,8 +1085,9 @@ public class testAPathThatFailsPartWay
     }
 
     /**
-     * Asserts the given graph loads, with MOVER where the run left it, OTHER where it stood, and FAILING on
-     * no point.  Loading it retires the run's layout, so this comes last.
+     * Asserts the given graph loads, with MOVER where the run left it, OTHER where it stood, and FAILING at
+     * PF S3, the last point it is known to have reached: its departure failed.  Loading it retires the run's
+     * layout, so this comes last.
      */
     private static void assertKeptWhereTheRunLeftThem(String json, String door)
     {
@@ -773,9 +1102,9 @@ public class testAPathThatFailsPartWay
         assertEquals(where(kept, model.getLocByName(OTHER)), Collections.singletonList("PF S7"),
             door + " moved a train the run never touched");
 
-        assertEquals(where(kept, model.getLocByName(FAILING)), Collections.emptyList(),
-            door + " placed " + FAILING + ", whose path failed part way - nothing knows where it stands, so it "
-            + "must be put back by hand");
+        assertEquals(where(kept, model.getLocByName(FAILING)), Collections.singletonList("PF S3"),
+            door + " did not keep " + FAILING + ", whose departure failed, at PF S3, the last point it is known to have "
+            + "reached - taken off the graph, its station reads free while it stands there (MRV2-B3)");
     }
 
     /**
@@ -814,7 +1143,17 @@ public class testAPathThatFailsPartWay
      */
     private static TrainControlUI aWindowOn(Layout layout, testMainWindowFaults.Answer first) throws Exception
     {
-        TrainControlUI ui = testMainWindowFaults.windowless();
+        return aWindowOn(TrainControlUI.class, layout, first);
+    }
+
+    /**
+     * As above, with a window of the given class - testMainWindowFaults.ChoosingWindow for a door that asks for
+     * a file.
+     */
+    private static <T extends TrainControlUI> T aWindowOn(Class<T> type, Layout layout, testMainWindowFaults.Answer first)
+        throws Exception
+    {
+        T ui = testMainWindowFaults.windowless(type);
 
         testMainWindowFaults.set(ui, "model", (ViewListener) Proxy.newProxyInstance(
             ViewListener.class.getClassLoader(), new Class<?>[]{ ViewListener.class }, (proxy, method, args) ->
@@ -854,6 +1193,29 @@ public class testAPathThatFailsPartWay
     }
 
     /**
+     * The file a door's chooser hands over, answering for its folder the one the preferences already record.
+     * Load JSON and Export JSON record the chosen file's folder in the preferences, and a test must not change
+     * them: the door writes back what is there.  Where nothing is recorded, forgetTheFolderIfNoneWasRecorded
+     * removes what the door wrote.
+     */
+    private static File leavingThePreferencesAlone(File file, String recorded)
+    {
+        return new File(file.getPath())
+        {
+            @Override
+            public String getParent()
+            {
+                return recorded != null ? recorded : super.getParent();
+            }
+        };
+    }
+
+    private static void forgetTheFolderIfNoneWasRecorded(String recorded)
+    {
+        if (recorded == null) TrainControlUI.getPrefs().remove(TrainControlUI.LAST_USED_FOLDER);
+    }
+
+    /**
      * Records the message of every option pane built, for the one test step that needs it.
      */
     public static final class RecordingOptionPaneUI extends BasicOptionPaneUI
@@ -876,6 +1238,14 @@ public class testAPathThatFailsPartWay
      */
     private static List<String> shownWhile(Action action, Condition done) throws Exception
     {
+        return shownWhile(action, done, 10000);
+    }
+
+    /**
+     * As above, waiting up to the given number of milliseconds for the condition.
+     */
+    private static List<String> shownWhile(Action action, Condition done, long waitMs) throws Exception
+    {
         RecordingOptionPaneUI.shown.clear();
 
         UIManager.put(RecordingOptionPaneUI.class.getName(), RecordingOptionPaneUI.class);
@@ -889,7 +1259,7 @@ public class testAPathThatFailsPartWay
         {
             action.run();
 
-            long deadline = System.currentTimeMillis() + 10000;
+            long deadline = System.currentTimeMillis() + waitMs;
 
             while (System.currentTimeMillis() < deadline
                 && (done != null ? !done.holds() : RecordingOptionPaneUI.shown.isEmpty()))
