@@ -84,6 +84,16 @@ public class GraphLocAssign extends javax.swing.JPanel
         if (p.getCurrentLocomotive() != null)
         {
             this.locAssign.setSelectedItem(p.getCurrentLocomotive().getName());
+
+            // BEFORE VALIDATING, THE TRAIN STANDING HERE ONLY (MRV5-C2): choosing another would place it - see
+            // commitChanges
+            String refusal = parent.getGraphEditRefusal();
+
+            if (refusal != null)
+            {
+                this.locAssign.setEnabled(false);
+                this.locAssign.setToolTipText(refusal);
+            }
         }
         
         if (newOnly)
@@ -247,7 +257,14 @@ public class GraphLocAssign extends javax.swing.JPanel
      */
     public void commitChanges()
     {
-        parent.getModel().getAutoLayout().moveLocomotive(getLoc(), p.getName(), false);
+        // BEFORE VALIDATING, SETTINGS ONLY (MRV5-C2).  No locomotive can be placed between a failed trip and the reload
+        // (Layout.getPlacementRefusal), so the doors open this dialog only on a train already standing on the point, with
+        // the choice of train locked, and its OK changes that train's settings - the function that made its trip fail
+        // among them.  Asking moveLocomotive anyway only wrote the refusal into the log.
+        if (parent.getGraphEditRefusal() == null)
+        {
+            parent.getModel().getAutoLayout().moveLocomotive(getLoc(), p.getName(), false);
+        }
 
         parent.getModel().getLocByName(getLoc()).setReversible(isReversible());
         parent.getModel().getLocByName(getLoc()).setArrivalFunc(getArrivalFunc());

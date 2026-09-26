@@ -200,7 +200,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                             }
                         }); 
 
-                        ui.offerGraphEdit(menuItem);
+                        // On a train, its settings - which place nothing (MRV5-C2)
+                        ui.offerGraphEditOfTheTrainAt(menuItem, current);
                         add(menuItem);
                     }
 

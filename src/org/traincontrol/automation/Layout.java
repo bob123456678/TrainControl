@@ -87,6 +87,10 @@ public class Layout
     // no locomotive can be placed or removed by hand (getPlacementRefusal, MRV4).  Guarded by failedPaths.
     private final Map<Locomotive, Point> failedAt = new HashMap<>();
 
+    // And each one's path, so that where it is kept can be found again when another train has taken the point it
+    // last tripped (keptPointFor, MRV5-C1).  Guarded by failedPaths.
+    private final Map<Locomotive, List<Edge>> failedPathOf = new HashMap<>();
+
     // Maximum number of seconds another locomotive should yield for to the inactive locomotive
     public static final int YIELD_SECONDS = 30;
 
@@ -2191,15 +2195,21 @@ public class Layout
         {
             for (Entry<Locomotive, List<Point>> running : this.locomotiveMilestones.entrySet())
             {
-                Point known = this.lastKnownPoint(running.getKey(), running.getValue(),
-                    this.activeLocomotives.get(running.getKey()));
+                List<Edge> path = this.activeLocomotives.get(running.getKey());
+
+                Point known = this.keptPointFor(running.getKey(),
+                    this.lastKnownPoint(running.getKey(), running.getValue(), path), path);
 
                 if (known != null) out.put(running.getKey(), known);
             }
 
             synchronized (this.failedPaths)
             {
-                out.putAll(this.failedAt);
+                for (Entry<Locomotive, Point> failed : this.failedAt.entrySet())
+                {
+                    out.put(failed.getKey(), this.keptPointFor(failed.getKey(), failed.getValue(),
+                        this.failedPathOf.get(failed.getKey())));
+                }
             }
         }
 
@@ -2246,6 +2256,45 @@ public class Layout
         else if (path != null && !path.isEmpty())
         {
             known = path.get(0).getStart();
+        }
+
+        return known;
+    }
+
+    /**
+     * Where to keep a train last known to be at the given point: there, unless another train now stands on it, and then
+     * the first point of its path that still records it (MRV5-C1).
+     *
+     * On a non-atomic route the release behind a train frees the point it last tripped, so another train can lock
+     * through it, and locking records that train there.  Kept on that point, the train was written on no point at all
+     * - toJSON(keptAt) writes the other one there and takes this one off every other point - so after the reload the
+     * track it stands on read free.  The first point of its path that still records it is the nearest one ahead of
+     * where it was last known to be, and it holds the track the train is on.
+     * @param loc
+     * @param known where it was last known to be; may be null
+     * @param path its path; may be null
+     * @return the point to keep it at, or null if known is
+     */
+    private Point keptPointFor(Locomotive loc, Point known, List<Edge> path)
+    {
+        if (known == null || path == null || path.isEmpty()) return known;
+
+        Locomotive there = known.getCurrentLocomotive();
+
+        if (there == null || there.equals(loc)) return known;
+
+        List<Point> along = new ArrayList<>();
+
+        along.add(path.get(0).getStart());
+
+        for (Edge e : path)
+        {
+            along.add(e.getEnd());
+        }
+
+        for (Point p : along)
+        {
+            if (loc.equals(p.getCurrentLocomotive())) return p;
         }
 
         return known;
@@ -3303,12 +3352,30 @@ public class Layout
                 // Its last milestone whose sensor it tripped, or its start - see lastKnownPoint (MRV3-B2)
                 Point lastReached = this.lastKnownPoint(loc, this.locomotiveMilestones.get(loc), path);
 
-                message = I18n.f(
-                    wasRunning ? "autolayout.errorPathFailedAutonomyStopped" : "autolayout.errorPathFailedSentByHand",
-                    loc.getName(),
-                    I18n.t("ui.main.validateConfigOpenGraphUI"),
-                    lastReached != null ? lastReached.getName() : ""
-                );
+                // Kept there - or, where another train already stands on it, on the next point of its path, and the
+                // message says why (MRV5-C1)
+                Point keptAt = this.keptPointFor(loc, lastReached, path);
+
+                if (keptAt != null && keptAt != lastReached)
+                {
+                    message = I18n.f(
+                        wasRunning ? "autolayout.errorPathFailedAutonomyStoppedKeptAhead"
+                            : "autolayout.errorPathFailedSentByHandKeptAhead",
+                        loc.getName(),
+                        I18n.t("ui.main.validateConfigOpenGraphUI"),
+                        keptAt.getName(),
+                        lastReached.getName()
+                    );
+                }
+                else
+                {
+                    message = I18n.f(
+                        wasRunning ? "autolayout.errorPathFailedAutonomyStopped" : "autolayout.errorPathFailedSentByHand",
+                        loc.getName(),
+                        I18n.t("ui.main.validateConfigOpenGraphUI"),
+                        lastReached != null ? lastReached.getName() : ""
+                    );
+                }
 
                 synchronized (this.failedPaths)
                 {
@@ -3316,6 +3383,7 @@ public class Layout
                     this.failedPaths.put(loc, message);
 
                     if (lastReached != null) this.failedAt.put(loc, lastReached);
+                    if (path != null) this.failedPathOf.put(loc, path);
                 }
 
                 this.activeLocomotives.remove(loc);
@@ -3912,7 +3980,9 @@ public class Layout
             names.add(l.getName());
         }
 
-        return I18n.f("autolayout.errorNoGraphEditUntilValidated", String.join(", ", names),
+        // In words for more than one train where there is more than one (MRV5-C2)
+        return I18n.f(names.size() > 1 ? "autolayout.errorNoGraphEditUntilValidatedSeveral"
+            : "autolayout.errorNoGraphEditUntilValidated", String.join(", ", names),
             I18n.t("ui.main.validateConfigOpenGraphUI"));
     }
 

@@ -1181,6 +1181,37 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * The refusal for the keys that take a locomotive off the point under the mouse - Delete, Backspace, Ctrl+X: that of
+     * getGraphEditRefusal where a train stands there to take off, and null where none does (MRV5-C2).  Over an empty
+     * point, or one that is no station, the keys did nothing before a trip failed, and they say nothing after one.
+     * @param pointName the point under the mouse
+     * @return the refusal, or null
+     */
+    String getGraphRemovalRefusal(String pointName)
+    {
+        String refusal = this.getGraphEditRefusal();
+
+        if (refusal == null || pointName == null) return refusal;
+
+        Point p = this.model.getAutoLayout().getPoint(pointName);
+
+        return p != null && p.getCurrentLocomotive() != null ? refusal : null;
+    }
+
+    /**
+     * Offers the locomotive dialog's item for a point - Edit where a train stands on it, Place where none does: greyed
+     * while getGraphEditRefusal says no, as offerGraphEdit greys, except where a train stands on the point.  There the
+     * dialog changes that train's settings - the departure or arrival function that made a trip fail among them - and
+     * places nothing before the reload (GraphLocAssign, MRV5-C2).
+     * @param item
+     * @param p the point the dialog is for
+     */
+    void offerGraphEditOfTheTrainAt(javax.swing.JMenuItem item, Point p)
+    {
+        if (p == null || p.getCurrentLocomotive() == null) this.offerGraphEdit(item);
+    }
+
+    /**
      * Greys a menu item that places or removes a locomotive on the graph while getGraphEditRefusal says no,
      * with the reason as its tooltip: the item that offers the action asks the guard's question (MRV4).
      * @param item

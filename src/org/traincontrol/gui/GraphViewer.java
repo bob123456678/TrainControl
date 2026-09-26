@@ -343,10 +343,11 @@ final public class GraphViewer extends PositionAwareJFrame
                                 
                                 if (p != null && p.isDestination() && !parent.getModel().getLocomotives().isEmpty())
                                 {    
-                                    // Nothing is placed between a failed trip and the reload, and the double-click says why (MRV4)
+                                    // Nothing is placed between a failed trip and the reload, and the double-click says why (MRV4) -
+                                    // except on a train, where the dialog changes its settings and places nothing (MRV5-C2)
                                     String refusal = parent.getGraphEditRefusal();
 
-                                    if (refusal != null)
+                                    if (refusal != null && p.getCurrentLocomotive() == null)
                                     {
                                         JOptionPane.showMessageDialog((Component) swingView, refusal);
                                         return;
@@ -572,12 +573,14 @@ final public class GraphViewer extends PositionAwareJFrame
         {
             if (this.getLastHoveredNode() != null)
             {
-                // Nothing is removed between a failed trip and the reload, and the key says why (MRV4)
-                String refusal = parent.getGraphEditRefusal();
-
-                if (refusal != null)
+                // Nothing is removed between a failed trip and the reload: over a train the key says why (MRV4), and
+                // over a point with nothing to take off it does nothing, as it always did there (MRV5-C2)
+                if (parent.getGraphEditRefusal() != null)
                 {
-                    JOptionPane.showMessageDialog(this, refusal);
+                    String refusal = parent.getGraphRemovalRefusal(this.getLastHoveredNode());
+
+                    if (refusal != null) JOptionPane.showMessageDialog(this, refusal);
+
                     return;
                 }
 

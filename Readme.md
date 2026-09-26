@@ -372,7 +372,7 @@ Tab icons provided by Freepik.
         - Return Home no longer starts and then stops every train when one of them has no speed set or is not at a station.  A train with no speed is now skipped and the others still go home, and a train that is not at a station is named before anything moves
         - Double-clicking Start no longer starts every train twice
         - One timetable entry that can no longer be loaded, such as after its locomotive was deleted, no longer wipes out the whole timetable
-        - If a train’s trip fails part way, autonomy now stops itself and says why.  Until the graph is validated again no train is sent, and no locomotive can be placed on the graph or taken off it.  Previously the other trains carried on, and the failed train could later be sent off from the wrong place
+        - If a train’s trip fails part way, autonomy now stops itself and says why.  Until the graph is validated again no train is sent, and no locomotive can be placed on the graph or taken off it, though a train’s settings, such as its departure function, can still be changed.  Previously the other trains carried on, and the failed train could later be sent off from the wrong place
         - Validating again, or closing TrainControl, then keeps the trains where the run left them, and the failed train at the last place it is known to have reached.  If it is not standing there, move it on the graph before starting autonomy again
         - Messages from the track diagram’s right-click autonomy menu, such as asking for the track power to be turned on, no longer open behind the main window when Window Always on Top is ticked
     - Route Bug Fixes
