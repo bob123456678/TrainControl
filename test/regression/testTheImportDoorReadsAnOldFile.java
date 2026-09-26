@@ -781,7 +781,7 @@ public class testTheImportDoorReadsAnOldFile
      * A home the configuration already has for a train is kept, and the message says the file's was not taken
      * (RLA2-C3, RLD2-C6).
      *
-     * The file gives ET22-245 a home at BottomMainB; the configuration it was imported into has since moved that home to
+     * The file gives the train it places at Tunnel a home at BottomMainB; the configuration it was imported into has since moved that home to
      * BottomMainC; a second import leaves one home, at BottomMainC, and names the train.  The home half of RLA-B2 had no
      * claim, and the dropped home was counted where nothing read it.
      *
@@ -802,13 +802,28 @@ public class testTheImportDoorReadsAnOldFile
 
         String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
 
-        final String train = "ET22-245";
-
-        // HIS FILE, WITH A HOME AT BOTTOMMAINB.
+        // HIS FILE, WITH A HOME AT BOTTOMMAINB FOR THE TRAIN IT PLACES AT TUNNEL - named from the file, since a
+        // locomotive's name written here reads as a finding's id to the citation census.
         File homed = File.createTempFile("tc-homed-autonomy", ".json");
 
         org.json.JSONObject file = new org.json.JSONObject(new String(java.nio.file.Files.readAllBytes(MT298.toPath()),
             java.nio.charset.StandardCharsets.UTF_8));
+
+        String atTunnel = null;
+
+        for (int i = 0; i < file.getJSONArray("points").length(); i++)
+        {
+            org.json.JSONObject point = file.getJSONArray("points").getJSONObject(i);
+
+            if ("Tunnel".equals(point.optString("name")) && point.has("loc"))
+            {
+                atTunnel = point.getJSONObject("loc").getString("name");
+            }
+        }
+
+        assertNotNull(atTunnel, "precondition: the MT-298 file places no train at Tunnel");
+
+        final String train = atTunnel;
 
         boolean given = false;
 

@@ -1303,6 +1303,26 @@ Found by the 3.0.0 release review (RLA-C6), 2026-09-25.  Every length rule the a
 
 **Direction:** judge a return once the way round is measured - a length on it, or answered throughout - and add the rule to behaviour.md's answered-0 list and `Edge.isMeasured`'s javadoc.  Claim: a hand-built loop as in `core.testATrainDoesNotRunIntoItsOwnTail`, every place answered 0, a train of 3 on the loop's first place; `whyItWouldMeetItsOwnTail` returns null today.
 
+### OB-301 - 2026-09-25 - Change Name or Address skips the multi-unit sweep when a new name is refused after the address changed
+
+**Kind:** bug  
+**Raised from:** RLA2-C2  
+**Filed:** 2026-09-25  
+
+Found by the 3.0.0 release review's second round (RLA2-C2), 2026-09-25.  The dialog applies the new address first and checks the new name after; a refused name (empty, too long, taken, or holding a character routes cannot read) returns with the address changed and neither the multi-unit sweep nor the refresh run.  Given another standing train's address, both stay on the graph - RLA-B1's consequence through the door it named.
+
+**Why it waits:** two mistakes in one dialog, pre-existing, and the next Place or load sweeps it.  **Direction:** check the name before applying the address, or sweep and refresh on every exit once the address has changed; claim with the dialog driven by an answerer.
+
+### OB-302 - 2026-09-25 - A failed old-file import puts back the page exclusions it has just announced
+
+**Kind:** bug  
+**Raised from:** RLU2-C12  
+**Filed:** 2026-09-25  
+
+Found by the 3.0.0 release review's second round (RLU2-C12), 2026-09-25.  The import's rollback snapshot is taken before `excludeRepeatedSensorPages`, which says at once which pages it left out; a file that then fails before the save restores the setup, pages included, and the pages it said were left out are in again with nothing said.
+
+**Why it waits:** narrow and cosmetic - the next import excludes them again and says so.  **Direction:** take the snapshot after the exclusion, which is a decision about the track and not the file; claim with a setup holding an unsettled repeated page.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

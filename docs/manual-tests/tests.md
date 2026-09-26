@@ -16805,6 +16805,10 @@ It took two goes to make it mean anything: the first fixture picked a square the
 
 **Superseded by an automated test** (2026-09-25, on your rule of today).  `regression.testTheImportDoorReadsAnOldFile.testASecondImportFromTheMenuKeepsAHandMadeChange` imports the MT-298 file from the Autonomy menu into a configuration of its own, changes a station's Maximum Train Length by hand in it, imports the same file again from the menu into the same configuration (answering Yes to replacing it), and asserts the changed maximum is still there.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
+**Claude, 2026-09-25.**
+
+The comment above says the second import answers Yes to replacing the configuration.  Since 2fa033f3 the door asks instead whether to add what the file has and the configuration does not, and the test answers Yes to that (RLD2-C7).
+
 ---
 
 <a id="mt-299"></a>
