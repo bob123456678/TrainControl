@@ -308,6 +308,73 @@ public class testControlStationFaults
     }
 
     /**
+     * An empty locomotive database - the commonest corruption - is saved over once its copy is kept.
+     *
+     * The load opened the file inside the stream that reads its header, as one resource; an empty file throws in that
+     * header, before the resource is assigned, so the file was never closed.  On Windows a file left open cannot be
+     * replaced, so the exit save kept the copy and then failed to write - and the next session started empty again,
+     * until a garbage collection happened to close the file (BPV-C8, found by the validator of the 2.8.2 backports).
+     *
+     * MUTATION: open the file inside the header's resource again, and this fails on Windows.
+     */
+    @Test
+    public void testAnEmptyDatabaseIsSavedOverOnceItsCopyIsKept() throws Exception
+    {
+        File live = new File(MarklinControlStation.DATA_FILE_NAME);
+
+        if (live.exists())
+        {
+            throw new SkipException("Not run here: the working directory holds a locomotive database ("
+                + live.getAbsolutePath() + "), and this test has to put an empty one in its place");
+        }
+
+        File backups = new File(Util.BACKUP_FOLDER);
+        boolean hadBackups = backups.isDirectory();
+        Set<String> before = names(backups);
+
+        try
+        {
+            Files.write(live.toPath(), new byte[0]);
+
+            // As at startup: the file is there, and empty
+            model.restoreState(MarklinControlStation.DATA_FILE_NAME);
+
+            java.lang.reflect.Field failed = MarklinControlStation.class.getDeclaredField("databaseLoadFailed");
+
+            failed.setAccessible(true);
+
+            assertTrue((Boolean) failed.get(model), "precondition: an empty file read as a first launch");
+
+            // As on exit - with no garbage collection in between to close what the load left open
+            model.saveState(false);
+
+            assertEquals(keptCopies(backups, before, new byte[0]), 1, "the empty file was not kept before the save");
+
+            assertTrue(live.length() > 0, "the save after the copy did not write the database - the load left the "
+                + "empty file open, and Windows will not replace a file that is open (BPV-C8)");
+        }
+        finally
+        {
+            // A handle the load left open holds the file until it is collected; let it go, so the tests after this one
+            // start from a clean folder whatever this one found
+            System.gc();
+            System.runFinalization();
+
+            Files.deleteIfExists(live.toPath());
+
+            for (String name : names(backups))
+            {
+                if (!before.contains(name)) Files.deleteIfExists(new File(backups, name).toPath());
+            }
+
+            if (!hadBackups) Files.deleteIfExists(backups.toPath());
+
+            // The mark is state on the model every test here shares
+            model.restoreState(new File(MarklinControlStation.DATA_FILE_NAME + ".absent").getPath());
+        }
+    }
+
+    /**
      * A file that stops part way through its first object, as an interrupted copy or sync leaves one.
      *
      * A valid stream header, so the reader opens it and fails on the object itself.  Plain garbage
