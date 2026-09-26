@@ -39,7 +39,7 @@ is not one.
 
 The railway defects live in the Inbox of `docs/manual-tests/issues.md`. **It is not empty**, and this
 paragraph said it was for twelve days (IND9X-B3, 2026-09-09).
-Today it holds 92 entries - 60 OB and 32 FR, recounted from the file on 2026-09-25.  On 2026-09-24 eighteen entries
+Today it holds 93 entries - 61 OB and 32 FR, recounted from the file on 2026-09-26.  On 2026-09-24 eighteen entries
 left it on Adam's word.  Seven were given their receipts then - OB-240 to OB-243, OB-271, OB-275
 and FR-095, each fixed, answered or withdrawn by its own text - and eleven had been receipted long before
 and were still sitting in the Inbox, which `triage.py` already treated as closed.  OB-272 to OB-277 and
@@ -426,8 +426,8 @@ this document exactly the thing it replaces.
 `docs/manual-tests/triage.db`. **2026-09-21: the same for the 65 documents written since** - 44 of them in
 `docs/reviews/` itself and 21 in three dated folders beside it, on Adam's *"I don't want more
 reviews living in the repo"* - 3,726 rows then.  The round of 2026-09-23 added 336 - five reviews and three rounds of validation - and 13 more came on 2026-09-24 with OB-247 (AR-17 to AR-23 and LR-1 to LR-6, which have no document), and the validation rounds of 2026-09-24 added 258 (TDA, TDU and TDD, then the same three lanes as TDA2 to TDD5), and the validation of the work on Adam's answers of that night added 52 on 2026-09-25 (ADA, ADU and ADD) and 48 in its second round (ADA2, ADU2 and ADD2), and the 3.0.0 release review 51 in its first round (RLA, RLU and RLD)
-and the 2.8.2 backport validation 30 (BPV), and the release review's second round 59 (RLA2, RLU2 and RLD2), its third 45 (RLA3, RLU3 and RLD3), its fourth 48 (RLA4, RLU4 and RLD4), its fifth 50 (RLA5, RLU5 and RLD5) and its sixth 12 (RLV6), which makes
-4,728 finding rows in the store now, every one of them with a status.
+and the 2.8.2 backport validation 30 (BPV), and the release review's second round 59 (RLA2, RLU2 and RLD2), its third 45 (RLA3, RLU3 and RLD3), its fourth 48 (RLA4, RLU4 and RLD4), its fifth 50 (RLA5, RLU5 and RLD5), its sixth 12 (RLV6) and its seventh 15 (RLV7), which makes
+4,743 finding rows in the store now, every one of them with a status.
 (This paragraph's figures - 65 documents, 44 of them in `docs/reviews/`, and the finding count - are quoted from the deletion commit and the store.  A correction to 63 and 206 was itself wrong and was reverted; the 208 it was about is in the first paragraph of this file, not here.  `regression.testTheRecordsCountTheStore` now compares the finding and Inbox counts with the store rather than trusting a reader to keep them - VD13-R1, VD14-R2, VD14-R5.) Everything still open above is open in that store too,
 so it can be queried rather than re-read:*
 

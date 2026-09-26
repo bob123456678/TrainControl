@@ -1353,6 +1353,16 @@ Found by the 3.0.0 release review (RLU2-C13, RLU3-C5), 2026-09-25.  Each placeme
 
 **Why it waits:** the next save writes it - the editor's own, any later one, or the exit - so only a crash in that window loses it.  **Direction:** save what the door wrote before asking, when no editor is open, and keep 'save nothing' for the late answer only.
 
+### OB-306 - 2026-09-26 - A page rename's carry, while a declined edit waits, loses a train on a station with no name of its own
+
+**Kind:** bug  
+**Raised from:** RLV7-C3  
+**Filed:** 2026-09-26  
+
+Found by the 3.0.0 release review's seventh round (RLV7-C3), 2026-09-26.  While a setup edit a run declined waits, the reload after a page rename carries each train across by Point name - the capture before the rename, which re-keys every placement with the page, does not fold while that edit waits.  A station with no name of its own is named after its page, so after the rename its name is not found, and a train standing there goes back to where the setup had it before the run: DW-A1's shape, the track it stands on reading free.  Two stations of one name on different pages can also trade their " (2)" when the page order changes.
+
+**Why it waits:** it needs the one-event race that raises the flag, a page rename while it is up, and a train on a station with no name of its own - and every one of the 33 stations on his railway has a name of its own, none shared.  **Direction:** carry by square rather than by name across a rename - record the page renamed and map a recorded name on it through the rename, as the capture's re-keying does - or rename the recorded names along with the page.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

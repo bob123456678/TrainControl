@@ -2637,6 +2637,21 @@ RLV6-D5	RLV6.md	Closed	Checked - clean.	Bookkeeping and the claims: RLA5-C2, RLU
 RLV6-D6	RLV6.md	Closed	Checked - clean.	RLA5-B1's fix at the door it covers: the configuration running, reloaded idle with the flag up, keeps every train where the run left it and lowers the
 RLV6-D7	RLV6.md	Closed	Checked - clean.	The records round 5 wrote: the counts match the store, MT-508's comment is in both tests.md and the store, and the three deferrals are open
 RLV6-D8	RLV6.md	Closed	Checked - clean.	The emergency-stop change as a change of its own: no door the program offers makes a mixed route, and the split keeps his route whole
+RLV7-A1	RLV7.md	Closed	Fixed - the route editor's Save no longer completes a diagram edit: a route is no page of 	Saving a route while autonomy runs forgets where every train stands: the reload the Save sets off asks to abandon the run, Yes rebuilds the railway fr
+RLV7-B1	RLV7.md	Closed	Fixed - a load folds no layout that holds a path: while the running layout isRunning() aft	A reload confirmed while a run is going folds each running train onto every point of its locked path: the configuration running is then refused as a l
+RLV7-C1	RLV7.md	Closed	Fixed - Layout.getLastPointsReached: a train under way is read at the last station on its 	`carryTheTrainsAcross` reads a layout whose running trains hold locked paths: a train stopped mid-path is carried to whichever of its points the map y
+RLV7-C2	RLV7.md	Closed	Fixed - the name a reset forgets is remembered (forgottenByTheReset), and a load carries o	The carry reads `running == null` as "the reset after an edit forgot the name", which is one of four doors that forget it: after a switch of layout fo
+RLV7-C3	RLV7.md	Open	Open - deferred as OB-306. A page rename's carry goes by Point name, and only a station wi	Door (a)'s carry goes by Point name, and a page rename renames every point on the page that has no name of its own: with the flag up, a train standing
+RLV7-C4	RLV7.md	Closed	Fixed - choosing another configuration while an edit waits, where the one running cannot b	Choosing another configuration while an edit waits, where the configuration running will not build with that edit: the log says it "could not be loade
+RLV7-C5	RLV7.md	Closed	Fixed - every claim with the flag up writes an edit to the file first (a declined edit is 	None of round 6's claims has an edit waiting, and none asserts that the configuration still has the moved train on its old square: door (b)'s claim pa
+RLV7-D1	RLV7.md	Closed	Checked - clean.	RLV6-B1 at the doors it names, at rest: every load while an edit waits carries each train across, keeps the operator's `interactive`, asks once, and l
+RLV7-D2	RLV7.md	Closed	Checked - clean.	RLV6-C1: a reload the operator asks for while an edit waits stops a train driven by hand, and shows the dialog when the setup will not build; the edit
+RLV7-D3	RLV7.md	Closed	Checked - clean.	RLV6-C2: `cutsThePowerAt` keeps the path, ends by its limit, and answers what firing does; the claim is red under the old set
+RLV7-D4	RLV7.md	Closed	Checked - clean.	RLV6-C3 and the round's records: the comma, the sentence named for what it follows, the counts, and the twelve rows
+RLV7-D5	RLV7.md	Closed	Checked - clean.	The two other test changes: the census allowance follows the capture into `loadPrepared`, and the routes-import wait tolerates `editRoute`'s delete-an
+RLV7-D6	RLV7.md	Closed	Checked - clean.	Round 6 touched no bundle, no route door and no split: no message is missing or different in any language, no stop stops firing, and no question appea
+RLV7-D7	RLV7.md	Closed	Checked - clean.	The carry names no placement the declined gesture edited, and that is right: considered, and not a defect
+RLV7-D8	RLV7.md	Closed	Checked - clean.	The final battery must show round 6's five claims passed, not skipped
 RR-C1	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27** - the rebuild is now staged and swapped under the locomotive's monito	A sync-applied address change rebuilds every consist without the fan-out lock
 RR-C2	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27** - the lock moved inside the shared method, so every entrance inherits	The layout-refresh lock covers half the entrances
 RR-C3	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27**	Danish and German dialogs name an option the menu does not have
