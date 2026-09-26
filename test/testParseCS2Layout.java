@@ -359,8 +359,11 @@ public class testParseCS2Layout
 
         assertTrue(pages.mkdirs(), "could not create " + pages);
 
+        // A left turnout, which 2.8 models.  The 3.0 test this came from uses a bare "weiche", which 2.8
+        // does not model and so drops when it writes the page back - on 2.8 that fixture left the saved
+        // page empty whatever the rename did, a failure the NullPointerException in parseLayout hid.
         Files.write(new File(pages, "Main.cs2").toPath(),
-            ("[gleisbildseite]\nversion\n .major=1\nelement\n .id=0x101\n .typ=weiche\n .artikel=8\n")
+            ("[gleisbildseite]\nversion\n .major=1\nelement\n .id=0x101\n .typ=linksweiche\n .artikel=8\n")
                 .getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
         Files.write(new File(config, "gleisbild.cs2").toPath(),
@@ -375,6 +378,10 @@ public class testParseCS2Layout
         List<LayoutDiagram> parsed = parser.parseLayout(new LinkedList<MarklinAccessory>());
 
         assertFalse(parsed.isEmpty(), "the fixture page did not parse");
+
+        assertEquals(parsed.get(0).getAll().size(), 1,
+            "precondition: the fixture page's turnout did not parse, so the page is written back empty whatever "
+            + "the rename does");
 
         parsed.get(0).saveChanges("MAIN", false);
 
