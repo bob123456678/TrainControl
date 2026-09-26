@@ -39,8 +39,8 @@ is not one.
 
 The railway defects live in the Inbox of `docs/manual-tests/issues.md`. **It is not empty**, and this
 paragraph said it was for twelve days (IND9X-B3, 2026-09-09).
-Today it holds 92 entries - 60 OB and 32 FR, recounted from the file on 2026-09-24: eighteen entries
-left it on Adam's word that day.  Seven were given their receipts then - OB-240 to OB-243, OB-271, OB-275
+Today it holds 92 entries - 60 OB and 32 FR, recounted from the file on 2026-09-25.  On 2026-09-24 eighteen entries
+left it on Adam's word.  Seven were given their receipts then - OB-240 to OB-243, OB-271, OB-275
 and FR-095, each fixed, answered or withdrawn by its own text - and eleven had been receipted long before
 and were still sitting in the Inbox, which `triage.py` already treated as closed.  OB-272 to OB-277 and
 FR-094/FR-095 had been filed that morning, FR-096 was filed after the tidy; FR-094 left it
@@ -235,12 +235,15 @@ resume note that has been deleted.
 
 ## Setup and start-up
 
-**Open** (2026-09-25, RLA3-B1 with RLU3-C4, RLA2-C4 and RLU2-C11): **a second import of an old file cannot tell a
-setting you returned to its default from one never set.**  Every editor door stores a default as nothing - a maximum of
-0, Can Be Chosen ticked, a square switched back on, priority 0, speed 100% - and a capture writes a station maximum of 0
-for every station; the gap-fill (MT-298) reads nothing as a gap, so a second import puts the file's value back where you
-had returned the default, and a captured 0 keeps the file's maximum out.  Options: (a) keep the gap-fill and say in its
-question that settings at their default take the file's; (b) import an old file only into a configuration of its own;
+**Open** (2026-09-25, RLA3-B1 with RLU3-C4, RLA2-C4, RLU2-C11 and RLA4-C8): **a second import of an old file cannot
+tell a setting you returned to its default from one never set.**  Every editor door stores a default as nothing - a
+maximum of 0, Can Be Chosen ticked, a square switched back on, priority 0, speed 100%, an exclusion list emptied, a home
+taken off - and a capture writes a station maximum of 0 for every station; the gap-fill (MT-298) reads nothing as a gap,
+so a second import puts the file's value back where you had returned the default (a home taken off comes back, and
+Return Home sends the train there), and a captured 0 keeps the file's maximum out - into the configuration in use,
+which the import captures into first, no maximum from the file arrives at all (RLU4-D3).  Options: (a) keep the
+gap-fill and say in its question that settings at their default, homes taken off and emptied exclusion lists take the
+file's; (b) import an old file only into a configuration of its own;
 (c) remember what the first import wrote and fill only that.  Recommendation: (a) - the second import is rare, and (b)
 and (c) change MT-298's rule or add state to every configuration.
 

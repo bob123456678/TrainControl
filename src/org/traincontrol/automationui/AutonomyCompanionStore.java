@@ -1169,11 +1169,13 @@ public class AutonomyCompanionStore
      *
      * *"we need to allow a length of 0 as a length that is set deliberately, i.e. for adjacent tracks.  same
      * meaning to the model, but this will allow everything to get assigned without what appears to be a skip."*
-     * So the 0 is KEPT - where `setTileLength` erases one - and nothing that reads a length can tell it from a
-     * square nobody measured: `getTileLength` answers 0 for both, and every length rule asks `> 0`.  What reads the
-     * difference is only `isTileLengthAnswered`, which the Mass Assign Lengths walk and the Unmeasured Track display
-     * ask so that an answered square is not offered again.  Adam, asked directly: a deliberate 0 is not a
-     * measurement of nothing, and a stretch whose answers are all 0 is still not judged.
+     * So the 0 is KEPT - where `setTileLength` erases one.  `getTileLength` answers 0 for it as for a square nobody
+     * measured, and `isTileLengthAnswered` tells the two apart: the Mass Assign Lengths walk and the Unmeasured Track
+     * display ask it, so an answered square is not offered again, and so do the reducer's places (`answeredAtZero`),
+     * so `Edge.isMeasured` and every length rule but the own-tail one (OB-300) read an answered 0 as measured track of
+     * no length.  That is Adam's decision of 2026-09-25 (*"Yes, count answered 0 as 0"*; ADU-C7, ADA-A1), which
+     * superseded his answer of 2026-09-23: that a deliberate 0 is not a measurement of nothing, and a stretch whose
+     * answers are all 0 is not judged (RLA4-C9).
      *
      * A square that already has a length keeps it.
      *

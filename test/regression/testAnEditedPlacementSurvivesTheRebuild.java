@@ -255,8 +255,8 @@ public class testAnEditedPlacementSurvivesTheRebuild
      * right-click autonomy menu is itself an `AutonomyEditorPanel`, and every gesture on it - a home,
      * a priority, a caption - ends in `setupChanged()` -> `rebuildRunningLayoutSoon()` ->
      * `rebuildRunningLayoutFromSetup(true)`. Nothing on that path captures the running layout, and
-     * nothing captures when a run ends (`captureRunningLayout`: *"Stopping autonomy does not capture;
-     * nothing else does either"*). So the setup is stale about exactly the trains the run moved.
+     * nothing captures when a run ends (`captureRunningLayout`: *"Stopping autonomy does not capture."*).
+     * So the setup is stale about exactly the trains the run moved.
      *
      * Occupancy is `currentLoc` and `isPathClear` never consults the s88, so a train modeled at
      * PLATFORM while it stands at SIDING is a block the next dispatch believes is free.

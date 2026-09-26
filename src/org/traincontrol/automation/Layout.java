@@ -5069,18 +5069,29 @@ public class Layout
 
         if (refused != null)
         {
-            // OPEN THAT SIDE only where not every train turns there (GUI4-C3): opened there, a terminus reached two ways is
-            // an error that refuses the whole setup.
-            return isABarredCopyOfAStation(refused) && !turnsEveryTrainAt(refused)
-                ? I18n.f("autolayout.why.startReachesNoStationOtherWayBarred", placeNameOf(at),
-                    I18n.t("autosetup.ui.menuArrivalsGroup"))
-                : I18n.f("autolayout.why.startReachesNoStationOtherWayRefused", placeNameOf(at));
+            // Switched off, or no station: autonomy starts no train that way
+            if (!isABarredCopyOfAStation(refused))
+            {
+                return I18n.f("autolayout.why.startReachesNoStationOtherWayRefused", placeNameOf(at));
+            }
+
+            // BARRED WHERE EVERY TRAIN TURNS (GUI4-C3, RLU4-C6, RLU4-C7): the reason said, and not "open that side" - opened
+            // there, a terminus reached two ways is the error that refuses the whole setup.
+            if (turnsEveryTrainAt(refused))
+            {
+                return I18n.f("autolayout.why.startReachesNoStationOtherWayBarredMustTurn", placeNameOf(at));
+            }
+
+            return I18n.f("autolayout.why.startReachesNoStationOtherWayBarred", placeNameOf(at),
+                I18n.t("autosetup.ui.menuArrivalsGroup"));
         }
 
-        // NEITHER WAY: what a reachable station needs.  Not "open the side it is reached by" (RLU3-C1) - where every train
-        // turns round there, that is the terminus error; this sentence does not know which station is meant.
+        // NEITHER WAY: what a reachable station needs - switched on, Can Be Chosen ticked, and the side a train would arrive
+        // on open, unless every train turns round there (RLU4-C4).  The exception is in the words because this sentence
+        // does not know which station is meant: where trains pass through, a closed side is the remedy (RLU2-C10); where
+        // every train turns round, opening it is the terminus error (RLU3-C1, GUI4-C3).
         return I18n.f("autolayout.why.startReachesNoStationEitherWay", placeNameOf(at),
-            I18n.t("autosetup.ui.menuAutoDestination"));
+            I18n.t("autosetup.ui.menuAutoDestination"), I18n.t("autosetup.ui.menuArrivalsGroup"));
     }
 
     /**

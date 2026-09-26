@@ -770,8 +770,11 @@ public class AutonomyViewerPanel extends JPanel
         // into THAT configuration, by name, before anything is replaced.  By name because store-active
         // and what-is-running can disagree after a refused load, and capturing into the store's idea
         // of active would overwrite a configuration with another one's state.
-        if (captureRunningState && ui.getActiveDiagramConfiguration() != null && ui.getModel() != null
-            && ui.getModel().hasAutoLayout() && ui.getModel().getAutoLayout().isValid())
+        //
+        // NOT WHILE A SETUP EDIT A RUN DECLINED WAITS FOR ITS REBUILD (RLD4-C3, WKW-B2): the running layout is then the
+        // older of the two, and folding it in would take the edit away - the exit save and the editor doors ask the same.
+        if (captureRunningState && !ui.isSetupNewerThanTheRunningLayout() && ui.getActiveDiagramConfiguration() != null
+            && ui.getModel() != null && ui.getModel().hasAutoLayout() && ui.getModel().getAutoLayout().isValid())
         {
             try
             {
@@ -1057,14 +1060,18 @@ public class AutonomyViewerPanel extends JPanel
             return;
         }
 
-        // NO BUNDLE OVER THE CONFIGURATION IN USE (RLA2-B1, RLD3-C2).  A bundle replaces the configuration it is imported
-        // into, and the reload that follows captured the running railway straight back over it - its settings and its
-        // timetable - so "Replace it?" answered Yes did not replace; and a bundle's placements are not where the running
-        // railway's trains stand (OB-183).  So it goes in under another name and is run by choosing it.  An old file is
-        // not refused (RLD3-C1): it fills gaps, as MT-298 has it, and places no train on the railway running - below.
+        // NOTHING THAT REPLACES THE CONFIGURATION IN USE (RLA2-B1, RLD3-C2, RLU4-B1).  A bundle replaces the configuration it
+        // is imported into, and so does a configuration of the older, bare shape - the setup folder's own file, or an export
+        // from before bundles; the reload that follows captured the running railway straight back over either - its
+        // settings and its timetable - so "Replace it?" answered Yes did not replace; and their placements are not where the
+        // running railway's trains stand (OB-183).  So they go in under another name and are run by choosing them.  An old
+        // file is not refused (RLD3-C1): it fills gaps, as MT-298 has it, and places no train on the railway running -
+        // below.
         String inUse = ui.getActiveDiagramConfiguration();
 
-        if (format == AutonomySession.ImportFormat.BUNDLE && inUse != null && inUse.equals(name.trim()))
+        final boolean intoTheOneInUse = inUse != null && inUse.equals(name.trim());
+
+        if (intoTheOneInUse && format != AutonomySession.ImportFormat.LEGACY_GRAPH)
         {
             JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.errorImportIntoConfigurationInUse", inUse,
                 I18n.t("autosetup.ui.menuAutonomy") + " > " + I18n.f("autosetup.ui.menuConfigurations", inUse)));
@@ -1072,12 +1079,25 @@ public class AutonomyViewerPanel extends JPanel
             return;
         }
 
-        // importing over an existing name replaces it, or fills its gaps, which is sometimes wanted and never silent
+        // NOR AN OLD FILE WHILE AUTONOMY RUNS (RLU4-C1, RLA4-C1, RLD4-C1), as Delete beside it is refused.  What the running
+        // layout knows goes into the configuration before the import only while nothing is moving; while something was, the
+        // reload stopped the trains and captured where they stopped - back over the homes and settings the import had just
+        // written and counted - and with the stop declined, the next fold did the same.
+        if (intoTheOneInUse && ui.isAutonomyBusy())
+        {
+            JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
+
+            return;
+        }
+
+        // importing over an existing name replaces it, or fills its gaps, which is sometimes wanted and never silent - and
+        // into the configuration in use an old file places none of its trains, which its question says (RLU4-C3)
         if (session().getStore().getConfigurationNames().contains(name.trim()))
         {
-            int replace = JOptionPane.showOptionDialog(ui,
-                I18n.f(format == AutonomySession.ImportFormat.LEGACY_GRAPH
-                    ? "autosetup.ui.confirmImportFillsGaps" : "autosetup.ui.confirmImportOverwrites", name.trim()),
+            String question = format != AutonomySession.ImportFormat.LEGACY_GRAPH ? "autosetup.ui.confirmImportOverwrites"
+                : intoTheOneInUse ? "autosetup.ui.confirmImportFillsGapsInUse" : "autosetup.ui.confirmImportFillsGaps";
+
+            int replace = JOptionPane.showOptionDialog(ui, I18n.f(question, name.trim()),
                 I18n.t("autosetup.ui.title"), JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE, null,
                 TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]);
@@ -1255,14 +1275,16 @@ public class AutonomyViewerPanel extends JPanel
             // FIRST, and the reload after the import does not capture again - captured on the reload, as every reload
             // is, it wrote the running railway back over the homes and settings the import had just brought.  And the
             // file places no train in it: where a train stands on the railway running is the railway's to say (OB-183),
-            // and nothing knows where the file's trains are now (RLA2-B3).  Not while trains are moving: the reload stops
-            // them and captures where they stopped, as it always has.
+            // and nothing knows where the file's trains are now (RLA2-B3).  While autonomy runs, the door refuses the name
+            // (RLU4-C1).  And not while a setup edit a run declined waits for its rebuild (RLD4-C3): the running layout is
+            // then the older of the two, and folding it in would take that edit away - which is why the exit save and the
+            // editor doors do not; the reload after the import does not fold either (`load`).
             final boolean intoTheOneRunning = into.equals(ui.getActiveDiagramConfiguration());
 
             boolean captured = false;
 
-            if (intoTheOneRunning && !ui.isAutonomyBusy() && ui.getModel() != null && ui.getModel().hasAutoLayout()
-                && ui.getModel().getAutoLayout().isValid())
+            if (intoTheOneRunning && !ui.isAutonomyBusy() && !ui.isSetupNewerThanTheRunningLayout()
+                && ui.getModel() != null && ui.getModel().hasAutoLayout() && ui.getModel().getAutoLayout().isValid())
             {
                 try
                 {
@@ -1331,7 +1353,7 @@ public class AutonomyViewerPanel extends JPanel
             if (!result.notPlacedInUse.isEmpty())
             {
                 unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyNotPlacedInUse",
-                    String.join(", ", result.notPlacedInUse), into);
+                    String.join(", ", result.notPlacedInUse), into, I18n.t("autolayout.ui.labelPlaceLocomotiveAt"));
             }
 
             // AND WHAT IT DID NOT BRING (MT-257 item 3).

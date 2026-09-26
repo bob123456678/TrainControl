@@ -2963,12 +2963,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Whether the setup on disk is newer than the running layout: a setup edit made as a run started was written to the
+     * file and not to the running layout, and no rebuild has carried it since (ACC-B3, WKW-B2, AMS-B1).  Every fold of the
+     * running layout back into the setup asks this first, since folding would take that edit away (RLD4-C3).
+     *
+     * @return true while such an edit waits
+     */
+    boolean isSetupNewerThanTheRunningLayout()
+    {
+        return setupEditDeclinedDuringRun;
+    }
+
+    /**
      * Folds what the running layout knows back into the configuration, and writes it.
      *
-     * This is the ONLY thing that does that. A run moves locomotives, and where they ended up lives in
-     * the running Layout until one of the three callers of this folds it into the setup - loading
-     * another configuration, the save on the way out, and the reset after a diagram edit. Stopping
-     * autonomy does not capture; nothing else does either.
+     * A run moves locomotives, and where they ended up lives in the running Layout until a fold writes it into the setup:
+     * this one, behind the reset after a diagram edit and the editor doors; the save on the way out; the one
+     * `AutonomyViewerPanel.load` makes as it chooses a configuration; and the one an old file's import into the
+     * configuration in use makes before it writes.  Stopping autonomy does not capture.  Each asks
+     * `isSetupNewerThanTheRunningLayout` first - this was once called the only fold, and the panel's two did not ask
+     * (RLD4-C3).
      *
      * DW-A1, and it is a defect I introduced earlier tonight. The rename fix marked the session stale
      * and had captureFromLayout refuse while that held, on the reasoning that "a rename is refused

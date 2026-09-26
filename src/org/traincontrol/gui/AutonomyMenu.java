@@ -329,8 +329,9 @@ public class AutonomyMenu extends JMenu
             // is the same kind of thought as choosing between them.
             choose.addSeparator();
 
-            // Import is never greyed. Into the configuration that is running it refuses a bundle, which would replace
-            // it (RLA2-B1), and takes an old file's gaps without its trains (RLD3-C1); otherwise it brings
+            // Import is never greyed. Into the configuration that is running it refuses a file that would replace it
+            // (RLA2-B1, RLU4-B1) and an old file while autonomy runs (RLU4-C1), and takes an old file's gaps without its
+            // trains (RLD3-C1); otherwise it brings
             // one in - and the moment it is most needed is when the current setup will not load, which
             // is repaired by importing one that will.
             choose.add(item(I18n.t("autosetup.ui.btnImportConfiguration"), new Runnable()

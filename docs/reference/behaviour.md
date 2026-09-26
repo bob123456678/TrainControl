@@ -702,7 +702,7 @@ leave by, a copy trains may not arrive at included, and the copy the paste would
 otherwise the first copy the menu offers.  The item is offered wherever a copy has a way out, as the action
 chooses (ADU2-C2).  It took one at random until then, and for a day chose only among station copies, which turned a
 train facing the barred way round at a square with a barred side (ADU-B1).  A copy with a way out that reaches no
-station autonomy may choose is kept too, and Why not Moving? says why autonomy never starts a train there - turn it round where another copy of the square reaches a station and a train may be started from that copy (RLA-C5), otherwise drive it off by hand or let autonomy choose a station it can reach - switched on, Can Be Chosen in Full Autonomy ticked, and the side a train would arrive on open under Trains May Arrive... (RLU-C4, RLU2-C10) (OB-299; by hand it is no reason, since a hand send may go where autonomy never does).  `core.testWhyStuck.testACopyThatReachesNoStationSaysSo`, `core.testWhyStuck.testTurningRoundIsOfferedOnlyOntoACopyATrainMayStartFrom`, `core.testWhyStuck.testTurningRoundIsNotOfferedOntoACopyThatIsNoStation`, `core.testATrainIsPutOnlyWhereItCanStart.testTheRightClickPlaceKeepsTheTrainsHeading`.
+station autonomy may choose is kept too, and Why not Moving? says why autonomy never starts a train there - turn it round where another copy of the square reaches a station and a train may be started from that copy (RLA-C5); where that copy is barred, open its side and turn it round - but where every train turns round at the square, drive it off by hand, since opening that side there is the terminus error (RLU3-C2, RLU4-C6, GUI4-C3); where autonomy starts no train from that copy for another reason, drive it off by hand (RLU3-C2); and where no copy reaches one, drive it off by hand or let autonomy choose a station it can reach - switched on, Can Be Chosen in Full Autonomy ticked, and the side a train would arrive on open under Trains May Arrive... unless every train turns round there (RLU-C4, RLU2-C10, RLU3-C1, RLU4-C4) (OB-299; by hand it is no reason, since a hand send may go where autonomy never does).  `core.testWhyStuck.testACopyThatReachesNoStationSaysSo`, `core.testWhyStuck.testTurningRoundIsOfferedOnlyOntoACopyATrainMayStartFrom`, `core.testWhyStuck.testTurningRoundIsNotOfferedOntoACopyThatIsNoStation`, `core.testWhyStuck.testOpeningASideIsNotOfferedWhereEveryTrainTurns`, `core.testATrainIsPutOnlyWhereItCanStart.testTheRightClickPlaceKeepsTheTrainsHeading`.
 
 > *"Simply don’t place the train, leave it on the clipboard as if no paste had been done."* — Adam,
 > 2026-09-07, on a dismissed prompt
@@ -2036,7 +2036,8 @@ side (GUI3-C1, TDY4-C3). The rebuild's put-back stands it there again where no s
 TDY4-B1); a placement keeps it where the train can leave that way (OB-284); a home does not save such a facing
 (GUI3-C2); and an import of an old
 autonomy.json takes each train's facing from the side its point's one-way edges leave by, guessing one trains may
-arrive in only where they cannot say (REG3-C1, REG4-A1, REG4-C1). **The old file's directions are carried onto the
+arrive in where they cannot say and the square records none - a facing the square records stays (REG3-C1, REG4-A1,
+REG4-C1, RLA3-C4; counting it and preferring a way trains may arrive are OB-304). **The old file's directions are carried onto the
 diagram first** (Adam, 2026-09-24: *"Carry the old file's directions onto the diagram - yes, to the extent
 possible."*): each one-way edge sets the track it ran over running its way, as the editor's one-way run does; track run
 both ways stays both; and the log says how much was carried. **Only onto a diagram nobody has set a direction on** -
@@ -2430,12 +2431,17 @@ between honouring the name typed and not asking for one: *"(a)"*), created where
 chosen only while the import writes into it: the configuration running stays the one in use, and is the one the next
 start resumes, whether or not the reload after the import goes ahead - the imported one is loaded only where nothing
 was running.  The import's message names the configuration its trains went into and, where another is in use, where
-to choose it.  **Into the configuration in use** (RLA2-B1, RLD3-C1, 2026-09-25): a bundle under that name is refused,
-with where to choose it once it is imported under another - it replaces a configuration, and the reload after it
-captured the running railway straight back over its settings and timetable.  An old file under that name fills gaps as
-MT-298 has it, and places none of its trains: what the running layout knows goes into the configuration first, the
-reload after the import does not capture again, and where a train stands on the railway running is the railway's to
-say (OB-183) - the message names the trains it did not place.  Until then a layout that already had configurations took the file's placements, homes and facings into
+to choose it.  **Into the configuration in use** (RLA2-B1, RLD3-C1, RLU4-B1, 2026-09-25): a bundle under that name is
+refused, and so is a configuration of the older, bare shape - the setup folder's own file, or an export from before
+bundles - with where to choose it once it is imported under another: each replaces a configuration, and the reload
+after it captured the running railway straight back over its settings and timetable.  An old file under that name
+fills gaps as MT-298 has it, and places none of its trains, which its question says (RLU4-C3): what the running layout
+knows goes into the configuration first, the reload after the import does not capture again, and where a train stands
+on the railway running is the railway's to say (OB-183) - the message names the trains it did not place, and how to put
+one down.  While autonomy runs it is refused, as Delete is (RLU4-C1): the capture first is not made while trains move,
+and the reload's capture took back what the import had just brought.  And no import folds the running layout into the
+setup while a setup edit a run declined waits for its rebuild - neither the capture first nor the reload (RLD4-C3,
+WKW-B2).  Until then a layout that already had configurations took the file's placements, homes and facings into
 the one in use, and the name asked for was thrown away.
 
 Into a configuration that exists, an old file fills what that configuration does not already say (MT-298), and the
