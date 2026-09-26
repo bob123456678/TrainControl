@@ -1177,8 +1177,8 @@ public class MarklinLocomotive extends Locomotive
      * multi-unit at address 4003 holding a member at 62: asked one way round the answer is false, the
      * other way true.
      *
-     * `Layout.clearMultiUnitConflictsWith` is the only production caller - reached from placing, loading and every
-     * edit door's sweep - and it asks both ways.  A second caller
+     * `Layout.clearMultiUnitConflictsWith` is the only production caller - reached from placing, loading, every edit
+     * door's sweep and the Central Station sync's - and it asks both ways.  A second caller
      * that asked once would let the pair through half the time, which is the shape `X8-A2` was: a
      * missing branch in one of the two loops made both directions answer the same wrong thing, and the
      * both-ways call could not compensate because neither direction knew.

@@ -1710,7 +1710,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // asked the graph nothing, so a member of a standing multi-unit given another standing train's address - or a
         // standing train added to a standing multi-unit on the Central Station's own screen - left both standing, and
         // autonomy would run the second as a train of its own while the multi-unit's commands moved it.  Asked as the
-        // window's edit doors ask it, of each locomotive the sync changed; not while autonomy runs, as they are not.
+        // window's edit doors ask it, of each locomotive the sync changed; not while autonomy runs, as they are not.  An
+        // address change is held back until the run has stopped, and swept by the sync that makes it; new members of a
+        // Central Station multi-unit are taken at once, and one that arrives during a run is swept by the next load or
+        // Place (OB-303).
         if (!sweptAfterTheSync.isEmpty() && this.hasAutoLayout() && !this.isAutonomyRunning())
         {
             Layout layout = this.getAutoLayout();

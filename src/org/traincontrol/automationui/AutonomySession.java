@@ -567,6 +567,12 @@ public class AutonomySession
          * kept, and the message names them (RLA2-C3).
          */
         public final List<String> homesKept = new ArrayList<>();
+
+        /**
+         * Locomotives the file places that were not placed because the configuration imported into is the one running:
+         * where a train stands there is the railway's to say (RLD3-C1).
+         */
+        public final List<String> notPlacedInUse = new ArrayList<>();
     }
 
     /**
@@ -932,6 +938,20 @@ public class AutonomySession
      */
     public LegacyImport importLegacy(org.json.JSONObject legacy, Set<String> knownLocomotives)
     {
+        return importLegacy(legacy, knownLocomotives, true);
+    }
+
+    /**
+     * The same, told whether the file's placements are taken - not into the configuration running, where a train stands
+     * is the railway's to say (RLD3-C1); the rest of the file fills gaps as ever.
+     *
+     * @param legacy the parsed autonomy.json
+     * @param knownLocomotives the names the locomotive database holds, or null not to check
+     * @param placeTrains whether the file's placements are written
+     * @return what was matched, placed, marked, carried and refused
+     */
+    public LegacyImport importLegacy(org.json.JSONObject legacy, Set<String> knownLocomotives, boolean placeTrains)
+    {
         LegacyImport result = new LegacyImport();
 
         // One locomotive stands in one place.  Tracked across the whole file rather than per point,
@@ -1120,6 +1140,10 @@ public class AutonomySession
                         else if (standingAlready.contains(locName))
                         {
                             if (!result.alreadyPlaced.contains(locName)) result.alreadyPlaced.add(locName);
+                        }
+                        else if (!placeTrains)
+                        {
+                            if (!result.notPlacedInUse.contains(locName)) result.notPlacedInUse.add(locName);
                         }
                         else if (!placedAlready.add(locName))
                         {
@@ -3678,7 +3702,8 @@ public class AutonomySession
         if (stretch == null || wholeLength < 0 || measuredIn(stretch) > 0) return false;
 
         // A DELIBERATE 0 IS AN ANSWER (OB-274): every square of the piece is recorded as answered, so the walk does
-        // not offer it again, and every length rule reads it as measured track of no length (TDU-C6; Adam, 2026-09-25).
+        // not offer it again, and every length rule but the own-tail one (OB-300) reads it as measured track of no length
+        // (TDU-C6; Adam, 2026-09-25).
         if (wholeLength == 0)
         {
             for (TileKey tile : stretch.getTiles()) store.answerTileLengthZero(tile);
@@ -3731,7 +3756,8 @@ public class AutonomySession
         {
             if (store.getTileLength(tile) > 0) continue;
 
-            // 0 ANSWERS IT (OB-274) - two switches back to back are his adjacent tracks - and every length rule reads it as
+            // 0 ANSWERS IT (OB-274) - two switches back to back are his adjacent tracks - and every length rule but the
+            // own-tail one (OB-300) reads it as
             // measured track of no length (TDU-C6; Adam, 2026-09-25).
             if (length == 0)
             {
@@ -8709,7 +8735,8 @@ public class AutonomySession
      * Answers these squares 0 on purpose, replacing any length they had, and re-derives once (Adam, 2026-09-23).
      *
      * What Segment Length's 0 means since *"no, add a clear button"*: a 0 typed there is the same answer a 0 in Mass
-     * Assign Lengths is (OB-274) - kept, not offered again, and read by every length rule as measured track of no length
+     * Assign Lengths is (OB-274) - kept, not offered again, and read by every length rule but the own-tail one (OB-300)
+     * as measured track of no length
      * (TDU-C6; Adam, 2026-09-25).  Clearing a length is
      * `setTileLength(tile, 0)`, which removes the answer as well.
      *

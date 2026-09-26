@@ -287,7 +287,8 @@ public class GraphReducer
         int getTileLength(TileKey tile);
 
         /**
-         * Whether this tile's 0 was answered on purpose (OB-274) - measured track of no length to every length rule
+         * Whether this tile's 0 was answered on purpose (OB-274) - measured track of no length to every length rule but
+         * the own-tail one (OB-300)
          * (TDU-C6; Adam, 2026-09-25), and not listed as missing (Adam, 2026-09-23).
          *
          * @param tile the square

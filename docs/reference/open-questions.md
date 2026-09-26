@@ -132,7 +132,7 @@ either.
 
 ## Length, blocking, and the tail
 
-**Decided 2026-09-25** (ADU-C7, ADA-A1): **an answered 0 is measured track of no length, to every length rule.**
+**Decided 2026-09-25** (ADU-C7, ADA-A1): **an answered 0 is measured track of no length, to every length rule** - but the own-tail rule, filed as OB-300.
 Adam: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*, and *"Build it"*.  The route in, the room walk, the walk that claims a standing train's
 tail, the berth rule and the tail question count it, adding nothing, and walk on over it; a leg with any square nobody
 answered - a switch or crossing on it included - still ends them.  Asked with the frozen railway's Tunnel as the example:

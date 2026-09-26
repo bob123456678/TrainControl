@@ -779,7 +779,7 @@ public class testTheImportDoorReadsAnOldFile
                 + " the running railway to " + toName + " before the import, is not there in " + inUse + " after it - the"
                 + " reload put it back where it set off (RLD2-C3)");
 
-            String notPlaced = before(I18n.t("autosetup.ui.infoLegacyNotPlacedInUse"), "{0}");
+            String notPlaced = before(I18n.f("autosetup.ui.infoLegacyNotPlacedInUse", "@@@", inUse), "@@@");
 
             assertTrue(said.stream().anyMatch(message -> message.contains(notPlaced)), "the import did not say why it"
                 + " placed none of the file's trains: " + said);

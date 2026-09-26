@@ -364,7 +364,7 @@ public class Layout
      * become a floor proportional to the measured ones rather than a flat 1.
      *
      * AN EDGE ANSWERED 0 COUNTS 0 (Adam, 2026-09-25: *"Yes, count answered 0 as 0"*).  The floor is for
-     * track nobody has measured; an answered 0 is a measurement (`Edge.isMeasured`), as every length rule
+     * track nobody has measured; an answered 0 is a measurement (`Edge.isMeasured`), as every length rule but the own-tail one (OB-300)
      * reads it, and counted as 1 it made a route through sensors side by side look longer than it is.
      */
     private int lengthOf(List<Edge> path)
@@ -5053,18 +5053,34 @@ public class Layout
     {
         if (at == null || canReachAnyDestination(at)) return null;
 
+        // THE OTHER WAY, where it reaches a station: turn it round where a train may be started there; otherwise say
+        // why not, and only what would help (RLU3-C2) - "whichever way a train faces" is false of it.
+        Point refused = null;
+
         for (Point other : this.getPoints())
         {
+            if (other == at || !other.isSamePlaceAs(at) || !canReachAnyDestination(other)) continue;
+
             // The start rules asked of the square a train stands on (`whyNoTrainIsStartedFrom`)
-            if (other != at && other.isSamePlaceAs(at) && whyNoTrainIsStartedFrom(other) == null
-                && canReachAnyDestination(other))
-            {
-                return I18n.f("autolayout.why.startReachesNoStation", placeNameOf(at));
-            }
+            if (whyNoTrainIsStartedFrom(other) == null) return I18n.f("autolayout.why.startReachesNoStation", placeNameOf(at));
+
+            if (refused == null) refused = other;
         }
 
+        if (refused != null)
+        {
+            // OPEN THAT SIDE only where not every train turns there (GUI4-C3): opened there, a terminus reached two ways is
+            // an error that refuses the whole setup.
+            return isABarredCopyOfAStation(refused) && !turnsEveryTrainAt(refused)
+                ? I18n.f("autolayout.why.startReachesNoStationOtherWayBarred", placeNameOf(at),
+                    I18n.t("autosetup.ui.menuArrivalsGroup"))
+                : I18n.f("autolayout.why.startReachesNoStationOtherWayRefused", placeNameOf(at));
+        }
+
+        // NEITHER WAY: what a reachable station needs.  Not "open the side it is reached by" (RLU3-C1) - where every train
+        // turns round there, that is the terminus error; this sentence does not know which station is meant.
         return I18n.f("autolayout.why.startReachesNoStationEitherWay", placeNameOf(at),
-            I18n.t("autosetup.ui.menuAutoDestination"), I18n.t("autosetup.ui.menuArrivalsGroup"));
+            I18n.t("autosetup.ui.menuAutoDestination"));
     }
 
     /**

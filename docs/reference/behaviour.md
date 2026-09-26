@@ -1957,7 +1957,7 @@ stopped railway, and their sweep for multi-unit conflicts asks of the edited tra
 standing multi-unit that drives it - a consist linked here or one the Central Station holds - what putting that
 multi-unit down again would ask.  A train that neither stands nor is driven by one that stands clashes with nothing
 that stands.  The Central Station sync asks the same of every locomotive it re-addresses or gives other members,
-when autonomy is not running (RLA2-B2).  Renaming a member of a
+when autonomy is not running (RLA2-B2); members that change during a run are swept by the next load or Place (OB-303).  Renaming a member of a
 multi-unit whose head stood on a station took the head off it - a head is never compatible with its
 own member - and the platform read as empty with the train on it.  Putting a train down still sweeps
 first, before it is placed.
@@ -2430,20 +2430,22 @@ between honouring the name typed and not asking for one: *"(a)"*), created where
 chosen only while the import writes into it: the configuration running stays the one in use, and is the one the next
 start resumes, whether or not the reload after the import goes ahead - the imported one is loaded only where nothing
 was running.  The import's message names the configuration its trains went into and, where another is in use, where
-to choose it.  **Not into the configuration in use** (RLA2-B1, RLA2-B3, 2026-09-25): an import under that name is
-refused, with where to choose the file's configuration once it is imported under another.  The reload after such an
-import captured the running railway over what the import had just written - an old file's homes, a bundle's settings
-and timetable - and capturing first instead stood the file's trains on the running railway, where nothing knew they
-were; where a train stands on the railway running is the railway's to say (OB-183).  Until then a layout that already had configurations took the file's placements, homes and facings into
+to choose it.  **Into the configuration in use** (RLA2-B1, RLD3-C1, 2026-09-25): a bundle under that name is refused,
+with where to choose it once it is imported under another - it replaces a configuration, and the reload after it
+captured the running railway straight back over its settings and timetable.  An old file under that name fills gaps as
+MT-298 has it, and places none of its trains: what the running layout knows goes into the configuration first, the
+reload after the import does not capture again, and where a train stands on the railway running is the railway's to
+say (OB-183) - the message names the trains it did not place.  Until then a layout that already had configurations took the file's placements, homes and facings into
 the one in use, and the name asked for was thrown away.
 
 Into a configuration that exists, an old file fills what that configuration does not already say (MT-298), and the
 door asks exactly that - *"Add to it what the file has and {0} does not?"* - where a bundle replaces the
 configuration and asks to replace it.  A train the configuration already has standing somewhere is not placed again,
 and is named in the message; a train that already has a home keeps it, and is named too (RLA2-C3) - one train in two
-places refuses the whole configuration (RLA-B2).  A train the file places faces the way the file ran it, whatever
-facing the square's last occupant left there (RLA2-B3).  A station maximum of 0 is a statement - "no limit" - and is
-kept, like any other value the configuration has.  A file the import cannot read to its end leaves the setup as it was: nothing made, chosen or
+places refuses the whole configuration (RLA-B2).  A train the file places faces the way the file ran it, over
+the facing the square's last occupant left there (RLA2-B3); where the file cannot say, the last occupant's stays.  A value
+the configuration holds is kept - including a station maximum of 0, which a capture writes for every station; whether a
+setting at its default should count as set is put to Adam (RLA3-B1).  A file the import cannot read to its end leaves the setup as it was: nothing made, chosen or
 saved (RLA-C3).  `core.testASecondImportFillsGapsAndDoesNotOverwrite.testAnImportGoesIntoTheConfigurationNamed`, and
 `regression.testTheImportDoorReadsAnOldFile`.
 
