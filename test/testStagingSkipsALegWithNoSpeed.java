@@ -60,7 +60,31 @@ public class testStagingSkipsALegWithNoSpeed
     }
 
     /**
-     * The other train still goes home even though one train has no speed.
+     * A train placed by hand with no speed is given the graph's default, as loading the graph gives it (3.0's
+     * MT-233).  It kept none until the next reload, so Start and Return Home skipped a train the operator had just
+     * put down.
+     *
+     * MUTATION: take the default out of moveLocomotive, and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testATrainPlacedByHandWithNoSpeedIsGivenTheDefault() throws Exception
+    {
+        Layout layout = load(ring(LOC_STUCK, null, LOC_MOVING));
+
+        assertTrue(layout.getDefaultLocSpeed() >= 1, "precondition: the graph has no usable default speed");
+
+        loc(LOC_STUCK).setPreferredSpeed(0);
+
+        assertTrue(layout.moveLocomotive(LOC_STUCK, "SG B", false), "precondition: the train was not placed");
+
+        assertEquals(loc(LOC_STUCK).getPreferredSpeed(), layout.getDefaultLocSpeed(), "a train placed by hand with "
+            + "no speed kept none - loading the graph gives it the default, placing it did not, so Start and Return "
+            + "Home skipped a train the operator had just put down");
+    }
+
+    /**
+     * The other train still goes home even though one train has no speed - kept as the guard for a train whose speed is
+     * outside 1 to 100 when it is sent, now that a placement gives one with none the default.
      *
      * ON A DEADLINE: this drives the real dispatch loop, and a regression here is a hang rather than a
      * failure.

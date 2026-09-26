@@ -370,6 +370,7 @@ Tab icons provided by Freepik.
         - Clearing a station’s priority no longer stops autonomy from sending trains out, or the graph from being saved
         - Fixed bug where a running train could miss its stop sensor and drive through its station while another train’s route was being set
         - Return Home no longer starts and then stops every train when one of them has no speed set or is not at a station.  A train with no speed is now skipped and the others still go home, and a train that is not at a station is named before anything moves
+        - A locomotive placed on the graph by hand without a speed now gets the default speed, as it does when the graph is loaded.  Previously Start and Return Home skipped it until the graph was loaded again
         - Double-clicking Start no longer starts every train twice
         - One timetable entry that can no longer be loaded, such as after its locomotive was deleted, no longer wipes out the whole timetable
         - If a train’s trip fails part way, autonomy now stops itself and says why.  Until the graph is validated again no train is sent, and no locomotive can be placed on the graph or taken off it, though a train’s settings, such as its departure function, can still be changed.  Previously the other trains carried on, and the failed train could later be sent off from the wrong place

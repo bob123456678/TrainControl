@@ -4024,7 +4024,20 @@ public class Layout
             {
                 this.locomotivesToRun.add(l);
             }
-            
+
+            // AND A SPEED, IF NOBODY HAS EVER GIVEN IT ONE (3.0's MT-233).
+            //
+            // Loading a graph gives every locomotive with no speed the default, and so does the locomotive
+            // dialog; a train placed by hand - Ctrl+V, Assign on the graph, Place on the track diagram - did not,
+            // and stood with no speed until the next reload.  Start skipped it, and Return Home skipped its leg:
+            // correct, but a train the operator had just put down went nowhere.  This is the single door every
+            // placement comes through, so one place covers them all.  Only when the default is usable.
+            if (l.getPreferredSpeed() < 1 && this.defaultLocSpeed >= 1)
+            {
+                l.setPreferredSpeed(this.defaultLocSpeed);
+                this.control.logf("autolayout.warnLocomotiveDefaultSpeedApplied", l, this.defaultLocSpeed);
+            }
+
             // Resolved once and null-checked, as the locomotive == null branch below already does.
             // An unknown point name used to be dereferenced straight away and thrown, rather than
             // reported - the two branches of this method disagreed about that.
