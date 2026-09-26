@@ -1067,7 +1067,8 @@ public class testAPathThatFailsPartWay
 
     /**
      * The graph's right-click menu, on the failed train's station, offers no placement or removal before
-     * validating: each such item is greyed, and says why (MRV4).
+     * validating: each such item is greyed, and says why (MRV4).  Edit is offered: on a point a train stands on, the
+     * dialog changes that train's settings and places nothing (MRV5-C2).
      *
      * The menu built as the graph builds it, on a window and a graph window that are never shown.
      */
@@ -1093,12 +1094,20 @@ public class testAPathThatFailsPartWay
         String[] edits = {
             I18n.f("autolayout.ui.menuRemoveLocomotiveFromNode", FAILING),
             I18n.f("autolayout.ui.menuRemoveLocomotiveFromGraph", FAILING),
-            I18n.t("autolayout.ui.menuAddLocomotiveAtNode"),
-            I18n.t("autolayout.ui.labelEditLocomotiveAt")
+            I18n.t("autolayout.ui.menuAddLocomotiveAtNode")
         };
+
+        boolean editOffered = false;
 
         for (java.awt.Component c : menu.getComponents())
         {
+            // THE TRAIN'S OWN SETTINGS, which place nothing (MRV5-C2)
+            if (c instanceof javax.swing.JMenuItem
+                && I18n.t("autolayout.ui.labelEditLocomotiveAt").equals(((javax.swing.JMenuItem) c).getText()))
+            {
+                editOffered = ((javax.swing.JMenuItem) c).isEnabled();
+            }
+
             if (c instanceof javax.swing.JMenuItem && Arrays.asList(edits).contains(((javax.swing.JMenuItem) c).getText()))
             {
                 javax.swing.JMenuItem item = (javax.swing.JMenuItem) c;
@@ -1109,8 +1118,11 @@ public class testAPathThatFailsPartWay
             }
         }
 
-        assertEquals(offered.size() + greyed.size(), edits.length, "precondition: the menu does not hold the four "
+        assertEquals(offered.size() + greyed.size(), edits.length, "precondition: the menu does not hold the three "
             + "placement and removal items: offered " + offered + ", greyed " + greyed);
+
+        assertTrue(editOffered, "the graph's menu greys Edit on the failed train's own point, so the function that "
+            + "made its trip fail cannot be changed until Validate - the dialog then places nothing (MRV5-C2)");
 
         assertTrue(offered.isEmpty(), "the graph's menu offers a placement or removal before validating, which the "
             + "model then refuses: " + offered + " (MRV4)");
@@ -1145,8 +1157,10 @@ public class testAPathThatFailsPartWay
 
         for (int[] door : new int[][]{ { doubleClick }, { paste }, { cut } })
         {
-            // The door's own question: the nearest one before it, with no other door in between
-            int asked = source.lastIndexOf("getGraphEditRefusal()", door[0]);
+            // The door's own question: the nearest one before it, with no other door in between - the removing keys
+            // ask whether the point has a train to take off (MRV5-C2)
+            int asked = Math.max(source.lastIndexOf("getGraphEditRefusal()", door[0]),
+                source.lastIndexOf("getGraphRemovalRefusal(", door[0]));
             String between = asked < 0 ? "" : source.substring(asked, door[0]);
 
             assertTrue(asked >= 0 && !between.contains("moveLocomotive(") && !between.contains("new GraphLocAssign("),
@@ -1472,6 +1486,194 @@ public class testAPathThatFailsPartWay
         }
     }
 
+    /**
+     * On a non-atomic route, the graph kept after another train has taken the point the failed train is kept at
+     * still has the failed train, on the next point of its path that holds it (MRV5-C1).
+     *
+     * The release behind the train frees the point it last tripped, so another train can lock through it, and
+     * locking records that train there.  The kept graph wrote the other train on it and took the failed one off
+     * every other point, so after the reload it was on no point, and the track it stands on read free.
+     *
+     * MUTATION: keep the train at the point it last tripped whoever stands there now, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test(timeOut = 120000)
+    public void testANonAtomicKeptPointAnotherTrainTakesAfterTheFailureKeepsTheTrainOnItsPath() throws Exception
+    {
+        MarklinLocomotive failing = model.getLocByName(FAILING);
+        MarklinLocomotive other = model.getLocByName(OTHER);
+
+        Layout layout = aNonAtomicTripThatFails("NT", 8960, null);
+
+        assertNotEquals(layout.getPoint("NT A").getCurrentLocomotive(), failing,
+            "precondition: NT A, the last point whose sensor the train tripped, was not released behind it");
+
+        // OTHER locks through the released point, as a train sent S7 - A does
+        layout.getPoint("NT S7").setLocomotive(null);
+        layout.getPoint("NT A").setLocomotive(other);
+
+        String ahead = firstPointHolding(layout, failing, "NT S1", "NT A", "NT J1", "NT J2", "NT S2");
+
+        assertNotNull(ahead, "precondition: no point of the failed path still records " + FAILING);
+
+        Layout reloaded = Layout.fromJSON(graphTheWindowKeeps(layout), model);
+
+        assertTrue(reloaded.isValid(), "the graph kept does not load: " + Layout.getLastError());
+
+        assertEquals(where(reloaded, other), Collections.singletonList("NT A"), "the reload moved " + OTHER);
+
+        assertEquals(where(reloaded, failing), Collections.singletonList(ahead), "after another train took NT A, "
+            + "where the failed train was kept, the reload has it on " + where(reloaded, failing) + " - not on "
+            + ahead + ", the next point of its path that holds it (MRV5-C1)");
+    }
+
+    /**
+     * The same where the other train took the point before the trip failed: the message names where the train is
+     * kept, and says why that is not the last place it is known to have reached (MRV5-C1).
+     *
+     * It named that point, which the graph then showed with the other train on it.
+     *
+     * MUTATION: keep the train at the point it last tripped whoever stands there, or name that point, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test(timeOut = 120000)
+    public void testANonAtomicKeptPointTakenBeforeTheFailureIsNamedAsTaken() throws Exception
+    {
+        MarklinLocomotive failing = model.getLocByName(FAILING);
+        MarklinLocomotive other = model.getLocByName(OTHER);
+
+        final Layout[] made = new Layout[1];
+
+        Layout layout = aNonAtomicTripThatFails("NB", 8970, () ->
+        {
+            made[0].getPoint("NB S7").setLocomotive(null);
+            made[0].getPoint("NB A").setLocomotive(other);
+        }, made);
+
+        String ahead = firstPointHolding(layout, failing, "NB S1", "NB A", "NB J1", "NB J2", "NB S2");
+
+        assertNotNull(ahead, "precondition: no point of the failed path still records " + FAILING);
+
+        assertEquals(layout.getPathFailedMessage(), I18n.f("autolayout.errorPathFailedSentByHandKeptAhead", FAILING,
+            I18n.t("ui.main.validateConfigOpenGraphUI"), ahead, "NB A"), "the message does not say that the train is "
+            + "kept at " + ahead + " because another train now stands at NB A, the last place it is known to have "
+            + "reached (MRV5-C1)");
+
+        assertEquals(where(Layout.fromJSON(graphTheWindowKeeps(layout), model), failing),
+            Collections.singletonList(ahead), "the reload does not keep the failed train where the message says");
+    }
+
+    /**
+     * With two failed trips, the refusal names both, in words for more than one (MRV5-C2).
+     *
+     * @throws Exception from the fixture
+     */
+    @Test(timeOut = 120000)
+    public void testTheRefusalNamesTwoFailedTrainsAsTwo() throws Exception
+    {
+        Layout layout = aDepartureThatFails("TW", 8980);
+
+        // A second failure, as a train already on its way when the first failed records one
+        java.lang.reflect.Field field = Layout.class.getDeclaredField("failedPaths");
+        field.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        java.util.Map<Locomotive, String> failed = (java.util.Map<Locomotive, String>) field.get(layout);
+
+        synchronized (failed)
+        {
+            failed.put(model.getLocByName(OTHER), "a second failure");
+        }
+
+        assertEquals(layout.getPlacementRefusal(), I18n.f("autolayout.errorNoGraphEditUntilValidatedSeveral",
+            FAILING + ", " + OTHER, I18n.t("ui.main.validateConfigOpenGraphUI")), "with two failed trips the refusal "
+            + "speaks of one trip and one train (MRV5-C2)");
+    }
+
+    /**
+     * Delete, Backspace and Ctrl+X over a point no train stands on say nothing before validating, as they did nothing
+     * there before; over a train, they say why they cannot take it off (MRV4, MRV5-C2).
+     *
+     * @throws Exception from the fixture
+     */
+    @Test(timeOut = 120000)
+    public void testTheRemovingKeysOverAnEmptyPointSayNothing() throws Exception
+    {
+        Layout layout = aDepartureThatFails("RK", 8990);
+
+        point(layout, "RK E", true, 8999);
+
+        TrainControlUI ui = aWindowOn(layout, null);
+
+        Method ask = TrainControlUI.class.getDeclaredMethod("getGraphRemovalRefusal", String.class);
+        ask.setAccessible(true);
+
+        assertNull(ask.invoke(ui, "RK E"), "over a point no train stands on, the removing keys say that no locomotive "
+            + "can be taken off - they had nothing to take (MRV5-C2)");
+
+        assertEquals(ask.invoke(ui, "RK S7"), layout.getPlacementRefusal(), "over a train, the removing keys do not "
+            + "say why they cannot take it off (MRV4)");
+    }
+
+    /**
+     * The locomotive dialog on the failed train's point, before validating, changes that train's settings and places
+     * nothing: the choice of train is locked, and its OK applies the settings - the departure function that failed
+     * among them (MRV5-C2).
+     *
+     * @throws Exception from the fixture
+     */
+    @Test(timeOut = 120000)
+    public void testTheLocomotiveDialogBeforeValidatingChangesSettingsOnly() throws Exception
+    {
+        Layout layout = aDepartureThatFails("LD", 9000);
+
+        // Where the kept graph stands each train - not the whole graph, which carries the settings this changes
+        Layout keptBefore = Layout.fromJSON(graphTheWindowKeeps(layout), model);
+
+        List<String> failingWas = where(keptBefore, model.getLocByName(FAILING));
+        List<String> otherWas = where(keptBefore, model.getLocByName(OTHER));
+
+        TrainControlUI ui = aWindowOn(layout, null);
+
+        org.traincontrol.gui.GraphLocAssign dialog = new org.traincontrol.gui.GraphLocAssign(ui, layout.getPoint("LD S3"),
+            false);
+
+        assertEquals(dialog.getLoc(), FAILING, "precondition: the dialog on LD S3 did not select the failed train");
+
+        java.lang.reflect.Field chooser = org.traincontrol.gui.GraphLocAssign.class.getDeclaredField("locAssign");
+        chooser.setAccessible(true);
+
+        assertFalse(((java.awt.Component) chooser.get(dialog)).isEnabled(), "before validating, the dialog lets "
+            + "another train be chosen for the failed train's point, which its OK would place there (MRV5-C2)");
+
+        java.lang.reflect.Field departure = org.traincontrol.gui.GraphLocAssign.class.getDeclaredField("departureFunc");
+        departure.setAccessible(true);
+
+        javax.swing.JComboBox<?> functions = (javax.swing.JComboBox<?>) departure.get(dialog);
+
+        Integer before = model.getLocByName(FAILING).getDepartureFunc();
+
+        functions.setSelectedIndex(functions.getSelectedIndex() == 1 ? 2 : 1);
+
+        Integer chosen = dialog.getDepartureFunc();
+
+        assertNotEquals(chosen, before, "precondition: the dialog's departure function was not changed");
+
+        dialog.commitChanges();
+
+        assertEquals(model.getLocByName(FAILING).getDepartureFunc(), chosen, "the dialog's OK did not change the "
+            + "failed train's departure function (MRV5-C2)");
+
+        Layout keptAfter = Layout.fromJSON(graphTheWindowKeeps(layout), model);
+
+        assertEquals(where(keptAfter, model.getLocByName(FAILING)), failingWas, "the dialog's OK before validating moved "
+            + FAILING);
+        assertEquals(where(keptAfter, model.getLocByName(OTHER)), otherWas, "the dialog's OK before validating moved "
+            + OTHER);
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Fixtures
     // ---------------------------------------------------------------------------------------------
@@ -1574,6 +1776,102 @@ public class testAPathThatFailsPartWay
             "precondition: the failed train is not recorded on the three points of its locked path");
 
         return layout;
+    }
+
+    /**
+     * FAILING on a non-atomic trip PREFIX S1 - A - J1 - J2 - S2, released as soon as it is past each point, whose
+     * arrival function throws approaching S2; A is a station with a sensor, J1 and J2 have none.  OTHER stands at S7,
+     * with an edge into A.  `before`, if given, runs just before the arrival function throws.
+     */
+    private static Layout aNonAtomicTripThatFails(String prefix, int firstSensor, Runnable before) throws Exception
+    {
+        return aNonAtomicTripThatFails(prefix, firstSensor, before, new Layout[1]);
+    }
+
+    /**
+     * The same, handing the layout to `before` through `made` before the trip.
+     */
+    private static Layout aNonAtomicTripThatFails(String prefix, int firstSensor, Runnable before, Layout[] made)
+        throws Exception
+    {
+        quietCallbacks();
+
+        MarklinLocomotive failing = model.getLocByName(FAILING);
+        Integer length = failing.getTrainLength();
+
+        Layout layout = new Layout(model);
+
+        made[0] = layout;
+
+        point(layout, prefix + " S1", true, firstSensor + 1);
+        point(layout, prefix + " A", true, firstSensor + 2);
+        point(layout, prefix + " J1", false, null);
+        point(layout, prefix + " J2", false, null);
+        point(layout, prefix + " S2", true, firstSensor + 3);
+        point(layout, prefix + " S7", true, firstSensor + 4);
+
+        layout.createEdge(prefix + " S1", prefix + " A");
+        layout.createEdge(prefix + " A", prefix + " J1");
+        layout.createEdge(prefix + " J1", prefix + " J2");
+        layout.createEdge(prefix + " J2", prefix + " S2");
+        layout.createEdge(prefix + " S7", prefix + " A");
+        layout.setDefaultLocSpeed(30);
+        layout.setAtomicRoutes(false);
+
+        layout.getPoint(prefix + " S1").setLocomotive(failing);
+        layout.getPoint(prefix + " S7").setLocomotive(model.getLocByName(OTHER));
+        layout.setSimulate(true);
+
+        try
+        {
+            // Each stretch released as soon as the train is past it
+            failing.setTrainLength(0);
+
+            failing.setCallback(Layout.CB_PRE_ARRIVAL, l ->
+            {
+                if (before != null) before.run();
+
+                throw new IllegalStateException("the " + Layout.CB_PRE_ARRIVAL + " function failed");
+            });
+
+            try
+            {
+                boolean sent = layout.executePath(trip(layout, prefix + " S1", prefix + " A", prefix + " J1",
+                    prefix + " J2", prefix + " S2"), failing, 30, null);
+
+                fail("precondition: the path was meant to fail part way, and executePath returned " + sent + " ("
+                    + Layout.getLastError() + ")");
+            }
+            catch (IllegalStateException expected)
+            {
+                // As intended
+            }
+            finally
+            {
+                failing.setCallback(Layout.CB_PRE_ARRIVAL, l -> { });
+            }
+        }
+        finally
+        {
+            failing.setTrainLength(length);
+        }
+
+        assertFalse(layout.isValid(), "precondition: the failed path did not stop the layout");
+
+        return layout;
+    }
+
+    /**
+     * The first of the named points, in order, the locomotive is recorded on; null if none.
+     */
+    private static String firstPointHolding(Layout layout, Locomotive loc, String... points)
+    {
+        for (String name : points)
+        {
+            if (loc.equals(layout.getPoint(name).getCurrentLocomotive())) return name;
+        }
+
+        return null;
     }
 
     /**
