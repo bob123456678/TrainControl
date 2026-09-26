@@ -520,6 +520,30 @@ public class testAPathThatFailsPartWay
     }
 
     /**
+     * A failed train put back on the graph by hand before validating is kept where it was put (MRV2-C1).
+     *
+     * The message asks for the train to be moved after validating, but nothing stops it being moved before,
+     * and the graph then kept it at the point its failure recorded - discarding the placement, or, when the
+     * move had taken it off that point, keeping it on two points, which does not load.  The operator's
+     * placement is the latest thing known about where it is.
+     */
+    @Test(timeOut = 120000)
+    public void testAFailedTrainPutBackBeforeValidatingIsKeptWhereItWasPut() throws Exception
+    {
+        Run run = aRunWithAFailedPath(8720, null);
+
+        assertTrue(run.layout.moveLocomotive(FAILING, "PF S8", false), "precondition: the train could not be placed");
+
+        Layout reloaded = Layout.fromJSON(graphTheWindowKeeps(run.layout), model);
+
+        assertTrue(reloaded.isValid(), "the graph kept after the failed train was put back by hand does not load: "
+            + Layout.getLastError() + " (MRV2-C1)");
+
+        assertEquals(where(reloaded, model.getLocByName(FAILING)), Collections.singletonList("PF S8"),
+            "the failed train, put back at PF S8 by hand before validating, was not kept there (MRV2-C1)");
+    }
+
+    /**
      * The failure's message names the last point the train is known to have reached, where the reload keeps
      * it (MRV2-B3).
      */
