@@ -1124,21 +1124,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The autonomy graph to keep - what Validate reloads, and what the exit save and Backup write - or
-     * null when there is none, and each of them does what it always did.
+     * The autonomy graph to keep - what Validate reloads, and what the exit save, Backup and Export JSON
+     * write - or null when there is none, and each of them does what it always did.
      *
      * On a valid layout, the graph as it stands.  On a layout a path failed part way on (see
-     * Layout.executePath), the graph as it stands with that train taken off every point, and any train
-     * still part way along a path with it: each is recorded on every point of its path, a graph placing a
-     * train twice does not load, and nothing knows which of those points it stands on.  Unplaced, it is
-     * never sent anywhere until it is put back where it stands.  Every other train stays where the run
-     * left it.
+     * Layout.executePath), the graph as it stands with the failed train, and any train still part way along
+     * a path, kept at the last point it is known to have reached and on no other (Layout.getLastPointsReached):
+     * each is recorded on every point of its path, and a graph placing a train twice does not load.  That
+     * place stays held after the reload, and every other train stays where the run left it.
      *
-     * Those three used to skip the graph of any invalid layout and use the configuration text as it was
+     * Those doors used to skip the graph of any invalid layout and use the configuration text as it was
      * last loaded - so after a failed trip, the reload the message asks for put every train back where it
      * stood when the session began, and closing TrainControl saved that over the session's graph
-     * (MRV1-A1).  Every other invalid state still gets nothing here: its graph did not load, or was
-     * replaced, and there is nothing of the session's to keep.
+     * (MRV1-A1).  The failed train was then taken off the graph instead, which left its station reading free
+     * while it stood there (MRV2-B3).  Every other invalid state still gets nothing here: its graph did not
+     * load, or was replaced, and there is nothing of the session's to keep.
+     *
+     * A recorded failure is asked about before validity, because it is recorded before the layout reads as
+     * invalid (MRV2-C4).
      * @return the graph as JSON, or null
      * @throws IllegalAccessException
      * @throws NoSuchFieldException
@@ -1149,12 +1152,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         Layout layout = this.model.getAutoLayout();
 
-        if (layout.isValid()) return layout.toJSON();
+        if (!layout.getLocomotivesLeftOnAFailedPath().isEmpty()) return layout.toJSON(layout.getLastPointsReached());
 
-        Set<Locomotive> unplaced = new HashSet<>(layout.getLocomotivesLeftOnAFailedPath());
-        unplaced.addAll(layout.getActiveLocomotives().keySet());
-
-        return layout.toJSON(unplaced);
+        return layout.toJSON();
     }
 
     /**
@@ -1284,8 +1284,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         
         // Not only on a valid layout: after a path failed part way, the graph as the run left it, with the
-        // failed train taken off - see getAutonomyGraphToKeep.  Skipped, this wrote the configuration as
-        // last loaded over the session's graph (MRV1-A1).
+        // failed train at the last point it is known to have reached - see getAutonomyGraphToKeep.  Skipped,
+        // this wrote the configuration as last loaded over the session's graph (MRV1-A1).
         if (this.autosave.isSelected() && this.hasAutonomyGraphToKeep()
                 && !this.model.getAutoLayout().getPoints().isEmpty())
         {
@@ -13148,11 +13148,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
             }
             // A layout a path failed part way on: the graph as the run left it is reloaded, with the failed
-            // train taken off - see getAutonomyGraphToKeep.  The configuration text is as last loaded or
-            // saved, and reloading it put every train back where it stood when the session began, though
-            // each is physically wherever the run left it, and Start would plan from there (MRV1-A1).  No
-            // question: nothing of the session's is thrown away.
-            else if (this.model.hasAutoLayout() && !this.model.getAutoLayout().isValid()
+            // train at the last point it is known to have reached - see getAutonomyGraphToKeep.  The
+            // configuration text is as last loaded or saved, and reloading it put every train back where it
+            // stood when the session began, though each is physically wherever the run left it, and Start
+            // would plan from there (MRV1-A1).  No question: nothing of the session's is thrown away.
+            //
+            // Only for this button's own press, which passes its event.  Load JSON and the new-graph button
+            // put their own graph in the box and then call this handler with none; replacing it here loaded
+            // the session's graph instead of the one chosen, and said nothing (MRV2-B1).  The start-up load
+            // passes a CustomActionEvent, and has no session's graph to keep.
+            else if (evt != null && !(evt instanceof CustomActionEvent) && this.model.hasAutoLayout()
                 && !this.model.getAutoLayout().getLocomotivesLeftOnAFailedPath().isEmpty())
             {
                 try
@@ -13440,7 +13445,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     // is trains that stopped halfway with no explanation.
                     // A graceful stop legitimately leaves trains short of home and returns true, so it
                     // is not reported - the operator asked for it and watched it happen.
-                    if (!completed || (!everyoneHome && !this.gracefulStopRequested))
+                    //
+                    // Nor is a trip that failed part way during the run: the failure has said what
+                    // happened and what to do, as a dialog, and this line - "a train's path stayed
+                    // blocked, move it out of the way by hand" - then said the opposite (MRV2-B2).
+                    if ((!completed || (!everyoneHome && !this.gracefulStopRequested))
+                        && layout.getPathFailedMessage() == null)
                     {
                         JOptionPane.showMessageDialog(this,
                             I18n.t("autolayout.ui.errorReturnToHomeStopped"));
@@ -13941,10 +13951,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 try
                 {
+                    // The graph Backup and the exit save keep, when there is one.  The graph as it stands, after
+                    // a path failed part way, places the failed train on every point of its path, and a file
+                    // with it is refused on import (MRV2-C3).
+                    final String kept = this.getAutonomyGraphToKeep();
+                    final String json = kept != null ? kept : this.getModel().getAutoLayout().toJSON();
+
                     JOptionPane.showMessageDialog(
                         this,
                         new AutoJSONExport(
-                            this.getModel().getAutoLayout().toJSON(),
+                            json,
                             this,
                             "autonomy",
                             "json"
@@ -13954,9 +13970,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     );
 
                     // Place in clipboard
-                    StringSelection selection = new StringSelection(
-                        this.model.getAutoLayout().toJSON()
-                    );
+                    StringSelection selection = new StringSelection(json);
                     Toolkit.getDefaultToolkit()
                         .getSystemClipboard()
                         .setContents(selection, selection);

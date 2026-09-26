@@ -77,9 +77,14 @@ public class Layout
 
     // Every locomotive whose path failed part way on this Layout, in the order they failed, each with the
     // message its failure logged - see executePath.  Such a train is still recorded on every point of its
-    // locked path, and nothing knows where along it the train stands; the window reads this to keep the
-    // graph without it and to say why no train can be sent (MRV1-A1, MRV1-B1).  Guarded by itself.
+    // locked path; the window reads this to keep the graph with it on one of them, and to say why no train
+    // can be sent (MRV1-A1, MRV1-B1).  Guarded by itself.
     private final Map<Locomotive, String> failedPaths = new LinkedHashMap<>();
+
+    // For each of those, the last point it is known to have reached when its path failed: its last
+    // milestone, or its start when it reached none.  Recorded then because the milestones are cleared
+    // with it (MRV2-B3).  Guarded by failedPaths.
+    private final Map<Locomotive, Point> failedAt = new HashMap<>();
 
     // Maximum number of seconds another locomotive should yield for to the inactive locomotive
     public static final int YIELD_SECONDS = 30;
@@ -2137,10 +2142,9 @@ public class Layout
 
     /**
      * Every locomotive whose path failed part way on this Layout, in the order they failed - see
-     * executePath.  Each is still recorded on every point of its locked path, so a graph written with it
-     * places it several times and does not load, and nothing knows which of those points it stands on.
-     * Empty unless a path has failed; a Layout a failure made invalid is never made valid again, only
-     * replaced (MRV1-A1).
+     * executePath.  Each is still recorded on every point of its locked path, so a graph written as it
+     * stands places it several times and does not load - see getLastPointsReached.  Empty unless a path
+     * has failed; a Layout a failure made invalid is never made valid again, only replaced (MRV1-A1).
      * @return a copy
      */
     public List<Locomotive> getLocomotivesLeftOnAFailedPath()
@@ -2164,6 +2168,43 @@ public class Layout
         {
             return this.failedPaths.isEmpty() ? null : String.join("\n\n", this.failedPaths.values());
         }
+    }
+
+    /**
+     * Where each train that stands on several points is last known to be: a train whose path failed part
+     * way, at the point executePath recorded when it failed, and a train still part way along a path - as
+     * a reload stops one - at its last milestone.  Each is recorded on every point of its path, so a graph
+     * written as it stands places it several times and does not load.  Written at this point and on no
+     * other (toJSON(keptAt)), it loads, and the place it was last known to be stays held.
+     *
+     * It used to be left off the graph altogether, so after the reload the station it stood at read free,
+     * and another train could be sent onto it (MRV2-B3, MRV2-C2).  Read under the same lock executePath
+     * records a failure under, so a train is never missed between being running and having failed (MRV2-C4).
+     * @return a copy
+     */
+    public Map<Locomotive, Point> getLastPointsReached()
+    {
+        Map<Locomotive, Point> out = new HashMap<>();
+
+        synchronized (this.activeLocomotives)
+        {
+            for (Entry<Locomotive, List<Point>> running : this.locomotiveMilestones.entrySet())
+            {
+                List<Point> milestones = running.getValue();
+
+                if (milestones != null && !milestones.isEmpty())
+                {
+                    out.put(running.getKey(), milestones.get(milestones.size() - 1));
+                }
+            }
+
+            synchronized (this.failedPaths)
+            {
+                out.putAll(this.failedAt);
+            }
+        }
+
+        return out;
     }
 
     /**
@@ -3202,8 +3243,40 @@ public class Layout
             //  - It does not unlock the path.  The locomotive may be physically standing on those edges,
             //    and releasing them would let another train be routed into occupied track.  Leaving them
             //    locked is degraded but safe, and a graph reload resets them.
+            //
+            // It is recorded as failed in the same step as it leaves activeLocomotives, under the same lock,
+            // and before the layout reads as invalid - see below.  Recorded after, a Validate, Backup or exit
+            // save landing in between found it in neither, kept it on every point of its path, and wrote a
+            // graph that does not load (MRV2-C4).  With it, the last point it is known to have reached: its
+            // last milestone, or its start when it reached none, as when its departure fails.  The reload
+            // keeps it there, so that place stays held, and the message names it (MRV2-B3).
+            final boolean wasRunning = this.running;
+            final boolean first;
+            final String message;
+
             synchronized (this.activeLocomotives)
             {
+                List<Point> milestones = this.locomotiveMilestones.get(loc);
+
+                Point lastReached = milestones != null && !milestones.isEmpty()
+                    ? milestones.get(milestones.size() - 1)
+                    : (path != null && !path.isEmpty() ? path.get(0).getStart() : null);
+
+                message = I18n.f(
+                    wasRunning ? "autolayout.errorPathFailedAutonomyStopped" : "autolayout.errorPathFailedSentByHand",
+                    loc.getName(),
+                    I18n.t("ui.main.validateConfigOpenGraphUI"),
+                    lastReached != null ? lastReached.getName() : ""
+                );
+
+                synchronized (this.failedPaths)
+                {
+                    first = this.failedPaths.isEmpty();
+                    this.failedPaths.put(loc, message);
+
+                    if (lastReached != null) this.failedAt.put(loc, lastReached);
+                }
+
                 this.activeLocomotives.remove(loc);
                 this.locomotiveMilestones.remove(loc);
             }
@@ -3233,30 +3306,14 @@ public class Layout
             // new is sent, trains already under way finish their paths - and invalidate, which every
             // dispatch refuses (executePathInternal's first check) until the configuration is reloaded.
             // No new path, and no unlock (BPV-C13, SG-A3; Adam's ruling for 2.8.2).
-            final boolean wasRunning = this.running;
-
             synchronized (this.activeLocomotives)
             {
                 this.stopLocomotives();
             }
 
-            final String message = I18n.f(
-                wasRunning ? "autolayout.errorPathFailedAutonomyStopped" : "autolayout.errorPathFailedSentByHand",
-                loc.getName(),
-                I18n.t("ui.main.validateConfigOpenGraphUI")
-            );
-
-            // Recorded before the layout reads as invalid, so that nothing which sees it invalid can miss
-            // why: the window keeps the graph without this train, and every door that then refuses says
-            // this message rather than a reason of its own (MRV1-A1, MRV1-B1).
-            final boolean first;
-
-            synchronized (this.failedPaths)
-            {
-                first = this.failedPaths.isEmpty();
-                this.failedPaths.put(loc, message);
-            }
-
+            // Invalid only now that the failure is recorded, so that nothing which sees the layout invalid can
+            // miss why: the window keeps the graph with this train at its last point, and every door that then
+            // refuses says this message rather than a reason of its own (MRV1-A1, MRV1-B1).
             this.invalidate(message);
 
             // Said once as a dialog, not only in the log - once per Layout, as the path-validation alert
@@ -4396,22 +4453,24 @@ public class Layout
      */
     synchronized public String toJSON() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
     {
-        return this.toJSON(Collections.emptySet());
+        return this.toJSON(Collections.emptyMap());
     }
 
     /**
-     * Returns the layout configuration as a JSON string, with the given locomotives on no point.
+     * Returns the layout configuration as a JSON string, with each of the given locomotives on the given point
+     * only.
      *
-     * For a train the graph cannot place: one whose path failed part way, or one stopped part way along
-     * a path, is recorded on every point of that path, and a configuration that places one locomotive
-     * twice does not load.  Left off, it is simply not on the graph - it is never sent anywhere until it
-     * is put back - and everything else about the graph is kept (MRV1-A1).
-     * @param unplaced the locomotives to leave off every point
+     * For a train that stands on several points: one whose path failed part way, or one stopped part way
+     * along a path, is recorded on every point of that path, and a configuration that places one locomotive
+     * twice does not load.  Kept on the last point it is known to have reached (getLastPointsReached), it
+     * loads, that place stays held, and everything else about the graph is kept (MRV1-A1, MRV2-B3).  A
+     * locomotive the given point does not record is written as the graph has it.
+     * @param keptAt for each locomotive to keep on one point, that point
      * @return
      * @throws java.lang.IllegalAccessException
      * @throws java.lang.NoSuchFieldException
      */
-    synchronized public String toJSON(Collection<Locomotive> unplaced) throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
+    synchronized public String toJSON(Map<Locomotive, Point> keptAt) throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
     {
         List<JSONObject> pointJson = new LinkedList<>();
         List<JSONObject> edgeJson = new LinkedList<>();
@@ -4431,9 +4490,11 @@ public class Layout
         for (Point p : pointList)
         {
             JSONObject point = p.toJSON();
+            Locomotive here = p.getCurrentLocomotive();
 
-            // The "loc" key is what places a locomotive; the point keeps everything else
-            if (p.getCurrentLocomotive() != null && unplaced.contains(p.getCurrentLocomotive()))
+            // The "loc" key is what places a locomotive; every other point keeps everything else
+            if (here != null && keptAt.containsKey(here) && !keptAt.get(here).equals(p)
+                && here.equals(keptAt.get(here).getCurrentLocomotive()))
             {
                 point.remove("loc");
             }
