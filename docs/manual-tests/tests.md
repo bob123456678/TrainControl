@@ -26180,6 +26180,10 @@ autonomy editor."*
 
 **Superseded by an automated test** (2026-09-26, on your answer of 2026-09-25: *"routes with an emergency stop should still fire"*, and *"if a route has emergency stop, it cannot have any other types of commands.  Reject it from being created or imported as such."*).  With the stop, the entry's route - now split into a route that throws A and B and then fires a stop-only route - is not asked about, so there is no OK to press: `regression.testARouteDoesNotThrowSwitchesUnderATrain.testOKFiresEveryCommandOfTheRoute` fires it and finds A left under the train, B thrown and the power off.  Without the stop it is asked about, and OK throws both A and B, as the entry expects.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
+**Claude, 2026-09-26.**
+
+A note on the test named above (RLD5-C5, 2026-09-26): `testOKFiresEveryCommandOfTheRoute` asks the route itself, as the route list's OK does - `execRouteOverridingConflicts` - rather than pressing the list's button.  The door claim for MT-508's route with its stop is MT-507's: `ui.testARouteOverATrainAtItsDoors.testCancelAtEitherDoorRunsNothing` fires that route from the route list and from its tile and finds no question at either, switch A left alone, B thrown and the power off.
+
 ---
 
 <a id="mt-509"></a>

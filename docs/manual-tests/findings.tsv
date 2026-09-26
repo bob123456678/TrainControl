@@ -2436,6 +2436,23 @@ RLA4-D4	RLA4.md	Closed	Checked - clean.	RLA3-C1 to RLA3-C3's records: the sync c
 RLA4-D5	RLA4.md	Closed	Checked - clean.	RLA3-C4, RLA3-C5 and RLA3-C6: the sentence, the follow-up, six comments and the open question say what the code does
 RLA4-D6	RLA4.md	Closed	Checked - clean.	RLD3-C1's MT-298 half: the claim chooses the imported configuration through `load`, and fails on a refusal or on an overwrite
 RLA4-D7	RLA4.md	Closed	Checked - clean.	The length, tail and berth rules and the Return Home planner are untouched this round, and the javadoc ratchet's counts for the changed autonomy files
+RLA5-A1	RLA5.md	Closed	Fixed - a route that is only a stop runs at any depth of a chain, since it fires nothing f	A route that fires, through a Route command, a route the split has made no longer cuts the power: the stop now sits one chained route deeper, and a ch
+RLA5-B1	RLA5.md	Closed	Fixed - a reload of the configuration running while a declined edit waits rebuilds as the 	RLD4-C3's fix makes `load` skip its capture while a declined edit waits, and `load` puts no train back: choosing the configuration running, ticking a
+RLA5-C1	RLA5.md	Closed	Fixed - the refusal names the import and what to do instead, in eight languages. claims ec	RLA4-C1's refusal says "Cannot edit auto layout while running.": it names neither the import nor a remedy, in all eight languages
+RLA5-C2	RLA5.md	Closed	Fixed - in build.xml, and in the live snapshot's Used by, which the class now reaches thro	`core.testAStopRouteStandsAlone` is not in `build.xml`: `ant test` does not run it, and `regression.testEveryTestIsInTheBattery` is red from `19d82501
+RLA5-C3	RLA5.md	Open - deferred	Follow-up - GSR-B4 (open): a route another route fires can be deleted on its own, and the 	The split makes a mixed route's power cut a second route that can be deleted on its own; the route that fires it then names nothing and cuts nothing -
+RLA5-C4	RLA5.md	Closed	Fixed - the stop's wait moves to the Route command in its place, so the commands after it 	The stop's delay moves to where it holds back nothing: a command after a delayed stop now follows it by the 150 ms floor, and the split's javadoc says
+RLA5-C5	RLA5.md	Closed	Fixed - the stop route is numbered from 1000, as a route made in the editor is. claims ec9	The split numbers the stop route one above the highest id, where the user's door starts at 1000 (OB-155): on a database with no route at or above 1000
+RLA5-C6	RLA5.md	Closed	Fixed - the editor's refusal names its rows as the editor labels them (route.kind.STOP, ro	The new messages speak of "an emergency stop" and "a Route command"; the editor's own rows are "Stop Everything" and "Trigger Another Route", in every
+RLA5-D1	RLA5.md	Closed	Checked - clean.	RLA4-C1 and RLA4-C2: the refusal and the priority claim do what their dispositions say
+RLA5-D2	RLA5.md	Closed	Checked - clean.	RLA4-C4: WS13 pins the branch GUI4-C3 is about
+RLA5-D3	RLA5.md	Closed	Checked - clean.	RLA4-C3, RLA4-C5, RLA4-C7, RLA4-C8 and RLA4-C9: the records say what the code does
+RLA5-D4	RLA5.md	Closed	Checked - clean.	RLA4-C6: the status notes are in the store
+RLA5-D5	RLA5.md	Closed	Checked - clean.	Round 4's other changes in this lane's files: the refusal covers both kinds of file that replace a configuration, the question and the message say wha
+RLA5-D6	RLA5.md	Closed	Checked - clean.	The stop rule holds at every door that creates, edits, duplicates, imports, loads or syncs a route; the split keeps everything the route was, cannot f
+RLA5-D7	RLA5.md	Closed	Checked - clean.	No question appears where none did; that the switch half of a split route is never asked is disclosed to Adam, with the way back
+RLA5-D8	RLA5.md	Closed	Checked - clean.	The eight bundles: 1,841 keys at `f7e94a50`, 1,843 after round 4, 1,848 at HEAD, and every check clean at all three
+RLA5-D9	RLA5.md	Closed	Checked - clean.	The length, tail and berth rules, Return Home and multi-units are untouched; the javadoc ratchet holds at 86
 RLD-B1	RLD.md	Closed	Fixed - master's BPV-C7 brought to 3.0: the unreadable mark is cleared only once the copy 	3.0.0 still saves over an unreadable locomotive database when its safety copy fails; 2.8.2 does not (BPV-C7 was never brought across)
 RLD-C1	RLD.md	Open	Open - the entry is replaced by 2.8.2's final one when master's release validation ends, e	The Readme's v2.8.2 entry is master's first draft, not the entry 2.8.2 shipped with
 RLD-C10	RLD.md	Closed	Fixed as RLA-C7.	"Balanced priority counts an answered 0 as 0" is not quite what it does, and ratioOf's javadoc now overstates
@@ -2506,6 +2523,21 @@ RLD4-D4	RLD4.md	Closed	Checked - clean.	The eight bundles at HEAD: 1,841 keys ea
 RLD4-D5	RLD4.md	Closed	Checked - clean.	The ratchet, the live-snapshot README, build.xml and the window census need nothing; the census's new allowance is `load`'s, for the same capture
 RLD4-D6	RLD4.md	Closed	Checked - clean.	The round's counts and rows agree with the store and the files
 RLD4-D7	RLD4.md	Closed	Checked - clean.	The final battery must show the round's display-needing claims passed, not skipped
+RLD5-A1	RLD5.md	Closed	Fixed as RLA5-A1.	Once split, a route that another route fires no longer cuts the power: the stop is now in a third route, and a chain runs only two levels
+RLD5-B1	RLD5.md	Closed	Fixed as RLA5-B1.	RLD4-C3's fix at `load`: while a declined edit waits, several doors now rebuild the railway with every train where it stood before the run
+RLD5-C1	RLD5.md	Closed	Fixed as RLA5-C2.	The ruling's new test class is in neither build.xml nor the live-snapshot README: `regression.testEveryTestIsInTheBattery` is red at HEAD, and the sce
+RLD5-C2	RLD5.md	Open - deferred	Fixed in part - the stop route is numbered from 1000 (mutation W4 red); its deletion on it	The stop route the split makes is tied to nothing: deleting it silently ends the split route's power cut, and on a railway whose routes all sit below
+RLD5-C3	RLD5.md	Closed	Fixed as RLA5-C4.	A delay written on the stop no longer holds back the commands after it: the split moves it into the stop route, and the Route command left in its plac
+RLD5-C4	RLD5.md	Closed	Fixed in the records - open-questions.md's paragraph lists round 4's and round 5's additio	open-questions.md's store paragraph lists additions only up to round 3 but gives round 4's total: its items add up to 4,618, not the 4,666 it states
+RLD5-C5	RLD5.md	Closed	Fixed in the records - a comment on MT-508 names the door claim for its route with the sto	MT-508's superseding comment names a claim below the door, when MT-507's test is the door claim for MT-508's own route
+RLD5-D1	RLD5.md	Closed	Checked - clean.	RLD4-C1 and RLD4-C2: an old file into the configuration in use is refused while autonomy is busy, before its question, with Delete's message; the in-u
+RLD5-D2	RLD5.md	Closed	Checked - clean.	RLD4-C4 and RLU4-B1's claim: both refusal claims read the replace question
+RLD5-D3	RLD5.md	Closed	Checked - clean.	RLD4-C5, RLD4-C6 and RLD4-C7: the user guide and behaviour.md give the four sentences the code chooses between; WS13 reaches the one where every train
+RLD5-D4	RLD5.md	Closed	Checked - clean.	RLD4-C8 and RLD4-C9: the thirteen superseded rows carry status notes, RLD3-C3 and RLD3-C4 have their statuses, and the owner census reads three files
+RLD5-D5	RLD5.md	Closed	Checked - clean.	The eight bundles at HEAD: 1,848 keys each; round 4's two new keys, its three changed ones and the ruling's five say the same in every language
+RLD5-D6	RLD5.md	Closed	Checked - clean.	The stop ruling at the doors that make routes: none can now make a route that mixes a stop, the split keeps what it says, and his route's notice still
+RLD5-D7	RLD5.md	Closed	Checked - clean.	MT-507 and MT-508 are superseded on Adam's answer, and the tracker, ledger and store agree
+RLD5-D8	RLD5.md	Closed	Checked - clean.	The final battery must show today's claims that need a display or their own data passed, not skipped
 RLU-A1	RLU.md	Closed	Fixed - Routes > Import reads its file as UTF-8. Claim bb197b16 (red first on this machine	Routes > Import reads a UTF-8 file in the machine's own character set: on Java 8 under Windows every accented letter in a route comes back wrong, and
 RLU-B1	RLU.md	Closed	Fixed as RLA-B2.	"Replace it with the imported one?" answered Yes does not replace for an old autonomy.json: the file is gap-filled into that configuration, and a trai
 RLU-B2	RLU.md	Closed	Fixed - every refusal on the right-click menu, and the setup's tidy report, belong to the 	with Preferences > Window Always on Top ticked, which is the default, the unowned modals of IND9X-C4 and IND9X-C5 can open beneath the main window - i
@@ -2575,6 +2607,24 @@ RLU4-D4	RLU4.md	Closed	Checked - clean.	RLU3-C1 and RLU3-C2 in the program: the 
 RLU4-D5	RLU4.md	Closed	Checked - clean.	An old file into the configuration in use, with nothing moving: the capture is inside the snapshot, the trains are named and not placed, every message
 RLU4-D6	RLU4.md	Closed	Checked - clean.	The eight bundles at HEAD: 1,841 keys each, and the four keys round 3 changed say the same thing in every language
 RLU4-D7	RLU4.md	Closed	Checked - clean.	A true bundle under the running configuration's name is still refused before anything is asked or written, on the main window, and its claim imports w
+RLU5-A1	RLU5.md	Closed	Fixed as RLA5-A1.	A route that another route fires no longer cuts the power once it is split: the split puts its stop one Route command deeper than a fired route may re
+RLU5-B1	RLU5.md	Closed	Fixed - the stop route is numbered from 1000, as a route made in the editor is. claims ec9	The split's stop route takes the next id up, not one from 1000 as a route made at any other door does: where no route has an id of 1000 or more, the C
+RLU5-B2	RLU5.md	Closed	Fixed as RLA5-B1.	RLD4-C3's fix makes `load` skip its fold while a declined setup edit waits, without carrying the trains across as the rebuild door does or lowering th
+RLU5-C1	RLU5.md	Closed	Fixed - the not-placed line names the door that places a train the diagram does not have: 	RLU4-C3's remedy names an item that does not offer the trains it names: "Place Locomotive..." lists only trains already standing, and every train in t
+RLU5-C2	RLU5.md	Closed	Fixed as RLA5-C1.	The refusal round 4 added for an old file into the configuration in use while autonomy runs says "Cannot edit auto layout while running.": it names ne
+RLU5-C3	RLU5.md	Closed	Fixed as RLA5-C6.	The route editor's refusal speaks of "an emergency stop" and "a Route command"; its own rows call them "Stop Everything" and "Trigger Another Route",
+RLU5-C4	RLU5.md	Closed	Fixed - the paragraph naming the routes an import split is wrapped to the screen. claims e	Routes > Import's new line naming the routes it split is not wrapped, where RLU-C3 wrapped the question beside it for the same reason
+RLU5-C5	RLU5.md	Closed	Fixed - the load claim reads the id, trigger, conditions and lock, and the stop's wait. Cl	The split's claim reads the name, the sensor and the armed state: the conditions, the id a route tile is bound by, the lock and the trigger, which the
+RLU5-C6	RLU5.md	Closed	Fixed as RLA5-C2.	`core.testAStopRouteStandsAlone` is not in `build.xml`: `ant test` does not run the split's claims, and `regression.testEveryTestIsInTheBattery` is re
+RLU5-C7	RLU5.md	Open - deferred	Follow-up - GSR-B4 (open): a route another route fires can be deleted on its own, and the 	Deleting a stop route the split made says nothing of the route that fires it: that route's power cut goes, and it is asked about again at the human do
+RLU5-D1	RLU5.md	Closed	Checked - clean.	RLU4-B1: every file that would replace the configuration in use is refused, after it is read and before anything is asked or written, and the claim im
+RLU5-D2	RLU5.md	Closed	Checked - clean.	RLU4-C1 and RLU4-C2: the busy refusal comes before the question and writes nothing, and the in-use claim now reads a setting the file brings
+RLU5-D3	RLU5.md	Closed	Checked - clean.	RLU4-C4, RLU4-C6 and RLU4-C7 in the program: the either-way sentence names the closed side with GUI4-C3's exception, the barred sentence says where th
+RLU5-D4	RLU5.md	Closed	Checked - clean.	RLU4-C5 and RLU4-C8: the user guide and behaviour.md give the four cases, and the store carries every status note the disposition names
+RLU5-D5	RLU5.md	Closed	Checked - clean.	The eight bundles at HEAD hold 1,848 keys each and agree; the javadoc ratchet still counts 86
+RLU5-D6	RLU5.md	Closed	Checked - clean.	The emergency-stop rule at every door that makes, changes, loads or syncs a route: no door the program offers leaves a stop among other commands, a sp
+RLU5-D7	RLU5.md	Closed	Checked - clean.	Every message the round added belongs to a window that is showing, and the owner census reads the three files it names
+RLU5-D8	RLU5.md	Closed	Checked - clean.	MT-507 and MT-508 are superseded on Adam's answer by tests that exist and assert what their comments say; the tail question's list (MT-575) is untouch
 RR-C1	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27** - the rebuild is now staged and swapped under the locomotive's monito	A sync-applied address change rebuilds every consist without the fan-out lock
 RR-C2	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27** - the lock moved inside the shared method, so every entrance inherits	The layout-refresh lock covers half the entrances
 RR-C3	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27**	Danish and German dialogs name an option the menu does not have
