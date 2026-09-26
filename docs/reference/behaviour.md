@@ -2197,7 +2197,11 @@ stop-only route with a Route command; it counts as carrying the stop, so it is n
 sensor it passes that on, so the notice that a route cut the power is shown as before.  A route saved or exported before
 the rule is split when it is loaded or imported (Adam, asked about his own *"Auto Emergency Stop Bottom Secondary"*:
 *"Split it automatically"*): it keeps its name, sensor, conditions and whether it is armed, and fires a new route named
-"(its name) (Emergency Stop)" where its stop stood; the log names both, and so does an import's message.
+"(its name) (Emergency Stop)" where its stop stood, with the stop's wait; the log names both, and so does an import's
+message.  The stop route is numbered from 1000, as a route made in the editor is, so a Central Station sync, which
+replaces its own routes by number, cannot replace it (RLU5-B1).  A route that is only a stop runs however deep in a
+chain of routes it is fired - it fires nothing further, so the limit that keeps a chain from running away has nothing
+to hold back - and a route that fires a split route still cuts the power, and counts as a route that does (RLA5-A1).
 `core.testAStopRouteStandsAlone`, `ui.testCommandTableMarks.testAnEmergencyStopStandsAlone`,
 `ui.testARouteOverATrainAtItsDoors`.
 
@@ -2453,7 +2457,8 @@ on the railway running is the railway's to say (OB-183) - the message names the 
 one down.  While autonomy runs it is refused, as Delete is (RLU4-C1): the capture first is not made while trains move,
 and the reload's capture took back what the import had just brought.  And no import folds the running layout into the
 setup while a setup edit a run declined waits for its rebuild - neither the capture first nor the reload (RLD4-C3,
-WKW-B2).  Until then a layout that already had configurations took the file's placements, homes and facings into
+WKW-B2); a reload of the configuration running then rebuilds as the editor doors do, carrying every train across from
+the running layout, and the edit is carried from then on (RLA5-B1).  Until then a layout that already had configurations took the file's placements, homes and facings into
 the one in use, and the name asked for was thrown away.
 
 Into a configuration that exists, an old file fills what that configuration does not already say (MT-298), and the

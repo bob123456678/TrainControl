@@ -427,12 +427,33 @@ public class MarklinRoute extends Route
      * AND THROUGH THE STOP ROUTE IT FIRES (Adam, 2026-09-25).  A stop stands in a route of its own (`mixesAStop`), and a
      * route that should set something and then cut the power fires that one in its stop's place - which is what a route
      * that mixed them is split into.  It cuts the power all the same, so it is never asked either: asked about a switch,
-     * Cancel would have called off a power cut the question never mentioned.  One level, as a chained route runs one.
+     * Cancel would have called off a power cut the question never mentioned.  As far down a chain as firing it reaches
+     * (`cutsThePowerAt`, RLA5-A1): a route that fires a split route reaches its stop two routes down.
      *
      * @return true when this route, or a route it fires, stops the railway
      */
     public boolean hasEmergencyStop()
     {
+        return cutsThePowerAt(1, new java.util.HashSet<>());
+    }
+
+    /**
+     * Whether this route, run at this recursion limit, cuts the power - itself, or through a route it runs.
+     *
+     * The limits are `execRoute`'s own, so the answer is what firing it does: every door starts a route at 1, a chained
+     * route runs one lower, a route below 0 is refused - and a route that is only a stop runs at any level, since it fires
+     * nothing further (RLA5-A1).
+     *
+     * @param limit the recursion limit this route would run at
+     * @param seen the routes already asked, so a chain that loops is asked once
+     * @return true where running it cuts the power
+     */
+    private boolean cutsThePowerAt(int limit, java.util.Set<MarklinRoute> seen)
+    {
+        if (!seen.add(this)) return false;
+
+        if (limit < 0 && !this.isOnlyStops()) return false;
+
         if (hasAStop(this.route)) return true;
 
         for (RouteCommand rc : new java.util.ArrayList<>(this.route))
@@ -441,10 +462,29 @@ public class MarklinRoute extends Route
 
             MarklinRoute fired = this.network.getRoute(rc.getName());
 
-            if (fired != null && fired != this && hasAStop(fired.getRoute())) return true;
+            if (fired != null && fired != this && fired.cutsThePowerAt(limit - 1, seen)) return true;
         }
 
         return false;
+    }
+
+    /**
+     * Whether every command of this route is an emergency stop - a route that fires nothing further.
+     *
+     * @return true for a stop-only route
+     */
+    public boolean isOnlyStops()
+    {
+        java.util.List<RouteCommand> commands = new java.util.ArrayList<>(this.route);
+
+        if (commands.isEmpty()) return false;
+
+        for (RouteCommand rc : commands)
+        {
+            if (rc == null || !rc.isStop()) return false;
+        }
+
+        return true;
     }
 
     /**
@@ -655,7 +695,10 @@ public class MarklinRoute extends Route
      */
     private void execRoute(boolean auto, int recursionLimit, boolean overrideConflicts)
     {
-        if (recursionLimit < 0)
+        // A ROUTE THAT IS ONLY A STOP RUNS AT ANY DEPTH (RLA5-A1, RLU5-A1, RLD5-A1).  It fires nothing further, so the limit
+        // that keeps a chain from running away has nothing to hold back - and a split route's stop sits one route below
+        // the route that fires it, so a chain that fires a split route reaches its stop past the limit.
+        if (recursionLimit < 0 && !this.isOnlyStops())
         {
             this.network.logf(
                 "route.recursionLimitReached",

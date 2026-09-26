@@ -766,6 +766,20 @@ public class AutonomyViewerPanel extends JPanel
             return;
         }
 
+        // THE CONFIGURATION RUNNING, RELOADED WHILE A SETUP EDIT A RUN DECLINED WAITS FOR ITS REBUILD (RLA5-B1, RLU5-B2,
+        // RLD5-B1).  Not folded - the running layout is the older of the two (RLD4-C3) - and not rebuilt with every train
+        // back where it stood before the run either, which is what this path did: the square a moved train stood on then
+        // read free.  The rebuild the editor doors use carries each train across from the running layout, and lowers the
+        // flag once the running layout carries the edit.
+        if (captureRunningState && ui.isSetupNewerThanTheRunningLayout() && name != null
+            && name.equals(ui.getActiveDiagramConfiguration()))
+        {
+            ui.rebuildRunningLayoutFromSetup(false, null);
+
+            refresh();
+            return;
+        }
+
         // What was set while the outgoing configuration ran - placements, homes, settings - goes back
         // into THAT configuration, by name, before anything is replaced.  By name because store-active
         // and what-is-running can disagree after a refused load, and capturing into the store's idea
@@ -1085,7 +1099,9 @@ public class AutonomyViewerPanel extends JPanel
         // written and counted - and with the stop declined, the next fold did the same.
         if (intoTheOneInUse && ui.isAutonomyBusy())
         {
-            JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
+            // With what to do instead (RLU5-C2, RLA5-C1)
+            JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.errorImportIntoConfigurationInUseWhileRunning",
+                name.trim()));
 
             return;
         }
@@ -1353,7 +1369,10 @@ public class AutonomyViewerPanel extends JPanel
             if (!result.notPlacedInUse.isEmpty())
             {
                 unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyNotPlacedInUse",
-                    String.join(", ", result.notPlacedInUse), into, I18n.t("autolayout.ui.labelPlaceLocomotiveAt"));
+                    String.join(", ", result.notPlacedInUse), into,
+                    // THE DOOR THAT PUTS DOWN A TRAIN THE DIAGRAM DOES NOT HAVE (RLU5-C1): "Place <train>", for the train
+                    // chosen in the main window - "Place Locomotive..." lists only the trains already standing
+                    I18n.f("layout.ui.menuPlaceLocomotive", String.valueOf((char) 0x2026)));
             }
 
             // AND WHAT IT DID NOT BRING (MT-257 item 3).

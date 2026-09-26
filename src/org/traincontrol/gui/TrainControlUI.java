@@ -25225,8 +25225,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         rearmed[0])
                     : I18n.f(org.traincontrol.marklin.MarklinControlStation.IMPORTED_ROUTES_NOTICE, added[0],
                         I18n.t("ui.main.bulkEnable"), I18n.t("route.ui.menuEnableAutoExecution")))
-                    + (split.isEmpty() ? "" : "\n\n" + I18n.f("route.ui.infoImportSplitStopRoutes",
-                        String.join(", ", split))));
+                    + (split.isEmpty() ? "" : "\n\n" + wrappedToFit(I18n.f("route.ui.infoImportSplitStopRoutes",
+                        String.join(", ", split)))));
             });
     }//GEN-LAST:event_importRoutesMenuItemActionPerformed
 

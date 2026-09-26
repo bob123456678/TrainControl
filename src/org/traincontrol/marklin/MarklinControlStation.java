@@ -4360,7 +4360,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * automatically."*
      *
      * The route keeps its name, sensor, conditions, lock, and whether it is armed; its stop moves to a new route of its own,
-     * named after it, and a Route command firing that one stands where the stop stood.  So it does what it did - sets what
+     * named after it and numbered from 1000 as a route made in the editor is, and a Route command firing that one stands
+     * where the stop stood, with the stop's wait.  So it does what it did - sets what
      * it set, then cuts the power - and is still never asked about (`MarklinRoute.hasEmergencyStop`); fired by its sensor,
      * it passes that on, so the notice that a route cut the power is still shown.  A second stop in one route is dropped:
      * one power cut is the same as two.
@@ -4394,11 +4395,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 if (rc != null && rc.isStop())
                 {
-                    // The first stop moves, with whatever delay it had, and its place fires the stop route
+                    // The first stop moves, and its place fires the stop route.  Its wait stays where it was, on the
+                    // command in its place (RLA5-C4, RLD5-C3): the stop route runs on a thread of its own, and nothing
+                    // after the command that fires it waits for it.
                     if (stopOnly.isEmpty())
                     {
-                        stopOnly.add(rc);
-                        rest.add(RouteCommand.RouteCommandRoute(stopName));
+                        stopOnly.add(RouteCommand.RouteCommandStop());
+
+                        RouteCommand fire = RouteCommand.RouteCommandRoute(stopName);
+
+                        fire.setDelay(rc.getDelay());
+
+                        rest.add(fire);
                     }
                 }
                 else
@@ -4407,7 +4415,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
             }
 
-            int stopId = Collections.max(this.routeDB.getItemIds()) + 1;
+            // NUMBERED AS A ROUTE MADE IN THE EDITOR IS, from 1000 up (RLU5-B1, RLA5-C5, RLD5-C2): below that are the
+            // Central Station's own routes, which its sync replaces by number
+            int stopId = Math.max(ROUTE_STARTING_ID, Collections.max(this.routeDB.getItemIds()) + 1);
 
             if (!this.newRoute(stopName, stopId, stopOnly, 0, r.getTriggerType(), false, null))
             {

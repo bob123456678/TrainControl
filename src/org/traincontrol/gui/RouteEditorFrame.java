@@ -2681,7 +2681,11 @@ public class RouteEditorFrame extends JFrame
             else anythingElse = true;
         }
 
-        if (aStop && anythingElse) wrong.add(I18n.t("route.ui.frameStopStandsAlone"));
+        // In the editor's own words for the two rows (RLA5-C6, RLU5-C3)
+        if (aStop && anythingElse)
+        {
+            wrong.add(I18n.f("route.ui.frameStopStandsAlone", I18n.t("route.kind.STOP"), I18n.t("route.kind.ROUTE")));
+        }
 
         // A level that disagrees with itself means two things at once, and the editor has been
         // showing which line is the problem in red.  Saving it would be picking one of the two
