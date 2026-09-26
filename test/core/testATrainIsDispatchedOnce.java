@@ -77,7 +77,7 @@ public class testATrainIsDispatchedOnce
 
         model = init(null, true, false, false, false);
 
-        for (int sensor = 194; sensor <= 195; sensor++)
+        for (int sensor = 194; sensor <= 198; sensor++)
         {
             model.newFeedback(sensor, null);
         }
@@ -322,6 +322,94 @@ public class testATrainIsDispatchedOnce
             model.setFeedbackState("195", false);
 
             if (layout.isAlreadyUnderway(train)) layout.unlockPath(theRoute(layout), train);
+        }
+    }
+
+    /**
+     * A train under way is last known where it set off, or at the last station on its path whose sensor it has tripped
+     * (RLV7-C1) - not at a point with no sensor it has only passed into, nor at a sensor that is no station.
+     *
+     * A locked path holds every point on it for its train, so a reload confirmed while it is under way has to choose
+     * one; `Layout.getLastPointsReached` is that choice, and every carry across a reload reads it.  A point with no
+     * sensor becomes a milestone the moment the loop reaches it, ahead of the train; nothing can put a train back on a
+     * point that is no station.
+     *
+     * MUTATION: keep it at its last milestone whatever that is, and this fails.
+     *
+     * @throws Exception from the dispatch
+     */
+    @Test
+    public void testATrainUnderWayIsWhereItWasLastSeen() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.createPoint("LS_a", true, "194");
+        layout.createPoint("LS_j", false, null);
+        layout.createPoint("LS_m", false, "196");
+        layout.createPoint("LS_c", true, "197");
+        layout.createPoint("LS_b", true, "198");
+
+        layout.createEdge("LS_a", "LS_j");
+        layout.createEdge("LS_j", "LS_m");
+        layout.createEdge("LS_m", "LS_c");
+        layout.createEdge("LS_c", "LS_b");
+
+        final Locomotive train = model.getLocByName(model.getLocList().get(0));
+
+        layout.getPoint("LS_a").setLocomotive(train);
+
+        final List<Edge> path = Arrays.asList(layout.getEdge("LS_a", "LS_j"), layout.getEdge("LS_j", "LS_m"),
+            layout.getEdge("LS_m", "LS_c"), layout.getEdge("LS_c", "LS_b"));
+
+        Future<Boolean> run = dispatcher.submit((Callable<Boolean>) () -> layout.executePath(path, train, 30, null));
+
+        try
+        {
+            // PAST LS_j, which has no sensor, and waiting on LS_m's
+            waitUntil(() -> layout.getReachedMilestones(train) != null
+                && layout.getReachedMilestones(train).contains(layout.getPoint("LS_j")), "the train to pass LS_j");
+
+            assertEquals(layout.getLastPointsReached().get(train), layout.getPoint("LS_a"), "a train that has only passed"
+                + " into LS_j, which has no sensor, is last known there rather than at LS_a, where it set off (RLV7-C1)");
+
+            // AND PAST LS_m, whose sensor it trips but which is no station
+            model.setFeedbackState("196", true);
+
+            waitUntil(() -> layout.getReachedMilestones(train).contains(layout.getPoint("LS_m")),
+                "the train to trip LS_m's sensor");
+
+            assertEquals(layout.getLastPointsReached().get(train), layout.getPoint("LS_a"), "a train past LS_m, a sensor"
+                + " that is no station, is last known there - nothing could put it back on it (RLV7-C1)");
+
+            // AND AT LS_c, a station whose sensor it trips: last known there
+            model.setFeedbackState("197", true);
+
+            waitUntil(() -> layout.getReachedMilestones(train).contains(layout.getPoint("LS_c")),
+                "the train to trip LS_c's sensor");
+
+            assertEquals(layout.getLastPointsReached().get(train), layout.getPoint("LS_c"), "a train that has tripped the"
+                + " sensor of LS_c, a station on its way, is not last known there (RLV7-C1)");
+        }
+        finally
+        {
+            // ITS RUN, finished: it waits for LS_b's sensor, which nothing else here sets
+            model.setFeedbackState("197", true);
+            model.setFeedbackState("198", true);
+
+            try
+            {
+                run.get(DEADLINE_SECONDS, TimeUnit.SECONDS);
+            }
+            catch (Exception notFinished)
+            {
+                run.cancel(true);
+            }
+
+            model.setFeedbackState("196", false);
+            model.setFeedbackState("197", false);
+            model.setFeedbackState("198", false);
+
+            if (layout.isAlreadyUnderway(train)) layout.unlockPath(path, train);
         }
     }
 
