@@ -154,46 +154,74 @@ public class testLocomotive
         assertEquals(l.getSpeed(), 0);
         l.waitForSpeedAtOrAbove(0);
         
+        // The test's own sensor.  It relied on the database it started from having an s88 1001, and one
+        // in a clean folder has none: setFeedbackState on a sensor that does not exist does nothing, so
+        // the wait for it below waited for ever, and the class hung with nothing reported (MRV1-C5).
+        if (!model.isFeedbackSet("1001"))
+        {
+            model.newFeedback(1001, null);
+        }
+
+        // Each state the helper sets is held until the wait below has returned - not for a fixed pulse.
+        //
+        // It used to hold each for 250 ms.  waitForOccupiedFeedback looks at the sensor again after
+        // FEEDBACK_DURATION_THRESHOLD (201 ms) and starts over if it reads clear, and a waiter woken from
+        // its monitor sees the sensor only when it is scheduled again - so a waiter running late under
+        // load could find the pulse over and wait for an occupancy that never came, the same hang
+        // (MRV1-C5).  The speed-1 pulse had the same shape.  The 250 ms lead before each change stays,
+        // so each wait is usually already waiting when the change arrives.
+        final java.util.concurrent.Semaphore seen = new java.util.concurrent.Semaphore(0);
+
         new Thread(() ->
         {
+            seen.acquireUninterruptibly();
             l.delay(250);
-            
+
             model.setFeedbackState("1001", true);
-            
+
+            seen.acquireUninterruptibly();
             l.delay(250);
-            
+
             model.setFeedbackState("1001", false);
-            
+
+            seen.acquireUninterruptibly();
             l.delay(250);
-            
+
             model.setAccessoryState(100, Accessory.accessoryDecoderType.MM2, false);
-            
+
+            seen.acquireUninterruptibly();
             l.delay(250);
-            
+
             l.setSpeed(1);
-            
+
+            seen.acquireUninterruptibly();
             l.delay(250);
-            
+
             l.setSpeed(0);
 
         }).start();
-        
+
         l.waitForAccessoryState(100, Accessory.accessoryDecoderType.MM2, true);
         assertTrue(model.getAccessoryState(100, Accessory.accessoryDecoderType.MM2));
 
         assertFalse(model.getFeedbackState("1001"));
+        seen.release();
         l.waitForOccupiedFeedback("1001");
         assertTrue(model.getFeedbackState("1001"));
-        
+
+        seen.release();
         l.waitForClearFeedback("1001");
         assertFalse(model.getFeedbackState("1001"));
-        
+
+        seen.release();
         l.waitForAccessoryState(100, Accessory.accessoryDecoderType.MM2, false);
         assertFalse(model.getAccessoryState(100, Accessory.accessoryDecoderType.MM2));
-        
+
+        seen.release();
         l.waitForSpeedAtOrAbove(1);
         assertEquals(l.getSpeed(), 1);
 
+        seen.release();
         l.waitForSpeedBelow(1);
         assertEquals(l.getSpeed(), 0);
         
