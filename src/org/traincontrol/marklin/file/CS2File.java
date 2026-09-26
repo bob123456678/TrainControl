@@ -2101,8 +2101,12 @@ public final class CS2File
         for (String name : names)
         { 
             String url = getLayoutURL(name);
-            
-            if (control.isDebug())
+
+            // Null-checked, as every other logging call in this class is - they all go through the
+            // null-safe logMessage and this one did not.  A CS2File built without a control station is
+            // a perfectly ordinary thing to make: it is how a layout is parsed on its own, with no
+            // hardware and no model behind it (testParseCS2Layout builds one, and failed here).
+            if (control != null && control.isDebug())
             {
                 control.logf(
                     "layout.loadingFromUrl",
