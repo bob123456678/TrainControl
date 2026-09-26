@@ -1363,6 +1363,115 @@ public class testAPathThatFailsPartWay
             model.getLocByName(OTHER), false), "after the reload another train can be sent into NA A (MRV4-C2)");
     }
 
+    /**
+     * The graph kept after the failed train is deleted from the database, before Validate, loads (MRV5-B1).
+     *
+     * Delete Locomotive is refused only while autonomy runs, and a failed trip has stopped it.  It does not go through
+     * moveLocomotive, so the guard does not stop it, and the failure stays recorded.  The kept graph wrote the deleted
+     * train back on its kept point, so Validate - and every later start, once the exit save had written that graph -
+     * failed with "does not exist in database".
+     *
+     * MUTATION: write a train on its empty kept point whether or not the graph still shows it, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test(timeOut = 120000)
+    public void testAGraphKeptAfterTheFailedTrainIsDeletedLoads() throws Exception
+    {
+        Layout layout = aDepartureThatFails("DL", 8910);
+
+        MarklinLocomotive failing = model.getLocByName(FAILING);
+
+        try
+        {
+            assertTrue(model.deleteLoc(FAILING), "precondition: " + FAILING + " was not deleted");
+
+            // As Delete Locomotive goes on: the layout told, then the graph's repaint taking the deleted locomotive off
+            // every point
+            layout.locDeleted(failing);
+
+            for (Point p : layout.getPoints())
+            {
+                if (failing.equals(p.getCurrentLocomotive())) p.setLocomotive(null);
+            }
+
+            assertFalse(layout.getLocomotivesLeftOnAFailedPath().isEmpty(),
+                "precondition: deleting the failed train forgot its failure");
+
+            Layout kept = Layout.fromJSON(graphTheWindowKeeps(layout), model);
+
+            assertTrue(kept.isValid(), "the graph kept after the failed train was deleted from the database does not "
+                + "load, so Validate and every later start fail: " + Layout.getLastError() + " (MRV5-B1)");
+
+            assertEquals(where(kept, model.getLocByName(OTHER)), Collections.singletonList("DL S7"),
+                "the reload moved a train nobody touched");
+        }
+        finally
+        {
+            if (model.getLocByName(FAILING) == null) model.newMM2Locomotive(FAILING, 97);
+        }
+    }
+
+    /**
+     * The graph kept after a locomotive edit's sweep takes the failed train off the graph, before Validate, reloads
+     * with the trains where the graph shows them (MRV5-B1).
+     *
+     * Change Name or Address, Edit Multi-Unit and the Central Station's rename end in sanitizeMultiUnits, not
+     * moveLocomotive, so the guard does not stop them.  Linking the failed train into a standing train's consist - or
+     * giving the standing train its address - takes the failed one off every point.  The kept graph wrote it back on
+     * its kept point beside the other, and the reload's own sweep kept whichever it met first by station name: here
+     * the failed train, so the train just edited, which stands at MU S0, was taken off and its station read free.
+     *
+     * MUTATION: write a train on its empty kept point whether or not the graph still shows it, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test(timeOut = 120000)
+    public void testAGraphKeptAfterALocomotiveEditSweepsTheFailedTrainOffKeepsTheGraphAsShown() throws Exception
+    {
+        Layout layout = aDepartureThatFails("MU", 8940, "S0");
+
+        MarklinLocomotive failing = model.getLocByName(FAILING);
+        MarklinLocomotive other = model.getLocByName(OTHER);
+
+        try
+        {
+            // Edit Multi-Unit: the failed train linked into the standing train's consist, then the sweep that door runs
+            java.util.Map<String, Double> consist = new HashMap<>();
+
+            consist.put(FAILING, 1.0);
+
+            other.preSetLinkedLocomotives(consist);
+            other.setLinkedLocomotives();
+
+            assertTrue(other.isLinkedTo(failing), "precondition: " + FAILING + " was not linked into " + OTHER);
+
+            layout.sanitizeMultiUnits(other);
+
+            assertEquals(where(layout, failing), Collections.emptyList(),
+                "precondition: the edit's sweep did not take " + FAILING + " off the graph");
+
+            assertEquals(where(layout, other), Collections.singletonList("MU S0"),
+                "precondition: the edit's sweep took " + OTHER + " off the graph");
+
+            Layout kept = Layout.fromJSON(graphTheWindowKeeps(layout), model);
+
+            assertTrue(kept.isValid(), "the graph kept after the edit does not load: " + Layout.getLastError());
+
+            assertEquals(where(kept, other), Collections.singletonList("MU S0"), "after the reload " + OTHER + ", which "
+                + "stands at MU S0 on the graph, is off it and its station reads free - the kept graph wrote " + FAILING
+                + ", which the edit had taken off, back beside it (MRV5-B1)");
+
+            assertEquals(where(kept, failing), Collections.emptyList(), "the reload put " + FAILING + " back on the "
+                + "graph, which the edit had taken it off (MRV5-B1)");
+        }
+        finally
+        {
+            other.preSetLinkedLocomotives(new HashMap<>());
+            other.setLinkedLocomotives();
+        }
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Fixtures
     // ---------------------------------------------------------------------------------------------
@@ -1431,6 +1540,14 @@ public class testAPathThatFailsPartWay
      */
     private static Layout aDepartureThatFails(String prefix, int firstSensor) throws Exception
     {
+        return aDepartureThatFails(prefix, firstSensor, "S7");
+    }
+
+    /**
+     * The same, with OTHER at the station named - which the reload places before or after S3, by name.
+     */
+    private static Layout aDepartureThatFails(String prefix, int firstSensor, String otherAt) throws Exception
+    {
         quietCallbacks();
 
         Layout layout = new Layout(model);
@@ -1438,16 +1555,16 @@ public class testAPathThatFailsPartWay
         point(layout, prefix + " S3", true, firstSensor + 3);
         point(layout, prefix + " M", true, firstSensor + 4);
         point(layout, prefix + " S4", true, firstSensor + 5);
-        point(layout, prefix + " S7", true, firstSensor + 7);
+        point(layout, prefix + " " + otherAt, true, firstSensor + 7);
 
         layout.createEdge(prefix + " S3", prefix + " M");
         layout.createEdge(prefix + " M", prefix + " S4");
-        layout.createEdge(prefix + " S7", prefix + " S3");
+        layout.createEdge(prefix + " " + otherAt, prefix + " S3");
         layout.setDefaultLocSpeed(30);
 
         // Placed as the graph's doors place them, so that they are on the list of trains to run
         assertTrue(layout.moveLocomotive(FAILING, prefix + " S3", false), "precondition: " + FAILING + " was not placed");
-        assertTrue(layout.moveLocomotive(OTHER, prefix + " S7", false), "precondition: " + OTHER + " was not placed");
+        assertTrue(layout.moveLocomotive(OTHER, prefix + " " + otherAt, false), "precondition: " + OTHER + " was not placed");
         layout.setSimulate(true);
 
         failTrip(layout, trip(layout, prefix + " S3", prefix + " M", prefix + " S4"), model.getLocByName(FAILING),
