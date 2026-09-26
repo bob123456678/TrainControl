@@ -16478,6 +16478,10 @@ one looks wrong, it probably is.
 
 **MT-468's reading half is folded in here** (2026-09-25, on your answer "OK").  When you run this in German, look over the screens you use as well - Locomotives, Routes, the track diagram, the layout editor and the autonomy editor, and the dialogs you open from them - for anything that does not read as a sentence a person would write.  That keys exist in every language, with a value, is now tested (`core.testMessageBundles.testEveryKeyAScreenAsksForIsInEveryLanguageWithAValue`), so a key name, a blank or a missing-resource error is no longer what to look for.
 
+**Adam, 2026-09-26 (triage).** Works.
+
+*Run against commit 5e3aeffa, in Deutsch - build\classes, compiled 26 Sep 08:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-292"></a>
@@ -25616,6 +25620,12 @@ it is today, in the time you are willing to wait, is what only you can check.
 
 **To run now:** steps 1 to 3.  Skip the four-train check in the Expected.
 
+**Adam, 2026-09-26 (triage).** Works.
+
+Filed from this test: FR-103 (feature request - Update color of "autonomy won't choose these" stations).  They are in `issues.md` until they are picked up.
+
+*Run against commit 5e3aeffa, in English - build\classes, compiled 26 Sep 08:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-493"></a>
@@ -26077,6 +26087,12 @@ autonomy editor."*
 **Claude, 2026-09-25.**
 
 **Back on your list** (2026-09-25, RLD-C6 of the 3.0.0 release review): an entry stays yours wherever its superseding is in doubt, and this one is - the test runs on a two-line page of its own rather than your railway, and it neither reads the editor's Configuration errors and warnings list, where step 2 looks, nor the sentence the Expected quotes.  The test named above still runs in every battery; your run is the verdict.
+
+**Adam, 2026-09-26 (triage).** Works, with notes.
+
+Works, but also highlight the affected signals when the notice is clicked.
+
+*Run against commit 5e3aeffa, in English - build\classes, compiled 26 Sep 08:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -26988,6 +27004,10 @@ This option should never be greyed out completely (show the number of missing tr
 **Claude, 2026-09-24.**
 
 **Your note is built** (2026-09-24): the item is never greyed and says how many are missing - MT-566 - and train lengths and station maxima are named apart - MT-567.  The steps above now run as written; the item is called Mass Assign Locomotive Train Lengths (2 missing)... with two trains at 0.
+
+**Adam, 2026-09-26 (triage).** Works.
+
+*Run against commit 5e3aeffa, in English - build\classes, compiled 26 Sep 08:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -28152,6 +28172,12 @@ Validated on your *Works* of 2026-09-24.
 
 **Two sentences corrected in the validation round** (2026-09-24): with no train placed at all, the item's tooltip now says so, as a click does; and typing 0 for a train that has a length says a length is 1 to 40 and Skip keeps the one it has, not that 0 is "what it has now".
 
+**Adam, 2026-09-26 (triage).** Works, with notes.
+
+Works, but prefill the textbox with the current length, if any.
+
+*Run against commit 5e3aeffa, in English - build\classes, compiled 26 Sep 08:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-567"></a>
@@ -28174,6 +28200,12 @@ Validated on your *Works* of 2026-09-24.
 - The item about trains reads Mass Assign Locomotive Train Lengths (N missing)...; the two about stations read Mass Assign Station Max Train Lengths... and Clear All Station Max Train Lengths (N).
 
 *What this is:* `core.testMassAssignLengths.testTrainLengthsAndStationMaximaAreNamedApart`.
+
+**Adam, 2026-09-26 (triage).** Does not work.
+
+Change "Locomotive Train Lengths" to just "Train Lengths", andkeep "Station Max Train Lengths" as is.
+
+*Run against commit 5e3aeffa, in English - build\classes, compiled 26 Sep 08:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -28236,6 +28268,12 @@ Validated on your *Works* of 2026-09-24.
 - Entry Guard: signals set to red when a train arrives here at the end of its journey, and set to green again only by the next route that needs them.
 
 *What this is:* `regression.testTheEditorSaysWhatItsToolsDo.testTheGuardItemsSayWhatTheGuardsDo`.
+
+**Adam, 2026-09-26 (triage).** Works, with notes.
+
+"station is taken" -> station is occupied.
+
+*Run against commit 5e3aeffa, in English - build\classes, compiled 26 Sep 08:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -28322,6 +28360,10 @@ Validated on your *Works* of 2026-09-24.
 **Claude, 2026-09-25.**
 
 **Back on your list** (2026-09-25, RLD-C6 of the 3.0.0 release review): an entry stays yours wherever its superseding is in doubt, and this one is - the test (`core.testATrainDoesNotRunIntoItsOwnTail.testTheRefusalNamesTheLongestTrainThatGoes`) asks the send doors' filter through the model's own calls rather than pressing the right-click menu, and reads Why not Moving? through the locomotive list's call rather than the editor's button.  The test named above still runs in every battery; your run is the verdict.
+
+**Adam, 2026-09-26 (triage).** Works.
+
+*Run against commit 5e3aeffa, in English - build\classes, compiled 26 Sep 08:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 

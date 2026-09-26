@@ -1363,6 +1363,15 @@ Found by the 3.0.0 release review's seventh round (RLV7-C3), 2026-09-26.  While 
 
 **Why it waits:** it needs the one-event race that raises the flag, a page rename while it is up, and a train on a station with no name of its own - and every one of the 33 stations on his railway has a name of its own, none shared.  **Direction:** carry by square rather than by name across a rename - record the page renamed and map a recorded name on it through the rename, as the capture's re-keying does - or rename the recorded names along with the page.
 
+### FR-103 - 2026-09-26 - Update color of "autonomy won't choose these" stations
+
+**Kind:** feature request  
+**Raised from:** MT-492 (Return Home finds a plan on a crowded railway)  
+**Filed:** 2026-09-26 09:01  
+**Build:** commit 5e3aeffa, in English - build\classes, compiled 26 Sep 08:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+Update color of "autonomy won't choose these" stations - instead of orange, make them a medium dark gray that's just slightly darker than labels.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
