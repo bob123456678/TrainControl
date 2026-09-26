@@ -493,7 +493,8 @@ public class Edge
      * Whether this edge is measured: it has a length, or every place on it was answered 0 on purpose - measured track of
      * no length (Adam, 2026-09-24, TDU-C6: *"0 lengths count as measures, so non-atomic should be allowed"*; and Adam, 2026-09-25: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*).
      *
-     * **The one question every length rule asks** of a leg with no length: the Atomic Routes gate
+     * **The question every length rule but one asks** of a leg with no length - the own-tail rule judges a way round
+     * only once it has run some length, filed as OB-300 (RLA-C6): the Atomic Routes gate
      * (`Layout.unmeasuredTrackThatCouldBeReleased`) and the release escape it stands for (`Layout.pathIsUnmeasured`), the
      * route in, the room walk, the walk that claims a standing train's tail, the berth rule and the tail question.  An
      * answered leg is counted, adding nothing, and walked on over; a leg nobody answered still ends each of them.  They

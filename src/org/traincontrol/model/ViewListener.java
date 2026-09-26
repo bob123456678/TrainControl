@@ -157,8 +157,8 @@ public interface ViewListener
     public int importRoutes(String json, boolean armAsSaved);
 
     /**
-     * The routes a route export saved with their automatic firing on, by name (REG2-C7) - what the import door asks
-     * about before anything is replaced.
+     * The routes a route export saved with their automatic firing on and a sensor to watch, by name (REG2-C7, RLU-C2) -
+     * the ones the import arms again when asked, and what its door asks about before anything is replaced.
      *
      * @param json the export
      * @return their names, empty when there are none or the file cannot be read

@@ -5055,16 +5055,16 @@ public class Layout
 
         for (Point other : this.getPoints())
         {
-            // The start rules `whyTheStartIsRefused` asks of the square a train stands on
-            if (other != at && other.isSamePlaceAs(at) && !isABarredCopyOfAStation(other) && other.isDestination()
-                && other.isActive() && canReachAnyDestination(other))
+            // The start rules asked of the square a train stands on (`whyNoTrainIsStartedFrom`)
+            if (other != at && other.isSamePlaceAs(at) && whyNoTrainIsStartedFrom(other) == null
+                && canReachAnyDestination(other))
             {
                 return I18n.f("autolayout.why.startReachesNoStation", placeNameOf(at));
             }
         }
 
         return I18n.f("autolayout.why.startReachesNoStationEitherWay", placeNameOf(at),
-            I18n.t("autosetup.ui.menuAutoDestination"));
+            I18n.t("autosetup.ui.menuAutoDestination"), I18n.t("autosetup.ui.menuArrivalsGroup"));
     }
 
     /**
@@ -5079,6 +5079,19 @@ public class Layout
 
         if (at == null) return I18n.t("autolayout.why.notOnGraph");
 
+        return whyNoTrainIsStartedFrom(at);
+    }
+
+    /**
+     * Why autonomy starts no train from this copy of a square, or null where it may: the square's own start rules, asked
+     * of a train standing there and of the copy Why not Moving? would turn one round onto (RLA-C5, RLA2-C6) - one rule
+     * for both, so one added here reaches "turn it round" too.
+     *
+     * @param at the copy
+     * @return the reason, or null
+     */
+    private String whyNoTrainIsStartedFrom(Point at)
+    {
         // FACING THE WAY TRAINS MAY NOT ARRIVE, AT A STATION (GUI3-C1): named as the square, with what to do - turn it
         // round, or open that side.  It was "standing on BottomMainA (westbound), which is not a station": the copy's
         // name, a station called not one, and no way out.
@@ -9230,7 +9243,8 @@ public class Layout
         
     /**
      * Takes off the graph whatever an edit to this locomotive - its name, its address, its consist, changed from the
-     * window - has made conflict with it; nothing where it stands nowhere (BPV-A1).
+     * window or by the Central Station sync - has made conflict with it, through the train itself where it stands and
+     * every standing multi-unit that drives it (BPV-A1, RLA-B1).
      *
      * An edit can only make a conflict ON THE GRAPH through a train that stands there and drives the edited one: the
      * edited train itself where it stands, and every standing multi-unit it is a member of.  A train that neither stands

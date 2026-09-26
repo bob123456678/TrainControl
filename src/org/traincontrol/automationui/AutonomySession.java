@@ -561,6 +561,12 @@ public class AutonomySession
          * again: the train stays where the configuration has it (RLA-B2).
          */
         public final List<String> alreadyPlaced = new ArrayList<>();
+
+        /**
+         * Locomotives the file gives a home that the configuration imported into already has a home for.  That home is
+         * kept, and the message names them (RLA2-C3).
+         */
+        public final List<String> homesKept = new ArrayList<>();
     }
 
     /**
@@ -630,9 +636,9 @@ public class AutonomySession
      * Names already here are kept, the same rule importing a configuration follows: this fills gaps,
      * it does not overwrite somebody's work with a file's.
      *
-     * Nothing is written to disk BY THIS METHOD; the only caller saves immediately afterwards
-     * (`AutonomyViewerPanel.importLegacyGraph`, which calls `save()` on the next line), so in practice an import is committed as soon as it is
-     * asked for.  This used to say a bad match "can still be cancelled", which described a step
+     * Nothing is written to disk BY THIS METHOD.  Its caller, `AutonomyViewerPanel.importLegacyGraph`, reads the rest of
+     * the file and saves once it has, or puts the setup back as it was where the file fails part way (RLA-C3) - so an
+     * import is committed only whole.  This used to say a bad match "can still be cancelled", which described a step
      * that has never existed and would have led the next reader to add it back (ACC-C5).
      *
      * @param legacy the parsed autonomy.json
@@ -705,7 +711,10 @@ public class AutonomySession
      * the square allows, and named in `facingsNotHeld` rather than counted as a guess, since it is known to be the
      * other way round from how the train drives.
      *
-     * @param facingToFind the placed trains with no facing yet, by square and legacy point name
+     * WHERE THE FILE CANNOT SAY, A FACING THE SQUARE RECORDS STAYS: the last occupant's is a guess as good as the first
+     * copy's, and a guess made by somebody standing a train there (RLA2-B3).
+     *
+     * @param facingToFind the placed trains, by square and legacy point name
      * @param edgesLeadTo each legacy point's edges, by the square each ends on (null: not on this diagram)
      * @param pointSquares the squares the old graph had points on
      * @param result where the guesses are counted
@@ -727,6 +736,8 @@ public class AutonomySession
 
                 continue;
             }
+
+            if (ran == null && getFacing(tile) != null) continue;
 
             java.util.Set<Side> mayArrive = homeFacingsFor(tile);
 
@@ -950,6 +961,9 @@ public class AutonomySession
         // already has a home, are facts about the configuration, and gap-filling does not overrule them.
         Set<String> standingAlready = new LinkedHashSet<>();
 
+        // And the homes it already has, told apart from a home the file names twice so the message can say which (RLA2-C3)
+        Set<String> homedInConfiguration = new LinkedHashSet<>();
+
         String into = store.getActiveConfiguration();
 
         org.json.JSONObject intoConfiguration = into == null ? null : store.getConfiguration(into);
@@ -971,7 +985,7 @@ public class AutonomySession
                     standingAlready.add(stands.optString("name", "").trim());
                 }
 
-                if (!extras.optString("home", "").trim().isEmpty()) homedAlready.add(extras.optString("home", "").trim());
+                if (!extras.optString("home", "").trim().isEmpty()) homedInConfiguration.add(extras.optString("home", "").trim());
             }
         }
 
@@ -1121,7 +1135,10 @@ public class AutonomySession
 
                             // And which way it is pointing - found after the loop, over the finished
                             // setup (REG4-C1): see `findTheImportedFacings`.
-                            if (getFacing(tile) == null) facingToFind.put(tile, name);
+                            // ASKED OF THE FILE WHATEVER THE SQUARE RECORDS (RLA2-B3): a facing on an empty square is its last
+                            // occupant's, and no evidence about the train the file puts there.  Asked only where the square
+                            // had none, a second import stood its train the way another train had stood.
+                            facingToFind.put(tile, name);
 
                             result.placed++;
                         }
@@ -1129,7 +1146,11 @@ public class AutonomySession
 
                     if (!home.trim().isEmpty() && !extras.has("home"))
                     {
-                        if (homedAlready.add(home.trim()))
+                        if (homedInConfiguration.contains(home.trim()))
+                        {
+                            if (!result.homesKept.contains(home.trim())) result.homesKept.add(home.trim());
+                        }
+                        else if (homedAlready.add(home.trim()))
                         {
                             extras.put("home", home.trim());
                         }

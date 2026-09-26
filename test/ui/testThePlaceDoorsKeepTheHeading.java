@@ -498,6 +498,10 @@ public class testThePlaceDoorsKeepTheHeading
      * until the editor was restored.  Asked here for his 75 407 DB, 5 long, on Tunnel from the north, as the main
      * window's own doors ask it.
      *
+     * NO DOOR REACHES THIS TODAY (RLA2-C5): every main-window door that asks the question refuses while an editor is
+     * open, a minimised one included, and the editor's own door cannot be used while it is minimised.  So this pins the
+     * owner rule itself, asked as a door would ask it, against the day a door does reach it.
+     *
      * MUTATION: hang the list from any editor that is open, and this fails.
      *
      * @throws Exception from the window

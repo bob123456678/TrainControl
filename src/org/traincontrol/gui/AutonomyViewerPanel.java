@@ -673,18 +673,6 @@ public class AutonomyViewerPanel extends JPanel
      */
     private void loadAfterImport(String name)
     {
-        loadAfterImport(name, true);
-    }
-
-    /**
-     * The same, told whether the running layout's state still has to be folded back in first - false where the import
-     * captured it before writing, so the reload does not write it back over what the import brought (RLA-C2).
-     *
-     * @param name the configuration to bring up, or null to leave things alone
-     * @param captureRunningState whether the reload captures the running layout first
-     */
-    private void loadAfterImport(String name, boolean captureRunningState)
-    {
         if (name == null || name.trim().isEmpty()) return;
 
         // The rule lives on AutonomySession, where it can be tested; see the note there for why
@@ -696,7 +684,7 @@ public class AutonomyViewerPanel extends JPanel
 
         session().getStore().setActiveConfiguration(toLoad);
 
-        load(toLoad, true, captureRunningState);
+        load(toLoad, true);
 
         // And then rebuild the diagram, which is what makes the captions live.
         //
@@ -1021,6 +1009,22 @@ public class AutonomyViewerPanel extends JPanel
 
         if (name == null || name.trim().isEmpty()) return;
 
+        // NOT INTO THE CONFIGURATION IN USE (RLA2-B1, RLA2-B3, RLD2-C2).  The reload after an import into the configuration
+        // running captured the running railway over what the import had just written - an old file's homes, a bundle's
+        // settings and timetable, the Yes to "Replace it?" undone - and capturing first instead stood an old file's trains
+        // on the running railway, facing the way their squares' last occupants faced, with nothing knowing where those
+        // trains really were.  Where a train stands on the railway running is the railway's to say (OB-183).  So a file
+        // goes into a configuration of its own, and is run by choosing it; the Import prompt suggests the file's name.
+        String inUse = ui.getActiveDiagramConfiguration();
+
+        if (inUse != null && inUse.equals(name.trim()))
+        {
+            JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.errorImportIntoConfigurationInUse", inUse,
+                I18n.t("autosetup.ui.menuAutonomy") + " > " + I18n.f("autosetup.ui.menuConfigurations", inUse)));
+
+            return;
+        }
+
         // READ BEFORE THE QUESTION BELOW, so that it can say what Yes does (RLA-B2, RLU-B1, RLD-C4).  A bundle replaces
         // the configuration of that name; an old autonomy.json fills in what that configuration does not already say,
         // as MT-298 rules a second import must.  They shared one question - "Replace it with the imported one?" - and
@@ -1235,30 +1239,8 @@ public class AutonomyViewerPanel extends JPanel
             java.util.Set<String> known = ui.getModel() == null
                 ? null : new java.util.LinkedHashSet<>(ui.getModel().getLocList());
 
-            // INTO THE CONFIGURATION RUNNING, BY ITS NAME (RLA-C2): what the running layout knows goes into it FIRST, and
-            // the reload after the import does not capture again.  Captured on the reload, as every reload does, it
-            // replaced the import's homes and maxima - or removed them, where the running layout carried none - right
-            // after the dialog had counted them.  Captured first, where a train stands is still the running layout's
-            // fact (OB-183), and the import fills only what is left.  Not while trains are moving: the reload stops them
-            // and captures where they stopped, as it always has.
-            boolean captured = false;
-
-            if (into.equals(ui.getActiveDiagramConfiguration()) && !ui.isAutonomyBusy() && ui.getModel() != null
-                && ui.getModel().hasAutoLayout() && ui.getModel().getAutoLayout().isValid())
-            {
-                try
-                {
-                    session().captureFromLayout(ui.getModel().getAutoLayout().toJSON(), into);
-
-                    captured = true;
-                }
-                catch (Exception e)
-                {
-                    // as load() treats it: a courtesy, and failing it leaves the reload to capture, as before
-                    if (ui.getModel().isDebug()) ui.getModel().log(String.valueOf(e.getMessage()));
-                }
-            }
-
+            // NEVER THE CONFIGURATION RUNNING: the door refuses that name before it reads the file (RLA2-B1), so the
+            // reload below captures the railway into the configuration it is running, not into this one.
             AutonomySession.LegacyImport result = session().importLegacy(file, known);
 
             // Read to its end before anything is saved, so a file that throws here has changed nothing (RLA-C3).  This
@@ -1301,6 +1283,12 @@ public class AutonomyViewerPanel extends JPanel
             {
                 unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyAlreadyPlaced",
                     String.join(", ", result.alreadyPlaced));
+            }
+
+            // And the homes it already has, which stay too (RLA2-C3)
+            if (!result.homesKept.isEmpty())
+            {
+                unmatched += "\n\n" + I18n.f("autosetup.ui.infoLegacyHomesKept", String.join(", ", result.homesKept));
             }
 
             // AND WHAT IT DID NOT BRING (MT-257 item 3).
@@ -1372,7 +1360,7 @@ public class AutonomyViewerPanel extends JPanel
 
             // The one just created when nothing was running - so the import is loaded rather than left sitting on disk -
             // and otherwise the one running, loaded again over the shared half the import merged.
-            loadAfterImport(into, !captured);
+            loadAfterImport(into);
         }
         // RuntimeException alone: reading the file moved out to the one Import action that decides
         // what a file IS, so nothing left in here is checked.  A malformed file still lands here, as

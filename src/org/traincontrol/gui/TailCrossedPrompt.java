@@ -209,9 +209,10 @@ public class TailCrossedPrompt
         DiagramPick pick = choices.size() > 1 && answeredByATest == null
             ? DiagramPick.of(parent, at, choices, train, shownName(shown, at)) : null;
 
-        // IN FRONT OF THE EDITOR WHERE ONE IS OPEN (MT-575).  A door reached from the autonomy editor hands this the
+        // IN FRONT OF THE EDITOR WHERE ONE IS SHOWING (MT-575).  A door reached from the autonomy editor hands this the
         // main window - the Place dialog's parent - and the list hung from it was centred on, and ordered with, the window
-        // the editor covers.  The editor is where the operator is looking, and where the question was asked from.
+        // the editor covers.  The editor is where the operator is looking, and where the question was asked from.  Not a
+        // minimised one, which hides what it owns (RLA-C4): `openLayoutEditorWindow` answers null for it.
         Component over = parent instanceof TrainControlUI && ((TrainControlUI) parent).openLayoutEditorWindow() != null
             ? ((TrainControlUI) parent).openLayoutEditorWindow() : parent;
 

@@ -1449,6 +1449,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.logf("log.csDBSyncStarting");
 
         int num = 0;
+
+        // Each locomotive the pass below re-addresses or gives other Central Station members, swept at the end (RLA2-B2)
+        final List<MarklinLocomotive> sweptAfterTheSync = new ArrayList<>();
         
         /* This is no longer needed now that we are allowing conditional routes during operation
         // Sanity check - in case accessories changed, etc.
@@ -1632,6 +1635,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                             oldAddr,
                             this.getLocAddress(existingLoc.getName()));
 
+                        sweptAfterTheSync.add(existingLoc);
+
                         // The same repair changeLocAddress performs, for the same reason
                         for (Locomotive other : getLocomotives())
                         {
@@ -1679,7 +1684,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 // Set multi unit info
                 if (this.locDB.getById(l.getUID()) != null)
                 {
-                    this.locDB.getById(l.getUID()).setModelMultiUnitLocomotives(l.getModelMultiUnitLocomotiveNames());
+                    MarklinLocomotive held = this.locDB.getById(l.getUID());
+
+                    boolean membersChanged = !java.util.Objects.equals(held.getModelMultiUnitLocomotiveNames(),
+                        l.getModelMultiUnitLocomotiveNames());
+
+                    held.setModelMultiUnitLocomotives(l.getModelMultiUnitLocomotiveNames());
+
+                    if (membersChanged) sweptAfterTheSync.add(held);
                 }
             }
         }
@@ -1692,7 +1704,23 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         
         this.rebuildLocIdCache();
-                
+
+        // AND THE GRAPH ASKED WHAT THE SYNC MADE CONFLICT (RLA2-B2).  The sync is the fourth writer of a locomotive's
+        // address, and the only door a Central Station multi-unit's members come in by; it re-addressed and re-linked and
+        // asked the graph nothing, so a member of a standing multi-unit given another standing train's address - or a
+        // standing train added to a standing multi-unit on the Central Station's own screen - left both standing, and
+        // autonomy would run the second as a train of its own while the multi-unit's commands moved it.  Asked as the
+        // window's edit doors ask it, of each locomotive the sync changed; not while autonomy runs, as they are not.
+        if (!sweptAfterTheSync.isEmpty() && this.hasAutoLayout() && !this.isAutonomyRunning())
+        {
+            Layout layout = this.getAutoLayout();
+
+            synchronized (layout)
+            {
+                for (MarklinLocomotive changed : sweptAfterTheSync) layout.sanitizeMultiUnits(changed);
+            }
+        }
+
         this.logf("loc.syncCompleted");
         
         return num;

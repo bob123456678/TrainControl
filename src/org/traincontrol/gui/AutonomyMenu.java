@@ -329,7 +329,8 @@ public class AutonomyMenu extends JMenu
             // is the same kind of thought as choosing between them.
             choose.addSeparator();
 
-            // Import is never greyed. It does not act on the configuration that is running; it brings
+            // Import is never greyed. It does not act on the configuration that is running - it refuses that name
+            // (RLA2-B1) - it brings
             // one in - and the moment it is most needed is when the current setup will not load, which
             // is repaired by importing one that will.
             choose.add(item(I18n.t("autosetup.ui.btnImportConfiguration"), new Runnable()

@@ -702,7 +702,7 @@ leave by, a copy trains may not arrive at included, and the copy the paste would
 otherwise the first copy the menu offers.  The item is offered wherever a copy has a way out, as the action
 chooses (ADU2-C2).  It took one at random until then, and for a day chose only among station copies, which turned a
 train facing the barred way round at a square with a barred side (ADU-B1).  A copy with a way out that reaches no
-station autonomy may choose is kept too, and Why not Moving? says why autonomy never starts a train there - turn it round where another copy of the square reaches a station and a train may be started from that copy (RLA-C5), otherwise drive it off by hand or let autonomy choose a station it can reach - switched on, Can Be Chosen in Full Autonomy ticked, and not one where trains turn round (RLU-C4) (OB-299; by hand it is no reason, since a hand send may go where autonomy never does).  `core.testWhyStuck.testACopyThatReachesNoStationSaysSo`, `core.testWhyStuck.testTurningRoundIsOfferedOnlyOntoACopyATrainMayStartFrom`, `core.testATrainIsPutOnlyWhereItCanStart.testTheRightClickPlaceKeepsTheTrainsHeading`.
+station autonomy may choose is kept too, and Why not Moving? says why autonomy never starts a train there - turn it round where another copy of the square reaches a station and a train may be started from that copy (RLA-C5), otherwise drive it off by hand or let autonomy choose a station it can reach - switched on, Can Be Chosen in Full Autonomy ticked, and the side a train would arrive on open under Trains May Arrive... (RLU-C4, RLU2-C10) (OB-299; by hand it is no reason, since a hand send may go where autonomy never does).  `core.testWhyStuck.testACopyThatReachesNoStationSaysSo`, `core.testWhyStuck.testTurningRoundIsOfferedOnlyOntoACopyATrainMayStartFrom`, `core.testWhyStuck.testTurningRoundIsNotOfferedOntoACopyThatIsNoStation`, `core.testATrainIsPutOnlyWhereItCanStart.testTheRightClickPlaceKeepsTheTrainsHeading`.
 
 > *"Simply don’t place the train, leave it on the clipboard as if no paste had been done."* — Adam,
 > 2026-09-07, on a dismissed prompt
@@ -1019,7 +1019,8 @@ beside it along the road it carries - plain track before a switch - so every tot
 **A deliberate 0 is an answer** (Adam, 2026-09-23, OB-274: *"we need to allow a length of 0 as a length
 that is set deliberately, i.e. for adjacent tracks.  same meaning to the model, but this will allow
 everything to get assigned without what appears to be a skip."*). So the walks accept 0, and the piece is
-recorded as answered and is not asked about again.  **And it is measured track of no length, to every length rule**
+recorded as answered and is not asked about again.  **And it is measured track of no length, to every length rule
+but one** - the own-tail rule, which judges a way round only where it has run some length, is filed as OB-300 (RLA-C6)
 (Adam, 2026-09-25, ADU-C7: *"we can't possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track lengths allow"*, and *"Build it"*).  The route in, the room walk, the
 walk that claims a standing train's tail, the berth rule and the tail question count it, adding nothing, and walk on
 over it - so a train is let in wherever the measured track holds it in total, and a train standing there is claimed over
@@ -1140,7 +1141,8 @@ The editor notice about turn-round squares with no length is a different questio
     list if there are options on another page"*): the sensors are lit and a click on one answers it, with **Not known**
     and **Cancel** in a small window.  The list is asked where a choice is on another page or not drawn, and where an
     editor window is open, whose squares do not take the click (TDU-C1) - and then the list opens from the editor,
-    in front of it, not from the main window it covers (MT-575, 2026-09-25).  The rest of a double-click on the sensor that
+    in front of it, not from the main window it covers (MT-575, 2026-09-25), while the editor is showing; a minimised
+    one hides what it owns, so then the list opens from the main window (RLA-C4).  The rest of a double-click on the sensor that
     answered is the question's, not the sensor's (TDU-B3), and the paste reads everything about its landing before the
     question waits, because the window stays live while it does (TDU-B2).  **An answer is written only where the placement
     still stands when it comes back** (TDU2-A1, TDU3-B1): the square's copy on the railway running then still holds the
@@ -1948,11 +1950,14 @@ object those sets and already-issued paths hold.
 **Staging counts as running.** The Return Home planner walks these structures with nothing dispatched
 at all, which is exactly the window a bare "is autonomy running" flag waves through.
 
-**A locomotive edit takes a train off the graph only through the edited train's own presence**
-(BPV-A1, 2026-09-25).  Renaming, re-addressing, re-linking or deleting a locomotive is refused while
+**A locomotive edit takes a train off the graph only through a train that stands and drives the edited one**
+(BPV-A1, RLA-B1, 2026-09-25).  Renaming, re-addressing, re-linking or deleting a locomotive is refused while
 autonomy runs - its coast-down and Return Home's planning included - so the edit doors act on a
-stopped railway, and their sweep for multi-unit conflicts asks only when the edited train stands on
-the graph: a train that stands nowhere clashes with nothing that stands.  Renaming a member of a
+stopped railway, and their sweep for multi-unit conflicts asks of the edited train where it stands, and of every
+standing multi-unit that drives it - a consist linked here or one the Central Station holds - what putting that
+multi-unit down again would ask.  A train that neither stands nor is driven by one that stands clashes with nothing
+that stands.  The Central Station sync asks the same of every locomotive it re-addresses or gives other members,
+when autonomy is not running (RLA2-B2).  Renaming a member of a
 multi-unit whose head stood on a station took the head off it - a head is never compatible with its
 own member - and the platform read as empty with the train on it.  Putting a train down still sweeps
 first, before it is placed.
@@ -2425,17 +2430,20 @@ between honouring the name typed and not asking for one: *"(a)"*), created where
 chosen only while the import writes into it: the configuration running stays the one in use, and is the one the next
 start resumes, whether or not the reload after the import goes ahead - the imported one is loaded only where nothing
 was running.  The import's message names the configuration its trains went into and, where another is in use, where
-to choose it.  Until then a layout that already had configurations took the file's placements, homes and facings into
+to choose it.  **Not into the configuration in use** (RLA2-B1, RLA2-B3, 2026-09-25): an import under that name is
+refused, with where to choose the file's configuration once it is imported under another.  The reload after such an
+import captured the running railway over what the import had just written - an old file's homes, a bundle's settings
+and timetable - and capturing first instead stood the file's trains on the running railway, where nothing knew they
+were; where a train stands on the railway running is the railway's to say (OB-183).  Until then a layout that already had configurations took the file's placements, homes and facings into
 the one in use, and the name asked for was thrown away.
 
 Into a configuration that exists, an old file fills what that configuration does not already say (MT-298), and the
 door asks exactly that - *"Add to it what the file has and {0} does not?"* - where a bundle replaces the
 configuration and asks to replace it.  A train the configuration already has standing somewhere is not placed again,
-and is named in the message; a train that already has a home gets no second one - one train in two places refuses the
-whole configuration (RLA-B2).  Into the configuration running, by its name, what the running layout knows goes in
-first and the reload after the import does not capture again, so the reload cannot write the running railway back
-over what the import brought (RLA-C2); while trains are moving the reload stops them and captures where they stopped,
-as every reload does.  A file the import cannot read to its end leaves the setup as it was: nothing made, chosen or
+and is named in the message; a train that already has a home keeps it, and is named too (RLA2-C3) - one train in two
+places refuses the whole configuration (RLA-B2).  A train the file places faces the way the file ran it, whatever
+facing the square's last occupant left there (RLA2-B3).  A station maximum of 0 is a statement - "no limit" - and is
+kept, like any other value the configuration has.  A file the import cannot read to its end leaves the setup as it was: nothing made, chosen or
 saved (RLA-C3).  `core.testASecondImportFillsGapsAndDoesNotOverwrite.testAnImportGoesIntoTheConfigurationNamed`, and
 `regression.testTheImportDoorReadsAnOldFile`.
 
