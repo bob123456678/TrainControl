@@ -1403,8 +1403,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         List<Map<Integer,String>> instance = new ArrayList<>();
         
-        // try-with-resources ensures the stream is closed (avoids a file-handle leak on every load)
-        try (ObjectInputStream obj_in = new ObjectInputStream(new FileInputStream(TrainControlUI.DATA_FILE_NAME)))
+        // THE FILE IN ITS OWN RESOURCE, because the stream wrapping it reads the header in its constructor and
+        // throws there on an empty or garbled file - before the resource is assigned, so the file stayed open, and
+        // Windows then refused the save that replaces it (BPV-C8).
+        try (FileInputStream file_in = new FileInputStream(TrainControlUI.DATA_FILE_NAME);
+            ObjectInputStream obj_in = new ObjectInputStream(file_in))
         {
             // Read an object
             Object obj = obj_in.readObject();
@@ -13878,7 +13881,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     {
                         File f = fc.getSelectedFile();
 
-                        this.model.importRoutes(new String(Files.readAllBytes(Paths.get(f.getPath()))));
+                        // UTF-8, as every door writes the file (RLU-A1): in the machine's own character set, Java 8 on Windows
+                        // turned a route's accented letters into others, and a locomotive command naming such a
+                        // locomotive named none.
+                        this.model.importRoutes(new String(Files.readAllBytes(Paths.get(f.getPath())),
+                            java.nio.charset.StandardCharsets.UTF_8));
 
                         prefs.put(LAST_USED_FOLDER, f.getParent());
 

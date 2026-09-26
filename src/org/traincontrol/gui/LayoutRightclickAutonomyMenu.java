@@ -34,7 +34,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     }
                     catch (Exception e)
                     {
-                        JOptionPane.showMessageDialog(this, e.getMessage());
+                        JOptionPane.showMessageDialog(ui, e.getMessage());
                     }
                 });
 
@@ -79,7 +79,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                                     {
                                         if (!ui.getModel().getPowerState())
                                         {
-                                            javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart")));
+                                            javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(ui, I18n.t("autolayout.ui.powerOnToStart")));
                                         }
                                         else
                                         {
@@ -91,14 +91,14 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                                             if (!success)
                                             {
-                                                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.autoFailedCheckLog")));
+                                                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(ui, I18n.t("autolayout.ui.autoFailedCheckLog")));
                                             }
                                         }
                                     }).start();
                                 }
                                 catch (Exception e)
                                 {
-                                    JOptionPane.showMessageDialog(this, e.getMessage());
+                                    JOptionPane.showMessageDialog(ui, e.getMessage());
                                 }
                             });    
 
@@ -115,7 +115,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                                     }
                                     catch (Exception e)
                                     {
-                                        JOptionPane.showMessageDialog(this, e.getMessage());
+                                        JOptionPane.showMessageDialog(ui, e.getMessage());
                                     }
                                 });    
 
@@ -219,7 +219,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     }
                     catch (Exception e)
                     {
-                        JOptionPane.showMessageDialog(this, e.getMessage());
+                        JOptionPane.showMessageDialog(ui, e.getMessage());
                     }
                 });    
 

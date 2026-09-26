@@ -1476,8 +1476,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // first one that did not
         this.databaseLoadFailed = false;
 
-        // try-with-resources ensures the stream is closed (avoids a file-handle leak on every load)
-        try (ObjectInputStream obj_in = new CustomObjectInputStream(new FileInputStream(dataFile)))
+        // THE FILE IN ITS OWN RESOURCE, because the stream wrapping it reads the header in its constructor and
+        // throws there on an empty or garbled file - before the resource is assigned, so the file stayed open, and
+        // Windows then refused the save that replaces it (BPV-C8).
+        try (FileInputStream file_in = new FileInputStream(dataFile);
+            ObjectInputStream obj_in = new CustomObjectInputStream(file_in))
         {
             // Read an object
             Object obj = obj_in.readObject();

@@ -3630,14 +3630,23 @@ public class Layout
         
     /**
      * Takes off the graph whatever an edit to this locomotive - its name, its address, its consist,
-     * changed from the window - has made conflict with it; nothing when it stands nowhere.
+     * changed from the window - has made conflict with it.
      *
-     * An edit can only make a conflict ON THE GRAPH through the edited train's own presence there: a
-     * train that stands nowhere clashes with nothing that stands.  Swept regardless, a rename of a
+     * An edit can only make a conflict ON THE GRAPH through a train that stands there and drives the
+     * edited one: the edited train itself where it stands, and every standing multi-unit it is a member
+     * of.  A train that neither stands nor is driven by one that stands clashes with nothing that stands.
+     *
+     * Swept regardless, a rename of a
      * MEMBER of a multi-unit whose head stood on a station asked the head whether it was compatible
      * with its own member - never, isLinkedTo - and took the head off its station: the platform read
      * as empty with the train standing on it, the loss the self-skip below was written for, by the one
      * rename that self-skip does not reach.  Found by the validator of the 2.8.2 backports (BPV-A1).
+     * So the head is swept as itself, and its own member, standing nowhere, is not a conflict.
+     *
+     * Swept only where the edited train stands, a member given the address of another standing train
+     * took nothing off: every command to its head then reached that train's decoder, while autonomy ran
+     * it as a train of its own (RLA-B1, from the 3.0.0 release review).  Sweeping the head asks exactly
+     * what putting the head down again would.
      *
      * Every door that calls this - rename, the multi-unit editor, rename from the Central Station -
      * refuses while autonomy runs, its coast-down and Return Home's planning included
@@ -3650,9 +3659,28 @@ public class Layout
      */
     public void sanitizeMultiUnits(Locomotive l)
     {
-        if (l == null || this.getLocomotiveLocation(l) == null) return;
+        if (l == null) return;
 
-        this.clearMultiUnitConflictsWith(l);
+        if (this.getLocomotiveLocation(l) != null) this.clearMultiUnitConflictsWith(l);
+
+        // Every standing multi-unit that drives it - a consist linked here, or one the Central Station holds
+        List<Locomotive> heads = new ArrayList<>();
+
+        for (Point p : this.getPoints())
+        {
+            Locomotive head = p.getCurrentLocomotive();
+
+            if (head != null && !head.equals(l) && !heads.contains(head)
+                && (head.isLinkedTo(l) || head.getModelMultiUnitLocomotives().contains(l)))
+            {
+                heads.add(head);
+            }
+        }
+
+        for (Locomotive head : heads)
+        {
+            if (this.getLocomotiveLocation(head) != null) this.clearMultiUnitConflictsWith(head);
+        }
     }
 
     /**
