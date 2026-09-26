@@ -33,7 +33,7 @@ import org.traincontrol.util.I18n;
  * The Autonomy menu's Import, driven as Adam drives it, on a sandbox copy of his railway with his own 2.7.4c file (Adam,
  * 2026-09-25: automated tests supersede the MTs they answer).
  *
- * The door is `AutonomyViewerPanel.importConfiguration` - the file chooser, the name prompt, the replace question and the
+ * The door is `AutonomyViewerPanel.importConfiguration` - the file chooser, the name prompt, the question about a configuration of that name and the
  * messages it shows - answered from a thread of its own, as he would answer them.  What each import then says, logs and
  * leaves in the setup is what MT-491, MT-501, MT-502, MT-582 and MT-298 ask him to read.
  *
@@ -599,8 +599,9 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * An import into the configuration in use, by its name, is refused and changes nothing: the file is imported under
-     * another name and chosen from there (RLA2-B1, RLA2-B3, RLD2-C2).
+     * A bundle imported into the configuration in use, by its name, is refused and changes nothing: it is imported under
+     * another name and chosen from there (RLA2-B1, RLD3-C2).  The case is the backup round trip: Export suggests the
+     * configuration's name and Import suggests the file's.
      *
      * The reload after an import into the configuration running captured the running railway over what the import had
      * just written - an old file's homes, a bundle's settings and timetable - and capturing first instead stood the old
@@ -644,7 +645,15 @@ public class testTheImportDoorReadsAnOldFile
             List<String> namesBefore = new ArrayList<>(session.getStore().getConfigurationNames());
             String onDiskBefore = setupOnDisk(session).toString();
 
-            List<String> said = importFromTheMenu(ui[0], MT491, inUse);
+            // HIS OWN CONFIGURATION, EXPORTED AS A BUNDLE - as Export writes it.
+            File bundle = File.createTempFile("tc-bundle", ".json");
+
+            bundle.deleteOnExit();
+
+            java.nio.file.Files.write(bundle.toPath(), session.getStore().exportBundle(inUse).toString()
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            List<String> said = importFromTheMenu(ui[0], bundle, inUse);
 
             session = ui[0].getAutonomySession();
 
@@ -660,6 +669,209 @@ public class testTheImportDoorReadsAnOldFile
 
             assertTrue(said.contains(refused), "the door did not say it will not import into the configuration in use,"
                 + " and what to do instead: " + said);
+        }
+        finally
+        {
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * An old file imported into the configuration in use, by its name, fills what it does not have and places none of the
+     * file's trains: where a train stands on the railway running is the railway's to say, and a train moved on it before
+     * the import is where it was moved (RLD3-C1, RLA2-B3, RLD2-C3, OB-183).
+     *
+     * Round 2 refused the name outright, which MT-298's own steps cannot get past: a hand change is made in the
+     * configuration chosen, and the second import is into that one.
+     *
+     * MUTATION: refuse the name again, place the file's trains on the running railway, or leave out the capture that
+     * keeps a moved train where it stands, and this fails.
+     *
+     * @throws Exception from the window or the import
+     */
+    @Test
+    public void testAnOldFileIntoTheConfigurationInUseLeavesItsTrainsToTheRailway() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in docs/manual-tests/files");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            AutonomySession session = ui[0].getAutonomySession();
+
+            final String inUse = session.getStore().getActiveConfiguration();
+
+            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+
+            // ONE STANDING TRAIN MOVED ON THE RUNNING RAILWAY, to an empty station - as a run leaves it, not written to
+            // the configuration.
+            final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
+
+            org.traincontrol.automation.Point from = null;
+            org.traincontrol.automation.Point to = null;
+
+            for (org.traincontrol.automation.Point point : railway.getPoints())
+            {
+                if (point.getCurrentLocomotive() != null && from == null) from = point;
+            }
+
+            assertNotNull(from, "precondition: no train stands on his railway");
+
+            for (org.traincontrol.automation.Point point : railway.getPoints())
+            {
+                if (to == null && point.isDestination() && point.isActive() && point.getCurrentLocomotive() == null
+                    && !point.isSamePlaceAs(from) && session.getStationIndex().squareOf(point.getName()) != null)
+                {
+                    to = point;
+                }
+            }
+
+            assertNotNull(to, "precondition: no empty station on his railway");
+
+            final String moved = from.getCurrentLocomotive().getName();
+            final String toName = to.getName();
+
+            SwingUtilities.invokeAndWait(() -> railway.moveLocomotive(moved, toName, false));
+
+            Set<String> before = standingIn(session, inUse);
+
+            List<String> said = importFromTheMenu(ui[0], MT491, inUse);
+
+            session = ui[0].getAutonomySession();
+
+            Integer placed = placedIn(said);
+
+            assertNotNull(placed, "the old file was not imported into " + inUse + ", the configuration in use: " + said);
+
+            assertEquals(placed, Integer.valueOf(0), "the import placed the file's trains in " + inUse + ", the"
+                + " configuration running, where nothing knows where they are: " + said);
+
+            assertEquals(standingIn(session, inUse), before, "the trains " + inUse + " has standing changed with the"
+                + " import: " + said);
+
+            TileKey movedTo = session.getStationIndex().squareOf(toName);
+
+            org.json.JSONObject extras = session.getStore().getConfiguration(inUse).getJSONObject("points")
+                .optJSONObject(movedTo.toString());
+
+            assertTrue(extras != null && extras.has(AutonomyBuilder.LOCOMOTIVE)
+                && moved.equals(extras.getJSONObject(AutonomyBuilder.LOCOMOTIVE).optString("name")), moved + ", moved on"
+                + " the running railway to " + toName + " before the import, is not there in " + inUse + " after it - the"
+                + " reload put it back where it set off (RLD2-C3)");
+
+            String notPlaced = before(I18n.t("autosetup.ui.infoLegacyNotPlacedInUse"), "{0}");
+
+            assertTrue(said.stream().anyMatch(message -> message.contains(notPlaced)), "the import did not say why it"
+                + " placed none of the file's trains: " + said);
+        }
+        finally
+        {
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * MT-298 as its steps run it: the imported configuration chosen, a maximum changed by hand in it, and the same file
+     * imported again into it by name - which fills gaps and keeps the hand change (RLD3-C1).
+     *
+     * MUTATION: refuse the configuration in use, or overwrite what is there, and this fails.
+     *
+     * @throws Exception from the window or the import
+     */
+    @Test
+    public void testASecondImportIntoTheConfigurationInUseKeepsAHandMadeChange() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        assertTrue(MT298.isFile(), "precondition: the MT-298 file is not in docs/manual-tests/files");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            importFromTheMenu(ui[0], MT298, "MT-298 run");
+
+            // CHOSEN, as Autonomy > Configuration chooses it: loaded and running.
+            SwingUtilities.invokeAndWait(() -> ui[0].getAutonomyViewerPanel().load("MT-298 run", false));
+
+            AutonomySession session = ui[0].getAutonomySession();
+
+            assertEquals(ui[0].getActiveDiagramConfiguration(), "MT-298 run", "precondition: the imported configuration"
+                + " could not be chosen");
+
+            TileKey named = null;
+
+            for (TileKey square : session.getReducer().getPoints().keySet())
+            {
+                String station = session.getStore().getPointName(square);
+
+                if (station != null && !station.trim().isEmpty() && session.getStore().isStation(square)
+                    && maxOf(session, square) > 0)
+                {
+                    named = square;
+
+                    break;
+                }
+            }
+
+            assertNotNull(named, "precondition: the import gave no named station a maximum on this diagram");
+
+            // THE HAND CHANGE, as the editor makes it: written, then the railway rebuilt from it.
+            final TileKey changed = named;
+            final int corrected = maxOf(session, changed) + 3;
+            final AutonomySession editing = session;
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                editing.setPointProperty(changed, "maxTrainLength", corrected);
+                ui[0].getAutonomyViewerPanel().load("MT-298 run", false, false);
+            });
+
+            List<String> said = importFromTheMenu(ui[0], MT298, "MT-298 run");
+
+            session = ui[0].getAutonomySession();
+
+            assertNotNull(placedIn(said), "the second import into the configuration in use did not happen: " + said);
+
+            assertEquals(maxOf(session, changed), corrected, "the second import into the configuration in use replaced"
+                + " the maximum set by hand between the two (MT-298): " + said);
         }
         finally
         {

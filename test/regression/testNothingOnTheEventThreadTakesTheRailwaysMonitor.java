@@ -244,6 +244,10 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             + " prepareAutonomyReload has already stopped everything that was moving, so nothing is"
             + " holding the monitor by the time this runs");
 
+        ALLOWED.put("AutonomyViewerPanel.java#importLegacyGraph",
+            "ON THE EVENT THREAD: an old file imported into the configuration in use captures the running layout into"
+            + " it first, only while isAutonomyBusy() is false, so nothing is holding the monitor (RLU2-C2, RLD3-C1)");
+
         ALLOWED.put("GraphLocAssign.java#commitChanges",
             "ON THE EVENT THREAD (D3-C4): placing a train is a change of state the operator has just"
             + " confirmed in a modal dialog, and the repaint that follows must not run before it");

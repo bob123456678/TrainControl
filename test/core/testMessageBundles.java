@@ -903,8 +903,11 @@ public class testMessageBundles
      * by name: Routes > Import's own two messages and every setup check's sentence are asked for that way, and the other
      * three did not see them (RLU-C8).
      *
-     * MUTATION: take a form's key out of any bundle, or give any asked-for key an empty value in one language, and this
-     * fails naming it.
+     * A key asked for by any other road - a ternary, a switch, a helper, the log - is not seen here; its value is held by
+     * `testEveryKeyHasAValueInEveryLanguage`, which asks every key of the bundle (RLU2-C3, RLU3-C6).
+     *
+     * MUTATION: take a form's key out of any bundle, or give a key one of the four roads sees an empty value in one
+     * language, and this fails naming it.
      *
      * @throws Exception reading the sources and bundles
      */

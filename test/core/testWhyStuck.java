@@ -707,6 +707,12 @@ public class testWhyStuck
             org.traincontrol.util.I18n.t("autosetup.ui.menuAutoDestination"),
             org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")), "a train on a square where neither copy"
             + " reaches a station autonomy may choose is told to turn round, which would not help (OB-299)");
+
+        // AND IT DOES NOT SEND THE OPERATOR TO OPEN A CLOSED SIDE (RLU3-C1): where every train turns round at the station
+        // beyond, that raises the terminus error and refuses the whole setup (GUI4-C3), and this sentence cannot know.
+        assertFalse(stranded.explainCannotStart(loc).contains(org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")),
+            "the either-way sentence tells the operator to open a side under Trains May Arrive..., which at a station every"
+            + " train turns round at makes the setup refuse to load (RLU3-C1): " + stranded.explainCannotStart(loc));
     }
 
     /**
@@ -732,11 +738,11 @@ public class testWhyStuck
 
         layout.moveLocomotive(loc.getName(), "WS11 Platform (eastbound)", false);
 
+        // NOT "WHICHEVER WAY" (RLU3-C2): the other way does reach a station; autonomy only starts no train there.
         assertEquals(layout.explainCannotStart(loc), org.traincontrol.util.I18n.f(
-            "autolayout.why.startReachesNoStationEitherWay", "WS11 Platform",
-            org.traincontrol.util.I18n.t("autosetup.ui.menuAutoDestination"),
-            org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")), "a train on the copy of WS11 Platform that"
-            + " reaches no station is told to turn round, onto a copy that is switched off (RLA-C5)");
+            "autolayout.why.startReachesNoStationOtherWayRefused", "WS11 Platform"), "a train on the copy of WS11 Platform"
+            + " that reaches no station is told to turn round onto a copy that is switched off (RLA-C5), or told no station"
+            + " can be reached whichever way it faces, where the other way reaches one (RLU3-C2)");
 
         // CONTROL: switched on, the other copy is one to turn round onto.
         layout.getPoint("WS11 Platform (westbound)").setActive(true);
@@ -769,11 +775,13 @@ public class testWhyStuck
         assertTrue(layout.isABarredCopyOfAStation(layout.getPoint("WS12 Platform (westbound)")), "precondition: the"
             + " westbound copy is not a copy of the station trains may not arrive at");
 
+        // NOT "WHICHEVER WAY" (RLU3-C2): the other way reaches WS12 Far; trains may only not arrive facing it.  Its
+        // remedy is that copy's own - open that side, then turn round - where not every train turns there (GUI4-C3).
         assertEquals(layout.explainCannotStart(loc), org.traincontrol.util.I18n.f(
-            "autolayout.why.startReachesNoStationEitherWay", "WS12 Platform",
-            org.traincontrol.util.I18n.t("autosetup.ui.menuAutoDestination"),
+            "autolayout.why.startReachesNoStationOtherWayBarred", "WS12 Platform",
             org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")), "a train on the copy of WS12 Platform that"
-            + " reaches no station is told to turn round onto a copy trains may not arrive at (RLA-C5)");
+            + " reaches no station is told to turn round onto a copy trains may not arrive at (RLA-C5), or told no station"
+            + " can be reached whichever way it faces, where the other way reaches WS12 Far (RLU3-C2)");
     }
 
     /**

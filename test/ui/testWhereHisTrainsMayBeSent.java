@@ -228,6 +228,14 @@ public class testWhereHisTrainsMayBeSent
 
         assertTrue(messages > 10, "precondition: the two menus show only " + messages + " messages");
 
+        // AND THE SETUP'S TIDY REPORT (IND9X-C4, RLU3-C3): the viewer panel is built and never shown, so a report
+        // parented on it belonged to the hidden frame too.
+        String panel = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/AutonomyViewerPanel.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        assertTrue(panel.contains("AutonomyReport.show(ui, session().save())"), "the setup's tidy report is not parented on"
+            + " the main window (IND9X-C4, RLU3-C3)");
+
         assertTrue(onAMenu.isEmpty(), "a message on a right-click menu belongs to the menu, which has left its window by"
             + " the time it shows - with Window Always on Top it opens beneath the window it holds: " + onAMenu);
     }

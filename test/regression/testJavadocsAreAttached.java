@@ -55,6 +55,8 @@ public class testJavadocsAreAttached
     // AutonomyCompanionStore.moveTiles - reattached to the members they were written for.
     // 88 -> 87 on 2026-09-24: TDY4-C1, AutonomyBuilder's placementCopy javadoc - left above homeCopy's when that
     // was inserted - moved onto placementCopy.
+    // 87 -> 86 on 2026-09-25: RLU-C6, AutonomyViewerPanel's stray "Debug builds only" javadoc - left stacked on
+    // activateTheConfigurationNamed's when that method was inserted - deleted (RLU2-C1, RLU3-C6).
     private static final int ALLOWED = 86;
 
     /**
