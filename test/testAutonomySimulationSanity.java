@@ -58,8 +58,14 @@ public class testAutonomySimulationSanity
     private static final long RUN_MS = 120_000;
     private static final long POLL_MS = 500;
 
-    // Minimum activity a genuine one-minute run must produce.
-    private static final int MIN_TOTAL_ACTUATIONS = 20;
+    // Minimum activity a genuine run must produce.
+    //
+    // Ten actuations, not twenty.  On an idle machine the run gives 15 to 21 actuations in its two minutes on
+    // 2.8.1 and 2.8.2 alike (four runs, over 45 to 50 station changes each), so a minimum of 20 sat inside the
+    // ordinary spread and failed about half the runs with nothing wrong (19 and 17 on 2026-09-25).  Ten still
+    // tells a run that switched points from one that did not; the station changes per locomotive below are
+    // the steadier sign that trains really moved.
+    private static final int MIN_TOTAL_ACTUATIONS = 10;
     private static final int MIN_STATION_CHANGES_PER_LOC = 3;
 
     @BeforeClass
