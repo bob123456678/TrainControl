@@ -56,6 +56,21 @@ public class testReturnHomeShowsItIsWorking
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
 
         ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+
+        // AND THE STARTUP LOAD OF HIS CONFIGURATION, which this test is about - as openTheWindow waits for it in the
+        // import-door claims.  It asked hasAutoLayout the moment the window was up, and passed only because the
+        // autonomy panel's list built an empty Layout as it was made; since RLV7-C2 nothing does, and it skipped.
+        final java.util.concurrent.CountDownLatch settled = new java.util.concurrent.CountDownLatch(1);
+
+        ui.whenTilesSettled(() -> settled.countDown());
+
+        settled.await(30, java.util.concurrent.TimeUnit.SECONDS);
+
+        long until = System.currentTimeMillis() + 30000;
+
+        while (!model.hasAutoLayout() && System.currentTimeMillis() < until) Thread.sleep(100);
+
+        for (int turn = 0; turn < 4; turn++) SwingUtilities.invokeAndWait(() -> { });
     }
 
     @AfterClass(alwaysRun = true)
@@ -88,7 +103,8 @@ public class testReturnHomeShowsItIsWorking
     @Test
     public void testTheButtonTurnsWhileThePlanIsWorkedOut() throws Exception
     {
-        if (!model.hasAutoLayout()) throw new SkipException("the frozen railway built no autonomy layout");
+        assertTrue(model.hasAutoLayout() && model.getAutoLayout().isValid(), "precondition: his railway, frozen, did"
+            + " not load its autonomy configuration at start-up");
 
         final Layout layout = model.getAutoLayout();
 
