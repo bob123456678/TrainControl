@@ -133,7 +133,12 @@ public class testCommandTableMarks
 
         try
         {
-            final String alone = I18n.t("route.ui.frameStopStandsAlone");
+            final String alone = I18n.f("route.ui.frameStopStandsAlone", I18n.t("route.kind.STOP"),
+                I18n.t("route.kind.ROUTE"));
+
+            // IN THE EDITOR'S OWN WORDS (RLA5-C6, RLU5-C3): the message names the rows as the editor labels them
+            assertTrue(alone.contains(I18n.t("route.kind.STOP")) && alone.contains(I18n.t("route.kind.ROUTE")),
+                "the editor's refusal does not name its rows as the editor labels them: " + alone);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
                 frame.appendCommand(RouteCommand.RouteCommandStop().toLine(null).trim()));

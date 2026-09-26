@@ -346,6 +346,77 @@ public class testARouteOverATrainAtItsDoors
         }
     }
 
+    /**
+     * A stop reached through a chain of routes still cuts the power (RLA5-A1, RLU5-A1, RLD5-A1).  A route that fires a
+     * split route - one that fires its stop route in the stop's place - reaches the stop two routes down, where a chained
+     * route may otherwise go no further.  A route that is only a stop fires nothing further, so it runs at any depth; and
+     * the route at the top counts as cutting the power, so it is never asked about either.
+     *
+     * MUTATION: hold a stop-only route to the chain's limit, or count only a stop one route down, and this fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testAStopReachedThroughAChainStillCutsThePower() throws Exception
+    {
+        final String stop = "MT-507 chain - the stop";
+        final String split = "MT-507 chain - split";
+        final String top = "MT-507 chain - fires it";
+
+        try
+        {
+            List<RouteCommand> alone = new ArrayList<>();
+
+            alone.add(RouteCommand.RouteCommandStop());
+
+            List<RouteCommand> fires = new ArrayList<>();
+
+            fires.add(RouteCommand.RouteCommandAccessory(SWITCH_B, Accessory.accessoryDecoderType.MM2, true));
+            fires.add(RouteCommand.RouteCommandRoute(stop));
+
+            List<RouteCommand> chain = new ArrayList<>();
+
+            chain.add(RouteCommand.RouteCommandRoute(split));
+
+            assertTrue(model.newRoute(new MarklinRoute(model, stop, 84911, alone, 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null)), "precondition: the stop route was not added");
+
+            assertTrue(model.newRoute(new MarklinRoute(model, split, 84912, fires, 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null)), "precondition: the split route was not added");
+
+            assertTrue(model.newRoute(new MarklinRoute(model, top, 84913, chain, 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null)), "precondition: the chain's top was not added");
+
+            switchAt(SWITCH_B).setSwitched(false);
+
+            model.go();
+
+            assertTrue(model.waitForPowerState(true, POWER_PATIENCE_MS), "precondition: the power has to be ON, or the"
+                + " stop has nothing to turn off");
+
+            model.getRoute(top).execRoute(false);
+
+            assertTrue(model.waitForPowerState(false, POWER_PATIENCE_MS), "a stop two routes down a chain did not cut the"
+                + " power - the chain's limit refused the stop route (RLA5-A1)");
+
+            assertTrue(model.getRoute(top).hasEmergencyStop(), "the route at the top of the chain cuts the power and is not"
+                + " counted as one that does, so it would be asked about");
+        }
+        finally
+        {
+            model.go();
+
+            model.waitForPowerState(true, POWER_PATIENCE_MS);
+
+            switchAt(SWITCH_B).setSwitched(false);
+
+            for (String each : new String[] {top, split, stop})
+            {
+                if (model.getRoute(each) != null) model.deleteRoute(each);
+            }
+        }
+    }
+
     // ---------------------------------------------------------------- the fixture
 
     /** What is done with the route, from inside the dispatch that holds switch A. */

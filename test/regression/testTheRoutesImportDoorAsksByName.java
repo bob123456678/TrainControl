@@ -231,6 +231,78 @@ public class testTheRoutesImportDoorAsksByName
     }
 
     /**
+     * The line naming the routes an import split fits the screen too: no line of the message after the import runs past a
+     * dialog's width (RLU5-C4, as RLU-C3 for the question).  The file carries one route that mixes an emergency stop with
+     * other commands, which the import splits.
+     *
+     * MUTATION: put the split routes' line back unwrapped, and this fails.
+     *
+     * @throws Exception from the window or the import
+     */
+    @Test
+    public void testTheLineNamingTheRoutesItSplitFitsTheScreen() throws Exception
+    {
+        Imported run = importHisRoutes(false, file ->
+        {
+            // ONE ROUTE WITH COMMANDS, COPIED WITH AN EMERGENCY STOP AMONG THEM
+            JSONObject json = new JSONObject(file);
+
+            JSONArray routes = json.getJSONArray("routes");
+
+            for (int i = 0; i < routes.length(); i++)
+            {
+                JSONObject route = routes.getJSONObject(i);
+
+                if (route.optJSONArray("commands") != null && route.getJSONArray("commands").length() > 0)
+                {
+                    JSONObject mixed = new JSONObject(route.toString());
+
+                    mixed.put("name", "RL5 a route that mixes a stop with its other commands");
+                    mixed.put("id", 99977);
+                    mixed.put("auto", false);
+                    mixed.getJSONArray("commands").put(new JSONObject().put("type", "TYPE_STOP")
+                        .put("state", new JSONObject()));
+
+                    routes.put(mixed);
+
+                    break;
+                }
+            }
+
+            return json.toString();
+        });
+
+        String opening = words(I18n.f("route.ui.infoImportSplitStopRoutes", "@@@"));
+
+        opening = opening.substring(0, opening.indexOf("@@@")).trim();
+
+        String told = null;
+
+        for (String message : run.said)
+        {
+            if (words(message).contains(opening)) told = message;
+        }
+
+        assertNotNull(told, "precondition: the import did not name the route it split: " + run.said);
+
+        // THE PARAGRAPH NAMING THEM: the notice above it is one sentence of a known length; the list is what grows
+        String paragraph = null;
+
+        for (String part : told.split("\n\n"))
+        {
+            if (words(part).contains(opening)) paragraph = part;
+        }
+
+        assertNotNull(paragraph, "precondition: no paragraph of the message names the routes it split: " + told);
+
+        for (String line : paragraph.split("\n"))
+        {
+            assertTrue(line.length() <= 100, "a line naming the routes the import split is " + line.length() + " characters"
+                + " long, so the dialog is as wide as that list (RLU5-C4): " + line);
+        }
+    }
+
+    /**
      * The question fits the screen however many routes it names: no line of it runs past a dialog's width (RLU-C3).
      *
      * The names went into the middle of the first line, joined with commas, and a question does not wrap a line - so a

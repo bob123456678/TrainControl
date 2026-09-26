@@ -152,3 +152,4 @@ not fix it. Name the square.
 - `regression.testAThreeWayIsLitOnce`
 - `regression.testANewStraightJoinsTheTrackBesideIt`
 - `regression.testTheImportDoorReadsAnOldFile`
+- `core.testAStopRouteStandsAlone`

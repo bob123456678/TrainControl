@@ -14,6 +14,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
+import org.traincontrol.base.NodeExpression;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
@@ -76,8 +77,9 @@ public class testAStopRouteStandsAlone
     @Test
     public void testAnImportSplitsARouteThatMixesAStop() throws Exception
     {
-        JSONObject file = new JSONObject(new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
-            "test/layouts/live-snapshot/config/gleisbilder/routes.json")), java.nio.charset.StandardCharsets.UTF_8));
+        JSONObject file = new JSONObject(new String(java.nio.file.Files.readAllBytes(new java.io.File(
+            support.Scenario.folderFor("live-snapshot"), "config/gleisbilder/routes.json").toPath()),
+            java.nio.charset.StandardCharsets.UTF_8));
 
         JSONArray routes = file.getJSONArray("routes");
 
@@ -128,16 +130,48 @@ public class testAStopRouteStandsAlone
             List<RouteCommand> mixed = new ArrayList<>();
 
             mixed.add(RouteCommand.RouteCommandAccessory(39, Accessory.accessoryDecoderType.MM2, true));
-            mixed.add(RouteCommand.RouteCommandStop());
+
+            // A STOP WITH A WAIT AFTER IT, which holds back the command after it (RLA5-C4, RLD5-C3)
+            RouteCommand stop = RouteCommand.RouteCommandStop();
+
+            stop.setDelay(700);
+
+            mixed.add(stop);
             mixed.add(RouteCommand.RouteCommandAccessory(40, Accessory.accessoryDecoderType.MM2, false));
 
+            List<RouteCommand> held = new ArrayList<>();
+
+            held.add(RouteCommand.RouteCommandAccessory(12, Accessory.accessoryDecoderType.MM2, false));
+
+            NodeExpression conditions = NodeExpression.fromList(held);
+
             // The door the start-up restores each saved route through
-            assertTrue(model.newRoute(name, 84951, mixed, 48451, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null),
-                "precondition: the route could not be restored");
+            assertTrue(model.newRoute(name, 84951, mixed, 48451, MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR, true,
+                conditions), "precondition: the route could not be restored");
+
+            model.getRoute(name).setLocked(true);
+
+            String conditionsBefore = conditions.toJSON().toString();
 
             call("splitRoutesThatMixAStop");
 
             assertTheSplit(name, I18n.f("route.stopRouteSplitName", name), 48451, true, 1);
+
+            // AND WHAT ELSE IT SAYS IT KEEPS (RLU5-C5): the id its tiles are bound by, the trigger, the conditions, the lock
+            MarklinRoute kept = model.getRoute(name);
+
+            assertEquals(kept.getId(), 84951, "the split changed the route's id, which its tiles are bound by");
+
+            assertEquals(kept.getTriggerType(), MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR, "the split changed the"
+                + " route's trigger");
+
+            assertEquals(kept.getConditions().toJSON().toString(), conditionsBefore, "the split changed the route's"
+                + " conditions");
+
+            assertTrue(kept.isLocked(), "the split unlocked the route");
+
+            assertEquals(kept.getRoute().get(1).getDelay(), 700, "the stop's wait did not move to the command that fires"
+                + " the stop route in its place, so the command after it no longer waits (RLA5-C4)");
 
             assertEquals(model.getRoute(name).getRoute().size(), 3, "the split did not keep the route's other commands");
 
@@ -166,6 +200,46 @@ public class testAStopRouteStandsAlone
                 }
             }
         }
+    }
+
+    /**
+     * The stop route a split makes is numbered as a route made in the editor is - from 1000 up - so a Central Station
+     * sync, which numbers its own routes below, cannot replace it and take the power cut out of the route that fires it
+     * (RLU5-B1, RLA5-C5, RLD5-C2).  Read from a file whose one route is numbered below 1000.
+     *
+     * @throws Exception from the file or the model
+     */
+    @Test
+    public void testTheStopRouteIsNumberedAsAUsersRouteIs() throws Exception
+    {
+        JSONObject file = new JSONObject(new String(java.nio.file.Files.readAllBytes(new java.io.File(
+            support.Scenario.folderFor("live-snapshot"), "config/gleisbilder/routes.json").toPath()),
+            java.nio.charset.StandardCharsets.UTF_8));
+
+        JSONArray routes = file.getJSONArray("routes");
+
+        JSONObject his = null;
+
+        for (int i = 0; i < routes.length(); i++)
+        {
+            if (HIS.equals(routes.getJSONObject(i).optString("name"))) his = routes.getJSONObject(i);
+        }
+
+        assertNotNull(his, "precondition: his routes file has no " + HIS);
+
+        // HIS ROUTE ALONE, NUMBERED LOW
+        his.put("id", 7);
+
+        file.put("routes", new JSONArray().put(his));
+
+        model.importRoutes(file.toString(), false);
+
+        MarklinRoute alone = model.getRoute(I18n.f("route.stopRouteSplitName", HIS));
+
+        assertNotNull(alone, "precondition: " + HIS + " was not split");
+
+        assertTrue(alone.getId() >= 1000, "the split numbered its stop route " + alone.getId() + ", among the numbers"
+            + " a Central Station sync replaces its own routes by (RLU5-B1)");
     }
 
     /**

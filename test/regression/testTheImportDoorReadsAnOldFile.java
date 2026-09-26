@@ -812,6 +812,16 @@ public class testTheImportDoorReadsAnOldFile
             assertTrue(said.stream().anyMatch(message -> message.contains(notPlaced)), "the import did not say why it"
                 + " placed none of the file's trains: " + said);
 
+            // AND A DOOR THAT PUTS ONE DOWN (RLU5-C1): the train chosen in the main window, then "Place <train>" on its
+            // station - the placement dialog lists only trains already standing, and these are not
+            String sentence = I18n.f("autosetup.ui.infoLegacyNotPlacedInUse", "@@@", inUse,
+                I18n.f("layout.ui.menuPlaceLocomotive", String.valueOf((char) 0x2026)));
+
+            final String remedy = sentence.substring(sentence.indexOf("@@@") + 3);
+
+            assertTrue(said.stream().anyMatch(message -> message.contains(remedy)), "the not-placed line does not end"
+                + " with a door that puts one of those trains down (RLU5-C1): " + said);
+
             // WHAT THE IMPORT BROUGHT STAYS: the reload after it does not capture the railway back over it (RLA-C2)
             assertEquals(priorityIn(session, inUse, prioritised), carried[1], "the priority the old file carried into "
                 + inUse + " was captured over by the reload after the import (RLU4-C2, RLA-C2): " + said);
@@ -1067,9 +1077,9 @@ public class testTheImportDoorReadsAnOldFile
 
             session = ui[0].getAutonomySession();
 
-            assertTrue(said.contains(I18n.t("autolayout.errorCannotEditWhileRunning")), "an old file was taken into " + inUse
-                + ", the configuration in use, while autonomy runs - and what it brought was captured over by the reload,"
-                + " or by the next fold (RLU4-C1): " + said);
+            assertTrue(said.contains(I18n.f("autosetup.ui.errorImportIntoConfigurationInUseWhileRunning", inUse)), "an"
+                + " old file was taken into " + inUse + ", the configuration in use, while autonomy runs (RLU4-C1), or"
+                + " refused without saying what to do instead (RLU5-C2, RLA5-C1): " + said);
 
             assertEquals(session.getStore().getConfiguration(inUse).toString(), before, "an import refused changed " + inUse);
 
@@ -1174,6 +1184,112 @@ public class testTheImportDoorReadsAnOldFile
             assertEquals(priorityIn(session, inUse, edited), Integer.valueOf(6), "an edit waiting for its rebuild was"
                 + " folded away by the reload of " + inUse + " after an import into another configuration (RLD4-C3): "
                 + said);
+        }
+        finally
+        {
+            if (ui[0] != null) declined.set(ui[0], false);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * Reloading the configuration running while a setup edit a run declined waits for its rebuild keeps every train where
+     * the run left it, and the edit is then carried (RLA5-B1, RLU5-B2, RLD5-B1).
+     *
+     * RLD4-C3 kept `load` from folding the older running layout over the edit, and `load` then rebuilt the railway from
+     * the setup with each train back where it stood before the run - so choosing the configuration from the Autonomy
+     * menu, ticking a page out of autonomy, or the reload after an import modelled a moved train on the square it had
+     * left, and the square it stood on read free.  It now rebuilds as the editor doors do, carrying the trains across,
+     * and lowers the flag.
+     *
+     * MUTATION: reload without carrying the trains, or leave the flag up, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAReloadWhileAnEditWaitsKeepsWhereTheRunLeftTheTrains() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
+
+        declined.setAccessible(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            AutonomySession session = ui[0].getAutonomySession();
+
+            final String inUse = session.getStore().getActiveConfiguration();
+
+            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+
+            // ONE STANDING TRAIN MOVED ON THE RUNNING RAILWAY, to an empty station, as a run leaves it
+            final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
+
+            org.traincontrol.automation.Point from = null;
+            org.traincontrol.automation.Point to = null;
+
+            for (org.traincontrol.automation.Point point : railway.getPoints())
+            {
+                if (point.getCurrentLocomotive() != null && from == null) from = point;
+            }
+
+            assertNotNull(from, "precondition: no train stands on his railway");
+
+            for (org.traincontrol.automation.Point point : railway.getPoints())
+            {
+                if (to == null && point.isDestination() && point.isActive() && point.getCurrentLocomotive() == null
+                    && !point.isSamePlaceAs(from) && session.getStationIndex().squareOf(point.getName()) != null)
+                {
+                    to = point;
+                }
+            }
+
+            assertNotNull(to, "precondition: no empty station on his railway");
+
+            final String moved = from.getCurrentLocomotive().getName();
+            final String fromName = from.getName();
+            final String toName = to.getName();
+
+            SwingUtilities.invokeAndWait(() -> railway.moveLocomotive(moved, toName, false));
+
+            // THE EDIT A RUN DECLINED: the flag up, as a race-declined edit leaves it
+            declined.set(ui[0], true);
+
+            // CHOSEN FROM THE AUTONOMY MENU
+            SwingUtilities.invokeAndWait(() -> ui[0].getAutonomyViewerPanel().load(inUse, false));
+
+            org.traincontrol.automation.Layout after = ui[0].getModel().getAutoLayout();
+
+            org.traincontrol.automation.Point where = after.getLocomotiveLocation(ui[0].getModel().getLocByName(moved));
+
+            assertNotNull(where, moved + " is off the railway after the reload");
+
+            assertEquals(where.getName(), toName, moved + ", moved by the run to " + toName + ", is back on " + fromName
+                + " after a reload made while an edit waited - the square it stands on reads free (RLA5-B1)");
+
+            assertFalse((Boolean) declined.get(ui[0]), "the reload carried the edit and left the flag up, so every later"
+                + " reload repeats this");
         }
         finally
         {
