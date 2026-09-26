@@ -934,7 +934,9 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
      * emergency stop is not asked about at all, so it has no OK: it fires the ordinary way (Adam, 2026-09-01: *"Emergency
      * stop should never conflict or prompt."*).
      *
-     * MT-508's route has switch A under the train, switch B elsewhere and an emergency stop.  With the stop, the route
+     * MT-508's route has switch A under the train, switch B elsewhere and an emergency stop - since 2026-09-25 a Route
+     * command firing a stop-only route, as a route must now carry a stop (`core.testAStopRouteStandsAlone`).  With the
+     * stop, the route
      * list's question (`askAboutRouteConflict`, over `conflictingAccessoryAndReason`) answers that there is nothing to
      * confirm, and the route runs guarded: the stop and switch B go out, and switch A, held by the train, is skipped.
      * Without the stop the question is asked, and OK - `execRouteOverridingConflicts`, what the route list runs on OK -
@@ -1027,10 +1029,26 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
     /**
      * A train dispatched over switch A, and inside that dispatch a route commanding A and B, with an emergency stop where
      * asked - handed to `probe`.  The power is on before, and put back after.
+     *
+     * The stop as a route must now carry one (Adam, 2026-09-25: *"if a route has emergency stop, it cannot have any
+     * other types of commands"*): a Route command firing a route that is only the stop, added to the route list here.
      */
     private void onARouteOverATrain(WithTheRoute probe, int elsewhere, MarklinAccessory otherSwitch, boolean stop)
         throws Exception
     {
+        final String stopRoute = "MT-508 route - the stop";
+
+        if (stop && model.getRoute(stopRoute) == null)
+        {
+            List<RouteCommand> alone = new ArrayList<>();
+
+            alone.add(RouteCommand.RouteCommandStop());
+
+            assertTrue(model.newRoute(new MarklinRoute(model, stopRoute, 84909, alone, 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null)), "precondition: the stop route could not be"
+                + " added to the route list");
+        }
+
         if (!model.isFeedbackSet(S88)) model.newFeedback(Integer.parseInt(S88), null);
 
         model.setFeedbackState(S88, false);
@@ -1073,7 +1091,7 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
             commands.add(RouteCommand.RouteCommandAccessory(SWITCH_ADDRESS, Accessory.accessoryDecoderType.MM2, true));
             commands.add(RouteCommand.RouteCommandAccessory(elsewhere, Accessory.accessoryDecoderType.MM2, true));
 
-            if (stop) commands.add(RouteCommand.RouteCommandStop());
+            if (stop) commands.add(RouteCommand.RouteCommandRoute(stopRoute));
 
             probe.run(new MarklinRoute(model, "MT-508 route", 84908, commands, 0,
                 MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null), underTheTrain);
@@ -1093,6 +1111,8 @@ public class testARouteDoesNotThrowSwitchesUnderATrain
             model.waitForPowerState(true, POWER_PATIENCE_MS);
 
             otherSwitch.setSwitched(false);
+
+            if (model.getRoute(stopRoute) != null) model.deleteRoute(stopRoute);
 
             model.clearAutoLayout();
         }
