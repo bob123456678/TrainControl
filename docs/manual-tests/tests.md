@@ -31,8 +31,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
 | [MT-492](#mt-492) | 2026-09-24 | Return Home finds a plan on a crowded railway | fixed unvalidated | OB-230, AMH-C1 |
 | [MT-505](#mt-505) | 2026-09-24 | A guard signal that no way into its station passes is noticed | fixed unvalidated | AUT-C2, MT-493 |
-| [MT-507](#mt-507) | 2026-09-24 | Cancel on a route that would switch track under a train cancels all of it, from either door | fixed unvalidated | MT-247 |
-| [MT-508](#mt-508) | 2026-09-24 | OK on a route that would switch track under a train fires all of it | fixed unvalidated | MT-247 |
 | [MT-533](#mt-533) | 2026-09-24 | The train-length prompt takes typing without a click | fixed unvalidated | MT-474 |
 | [MT-548](#mt-548) | 2026-09-24 | On a Central Station layout the Autonomy menu opens, and only the download and Documentation can be chosen | fixed unvalidated | OB-254, OB-093, MT-544 |
 | [MT-566](#mt-566) | 2026-09-24 | The locomotive train-length walk is never greyed, and counts | fixed unvalidated | MT-533 |
@@ -40,8 +38,8 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-569](#mt-569) | 2026-09-24 | The guard items say what each guard does | fixed unvalidated | OB-293 |
 | [MT-571](#mt-571) | 2026-09-24 | A train is not sent round a loop into its own tail | fixed unvalidated | OB-294 |
 
-Everything else - 574 of 586 - needs nothing from you unless the area changes again:
-453 **fixed validated** and 121 **superseded**.
+Everything else - 576 of 586 - needs nothing from you unless the area changes again:
+453 **fixed validated** and 123 **superseded**.
 
 ---
 
@@ -26118,7 +26116,7 @@ autonomy editor."*
 
 ### MT-507 - 2026-09-24 - Cancel on a route that would switch track under a train cancels all of it, from either door
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-247
 
 **Written:** 2026-09-24
@@ -26144,13 +26142,17 @@ autonomy editor."*
 
 **Back on your list** (2026-09-25, RLD-C6 of the 3.0.0 release review): an entry stays yours wherever its superseding is in doubt, and this one is - the steps name a route with an emergency stop in it, and such a route is never asked about (your rule of 2026-09-01), so the test asserted what the code does for it instead of the Expected - a decision the comment made for you.  Run it as written and say which you want for a route with a stop in it: never asked, as now, or asked like any other.  The test named above still runs in every battery; your run is the verdict.
 
+**Claude, 2026-09-26.**
+
+**Superseded by an automated test** (2026-09-26, on your answer of 2026-09-25: *"routes with an emergency stop should still fire"*, and *"if a route has emergency stop, it cannot have any other types of commands.  Reject it from being created or imported as such."*).  The entry's route - switches A and B and an emergency stop - can no longer be one route: a route with a stop has no other commands, and one saved or imported with both is split into a route that throws A and B and then fires a route that is only the stop.  `ui.testARouteOverATrainAtItsDoors.testCancelAtEitherDoorRunsNothing` builds it that way and fires it from the route list and from its tile with a train on switch A: neither door asks, A is left alone, B is thrown and the power goes off.  The same route without the stop is asked about at both doors, and Cancel runs none of it.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
+
 ---
 
 <a id="mt-508"></a>
 
 ### MT-508 - 2026-09-24 - OK on a route that would switch track under a train fires all of it
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-247
 
 **Written:** 2026-09-24
@@ -26173,6 +26175,10 @@ autonomy editor."*
 **Claude, 2026-09-25.**
 
 **Back on your list** (2026-09-25, RLD-C6 of the 3.0.0 release review): an entry stays yours wherever its superseding is in doubt, and this one is - the steps name a route with an emergency stop in it, and such a route is never asked about (your rule of 2026-09-01), so the test asserted what the code does for it instead of the Expected - a decision the comment made for you; and on 2026-09-06 you answered MT-247, the same shape, *"OK should fire everything"*.  Run it as written and say which you want for a route with a stop in it.  The test named above still runs in every battery; your run is the verdict.
+
+**Claude, 2026-09-26.**
+
+**Superseded by an automated test** (2026-09-26, on your answer of 2026-09-25: *"routes with an emergency stop should still fire"*, and *"if a route has emergency stop, it cannot have any other types of commands.  Reject it from being created or imported as such."*).  With the stop, the entry's route - now split into a route that throws A and B and then fires a stop-only route - is not asked about, so there is no OK to press: `regression.testARouteDoesNotThrowSwitchesUnderATrain.testOKFiresEveryCommandOfTheRoute` fires it and finds A left under the train, B thrown and the power off.  Without the stop it is asked about, and OK throws both A and B, as the entry expects.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
 
 ---
 
