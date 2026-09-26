@@ -461,20 +461,26 @@ Tab icons provided by Freepik.
 
 * v2.8.2 [9/25/2026]
     - Autonomy Bug Fixes
-        - Fixed: renaming a locomotive that was standing at a station took it off that station, so autonomy could send another train there.
-        - Fixed: clearing a station’s priority made autonomy stop sending trains out, and stopped the graph from being saved.
-        - Fixed: a running train could miss its stop sensor and drive through its station while another train’s route was being set.
-        - Fixed: Return Home gave up and stopped every train when one train was standing somewhere that is not a station, or had no speed set.
-        - Fixed: double-clicking Start could start every train twice.
-        - Fixed: one timetable entry that could no longer be loaded, for example after its locomotive was deleted, wiped out the whole timetable.
+        - Fixed bug where renaming a locomotive, or one of the locomotives in a multi-unit, took the train off the station it was standing at, so autonomy could send another train there
+        - Giving a locomotive in a multi-unit the address of a train standing on the graph now takes that train off the graph, as placing the multi-unit does.  Previously autonomy could run it as a train of its own while the multi-unit’s commands also moved it
+        - Clearing a station’s priority no longer stops autonomy from sending trains out, or the graph from being saved
+        - Fixed bug where a running train could miss its stop sensor and drive through its station while another train’s route was being set
+        - Return Home no longer starts and then stops every train when one of them has no speed set or is not at a station.  A train with no speed is now skipped and the others still go home, and a train that is not at a station is named before anything moves
+        - Double-clicking Start no longer starts every train twice
+        - One timetable entry that can no longer be loaded, such as after its locomotive was deleted, no longer wipes out the whole timetable
+        - If a train’s trip fails part way, autonomy now stops itself and says why.  Until the graph is validated again no train is sent, and no locomotive can be placed on the graph or taken off it, though a train’s settings, such as its departure function, can still be changed.  Previously the other trains carried on, and the failed train could later be sent off from the wrong place
+        - Validating again, or closing TrainControl, then keeps the trains where the run left them, and the failed train at the last place it is known to have reached.  If it is not standing there, move it on the graph before starting autonomy again
+        - Messages from the track diagram’s right-click autonomy menu, such as asking for the track power to be turned on, no longer open behind the main window when Window Always on Top is ticked
     - Route Bug Fixes
-        - Fixed: editing a route, or switching it on or off, removed it from the routes autonomy is set to activate.
+        - Fixed bug where editing a route, or switching it on or off, removed it from the routes autonomy is set to activate
+        - Importing routes no longer garbles accented letters in route and locomotive names, which stopped a route’s commands for such a locomotive from working
+        - Routes and autonomy files exported by TrainControl 2.7.3 or earlier also import with their accented letters intact
     - Locomotive Bug Fixes
-        - Fixed: if the locomotive list or the keyboard pages could not be read when TrainControl started, they were saved over as empty when it closed.  A copy of the unreadable file is now kept in the tc_backup folder.
-        - Fixed: page names were lost when going back to 2.8 after using TrainControl 3.0 with fewer than ten pages.
+        - If the locomotive list or the keyboard pages cannot be read when TrainControl starts, a copy of the unreadable file is now kept in the tc_backup folder before it is saved over.  Previously it was saved over as empty when TrainControl closed
+        - Page names are no longer lost when going back to 2.8 after using TrainControl 3.0 with fewer than ten pages
     - Central Station Bug Fixes
-        - Fixed: after a short network drop, TrainControl kept saying the connection was lost until it was restarted, and autonomy could keep turning the track power off.
-        - Fixed: finding the Central Station automatically sometimes missed it when it was slow to answer.
+        - After a short network drop, TrainControl no longer keeps reporting the connection as lost until it is restarted, and autonomy no longer keeps turning the track power off because of it
+        - Finding the Central Station automatically no longer fails when it answers slowly, or when one reply on the network is lost
 
 * v2.8.1 [8/17/2026]
     - Autonomy Bug Fixes
