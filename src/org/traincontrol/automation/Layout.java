@@ -83,7 +83,8 @@ public class Layout
 
     // For each of those, the last point it is known to have reached when its path failed: its last
     // milestone, or its start when it reached none.  Recorded then because the milestones are cleared
-    // with it (MRV2-B3).  Guarded by failedPaths.
+    // with it (MRV2-B3), and replaced by the station the operator puts it on by hand (moveLocomotive,
+    // MRV2-C1).  Guarded by failedPaths.
     private final Map<Locomotive, Point> failedAt = new HashMap<>();
 
     // Maximum number of seconds another locomotive should yield for to the inactive locomotive
@@ -3921,6 +3922,15 @@ public class Layout
                         
             // Set new location
             target.setLocomotive(l);
+
+            // A train whose path failed part way is kept, when the graph is next kept, at the last point it
+            // is known to have reached - and a place the operator puts it by hand is the latest thing known.
+            // Without this, putting it back before validating was discarded, or, when the move had taken it
+            // off the point its failure recorded, kept it on two points, which does not load (MRV2-C1).
+            synchronized (this.failedPaths)
+            {
+                if (this.failedAt.containsKey(l)) this.failedAt.put(l, target);
+            }
 
             // A locomotive placed by hand claims this station if it has no home and the station is
             // free of claims.  Placing an already-homed locomotive somewhere else does not re-home it.
