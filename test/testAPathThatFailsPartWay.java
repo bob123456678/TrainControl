@@ -29,6 +29,7 @@ import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
@@ -928,9 +929,381 @@ public class testAPathThatFailsPartWay
             "Execute Timetable, on a layout a failed path has stopped, did not say so up front (MRV1-B1)");
     }
 
+    /**
+     * Remove from Point, on the station a failed train's departure failed at, takes it off the graph that is
+     * kept (MRV3-B1).
+     *
+     * The graph kept writes a failed train on the point its failure recorded, and removing it there left it
+     * recorded on the rest of its locked path: after a two-stretch trip that is two points, a graph that
+     * does not load - and the exit save wrote it, so autonomy.json failed at every start.  A train the
+     * operator takes off comes off every point.
+     */
+    @Test(timeOut = 120000)
+    public void testRemovingAFailedTrainTakesItOffTheGraph() throws Exception
+    {
+        Layout layout = aDepartureThatFails("RM", 8730);
+
+        assertTrue(layout.moveLocomotive(null, "RM S3", false), "precondition: Remove from Point was refused");
+
+        assertTakenOff(layout, "Remove from Point");
+    }
+
+    /**
+     * Clear all locomotives takes a failed train off the graph that is kept (MRV3-B1).
+     *
+     * The door takes each train off the station getLocomotiveLocation finds it at - for a failed train, any
+     * one of the points of its locked path - and the train stayed recorded on the others.  Here the door's
+     * own loop, after its question.
+     */
+    @Test(timeOut = 120000)
+    public void testClearingAllLocomotivesTakesAFailedTrainOff() throws Exception
+    {
+        Layout layout = aDepartureThatFails("CL", 8750);
+
+        for (Locomotive l : new Locomotive[]{ model.getLocByName(FAILING), model.getLocByName(OTHER) })
+        {
+            Point at = layout.getLocomotiveLocation(l);
+
+            if (at != null && !at.isReversing() && at.isDestination())
+            {
+                layout.moveLocomotive(null, at.getName(), false);
+            }
+        }
+
+        assertTakenOff(layout, "Clear all locomotives");
+    }
+
+    /**
+     * Another train placed on the station a failed train's departure failed at takes the failed train off the
+     * graph that is kept (MRV3-B1).
+     *
+     * The placement replaced the failed train on that one point, and it stayed recorded on the rest of its
+     * locked path: a graph that does not load.
+     */
+    @Test(timeOut = 120000)
+    public void testAnotherTrainPlacedOverAFailedTrainTakesItOff() throws Exception
+    {
+        Layout layout = aDepartureThatFails("PO", 8770);
+
+        assertTrue(layout.moveLocomotive(OTHER, "PO S3", false), "precondition: the other train could not be placed");
+
+        Layout reloaded = assertTakenOff(layout, "another train placed over it");
+
+        assertEquals(where(reloaded, model.getLocByName(OTHER)), Collections.singletonList("PO S3"),
+            "the train placed over the failed one was not kept where it was put");
+    }
+
+    /**
+     * A failed train is kept at the last point whose sensor it has tripped - here its start - and not at a
+     * point with no sensor it was only passing into (MRV3-B2).
+     *
+     * A point with no sensor is passed without waiting, so the loop reaches it - and it became a milestone -
+     * the moment the train sets off.  The failure's arrival function threw a millisecond after the start, and
+     * the train was kept at that point, ahead of itself, with the station it was still standing at reading
+     * free.  NS J has no sensor, as the sample graph's "Departure" has none.
+     */
+    @Test(timeOut = 120000)
+    public void testAFailureJustPastAPointWithNoSensorKeepsTheTrainAtItsStart() throws Exception
+    {
+        quietCallbacks();
+
+        MarklinLocomotive failing = model.getLocByName(FAILING);
+        MarklinLocomotive other = model.getLocByName(OTHER);
+
+        Layout layout = new Layout(model);
+
+        point(layout, "NS S1", true, 8791);
+        point(layout, "NS J", false, null);
+        point(layout, "NS S2", true, 8792);
+        point(layout, "NS S7", true, 8793);
+
+        layout.createEdge("NS S1", "NS J");
+        layout.createEdge("NS J", "NS S2");
+        layout.createEdge("NS S7", "NS S1");
+        layout.setDefaultLocSpeed(30);
+
+        layout.getPoint("NS S1").setLocomotive(failing);
+        layout.getPoint("NS S7").setLocomotive(other);
+        layout.setSimulate(true);
+
+        failTrip(layout, trip(layout, "NS S1", "NS J", "NS S2"), failing, Layout.CB_PRE_ARRIVAL);
+
+        Layout reloaded = Layout.fromJSON(graphTheWindowKeeps(layout), model);
+
+        assertTrue(reloaded.isValid(), "precondition: the graph kept does not load: " + Layout.getLastError());
+
+        assertEquals(where(reloaded, failing), Collections.singletonList("NS S1"),
+            "the failed train was not kept at its start, the last point whose sensor it has tripped - a point with no "
+            + "sensor is reached the moment it sets off, and says nothing about where it is (MRV3-B2)");
+
+        assertFalse(reloaded.isPathClear(Collections.singletonList(reloaded.getEdge("NS S7", "NS S1")), other, false),
+            "after the reload another train can be sent into NS S1, which the failed train had only just left (MRV3-B2)");
+    }
+
+    /**
+     * A train still under way, just past a point with no sensor, is kept at its start when the graph is kept -
+     * as it is after Validate stops it - and not at that point (MRV3-B2).
+     *
+     * LATE sets off UW S5 - J2 (no sensor) - Q - S6 and waits for Q's sensor; simulation is off, so it waits
+     * for as long as the test likes.  Its milestones are S5 and J2, and it was kept at J2, with S5 reading free.
+     */
+    @Test(timeOut = 120000)
+    public void testATrainUnderWayJustPastAPointWithNoSensorIsKeptAtItsStart() throws Exception
+    {
+        quietCallbacks();
+
+        MarklinLocomotive failing = model.getLocByName(FAILING);
+        MarklinLocomotive other = model.getLocByName(OTHER);
+        MarklinLocomotive late = model.getLocByName(LATE);
+
+        Layout layout = new Layout(model);
+
+        point(layout, "UW S3", true, 8811);
+        point(layout, "UW S4", true, 8812);
+        point(layout, "UW S5", true, 8813);
+        point(layout, "UW J2", false, null);
+        point(layout, "UW Q", false, 8814);
+        point(layout, "UW S6", true, 8815);
+        point(layout, "UW S7", true, 8816);
+
+        layout.createEdge("UW S3", "UW S4");
+        layout.createEdge("UW S5", "UW J2");
+        layout.createEdge("UW J2", "UW Q");
+        layout.createEdge("UW Q", "UW S6");
+        layout.createEdge("UW S7", "UW S5");
+        layout.setDefaultLocSpeed(30);
+
+        layout.getPoint("UW S3").setLocomotive(failing);
+        layout.getPoint("UW S5").setLocomotive(late);
+        layout.getPoint("UW S7").setLocomotive(other);
+
+        final String q = layout.getPoint("UW Q").getS88();
+
+        Thread under = new Thread(() ->
+        {
+            try
+            {
+                layout.executePath(trip(layout, "UW S5", "UW J2", "UW Q", "UW S6"), late, 30, null);
+            }
+            catch (RuntimeException ended)
+            {
+                // Not what is asserted
+            }
+        });
+
+        Layout reloaded;
+
+        try
+        {
+            under.start();
+
+            long deadline = System.currentTimeMillis() + 10000;
+
+            while (System.currentTimeMillis() < deadline
+                && (layout.getReachedMilestones(late) == null || layout.getReachedMilestones(late).size() < 2))
+            {
+                Thread.sleep(20);
+            }
+
+            Thread.sleep(300);
+
+            assertEquals(layout.getReachedMilestones(late).size(), 2,
+                "precondition: " + LATE + " is not waiting for Q's sensor just past J2: " + layout.getReachedMilestones(late));
+
+            failTrip(layout, trip(layout, "UW S3", "UW S4"), failing, Layout.CB_ROUTE_START);
+
+            reloaded = Layout.fromJSON(graphTheWindowKeeps(layout), model);
+        }
+        finally
+        {
+            // The reload retired LATE's layout, so it stops at Q's milestone once Q is reached
+            model.setFeedbackState(q, true);
+            under.join(15000);
+            model.setFeedbackState(q, false);
+        }
+
+        assertTrue(reloaded.isValid(), "precondition: the graph kept does not load: " + Layout.getLastError());
+
+        assertEquals(where(reloaded, late), Collections.singletonList("UW S5"),
+            "a train under way just past a point with no sensor was not kept at its start, the last point whose sensor "
+            + "it has tripped (MRV3-B2)");
+
+        assertFalse(reloaded.isPathClear(Collections.singletonList(reloaded.getEdge("UW S7", "UW S5")), other, false),
+            "after the reload another train can be sent into UW S5, which the train under way had only just left "
+            + "(MRV3-B2)");
+    }
+
+    /**
+     * On a non-atomic route a failed train is kept on a point that still records it, when the point whose
+     * sensor it last tripped has already been released behind it (MRV3-B2).
+     *
+     * A non-atomic route releases the track behind a train as it goes, and a run of points with no sensor is
+     * passed without waiting: past NA A, J1 and J2 (neither has a sensor) release NA A before the train is
+     * anywhere near them.  Kept at A, it would be written wherever it is still recorded - three points, a
+     * graph that does not load.  It is kept at the earliest point that still records it.
+     */
+    @Test(timeOut = 120000)
+    public void testANonAtomicTripPastTwoPointsWithNoSensorKeepsAGraphThatLoads() throws Exception
+    {
+        quietCallbacks();
+
+        MarklinLocomotive failing = model.getLocByName(FAILING);
+        Integer length = failing.getTrainLength();
+
+        Layout layout = new Layout(model);
+
+        point(layout, "NA S1", true, 8831);
+        point(layout, "NA A", true, 8832);
+        point(layout, "NA J1", false, null);
+        point(layout, "NA J2", false, null);
+        point(layout, "NA S2", true, 8833);
+
+        layout.createEdge("NA S1", "NA A");
+        layout.createEdge("NA A", "NA J1");
+        layout.createEdge("NA J1", "NA J2");
+        layout.createEdge("NA J2", "NA S2");
+        layout.setDefaultLocSpeed(30);
+        layout.setAtomicRoutes(false);
+
+        layout.getPoint("NA S1").setLocomotive(failing);
+        layout.setSimulate(true);
+
+        try
+        {
+            // Each stretch released as soon as the train is past it
+            failing.setTrainLength(0);
+
+            failTrip(layout, trip(layout, "NA S1", "NA A", "NA J1", "NA J2", "NA S2"), failing, Layout.CB_PRE_ARRIVAL);
+        }
+        finally
+        {
+            failing.setTrainLength(length);
+        }
+
+        assertNotEquals(layout.getPoint("NA A").getCurrentLocomotive(), failing,
+            "precondition: NA A, the last point whose sensor the train tripped, was not released behind it");
+
+        Layout reloaded = Layout.fromJSON(graphTheWindowKeeps(layout), model);
+
+        assertTrue(reloaded.isValid(), "on a non-atomic route, the graph kept after a failure past two points with no "
+            + "sensor does not load: " + Layout.getLastError() + " (MRV3-B2)");
+
+        assertEquals(where(reloaded, failing), Collections.singletonList("NA J1"),
+            "on a non-atomic route the failed train was not kept at the earliest point that still records it, NA J1 - "
+            + "NA A behind it had been released (MRV3-B2)");
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Fixtures
     // ---------------------------------------------------------------------------------------------
+
+    /**
+     * A point: a station or not, with a sensor of the given number or none.
+     */
+    private static void point(Layout layout, String name, boolean station, Integer sensor) throws Exception
+    {
+        String s88 = null;
+
+        if (sensor != null)
+        {
+            MarklinFeedback feedback = model.newFeedback(sensor, null);
+            model.setFeedbackState(feedback.getName(), false);
+            s88 = feedback.getName();
+        }
+
+        layout.createPoint(name, station, s88);
+    }
+
+    /**
+     * The path through the named points, in order.
+     */
+    private static List<Edge> trip(Layout layout, String... points)
+    {
+        List<Edge> out = new ArrayList<>();
+
+        for (int i = 0; i + 1 < points.length; i++) out.add(layout.getEdge(points[i], points[i + 1]));
+
+        return out;
+    }
+
+    /**
+     * Sends the train on the path with the named callback throwing, and asserts that the path failed part way.
+     */
+    private static void failTrip(Layout layout, List<Edge> path, Locomotive loc, String callback)
+    {
+        loc.setCallback(callback, l ->
+        {
+            throw new IllegalStateException("the " + callback + " function failed");
+        });
+
+        try
+        {
+            boolean sent = layout.executePath(path, loc, 30, null);
+
+            fail("precondition: the path was meant to fail part way, and executePath returned " + sent + " ("
+                + Layout.getLastError() + ")");
+        }
+        catch (IllegalStateException expected)
+        {
+            // As intended
+        }
+        finally
+        {
+            loc.setCallback(callback, l -> { });
+        }
+
+        assertFalse(layout.isValid(), "precondition: the failed path did not stop the layout");
+    }
+
+    /**
+     * FAILING's departure fails at PREFIX S3 on a two-stretch trip, S3 - M - S4, so it is recorded on all three
+     * points and has reached none; OTHER stands at S7, with an edge into S3.
+     */
+    private static Layout aDepartureThatFails(String prefix, int firstSensor) throws Exception
+    {
+        quietCallbacks();
+
+        Layout layout = new Layout(model);
+
+        point(layout, prefix + " S3", true, firstSensor + 3);
+        point(layout, prefix + " M", true, firstSensor + 4);
+        point(layout, prefix + " S4", true, firstSensor + 5);
+        point(layout, prefix + " S7", true, firstSensor + 7);
+
+        layout.createEdge(prefix + " S3", prefix + " M");
+        layout.createEdge(prefix + " M", prefix + " S4");
+        layout.createEdge(prefix + " S7", prefix + " S3");
+        layout.setDefaultLocSpeed(30);
+
+        layout.getPoint(prefix + " S3").setLocomotive(model.getLocByName(FAILING));
+        layout.getPoint(prefix + " S7").setLocomotive(model.getLocByName(OTHER));
+        layout.setSimulate(true);
+
+        failTrip(layout, trip(layout, prefix + " S3", prefix + " M", prefix + " S4"), model.getLocByName(FAILING),
+            Layout.CB_ROUTE_START);
+
+        assertEquals(where(layout, model.getLocByName(FAILING)).size(), 3,
+            "precondition: the failed train is not recorded on the three points of its locked path");
+
+        return layout;
+    }
+
+    /**
+     * Asserts that the graph kept loads, with FAILING on no point: the operator took it off.
+     */
+    private static Layout assertTakenOff(Layout layout, String door) throws Exception
+    {
+        Layout reloaded = Layout.fromJSON(graphTheWindowKeeps(layout), model);
+
+        assertTrue(reloaded.isValid(), "after " + door + " took the failed train off its station, the graph kept does "
+            + "not load - the train was still recorded on the rest of its path: " + Layout.getLastError() + " (MRV3-B1)");
+
+        assertEquals(where(reloaded, model.getLocByName(FAILING)), Collections.emptyList(),
+            "after " + door + " took the failed train off its station, the graph kept puts it back on the graph "
+            + "(MRV3-B1)");
+
+        return reloaded;
+    }
 
     /**
      * Thrown by a stand-in to end a handler at a known point, before it builds anything.
