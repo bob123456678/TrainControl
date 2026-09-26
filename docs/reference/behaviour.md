@@ -2457,8 +2457,9 @@ on the railway running is the railway's to say (OB-183) - the message names the 
 one down.  While autonomy runs it is refused, as Delete is (RLU4-C1): the capture first is not made while trains move,
 and the reload's capture took back what the import had just brought.  And no import folds the running layout into the
 setup while a setup edit a run declined waits for its rebuild - neither the capture first nor the reload (RLD4-C3,
-WKW-B2); a reload of the configuration running then rebuilds as the editor doors do, carrying every train across from
-the running layout, and the edit is carried from then on (RLA5-B1).  Until then a layout that already had configurations took the file's placements, homes and facings into
+WKW-B2); every load then carries each train across from the running layout and lowers the flag once a layout carries
+the edit, and choosing another configuration first carries the one running, which is then folded as any configuration
+left is (RLA5-B1, RLV6-B1).  Before the import went into the configuration named, a layout that already had configurations took the file's placements, homes and facings into
 the one in use, and the name asked for was thrown away.
 
 Into a configuration that exists, an old file fills what that configuration does not already say (MT-298), and the

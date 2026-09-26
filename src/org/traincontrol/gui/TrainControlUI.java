@@ -2975,6 +2975,49 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Runs a load while a setup edit a run declined waits for its rebuild, carrying where every train stands across it
+     * (RLA5-B1, RLV6-B1).
+     *
+     * The running layout is then the older of the two, so nothing folds it into the setup - but where its trains stand
+     * is still the railway's to say (OB-183).  So they are recorded before the load replaces it and put back after, with
+     * the turns they were due, as `rebuildRunningLayoutFromSetup` does for the editor doors; and once a valid layout
+     * carries the edit the flag comes down (AMS-B1).  Unlike that rebuild this runs whatever `isAutonomyBusy` says: it is
+     * reached after `prepareAutonomyReload` has stopped the run, and a train stopped between sensors keeps the old layout
+     * reading busy until something replaces it.
+     *
+     * @param load the load, which replaces the running layout or leaves it
+     * @return whether a valid layout now carries the edit
+     */
+    boolean carryTheTrainsAcross(Runnable load)
+    {
+        java.util.Map<String, String[]> standing = whereTheTrainsAre();
+
+        java.util.Map<String, String> pendingTurns = takeThePendingTurns();
+
+        final Object runningBefore = this.model == null ? null : this.model.getAutoLayout();
+
+        boolean carried = false;
+
+        try
+        {
+            load.run();
+
+            putTheTrainsBack(standing, null);
+
+            carried = this.model != null && this.model.hasAutoLayout() && this.model.getAutoLayout() != runningBefore
+                && this.model.getAutoLayout().isValid();
+
+            if (carried) setupEditDeclinedDuringRun = false;
+        }
+        finally
+        {
+            putThePendingTurnsBack(pendingTurns);
+        }
+
+        return carried;
+    }
+
+    /**
      * Folds what the running layout knows back into the configuration, and writes it.
      *
      * A run moves locomotives, and where they ended up lives in the running Layout until a fold writes it into the setup:
@@ -3023,9 +3066,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // configuration and removed the edit before the exit could protect it.
         //
         // The same trade as the exit: until a rebuild has carried the edit no door folds the running layout
-        // back, and where the trains stand is carried across rebuilds by `putTheTrainsBack` rather than
-        // written - against authored data nothing else would bring back.  The rebuild that replaces the
-        // running layout clears the flag, because from then on it carries the edit too (AMS-B1).
+        // back, and where the trains stand is carried across rebuilds - and across every load while the flag is
+        // up (`carryTheTrainsAcross`, RLV6-B1) - by `putTheTrainsBack` rather than written, against authored
+        // data nothing else would bring back.  The rebuild or load that replaces the running layout clears the
+        // flag, because from then on it carries the edit too (AMS-B1).
         if (setupEditDeclinedDuringRun) return;
 
         try

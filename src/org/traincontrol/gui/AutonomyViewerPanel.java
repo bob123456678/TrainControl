@@ -766,20 +766,44 @@ public class AutonomyViewerPanel extends JPanel
             return;
         }
 
-        // THE CONFIGURATION RUNNING, RELOADED WHILE A SETUP EDIT A RUN DECLINED WAITS FOR ITS REBUILD (RLA5-B1, RLU5-B2,
-        // RLD5-B1).  Not folded - the running layout is the older of the two (RLD4-C3) - and not rebuilt with every train
-        // back where it stood before the run either, which is what this path did: the square a moved train stood on then
-        // read free.  The rebuild the editor doors use carries each train across from the running layout, and lowers the
-        // flag once the running layout carries the edit.
-        if (captureRunningState && ui.isSetupNewerThanTheRunningLayout() && name != null
-            && name.equals(ui.getActiveDiagramConfiguration()))
+        // WHILE A SETUP EDIT A RUN DECLINED WAITS FOR ITS REBUILD (RLD4-C3, RLA5-B1, RLV6-B1).  The running layout is the
+        // older of the two, so nothing folds it into the setup - but where its trains stand is still the railway's to say
+        // (OB-183), and a load that rebuilt from the setup stood each train the run moved back where it set off, with the
+        // square it really stands on reading free.  So every load carries them across (`carryTheTrainsAcross`), and the
+        // load itself is the one asked for, interactive or not (RLV6-C1), after the question above rather than through a
+        // door that refuses while autonomy reads busy (RLV6-B1, c).
+        if (captureRunningState && ui.isSetupNewerThanTheRunningLayout())
         {
-            ui.rebuildRunningLayoutFromSetup(false, null);
+            final String running = ui.getActiveDiagramConfiguration();
 
-            refresh();
-            return;
+            // The configuration running - or, where the reset after an edit has just forgotten its name, the one it
+            // reloads (RLV6-B1, a)
+            if (running == null || running.equals(name))
+            {
+                ui.carryTheTrainsAcross(() -> loadPrepared(name, interactive, false));
+
+                refresh();
+                return;
+            }
+
+            // Another configuration (RLV6-B1, b): the one running first, with the edit and where the trains stand, so
+            // it is folded below as any configuration left is
+            ui.carryTheTrainsAcross(() -> loadPrepared(running, false, false));
         }
 
+        loadPrepared(name, interactive, captureRunningState);
+    }
+
+    /**
+     * The load itself, once `prepareAutonomyReload` has been asked: the capture where it is wanted, the rebuild, and what
+     * follows it.
+     *
+     * @param name the configuration to load
+     * @param interactive whether the user asked for this, and so should be told when it fails
+     * @param captureRunningState whether to fold the running layout's state back in first
+     */
+    private void loadPrepared(String name, boolean interactive, boolean captureRunningState)
+    {
         // What was set while the outgoing configuration ran - placements, homes, settings - goes back
         // into THAT configuration, by name, before anything is replaced.  By name because store-active
         // and what-is-running can disagree after a refused load, and capturing into the store's idea

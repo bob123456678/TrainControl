@@ -444,28 +444,38 @@ public class MarklinRoute extends Route
      * route runs one lower, a route below 0 is refused - and a route that is only a stop runs at any level, since it fires
      * nothing further (RLA5-A1).
      *
+     * THE PATH, NOT EVERY ROUTE EVER ASKED (RLV6-C2).  A route reached by two paths is asked again by the second, at
+     * that path's own depth: met first too deep to fire its stop, it may fire it from a shorter way in.
+     *
      * @param limit the recursion limit this route would run at
-     * @param seen the routes already asked, so a chain that loops is asked once
+     * @param seen the routes on the path being walked, so a chain that loops ends
      * @return true where running it cuts the power
      */
     private boolean cutsThePowerAt(int limit, java.util.Set<MarklinRoute> seen)
     {
         if (!seen.add(this)) return false;
 
-        if (limit < 0 && !this.isOnlyStops()) return false;
-
-        if (hasAStop(this.route)) return true;
-
-        for (RouteCommand rc : new java.util.ArrayList<>(this.route))
+        try
         {
-            if (rc == null || !rc.isRoute() || this.network == null) continue;
+            if (limit < 0 && !this.isOnlyStops()) return false;
 
-            MarklinRoute fired = this.network.getRoute(rc.getName());
+            if (hasAStop(this.route)) return true;
 
-            if (fired != null && fired != this && fired.cutsThePowerAt(limit - 1, seen)) return true;
+            for (RouteCommand rc : new java.util.ArrayList<>(this.route))
+            {
+                if (rc == null || !rc.isRoute() || this.network == null) continue;
+
+                MarklinRoute fired = this.network.getRoute(rc.getName());
+
+                if (fired != null && fired != this && fired.cutsThePowerAt(limit - 1, seen)) return true;
+            }
+
+            return false;
         }
-
-        return false;
+        finally
+        {
+            seen.remove(this);
+        }
     }
 
     /**

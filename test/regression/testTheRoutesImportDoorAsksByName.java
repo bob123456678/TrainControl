@@ -419,8 +419,10 @@ public class testTheRoutesImportDoorAsksByName
 
                 SwingUtilities.invokeAndWait(() -> ui[0].enableOrDisableRoute(arming, true));
 
-                for (long end = System.currentTimeMillis() + 10000; !model.getRoute(arming).isEnabled()
-                    && System.currentTimeMillis() < end; ) Thread.sleep(50);
+                // THE EDIT DELETES AND RE-ADDS THE ROUTE, so for a moment it is in the list under no name at all: asked
+                // then, getRoute answered null and this threw (the battery of 2026-09-26, another run's JVMs up)
+                for (long end = System.currentTimeMillis() + 10000; (model.getRoute(arming) == null
+                    || !model.getRoute(arming).isEnabled()) && System.currentTimeMillis() < end; ) Thread.sleep(50);
             }
 
             run.routesBefore = new TreeSet<>(model.getRouteList());

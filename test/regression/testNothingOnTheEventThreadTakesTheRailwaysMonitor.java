@@ -239,10 +239,11 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "ON THE EVENT THREAD: the same fallback, for the same reason - findPaths gathers this on"
             + " the worker and stamps it, and this reads the Layout only when nothing gathered");
 
-        ALLOWED.put("AutonomyViewerPanel.java#load",
+        ALLOWED.put("AutonomyViewerPanel.java#loadPrepared",
             "ON THE EVENT THREAD: loading a configuration captures the outgoing one first, and"
             + " prepareAutonomyReload has already stopped everything that was moving, so nothing is"
-            + " holding the monitor by the time this runs");
+            + " holding the monitor by the time this runs - `load` asks it, then hands over to this"
+            + " (split for RLV6-B1, so the carry can run the load without asking twice)");
 
         ALLOWED.put("AutonomyViewerPanel.java#importLegacyGraph",
             "ON THE EVENT THREAD: an old file imported into the configuration in use captures the running layout into"
