@@ -2667,6 +2667,22 @@ public class RouteEditorFrame extends JFrame
             }
         }
 
+        // AN EMERGENCY STOP STANDS ALONE (Adam, 2026-09-25: *"if a route has emergency stop, it cannot have any other types
+        // of commands.  Reject it from being created or imported as such."*).  A route that should set something and then
+        // cut the power fires a stop-only route with a Route command, which the message says.
+        boolean aStop = false;
+        boolean anythingElse = false;
+
+        for (Entry entry : commands.rows)
+        {
+            if (entry.getRow() == null) continue;
+
+            if (entry.getRow().getKind() == CommandRow.Kind.STOP) aStop = true;
+            else anythingElse = true;
+        }
+
+        if (aStop && anythingElse) wrong.add(I18n.t("route.ui.frameStopStandsAlone"));
+
         // A level that disagrees with itself means two things at once, and the editor has been
         // showing which line is the problem in red.  Saving it would be picking one of the two
         // meanings quietly, and the route would then fire at times nobody asked for.

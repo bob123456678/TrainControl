@@ -2189,6 +2189,18 @@ route was then skipped: one turnout under a train silently dropped all the other
 human door and never has its stop skipped (SVN-A4). Suppressing a stop is the one refusal that can
 make things worse, and a route that contains one is a route somebody wants to happen now.
 
+**An emergency stop stands in a route of its own** (Adam, 2026-09-25: *"if a route has emergency stop, it cannot have
+any other types of commands.  Reject it from being created or imported as such.  This will keep a clean separation."*;
+MT-507, MT-508: *"routes with an emergency stop should still fire"*).  The route editor will not save a stop among other
+commands, and the model refuses to make one.  A route that should set something and then cut the power fires a
+stop-only route with a Route command; it counts as carrying the stop, so it is never asked about either, and fired by its
+sensor it passes that on, so the notice that a route cut the power is shown as before.  A route saved or exported before
+the rule is split when it is loaded or imported (Adam, asked about his own *"Auto Emergency Stop Bottom Secondary"*:
+*"Split it automatically"*): it keeps its name, sensor, conditions and whether it is armed, and fires a new route named
+"(its name) (Emergency Stop)" where its stop stood; the log names both, and so does an import's message.
+`core.testAStopRouteStandsAlone`, `ui.testCommandTableMarks.testAnEmergencyStopStandsAlone`,
+`ui.testARouteOverATrainAtItsDoors`.
+
 **Conditions hold back the route's own firing, not a route somebody runs by hand (X8-B6).** A route's
 conditions - "S88 1 is on, switch 3 is turned" - are read in exactly two places: the s88 monitor thread
 that fires the route on its trigger, and the editor's Test button, which reports what that thread would

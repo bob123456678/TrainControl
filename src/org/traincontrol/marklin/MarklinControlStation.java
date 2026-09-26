@@ -249,6 +249,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     // Route database
     private final RemoteDeviceCollection<MarklinRoute, Integer> routeDB;
+
+    // The routes the last import split, with the stop route each now fires (Adam, 2026-09-25) - see importRoutes
+    private volatile List<String[]> routesSplitByLastImport = new ArrayList<>();
     
     // Layouts
     private final RemoteDeviceCollection<LayoutDiagram, String> layoutDB;
@@ -476,6 +479,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 newRoute(c.getName(), c.getAddress(), c.getRoute(), c.getS88(), c.getS88TriggerType(), c.getRouteEnabled(), c.getConditions());
             }
         }
+
+        // AND NO ROUTE MIXES AN EMERGENCY STOP WITH OTHER COMMANDS (Adam, 2026-09-25): one saved before the rule is split,
+        // now that every saved route has its id, and the log names both halves.
+        this.splitRoutesThatMixAStop();
                 
         this.logf("log.restored");
         
@@ -2066,6 +2073,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
             return false;
         }
 
+        // NO EMERGENCY STOP AMONG OTHER COMMANDS (Adam, 2026-09-25), refused before anything is deleted
+        if (MarklinRoute.mixesAStop(route))
+        {
+            this.logf("route.errorStopAmongOtherCommands", name);
+            return false;
+        }
+
         String trimmedNewName = newName.trim();
 
         // Checked before anything is deleted.  This method edits by delete-then-re-add, and newRoute
@@ -2314,6 +2328,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public final boolean newRoute(String name, List<RouteCommand> route, int s88, MarklinRoute.s88Triggers s88Trigger, boolean routeEnabled,
         NodeExpression conditions)
     {
+        // NO EMERGENCY STOP AMONG OTHER COMMANDS (Adam, 2026-09-25) - the route editor says so before it gets here
+        if (MarklinRoute.mixesAStop(route))
+        {
+            this.logf("route.errorStopAmongOtherCommands", name);
+            return false;
+        }
+
         int newId = ROUTE_STARTING_ID;
         
         if (this.routeDB.hasId(newId))
@@ -4256,6 +4277,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public int importRoutes(String json, boolean armAsSaved)
     {
+        this.routesSplitByLastImport = new ArrayList<>();
+
         List<MarklinRoute> routes = this.parseRoutesFromJson(json);
 
         // Asked about before anything is replaced, and answered by the operator (REG2-C7, Adam 2026-09-24: *"save the
@@ -4309,6 +4332,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
             rearmed++;
         }
 
+        // AND NO ROUTE MIXES AN EMERGENCY STOP WITH OTHER COMMANDS (Adam, 2026-09-25): one the file has is split once every
+        // route is in and armed as the file saved it, and the door names it.
+        this.routesSplitByLastImport = this.splitRoutesThatMixAStop();
+
         if (rearmed > 0)
         {
             this.logf(IMPORTED_ROUTES_REARMED, added, rearmed);
@@ -4324,6 +4351,94 @@ public class MarklinControlStation implements ViewListener, ModelListener
             I18n.t("route.ui.menuEnableAutoExecution"));
 
         return added;
+    }
+
+    /**
+     * Splits every route that puts an emergency stop among other commands, which no route may do - Adam, 2026-09-25:
+     * *"if a route has emergency stop, it cannot have any other types of commands.  Reject it from being created or
+     * imported as such."*  Asked about his own route that did, *"Auto Emergency Stop Bottom Secondary"*: *"Split it
+     * automatically."*
+     *
+     * The route keeps its name, sensor, conditions, lock, and whether it is armed; its stop moves to a new route of its own,
+     * named after it, and a Route command firing that one stands where the stop stood.  So it does what it did - sets what
+     * it set, then cuts the power - and is still never asked about (`MarklinRoute.hasEmergencyStop`); fired by its sensor,
+     * it passes that on, so the notice that a route cut the power is still shown.  A second stop in one route is dropped:
+     * one power cut is the same as two.
+     *
+     * Run after the start-up restores the saved routes, and after an import, when every route is in: a new route's id is
+     * free only once the saved ones have theirs.
+     *
+     * @return each route split, with the stop route it now fires
+     */
+    public List<String[]> splitRoutesThatMixAStop()
+    {
+        List<String[]> split = new ArrayList<>();
+
+        for (MarklinRoute r : new ArrayList<>(this.routeDB.getItems()))
+        {
+            if (r == null || !MarklinRoute.mixesAStop(r.getRoute())) continue;
+
+            String name = r.getName();
+
+            String stopName = I18n.f("route.stopRouteSplitName", name);
+
+            for (int n = 2; this.routeDB.hasName(stopName); n++)
+            {
+                stopName = I18n.f("route.stopRouteSplitName", name) + " " + n;
+            }
+
+            List<RouteCommand> stopOnly = new ArrayList<>();
+            List<RouteCommand> rest = new ArrayList<>();
+
+            for (RouteCommand rc : r.getRoute())
+            {
+                if (rc != null && rc.isStop())
+                {
+                    // The first stop moves, with whatever delay it had, and its place fires the stop route
+                    if (stopOnly.isEmpty())
+                    {
+                        stopOnly.add(rc);
+                        rest.add(RouteCommand.RouteCommandRoute(stopName));
+                    }
+                }
+                else
+                {
+                    rest.add(rc);
+                }
+            }
+
+            int stopId = Collections.max(this.routeDB.getItemIds()) + 1;
+
+            if (!this.newRoute(stopName, stopId, stopOnly, 0, r.getTriggerType(), false, null))
+            {
+                this.logf("route.notAdded", stopName);
+                continue;
+            }
+
+            if (!this.editRoute(name, name, rest, r.getS88(), r.getTriggerType(), r.isEnabled(), r.getConditions()))
+            {
+                this.deleteRoute(stopName);
+                this.logf("route.notAdded", name);
+                continue;
+            }
+
+            this.logf("route.stopRouteSplit", name, stopName);
+
+            split.add(new String[] {name, stopName});
+        }
+
+        return split;
+    }
+
+    /**
+     * The routes the last import split, each with the stop route it now fires, for the door to name (Adam, 2026-09-25).
+     *
+     * @return pairs of route and stop route; empty when the last import split nothing
+     */
+    @Override
+    public List<String[]> getRoutesSplitByLastImport()
+    {
+        return new ArrayList<>(this.routesSplitByLastImport);
     }
 
     /**

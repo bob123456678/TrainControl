@@ -192,7 +192,15 @@ public class testRoutes
                     break;
             }
         }
-        
+
+        // A ROUTE WITH AN EMERGENCY STOP HAS NO OTHER COMMANDS (Adam, 2026-09-25): a draw that put a stop among other
+        // commands keeps its other commands, or now and then only its stops - the two kinds of route there are.
+        if (MarklinRoute.mixesAStop(routeCommands))
+        {
+            if (random.nextInt(4) == 0) routeCommands.removeIf(command -> !command.isStop());
+            else routeCommands.removeIf(RouteCommand::isStop);
+        }
+
         for (int i = 0; i < random.nextInt(20); i++)
         {
             int address = random.nextInt(100);

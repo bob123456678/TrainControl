@@ -164,6 +164,14 @@ public interface ViewListener
      * @return their names, empty when there are none or the file cannot be read
      */
     public List<String> routesSavedArmed(String json);
+
+    /**
+     * The routes the last import split because each put an emergency stop among other commands, each with the stop route
+     * it now fires in the stop's place (Adam, 2026-09-25).
+     *
+     * @return pairs of route and stop route; empty when the last import split nothing
+     */
+    public List<String[]> getRoutesSplitByLastImport();
     public List<Locomotive> getLocomotives();
     public void changeLocAddress(String locName, int newAddress, decoderType newDecoderType) throws Exception;
     public void sendPing(boolean force);

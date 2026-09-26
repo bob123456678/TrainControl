@@ -25213,11 +25213,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // somebody restoring a backup is looking.  Or, asked, the ones saved armed come back armed (REG2-C7).
                 // THE MODEL'S OWN CHOICE OF SENTENCE: re-armed where it armed some, and otherwise the notice that they
                 // arrived off - which is what the log says.
-                JOptionPane.showMessageDialog(this, rearmed[0] > 0
+                //
+                // AND WHAT IT SPLIT (Adam, 2026-09-25): a route with an emergency stop among other commands now fires a
+                // stop-only route, named after it, in the stop's place.
+                java.util.List<String> split = new java.util.ArrayList<>();
+
+                for (String[] pair : this.model.getRoutesSplitByLastImport()) split.add(pair[0]);
+
+                JOptionPane.showMessageDialog(this, (rearmed[0] > 0
                     ? I18n.f(org.traincontrol.marklin.MarklinControlStation.IMPORTED_ROUTES_REARMED, added[0],
                         rearmed[0])
                     : I18n.f(org.traincontrol.marklin.MarklinControlStation.IMPORTED_ROUTES_NOTICE, added[0],
-                        I18n.t("ui.main.bulkEnable"), I18n.t("route.ui.menuEnableAutoExecution")));
+                        I18n.t("ui.main.bulkEnable"), I18n.t("route.ui.menuEnableAutoExecution")))
+                    + (split.isEmpty() ? "" : "\n\n" + I18n.f("route.ui.infoImportSplitStopRoutes",
+                        String.join(", ", split))));
             });
     }//GEN-LAST:event_importRoutesMenuItemActionPerformed
 

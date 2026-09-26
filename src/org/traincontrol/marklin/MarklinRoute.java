@@ -419,20 +419,75 @@ public class MarklinRoute extends Route
     }
 
     /**
-     * Whether this route cuts the power - an emergency stop, wherever it sits in the command list.
+     * Whether this route cuts the power - an emergency stop, wherever it sits in the command list, or a route it fires
+     * that is one.
      *
      * Adam, 2026-09-01: "emergency stop should never conflict or prompt."
      *
-     * @return true when any command in this route stops the railway
+     * AND THROUGH THE STOP ROUTE IT FIRES (Adam, 2026-09-25).  A stop stands in a route of its own (`mixesAStop`), and a
+     * route that should set something and then cut the power fires that one in its stop's place - which is what a route
+     * that mixed them is split into.  It cuts the power all the same, so it is never asked either: asked about a switch,
+     * Cancel would have called off a power cut the question never mentioned.  One level, as a chained route runs one.
+     *
+     * @return true when this route, or a route it fires, stops the railway
      */
     public boolean hasEmergencyStop()
     {
+        if (hasAStop(this.route)) return true;
+
         for (RouteCommand rc : new java.util.ArrayList<>(this.route))
+        {
+            if (rc == null || !rc.isRoute() || this.network == null) continue;
+
+            MarklinRoute fired = this.network.getRoute(rc.getName());
+
+            if (fired != null && fired != this && hasAStop(fired.getRoute())) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether any of these commands is an emergency stop.
+     */
+    private static boolean hasAStop(java.util.List<RouteCommand> commands)
+    {
+        for (RouteCommand rc : new java.util.ArrayList<>(commands))
         {
             if (rc != null && rc.isStop()) return true;
         }
 
         return false;
+    }
+
+    /**
+     * Whether these commands put an emergency stop among commands of other kinds, which no route may do - Adam,
+     * 2026-09-25: *"if a route has emergency stop, it cannot have any other types of commands.  Reject it from being
+     * created or imported as such.  This will keep a clean separation."*
+     *
+     * A route that mixes them, loaded or imported, is split instead (`MarklinControlStation.splitRoutesThatMixAStop`, on
+     * his answer for his own route that did: *"Split it automatically"*); the model and the route editor refuse to make
+     * one.
+     *
+     * @param commands a route's commands, or null
+     * @return true where there is a stop and anything else
+     */
+    public static boolean mixesAStop(java.util.List<RouteCommand> commands)
+    {
+        if (commands == null) return false;
+
+        boolean stop = false;
+        boolean other = false;
+
+        for (RouteCommand rc : new java.util.ArrayList<>(commands))
+        {
+            if (rc == null) continue;
+
+            if (rc.isStop()) stop = true;
+            else other = true;
+        }
+
+        return stop && other;
     }
     
     /**
