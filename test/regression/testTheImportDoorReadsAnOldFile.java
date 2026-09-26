@@ -2031,6 +2031,139 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
+     * Choosing another configuration while a setup edit waits, where the configuration running cannot be rebuilt with that
+     * edit, is refused and says why (RLV7-C4).
+     *
+     * The choice went ahead: the configuration left kept where its trains stood before the run, with nothing said; the
+     * log said it "could not be loaded at startup", about a load nobody made at start-up; and the flag stayed up over the
+     * configuration chosen, so nothing it did was folded until something rebuilt it.
+     *
+     * MUTATION: load the configuration chosen whether or not the one running was carried, and this fails.
+     *
+     * @throws Exception from the window or the import
+     */
+    @Test
+    public void testChoosingAnotherConfigurationWhileAnEditThatBreaksTheOneRunningWaitsIsRefused() throws Exception
+    {
+        assertTrue(MT491.isFile(), "precondition: the MT-491 file is not in docs/manual-tests/files");
+
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
+
+        declined.setAccessible(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            AutonomySession session = ui[0].getAutonomySession();
+
+            final String inUse = session.getStore().getActiveConfiguration();
+
+            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+
+            importFromTheMenu(ui[0], MT491, "MT-491 other");
+
+            session = ui[0].getAutonomySession();
+
+            assertTrue(session.getStore().getConfigurationNames().contains("MT-491 other"), "precondition: the import made"
+                + " no second configuration");
+
+            final String[] move = moveAStandingTrain(ui[0], session);
+
+            // THE EDIT THAT WAITS, and it stops the configuration running from building: the moved train placed on a
+            // second station, written to the file as a declined edit is
+            final TileKey second = anEmptyStationSquare(ui[0], session, move);
+
+            final AutonomySession editing = session;
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                editing.setPointProperty(second, AutonomyBuilder.LOCOMOTIVE, new org.json.JSONObject().put("name", move[0]));
+
+                try
+                {
+                    editing.getStore().save();
+                }
+                catch (java.io.IOException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            declined.set(ui[0], true);
+
+            final Object before = ui[0].getModel().getAutoLayout();
+
+            final int logFrom = logged().length();
+
+            List<String> asked = answeringYes(() -> ui[0].getAutonomyViewerPanel().load("MT-491 other", true));
+
+            final String refusal = I18n.f("autosetup.ui.errorCannotKeepTrainsBeforeChoosing", inUse, "MT-491 other");
+
+            assertTrue(asked.stream().anyMatch(said -> said.startsWith(refusal)), "choosing another configuration, while"
+                + " the edit that waits stops " + inUse + " from building, did not say why it was refused (RLV7-C4): "
+                + asked);
+
+            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "MT-491 other was loaded, and " + inUse + " was left"
+                + " with its trains where they stood before the run (RLV7-C4)");
+
+            assertTrue(ui[0].getModel().getAutoLayout() == before, "the running layout was replaced (RLV7-C4)");
+
+            assertStandsWhereItWasMoved(ui[0], move, "after the refused choice (RLV7-C4)");
+
+            assertTrue((Boolean) declined.get(ui[0]), "the flag came down, though the edit it guards still waits");
+
+            assertFalse(logged().substring(logFrom).contains(I18n.f("autosetup.ui.infoResumeFailed", inUse)), "the log"
+                + " says " + inUse + " could not be loaded at startup, about a load nobody made at start-up (RLV7-C4)");
+        }
+        finally
+        {
+            if (ui[0] != null) declined.set(ui[0], false);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** A station square no train stands on, in the running layout or where the moved train set off. */
+    private static TileKey anEmptyStationSquare(TrainControlUI ui, AutonomySession session, String[] move)
+    {
+        final org.traincontrol.automation.Layout railway = ui.getModel().getAutoLayout();
+
+        final org.traincontrol.automation.Point setOff = railway.getPoint(move[1]);
+
+        for (org.traincontrol.automation.Point point : railway.getPoints())
+        {
+            if (point.isDestination() && point.isActive() && point.getCurrentLocomotive() == null
+                && (setOff == null || !point.isSamePlaceAs(setOff))
+                && session.getStationIndex().squareOf(point.getName()) != null)
+            {
+                return session.getStationIndex().squareOf(point.getName());
+            }
+        }
+
+        throw new AssertionError("precondition: no empty station on his railway");
+    }
+
+    /**
      * A switch of railway forgets the railway it leaves (RLV7-C2): the flag a declined edit raised, and the name of the
      * configuration the reset forgot.  The load that followed read "no configuration running" as the reset after an
      * edit, and carried the previous railway's trains across by Point name.
