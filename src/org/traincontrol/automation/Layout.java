@@ -82,9 +82,10 @@ public class Layout
     private final Map<Locomotive, String> failedPaths = new LinkedHashMap<>();
 
     // For each of those, the last point it is known to have reached when its path failed: its last
-    // milestone, or its start when it reached none.  Recorded then because the milestones are cleared
-    // with it (MRV2-B3), and replaced by the station the operator puts it on by hand (moveLocomotive,
-    // MRV2-C1).  Guarded by failedPaths.
+    // milestone whose sensor it tripped, or its start (lastKnownPoint).  Recorded then because the
+    // milestones are cleared with it (MRV2-B3, MRV3-B2).  Replaced by the station the operator puts it on by
+    // hand (MRV2-C1), and forgotten, with the train taken off every point, when the operator takes it off
+    // one (MRV3-B1) - both in moveLocomotive.  Guarded by failedPaths.
     private final Map<Locomotive, Point> failedAt = new HashMap<>();
 
     // Maximum number of seconds another locomotive should yield for to the inactive locomotive
@@ -2174,9 +2175,9 @@ public class Layout
     /**
      * Where each train that stands on several points is last known to be: a train whose path failed part
      * way, at the point executePath recorded when it failed, and a train still part way along a path - as
-     * a reload stops one - at its last milestone.  Each is recorded on every point of its path, so a graph
-     * written as it stands places it several times and does not load.  Written at this point and on no
-     * other (toJSON(keptAt)), it loads, and the place it was last known to be stays held.
+     * a reload stops one - at the point lastKnownPoint gives.  Each is recorded on every point of its path,
+     * so a graph written as it stands places it several times and does not load.  Written at this point and
+     * on no other (toJSON(keptAt)), it loads, and the place it was last known to be stays held.
      *
      * It used to be left off the graph altogether, so after the reload the station it stood at read free,
      * and another train could be sent onto it (MRV2-B3, MRV2-C2).  Read under the same lock executePath
@@ -2191,12 +2192,10 @@ public class Layout
         {
             for (Entry<Locomotive, List<Point>> running : this.locomotiveMilestones.entrySet())
             {
-                List<Point> milestones = running.getValue();
+                Point known = this.lastKnownPoint(running.getKey(), running.getValue(),
+                    this.activeLocomotives.get(running.getKey()));
 
-                if (milestones != null && !milestones.isEmpty())
-                {
-                    out.put(running.getKey(), milestones.get(milestones.size() - 1));
-                }
+                if (known != null) out.put(running.getKey(), known);
             }
 
             synchronized (this.failedPaths)
@@ -2206,6 +2205,65 @@ public class Layout
         }
 
         return out;
+    }
+
+    /**
+     * The point a train on the given path is last known to be at: the last of its milestones whose sensor it
+     * has tripped, or its start where it has tripped none.
+     *
+     * Not simply its last milestone.  executePath waits for a sensor only at a point that has one; a point
+     * with no sensor is passed without waiting and becomes a milestone the moment the loop reaches it - on a
+     * path whose first point has none, the moment the train sets off.  Kept there, a train stood on a point
+     * ahead of itself, with the station it was still standing at reading free (MRV3-B2).  A point with no
+     * sensor is never a position.
+     *
+     * On a non-atomic route the track behind a train is released as it goes, and past a run of points with
+     * no sensor that can already have released this one: the train is then kept at the earliest point of its
+     * path that still records it, so that the graph kept places it once and loads (MRV3-B2).
+     * @param loc
+     * @param milestones the points it has reached, in order, its start first; null or empty if none
+     * @param path its path; may be null
+     * @return the point, or null if there is none
+     */
+    private Point lastKnownPoint(Locomotive loc, List<Point> milestones, List<Edge> path)
+    {
+        Point known = null;
+
+        if (milestones != null && !milestones.isEmpty())
+        {
+            known = milestones.get(0);
+
+            for (int i = milestones.size() - 1; i >= 0; i--)
+            {
+                if (milestones.get(i).hasS88())
+                {
+                    known = milestones.get(i);
+                    break;
+                }
+            }
+        }
+        else if (path != null && !path.isEmpty())
+        {
+            known = path.get(0).getStart();
+        }
+
+        if (known != null && !loc.equals(known.getCurrentLocomotive()) && path != null && !path.isEmpty())
+        {
+            List<Point> along = new ArrayList<>();
+            along.add(path.get(0).getStart());
+
+            for (Edge e : path)
+            {
+                along.add(e.getEnd());
+            }
+
+            for (Point p : along)
+            {
+                if (loc.equals(p.getCurrentLocomotive())) return p;
+            }
+        }
+
+        return known;
     }
 
     /**
@@ -3249,19 +3307,16 @@ public class Layout
             // and before the layout reads as invalid - see below.  Recorded after, a Validate, Backup or exit
             // save landing in between found it in neither, kept it on every point of its path, and wrote a
             // graph that does not load (MRV2-C4).  With it, the last point it is known to have reached: its
-            // last milestone, or its start when it reached none, as when its departure fails.  The reload
-            // keeps it there, so that place stays held, and the message names it (MRV2-B3).
+            // last milestone whose sensor it tripped, or its start, as when its departure fails.  The reload
+            // keeps it there, so that place stays held, and the message names it (MRV2-B3, MRV3-B2).
             final boolean wasRunning = this.running;
             final boolean first;
             final String message;
 
             synchronized (this.activeLocomotives)
             {
-                List<Point> milestones = this.locomotiveMilestones.get(loc);
-
-                Point lastReached = milestones != null && !milestones.isEmpty()
-                    ? milestones.get(milestones.size() - 1)
-                    : (path != null && !path.isEmpty() ? path.get(0).getStart() : null);
+                // Its last milestone whose sensor it tripped, or its start - see lastKnownPoint (MRV3-B2)
+                Point lastReached = this.lastKnownPoint(loc, this.locomotiveMilestones.get(loc), path);
 
                 message = I18n.f(
                     wasRunning ? "autolayout.errorPathFailedAutonomyStopped" : "autolayout.errorPathFailedSentByHand",
@@ -3847,6 +3902,36 @@ public class Layout
     }
     
     /**
+     * Takes a train whose path failed part way off every point, and forgets the point it was to be kept at,
+     * when the operator takes it off one - Remove from Point or from Graph, Delete, Backspace, Ctrl+X, Clear
+     * all locomotives, or another train put on its station.  Does nothing for any other train.
+     *
+     * Such a train is recorded on every point of its locked path, and the graph kept writes it on the one its
+     * failure recorded.  Taking it off that point left it on the rest of its path: on a station it never
+     * reached, after a one-stretch trip, or on two or more points, a graph that does not load, which the exit
+     * save then wrote (MRV3-B1).  A train the operator chose to take off comes off the graph; it is put back
+     * where it stands, as any train is.
+     * @param l
+     */
+    private void takeAFailedTrainOff(Locomotive l)
+    {
+        synchronized (this.failedPaths)
+        {
+            if (!this.failedPaths.containsKey(l)) return;
+
+            this.failedAt.remove(l);
+        }
+
+        for (Point p : this.getPoints())
+        {
+            if (l.equals(p.getCurrentLocomotive()))
+            {
+                p.setLocomotive(null);
+            }
+        }
+    }
+
+    /**
      * Requests to move a locomotive to a new station.  Called from the UI.
      * @param locomotive
      * @param targetPoint
@@ -3920,6 +4005,15 @@ public class Layout
             // not the edit doors' sanitizeMultiUnits, which asks only of a train already standing (BPV-A1)
             this.clearMultiUnitConflictsWith(l);
                         
+            // A train whose path failed part way, standing on the station this one is put on, is taken off the
+            // graph: see takeAFailedTrainOff (MRV3-B1)
+            Locomotive displaced = target.getCurrentLocomotive();
+
+            if (displaced != null && !displaced.equals(l))
+            {
+                this.takeAFailedTrainOff(displaced);
+            }
+
             // Set new location
             target.setLocomotive(l);
 
@@ -3941,14 +4035,22 @@ public class Layout
         
         if (locomotive == null && this.getPoint(targetPoint) != null)
         {
-            if (purge && this.getPoint(targetPoint).getCurrentLocomotive() != null)
+            Locomotive removed = this.getPoint(targetPoint).getCurrentLocomotive();
+
+            if (purge && removed != null)
             {
-                this.locomotivesToRun.remove(this.getPoint(targetPoint).getCurrentLocomotive());
+                this.locomotivesToRun.remove(removed);
             }
-            
+
             // Set new location
             this.getPoint(targetPoint).setLocomotive(null);
-             
+
+            // A train whose path failed part way comes off every point - see takeAFailedTrainOff (MRV3-B1)
+            if (removed != null)
+            {
+                this.takeAFailedTrainOff(removed);
+            }
+
             result = true;
         }
         
