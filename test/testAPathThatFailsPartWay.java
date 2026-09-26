@@ -1145,9 +1145,11 @@ public class testAPathThatFailsPartWay
 
         for (int[] door : new int[][]{ { doubleClick }, { paste }, { cut } })
         {
-            String before = source.substring(Math.max(0, door[0] - 700), door[0]);
+            // The door's own question: the nearest one before it, with no other door in between
+            int asked = source.lastIndexOf("getGraphEditRefusal()", door[0]);
+            String between = asked < 0 ? "" : source.substring(asked, door[0]);
 
-            assertTrue(before.contains("getGraphEditRefusal()"),
+            assertTrue(asked >= 0 && !between.contains("moveLocomotive(") && !between.contains("new GraphLocAssign("),
                 "a graph window door places or removes a locomotive without asking first whether a failed trip "
                 + "forbids it: " + source.substring(door[0], Math.min(source.length(), door[0] + 60)) + " (MRV4)");
         }
