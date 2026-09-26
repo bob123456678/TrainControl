@@ -40,6 +40,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinFeedback;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.model.ViewListener;
+import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 
 /**
@@ -521,27 +522,36 @@ public class testAPathThatFailsPartWay
     }
 
     /**
-     * A failed train put back on the graph by hand before validating is kept where it was put (MRV2-C1).
+     * Between a failed trip and Validate no locomotive can be placed on the graph: putting the failed train
+     * somewhere by hand is refused, and the graph kept is unchanged; after Validate a placement works
+     * (MRV4, Adam's decision of 2026-09-26; it was MRV2-C1).
      *
-     * The message asks for the train to be moved after validating, but nothing stops it being moved before,
-     * and the graph then kept it at the point its failure recorded - discarding the placement, or, when the
-     * move had taken it off that point, keeping it on two points, which does not load.  The operator's
-     * placement is the latest thing known about where it is.
+     * The failed train is shown on every point of its locked path, so a placement by hand before validating -
+     * Ctrl+V, Assign, or the Place/Edit dialog's OK on any of those points - moved the point it is kept at
+     * to wherever it was put, including a station it never reached, and the station it stands at then read
+     * free (MRV4-B2).  Rather than each door working out what a hand edit on that graph means, none is
+     * allowed until the reload: the train is kept where its sensors last saw it, and moved after.
      */
     @Test(timeOut = 120000)
-    public void testAFailedTrainPutBackBeforeValidatingIsKeptWhereItWasPut() throws Exception
+    public void testPlacingTheFailedTrainBeforeValidatingIsRefused() throws Exception
     {
         Run run = aRunWithAFailedPath(8720, null);
 
-        assertTrue(run.layout.moveLocomotive(FAILING, "PF S8", false), "precondition: the train could not be placed");
+        String kept = graphTheWindowKeeps(run.layout);
 
-        Layout reloaded = Layout.fromJSON(graphTheWindowKeeps(run.layout), model);
+        assertFalse(run.layout.moveLocomotive(FAILING, "PF S8", false),
+            "the failed train was placed by hand before validating (MRV4)");
 
-        assertTrue(reloaded.isValid(), "the graph kept after the failed train was put back by hand does not load: "
-            + Layout.getLastError() + " (MRV2-C1)");
+        assertEquals(graphTheWindowKeeps(run.layout), kept, "a refused placement changed the graph that is kept (MRV4)");
+
+        // After Validate: a new layout, with no failure recorded, where placing works again
+        Layout reloaded = Layout.fromJSON(kept, model);
+
+        assertTrue(reloaded.moveLocomotive(FAILING, "PF S8", false),
+            "after validating, the failed train could not be placed where it stands");
 
         assertEquals(where(reloaded, model.getLocByName(FAILING)), Collections.singletonList("PF S8"),
-            "the failed train, put back at PF S8 by hand before validating, was not kept there (MRV2-C1)");
+            "after validating, the failed train was not placed where it was put");
     }
 
     /**
@@ -930,55 +940,64 @@ public class testAPathThatFailsPartWay
     }
 
     /**
-     * Remove from Point, on the station a failed train's departure failed at, takes it off the graph that is
-     * kept (MRV3-B1).
+     * Between a failed trip and Validate no locomotive can be taken off the graph: Remove from Point and Remove
+     * from Graph (as Delete, Backspace and Ctrl+X do) are refused on the failed train's station, on a point of
+     * its path it never reached, and for another train, and the graph kept is unchanged (MRV4; it was MRV3-B1
+     * and MRV4-B1).
      *
-     * The graph kept writes a failed train on the point its failure recorded, and removing it there left it
-     * recorded on the rest of its locked path: after a two-stretch trip that is two points, a graph that
-     * does not load - and the exit save wrote it, so autonomy.json failed at every start.  A train the
-     * operator takes off comes off every point.
+     * Each such removal meant something different depending on which point of the failed train's locked path
+     * it was made on: off its station, it left the train recorded on points it never reached; off one of
+     * those, it took the train off the station it stands at too.  None is allowed until the reload.
      */
     @Test(timeOut = 120000)
-    public void testRemovingAFailedTrainTakesItOffTheGraph() throws Exception
+    public void testRemovingALocomotiveBeforeValidatingIsRefused() throws Exception
     {
         Layout layout = aDepartureThatFails("RM", 8730);
 
-        assertTrue(layout.moveLocomotive(null, "RM S3", false), "precondition: Remove from Point was refused");
+        String kept = graphTheWindowKeeps(layout);
 
-        assertTakenOff(layout, "Remove from Point");
+        assertFalse(layout.moveLocomotive(null, "RM S3", false),
+            "Remove from Point took the failed train off its station before validating (MRV4)");
+
+        assertFalse(layout.moveLocomotive(null, "RM S4", true),
+            "Remove from Graph took the failed train off a point it never reached before validating (MRV4, MRV4-B1)");
+
+        assertFalse(layout.moveLocomotive(null, "RM S7", false),
+            "another train was taken off the graph before validating (MRV4)");
+
+        assertEquals(graphTheWindowKeeps(layout), kept, "a refused removal changed the graph that is kept (MRV4)");
+
+        assertEquals(where(layout, model.getLocByName(FAILING)).size(), 3,
+            "a refused removal changed where the failed train is recorded");
     }
 
     /**
-     * Ctrl+X on a failed train's station, then Ctrl+V on another, keeps it where it was pasted (MRV2-C1,
-     * MRV3-B1): the cut takes it off every point, and the paste puts it on one.
+     * Ctrl+X on a failed train's station, then Ctrl+V on another, are both refused before validating, and the
+     * graph kept is unchanged (MRV4; it was MRV2-C1 and MRV3-B1).
      */
     @Test(timeOut = 120000)
-    public void testCuttingAFailedTrainAndPastingItElsewhereKeepsItThere() throws Exception
+    public void testCuttingAndPastingBeforeValidatingIsRefused() throws Exception
     {
         Layout layout = aDepartureThatFails("CP", 8850);
 
-        assertTrue(layout.moveLocomotive(null, "CP S3", true), "precondition: the cut was refused");
-        assertTrue(layout.moveLocomotive(FAILING, "CP M", false), "precondition: the paste was refused");
+        String kept = graphTheWindowKeeps(layout);
 
-        Layout reloaded = Layout.fromJSON(graphTheWindowKeeps(layout), model);
+        assertFalse(layout.moveLocomotive(null, "CP S3", true), "the cut was made before validating (MRV4)");
+        assertFalse(layout.moveLocomotive(FAILING, "CP M", false), "the paste was made before validating (MRV4)");
 
-        assertTrue(reloaded.isValid(), "after a cut and a paste the graph kept does not load: " + Layout.getLastError());
-
-        assertEquals(where(reloaded, model.getLocByName(FAILING)), Collections.singletonList("CP M"),
-            "a failed train cut and pasted elsewhere was not kept where it was pasted");
+        assertEquals(graphTheWindowKeeps(layout), kept, "a refused cut and paste changed the graph that is kept (MRV4)");
     }
 
     /**
-     * Clear all locomotives takes a failed train off the graph that is kept (MRV3-B1).
-     *
-     * The door takes each train off the station getLocomotiveLocation finds it at - for a failed train, any
-     * one of the points of its locked path - and the train stayed recorded on the others.  Here the door's
-     * own loop, after its question.
+     * Clear all locomotives is refused before validating, and the graph kept is unchanged (MRV4; it was
+     * MRV3-B1).  The door's own loop, after its question.
      */
     @Test(timeOut = 120000)
-    public void testClearingAllLocomotivesTakesAFailedTrainOff() throws Exception
+    public void testClearingAllLocomotivesBeforeValidatingIsRefused() throws Exception
     {
         Layout layout = aDepartureThatFails("CL", 8750);
+
+        String kept = graphTheWindowKeeps(layout);
 
         for (Locomotive l : new Locomotive[]{ model.getLocByName(FAILING), model.getLocByName(OTHER) })
         {
@@ -986,31 +1005,152 @@ public class testAPathThatFailsPartWay
 
             if (at != null && !at.isReversing() && at.isDestination())
             {
-                layout.moveLocomotive(null, at.getName(), false);
+                assertFalse(layout.moveLocomotive(null, at.getName(), false),
+                    "Clear all locomotives took " + l.getName() + " off " + at.getName() + " before validating (MRV4)");
             }
         }
 
-        assertTakenOff(layout, "Clear all locomotives");
+        assertEquals(graphTheWindowKeeps(layout), kept, "a refused Clear all changed the graph that is kept (MRV4)");
     }
 
     /**
-     * Another train placed on the station a failed train's departure failed at takes the failed train off the
-     * graph that is kept (MRV3-B1).
-     *
-     * The placement replaced the failed train on that one point, and it stayed recorded on the rest of its
-     * locked path: a graph that does not load.
+     * Another train placed on a point of the failed train's path is refused before validating - on the station
+     * it stands at and on one it never reached - and the graph kept is unchanged (MRV4; it was MRV3-B1 and
+     * MRV4-B1).
      */
     @Test(timeOut = 120000)
-    public void testAnotherTrainPlacedOverAFailedTrainTakesItOff() throws Exception
+    public void testPlacingAnotherTrainOverTheFailedTrainBeforeValidatingIsRefused() throws Exception
     {
         Layout layout = aDepartureThatFails("PO", 8770);
 
-        assertTrue(layout.moveLocomotive(OTHER, "PO S3", false), "precondition: the other train could not be placed");
+        String kept = graphTheWindowKeeps(layout);
 
-        Layout reloaded = assertTakenOff(layout, "another train placed over it");
+        assertFalse(layout.moveLocomotive(OTHER, "PO S3", false),
+            "another train was placed on the failed train's station before validating (MRV4)");
 
-        assertEquals(where(reloaded, model.getLocByName(OTHER)), Collections.singletonList("PO S3"),
-            "the train placed over the failed one was not kept where it was put");
+        assertFalse(layout.moveLocomotive(OTHER, "PO S4", false),
+            "another train was placed on a point of the failed train's path before validating (MRV4, MRV4-B1)");
+
+        assertEquals(graphTheWindowKeeps(layout), kept, "a refused placement changed the graph that is kept (MRV4)");
+
+        assertEquals(where(layout, model.getLocByName(OTHER)), Collections.singletonList("PO S7"),
+            "a refused placement moved the other train");
+    }
+
+    /**
+     * The Place/Edit dialog's OK, on a point of the failed train's path it never reached, does not move the
+     * point it is kept at there (MRV4, MRV4-B2).
+     *
+     * The dialog selects the train shown on that point, and its OK places that train there before it applies
+     * the settings - for a failed train, shown on every point of its locked path, a placement by hand.  The
+     * doors that open it are refused before validating; this is the model refusing even so.
+     */
+    @Test(timeOut = 120000)
+    public void testThePlaceDialogsOkBeforeValidatingMovesNothing() throws Exception
+    {
+        Layout layout = aDepartureThatFails("PD", 8870);
+
+        String kept = graphTheWindowKeeps(layout);
+
+        TrainControlUI ui = aWindowOn(layout, null);
+
+        org.traincontrol.gui.GraphLocAssign dialog = new org.traincontrol.gui.GraphLocAssign(ui, layout.getPoint("PD M"),
+            false);
+
+        assertEquals(dialog.getLoc(), FAILING, "precondition: the dialog on PD M did not select the failed train");
+
+        dialog.commitChanges();
+
+        assertEquals(graphTheWindowKeeps(layout), kept, "the Place/Edit dialog's OK on a point the failed train never "
+            + "reached moved the point it is kept at there, and its station reads free after the reload (MRV4-B2)");
+    }
+
+    /**
+     * The graph's right-click menu, on the failed train's station, offers no placement or removal before
+     * validating: each such item is greyed, and says why (MRV4).
+     *
+     * The menu built as the graph builds it, on a window and a graph window that are never shown.
+     */
+    @Test(timeOut = 120000)
+    public void testTheGraphMenuSaysWhyItCannotPlaceOrRemove() throws Exception
+    {
+        Layout layout = aDepartureThatFails("GM", 8890);
+
+        TrainControlUI ui = aWindowOn(layout, null);
+
+        Class<?> menuClass = Class.forName("org.traincontrol.gui.GraphRightClickPointMenu");
+        java.lang.reflect.Constructor<?> build = menuClass.getDeclaredConstructor(TrainControlUI.class, Point.class,
+            org.traincontrol.gui.GraphViewer.class);
+        build.setAccessible(true);
+
+        javax.swing.JPopupMenu menu = (javax.swing.JPopupMenu) build.newInstance(ui, layout.getPoint("GM S3"),
+            testMainWindowFaults.windowless(org.traincontrol.gui.GraphViewer.class));
+
+        List<String> offered = new ArrayList<>();
+        List<String> greyed = new ArrayList<>();
+        String tooltip = null;
+
+        String[] edits = {
+            I18n.f("autolayout.ui.menuRemoveLocomotiveFromNode", FAILING),
+            I18n.f("autolayout.ui.menuRemoveLocomotiveFromGraph", FAILING),
+            I18n.t("autolayout.ui.menuAddLocomotiveAtNode"),
+            I18n.t("autolayout.ui.labelEditLocomotiveAt")
+        };
+
+        for (java.awt.Component c : menu.getComponents())
+        {
+            if (c instanceof javax.swing.JMenuItem && Arrays.asList(edits).contains(((javax.swing.JMenuItem) c).getText()))
+            {
+                javax.swing.JMenuItem item = (javax.swing.JMenuItem) c;
+
+                (item.isEnabled() ? offered : greyed).add(item.getText());
+
+                if (!item.isEnabled()) tooltip = item.getToolTipText();
+            }
+        }
+
+        assertEquals(offered.size() + greyed.size(), edits.length, "precondition: the menu does not hold the four "
+            + "placement and removal items: offered " + offered + ", greyed " + greyed);
+
+        assertTrue(offered.isEmpty(), "the graph's menu offers a placement or removal before validating, which the "
+            + "model then refuses: " + offered + " (MRV4)");
+
+        assertEquals(tooltip, Layout.class.getMethod("getPlacementRefusal").invoke(layout),
+            "the greyed items do not say why (MRV4)");
+
+        assertTrue(tooltip.contains(FAILING) && tooltip.contains(I18n.t("ui.main.validateConfigOpenGraphUI")),
+            "the reason does not name the failed train and the button to press: " + tooltip);
+    }
+
+    /**
+     * The graph window's keyboard and double-click doors - Ctrl+V, Ctrl+X, Delete, Backspace, and the
+     * double-click that opens the Place/Edit dialog - say why and do nothing before validating (MRV4).
+     *
+     * Read from the source: the graph window needs a display.
+     */
+    @Test
+    public void testTheGraphWindowsKeysSayWhyTheyCannotPlaceOrRemove() throws Exception
+    {
+        File viewer = new File(ROOT, "src/org/traincontrol/gui/GraphViewer.java");
+
+        assertTrue(viewer.isFile(), "precondition: the graph window is not at " + viewer);
+
+        String source = new String(Files.readAllBytes(viewer.toPath()), StandardCharsets.UTF_8);
+
+        int doubleClick = source.indexOf("new GraphLocAssign(parent, p,");
+        int paste = source.indexOf("moveLocomotive(toPlace.getName()");
+        int cut = source.indexOf("moveLocomotive(null, this.getLastHoveredNode(), true)");
+
+        assertTrue(doubleClick > 0 && paste > 0 && cut > 0, "precondition: the graph window's doors were not found");
+
+        for (int[] door : new int[][]{ { doubleClick }, { paste }, { cut } })
+        {
+            String before = source.substring(Math.max(0, door[0] - 700), door[0]);
+
+            assertTrue(before.contains("getGraphEditRefusal()"),
+                "a graph window door places or removes a locomotive without asking first whether a failed trip "
+                + "forbids it: " + source.substring(door[0], Math.min(source.length(), door[0] + 60)) + " (MRV4)");
+        }
     }
 
     /**
@@ -1154,13 +1294,15 @@ public class testAPathThatFailsPartWay
     }
 
     /**
-     * On a non-atomic route a failed train is kept on a point that still records it, when the point whose
-     * sensor it last tripped has already been released behind it (MRV3-B2).
+     * On a non-atomic route a failed train is kept at the last point whose sensor it tripped, even when that
+     * point has already been released behind it, and the graph kept loads (MRV3-B2, MRV4-C2).
      *
      * A non-atomic route releases the track behind a train as it goes, and a run of points with no sensor is
      * passed without waiting: past NA A, J1 and J2 (neither has a sensor) release NA A before the train is
-     * anywhere near them.  Kept at A, it would be written wherever it is still recorded - three points, a
-     * graph that does not load.  It is kept at the earliest point that still records it.
+     * anywhere near them.  Kept at A as it stood, it was written wherever it was still recorded - three
+     * points, a graph that does not load - so it was kept at the earliest of them, J1, a point with no sensor,
+     * which the message then called the last place it is known to have reached (MRV4-C2).  It is kept at A,
+     * which the message names truly, and A is held after the reload.
      */
     @Test(timeOut = 120000)
     public void testANonAtomicTripPastTwoPointsWithNoSensorKeepsAGraphThatLoads() throws Exception
@@ -1177,15 +1319,18 @@ public class testAPathThatFailsPartWay
         point(layout, "NA J1", false, null);
         point(layout, "NA J2", false, null);
         point(layout, "NA S2", true, 8833);
+        point(layout, "NA S7", true, 8834);
 
         layout.createEdge("NA S1", "NA A");
         layout.createEdge("NA A", "NA J1");
         layout.createEdge("NA J1", "NA J2");
         layout.createEdge("NA J2", "NA S2");
+        layout.createEdge("NA S7", "NA A");
         layout.setDefaultLocSpeed(30);
         layout.setAtomicRoutes(false);
 
         layout.getPoint("NA S1").setLocomotive(failing);
+        layout.getPoint("NA S7").setLocomotive(model.getLocByName(OTHER));
         layout.setSimulate(true);
 
         try
@@ -1208,9 +1353,12 @@ public class testAPathThatFailsPartWay
         assertTrue(reloaded.isValid(), "on a non-atomic route, the graph kept after a failure past two points with no "
             + "sensor does not load: " + Layout.getLastError() + " (MRV3-B2)");
 
-        assertEquals(where(reloaded, failing), Collections.singletonList("NA J1"),
-            "on a non-atomic route the failed train was not kept at the earliest point that still records it, NA J1 - "
-            + "NA A behind it had been released (MRV3-B2)");
+        assertEquals(where(reloaded, failing), Collections.singletonList("NA A"),
+            "on a non-atomic route the failed train was not kept at NA A, the last point whose sensor it tripped, "
+            + "which the message names as the last place it is known to have reached (MRV4-C2)");
+
+        assertFalse(reloaded.isPathClear(Collections.singletonList(reloaded.getEdge("NA S7", "NA A")),
+            model.getLocByName(OTHER), false), "after the reload another train can be sent into NA A (MRV4-C2)");
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -1295,8 +1443,9 @@ public class testAPathThatFailsPartWay
         layout.createEdge(prefix + " S7", prefix + " S3");
         layout.setDefaultLocSpeed(30);
 
-        layout.getPoint(prefix + " S3").setLocomotive(model.getLocByName(FAILING));
-        layout.getPoint(prefix + " S7").setLocomotive(model.getLocByName(OTHER));
+        // Placed as the graph's doors place them, so that they are on the list of trains to run
+        assertTrue(layout.moveLocomotive(FAILING, prefix + " S3", false), "precondition: " + FAILING + " was not placed");
+        assertTrue(layout.moveLocomotive(OTHER, prefix + " S7", false), "precondition: " + OTHER + " was not placed");
         layout.setSimulate(true);
 
         failTrip(layout, trip(layout, prefix + " S3", prefix + " M", prefix + " S4"), model.getLocByName(FAILING),
@@ -1306,23 +1455,6 @@ public class testAPathThatFailsPartWay
             "precondition: the failed train is not recorded on the three points of its locked path");
 
         return layout;
-    }
-
-    /**
-     * Asserts that the graph kept loads, with FAILING on no point: the operator took it off.
-     */
-    private static Layout assertTakenOff(Layout layout, String door) throws Exception
-    {
-        Layout reloaded = Layout.fromJSON(graphTheWindowKeeps(layout), model);
-
-        assertTrue(reloaded.isValid(), "after " + door + " took the failed train off its station, the graph kept does "
-            + "not load - the train was still recorded on the rest of its path: " + Layout.getLastError() + " (MRV3-B1)");
-
-        assertEquals(where(reloaded, model.getLocByName(FAILING)), Collections.emptyList(),
-            "after " + door + " took the failed train off its station, the graph kept puts it back on the graph "
-            + "(MRV3-B1)");
-
-        return reloaded;
     }
 
     /**
