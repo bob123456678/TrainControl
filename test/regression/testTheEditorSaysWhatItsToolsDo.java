@@ -78,6 +78,11 @@ public class testTheEditorSaysWhatItsToolsDo
     @Test
     public void testTheGuardItemsSayWhatTheGuardsDo() throws Exception
     {
+        // "OCCUPIED", NOT "TAKEN" (Adam, on MT-569: *"station is taken" -> station is occupied*)
+        assertTrue(I18n.t("autosetup.ui.tooltipExitGuard").contains("while this station is occupied")
+            && !I18n.t("autosetup.ui.tooltipExitGuard").contains("taken"), "the exit guard's tooltip does not say"
+            + " \"occupied\" (MT-569): " + I18n.t("autosetup.ui.tooltipExitGuard"));
+
         final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
         final javax.swing.JPopupMenu[] menu = new javax.swing.JPopupMenu[1];

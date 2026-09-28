@@ -2517,6 +2517,18 @@ public class testMassAssignLengths
         assertTrue(promptText(first).contains("Charlie") && promptText(first).contains("5"), "the first prompt does not"
             + " name Charlie and the length it has: " + promptText(first));
 
+        // THE BOX HOLDS THAT LENGTH (Adam, on MT-566: "prefill the textbox with the current length, if any")
+        final String[] boxed = new String[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            javax.swing.JTextField field = findField(first.getContentPane());
+
+            boxed[0] = field == null ? null : field.getText();
+        });
+
+        assertEquals(boxed[0], "5", "the length box is empty for Charlie, whose length is 5 (MT-566)");
+
         answer(first, org.traincontrol.util.I18n.t("autosetup.ui.btnSkipOne"));
 
         javax.swing.JDialog second = awaitPrompt(first, TRAINS);
@@ -2629,10 +2641,12 @@ public class testMassAssignLengths
     }
 
     /**
-     * Train lengths and the stations' maximum train lengths are named apart (MT-533).
+     * Train lengths and the stations' maximum train lengths are named apart (MT-533), the trains' as plain "Train
+     * Lengths" (MT-567).
      *
      * Adam, 2026-09-24: *"better disambiguate labels for 'train lengths' from 'max train lengths', since the latter deals
-     * with stations."*  Read from the English bundle, which is the one the sentence was about.
+     * with stations."*  And 2026-09-26, on MT-567: *"Change "Locomotive Train Lengths" to just "Train Lengths", and keep
+     * "Station Max Train Lengths" as is."*  Read from the English bundle, which is the one the sentences were about.
      *
      * @throws Exception reading the bundle
      */
@@ -2646,8 +2660,11 @@ public class testMassAssignLengths
             english.load(in);
         }
 
-        assertTrue(String.valueOf(english.getProperty(TRAINS_COUNTED)).contains("Locomotive"), "the train walk's label"
-            + " does not say it is about locomotives: " + english.getProperty(TRAINS_COUNTED));
+        assertEquals(english.getProperty(TRAINS_COUNTED), "Mass Assign Train Lengths ({0} missing)...", "the train walk's"
+            + " label is not the one Adam asked for on MT-567");
+
+        assertEquals(english.getProperty(TRAINS), "Mass Assign Train Lengths...", "the train walk's label, uncounted, is"
+            + " not the one Adam asked for on MT-567");
 
         assertTrue(String.valueOf(english.getProperty(MAXIMA)).contains("Station"), "the maximum walk's label does not say"
             + " it is about stations: " + english.getProperty(MAXIMA));

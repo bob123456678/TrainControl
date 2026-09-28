@@ -7368,6 +7368,11 @@ public class testAutonomyDiagramSession
         assertTrue(noticesAGuardOffTheWayIn(session), "an entry guard on track no train reaching the station runs over"
             + " is not noticed (AUT-C2)");
 
+        // AND THE SIGNAL'S SQUARE, which a click on the notice outlines (Adam, on MT-505: "highlight the affected signals
+        // when the notice is clicked")
+        assertEquals(squaresTheGuardNoticeNames(session), Arrays.asList(new TileKey("main", 2, 3)), "the notice does not"
+            + " carry the square of the signal it is about, so a click on it can show only the station (MT-505)");
+
         // A NOTICE, NOT AN ERROR (MT-505): the setup still saves and runs.
         for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
         {
@@ -7393,6 +7398,74 @@ public class testAutonomyDiagramSession
 
         assertTrue(noticesAGuardOffTheWayIn(session), "an exit guard on track no train reaching the station runs over"
             + " is not noticed (AUT-C2)");
+    }
+
+    /**
+     * Clicking a guard notice outlines the signal as well as the station (MT-505).
+     *
+     * Adam, 2026-09-26, on MT-505: *"Works, but also highlight the affected signals when the notice is clicked."*  The
+     * notice named the signal in words and took the reader to the station, which is the one square it says nothing is
+     * wrong with.
+     *
+     * MUTATION: outline only the finding's own square, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testClickingAGuardNoticeOutlinesItsSignal() throws Exception
+    {
+        session.open(Arrays.asList(pageWithAGuardOffTheLine()));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey signal = new TileKey("main", 2, 3);
+
+        session.setStation(station, true);
+        session.setEntrySignals(station, Arrays.asList(signal));
+
+        final org.traincontrol.gui.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { });
+
+        java.lang.reflect.Field field = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("findings");
+
+        field.setAccessible(true);
+
+        final javax.swing.JList<?> list = (javax.swing.JList<?>) field.get(panel);
+
+        final int[] row = {-1};
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            for (int i = 0; i < list.getModel().getSize(); i++)
+            {
+                if (String.valueOf(list.getModel().getElementAt(i)).contains("but no way into")) row[0] = i;
+            }
+
+            if (row[0] >= 0) list.setSelectedIndex(row[0]);
+        });
+
+        assertTrue(row[0] >= 0, "precondition: the editor's list has no guard notice");
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        assertTrue(panel.getSelection().contains(signal), "a click on the guard notice did not outline the signal it is"
+            + " about (MT-505): " + panel.getSelection());
+
+        assertTrue(panel.getSelection().contains(station), "a click on the guard notice no longer outlines the station");
+    }
+
+    /** The squares, beyond its own, that the guard notice names - read by reflection, as the claim came first. */
+    private static List<?> squaresTheGuardNoticeNames(AutonomySession session) throws Exception
+    {
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        {
+            if ("autosetup.ui.checkGuardOffTheWayIn".equals(finding.getMessageKey()))
+            {
+                return new ArrayList<>((java.util.Collection<?>) finding.getClass().getMethod("getRelated")
+                    .invoke(finding));
+            }
+        }
+
+        return null;
     }
 
     private static boolean noticesAGuardOffTheWayIn(AutonomySession session)

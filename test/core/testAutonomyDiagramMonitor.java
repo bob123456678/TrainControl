@@ -1108,6 +1108,33 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
+     * A square autonomy will not choose - a parking berth, or one switched off - is drawn in a medium dark grey, not
+     * orange (FR-103).
+     *
+     * Adam, 2026-09-26, from MT-492: *"instead of orange, make them a medium dark gray that's just slightly darker than
+     * labels."*  Grey as the grey station labels are, and darker than they are.
+     *
+     * MUTATION: put the orange back, and this fails.
+     *
+     * @throws Exception from painting
+     */
+    @Test
+    public void testASquareAutonomyWillNotChooseIsGrey() throws Exception
+    {
+        java.awt.Color parking = markColour(plainBadge(true, false), 40);
+
+        int spread = Math.max(parking.getRed(), Math.max(parking.getGreen(), parking.getBlue()))
+            - Math.min(parking.getRed(), Math.min(parking.getGreen(), parking.getBlue()));
+
+        assertTrue(spread <= 16, "a square autonomy will not choose is not drawn grey (FR-103): " + parking);
+
+        int label = org.traincontrol.gui.StationCaption.PILL_GREY.getRed();
+
+        assertTrue(parking.getRed() < label && parking.getRed() >= label - 90, "a square autonomy will not choose is not"
+            + " a medium dark grey just darker than the grey station labels (" + label + ") (FR-103): " + parking);
+    }
+
+    /**
      * The cross gets heavier as the tile gets bigger, the way the old reversing-point cross did.
      *
      * Adam: "make the X a little thicker, close to what we had in the old reversing points."  That one
