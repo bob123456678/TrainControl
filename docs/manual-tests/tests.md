@@ -37,8 +37,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-567](#mt-567) | 2026-09-24 | Train lengths and station maximum lengths are named apart | fixed unvalidated | MT-533 |
 | [MT-569](#mt-569) | 2026-09-24 | The guard items say what each guard does | fixed unvalidated | OB-293 |
 | [MT-571](#mt-571) | 2026-09-24 | A train is not sent round a loop into its own tail | fixed unvalidated | OB-294 |
+| [MT-587](#mt-587) | 2026-09-27 | A station autonomy will not choose is marked grey, not orange | fixed unvalidated | FR-103 |
 
-Everything else - 576 of 586 - needs nothing from you unless the area changes again:
+Everything else - 576 of 587 - needs nothing from you unless the area changes again:
 453 **fixed validated** and 123 **superseded**.
 
 ---
@@ -25626,6 +25627,10 @@ Filed from this test: FR-103 (feature request - Update color of "autonomy won't 
 
 *Run against commit 5e3aeffa, in English - build\classes, compiled 26 Sep 08:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-27.**
+
+**FR-103, filed from this test, is built** (2026-09-27) - MT-587.
+
 ---
 
 <a id="mt-493"></a>
@@ -26093,6 +26098,10 @@ autonomy editor."*
 Works, but also highlight the affected signals when the notice is clicked.
 
 *Run against commit 5e3aeffa, in English - build\classes, compiled 26 Sep 08:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-27.**
+
+**Your note is built** (2026-09-27, `0d597c1a`): clicking the notice outlines the signal as well as the station, and shows the station; the notice for a signal on both of a station's guard lists does the same.  `core.testAutonomyDiagramSession.testClickingAGuardNoticeOutlinesItsSignal`.
 
 ---
 
@@ -28178,6 +28187,10 @@ Works, but prefill the textbox with the current length, if any.
 
 *Run against commit 5e3aeffa, in English - build\classes, compiled 26 Sep 08:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-27.**
+
+**Your note is built** (2026-09-27, `0d597c1a`): going through every train, the length box holds the train's length, selected, so a number typed replaces it; OK or Enter keeps it, as Skip does.  In step 2 the first prompt's box shows its length.  `core.testMassAssignLengths.testWithEveryTrainMeasuredTheWalkShowsEachAndSkipKeepsIt`.
+
 ---
 
 <a id="mt-567"></a>
@@ -28206,6 +28219,10 @@ Works, but prefill the textbox with the current length, if any.
 Change "Locomotive Train Lengths" to just "Train Lengths", andkeep "Station Max Train Lengths" as is.
 
 *Run against commit 5e3aeffa, in English - build\classes, compiled 26 Sep 08:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-27.**
+
+**Your note is built** (2026-09-27, `0d597c1a`): the item reads **Mass Assign Train Lengths (N missing)...** - and, with nothing to count, **Mass Assign Train Lengths...** - in all eight languages; the two station items are as they were.  The Expected line above still gives the old name: this is the one to check.  `core.testMassAssignLengths.testTrainLengthsAndStationMaximaAreNamedApart` now pins the English words.
 
 ---
 
@@ -28274,6 +28291,10 @@ Change "Locomotive Train Lengths" to just "Train Lengths", andkeep "Station Max 
 "station is taken" -> station is occupied.
 
 *Run against commit 5e3aeffa, in English - build\classes, compiled 26 Sep 08:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-27.**
+
+**Your note is built** (2026-09-27, `0d597c1a`): Exit Guard reads *"Signals held at red while this station is occupied - ..."*, in English and French; the other six languages already said occupied.  `regression.testTheEditorSaysWhatItsToolsDo.testTheGuardItemsSayWhatTheGuardsDo`.
 
 ---
 
@@ -28876,5 +28897,33 @@ The test above is `regression.testTheImportDoorReadsAnOldFile.testAnOldFileFromT
 **Claude, 2026-09-25.**
 
 **Superseded by an automated test** (2026-09-25, on your rule of today).  `ui.testWhereHisTrainsMayBeSent.testAStretchAnsweredZeroLetsHisTrainIntoTunnel` on the real window over a sandbox copy of your railway, with your own 75 407 DB from the test run's copy of your locomotive data.  In the autonomy editor on 1 - Main it Shift-clicks every square of the stretch between BottomSecondary and TunnelPre, chooses Segment Length... on one, types 0 and presses OK, and rebuilds the railway as closing the editor saving the change does; with the train 5 long at RampDown facing south, it asserts Tunnel is offered on the right-click, sends it there with that item, lets it drive in simulation, and asserts that standing at Tunnel it holds the whole stretch answered 0 and the track from RampDown into BottomSecondary.  Its setup is a sandbox copy and every length is put back, so the backup steps are not needed.  Nothing to run by hand; if you want it back on your list, say so and it returns to fixed unvalidated.
+
+---
+
+<a id="mt-587"></a>
+
+### MT-587 - 2026-09-27 - A station autonomy will not choose is marked grey, not orange
+
+**Disposition:** fixed unvalidated
+**From:** FR-103
+
+**Written:** 2026-09-27
+
+Your words, 2026-09-26, from MT-492: *"Update color of "autonomy won't choose these" stations - instead of orange,
+make them a medium dark gray that's just slightly darker than labels."*
+
+**Steps**
+
+1. With autonomy loaded, look at the mark on a parking station, or on a station switched off so that autonomy never
+   chooses it - on the track diagram, or in the autonomy editor.
+2. Compare it with the mark on a station autonomy does choose, and with a train's line.
+
+**Expected**
+
+- Step 1: the mark is a medium dark grey, rgb(128,130,134) - a little darker than the grey station labels - not orange.
+- Step 2: a station autonomy chooses is still blue, and a train's line is still orange.
+
+*What this is:* `core.testAutonomyDiagramMonitor.testASquareAutonomyWillNotChooseIsGrey`, red under the orange.  The
+shade is what only you can judge: say if you want it lighter or darker.
 
 ---
