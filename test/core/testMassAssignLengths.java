@@ -2529,6 +2529,28 @@ public class testMassAssignLengths
 
         assertEquals(boxed[0], "5", "the length box is empty for Charlie, whose length is 5 (MT-566)");
 
+        // AND SELECTED WHEN THE BOX TAKES THE KEYBOARD, so a number typed replaces it rather than being added to it
+        // (MT-566, RLV9-C7): the box's own focus listeners, run here, since a test cannot count on the window being given
+        // the focus
+        final String[] selected = new String[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            javax.swing.JTextField field = findField(first.getContentPane());
+
+            field.select(0, 0);
+
+            for (java.awt.event.FocusListener listener : field.getFocusListeners())
+            {
+                listener.focusGained(new java.awt.event.FocusEvent(field, java.awt.event.FocusEvent.FOCUS_GAINED));
+            }
+
+            selected[0] = field.getSelectedText();
+        });
+
+        assertEquals(selected[0], "5", "Charlie's 5 is not selected when the box takes the keyboard, so a number typed is"
+            + " added to it - 5 and 7 make 57 (MT-566, RLV9-C7)");
+
         answer(first, org.traincontrol.util.I18n.t("autosetup.ui.btnSkipOne"));
 
         javax.swing.JDialog second = awaitPrompt(first, TRAINS);

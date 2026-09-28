@@ -7447,10 +7447,150 @@ public class testAutonomyDiagramSession
 
         javax.swing.SwingUtilities.invokeAndWait(() -> { });
 
-        assertTrue(panel.getSelection().contains(signal), "a click on the guard notice did not outline the signal it is"
-            + " about (MT-505): " + panel.getSelection());
+        // OUTLINED, not selected (RLV9-C3) - read by reflection, as the claim came first
+        java.lang.reflect.Method outlined = org.traincontrol.gui.AutonomyEditorPanel.class.getMethod("isOutlined",
+            TileKey.class);
 
-        assertTrue(panel.getSelection().contains(station), "a click on the guard notice no longer outlines the station");
+        assertTrue((Boolean) outlined.invoke(panel, signal), "a click on the guard notice did not outline the signal it"
+            + " is about (MT-505)");
+
+        assertTrue((Boolean) outlined.invoke(panel, station), "a click on the guard notice no longer outlines the"
+            + " station");
+    }
+
+    /**
+     * A click on a guard notice outlines its squares without making them the bulk selection (RLV9-C3), so a length set
+     * afterwards on another square goes to that square.  The outline was the selection, and the next Segment Length - on
+     * any square - was written to the station and its signal instead.
+     *
+     * MUTATION: outline the notice's squares by selecting them, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testAGuardNoticeClickedSelectsNothing() throws Exception
+    {
+        session.open(Arrays.asList(pageWithAGuardOffTheLine()));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey signal = new TileKey("main", 2, 3);
+        TileKey elsewhere = new TileKey("main", 4, 1);
+
+        session.setStation(station, true);
+        session.setEntrySignals(station, Arrays.asList(signal));
+
+        final org.traincontrol.gui.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { });
+
+        clickTheGuardNotice(panel);
+
+        assertTrue(panel.getSelection().isEmpty(), "a click on the guard notice made its squares the bulk selection,"
+            + " which the next length is written to (RLV9-C3): " + panel.getSelection());
+
+        int stationWas = session.getStore().getTileLength(station);
+        int signalWas = session.getStore().getTileLength(signal);
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> panel.applyLengthAnswer(elsewhere, 9));
+
+        assertEquals(session.getStore().getTileLength(elsewhere), 9, "a length set on " + elsewhere + " after a click on"
+            + " the guard notice was not written there (RLV9-C3)");
+
+        assertEquals(session.getStore().getTileLength(station), stationWas, "a length set on " + elsewhere + " after a"
+            + " click on the guard notice was written to its station (RLV9-C3)");
+
+        assertEquals(session.getStore().getTileLength(signal), signalWas, "a length set on " + elsewhere + " after a"
+            + " click on the guard notice was written to its signal (RLV9-C3)");
+    }
+
+    /**
+     * A guard notice about a station on another page takes its signal with it to that page (RLV9-C5): the jump handed on
+     * only the station, and the editor opened there outlined the station alone.  Read by reflection, as the claim came
+     * first.
+     *
+     * MUTATION: jump with the station only, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testAGuardNoticeOnAnotherPageTakesItsSignalWithIt() throws Exception
+    {
+        session.open(Arrays.asList(pageWithAGuardOffTheLine(), aSecondPage()));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey signal = new TileKey("main", 2, 3);
+
+        session.setStation(station, true);
+        session.setEntrySignals(station, Arrays.asList(signal));
+
+        final org.traincontrol.gui.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.AutonomyEditorPanel(session, "far", () -> { });
+
+        final List<Object> handed = new ArrayList<>();
+
+        java.lang.reflect.Method jump = org.traincontrol.gui.AutonomyEditorPanel.class.getMethod("setOnJumpToNotice",
+            java.util.function.BiConsumer.class);
+
+        jump.invoke(panel, (java.util.function.BiConsumer<TileKey, List<TileKey>>) (at, related) ->
+        {
+            handed.add(at);
+            handed.addAll(related);
+        });
+
+        clickTheGuardNotice(panel);
+
+        assertTrue(handed.contains(station), "a click on a guard notice about another page did not go to its station: "
+            + handed);
+
+        assertTrue(handed.contains(signal), "a click on a guard notice about another page did not take its signal with"
+            + " it (RLV9-C5): " + handed);
+    }
+
+    /** Selects the guard notice in the editor's list, as a click on it does. */
+    private static void clickTheGuardNotice(org.traincontrol.gui.AutonomyEditorPanel panel) throws Exception
+    {
+        java.lang.reflect.Field field = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField("findings");
+
+        field.setAccessible(true);
+
+        final javax.swing.JList<?> list = (javax.swing.JList<?>) field.get(panel);
+
+        final int[] row = {-1};
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            for (int i = 0; i < list.getModel().getSize(); i++)
+            {
+                if (String.valueOf(list.getModel().getElementAt(i)).contains("but no way into")) row[0] = i;
+            }
+
+            if (row[0] >= 0) list.setSelectedIndex(row[0]);
+        });
+
+        assertTrue(row[0] >= 0, "precondition: the editor's list has no guard notice");
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /** A second page, "far", with one sensor on it. */
+    private LayoutDiagram aSecondPage() throws IOException
+    {
+        File pages = new File(layout, "config/gleisbilder");
+
+        assertTrue(pages.mkdirs() || pages.isDirectory(), "could not create " + pages);
+
+        File far = new File(pages, "far.cs2");
+
+        Files.write(far.toPath(), "[gleisbildseite]\nversion\n .major=1\n".getBytes(StandardCharsets.UTF_8));
+
+        String url = "file:///" + far.getAbsolutePath().replace('\\', '/');
+
+        LayoutDiagram page = new LayoutDiagram("far", 4, 2, url, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 9, 15, accessoryDecoderType.MM2, null);
+
+        page.setPageId("2");
+
+        return page;
     }
 
     /** The squares, beyond its own, that the guard notice names - read by reflection, as the claim came first. */
