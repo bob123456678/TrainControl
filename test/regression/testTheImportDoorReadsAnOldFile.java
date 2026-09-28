@@ -2949,6 +2949,385 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
+     * Stop Using Autonomy while an edit a run declined waits keeps where the trains stand, and the edit (RLV10-B1).  Its
+     * fold is not made then - it would take the edit away - and nothing else was: the model was cleared, the flag
+     * lowered, and the next load built every train the run moved back where the file had it, as the loads did before
+     * they carried the trains (RLA5-B1, RLV6-B1).
+     *
+     * MUTATION: keep nothing at Unload while an edit waits, or fold the whole running layout then, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAnUnloadWhileAnEditWaitsKeepsWhereTheRunLeftTheTrains() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
+
+        declined.setAccessible(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            AutonomySession session = ui[0].getAutonomySession();
+
+            final String inUse = session.getStore().getActiveConfiguration();
+
+            assertEquals(ui[0].getActiveDiagramConfiguration(), inUse, "precondition: " + inUse + " is not running");
+
+            final Object[] edit = anEditWaits(ui[0], session, inUse);
+
+            final String[] move = moveAStandingTrain(ui[0], session);
+
+            assertTheConfigurationHasItWhereItSetOff(session, inUse, move);
+
+            declined.set(ui[0], true);
+
+            answeringYes(() -> ui[0].unloadAutonomy());
+
+            assertFalse(ui[0].getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
+
+            answeringYes(() -> ui[0].getAutonomyViewerPanel().load(inUse, true));
+
+            assertTrue(ui[0].getModel().hasAutoLayout(), "precondition: " + inUse + " did not load again");
+
+            assertStandsWhereItWasMoved(ui[0], move, "after Stop Using Autonomy while an edit waited, and a load"
+                + " (RLV10-B1)");
+
+            assertTheEditStands(ui[0].getAutonomySession(), inUse, edit, "after Stop Using Autonomy and a load"
+                + " (RLV10-B1)");
+        }
+        finally
+        {
+            if (ui[0] != null) declined.set(ui[0], false);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * A turn the railway owes when Stop Using Autonomy is confirmed during a run is written into the configuration it
+     * leaves (RLV10-C1): the train faces the way it came in.  The turns are written only while the railway is idle, so
+     * during a run every one made since it started is still owed, and Unload dropped them with the railway: the
+     * configuration had the turned train facing the way it arrived, and the next dispatch was offered paths for that
+     * heading (OB-189).
+     *
+     * MUTATION: leave the turns on the railway Unload drops, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAnUnloadWritesTheTurnsTheRailwayOwes() throws Exception
+    {
+        turnOwedThen(true);
+    }
+
+    /**
+     * The same where another configuration is chosen (RLV10-C1): the turns are the configuration left's, written into it
+     * with its fold.
+     *
+     * MUTATION: leave the turns on the railway the choice replaces, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testChoosingAnotherConfigurationWritesTheTurnsTheRailwayOwes() throws Exception
+    {
+        turnOwedThen(false);
+    }
+
+    /** The two above: a turn owed during a run, then Unload, or another configuration chosen. */
+    private static void turnOwedThen(boolean unload) throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        Thread driving = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            if (!unload) addAConfigurationLikeTheOneInUse("Other");
+
+            ui[0] = openTheWindow();
+
+            AutonomySession session = ui[0].getAutonomySession();
+
+            final String inUse = session.getStore().getActiveConfiguration();
+
+            final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
+
+            final Object[] dispatched = dispatchATrain(ui[0], null);
+
+            driving = (Thread) dispatched[3];
+
+            // A STANDING TRAIN ON A SPLIT SQUARE, with the side it came in by recorded and the setup facing another way
+            org.traincontrol.automation.Point at = null;
+
+            for (org.traincontrol.automation.Point p : railway.getPoints())
+            {
+                org.traincontrol.base.Locomotive l = p.getCurrentLocomotive();
+
+                if (at != null || l == null || l.getName().equals(dispatched[0]) || p.getArrivedFrom() == null) continue;
+
+                if (railway.getActiveLocomotives().containsKey(l)) continue;
+
+                TileKey square = session.getStationIndex().squareOf(p.getName());
+
+                if (square == null || p.getArrivedFrom().equals(facingIn(session, inUse, square))) continue;
+
+                for (org.traincontrol.automation.Point q : railway.getPoints())
+                {
+                    if (q != p && p.isSamePlaceAs(q)) at = p;
+                }
+            }
+
+            assertNotNull(at, "precondition: no standing train on a split square with a side recorded that its setup"
+                + " facing is not");
+
+            final String turned = at.getCurrentLocomotive().getName();
+            final String came = at.getArrivedFrom();
+            final TileKey square = session.getStationIndex().squareOf(at.getName());
+
+            java.util.Map<String, String> owed = new java.util.HashMap<>();
+
+            owed.put(turned, at.getName());
+
+            railway.restoreReversalsOnArrival(owed);
+
+            // THE DRAIN DECLINES WHILE THE RAILWAY RUNS: still owed
+            SwingUtilities.invokeAndWait(() -> ui[0].reconcileFacingWhenIdle());
+
+            assertEquals(railway.turnedOnArrivalAt(turned), at.getName(), "precondition: the turn was written while "
+                + dispatched[0] + " was under way");
+
+            if (unload)
+            {
+                answeringYes(() -> ui[0].unloadAutonomy());
+
+                assertFalse(ui[0].getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
+            }
+            else
+            {
+                answeringYes(() -> ui[0].getAutonomyViewerPanel().load("Other", true));
+
+                assertEquals(ui[0].getActiveDiagramConfiguration(), "Other", "precondition: Other was not chosen");
+            }
+
+            assertEquals(facingIn(ui[0].getAutonomySession(), inUse, square), came, inUse + " has " + turned + ", turned"
+                + " round at " + square + " during the run, facing the way it arrived after "
+                + (unload ? "Stop Using Autonomy" : "another configuration was chosen") + " - the turn it owed was"
+                + " dropped with the railway (RLV10-C1)");
+        }
+        finally
+        {
+            if (driving != null) driving.interrupt();
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** The facing a configuration records for a square, or null. */
+    private static String facingIn(AutonomySession session, String configuration, TileKey square)
+    {
+        org.json.JSONObject points = session.getStore().getConfiguration(configuration).optJSONObject("points");
+
+        org.json.JSONObject extras = points == null ? null : points.optJSONObject(square.toString());
+
+        return extras == null || !extras.has(AutonomyBuilder.FACING) ? null : extras.getString(AutonomyBuilder.FACING);
+    }
+
+    /** A second configuration in the sandbox, a copy of the one in use under another name. */
+    private static void addAConfigurationLikeTheOneInUse(String name) throws Exception
+    {
+        String root = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+
+        assertTrue(root.contains("tc-sandbox-layout"), "precondition: the layout preference is not the sandbox: " + root);
+
+        File folder = new File(root, "config/autonomy");
+
+        File[] configurations = folder.listFiles((dir, file) -> file.startsWith("configuration-") && file.endsWith(".json"));
+
+        assertTrue(configurations != null && configurations.length > 0, "precondition: the sandbox has no configuration");
+
+        org.json.JSONObject copy = new org.json.JSONObject(new String(java.nio.file.Files.readAllBytes(
+            configurations[0].toPath()), java.nio.charset.StandardCharsets.UTF_8));
+
+        copy.put("name", name);
+
+        java.nio.file.Files.write(new File(folder, "configuration-" + name + ".json").toPath(),
+            copy.toString(2).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    /**
+     * The editor opened for a finding outlines what the finding names - its own square and those beside it - and a
+     * finding that names nothing beside its own is shown, not outlined (RLV10-C3, RLV10-C5): the editor's own list does
+     * the same.  The Auto tab's list opens the editor this way, with each row's squares, an empty list for most.
+     *
+     * MUTATION: open without the outline, or outline a finding that names nothing, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheEditorOpenedForAFindingOutlinesWhatItNames() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            AutonomySession session = ui[0].getAutonomySession();
+
+            // Two stations of one page
+            TileKey first = null;
+            TileKey second = null;
+
+            for (org.traincontrol.automation.Point p : ui[0].getModel().getAutoLayout().getPoints())
+            {
+                TileKey square = p.isDestination() ? session.getStationIndex().squareOf(p.getName()) : null;
+
+                if (square == null) continue;
+
+                if (first == null) first = square;
+                else if (second == null && !square.equals(first) && square.getPage().equals(first.getPage())) second = square;
+            }
+
+            assertNotNull(second, "precondition: no two stations on one page");
+
+            org.traincontrol.gui.AutonomyEditorPanel shown = openTheEditorFor(ui[0], first, Collections.emptyList());
+
+            assertFalse(shown.isOutlined(first), "the editor opened for a finding that names nothing beside its own"
+                + " outlines its square, as it outlines the bulk selection - the editor's own list only shows it"
+                + " (RLV10-C3)");
+
+            closeTheEditor(ui[0]);
+
+            shown = openTheEditorFor(ui[0], first, Collections.singletonList(second));
+
+            assertTrue(shown.isOutlined(first) && shown.isOutlined(second), "the editor opened for a finding that names"
+                + " another square does not outline both (RLV9-C5, RLV10-C5)");
+
+            closeTheEditor(ui[0]);
+        }
+        finally
+        {
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** Opens the autonomy editor at a square, as a finding's click does, and waits for it to settle. */
+    private static org.traincontrol.gui.AutonomyEditorPanel openTheEditorFor(TrainControlUI ui, TileKey at,
+        List<TileKey> related) throws Exception
+    {
+        answeringYes(() -> ui.openAutonomyEditor(at, related));
+
+        java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
+
+        open.setAccessible(true);
+
+        org.traincontrol.gui.LayoutEditor editor = null;
+
+        long until = System.currentTimeMillis() + 20000;
+
+        while (System.currentTimeMillis() < until)
+        {
+            SwingUtilities.invokeAndWait(() -> { });
+
+            editor = (org.traincontrol.gui.LayoutEditor) open.get(ui);
+
+            if (editor != null && editor.getAutonomyPanel() != null) break;
+
+            Thread.sleep(100);
+        }
+
+        assertTrue(editor != null && editor.getAutonomyPanel() != null, "precondition: the autonomy editor did not open");
+
+        // The reveal and the outline are posted twice over behind the editor's own build
+        for (int turn = 0; turn < 10; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+        Thread.sleep(500);
+
+        for (int turn = 0; turn < 10; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+        return editor.getAutonomyPanel();
+    }
+
+    /** Closes the editor `openTheEditorFor` opened. */
+    private static void closeTheEditor(TrainControlUI ui) throws Exception
+    {
+        java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
+
+        open.setAccessible(true);
+
+        final org.traincontrol.gui.LayoutEditor editor = (org.traincontrol.gui.LayoutEditor) open.get(ui);
+
+        if (editor == null) return;
+
+        answeringYes(() ->
+        {
+            editor.dispose();
+
+            ui.autonomyEditorClosed();
+        });
+
+        for (int turn = 0; turn < 10; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+        open.set(ui, null);
+    }
+
+    /**
      * An edit a run declined, as RLD4-C3's claim makes one: a priority written into the configuration and not into the
      * running layout, on a station of his railway - and to the file, as a declined edit is, so a reset that reads the
      * setup again finds it.

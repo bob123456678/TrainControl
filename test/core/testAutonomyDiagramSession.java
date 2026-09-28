@@ -7503,6 +7503,39 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A clicked notice's outline goes with the next click on the diagram (RLV10-C5): it is drawn as the bulk selection
+     * is, and left standing it reads as a selection nothing is in.
+     *
+     * MUTATION: leave the outline after a click on the diagram, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testAClickOnTheDiagramTakesANoticesOutlineAway() throws Exception
+    {
+        session.open(Arrays.asList(pageWithAGuardOffTheLine()));
+
+        TileKey station = new TileKey("main", 1, 1);
+        TileKey signal = new TileKey("main", 2, 3);
+
+        session.setStation(station, true);
+        session.setEntrySignals(station, Arrays.asList(signal));
+
+        final org.traincontrol.gui.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { });
+
+        clickTheGuardNotice(panel);
+
+        assertTrue(panel.isOutlined(signal), "precondition: the notice's signal is not outlined");
+
+        // An empty square, which a click changes nothing on
+        javax.swing.SwingUtilities.invokeAndWait(() -> panel.tileClicked(new TileKey("main", 6, 2), null, false));
+
+        assertFalse(panel.isOutlined(signal) || panel.isOutlined(station), "a click on the diagram left the guard"
+            + " notice's squares outlined (RLV10-C5)");
+    }
+
+    /**
      * A guard notice about a station on another page takes its signal with it to that page (RLV9-C5): the jump handed on
      * only the station, and the editor opened there outlined the station alone.  Read by reflection, as the claim came
      * first.

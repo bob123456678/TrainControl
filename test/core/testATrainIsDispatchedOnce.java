@@ -694,6 +694,127 @@ public class testATrainIsDispatchedOnce
         }
     }
 
+    /**
+     * The station ahead a train is kept on is not one another train under way is kept at, whichever of the two the map
+     * yields first (RLV10-C2); and it is a station, not the first point it holds (RLV10-C5).
+     *
+     * A has set off from TA, past no sensor, along TA-TJ-TS-TB, and B has since stopped on TA; C set off from TS towards
+     * TC, past no sensor, TS released behind it and then locked through for A.  A's station ahead that it holds is TS -
+     * where C is kept - so which of the two kept it followed the map's order, and in about half the orders C was read
+     * nowhere and a fold wrote it on no point.  Over every ordered pair of seven locomotives as A and C, both orders
+     * come up.  TJ, a point that is no station, is held by A and nearer.
+     *
+     * MUTATION: decide against the map as it is rewritten, keep a train on a station another is kept at, or on the first
+     * point ahead it holds, and this fails.
+     *
+     * @throws Exception from reflection
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testTheStationAheadIsNotAnotherTrainsKeptPoint() throws Exception
+    {
+        java.lang.reflect.Method reserve = org.traincontrol.automation.Point.class.getDeclaredMethod("reserve",
+            Locomotive.class);
+
+        reserve.setAccessible(true);
+
+        java.lang.reflect.Method kept = Layout.class.getMethod("toJSON", java.util.Map.class);
+
+        List<String> wrong = new ArrayList<>();
+
+        int pairs = 0;
+
+        List<String> names = model.getLocList().subList(0, Math.min(7, model.getLocList().size()));
+
+        for (String nameA : names)
+        {
+            for (String nameC : names)
+            {
+                if (nameA.equals(nameC)) continue;
+
+                String nameB = null;
+
+                for (String other : names)
+                {
+                    if (nameB == null && !other.equals(nameA) && !other.equals(nameC)) nameB = other;
+                }
+
+                Locomotive a = model.getLocByName(nameA);
+                Locomotive b = model.getLocByName(nameB);
+                Locomotive c = model.getLocByName(nameC);
+
+                Layout layout = new Layout(model);
+
+                layout.createPoint("TA", true, "194");
+                layout.createPoint("TJ", false, null);
+                layout.createPoint("TS", true, "195");
+                layout.createPoint("TB", true, "196");
+                layout.createPoint("TC", true, "197");
+
+                layout.createEdge("TA", "TJ");
+                layout.createEdge("TJ", "TS");
+                layout.createEdge("TS", "TB");
+                layout.createEdge("TS", "TC");
+
+                reserve.invoke(layout.getPoint("TC"), c);
+                reserve.invoke(layout.getPoint("TJ"), a);
+                reserve.invoke(layout.getPoint("TS"), a);
+                reserve.invoke(layout.getPoint("TB"), a);
+
+                layout.getPoint("TA").setLocomotive(b);
+
+                java.util.Map<Locomotive, List<Edge>> active =
+                    (java.util.Map<Locomotive, List<Edge>>) field(layout, "activeLocomotives");
+                java.util.Map<Locomotive, List<org.traincontrol.automation.Point>> milestones =
+                    (java.util.Map<Locomotive, List<org.traincontrol.automation.Point>>) field(layout, "locomotiveMilestones");
+
+                active.put(a, Arrays.asList(layout.getEdge("TA", "TJ"), layout.getEdge("TJ", "TS"),
+                    layout.getEdge("TS", "TB")));
+                milestones.put(a, new java.util.concurrent.CopyOnWriteArrayList<>(Arrays.asList(layout.getPoint("TA"))));
+
+                active.put(c, Arrays.asList(layout.getEdge("TS", "TC")));
+                milestones.put(c, new java.util.concurrent.CopyOnWriteArrayList<>(Arrays.asList(layout.getPoint("TS"))));
+
+                pairs++;
+
+                java.util.Map<Locomotive, org.traincontrol.automation.Point> keptAt = layout.getLastPointsReached();
+
+                java.util.Map<String, String[]> read = org.traincontrol.gui.TrainControlUI.whereTheTrainsAre(layout);
+
+                java.util.Map<String, String> written = new java.util.HashMap<>();
+
+                for (Object point : new org.json.JSONObject((String) kept.invoke(layout, keptAt)).getJSONArray("points"))
+                {
+                    org.json.JSONObject p = (org.json.JSONObject) point;
+
+                    if (p.has("loc")) written.put(p.getJSONObject("loc").getString("name"), p.getString("name"));
+                }
+
+                String said = "A=" + nameA + " kept at " + (keptAt.get(a) == null ? null : keptAt.get(a).getName())
+                    + ", C=" + nameC + " kept at " + (keptAt.get(c) == null ? null : keptAt.get(c).getName())
+                    + "; the carry reads A at " + (read.get(nameA) == null ? null : read.get(nameA)[0]) + ", C at "
+                    + (read.get(nameC) == null ? null : read.get(nameC)[0]) + "; the fold writes " + written;
+
+                if (keptAt.get(a) != layout.getPoint("TB") || keptAt.get(c) != layout.getPoint("TS")
+                    || read.get(nameA) == null || !"TB".equals(read.get(nameA)[0])
+                    || read.get(nameC) == null || !"TS".equals(read.get(nameC)[0])
+                    || !"TB".equals(written.get(nameA)) || !"TS".equals(written.get(nameC))
+                    || !"TA".equals(written.get(nameB)))
+                {
+                    wrong.add(said);
+                }
+
+                active.clear();
+                milestones.clear();
+            }
+        }
+
+        assertTrue(pairs >= 6, "precondition: fewer than three locomotives to pair");
+
+        assertTrue(wrong.isEmpty(), wrong.size() + " of " + pairs + " orders keep A on TS, where C is kept, or on TJ,"
+            + " which is no station, or read or write one of them on no point (RLV10-C2, RLV10-C5): " + wrong);
+    }
+
     private static Object field(Object target, String name) throws Exception
     {
         java.lang.reflect.Field f = target.getClass().getDeclaredField(name);

@@ -1101,6 +1101,56 @@ public class testHomeStaging
     }
 
     /**
+     * A fold while the plan occupies the timetable writes his timetable, not the plan, and no one-at-a-time flag; and
+     * once the plan has handed it back a fold writes the timetable as it is then (RLV9-B1, RLV10-C5).  The loan ends
+     * with the hand-back, or a timetable changed afterwards - an entry deleted, a run captured - would never be saved:
+     * the one he had when Return Home began would be written instead, every time.
+     *
+     * MUTATION: fold the timetable the railway holds while the plan has it, or leave the loan standing after the
+     * hand-back, and this fails.
+     *
+     * @throws Exception from the JSON
+     */
+    @Test
+    public void testAFoldWritesHisTimetableWhileThePlanHasItAndTheTimetableOnceItIsBack() throws Exception
+    {
+        Layout layout = load(ring(LOC_A, LOC_B, null));
+
+        List<TimetablePath> original = giveTimetable(layout, LOC_A);
+
+        List<TimetablePath> borrowed = new ArrayList<>(layout.getTimetable());
+
+        assertTrue(layout.moveLocomotive(LOC_A, "HS D", false));
+
+        assertTrue(layout.loadReturnToHomeTimetable().isPossible(), "precondition: the fixture must produce a plan");
+
+        org.json.JSONObject folded = new org.json.JSONObject(layout.toJSON());
+
+        assertEquals(folded.getJSONArray("timetable").length(), original.size(), "a fold while the plan has the"
+            + " timetable wrote the plan (RLV9-B1)");
+
+        for (int i = 0; i < original.size(); i++)
+        {
+            assertTrue(original.get(i).toJSON().similar(folded.getJSONArray("timetable").getJSONObject(i)), "a fold"
+                + " while the plan has the timetable wrote entry " + i + " other than his (RLV9-B1)");
+        }
+
+        assertFalse(folded.optBoolean("timetableSequential", false), "a fold while the plan has the timetable marked"
+            + " it to run one train at a time (RLV9-B1)");
+
+        // HANDED BACK, as the runner's finally hands it back, and then changed: an entry deleted
+        layout.setTimetable(borrowed);
+
+        layout.getTimetable().remove(1);
+
+        folded = new org.json.JSONObject(layout.toJSON());
+
+        assertEquals(folded.getJSONArray("timetable").length(), 1, "a fold after the plan handed the timetable back"
+            + " wrote the timetable as it was when Return Home began, not as it is - the loan outlived the hand-back"
+            + " (RLV10-C5)");
+    }
+
+    /**
      * With capture on, a staging run records nothing.
      *
      * Capture appends every path a locomotive starts to the timetable - and a staging run IS the
