@@ -1857,6 +1857,19 @@ public class testTheImportDoorReadsAnOldFile
             // without a fold, it goes back where it set off
             final String[] move = moveAStandingTrain(ui[0], session);
 
+            assertTheConfigurationHasItWhereItSetOff(session, inUse, move);
+
+            // AND WHAT ONLY A FOLD KEEPS (RLV8-B1): the Auto tab's settings changed since the last save, and a
+            // timetable captured this session - set while idle, as the sliders are, before the train sets off
+            final org.traincontrol.automation.Layout idle = ui[0].getModel().getAutoLayout();
+
+            if (!editWaits)
+            {
+                idle.setMaxDelay(7);
+                idle.setMaxActiveTrains(5);
+                idle.setTimetableCapture(true);
+            }
+
             final Object[] dispatched = dispatchATrain(ui[0], move[0]);
 
             driving = (Thread) dispatched[3];
@@ -1869,6 +1882,14 @@ public class testTheImportDoorReadsAnOldFile
 
             assertTrue(ui[0].getModel().isAutonomyRunning(), "precondition: autonomy does not read busy with " + train
                 + " under way");
+
+            final int captured = before.getTimetableSnapshot().size();
+
+            if (!editWaits)
+            {
+                assertTrue(captured > 0, "precondition: capture was on and " + train + " was sent, and the timetable"
+                    + " captured nothing");
+            }
 
             // THE RULE (RLV7-C1), as every carry reads it
             String[] read = TrainControlUI.whereTheTrainsAre(before).get(train);
@@ -1901,6 +1922,20 @@ public class testTheImportDoorReadsAnOldFile
 
             assertEquals(squaresPlacing(ui[0].getAutonomySession(), inUse, train), 1, inUse + " places " + train + " on"
                 + " other than one square after the reload (RLV7-B1)");
+
+            if (!editWaits)
+            {
+                org.traincontrol.automation.Layout after = ui[0].getModel().getAutoLayout();
+
+                assertEquals(after.getMaxDelay(), 7, "the reload with " + train + " under way put the Auto tab's maximum"
+                    + " delay back to the file's (RLV8-B1)");
+
+                assertEquals(after.getMaxActiveTrains(), 5, "the reload with " + train + " under way put the Auto tab's"
+                    + " maximum active trains back to the file's (RLV8-B1)");
+
+                assertEquals(after.getTimetableSnapshot().size(), captured, "the reload with " + train + " under way"
+                    + " lost the timetable captured this session (RLV8-B1)");
+            }
 
             if (editWaits)
             {
@@ -2171,11 +2206,14 @@ public class testTheImportDoorReadsAnOldFile
     /**
      * A switch of railway forgets the railway it leaves (RLV7-C2): the flag a declined edit raised, and the name of the
      * configuration the reset forgot.  The load that followed read "no configuration running" as the reset after an
-     * edit, and carried the previous railway's trains across by Point name.
+     * edit, and carried the previous railway's trains across by Point name.  And only when the railway changes
+     * (RLV8-C5): choosing the folder already in use reloads the same railway, whose trains are carried as any reload
+     * carries them.
      *
-     * The door every switch of layout source ends in, `initializeTrackDiagram`, over the same folder.
+     * The door every switch of layout source ends in, `initializeTrackDiagram`: first over the same folder, then over a
+     * source named differently.
      *
-     * MUTATION: read no configuration running as the one being loaded, or leave the flag up, and this fails.
+     * MUTATION: forget the railway on every switch, or on none, and this fails.
      *
      * @throws Exception from the window
      */
@@ -2208,6 +2246,11 @@ public class testTheImportDoorReadsAnOldFile
 
             final String[] move = moveAStandingTrain(ui[0], session);
 
+            java.lang.reflect.Field forgotten = TrainControlUI.class.getDeclaredField("forgottenByTheReset");
+
+            forgotten.setAccessible(true);
+
+            // THE SAME FOLDER, chosen again (RLV8-C5): the same railway, so nothing is forgotten, and the load carries
             declined.set(ui[0], true);
 
             SwingUtilities.invokeAndWait(() -> ui[0].initializeTrackDiagram(false));
@@ -2217,25 +2260,182 @@ public class testTheImportDoorReadsAnOldFile
             assertEquals(ui[0].getActiveDiagramConfiguration(), null, "precondition: the switch left a configuration"
                 + " running");
 
-            assertFalse((Boolean) declined.get(ui[0]), "a switch of railway left the flag up, about a railway no longer"
-                + " shown (RLV7-C2)");
+            assertTrue((Boolean) declined.get(ui[0]), "choosing the folder already in use forgot the edit that waits, as"
+                + " if it were another railway (RLV8-C5)");
 
-            java.lang.reflect.Field forgotten = TrainControlUI.class.getDeclaredField("forgottenByTheReset");
-
-            forgotten.setAccessible(true);
-
-            assertEquals(forgotten.get(ui[0]), null, "a switch of railway remembers the configuration the previous one"
-                + " ran, for a load to carry its trains across (RLV7-C2)");
+            assertEquals(forgotten.get(ui[0]), inUse, "choosing the folder already in use forgot which configuration it"
+                + " ran (RLV8-C5)");
 
             answeringYes(() -> ui[0].getAutonomyViewerPanel().load(inUse, true));
 
-            org.traincontrol.automation.Point where = ui[0].getModel().getAutoLayout()
-                .getLocomotiveLocation(ui[0].getModel().getLocByName(move[0]));
+            assertStandsWhereItWasMoved(ui[0], move, "after the folder in use was chosen again and loaded (RLV8-C5)");
 
-            assertNotNull(where, move[0] + " is off the railway after the load");
+            // ANOTHER SOURCE (RLV7-C2): the same files, named differently, stand for a railway that is not this one
+            final String[] moved = moveAStandingTrain(ui[0], ui[0].getAutonomySession());
 
-            assertEquals(where.getName(), move[1], "a load after a switch of railway carried " + move[0] + " across from"
-                + " the railway left, by Point name (RLV7-C2)");
+            declined.set(ui[0], true);
+
+            final String source = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+
+            TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, source + java.io.File.separator);
+
+            try
+            {
+                SwingUtilities.invokeAndWait(() -> ui[0].initializeTrackDiagram(false));
+
+                for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+                assertFalse((Boolean) declined.get(ui[0]), "a switch of railway left the flag up, about a railway no"
+                    + " longer shown (RLV7-C2)");
+
+                assertEquals(forgotten.get(ui[0]), null, "a switch of railway remembers the configuration the previous"
+                    + " one ran, for a load to carry its trains across (RLV7-C2)");
+
+                answeringYes(() -> ui[0].getAutonomyViewerPanel().load(inUse, true));
+
+                org.traincontrol.automation.Point where = ui[0].getModel().getAutoLayout()
+                    .getLocomotiveLocation(ui[0].getModel().getLocByName(moved[0]));
+
+                assertNotNull(where, moved[0] + " is off the railway after the load");
+
+                assertEquals(where.getName(), moved[1], "a load after a switch of railway carried " + moved[0] + " across"
+                    + " from the railway left, by Point name (RLV7-C2)");
+            }
+            finally
+            {
+                TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, source);
+            }
+        }
+        finally
+        {
+            if (ui[0] != null) declined.set(ui[0], false);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * Unload retires the railway it unloads (RLV8-A1): a train its thread was driving, stopped by Unload's Yes between
+     * two sensors, is not driven on when it reaches the next one.
+     *
+     * A path's thread asks, at each sensor, whether its railway is still the current one, and every load replaces it
+     * with a newer one.  Unload replaced it with nothing, and the retirement came by accident - the autonomy panel's list
+     * built an empty railway as Unload remade it.  RLV7-C2 removed that, and the unloaded railway stayed current.
+     *
+     * MUTATION: drop the railway at Unload without retiring it, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAnUnloadRetiresTheRailwayItUnloads() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        Thread driving = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final Object[] dispatched = dispatchATrain(ui[0], null);
+
+            driving = (Thread) dispatched[3];
+
+            final org.traincontrol.automation.Layout unloaded = ui[0].getModel().getAutoLayout();
+
+            assertTrue(unloaded.isCurrentLayout(), "precondition: the railway running is not the current one");
+
+            List<String> asked = answeringYes(() -> ui[0].unloadAutonomy());
+
+            assertTrue(asked.contains(I18n.t("autolayout.ui.confirmReloadJsonStopsRunningLocomotives")), "precondition:"
+                + " Unload did not ask to stop the trains: " + asked);
+
+            assertFalse(ui[0].getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
+
+            assertFalse(unloaded.isCurrentLayout(), "the railway Unload dropped is still the current one, so the thread"
+                + " driving " + dispatched[0] + " drives it on at line speed when it reaches the sensor it waits for"
+                + " (RLV8-A1)");
+        }
+        finally
+        {
+            if (driving != null) driving.interrupt();
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * Deleting the configuration running forgets the railway, as Unload does (RLV7-C2, RLV8-C7): the flag and the name
+     * the reset forgot.
+     *
+     * MUTATION: leave the delete door's forgetting out, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testADeletedSetupForgetsTheRailway() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
+
+        declined.setAccessible(true);
+
+        java.lang.reflect.Field forgotten = TrainControlUI.class.getDeclaredField("forgottenByTheReset");
+
+        forgotten.setAccessible(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            declined.set(ui[0], true);
+
+            SwingUtilities.invokeAndWait(() -> ui[0].autonomySetupDeleted());
+
+            for (int turn = 0; turn < 4; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertFalse(ui[0].getModel().hasAutoLayout(), "precondition: the delete door left a railway loaded");
+
+            assertFalse((Boolean) declined.get(ui[0]), "deleting the setup left the flag up, with no railway for an edit"
+                + " to wait for (RLV8-C7)");
+
+            assertEquals(forgotten.get(ui[0]), null, "deleting the setup remembers the configuration it ran, for a load"
+                + " to carry its trains across (RLV8-C7)");
         }
         finally
         {
@@ -2286,11 +2486,74 @@ public class testTheImportDoorReadsAnOldFile
 
             ui[0] = openTheWindow();
 
+            java.lang.reflect.Field covered = TrainControlUI.class.getDeclaredField("coveredTrack");
+
+            covered.setAccessible(true);
+
+            long until = System.currentTimeMillis() + 20000;
+
+            while (((java.util.Map<?, ?>) covered.get(ui[0])).isEmpty() && System.currentTimeMillis() < until)
+            {
+                Thread.sleep(100);
+            }
+
+            assertFalse(((java.util.Map<?, ?>) covered.get(ui[0])).isEmpty(), "precondition: no track is washed as"
+                + " covered by a standing train");
+
             declined.set(ui[0], true);
 
             answeringYes(() -> ui[0].unloadAutonomy());
 
             assertFalse(ui[0].getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
+
+            // NO WASH (RLV8-C1): with nothing loaded no track is covered by a standing train
+            until = System.currentTimeMillis() + 10000;
+
+            while (!((java.util.Map<?, ?>) covered.get(ui[0])).isEmpty() && System.currentTimeMillis() < until)
+            {
+                Thread.sleep(100);
+            }
+
+            assertTrue(((java.util.Map<?, ?>) covered.get(ui[0])).isEmpty(), "after Unload the diagram still washes the"
+                + " track the unloaded configuration's trains covered (RLV8-C1)");
+
+            // NOR DOES THE LATENCY PING, OR A TIMETABLE REPAINT, BUILD ONE (RLV8-C2): with the power on, it asked the
+            // model for its railway, which makes one where there is none
+            java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
+
+            power.setAccessible(true);
+
+            Object powerWas = power.get(ui[0].getModel());
+
+            try
+            {
+                power.set(ui[0].getModel(), true);
+
+                java.lang.reflect.Method ping = TrainControlUI.class.getDeclaredMethod("checkAutoLayoutLatency",
+                    double.class);
+
+                ping.setAccessible(true);
+
+                ping.invoke(ui[0], 0.0);
+
+                assertFalse(ui[0].getModel().hasAutoLayout(), "after Unload the latency ping built a railway, which"
+                    + " hasAutoLayout then answers yes about (RLV8-C2)");
+
+                java.lang.reflect.Method repaint = TrainControlUI.class.getDeclaredMethod("repaintTimetable");
+
+                repaint.setAccessible(true);
+
+                repaint.invoke(ui[0]);
+
+                for (int turn = 0; turn < 4; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+                assertFalse(ui[0].getModel().hasAutoLayout(), "after Unload a timetable repaint - every milestone's"
+                    + " refresh - built a railway (RLV8-C2)");
+            }
+            finally
+            {
+                power.set(ui[0].getModel(), powerWas);
+            }
 
             assertFalse((Boolean) declined.get(ui[0]), "Unload left the flag up, with no railway for an edit to wait for"
                 + " (RLV7-C2)");

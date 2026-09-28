@@ -413,6 +413,162 @@ public class testATrainIsDispatchedOnce
         }
     }
 
+    /**
+     * A railway loaded into an empty model is the current one, even when something asked the model for its railway while
+     * the load was being parsed (RLV8-C3).
+     *
+     * Asking an empty model builds a railway, and every railway built is newer than those before it.  The parse built
+     * the loaded one first, so one built during the parse was newer, and the one loaded was retired from the start:
+     * valid, named as running, and no train it sent would get under way.  The seam runs where the lookup would land.
+     *
+     * MUTATION: assign the parsed railway without making it the current one, and this fails.
+     *
+     * @throws Exception from the parse
+     */
+    @Test
+    public void testARailwayLoadedIsCurrentThoughOneWasBuiltDuringItsParse() throws Exception
+    {
+        Layout built = oneEdge();
+
+        built.setDefaultLocSpeed(30);
+
+        final String json = built.toJSON();
+
+        java.lang.reflect.Field seam = MarklinControlStation.class.getField("whileParsingForTest");
+
+        model.clearAutoLayout();
+
+        seam.set(null, (Runnable) () -> model.getAutoLayout());
+
+        try
+        {
+            model.parseAuto(json);
+        }
+        finally
+        {
+            seam.set(null, null);
+        }
+
+        Layout loaded = model.getAutoLayout();
+
+        assertEquals(loaded.getPoints().size(), 2, "precondition: the model holds something other than the railway"
+            + " loaded");
+
+        assertTrue(loaded.isCurrentLayout(), "a railway loaded while a lookup built one during its parse is retired from"
+            + " the start, so no train it sends gets under way (RLV8-C3)");
+
+        model.clearAutoLayout();
+    }
+
+    /**
+     * A train under way whose last station a release has cleared, atomic routes off, is read there - and written there
+     * by a fold - though another train's path now runs through it (RLV8-C4).
+     *
+     * A second train locking a path through that point is recorded on it; the carry skipped the first train wherever the
+     * point had any occupant, so it was modelled back where it set off, and the fold wrote the second train there as if
+     * it stood.  A train only passing through stands elsewhere.
+     *
+     * Built by hand, as a run would leave it: the maps a dispatch writes, set directly.
+     *
+     * MUTATION: skip wherever the point has an occupant, or write each point's occupant, and this fails.
+     *
+     * @throws Exception from reflection
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testATrainIsReadWhereItWasLastSeenThoughAnotherPassesThere() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.createPoint("RC_a", true, "194");
+        layout.createPoint("RC_x", true, "195");
+        layout.createPoint("RC_b", true, "196");
+        layout.createPoint("RC_c", true, "197");
+        layout.createPoint("RC_d", true, "198");
+
+        layout.createEdge("RC_a", "RC_x");
+        layout.createEdge("RC_x", "RC_b");
+        layout.createEdge("RC_c", "RC_x");
+        layout.createEdge("RC_x", "RC_d");
+
+        layout.setDefaultLocSpeed(30);
+
+        Locomotive first = model.getLocByName(model.getLocList().get(0));
+        Locomotive second = model.getLocByName(model.getLocList().get(1));
+
+        // RESERVED, as locking a path records a train on every point of it - `setLocomotive` would take it off the others
+        java.lang.reflect.Method reserve = org.traincontrol.automation.Point.class.getDeclaredMethod("reserve",
+            Locomotive.class);
+
+        reserve.setAccessible(true);
+
+        // FIRST: set off from RC_a, tripped RC_x, and the release behind it has cleared RC_a and RC_x; it holds RC_b
+        reserve.invoke(layout.getPoint("RC_b"), first);
+
+        // SECOND: standing at RC_c, its path locked through RC_x to RC_d
+        reserve.invoke(layout.getPoint("RC_c"), second);
+        reserve.invoke(layout.getPoint("RC_x"), second);
+        reserve.invoke(layout.getPoint("RC_d"), second);
+
+        assertEquals(layout.getPoint("RC_x").getCurrentLocomotive(), second, "precondition: RC_x does not record the"
+            + " second train, whose path runs through it");
+
+        java.util.Map<Locomotive, List<Edge>> active =
+            (java.util.Map<Locomotive, List<Edge>>) field(layout, "activeLocomotives");
+        java.util.Map<Locomotive, List<org.traincontrol.automation.Point>> milestones =
+            (java.util.Map<Locomotive, List<org.traincontrol.automation.Point>>) field(layout, "locomotiveMilestones");
+
+        active.put(first, Arrays.asList(layout.getEdge("RC_a", "RC_x"), layout.getEdge("RC_x", "RC_b")));
+        milestones.put(first, new java.util.concurrent.CopyOnWriteArrayList<>(
+            Arrays.asList(layout.getPoint("RC_a"), layout.getPoint("RC_x"))));
+
+        active.put(second, Arrays.asList(layout.getEdge("RC_c", "RC_x"), layout.getEdge("RC_x", "RC_d")));
+        milestones.put(second, new java.util.concurrent.CopyOnWriteArrayList<>(
+            Arrays.asList(layout.getPoint("RC_c"))));
+
+        try
+        {
+            assertEquals(layout.getLastPointsReached().get(first), layout.getPoint("RC_x"), "precondition: the first"
+                + " train is not last known at RC_x, the station whose sensor it tripped");
+
+            String[] read = org.traincontrol.gui.TrainControlUI.whereTheTrainsAre(layout).get(first.getName());
+
+            assertEquals(read == null ? null : read[0], "RC_x", "the first train, last seen at RC_x, is not read there"
+                + " because the second train's path runs through it - the carry leaves it where it set off (RLV8-C4)");
+
+            java.lang.reflect.Method kept = Layout.class.getMethod("toJSON", java.util.Map.class);
+
+            org.json.JSONObject written = new org.json.JSONObject((String) kept.invoke(layout,
+                layout.getLastPointsReached()));
+
+            java.util.Map<String, String> standing = new java.util.HashMap<>();
+
+            for (Object point : written.getJSONArray("points"))
+            {
+                org.json.JSONObject p = (org.json.JSONObject) point;
+
+                if (p.has("loc")) standing.put(p.getString("name"), p.getJSONObject("loc").getString("name"));
+            }
+
+            assertEquals(standing.get("RC_x"), first.getName(), "a fold writes the train passing through RC_x there, not"
+                + " the one last seen there (RLV8-C4): " + standing);
+
+            assertEquals(standing.get("RC_c"), second.getName(), "a fold does not write the second train where it set"
+                + " off: " + standing);
+
+            assertEquals(java.util.Collections.frequency(standing.values(), first.getName()), 1, "a fold writes the"
+                + " first train on other than one point: " + standing);
+
+            assertEquals(java.util.Collections.frequency(standing.values(), second.getName()), 1, "a fold writes the"
+                + " second train on other than one point: " + standing);
+        }
+        finally
+        {
+            active.clear();
+            milestones.clear();
+        }
+    }
+
     private static Object field(Object target, String name) throws Exception
     {
         java.lang.reflect.Field f = target.getClass().getDeclaredField(name);
