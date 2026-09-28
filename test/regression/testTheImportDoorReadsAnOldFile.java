@@ -2270,8 +2270,11 @@ public class testTheImportDoorReadsAnOldFile
 
             assertStandsWhereItWasMoved(ui[0], move, "after the folder in use was chosen again and loaded (RLV8-C5)");
 
-            // ANOTHER SOURCE (RLV7-C2): the same files, named differently, stand for a railway that is not this one
-            final String[] moved = moveAStandingTrain(ui[0], ui[0].getAutonomySession());
+            // ANOTHER SOURCE (RLV7-C2): the same files, named differently, stand for a railway that is not this one.
+            // Another train, so that where its configuration has it and where it was moved to differ
+            final String[] moved = moveAStandingTrain(ui[0], ui[0].getAutonomySession(), move[0]);
+
+            assertTheConfigurationHasItWhereItSetOff(ui[0].getAutonomySession(), inUse, moved);
 
             declined.set(ui[0], true);
 
@@ -2813,6 +2816,13 @@ public class testTheImportDoorReadsAnOldFile
     /** Moves one standing train, on the running railway only, to an empty station; its name, where it was, where it is. */
     private static String[] moveAStandingTrain(TrainControlUI ui, AutonomySession session) throws Exception
     {
+        return moveAStandingTrain(ui, session, null);
+    }
+
+    /** The same, leaving the named train where it is. */
+    private static String[] moveAStandingTrain(TrainControlUI ui, AutonomySession session, String notThis)
+        throws Exception
+    {
         final org.traincontrol.automation.Layout railway = ui.getModel().getAutoLayout();
 
         org.traincontrol.automation.Point from = null;
@@ -2820,7 +2830,11 @@ public class testTheImportDoorReadsAnOldFile
 
         for (org.traincontrol.automation.Point point : railway.getPoints())
         {
-            if (point.getCurrentLocomotive() != null && from == null) from = point;
+            if (point.getCurrentLocomotive() != null && from == null
+                && (notThis == null || !notThis.equals(point.getCurrentLocomotive().getName())))
+            {
+                from = point;
+            }
         }
 
         assertNotNull(from, "precondition: no train stands on his railway");
