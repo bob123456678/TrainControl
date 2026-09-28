@@ -2472,8 +2472,11 @@ where it set off; so the Auto tab's settings and a timetable captured this sessi
 RLV8-B1).  The timetable written is the configuration's own, not a plan Return Home has borrowed it for (RLV9-B1); the
 destination turns the railway has made and not yet written down are kept across the load (RLV9-C1); and a train under
 way whose last station another has since stopped on is written on the first station ahead on its path that it still
-holds (RLV9-C4).  Unload folds the running layout into the configuration first, as a reload does, so a load after it
-has the trains where the run left them (RLV9-A1).  Unload, a deleted setup and a switch of railway forget the
+holds and no other train under way is kept at (RLV9-C4, RLV10-C2).  Unload folds the running layout into the
+configuration first, as a reload does, so a load after it has the trains where the run left them (RLV9-A1); while a
+setup edit a run declined waits it writes where the trains stand and nothing else, as a load then carries them
+(RLV10-B1).  Unload, and choosing another configuration, write the turns the railway owes into the configuration they
+leave (RLV10-C1).  Unload, a deleted setup and a switch of railway forget the
 railway loaded, so a load after them carries nothing across (RLV7-C2) - a switch only to another source, not to the one
 in use chosen again (RLV8-C5), the folder the Central Station's layout was downloaded into counting as the one in use
 (RLV9-C8) - and Unload retires the railway it drops, so a train its thread was driving is not driven

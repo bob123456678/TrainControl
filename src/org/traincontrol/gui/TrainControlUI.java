@@ -3090,6 +3090,36 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Writes where each train stands - the train, the copy it stands on and the side it came in by - and nothing else
+     * into the configuration running, while a setup edit a run declined waits (RLV10-B1).  Unload's fold is not made
+     * then, since it would take the edit away, and every load in that state carries the trains across instead
+     * (`carryTheTrainsAcross`); Unload has no load to carry them into, so it writes what the carry would put back.  The
+     * carry's trade: where a train stands is the railway's to say (OB-183), and the edit is kept.
+     */
+    private void keepWhereTheTrainsStand()
+    {
+        if (!setupEditDeclinedDuringRun || autonomySession == null || activeDiagramConfiguration == null
+            || this.model == null || !this.model.hasAutoLayout() || !this.model.getAutoLayout().isValid())
+        {
+            return;
+        }
+
+        try
+        {
+            org.traincontrol.automation.Layout standing = this.model.getAutoLayout();
+
+            autonomySession.captureWhereTheTrainsStand(standing.toJSON(standing.getLastPointsReached()),
+                activeDiagramConfiguration);
+
+            autonomySession.saveWithoutReconciling();
+        }
+        catch (Exception e)
+        {
+            this.model.log(e);
+        }
+    }
+
+    /**
      * Runs a load that folds the running layout, keeping the destination turns the railway has made and not yet written
      * into the setup (RLV9-C1).  A turn is written only while the railway is idle, so during a run every one made since
      * it started is still owed; the fold writes where each train stands, not which way it has been turned, and the load
@@ -5387,7 +5417,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             editor.reveal(reveal);
 
                             // AND WHAT A FINDING NAMES BESIDE IT, outlined as the editor's own list outlines it (RLV9-C5)
-                            if (outline != null && editor.getAutonomyPanel() != null)
+                            // Only one that names squares beside its own: the editor's own list shows the rest,
+                            // and an outline reads as a selection (RLV10-C3)
+                            if (outline != null && !outline.isEmpty() && editor.getAutonomyPanel() != null)
                             {
                                 editor.getAutonomyPanel().outlineTheNotice(reveal, outline);
                             }
@@ -5683,12 +5715,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public org.traincontrol.automation.Point getAutonomyPointForTile(
         org.traincontrol.automationui.TileGraph.TileKey station)
     {
-        if (!this.model.hasAutoLayout() || station == null) return null;
+        // ASKED ONCE, NOT BUILT: asking whether there is a railway and then for it builds an empty one where Unload
+        // clears it between the two
+        org.traincontrol.automation.Layout shown = this.model.getAutoLayoutIfLoaded();
+
+        if (shown == null || station == null) return null;
 
         org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
-        return session == null ? null
-            : session.getStationIndex().speakerAt(this.model.getAutoLayout(), station);
+        return session == null ? null : session.getStationIndex().speakerAt(shown, station);
     }
 
     /**
@@ -5704,7 +5739,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public java.util.List<org.traincontrol.automation.Point> getAutonomyOccupantsForTile(
         org.traincontrol.automationui.TileGraph.TileKey station)
     {
-        if (!this.model.hasAutoLayout() || station == null)
+        // Asked once, not built, as above
+        org.traincontrol.automation.Layout shown = this.model.getAutoLayoutIfLoaded();
+
+        if (shown == null || station == null)
         {
             return java.util.Collections.<org.traincontrol.automation.Point>emptyList();
         }
@@ -5713,7 +5751,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         return session == null
             ? java.util.Collections.<org.traincontrol.automation.Point>emptyList()
-            : session.getStationIndex().occupantsAt(this.model.getAutoLayout(), station);
+            : session.getStationIndex().occupantsAt(shown, station);
     }
 
     /**
@@ -5855,8 +5893,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // This was the only place that read the copy the train is standing on, and the menu read the
         // stored facing instead - a split made deliberately to fix the arrow vanishing for autonomy-
         // driven trains, and never swept to the other surface. They ask one method now.
+        // ASKED, NOT BUILT: the station labels post this, and one landing after Unload built an empty railway, which
+        // hasAutoLayout then answered yes about (found by RLV10-B1's claim; RLV8-C2's and RLV9-C2's family)
         org.traincontrol.automationui.TilePorts.Side facing = session.facingOnTheRailway(square,
-            this.model == null ? null : this.model.getAutoLayout());
+            this.model == null ? null : this.model.getAutoLayoutIfLoaded());
 
         // The copy this caller resolved, when the shared reading cannot see a train - a crowded square
         // speaks for the copy handed in rather than for the first occupied one.
@@ -5912,12 +5952,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Everything standing on this square, not only the copy that answered first.
         final java.util.List<Point> crowd = this.getAutonomyOccupantsForTile(square);
 
-        if (!this.getLayoutStations(square).isEmpty() && this.activeDiagramConfiguration != null)
+        // Asked once, not built, as the lookups above are
+        final Layout shown = this.model.getAutoLayoutIfLoaded();
+
+        if (shown != null && !this.getLayoutStations(square).isEmpty() && this.activeDiagramConfiguration != null)
         {
-            Point destination = this.model.getAutoLayout().getDestination(p.getCurrentLocomotive());
-            Point start = this.model.getAutoLayout().getStart(p.getCurrentLocomotive());
+            Point destination = shown.getDestination(p.getCurrentLocomotive());
+            Point start = shown.getStart(p.getCurrentLocomotive());
             Locomotive current = p.getCurrentLocomotive();
-            List<Point> milestones = this.model.getAutoLayout().getReachedMilestones(current);
+            List<Point> milestones = shown.getReachedMilestones(current);
             
             SwingUtilities.invokeLater(() ->
             {
@@ -7708,6 +7751,87 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Writes the turns the railway has made at its destinations into the setup, each train faced the way it came in, and
+     * keeps on the railway those it could not write - the drain `reconcileFacingWhenIdle` makes whenever the railway is
+     * idle, and the doors that leave a railway during a run make before their fold (RLV10-C1).
+     *
+     * @param built the railway the turns were made on
+     * @param session the session to write them into, or null to write none
+     */
+    private void writeTheTurns(org.traincontrol.automation.Layout built,
+        org.traincontrol.automationui.AutonomySession session)
+    {
+        // FORGOTTEN ONLY ONCE WRITTEN (RGD-C7).  The drain happens before any of these reach
+        // the graph, so every way of not reaching it - no session to write to, a store that throws
+        // on the second of three - used to lose the turn for good. The remainder goes back.
+        java.util.Map<String, String> turnedRound = built.takeReversalsOnArrival();
+
+        try
+        {
+            if (session != null)
+            {
+                for (java.util.Iterator<java.util.Map.Entry<String, String>> pending
+                    = turnedRound.entrySet().iterator(); pending.hasNext();)
+                {
+                    java.util.Map.Entry<String, String> turned = pending.next();
+
+                    // THE WAY IT CAME IN, NOT THE OTHER OF WHAT THE SETUP REMEMBERS (REV9-A1).
+                    //
+                    // This used to call `flipFacing`, which then pivoted on `getFacing(tile)` - the
+                    // SETUP's stored facing for the arrival square.  behaviour.md 6a says that
+                    // record is stale at exactly this moment, as a rule: a run moves trains and
+                    // nothing writes where they ended up back to the setup.  So the pivot was
+                    // either missing, and the turn was written nowhere, or it belonged to the
+                    // square's previous occupant, and the turn was written BACKWARDS - with
+                    // `moveOntoFacingCopy` then standing the train on the wrong copy.  That is
+                    // OB-190 from the inside.
+                    //
+                    // What the railway does know is which Point the train turned at and which side
+                    // it came in by, both written by the arrival itself; and behaviour.md 4 says a
+                    // train that has been turned round faces the way it came in.  So the answer is
+                    // read off the railway rather than derived from a record that has to have been
+                    // in sync first.
+                    if (session.faceTheWayItCameIn(turned.getKey(),
+                        built.getPoint(turned.getValue()), built) == null)
+                    {
+                        // NOT WRITTEN, SO NOT FORGOTTEN.  The old code removed the record whether
+                        // or not anything had been written, and its comment said "written, and
+                        // only now forgotten" - which was false at every one of `flipFacing`'s
+                        // four ways of declining.  A turn destroyed here never self-heals, because
+                        // there is nothing left to try again with.
+                        //
+                        // Safe to retry precisely because the write is absolute: applying it a
+                        // second time writes the same side again rather than flipping it back.
+                        continue;
+                    }
+
+                    // Written, and only now forgotten.
+                    pending.remove();
+                }
+            }
+        }
+        finally
+        {
+            built.restoreReversalsOnArrival(turnedRound);
+        }
+    }
+
+    /**
+     * Writes the turns the railway owes into the configuration running, before a fold that leaves the railway during a run
+     * - Stop Using Autonomy, or another configuration chosen (RLV10-C1).  A turn is written only while the railway is
+     * idle, and after Yes a train stopped between sensors keeps it running, so every turn made since the run started was
+     * dropped with the railway: the configuration had the train facing the way it arrived, and the next dispatch was
+     * offered paths for that heading (OB-189).  "Only while idle" is about a train between two copies; a turn is written
+     * only for a train still standing where it turned (`faceTheWayItCameIn`), which is no such train.
+     */
+    void writeTheTurnsOwed()
+    {
+        if (this.model == null || !this.model.hasAutoLayout()) return;
+
+        writeTheTurns(this.model.getAutoLayout(), getAutonomySession());
+    }
+
+    /**
      * Levels the direction baseline whenever the railway is idle, so nothing is followed twice.
      *
      * Adam, 2026-09-07: **"Reversals during the run should be ignored and not queued.  Only count
@@ -7745,59 +7869,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Before the levelling below, and drained, so each is written exactly once.
             org.traincontrol.automationui.AutonomySession session = getAutonomySession();
 
-            // AND FORGOTTEN ONLY ONCE WRITTEN (RGD-C7).  The drain happens before any of these reach
-            // the graph, so every way of not reaching it - no session to write to, a store that throws
-            // on the second of three - used to lose the turn for good. The remainder goes back.
-            java.util.Map<String, String> turnedRound = built.takeReversalsOnArrival();
-
-            try
-            {
-                if (session != null)
-                {
-                    for (java.util.Iterator<java.util.Map.Entry<String, String>> pending
-                        = turnedRound.entrySet().iterator(); pending.hasNext();)
-                    {
-                        java.util.Map.Entry<String, String> turned = pending.next();
-
-                        // THE WAY IT CAME IN, NOT THE OTHER OF WHAT THE SETUP REMEMBERS (REV9-A1).
-                        //
-                        // This used to call `flipFacing`, which then pivoted on `getFacing(tile)` - the
-                        // SETUP's stored facing for the arrival square.  behaviour.md 6a says that
-                        // record is stale at exactly this moment, as a rule: a run moves trains and
-                        // nothing writes where they ended up back to the setup.  So the pivot was
-                        // either missing, and the turn was written nowhere, or it belonged to the
-                        // square's previous occupant, and the turn was written BACKWARDS - with
-                        // `moveOntoFacingCopy` then standing the train on the wrong copy.  That is
-                        // OB-190 from the inside.
-                        //
-                        // What the railway does know is which Point the train turned at and which side
-                        // it came in by, both written by the arrival itself; and behaviour.md 4 says a
-                        // train that has been turned round faces the way it came in.  So the answer is
-                        // read off the railway rather than derived from a record that has to have been
-                        // in sync first.
-                        if (session.faceTheWayItCameIn(turned.getKey(),
-                            built.getPoint(turned.getValue()), built) == null)
-                        {
-                            // NOT WRITTEN, SO NOT FORGOTTEN.  The old code removed the record whether
-                            // or not anything had been written, and its comment said "written, and
-                            // only now forgotten" - which was false at every one of `flipFacing`'s
-                            // four ways of declining.  A turn destroyed here never self-heals, because
-                            // there is nothing left to try again with.
-                            //
-                            // Safe to retry precisely because the write is absolute: applying it a
-                            // second time writes the same side again rather than flipping it back.
-                            continue;
-                        }
-
-                        // Written, and only now forgotten.
-                        pending.remove();
-                    }
-                }
-            }
-            finally
-            {
-                built.restoreReversalsOnArrival(turnedRound);
-            }
+            // AND FORGOTTEN ONLY ONCE WRITTEN (RGD-C7) - `writeTheTurns`, which the doors that leave the railway
+            // during a run share (RLV10-C1)
+            writeTheTurns(built, session);
 
             for (org.traincontrol.automation.Point point : built.getPoints())
             {
@@ -8966,13 +9040,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Asks first if anything is moving, and stops it
         if (!prepareAutonomyReload()) return false;
 
+        // THE TURNS THE RAILWAY OWES, written into the configuration first (RLV10-C1)
+        writeTheTurnsOwed();
+
         // FOLDED BEFORE IT IS CLEARED (RLV9-A1).  The reset below folds the running layout into the configuration - but it
-        // asks the model for its railway, which the line after this one empties, so Unload folded nothing: the next load
+        // asks the model for its railway, which Unload empties just before it, so Unload folded nothing: the next load
         // built every train the run moved back where the file had it before the run, with the square it really stands on
         // reading free (DW-A1's shape), and the Auto tab's settings went back with them.  A train under way - Yes above
-        // stops it and releases nothing - is written on the one point it is kept at, as a reload writes it (RLV8-B1); and
-        // nothing is folded while an edit a run declined waits, as at every door.
+        // stops it and releases nothing - is written on the one point it is kept at, as a reload writes it (RLV8-B1).
         captureRunningLayout(true);
+
+        // AND WHILE AN EDIT A RUN DECLINED WAITS, WHERE THE TRAINS STAND (RLV10-B1).  The fold above is not made then -
+        // it would take the edit away - and nothing else was, so the next load built every train the run moved back
+        // where the file had it.  Every load in that state carries the trains across; Unload has no load to carry them
+        // into, so it writes them.
+        keepWhereTheTrainsStand();
 
         this.model.clearAutoLayout();
 

@@ -851,6 +851,10 @@ public class AutonomyViewerPanel extends JPanel
         }
         else
         {
+            // ANOTHER CONFIGURATION: the turns the railway owes are the one running's, written into it before its fold
+            // (RLV10-C1)
+            if (captureRunningState && runningNow != null) ui.writeTheTurnsOwed();
+
             loadPrepared(name, interactive, captureRunningState);
         }
     }

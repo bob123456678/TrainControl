@@ -3261,6 +3261,12 @@ public class AutonomySession
         "arrivedFrom", "arrivedAlong");
 
     /**
+     * The per-point keys that say where a train stands: the train, and its tail's side and road (RLV10-B1).  The rest of
+     * `POINT_OPERATIONAL_KEYS` is the setup's.
+     */
+    private static final List<String> PLACEMENT_KEYS = java.util.Arrays.asList("loc", "arrivedFrom", "arrivedAlong");
+
+    /**
      * Squares where trains turn round whose track has no recorded length (Adam, 2026-09-01).
      *
      * "Add notices to the autonomy editor to add track lengths between stations and switches that
@@ -5336,6 +5342,32 @@ public class AutonomySession
      */
     public void captureFromLayout(String layoutJson, String configurationName)
     {
+        capture(layoutJson, configurationName, false);
+    }
+
+    /**
+     * Where the trains stand, and nothing else, into a named configuration (RLV10-B1): each square's train, the side and
+     * road of its tail, and the facing of the copy it stands on - the setup's own settings, and the run's, left as they
+     * are.  For a railway older than its setup - an edit a run declined waits - where a whole fold would take the edit
+     * away, and where the trains stand is still the railway's to say (OB-183).
+     *
+     * @param layoutJson what the running Layout serialized to
+     * @param configurationName which configuration this layout's trains belong to
+     */
+    public void captureWhereTheTrainsStand(String layoutJson, String configurationName)
+    {
+        capture(layoutJson, configurationName, true);
+    }
+
+    /**
+     * The two above.
+     *
+     * @param layoutJson what the running Layout serialized to
+     * @param configurationName which configuration this layout's state belongs to
+     * @param placementsOnly whether to write where the trains stand and nothing else
+     */
+    private void capture(String layoutJson, String configurationName, boolean placementsOnly)
+    {
         if (layoutJson == null || reducer == null || configurationName == null) return;
 
         // Not after a rename (MT-135, MT-171, MT-174).
@@ -5390,7 +5422,7 @@ public class AutonomySession
 
                 org.json.JSONObject extras = new org.json.JSONObject();
 
-                for (String key : POINT_OPERATIONAL_KEYS)
+                for (String key : placementsOnly ? PLACEMENT_KEYS : POINT_OPERATIONAL_KEYS)
                 {
                     if (!point.has(key) || point.isNull(key)) continue;
 
@@ -5492,7 +5524,7 @@ public class AutonomySession
 
             // Keys the layout can speak for are replaced - including being REMOVED when the layout no
             // longer carries them, which is how a property returned to its default is cleared.
-            for (String key : POINT_OPERATIONAL_KEYS)
+            for (String key : placementsOnly ? PLACEMENT_KEYS : POINT_OPERATIONAL_KEYS)
             {
                 if (captured.has(key)) before.put(key, captured.get(key));
                 else before.remove(key);
@@ -5514,7 +5546,7 @@ public class AutonomySession
             {
                 before.put(AutonomyBuilder.HOME_FACING, captured.get(AutonomyBuilder.HOME_FACING));
             }
-            else if (!before.has("home"))
+            else if (!before.has("home") && !placementsOnly)
             {
                 before.remove(AutonomyBuilder.HOME_FACING);
             }
@@ -5583,9 +5615,17 @@ public class AutonomySession
             gone.add(id);
         }
 
-        for (String id : gone) existing.remove(id);
+        // Not where only the trains are written: a square gone is the setup's business (RLV10-B1)
+        if (!placementsOnly) for (String id : gone) existing.remove(id);
 
         configuration.put("points", existing);
+
+        if (placementsOnly)
+        {
+            dirty = true;
+
+            return;
+        }
 
         // and the top of the file: pace, speeds, and the rest of the settings panel
         org.json.JSONObject globals = new org.json.JSONObject();

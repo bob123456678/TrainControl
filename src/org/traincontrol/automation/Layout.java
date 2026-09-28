@@ -1596,7 +1596,9 @@ public class Layout
      *   its destination at worst (RLV9-C4).  Kept where the other stands, it was kept on no point: the carry and the fold
      *   each give that point to the train standing there, and the fold then erased the one under way from the
      *   configuration.  Ahead is track it is heading over, and holds.  A train only passing through the point gives way
-     *   to the one kept there (RLV8-C4).
+     *   to the one kept there (RLV8-C4).  Not a station another train under way is kept at, and decided against the
+     *   map as first read, not as it is rewritten (RLV10-C2): the station ahead could be another's kept point, and which
+     *   of the two then kept it followed the map's order.
      *
      * Read without the railway's monitor, which the event thread must not take: the maps are concurrent, and a train
      * setting off or arriving as this runs is read on one side of it or the other.
@@ -1624,16 +1626,19 @@ public class Layout
         }
 
         // WHERE ANOTHER TRAIN NOW STANDS THERE, the station ahead it holds (RLV9-C4) - see above.  Standing: not under way,
-        // or kept at that point itself; one whose path only runs through it is kept elsewhere, and gives way (RLV8-C4)
-        for (Entry<Locomotive, Point> kept : new ArrayList<>(out.entrySet()))
+        // or kept at that point itself; one whose path only runs through it is kept elsewhere, and gives way (RLV8-C4).
+        // Each asked of the map as first read (RLV10-C2)
+        Map<Locomotive, Point> read = new HashMap<>(out);
+
+        for (Entry<Locomotive, Point> kept : read.entrySet())
         {
             Locomotive there = kept.getValue().getCurrentLocomotive();
 
             if (there == null || there == kept.getKey()) continue;
 
-            if (out.containsKey(there) && out.get(there) != kept.getValue()) continue;
+            if (read.containsKey(there) && read.get(there) != kept.getValue()) continue;
 
-            Point ahead = this.stationAheadItHolds(kept.getKey(), kept.getValue());
+            Point ahead = this.stationAheadItHolds(kept.getKey(), kept.getValue(), read);
 
             if (ahead != null) out.put(kept.getKey(), ahead);
         }
@@ -1642,14 +1647,15 @@ public class Layout
     }
 
     /**
-     * The first station after this point on the path a train is under way on, or still locking, that it still holds -
-     * its destination at worst (RLV9-C4).
+     * The first station after this point on the path a train is under way on, or still locking, that it still holds and
+     * no other train is kept at - its destination at worst (RLV9-C4, RLV10-C2).
      *
      * @param loc the train
      * @param from the point it was kept at
+     * @param keptAt where each train under way is kept, as first read
      * @return the station, or null where it holds none ahead
      */
-    private Point stationAheadItHolds(Locomotive loc, Point from)
+    private Point stationAheadItHolds(Locomotive loc, Point from, Map<Locomotive, Point> keptAt)
     {
         List<Edge> path = this.activeLocomotives.containsKey(loc) ? this.activeLocomotives.get(loc)
             : this.takingPath.get(loc);
@@ -1666,7 +1672,15 @@ public class Layout
 
             Point ahead = e.getEnd();
 
-            if (ahead.getCurrentLocomotive() == loc && (ahead.isDestination() || this.isABarredCopyOfAStation(ahead)))
+            boolean anotherIsKeptThere = false;
+
+            for (Entry<Locomotive, Point> other : keptAt.entrySet())
+            {
+                if (other.getKey() != loc && other.getValue() == ahead) anotherIsKeptThere = true;
+            }
+
+            if (ahead.getCurrentLocomotive() == loc && !anotherIsKeptThere
+                && (ahead.isDestination() || this.isABarredCopyOfAStation(ahead)))
             {
                 return ahead;
             }
@@ -11903,7 +11917,9 @@ public class Layout
      * Says whether the timetable's entries must run one at a time.
      *
      * Public because setTimetable clears it and only the staging planner sets it, which left no way
-     * to state the flag directly - including for the file that has to remember it.
+     * to state the flag directly.  Nothing in the application calls it now - `fromJSON` sets the field
+     * itself, and a fold no longer writes a plan (RLV9-B1) - so what it states is a file written before
+     * that, which tests state by hand (RLV10-C4).
      *
      * @param sequential true to wait for each entry to arrive before starting the next
      */
@@ -12176,9 +12192,12 @@ public class Layout
         jsonObj.put("timetable", timeTableJson);
 
         // Written only when set, so an ordinary layout's file does not grow a key that means nothing
-        // to it.  Without this a saved return-home plan reloaded as an ordinary timetable: entries
-        // dispatched as soon as the previous one STARTED rather than arrived, which is the contention
-        // the flag exists to prevent, and which was observed in exactly that form before it existed.
+        // to it - and not while a plan has the timetable on loan, since then the owner's timetable is
+        // what is written (RLV9-B1).  So it is written back only where it was read from a file: one a
+        // fold wrote before the loan, with a Return Home plan as its timetable (RLV10-C4).  Without it
+        // that plan reloads as an ordinary timetable, its entries dispatched as soon as the previous one
+        // STARTED rather than arrived - the contention the flag exists to prevent, observed in exactly
+        // that form before it existed.
         if (this.timetableSequential && owners == null)
         {
             jsonObj.put("timetableSequential", true);

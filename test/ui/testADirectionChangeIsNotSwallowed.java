@@ -146,12 +146,23 @@ public class testADirectionChangeIsNotSwallowed
             "nothing levels the baseline from live state any more, so the reconcile no longer does the"
             + " job its name claims");
 
-        int writes = body.indexOf("takeReversalsOnArrival()");
+        // THE DRAIN IS `writeTheTurns`, which this method calls and the doors that leave a railway during a run share
+        // (RLV10-C1) - so the call is looked for here, and the drain in that method's own body
+        int writes = body.indexOf("writeTheTurns(built, session)");
 
         assertTrue(writes > 0,
             "reconcileFacingWhenIdle no longer drains the destination turns at all. The behaviour is"
             + " really pinned by regression.testTheTurnAtTheDestinationReachesTheDiagram, which drives"
             + " it; this assertion only says the mechanism is still in the method it belongs to");
+
+        String source = ui.replace("\r\n", "\n");
+
+        int drain = source.indexOf("private void writeTheTurns(");
+
+        int drained = drain < 0 ? -1 : source.indexOf("takeReversalsOnArrival()", drain);
+
+        assertTrue(drain > 0 && drained > 0 && drained < source.indexOf("\n    }\n", drain),
+            "writeTheTurns, which reconcileFacingWhenIdle calls to drain the destination turns, drains nothing");
 
         assertTrue(writes < levels,
             "the reversals the railway made at a destination are not written to the graph before the"
