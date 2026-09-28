@@ -275,6 +275,12 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
 
         ALLOWED.put("TrainControlUI.java#captureRunningLayout",
             "ON THE EVENT THREAD: capturing the running layout into the setup, on an explicit gesture");
+
+        ALLOWED.put("TrainControlUI.java#keepWhereTheTrainsStand",
+            "ON THE EVENT THREAD: Stop Using Autonomy writing where the trains stand while an edit a run"
+            + " declined waits (RLV10-B1), the same serialization its fold makes - after prepareAutonomyReload"
+            + " has stopped everything that was moving, so at worst it waits for a dispatch still locking its"
+            + " path, as the reload's fold does (RLV9-D9)");
     }
 
     /**
