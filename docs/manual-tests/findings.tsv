@@ -2625,6 +2625,22 @@ RLU5-D5	RLU5.md	Closed	Checked - clean.	The eight bundles at HEAD hold 1,848 key
 RLU5-D6	RLU5.md	Closed	Checked - clean.	The emergency-stop rule at every door that makes, changes, loads or syncs a route: no door the program offers leaves a stop among other commands, a sp
 RLU5-D7	RLU5.md	Closed	Checked - clean.	Every message the round added belongs to a window that is showing, and the owner census reads the three files it names
 RLU5-D8	RLU5.md	Closed	Checked - clean.	MT-507 and MT-508 are superseded on Adam's answer by tests that exist and assert what their comments say; the tail question's list (MT-575) is untouch
+RLV10-B1	RLV10.md	Closed	Fixed - while an edit a run declined waits, Stop Using Autonomy writes where the trains st	Stop Using Autonomy while an edit a run declined waits still keeps nothing: the next load puts every train the run moved back where the file had it, a
+RLV10-C1	RLV10.md	Closed	Fixed - Stop Using Autonomy, and choosing another configuration, write the turns the railw	The destination turns owed during a run are still dropped at the two other doors that fold and leave the railway: Stop Using Autonomy, and choosing an
+RLV10-C2	RLV10.md	Closed	Fixed - the station ahead is decided against the map as first read, and passes over a stat	The station ahead can be another train's kept point: which of the two keeps it follows the hash order, and in about half the orders the fold writes on
+RLV10-C3	RLV10.md	Closed	Fixed - the editor opened for a finding outlines only a finding that names squares beside 	The Auto tab's door outlines the square of every finding it opens, not only a guard notice's; the editor's own list outlines only a finding that names
+RLV10-C4	RLV10.md	Closed	Fixed - the sequential flag's two comments in Layout and the test's javadoc say a fold no 	Records the round made false: the sequential flag is still explained as what makes a saved Return Home plan reload safely, and RLV9-B1's fix means a p
+RLV10-C5	RLV10.md	Closed	Fixed - claims for the loan's end (testHomeStaging, V1), the station test ahead (a point t	What the round's claims do not reach: the loan's end, the station test in the rule ahead, the outline's clearing, and the doors the dispositions call
+RLV10-D1	RLV10.md	Closed	Checked - clean, apart from RLV10-B1.	RLV9-A1 at its own door: Unload folds before it clears, a train under way once, and the reset after it has nothing left to fold
+RLV10-D10	RLV10.md	Closed	Checked - clean, apart from RLV10-B1 (behaviour.md's Unload sentence).	The records
+RLV10-D2	RLV10.md	Closed	Checked - clean, apart from RLV10-C4 and a two-statement window.	RLV9-B1: the loan against every writer and reader of the timetable
+RLV10-D3	RLV10.md	Closed	Checked - clean, apart from RLV10-C1.	RLV9-C1 at the reload door: the turns are kept, and drained on the new railway
+RLV10-D4	RLV10.md	Closed	Checked - clean.	RLV9-C2: nothing on the refresh builds a railway, and every reader of the swept suppliers takes none as nothing to show
+RLV10-D5	RLV10.md	Closed	Checked - clean, apart from RLV10-C5 (V5).	RLV9-C3: the outline is its own set, with one reader and three clears, and the bulk readers no longer see a notice
+RLV10-D6	RLV10.md	Closed	Checked - clean, apart from RLV10-C2 and RLV10-C5 (V3).	RLV9-C4: the rule against its readers and a train still locking its path
+RLV10-D7	RLV10.md	Closed	Checked - clean, apart from RLV10-C3.	RLV9-C5: the jump carries the squares, and the editor opened outlines them
+RLV10-D8	RLV10.md	Closed	Checked - clean.	RLV9-C6 and RLV9-C8: the comments, and the switch-of-source rule at every door
+RLV10-D9	RLV10.md	Closed	Checked - clean, apart from RLV10-C5.	The round's claims ran green on the archive, and each goes red with its fix undone
 RLV6-B1	RLV6.md	Closed	Fixed - while a declined edit waits, every load carries each train across and lowers the f	RLA5-B1's fix reaches one of the four doors round 5 named; three still put every moved train back on its pre-run square and leave the flag up
 RLV6-C1	RLV6.md	Closed	Fixed - the carried load is the one asked for, interactive or not, so a train driven by ha	With the flag up, the Autonomy menu's, a page tick's and an import's reload of the configuration running is the editor doors' quiet one: hand-driven t
 RLV6-C2	RLV6.md	Closed	Fixed - the walk remembers the path, not every route asked. claims 528fd305 (red first), f	`hasEmergencyStop` shares one visited set across every branch it walks, so a route that reaches a split route by two paths, the longer first, is count
