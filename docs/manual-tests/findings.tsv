@@ -2652,6 +2652,23 @@ RLV7-D5	RLV7.md	Closed	Checked - clean.	The two other test changes: the census a
 RLV7-D6	RLV7.md	Closed	Checked - clean.	Round 6 touched no bundle, no route door and no split: no message is missing or different in any language, no stop stops firing, and no question appea
 RLV7-D7	RLV7.md	Closed	Checked - clean.	The carry names no placement the declined gesture edited, and that is right: considered, and not a defect
 RLV7-D8	RLV7.md	Closed	Checked - clean.	The final battery must show round 6's five claims passed, not skipped
+RLV8-A1	RLV8.md	Closed	Fixed - Unload retires the railway it drops (Layout.retireEveryLayout), as every load reti	Unload no longer retires the railway it unloads: a train that reaches the sensor its path was waiting for is driven on at its line speed by the unload
+RLV8-B1	RLV8.md	Closed	Fixed - a reload confirmed with a train under way folds the running layout again, each tra	A reload confirmed during a run now folds nothing: the Auto tab's settings changed since the last save, and a timetable captured this session, go back
+RLV8-C1	RLV8.md	Closed	Fixed - with nothing loaded, updateVisiblePoints empties the covered track before returnin	After Unload the diagram keeps the unloaded configuration's grey wash: `updateVisiblePoints` returns before it refreshes the covered track when there
+RLV8-C2	RLV8.md	Closed	Fixed - the latency ping and the timetable repaint every milestone runs ask getAutoLayoutI	RLV7-C2's roster fix holds only offline or with the power off: the latency ping still builds the empty railway on every reply, so what reads `hasAutoL
+RLV8-C3	RLV8.md	Closed	Fixed - parseAuto takes the parsed railway under the lock and makes it the current one (La	A load that starts with no railway in the model can be left retired by a lookup that lands in its parse: `parseAuto` assigns outside the lock, and a r
+RLV8-C4	RLV8.md	Closed	Fixed - a train is read (the carry) and written (the fold) at the point it was last seen t	The carry's second reading - a train whose last known point a release has cleared, atomic routes off - drops the train wherever any other train holds
+RLV8-C5	RLV8.md	Closed	Fixed - a switch of layout source forgets the railway only when the source changes (railwa	A switch of railway over the same folder, while an edit waits, now stands every train the run moved back where it set off - and the claim asserts that
+RLV8-C6	RLV8.md	Closed	Fixed in the records - the route paragraph moved below the emergency-stop citation, with i	behaviour.md: the new "Saving a route leaves autonomy alone" paragraph was put between the emergency-stop paragraph and its claims, so those claims no
+RLV8-C7	RLV8.md	Closed	Fixed - a claim deletes the setup with the flag up and asserts the flag and the name are g	Claim gaps in the round's claims: the delete doors' forgetting has no claim, and the under-way reload with an edit waiting does not check the configur
+RLV8-D1	RLV8.md	Closed	Checked - clean.	RLV7-A1: the route editor's Save needs nothing else `layoutEditingComplete` did, and every other door that completes a diagram edit is refused during
+RLV8-D2	RLV8.md	Closed	Checked - clean.	RLV7-B1: no fold reads a layout that holds a path any more, at any of the four
+RLV8-D3	RLV8.md	Closed	Checked - clean.	RLV7-C1: `getLastPointsReached` reads the milestones as its javadoc says, and the hand-built claim holds it to that
+RLV8-D4	RLV8.md	Closed	Checked - clean.	RLV7-C2: a carry now happens only for the configuration running or the one the reset forgot, and every door that replaces the railway forgets it
+RLV8-D5	RLV8.md	Closed	Checked - clean.	RLV7-C4: the refusal fires only where the carry of the one running left no valid layout while the flag is up, counts what stops it, leaves the dropdow
+RLV8-D6	RLV8.md	Closed	Checked - clean.	The new key, in all eight bundles
+RLV8-D7	RLV8.md	Closed	Checked - clean.	The claims that exist are real where I could test them, and the round's other test changes hold
+RLV8-D8	RLV8.md	Closed	Checked - clean.	RLV7-C3 is filed, and the round's records say what the code does, apart from RLV8-C6 and RLV8-B1's omission
 RR-C1	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27** - the rebuild is now staged and swapped under the locomotive's monito	A sync-applied address change rebuilds every consist without the fan-out lock
 RR-C2	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27** - the lock moved inside the shared method, so every entrance inherits	The layout-refresh lock covers half the entrances
 RR-C3	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27**	Danish and German dialogs name an option the menu does not have
