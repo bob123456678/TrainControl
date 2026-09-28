@@ -1051,7 +1051,7 @@ are cut at it and it is asked for on its own, one length for all such squares on
 length to each road, which is the ruling.  A square whose geometry carries two roads but which only one leg runs over
 is ordinary track and stays in its piece.
 
-**The bulk doors on Bulk Tools.**  **Mass Assign Locomotive Train Lengths (N missing)** (FR-094; Adam, 2026-09-23: *"add a
+**The bulk doors on Bulk Tools.**  **Mass Assign Train Lengths (N missing)** (FR-094; Adam, 2026-09-23: *"add a
 bulk tool to the autonomy editor to set missing train lengths, similar to how the station lengths are set"*) walks every
 train autonomy would run that has no length, in the same prompt, writing each answer to the locomotive itself - so
 Cancel in the editor does not take it back, and the prompt says so; a length is 1 to 40, the one limit both train-length
@@ -1649,7 +1649,7 @@ of the edge, and how long the train is.
   its platforms and nowhere else is in this state for most of its paths.
 - **A train whose length is 0**, which is what `Locomotive.trainLength` holds until somebody sets it.
   `behind >= trainLength` is then true the first time every edge is asked about, so the whole railway
-  is handed back under the train however well the track is measured.  **Mass Assign Locomotive Train Lengths** on
+  is handed back under the train however well the track is measured.  **Mass Assign Train Lengths** on
   Bulk Tools (§5b, FR-094) asks every train autonomy would run that has none.
 
 In either state the edge behind a moving train is released while the train is still lying across it,

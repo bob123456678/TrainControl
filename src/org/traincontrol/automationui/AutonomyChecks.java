@@ -70,10 +70,16 @@ public class AutonomyChecks
         private final int count;
         private final int detail;
         private final int third;
+        private final List<TileKey> related;
 
         Finding(Severity severity, String messageKey, String subject, TileKey tile)
         {
             this(severity, messageKey, subject, tile, 0);
+        }
+
+        Finding(Severity severity, String messageKey, String subject, TileKey tile, List<TileKey> related)
+        {
+            this(severity, messageKey, subject, tile, 0, 0, 0, related);
         }
 
         /**
@@ -110,6 +116,14 @@ public class AutonomyChecks
         Finding(Severity severity, String messageKey, String subject, TileKey tile, int count,
             int detail, int third)
         {
+            this(severity, messageKey, subject, tile, count, detail, third, null);
+        }
+
+        Finding(Severity severity, String messageKey, String subject, TileKey tile, int count,
+            int detail, int third, List<TileKey> related)
+        {
+            this.related = related == null ? Collections.<TileKey>emptyList()
+                : Collections.unmodifiableList(new ArrayList<>(related));
             this.severity = severity;
             this.messageKey = messageKey;
             this.subject = subject;
@@ -184,6 +198,16 @@ public class AutonomyChecks
         public TileKey getTile()
         {
             return tile;
+        }
+
+        /**
+         * The squares it is about beyond its own, which a click on it outlines too - a guard finding's signal, where
+         * its own square is the station (MT-505).
+         * @return never null; empty for most findings
+         */
+        public List<TileKey> getRelated()
+        {
+            return related;
         }
 
         @Override
@@ -478,7 +502,7 @@ public class AutonomyChecks
         Set<TileKey> notAutoDestinations,
         Map<TileKey, String> copiesWithNoWayOut, Map<TileKey, String> copiesWithNoWayIn,
         Map<TileKey, String> copiesReachingNoStation,
-        Map<TileKey, List<String>> guardsOnBothLists, Map<TileKey, List<String>> guardsOffTheWayIn,
+        Map<TileKey, Map<TileKey, String>> guardsOnBothLists, Map<TileKey, Map<TileKey, String>> guardsOffTheWayIn,
         Map<TileKey, String> restrictions)
     {
         List<Finding> findings = new ArrayList<>();
@@ -839,15 +863,20 @@ public class AutonomyChecks
      * @param key the message
      * @param severity how loudly
      */
-    private static List<Finding> checkGuards(Map<TileKey, List<String>> guards, String key, Severity severity)
+    private static List<Finding> checkGuards(Map<TileKey, Map<TileKey, String>> guards, String key, Severity severity)
     {
         List<Finding> findings = new ArrayList<>();
 
         if (guards == null) return findings;
 
-        for (Map.Entry<TileKey, List<String>> station : guards.entrySet())
+        // Each about its station, and naming the signal's square as well, so a click shows the signal (MT-505)
+        for (Map.Entry<TileKey, Map<TileKey, String>> station : guards.entrySet())
         {
-            for (String signal : station.getValue()) findings.add(new Finding(severity, key, signal, station.getKey()));
+            for (Map.Entry<TileKey, String> signal : station.getValue().entrySet())
+            {
+                findings.add(new Finding(severity, key, signal.getValue(), station.getKey(),
+                    Collections.singletonList(signal.getKey())));
+            }
         }
 
         return findings;

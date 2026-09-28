@@ -1664,12 +1664,11 @@ public final class LayoutLabel extends JLabel
      * "trains may run this way" and "they may not", and yellow is the transient flash for something
      * that has just been switched. Orange is not spoken for.
      *
-     * **The SAME orange the diagram already uses for a square autonomy does not choose** (Adam,
-     * 2026-09-12: *"make the orange of the lines match the orange of inactive stations"*).  That is
-     * `TileAnnotation.POINT_INACTIVE`, which is itself the graph window's own inactive colour - so the
-     * value is copied from there rather than picked again, and one orange now means one thing across
-     * three views.  It was rgb(255,140,0), half a shade off, which on a diagram carrying both at once
-     * reads as two colours that were each meant to be something.
+     * **The orange the diagram used for a square autonomy does not choose** (Adam, 2026-09-12: *"make
+     * the orange of the lines match the orange of inactive stations"*), which is the graph window's own
+     * inactive colour.  It was rgb(255,140,0), half a shade off, which on a diagram carrying both at once
+     * reads as two colours that were each meant to be something.  Those squares are grey since FR-103
+     * (Adam, 2026-09-26); the train keeps the orange, which is now its own.
      */
     public static final Color TRAIN_MARK = new Color(255, 102, 0);
 

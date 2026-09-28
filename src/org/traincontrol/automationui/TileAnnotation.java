@@ -130,17 +130,19 @@ public class TileAnnotation
     private static final Color DIM_COLOUR = Color.WHITE;
 
     /**
-     * The graph window's own colours, so somebody who has read one view can read the other.
-     * TrainControlUI paints an active point rgb(0,0,200) and an inactive one rgb(255,102,0).
+     * The colour of a square autonomy uses - the graph window's own blue, rgb(0,0,200), so somebody who has read one
+     * view can read the other - and of one it leaves alone: a medium dark grey, just darker than the grey station
+     * labels (Adam, FR-103, from MT-492: *"instead of orange, make them a medium dark gray that's just slightly darker
+     * than labels"*).  It was the graph window's orange, which the train mark still is.
      */
     private static final Color POINT_ACTIVE = new Color(0, 0, 200);
-    private static final Color POINT_INACTIVE = new Color(255, 102, 0);
+    private static final Color POINT_INACTIVE = new Color(128, 130, 134);
 
     /**
      * What a sensor has been designated as, drawn as a badge on its tile.
      *
      * The SHAPE says what turning means here; the SIZE says whether it is a station.  Blue means
-     * autonomy uses it, orange means it does not.
+     * autonomy uses it, grey means it does not (FR-103).
      *
      *                       trains do not turn    trains MAY turn    trains ALWAYS turn
      *     a station              big circle          big diamond         big square
@@ -1712,7 +1714,7 @@ public class TileAnnotation
      *   terminus          square, or a cross where turning round is optional
      *   reversing         small square
      *   blue              autonomy uses it
-     *   orange            autonomy leaves it alone (parking, or switched off)
+     *   grey              autonomy leaves it alone (parking, or switched off) - FR-103; it was orange
      *
      * Parity on purpose: the shapes and the two colours are exactly what TrainControlUI already paints
      * on the graph, so nobody has to learn a second vocabulary to read the same railway.

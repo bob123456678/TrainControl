@@ -6216,9 +6216,9 @@ public class AutonomySession
      *
      * @return station square to the names of the signals on both its lists
      */
-    private Map<TileKey, List<String>> guardsOnBothLists()
+    private Map<TileKey, Map<TileKey, String>> guardsOnBothLists()
     {
-        Map<TileKey, List<String>> out = new LinkedHashMap<>();
+        Map<TileKey, Map<TileKey, String>> out = new LinkedHashMap<>();
 
         if (graph == null) return out;
 
@@ -6232,7 +6232,7 @@ public class AutonomySession
             {
                 if (exits.get(entry.getKey()).contains(signal))
                 {
-                    out.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).add(signalName(signal));
+                    out.computeIfAbsent(entry.getKey(), k -> new LinkedHashMap<>()).put(signal, signalName(signal));
                 }
             }
         }
@@ -6249,9 +6249,9 @@ public class AutonomySession
      *
      * @return station square to the names of its guards off every way in
      */
-    private Map<TileKey, List<String>> guardsOffTheWayIn()
+    private Map<TileKey, Map<TileKey, String>> guardsOffTheWayIn()
     {
-        Map<TileKey, List<String>> out = new LinkedHashMap<>();
+        Map<TileKey, Map<TileKey, String>> out = new LinkedHashMap<>();
 
         if (graph == null || reducer == null) return out;
 
@@ -6273,7 +6273,7 @@ public class AutonomySession
             {
                 if (!graph.getTiles().containsKey(signal) || onAWayInto(station.getKey(), signal)) continue;
 
-                out.computeIfAbsent(station.getKey(), k -> new ArrayList<>()).add(signalName(signal));
+                out.computeIfAbsent(station.getKey(), k -> new LinkedHashMap<>()).put(signal, signalName(signal));
             }
         }
 

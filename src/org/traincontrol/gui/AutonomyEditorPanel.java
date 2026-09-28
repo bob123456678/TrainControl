@@ -112,6 +112,9 @@ public class AutonomyEditorPanel extends JPanel
     // Which tile each findings row is about; null for a heading or a finding with no tile
     private final List<TileKey> findingTiles = new java.util.ArrayList<>();
 
+    /** For each row of the findings list, the squares it is about beyond its own - a guard notice's signal (MT-505). */
+    private final List<List<TileKey>> findingRelated = new java.util.ArrayList<>();
+
     // What each row is, so it can be coloured the same way the Auto tab colours its own list
     private final List<AutonomyChecks.Severity> findingSeverity = new java.util.ArrayList<>();
 
@@ -1152,6 +1155,27 @@ public class AutonomyEditorPanel extends JPanel
                 if (!onThisPage(at))
                 {
                     if (onJumpToPage != null) onJumpToPage.accept(at);
+
+                    return;
+                }
+
+                // AND THE SQUARES IT IS ABOUT BESIDE ITS OWN (Adam, on MT-505: "also highlight the affected signals when
+                // the notice is clicked").  A guard notice's own square is the station; the signal it names is what is
+                // wrong, so both are outlined, and the station is shown.
+                List<TileKey> related = row < findingRelated.size() ? findingRelated.get(row) : null;
+
+                if (related != null && !related.isEmpty())
+                {
+                    List<TileKey> squares = new java.util.ArrayList<>();
+
+                    squares.add(at);
+
+                    for (TileKey square : related)
+                    {
+                        if (onThisPage(square) && !squares.contains(square)) squares.add(square);
+                    }
+
+                    outlineAndReveal(squares);
 
                     return;
                 }
@@ -9519,6 +9543,7 @@ public class AutonomyEditorPanel extends JPanel
 
         findingsModel.clear();
         findingTiles.clear();
+        findingRelated.clear();
         findingSeverity.clear();
 
         // Split into what must be fixed and what is only worth checking.
@@ -9588,7 +9613,7 @@ public class AutonomyEditorPanel extends JPanel
                     : severity == AutonomyChecks.Severity.WARNING ? elsewhereWarnings
                     : elsewhereNotices);
 
-            into.add(new Object[] {finding.getTile(), text});
+            into.add(new Object[] {finding.getTile(), text, finding.getRelated()});
         }
 
         // Severity first, everywhere.  Rows about other pages used to sit under a heading of their
@@ -9688,6 +9713,7 @@ public class AutonomyEditorPanel extends JPanel
         {
             findingsModel.addElement(heading);
             findingTiles.add(null);
+            findingRelated.add(null);
             findingSeverity.add(null);
         }
 
@@ -9695,6 +9721,11 @@ public class AutonomyEditorPanel extends JPanel
         {
             findingsModel.addElement("   " + row[1]);
             findingTiles.add((TileKey) row[0]);
+
+            @SuppressWarnings("unchecked")
+            List<TileKey> related = row.length > 2 && row[2] != null ? (List<TileKey>) row[2] : null;
+
+            findingRelated.add(related);
             findingSeverity.add(severity);
         }
     }
@@ -10026,7 +10057,7 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Goes through every locomotive autonomy would run that has no train length, asking for each one's (Mass Assign
-     * Locomotive Train Lengths, FR-094) - and where none is missing one, through every train with the length it has,
+     * Train Lengths, FR-094, named so on MT-567) - and where none is missing one, through every train with the length it has,
      * which Skip keeps (MT-533: the item is never greyed).
      *
      * Adam, 2026-09-23: *"Rather than adding complexity through new menus, add a bulk tool to the autonomy editor to set
@@ -10105,7 +10136,13 @@ public class AutonomyEditorPanel extends JPanel
                     : I18n.f("autosetup.ui.promptMassAssignTrainLength", i + 1, trains.size(), train,
                         nameForPrompt(standing));
 
-            Integer units = askForWholeLength(question, TRAINS_TITLE);
+            // THE LENGTH IT HAS, in the box (Adam, on MT-566: "prefill the textbox with the current length, if any") -
+            // selected, so a number typed replaces it.  Only when going through every train: a train missing one has none.
+            Integer had = known != null ? known.get(train) : null;
+
+            String prefill = had != null && had > 0 ? String.valueOf(had) : "";
+
+            Integer units = askForWholeLength(question, TRAINS_TITLE, prefill);
 
             while (units != null && units >= 0 && !acceptsATrainLength(units))
             {
@@ -10113,7 +10150,7 @@ public class AutonomyEditorPanel extends JPanel
                     ? "autosetup.ui.errorTrainLengthOutOfRangeKnown" : "autosetup.ui.errorTrainLengthOutOfRange",
                     TrainControlUI.ROUTE_TRAIN_LENGTH_MAX)));
 
-                units = askForWholeLength(question, TRAINS_TITLE);
+                units = askForWholeLength(question, TRAINS_TITLE, prefill);
             }
 
             if (units == null) break;
@@ -10331,7 +10368,34 @@ public class AutonomyEditorPanel extends JPanel
      */
     private Integer askForWholeLength(String question, String titleKey)
     {
-        final javax.swing.JTextField field = digitsOnly("");
+        return askForWholeLength(question, titleKey, "");
+    }
+
+    /**
+     * The same, the box holding a number to start from (MT-566): the length a train already has, in the walk through
+     * every train.  Selected when the box takes the keyboard, so a number typed replaces it rather than being added to
+     * it; OK or Enter keeps it, as Skip does.
+     *
+     * @param question what to say above the field
+     * @param titleKey the bundle key of the walk's name, which is the prompt's title
+     * @param prefill what the box holds to start with, or empty
+     * @return the number; -1 for Skip or a blank answer; null for Stop
+     */
+    private Integer askForWholeLength(String question, String titleKey, String prefill)
+    {
+        final javax.swing.JTextField field = digitsOnly(prefill == null ? "" : prefill);
+
+        if (prefill != null && !prefill.isEmpty())
+        {
+            field.addFocusListener(new java.awt.event.FocusAdapter()
+            {
+                @Override
+                public void focusGained(java.awt.event.FocusEvent e)
+                {
+                    field.selectAll();
+                }
+            });
+        }
 
         JPanel panel = new JPanel(new java.awt.BorderLayout(0, 6));
 
