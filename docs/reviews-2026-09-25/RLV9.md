@@ -1,6 +1,6 @@
 # RLV9 - Validation, rounds 9 and 10: Adam's notes of 26 September and FR-103; the fixes for RLV8 - Unload's retirement, the fold with a train under way, the builders, the parse, the carry's reading, the switch of source (TrainControl 3.0.0)
 
-**Status:** closed
+**Status:** open
 
 **Prefix:** RLV9
 
