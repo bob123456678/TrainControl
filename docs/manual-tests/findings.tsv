@@ -2669,6 +2669,26 @@ RLV8-D5	RLV8.md	Closed	Checked - clean.	RLV7-C4: the refusal fires only where th
 RLV8-D6	RLV8.md	Closed	Checked - clean.	The new key, in all eight bundles
 RLV8-D7	RLV8.md	Closed	Checked - clean.	The claims that exist are real where I could test them, and the round's other test changes hold
 RLV8-D8	RLV8.md	Closed	Checked - clean.	RLV7-C3 is filed, and the round's records say what the code does, apart from RLV8-C6 and RLV8-B1's omission
+RLV9-A1	RLV9.md	Closed	Fixed - Stop Using Autonomy folds the running layout into the configuration before it clea	Stop Using Autonomy folds nothing: every train the run moved goes back, at the next load, to where the file had it before the run - and so do the Auto
+RLV9-B1	RLV9.md	Closed	Fixed - while a staging plan occupies the timetable the railway keeps the one it borrowed,	A reload confirmed while Return Home runs now writes Return Home's plan into the configuration as its timetable, and saves it
+RLV9-C1	RLV9.md	Closed	Fixed - a load that folds the configuration running keeps the destination turns the railwa	The fold that replaced the carry at a reload during a run does not take the pending destination turns across: every turn the run made is dropped with
+RLV9-C2	RLV9.md	Closed	Fixed - the Return Home button asks getAutoLayoutIfLoaded, so the refresh an unloaded rail	RLV8-C2's sweep missed the other half of the refresh it named: `refreshReturnHomeButton` still builds an empty railway, and every run that Unload drop
+RLV9-C3	RLV9.md	Closed	Fixed - a clicked finding's squares are outlined through a set of their own, not the bulk 	A click on a guard notice leaves the station and its signal as the editor's bulk selection, and the next Segment Length - on any square - is written t
+RLV9-C4	RLV9.md	Closed	Fixed - where another train now stands on the point a train under way is kept at, it is ke	Where another train has since stopped on the point a train under way is kept at, the reload leaves the train under way on no square - and the fold now
+RLV9-C5	RLV9.md	Closed	Fixed - a finding on another page takes the squares it names with it (setOnJumpToNotice), 	MT-505's outline reaches one of the three ways to a guard notice's square: the Auto tab's list opens the editor at the station only, and a notice abou
+RLV9-C6	RLV9.md	Closed	Fixed - TileAnnotation's two explanations and the switched-off-square test's javadoc say t	Comments the round made false: the parking badge is "orange" in two of TileAnnotation's explanations, and the editor's layout supplier "builds a Layou
+RLV9-C7	RLV9.md	Closed	Fixed - claims for each gap: the switch claim goes back to the first source (W1), the MT-5	What the round's claims do not reach: the source remembered after a switch, the prefill's selection, the refresh RLV9-C2 names, and the round's unclai
+RLV9-C8	RLV9.md	Closed	Fixed - the Download door records the folder as the source a later switch compares with (u	One door switches the source without the rule: Download from the Central Station writes the folder and never reaches `initializeTrackDiagram`, so the
+RLV9-D1	RLV9.md	Closed	Checked - clean.	RLV8-A1: Unload retires the railway it drops, and every reader of the version counter answers as a reload makes it answer
+RLV9-D10	RLV9.md	Closed	Checked - clean.	The round's claims ran green on the archive
+RLV9-D2	RLV9.md	Closed	Checked - clean.	RLV8-C3: the parsed railway is taken under the lock and made current, and nothing else builds a Layout that could outrank it
+RLV9-D3	RLV9.md	Closed	Checked - clean.	RLV8-C1: no wash after Unload
+RLV9-D4	RLV9.md	Closed	Checked - clean, apart from RLV9-C4.	RLV8-C4: the carry and the fold now read a train under way by one rule, and the claim holds both
+RLV9-D5	RLV9.md	Closed	Checked - clean, apart from RLV9-C8.	RLV8-C5: the source is compared at the one door every switch of source ends in, and each door sets the preference before it gets there
+RLV9-D6	RLV9.md	Closed	Checked - clean.	RLV8-C6 and RLV8-C7: the records and the claims
+RLV9-D7	RLV9.md	Closed	Checked - clean.	Round 9's bundles, in all eight languages
+RLV9-D8	RLV9.md	Closed	Checked - clean, apart from RLV9-C3, RLV9-C5 and RLV9-C6.	Round 9's prefill, getRelated and grey do what the notes asked
+RLV9-D9	RLV9.md	Closed	Checked - clean.	The fold now takes the railway's monitor on the event thread during a run, and no load door can deadlock on it
 RR-C1	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27** - the rebuild is now staged and swapped under the locomotive's monito	A sync-applied address change rebuilds every consist without the fan-out lock
 RR-C2	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27** - the lock moved inside the shared method, so every entrance inherits	The layout-refresh lock covers half the entrances
 RR-C3	2026-07-27-regression-review.md	Closed	**Fixed 2026-07-27**	Danish and German dialogs name an option the menu does not have
