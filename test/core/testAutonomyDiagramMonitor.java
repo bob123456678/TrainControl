@@ -1075,16 +1075,16 @@ public class testAutonomyDiagramMonitor
     /**
      * A square nothing can pass is drawn in the colour that means "autonomy leaves this alone".
      *
-     * Adam: "should they always be orange with the 'full autonomy' option just greyed out?"
+     * Adam: "should they always be orange with the 'full autonomy' option just greyed out?"  One
+     * colour, which is a medium grey since FR-103 (Adam, from MT-492); it was orange.
      *
      * The cross used to take whichever colour the square would have had if it were working, so the
      * same switched-off square came out blue or orange depending on a setting that means nothing while
-     * it is switched off - a difference the reader can see and cannot use.  Orange, because the graph
-     * window paints an inactive point orange and the two colour constants are declared to keep the
-     * views agreeing.
+     * it is switched off - a difference the reader can see and cannot use.  The inactive colour,
+     * because the two colour constants are declared to keep the views agreeing.
      *
      * The badge is NOT a parking berth in the first case, which is what makes this a test: parking was
-     * already the orange one, and a fixture that set both would pass on the old rule as well.
+     * already the inactive colour, and a fixture that set both would pass on the old rule as well.
      *
      * MUTATION: dropping isImpassable from the colour makes the first assertion fail.
      */

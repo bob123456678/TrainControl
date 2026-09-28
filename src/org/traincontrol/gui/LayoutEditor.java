@@ -1779,6 +1779,21 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
             });
 
+            // AND A FINDING'S OTHER SQUARES WITH IT (RLV9-C5): a guard notice about a station on another page names its
+            // signal too, which the editor opened there outlines beside the station, as this one's list does
+            autonomyPanel.setOnJumpToNotice((at, named) ->
+            {
+                layout.setEdit(false);
+
+                dispose();
+
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    parent.autonomyEditorClosed();
+                    parent.openAutonomyEditor(at, named);
+                });
+            });
+
             // Going to a link's other end.  Same close-and-reopen as a finding on another page, but it
             // asks first: a finding is the window taking the user somewhere as part of showing them a
             // result, and this is the user choosing to leave a page they were working on.

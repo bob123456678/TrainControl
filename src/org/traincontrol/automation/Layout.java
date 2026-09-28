@@ -689,6 +689,11 @@ public class Layout
     // cleared by any other timetable load - see executeTimetable.
     private boolean timetableSequential = false;
 
+    // The timetable a staging plan has borrowed, for as long as the plan occupies it (RLV9-B1): what a fold writes as
+    // the railway's timetable, so a configuration folded while Return Home runs keeps its own.  Set and cleared as the
+    // flag above is.
+    private volatile List<TimetablePath> timetableOnLoan = null;
+
     // Set for as long as executeTimetable is driving.  Capture records what the OPERATOR drives; a
     // timetable run recording itself appends to the very list being walked, and the dispatch loop
     // re-reads its own size.  Staging was only one of the two entrances into that.
@@ -1586,6 +1591,13 @@ public class Layout
      * No rule can know where a train stopped between two sensors is.  This one keeps the last place it was known to
      * be held, as 2.8.2 keeps a train after a failed trip.
      *
+     * - Where another train now stands on that point - atomic routes off, a release clears the track behind a train, and
+     *   another can stop there while it is still under way - the first station ahead on its path that it still holds,
+     *   its destination at worst (RLV9-C4).  Kept where the other stands, it was kept on no point: the carry and the fold
+     *   each give that point to the train standing there, and the fold then erased the one under way from the
+     *   configuration.  Ahead is track it is heading over, and holds.  A train only passing through the point gives way
+     *   to the one kept there (RLV8-C4).
+     *
      * Read without the railway's monitor, which the event thread must not take: the maps are concurrent, and a train
      * setting off or arriving as this runs is read on one side of it or the other.
      *
@@ -1611,7 +1623,56 @@ public class Layout
             if (known != null) out.put(running.getKey(), known);
         }
 
+        // WHERE ANOTHER TRAIN NOW STANDS THERE, the station ahead it holds (RLV9-C4) - see above.  Standing: not under way,
+        // or kept at that point itself; one whose path only runs through it is kept elsewhere, and gives way (RLV8-C4)
+        for (Entry<Locomotive, Point> kept : new ArrayList<>(out.entrySet()))
+        {
+            Locomotive there = kept.getValue().getCurrentLocomotive();
+
+            if (there == null || there == kept.getKey()) continue;
+
+            if (out.containsKey(there) && out.get(there) != kept.getValue()) continue;
+
+            Point ahead = this.stationAheadItHolds(kept.getKey(), kept.getValue());
+
+            if (ahead != null) out.put(kept.getKey(), ahead);
+        }
+
         return out;
+    }
+
+    /**
+     * The first station after this point on the path a train is under way on, or still locking, that it still holds -
+     * its destination at worst (RLV9-C4).
+     *
+     * @param loc the train
+     * @param from the point it was kept at
+     * @return the station, or null where it holds none ahead
+     */
+    private Point stationAheadItHolds(Locomotive loc, Point from)
+    {
+        List<Edge> path = this.activeLocomotives.containsKey(loc) ? this.activeLocomotives.get(loc)
+            : this.takingPath.get(loc);
+
+        if (path == null) return null;
+
+        boolean past = false;
+
+        for (Edge e : path)
+        {
+            if (e.getStart() == from) past = true;
+
+            if (!past) continue;
+
+            Point ahead = e.getEnd();
+
+            if (ahead.getCurrentLocomotive() == loc && (ahead.isDestination() || this.isABarredCopyOfAStation(ahead)))
+            {
+                return ahead;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -11658,6 +11719,9 @@ public class Layout
         // Overlapping execution is the normal behaviour; only a staging plan opts out, and it does so
         // after calling this
         this.timetableSequential = false;
+
+        // And nothing is on loan: this is the timetable, or the one a plan hands back (RLV9-B1)
+        this.timetableOnLoan = null;
     }
 
     /**
@@ -11812,6 +11876,9 @@ public class Layout
             staged.add(entry);
         }
 
+        // His own, for a fold to write while the plan occupies the timetable (RLV9-B1)
+        List<TimetablePath> owners = new ArrayList<>(this.timetable);
+
         this.setTimetable(staged);
 
         // Must be after setTimetable, which clears it.
@@ -11823,6 +11890,9 @@ public class Layout
         // on a route it cannot abandon, while a free alternative exists that only live path selection
         // would find.  Observed in exactly that form before this flag existed.
         this.timetableSequential = true;
+
+        // And so is this
+        this.timetableOnLoan = owners;
 
         this.control.logf("autolayout.infoReturnToHomeLoaded", staged.size());
 
@@ -12071,7 +12141,13 @@ public class Layout
             edgeJson.add(e.toJSON());
         }
         
-        for (TimetablePath p : this.timetable)
+        // THE OWNER'S TIMETABLE, not a staging plan that borrows it (RLV9-B1).  Return Home puts its plan in the timetable
+        // while it runs and hands the original back when it ends; a fold in between - a reload confirmed during the run,
+        // or Unload - wrote the plan into the configuration as its timetable, marked to run one train at a time, and saved
+        // it.  "A plan that was never saved cannot outlive the session" is what Return Home is written on.
+        List<TimetablePath> owners = this.timetableOnLoan;
+
+        for (TimetablePath p : owners != null ? owners : this.timetable)
         {
             timeTableJson.add(p.toJSON());
         }
@@ -12103,7 +12179,7 @@ public class Layout
         // to it.  Without this a saved return-home plan reloaded as an ordinary timetable: entries
         // dispatched as soon as the previous one STARTED rather than arrived, which is the contention
         // the flag exists to prevent, and which was observed in exactly that form before it existed.
-        if (this.timetableSequential)
+        if (this.timetableSequential && owners == null)
         {
             jsonObj.put("timetableSequential", true);
         }

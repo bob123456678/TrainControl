@@ -3016,6 +3016,35 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * The switch-of-source rule, at every door that changes the layout source: the railway loaded is forgotten where the
+     * source is another railway (RLV7-C2), and not where the source in use is chosen again, which reloads the same
+     * railway, whose trains are carried as any reload carries them (RLV8-C5).
+     *
+     * @param source the layout source now in use - a folder, or empty for the Central Station's
+     */
+    private void sourceIsNow(String source)
+    {
+        if (!source.equals(this.railwaySource)) this.forgetTheRailway();
+
+        this.railwaySource = source;
+    }
+
+    /**
+     * The layout source is now the folder the Central Station's layout was downloaded into (RLV9-C8).  The Download door
+     * reloads the pages itself and never reaches `initializeTrackDiagram`, where every other switch of source meets the
+     * rule, so the source remembered stayed the Central Station's - and choosing that folder again read as a switch to
+     * another railway, and forgot the one shown.
+     *
+     * @param path the folder
+     */
+    void useTheDownloadedLayout(File path)
+    {
+        prefs.put(LAYOUT_OVERRIDE_PATH_PREF, path.getAbsolutePath());
+
+        sourceIsNow(path.getAbsolutePath());
+    }
+
+    /**
      * Runs a load while a setup edit a run declined waits for its rebuild, carrying where every train stands across it
      * (RLA5-B1, RLV6-B1).
      *
@@ -3061,6 +3090,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Runs a load that folds the running layout, keeping the destination turns the railway has made and not yet written
+     * into the setup (RLV9-C1).  A turn is written only while the railway is idle, so during a run every one made since
+     * it started is still owed; the fold writes where each train stands, not which way it has been turned, and the load
+     * replaced the railway with the records on it.  Put back on whatever railway the load leaves, as the carry and the
+     * rebuild put them back (D3-C5).
+     *
+     * @param load the load
+     */
+    void keepThePendingTurnsAcross(Runnable load)
+    {
+        java.util.Map<String, String> pendingTurns = takeThePendingTurns();
+
+        try
+        {
+            load.run();
+        }
+        finally
+        {
+            putThePendingTurnsBack(pendingTurns);
+        }
+    }
+
+    /**
      * Folds what the running layout knows back into the configuration, and writes it.
      *
      * A run moves locomotives, and where they ended up lives in the running Layout until a fold writes it into the setup:
@@ -3091,10 +3143,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void captureRunningLayout()
     {
+        captureRunningLayout(false);
+    }
+
+    /**
+     * The same, told whether a railway that holds a path is folded too, each train under way written on the one point it
+     * is kept at (RLV9-A1): Unload's fold, made after its Yes has stopped the trains, as a reload's is (RLV8-B1).  Every
+     * other door here is refused while autonomy runs, or is the reset after one, and keeps the rule that a railway
+     * reading busy is not folded.
+     *
+     * @param underWayToo whether to fold a railway that holds a path
+     */
+    private void captureRunningLayout(boolean underWayToo)
+    {
         if (autonomySession == null || activeDiagramConfiguration == null
             || this.model == null || !this.model.hasAutoLayout()
             || !this.model.getAutoLayout().isValid()
-            || this.model.getAutoLayout().isRunning())
+            || (!underWayToo && this.model.getAutoLayout().isRunning()))
         {
             return;
         }
@@ -3117,7 +3182,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         try
         {
-            autonomySession.captureFromLayout(this.model.getAutoLayout().toJSON(),
+            // Each train under way on the one point it is kept at (RLV8-B1, RLV9-A1); a railway at rest keeps none
+            org.traincontrol.automation.Layout folding = this.model.getAutoLayout();
+
+            autonomySession.captureFromLayout(folding.toJSON(folding.getLastPointsReached()),
                 activeDiagramConfiguration);
 
             // Written, not reconciled.  This runs because the diagram is being REPLACED - a
@@ -4702,15 +4770,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // a configuration is loaded, and a supplier set on the wrong instance is set on nothing.
         if (getAutonomySession() != null)
         {
+            // Asked, not built (RLV9-C2): each reader takes no railway as nothing to show
             getAutonomySession().setRunningLayoutSource(
-                () -> this.model == null ? null : this.model.getAutoLayout());
+                () -> this.model == null ? null : this.model.getAutoLayoutIfLoaded());
         }
 
         // The panel needs it too, for the arrived-from menu it now builds (Adam, 2026-09-07).
         if (autonomyTileMenus != null)
         {
             autonomyTileMenus.setRunningLayoutSource(
-                () -> this.model == null ? null : this.model.getAutoLayout());
+                () -> this.model == null ? null : this.model.getAutoLayoutIfLoaded());
         }
 
         return autonomyTileMenus == null ? null : autonomyTileMenus.buildFacingMenu(tile);
@@ -4835,7 +4904,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void openAutonomyEditor(final org.traincontrol.automationui.TileGraph.TileKey tile)
     {
-        openLayoutEditor(tile == null ? null : tile.getPage(), Boolean.TRUE, tile);
+        openAutonomyEditor(tile, null);
+    }
+
+    /**
+     * The same, for a finding that names squares beside its own - a guard's signal - which are outlined with it when the
+     * editor opens, as the editor's own list outlines them (MT-505, RLV9-C5).
+     *
+     * @param tile the square to go to, or null just to open the editor on the current page
+     * @param related the squares the finding names beside it, or null
+     */
+    public void openAutonomyEditor(final org.traincontrol.automationui.TileGraph.TileKey tile,
+        final java.util.List<org.traincontrol.automationui.TileGraph.TileKey> related)
+    {
+        openLayoutEditor(tile == null ? null : tile.getPage(), Boolean.TRUE, tile, false, related);
     }
 
     /**
@@ -5129,6 +5211,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void openLayoutEditor(String page, Boolean autonomy,
         final org.traincontrol.automationui.TileGraph.TileKey reveal, boolean remember)
     {
+        openLayoutEditor(page, autonomy, reveal, remember, null);
+    }
+
+    /**
+     * The same, with the squares a finding names beside the one revealed, outlined with it (RLV9-C5).
+     *
+     * @param outline those squares, or null
+     */
+    private void openLayoutEditor(String page, Boolean autonomy,
+        final org.traincontrol.automationui.TileGraph.TileKey reveal, boolean remember,
+        final java.util.List<org.traincontrol.automationui.TileGraph.TileKey> outline)
+    {
         if (!this.isLocalLayout())
         {
             JOptionPane.showMessageDialog(this,
@@ -5288,7 +5382,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 if (reveal != null)
                 {
                     javax.swing.SwingUtilities.invokeLater(() ->
-                        javax.swing.SwingUtilities.invokeLater(() -> editor.reveal(reveal)));
+                        javax.swing.SwingUtilities.invokeLater(() ->
+                        {
+                            editor.reveal(reveal);
+
+                            // AND WHAT A FINDING NAMES BESIDE IT, outlined as the editor's own list outlines it (RLV9-C5)
+                            if (outline != null && editor.getAutonomyPanel() != null)
+                            {
+                                editor.getAutonomyPanel().outlineTheNotice(reveal, outline);
+                            }
+                        }));
                 }
             }
             catch (Exception e)
@@ -8863,6 +8966,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Asks first if anything is moving, and stops it
         if (!prepareAutonomyReload()) return false;
 
+        // FOLDED BEFORE IT IS CLEARED (RLV9-A1).  The reset below folds the running layout into the configuration - but it
+        // asks the model for its railway, which the line after this one empties, so Unload folded nothing: the next load
+        // built every train the run moved back where the file had it before the run, with the square it really stands on
+        // reading free (DW-A1's shape), and the Auto tab's settings went back with them.  A train under way - Yes above
+        // stops it and releases nothing - is written on the one point it is kept at, as a reload writes it (RLV8-B1); and
+        // nothing is folded while an edit a run declined waits, as at every door.
+        captureRunningLayout(true);
+
         this.model.clearAutoLayout();
 
         resetAutonomySession();
@@ -10831,13 +10942,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // still monitoring or capturing against it - has to go
             this.resetAutonomySession();
 
-            // and the railway with it where the source is another railway (RLV7-C2) - not where the source in use is
-            // chosen again, which reloads the same railway, whose trains are carried as any reload carries them (RLV8-C5)
-            String source = prefs.get(LAYOUT_OVERRIDE_PATH_PREF, "");
-
-            if (!source.equals(this.railwaySource)) this.forgetTheRailway();
-
-            this.railwaySource = source;
+            // and the railway with it where the source is another railway - `sourceIsNow` says the rule (RLV7-C2, RLV8-C5)
+            this.sourceIsNow(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, ""));
 
             // OB-093, Adam: "when using a CS2 layout and the autonomy tab is greyed out, the autonomy
             // checkbox is still visible on the track diagram page." resetAutonomySession greys the Auto
@@ -24551,7 +24657,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // repaintAutoLocList can run while the window is still being built, before the buttons exist
         if (this.returnHomeButton == null) return;
 
-        Layout layout = this.model == null ? null : this.model.getAutoLayout();
+        // ASKED, NOT BUILT (RLV9-C2): the refresh a railway's last thread fires as it ends runs this, and after Unload it
+        // built an empty railway - `getAutoLayout` makes one where there is none - which hasAutoLayout then answered yes
+        // about (CS3-C4).  The null branch below was written for exactly that state, and `getAutoLayout` never reached it.
+        Layout layout = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
 
         if (layout == null)
         {
@@ -24676,7 +24785,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (this.returnHomeButton == null) return;
 
-        if (this.model == null || this.model.getAutoLayout() != asked) return;
+        // Asked, not built (RLV9-C2)
+        if (this.model == null || this.model.getAutoLayoutIfLoaded() != asked) return;
 
         if (this.isAutonomyBusy())
         {
@@ -26422,8 +26532,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                         this.model.downloadLayout(path);
 
-                        // Load the layout
-                        prefs.put(LAYOUT_OVERRIDE_PATH_PREF, path.getAbsolutePath());
+                        // Load the layout - the source a later switch of source compares with, too (RLV9-C8)
+                        useTheDownloadedLayout(path);
 
                         // The editing controls answer differently now (OB-126): this is what decides whether
                         // there is a layout of his own to edit.
@@ -27164,8 +27274,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             //
                             // A graceful stop is not a failure - the operator asked for it and watched it happen -
                             // so it is not reported.
-                            final boolean completed = this.model.getAutoLayout().executeTimetable();
-                            final int stoppedAt = this.model.getAutoLayout().getUnfinishedTimetablePathIndex();
+                            // THE RAILWAY IT RAN ON, asked once (RLV9-C2): Unload during the run empties the model, and
+                            // asking again afterwards built an empty railway to read the index from
+                            final Layout running = this.model.getAutoLayout();
+                            final boolean completed = running.executeTimetable();
+                            final int stoppedAt = running.getUnfinishedTimetablePathIndex();
 
                             if (!completed && !this.gracefulStopRequested)
                             {

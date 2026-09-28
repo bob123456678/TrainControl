@@ -2469,9 +2469,14 @@ the edit, and choosing another configuration first carries the one running, whic
 left is (RLA5-B1, RLV6-B1).  A load confirmed while a train is under way - which holds every point of its path - folds
 the running layout with that train written on one point, the last station on its path whose sensor it has tripped, or
 where it set off; so the Auto tab's settings and a timetable captured this session are kept (RLV7-B1, RLV7-C1,
-RLV8-B1).  Unload, a deleted setup and a switch of railway forget the
+RLV8-B1).  The timetable written is the configuration's own, not a plan Return Home has borrowed it for (RLV9-B1); the
+destination turns the railway has made and not yet written down are kept across the load (RLV9-C1); and a train under
+way whose last station another has since stopped on is written on the first station ahead on its path that it still
+holds (RLV9-C4).  Unload folds the running layout into the configuration first, as a reload does, so a load after it
+has the trains where the run left them (RLV9-A1).  Unload, a deleted setup and a switch of railway forget the
 railway loaded, so a load after them carries nothing across (RLV7-C2) - a switch only to another source, not to the one
-in use chosen again (RLV8-C5) - and Unload retires the railway it drops, so a train its thread was driving is not driven
+in use chosen again (RLV8-C5), the folder the Central Station's layout was downloaded into counting as the one in use
+(RLV9-C8) - and Unload retires the railway it drops, so a train its thread was driving is not driven
 on (RLV8-A1).  Another configuration is not chosen while the
 one running cannot be used with the edit that waits: the choice is refused, and says so, and the one running stays
 loaded - with its errors, where it builds with them, since a setup with errors loads so that it can be fixed (RLV7-C4).  Before the import went into the configuration named, a layout that already had configurations took the file's placements, homes and facings into

@@ -1258,11 +1258,13 @@ public class testEditorSurfaceRules
             "whyAutonomyEditorCannotOpen is gone. It is the one answer to 'would the editor open', "
             + "and the menu item and openLayoutEditor are both supposed to be reading it");
 
-        // The last parameter rather than the first line: the three-argument overload above it
-        // begins with the same words, and indexOf would stop on that one.
-        String opener = bodyOf(ui, "reveal, boolean remember)");
+        // The last parameters rather than the first line: the overloads above it begin with the same
+        // words, and indexOf would stop on those.  The five-argument form, which the others hand on to
+        // with the squares a finding names beside the one revealed (RLV9-C5).
+        String opener = bodyOf(ui, "boolean remember,"
+            + "\n        final java.util.List<org.traincontrol.automationui.TileGraph.TileKey> outline)");
 
-        assertFalse(opener.isEmpty(), "openLayoutEditor's four-argument form could not be found, so "
+        assertFalse(opener.isEmpty(), "the openLayoutEditor that holds the refusals could not be found, so "
             + "this test is reading nothing and would pass however far the two had drifted");
 
         java.util.List<String> refusals = new java.util.ArrayList<>();
@@ -3736,9 +3738,10 @@ public class testEditorSurfaceRules
         // THE TWO DOORS both ask, rather than assuming.
         for (String door : new String[] {
             "private void editLayoutButtonActionPerformed(java.awt.event.ActionEvent evt)",
-            "public void openLayoutEditor(String page, Boolean autonomy,"
+            "private void openLayoutEditor(String page, Boolean autonomy,"
                 + "\n        final org.traincontrol.automationui.TileGraph.TileKey reveal, "
-                + "boolean remember)" })
+                + "boolean remember,"
+                + "\n        final java.util.List<org.traincontrol.automationui.TileGraph.TileKey> outline)" })
         {
             String body = withoutComments(bodyOf(ui, door));
 

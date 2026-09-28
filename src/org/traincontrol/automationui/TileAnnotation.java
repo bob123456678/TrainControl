@@ -1670,10 +1670,11 @@ public class TileAnnotation
      * autonomy send one - were being answered by one line.
      *
      * **MAGENTA, and it is the only strong hue this diagram had left.**  The vocabulary already spoken
-     * here is warm for paths and parking - yellow out, orange back, orange again for the badge on a
-     * square autonomy leaves alone, and the same orange for the train mark - with green and red for
-     * the one-way arrows and blue for a point autonomy uses.  A fourth warm shade would read as a
-     * third kind of path; a green or a red would read as a direction; a blue would read as the badge.
+     * here is warm for paths and trains - yellow out, orange back, and orange for the train mark - with
+     * a medium grey for the badge on a square autonomy leaves alone (FR-103; it was orange too), green
+     * and red for the one-way arrows and blue for a point autonomy uses.  A fourth warm shade would read
+     * as a third kind of path; a green or a red would read as a direction; a blue would read as the
+     * badge.
      * Magenta is none of those, is far enough from the red arrowhead and the blue badge to be told
      * apart at tile size, and is dark enough that the chevrons drawn on top of it still show.
      *
@@ -1774,28 +1775,28 @@ public class TileAnnotation
 
     private void paintBadge(Graphics2D g, int width, int height)
     {
-        // ORANGE WHENEVER AUTONOMY WILL NOT SEND A TRAIN HERE, which is one question and now has one
-        // colour (Adam, 2026-09-01: "should they always be orange...?").
+        // ONE COLOUR WHENEVER AUTONOMY WILL NOT SEND A TRAIN HERE, which is one question and now has one
+        // colour (Adam, 2026-09-01: "should they always be orange...?") - `POINT_INACTIVE`, a medium grey
+        // just darker than the labels since FR-103 (Adam, from MT-492); it was orange.
         //
         // A cross took whichever colour the square would have had if it were working, so the same
         // switched-off square drew blue or orange depending on a setting that means nothing while it is
         // switched off - a difference the reader can see and cannot use.
         //
-        // Orange rather than blue because the graph window already paints an inactive point orange, and
-        // these two constants exist precisely so that somebody who has read one view can read the
-        // other; a switched-off square that was blue here and orange there is the disagreement they
-        // were declared to prevent.
+        // The inactive colour rather than blue because these two constants exist precisely so that
+        // somebody who has read one view can read the other; a switched-off square that took the active
+        // colour here and the inactive one elsewhere is the disagreement they were declared to prevent.
         //
         // BUT IT CHANGES NOTHING TODAY, and the paragraph above overstated it (FV2-C1).  Both places
         // in src/ that build a Badge compute `parking` as `active == false || !autoDestination` and
         // `shut` as `active == false` - so `shut` already implies `parking`, and a switched-off square
-        // was ALWAYS orange.  There is no configuration reachable through the editor where this clause
-        // decides the colour.
+        // ALWAYS took the inactive colour.  There is no configuration reachable through the editor where
+        // this clause decides the colour.
         //
         // It stays because the two flags are independent in the type even where they are not in those
         // two callers: a Badge built any other way - by a test, or by a third site added later - must
-        // still read as orange when nothing can pass, and the test pins that.  What was actually wrong
-        // with the cross, and what Adam was seeing, is the SHAPE rule below, not this.
+        // still take the inactive colour when nothing can pass, and the test pins that.  What was
+        // actually wrong with the cross, and what Adam was seeing, is the SHAPE rule below, not this.
         //
         // Colour and shape stay separate questions, as they are everywhere else on this diagram: the
         // colour says whether autonomy uses the square, the mark says what the square does.  Parking

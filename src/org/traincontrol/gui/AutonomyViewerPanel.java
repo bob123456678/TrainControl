@@ -89,6 +89,11 @@ public class AutonomyViewerPanel extends JPanel
     private final List<org.traincontrol.automationui.TileGraph.TileKey> findingRows =
         new java.util.ArrayList<>();
 
+    // The squares each row's finding names beside its own - a guard's signal - for the editor to outline when a click
+    // opens it there (RLV9-C5).  Parallel to the rows; null where there are none.
+    private final List<List<org.traincontrol.automationui.TileGraph.TileKey>> findingRelatedRows =
+        new java.util.ArrayList<>();
+
     // What each findings row is, so the renderer can colour it and a click can act on it.  Parallel
     // lists rather than a richer element type, so the list still renders as plain strings.
     private final List<AutonomyChecks.Severity> findingSeverity = new java.util.ArrayList<>();
@@ -501,7 +506,12 @@ public class AutonomyViewerPanel extends JPanel
 
                 org.traincontrol.automationui.TileGraph.TileKey tile = findingRows.get(row);
 
-                if (tile != null) ui.openAutonomyEditor(tile);
+                // With the squares it names beside its own, outlined there as the editor's own list outlines them
+                // (RLV9-C5)
+                if (tile != null)
+                {
+                    ui.openAutonomyEditor(tile, row < findingRelatedRows.size() ? findingRelatedRows.get(row) : null);
+                }
             }
         });
 
@@ -829,7 +839,20 @@ public class AutonomyViewerPanel extends JPanel
             }
         }
 
-        loadPrepared(name, interactive, captureRunningState);
+        // AND THE TURNS THE RAILWAY OWES, across a fold of the configuration running (RLV9-C1).  A turn made at a
+        // destination is written into the setup only while the railway is idle, so during a run every one made since it
+        // started is still owed; the fold writes where each train stands, not which way it was turned, and the load
+        // replaced the railway with the records on it.  The carry above keeps them already.
+        final String runningNow = ui.getActiveDiagramConfiguration();
+
+        if (captureRunningState && runningNow != null && runningNow.equals(name))
+        {
+            ui.keepThePendingTurnsAcross(() -> loadPrepared(name, interactive, captureRunningState));
+        }
+        else
+        {
+            loadPrepared(name, interactive, captureRunningState);
+        }
     }
 
     /**
@@ -1838,6 +1861,7 @@ public class AutonomyViewerPanel extends JPanel
     {
         findingsModel.clear();
         findingRows.clear();
+        findingRelatedRows.clear();
         findingSeverity.clear();
 
         List<Object[]> errors = new java.util.ArrayList<>();
@@ -1892,7 +1916,8 @@ public class AutonomyViewerPanel extends JPanel
             // this list changes, and lets the two that need a name use {1}.
                 new Object[] {finding.getTile(),
                     describe(finding.getMessageKey(), subject, finding.getSubject(),
-                        finding.getCount(), finding.getDetail(), finding.getThird())});
+                        finding.getCount(), finding.getDetail(), finding.getThird()),
+                    finding.getRelated()});
         }
 
         // a page renumbered under the setup would silently reattach settings to the wrong track, so it
@@ -1956,6 +1981,7 @@ public class AutonomyViewerPanel extends JPanel
 
         findingsModel.addElement(heading);
         findingRows.add(null);
+        findingRelatedRows.add(null);
         findingSeverity.add(null);
 
         Map<String, List<Object[]>> byPage = new java.util.LinkedHashMap<>();
@@ -1980,6 +2006,7 @@ public class AutonomyViewerPanel extends JPanel
                 findingsModel.addElement("  " + I18n.f("autosetup.ui.labelPageHeading",
                     entry.getKey()));
                 findingRows.add(null);
+                findingRelatedRows.add(null);
                 findingSeverity.add(null);
             }
 
@@ -1988,6 +2015,12 @@ public class AutonomyViewerPanel extends JPanel
                 findingsModel.addElement("     " + row[1]);
                 findingRows.add((org.traincontrol.automationui.TileGraph.TileKey) row[0]);
                 findingSeverity.add(severity);
+
+                @SuppressWarnings("unchecked")
+                List<org.traincontrol.automationui.TileGraph.TileKey> related = row.length > 2
+                    ? (List<org.traincontrol.automationui.TileGraph.TileKey>) row[2] : null;
+
+                findingRelatedRows.add(related);
             }
         }
     }

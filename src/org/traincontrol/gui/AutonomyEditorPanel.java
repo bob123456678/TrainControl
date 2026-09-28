@@ -109,6 +109,18 @@ public class AutonomyEditorPanel extends JPanel
         this.onJumpToPage = action;
     }
 
+    // A finding on another page that names squares beside its own - a guard's signal - goes there with them (RLV9-C5).
+    // Where this is not set, such a finding jumps as any other.
+    private java.util.function.BiConsumer<TileKey, List<TileKey>> onJumpToNotice;
+
+    /**
+     * @param action given the square of a finding on another page, and the squares it names beside it
+     */
+    public void setOnJumpToNotice(java.util.function.BiConsumer<TileKey, List<TileKey>> action)
+    {
+        this.onJumpToNotice = action;
+    }
+
     // Which tile each findings row is about; null for a heading or a finding with no tile
     private final List<TileKey> findingTiles = new java.util.ArrayList<>();
 
@@ -517,6 +529,11 @@ public class AutonomyEditorPanel extends JPanel
 
     // The signals drawn outlined, so that "protected by signal 12" can be pointed at rather than read
     private final java.util.Set<TileKey> highlightedSignals = new java.util.LinkedHashSet<>();
+
+    // The squares a clicked finding is about, drawn outlined (MT-505): its own and those it names beside it.  Not the bulk
+    // selection, which the next length or direction is written to (RLV9-C3); cleared by the next click on the diagram, the
+    // next finding, Escape or a tool.
+    private final java.util.Set<TileKey> noticeOutline = new java.util.LinkedHashSet<>();
 
     // Where the locomotive roster comes from.  Supplied rather than read here, because the session is
     // headless and knows nothing about the control station.
@@ -1020,6 +1037,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         pendingPortal = null;
         selection.clear();
+        noticeOutline.clear();
         testFrom = null;
         lastTestFrom = null;
         lastTestTo = null;
@@ -1149,35 +1167,42 @@ public class AutonomyEditorPanel extends JPanel
             {
                 TileKey at = findingTiles.get(row);
 
-                // A finding on another page is reached by opening that page, which this window cannot
-                // do in place - it is built around one diagram.  So it hands the square to the main
-                // window, which closes this editor and opens one there.
-                if (!onThisPage(at))
-                {
-                    if (onJumpToPage != null) onJumpToPage.accept(at);
-
-                    return;
-                }
-
                 // AND THE SQUARES IT IS ABOUT BESIDE ITS OWN (Adam, on MT-505: "also highlight the affected signals when
                 // the notice is clicked").  A guard notice's own square is the station; the signal it names is what is
                 // wrong, so both are outlined, and the station is shown.
                 List<TileKey> related = row < findingRelated.size() ? findingRelated.get(row) : null;
 
-                if (related != null && !related.isEmpty())
+                // A finding on another page is reached by opening that page, which this window cannot
+                // do in place - it is built around one diagram.  So it hands the square to the main
+                // window, which closes this editor and opens one there - with the squares the finding
+                // names beside its own, for the editor opened there to outline (RLV9-C5).
+                if (!onThisPage(at))
                 {
-                    List<TileKey> squares = new java.util.ArrayList<>();
-
-                    squares.add(at);
-
-                    for (TileKey square : related)
+                    if (related != null && !related.isEmpty() && onJumpToNotice != null)
                     {
-                        if (onThisPage(square) && !squares.contains(square)) squares.add(square);
+                        onJumpToNotice.accept(at, related);
+                    }
+                    else if (onJumpToPage != null)
+                    {
+                        onJumpToPage.accept(at);
                     }
 
-                    outlineAndReveal(squares);
+                    return;
+                }
+
+                if (related != null && !related.isEmpty())
+                {
+                    outlineTheNotice(at, related);
 
                     return;
+                }
+
+                // Another finding: the last one's outline goes
+                if (!noticeOutline.isEmpty())
+                {
+                    noticeOutline.clear();
+
+                    refresh();
                 }
 
                 if (onReveal != null) onReveal.accept(at);
@@ -2347,7 +2372,7 @@ public class AutonomyEditorPanel extends JPanel
 
             bulk.add(massAssignMaximum);
 
-            // MASS ASSIGN LOCOMOTIVE TRAIN LENGTHS (FR-094; Adam, 2026-09-23: *"Rather than adding complexity through
+            // MASS ASSIGN TRAIN LENGTHS, as MT-567 named it (FR-094; Adam, 2026-09-23: *"Rather than adding complexity through
             // new menus, add a bulk tool to the autonomy editor to set missing train lengths, similar to how the
             // station lengths are set."*).  Not a page's question - a train is not on a page - so a page left out does
             // not change it.
@@ -7196,6 +7221,14 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (tile == null || session.getGraph() == null) return;
 
+        // A clicked finding's outline goes with the next click on the diagram (RLV9-C3)
+        if (!noticeOutline.isEmpty())
+        {
+            noticeOutline.clear();
+
+            refresh();
+        }
+
         rememberIfStation(tile);
 
         // A train's tail is waiting to be told the farthest sensor it crossed, and this is that click (2026-09-14).
@@ -7828,11 +7861,12 @@ public class AutonomyEditorPanel extends JPanel
      * in `AutoLocomotiveStatus` was moved off the event thread twice, for OB-079; this is that sweep
      * reaching the copy it missed.
      *
-     * **WHAT STAYS HERE IS WHAT MUST.**  `layoutSource.get()` is `getModel().getAutoLayout()`, which
-     * BUILDS a `Layout` when there is none, and `getStationIndex` DERIVES the square-to-Point
-     * translation when nothing has yet - the same reason `refreshCoveredTrack` captures its railway
-     * and its session on the caller's thread rather than letting the worker ask for them.  So both
-     * are captured here and handed over, and the worker asks nothing that can build anything.
+     * **WHAT STAYS HERE IS WHAT MUST.**  `getStationIndex` DERIVES the square-to-Point translation when
+     * nothing has yet, and `layoutSource.get()` was `getModel().getAutoLayout()`, which BUILDS a
+     * `Layout` when there is none - it asks `getAutoLayoutIfLoaded` since RLV8-C2, and may answer
+     * null - the same reason `refreshCoveredTrack` captures its railway and its session on the
+     * caller's thread rather than letting the worker ask for them.  So both are captured here and
+     * handed over, and the worker asks nothing that can build anything.
      *
      * @param tile the square that was clicked
      * @param component what is drawn on it
@@ -8937,8 +8971,7 @@ public class AutonomyEditorPanel extends JPanel
         // The paired signal borrows the outline too, while its menu item is being acted on.  An
         // address names the signal but does not say where it is, and where it is is the thing somebody
         // checking a pairing actually wants to know.
-        boolean outlined = selection.contains(tile) || tile.equals(testFrom)
-            || highlightedSignals.contains(tile) || whyWaitsOn(tile);
+        boolean outlined = isOutlined(tile);
 
         // In the arrivals view every station shows every side it has, so the setting can be READ -
         // an unrestricted station drawing nothing is right on the running diagram and useless in the
@@ -10191,7 +10224,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Where Mass Assign Locomotive Train Lengths finds the trains to ask about, and where it writes each answer
+     * Where Mass Assign Train Lengths finds the trains to ask about, and where it writes each answer
      * (FR-094).
      *
      * Both halves live on the main window - the run list is the running layout's, and a length is written through
@@ -10266,6 +10299,44 @@ public class AutonomyEditorPanel extends JPanel
                 window.applyTrainLength(window.getModel().getLocByName(train), units);
             }
         };
+    }
+
+    /**
+     * Outlines the squares a clicked finding is about - its own, and those it names beside it on this page - and shows
+     * its own (MT-505).  Outlined, not selected (RLV9-C3): the bulk selection is what the next Segment Length or direction
+     * is written to, and a click on a guard notice made it the station and its signal, so a length typed for any square
+     * went to those two.
+     *
+     * @param at the finding's own square
+     * @param related the squares it names beside it
+     */
+    public void outlineTheNotice(TileKey at, java.util.Collection<TileKey> related)
+    {
+        noticeOutline.clear();
+
+        if (at != null && onThisPage(at)) noticeOutline.add(at);
+
+        for (TileKey square : related == null ? java.util.Collections.<TileKey>emptyList() : related)
+        {
+            if (square != null && onThisPage(square)) noticeOutline.add(square);
+        }
+
+        refresh();
+
+        if (at != null && onThisPage(at) && onReveal != null) onReveal.accept(at);
+    }
+
+    /**
+     * Whether a square is drawn outlined: the bulk selection, a clicked finding's squares, the first end of a path test,
+     * the signals a menu item is acting on, or the square a test is waiting on.
+     *
+     * @param tile the square
+     * @return whether it is outlined
+     */
+    public boolean isOutlined(TileKey tile)
+    {
+        return selection.contains(tile) || noticeOutline.contains(tile) || tile.equals(testFrom)
+            || highlightedSignals.contains(tile) || whyWaitsOn(tile);
     }
 
     private void outlineAndReveal(java.util.Collection<TileKey> squares)
