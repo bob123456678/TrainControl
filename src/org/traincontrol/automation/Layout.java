@@ -789,7 +789,10 @@ public class Layout
 
     // This instance's version, fixed at construction.  Compared against layoutVersion to answer "am I
     // still the current Layout?" - see isCurrentLayout
-    private final int version;
+    private volatile int version;
+
+    // What the version counter is ticked under: a construction, a retirement (RLV8-A1), and a load made current (RLV8-C3).
+    private static final Object VERSIONS = new Object();
     
     // The last error message - useful for debugging the JSON parse result
     private static String lastError = "";
@@ -863,8 +866,11 @@ public class Layout
         this.locomotivePendingS88 = new ConcurrentHashMap<>();
         this.activateRouteIDs = new LinkedList<>();
         
-        Layout.layoutVersion += 1;
-        this.version = Layout.layoutVersion;
+        synchronized (VERSIONS)
+        {
+            Layout.layoutVersion += 1;
+            this.version = Layout.layoutVersion;
+        }
         Layout.lastError = "";
     }
     
@@ -1662,6 +1668,36 @@ public class Layout
        return null;
     }
     
+    /**
+     * Retires every Layout there is, so that none is the current one and a path's thread on any of them stops its train
+     * at its next check (RLV8-A1).
+     *
+     * Every load retires the railway it replaces, by building a newer one.  Unload replaces it with nothing, and its
+     * retirement came by accident - from the next lookup that built an empty railway, which RLV7-C2 took away.  So the
+     * door that drops the railway retires it itself.
+     */
+    public static void retireEveryLayout()
+    {
+        synchronized (VERSIONS)
+        {
+            Layout.layoutVersion += 1;
+        }
+    }
+
+    /**
+     * Makes this the current Layout, retiring every other (RLV8-C3): a railway loaded is the current one whatever was
+     * built while it was parsed.  The parse builds this first and the model takes it after, and a lookup landing between
+     * built a newer, empty railway - so the one loaded was retired from the start, and no train it sent got under way.
+     */
+    public void makeCurrent()
+    {
+        synchronized (VERSIONS)
+        {
+            Layout.layoutVersion += 1;
+            this.version = Layout.layoutVersion;
+        }
+    }
+
     /**
      * Whether this Layout is still the one in use, or has been superseded by a newer one.
      *
@@ -11958,6 +11994,27 @@ public class Layout
      * @throws java.lang.NoSuchFieldException 
      */
     synchronized public String toJSON() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
+    {
+        return toJSON(Collections.<Locomotive, Point>emptyMap());
+    }
+
+    /**
+     * The same, with each train under way written on the one point it is kept at (RLV8-B1): `getLastPointsReached`'s.
+     *
+     * A locked path holds every point on it for its train, so written point by point a train under way stands in several
+     * places, which a configuration refuses.  A fold of a railway holding a path writes it here instead - on the kept
+     * point, and on no other point it holds.  A kept point a released path no longer records it on is written with it,
+     * while the railway still shows the train somewhere and the database has it, as 2.8.2 writes a kept graph; and a
+     * point another train only passes through gives way to the train kept there (RLV8-C4).
+     *
+     * @param keptAt each train under way against the point it is kept at; empty for a railway at rest
+     * @return the railway
+     * @throws IllegalArgumentException from the JSON
+     * @throws IllegalAccessException from the JSON
+     * @throws NoSuchFieldException from the JSON
+     */
+    synchronized public String toJSON(Map<Locomotive, Point> keptAt) throws IllegalArgumentException,
+        IllegalAccessException, NoSuchFieldException
     {        
         List<JSONObject> pointJson = new LinkedList<>();
         List<JSONObject> edgeJson = new LinkedList<>();
@@ -11974,9 +12031,39 @@ public class Layout
                 (Edge p1, Edge p2) -> p1.getName().compareTo(p2.getName())
         );
         
+        // Each kept point, with the train kept on it - a train the railway still shows somewhere, and the database has
+        Set<Locomotive> onTheRailway = new HashSet<>();
+
         for (Point p : pointList)
         {
-            pointJson.add(p.toJSON());
+            if (p.getCurrentLocomotive() != null) onTheRailway.add(p.getCurrentLocomotive());
+        }
+
+        Map<Point, Locomotive> keptHere = new HashMap<>();
+
+        for (Entry<Locomotive, Point> kept : keptAt.entrySet())
+        {
+            Locomotive train = kept.getKey();
+
+            if (kept.getValue() == null || !onTheRailway.contains(train) || train.getName() == null
+                || this.control.getLocByName(train.getName()) == null)
+            {
+                continue;
+            }
+
+            keptHere.put(kept.getValue(), train);
+        }
+
+        for (Point p : pointList)
+        {
+            Locomotive here = p.getCurrentLocomotive();
+
+            // A train kept elsewhere is only on its way through here
+            Locomotive standing = here != null && keptAt.containsKey(here) && keptAt.get(here) != p ? null : here;
+
+            if (standing == null && keptHere.containsKey(p)) standing = keptHere.get(p);
+
+            pointJson.add(p.toJSON(standing));
         }
         
         for (Edge e : edgeList)

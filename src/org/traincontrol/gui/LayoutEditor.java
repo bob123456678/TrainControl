@@ -1700,21 +1700,22 @@ public class LayoutEditor extends PositionAwareJFrame
             // writing the setup until somebody happened to open the diagram's menu once.  A feature
             // that works on one of two surfaces depending on what you opened earlier is worse than
             // one that works on neither, because nothing tells you which you are looking at.
+            // Asked, not built (RLV8-C2): each reader takes no railway as nothing to show
             autonomyPanel.setRunningLayoutSource(
                 () -> parent == null || parent.getModel() == null
-                    ? null : parent.getModel().getAutoLayout());
+                    ? null : parent.getModel().getAutoLayoutIfLoaded());
 
             if (session != null)
             {
                 session.setRunningLayoutSource(
                     () -> parent == null || parent.getModel() == null
-                        ? null : parent.getModel().getAutoLayout());
+                        ? null : parent.getModel().getAutoLayoutIfLoaded());
             }
 
             // Asked for on every use rather than held, because loading a configuration replaces the
             // Layout wholesale and a kept reference would answer about the previous one without
             // saying so.
-            autonomyPanel.setLayoutSource(() -> parent.getModel().getAutoLayout());
+            autonomyPanel.setLayoutSource(() -> parent.getModel().getAutoLayoutIfLoaded());
 
             // Setup mode writes to a page only when a station name is put on a square.  The caption is
             // part of the tile art, so the grid is rebuilt rather than repainted, and the annotations

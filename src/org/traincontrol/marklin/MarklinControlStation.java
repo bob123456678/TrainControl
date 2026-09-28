@@ -994,6 +994,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     private final Object autoLayoutLock = new Object();
 
+    /**
+     * Run between parsing a configuration and the model taking it, when set - the seam a test lands a lookup in
+     * (RLV8-C3).  Null in the application.
+     */
+    public static volatile Runnable whileParsingForTest;
+
     @Override
     public boolean hasAutoLayout()
     {
@@ -1059,6 +1065,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // STOPPED OUTSIDE THE LOCK (CS3-C4).  `stopLocomotives` talks to the railway and waits on it, and
         // nothing else may be made to queue behind that - the lock is only there so a route thread cannot
         // build a fresh layout in the middle of a clear.
+        // RETIRED, as a load retires the railway it replaces (RLV8-A1): a path's thread on the railway dropped stops its
+        // train at its next check.  Dropped and not retired, it drove a train stopped by Unload's Yes on at line speed
+        // when it reached the sensor it was waiting for.
+        Layout.retireEveryLayout();
+
         if (going != null)
         {
             going.invalidate();
@@ -1104,7 +1115,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
             this.autoLayout.stopLocomotives();
         }
         
-        this.autoLayout = Layout.fromJSON(s, this);
+        Layout parsed = Layout.fromJSON(s, this);
+
+        if (whileParsingForTest != null) whileParsingForTest.run();
+
+        // TAKEN UNDER THE LOCK, AND MADE THE CURRENT ONE (RLV8-C3).  A lookup of an empty model while this parsed built a
+        // railway newer than the one parsed, which was then retired from the start; and assigned outside the lock, the
+        // two could interleave.
+        synchronized (this.autoLayoutLock)
+        {
+            this.autoLayout = parsed;
+
+            if (parsed != null) parsed.makeCurrent();
+        }
 
         if (this.autoLayout != null)
         {

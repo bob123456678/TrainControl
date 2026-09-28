@@ -1173,6 +1173,24 @@ public class Point
      * @throws java.lang.NoSuchFieldException 
      */
     public JSONObject toJSON() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
+    {
+        return toJSON(this.currentLoc);
+    }
+
+    /**
+     * The same, writing the given locomotive as the one standing here - or none, for null - rather than whichever this
+     * point records (RLV8-B1).  A train under way is recorded on every point of its locked path, and a fold writes it on
+     * the one point it is kept at.  The side it arrived by and its road are written only for the train this point
+     * records.
+     *
+     * @param standing the locomotive to write as standing here, or null
+     * @return the point
+     * @throws IllegalArgumentException from the JSON
+     * @throws IllegalAccessException from the JSON
+     * @throws NoSuchFieldException from the JSON
+     */
+    public JSONObject toJSON(Locomotive standing) throws IllegalArgumentException, IllegalAccessException,
+        NoSuchFieldException
     {		
         JSONObject jsonObj = new JSONObject();
         Field map = jsonObj.getClass().getDeclaredField("map");
@@ -1277,7 +1295,7 @@ public class Point
 
         if (this.copyFacing != null) jsonObj.put("copyFacing", this.copyFacing);
         
-        if (this.currentLoc != null)
+        if (standing != null)
         {
             JSONObject locObj = new JSONObject();
             
@@ -1286,8 +1304,8 @@ public class Point
             map.set(locObj, new LinkedHashMap<>());
             map.setAccessible(false);
             
-            locObj.put("name", this.currentLoc.getName());
-            locObj.put("reversible", this.currentLoc.isReversible());
+            locObj.put("name", standing.getName());
+            locObj.put("reversible", standing.isReversible());
             // WRITTEN ONLY WHEN IT IS A SPEED (MT-233).
             //
             // Adam: "ensure a locomotive cannot have a speed of 0 set anywhere in the autonomy config
@@ -1299,26 +1317,26 @@ public class Point
             //
             // Absence says the same thing and cannot be misread.  It is also what arrivalFunc and
             // departureFunc below already do, for the same reason - the format had the idiom already.
-            if (this.currentLoc.getPreferredSpeed() > 0)
+            if (standing.getPreferredSpeed() > 0)
             {
-                locObj.put("speed", this.currentLoc.getPreferredSpeed());
+                locObj.put("speed", standing.getPreferredSpeed());
             }
             
-            if (this.currentLoc.getArrivalFunc() != null)
+            if (standing.getArrivalFunc() != null)
             {
-                locObj.put("arrivalFunc", this.currentLoc.getArrivalFunc());
+                locObj.put("arrivalFunc", standing.getArrivalFunc());
             }
         
-            if (this.currentLoc.getDepartureFunc() != null)
+            if (standing.getDepartureFunc() != null)
             {
-                locObj.put("departureFunc", this.currentLoc.getDepartureFunc());
+                locObj.put("departureFunc", standing.getDepartureFunc());
             }
             
             // A LENGTH NOBODY HAS SET IS NULL, and unboxing it here threw (found 2026-09-14 by
             // `testAPassingTrainMayStandAcrossThePoints.testTheRoadIsWrittenToTheSetup`).  `Layout.toJSON` then
             // failed whole, and every capture of the running layout - closing the editor, the exit, a
             // re-download - logged the exception and wrote nothing while such a train stood anywhere.
-            Integer trainLength = this.currentLoc.getTrainLength();
+            Integer trainLength = standing.getTrainLength();
 
             if (trainLength != null && trainLength > 0)
             {
@@ -1368,7 +1386,7 @@ public class Point
         // A side with nobody on the square is a record of a train the database no longer has, and it
         // was written back on every save for ever - so the AMR-C3 drop's own promise, "the next save
         // writes the file back without the phantom", was true of the placement and false of its tail.
-        if (this.arrivedFrom != null && this.currentLoc != null)
+        if (this.arrivedFrom != null && standing != null && standing == this.currentLoc)
         {
             jsonObj.put("arrivedFrom", this.arrivedFrom);
         }
@@ -1382,7 +1400,7 @@ public class Point
         // looks up.
         String road = Layout.namesOfRoad(this.arrivedAlong);
 
-        if (road != null && this.currentLoc != null)
+        if (road != null && standing != null && standing == this.currentLoc)
         {
             jsonObj.put("arrivedAlong", new JSONArray(road));
         }

@@ -607,6 +607,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private String forgottenByTheReset;
 
     /**
+     * The layout source the railway came from - the local folder, or none for the Central Station's - so that a switch
+     * of source can tell another railway from the same one chosen again (RLV8-C5).  Null until the window is given its
+     * model, and then a switch forgets the railway whatever it is.
+     */
+    private String railwaySource;
+
+    /**
      * The route editor, which is now the only one.
      *
      * Still called routeEditor because that is what it is: the old text-based one it replaces has
@@ -4789,7 +4796,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             // Asked for on every use rather than held, for the same reason the editor does it: loading
             // a configuration replaces the Layout wholesale.
-            autonomyTileMenus.setLayoutSource(() -> this.model.getAutoLayout());
+            // Asked, not built (RLV8-C2): the menus read no railway as nothing to offer
+            autonomyTileMenus.setLayoutSource(() -> this.model.getAutoLayoutIfLoaded());
 
             autonomyTileMenus.setLocomotiveNames(() ->
                 this.model == null ? new java.util.ArrayList<String>() : this.model.getLocList());
@@ -6425,7 +6433,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             String name = kept.getKey().getName();
 
-            if (name == null || standing.containsKey(name) || kept.getValue().getCurrentLocomotive() != null) continue;
+            if (name == null || standing.containsKey(name)) continue;
+
+            // UNLESS ANOTHER TRAIN STANDS THERE - recorded above - not merely one whose path runs through it (RLV8-C4): a
+            // train locking a path through the point is recorded on it, and skipping for that left this one where the
+            // setup had it, before the run
+            boolean anotherStands = false;
+
+            for (String[] at : standing.values())
+            {
+                if (kept.getValue().getName().equals(at[0])) anotherStands = true;
+            }
+
+            if (anotherStands) continue;
 
             standing.put(name, new String[]{kept.getValue().getName(), null, null});
         }
@@ -9487,6 +9507,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         // Set the model reference
         this.model = listener;
+
+        // The railway's source, for a switch of source to compare with (RLV8-C5)
+        this.railwaySource = prefs.get(LAYOUT_OVERRIDE_PATH_PREF, "");
                  
         List<Map<Integer, String>> saveStates = this.restoreState();
         boolean locWasLoaded = false;
@@ -10636,7 +10659,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (model.getPowerState())
         {
-            Layout l = model.getAutoLayout();
+            // ASKED, NOT BUILT (RLV8-C2): with nothing loaded there is nothing to check, and building an empty railway
+            // on every reply made what hasAutoLayout answers depend on the power and the time since start-up
+            Layout l = model.getAutoLayoutIfLoaded();
 
             if (l != null && l.isRunning() && l.getMaxLatency() > 0 && latency > l.getMaxLatency())
             {
@@ -10806,8 +10831,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // still monitoring or capturing against it - has to go
             this.resetAutonomySession();
 
-            // and the railway with it: every door here is a switch of layout source (RLV7-C2)
-            this.forgetTheRailway();
+            // and the railway with it where the source is another railway (RLV7-C2) - not where the source in use is
+            // chosen again, which reloads the same railway, whose trains are carried as any reload carries them (RLV8-C5)
+            String source = prefs.get(LAYOUT_OVERRIDE_PATH_PREF, "");
+
+            if (!source.equals(this.railwaySource)) this.forgetTheRailway();
+
+            this.railwaySource = source;
 
             // OB-093, Adam: "when using a CS2 layout and the autonomy tab is greyed out, the autonomy
             // checkbox is still visible on the track diagram page." resetAutonomySession greys the Auto
@@ -21157,7 +21187,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         inputPanel.add(autonomyOrder);
         
         // Special option for selecting only autonomy locomotives if autonomy is active
-        if (this.getModel().getAutoLayout() == null || this.getModel().getAutoLayout().getLocomotivesToRun().isEmpty())
+        // Asked, not built (RLV8-C2)
+        if (this.getModel().getAutoLayoutIfLoaded() == null
+            || this.getModel().getAutoLayoutIfLoaded().getLocomotivesToRun().isEmpty())
         {
             autonomyOrder.setVisible(false);
         }
@@ -28789,7 +28821,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     synchronized public void updateVisiblePoints()
     {
-        if (!this.model.hasAutoLayout()) return;
+        // WITH NOTHING LOADED, THE COVERED TRACK IS EMPTIED - and the wash with it (RLV8-C1).  Returning first, Unload
+        // left the unloaded configuration's standing trains' track washed out.
+        if (!this.model.hasAutoLayout())
+        {
+            refreshCoveredTrack();
+
+            return;
+        }
 
         // The station labels on the track diagram, which is all this does now.
         //
@@ -28971,14 +29010,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
-        final List<TimetablePath> timeTable = this.model.getAutoLayout().getTimetableSnapshot();
+        // ASKED, NOT BUILT (RLV8-C2): every milestone's refresh runs this, and after Unload it built an empty railway
+        final Layout shown = this.model.getAutoLayoutIfLoaded();
+
+        final List<TimetablePath> timeTable =
+            shown == null ? java.util.Collections.<TimetablePath>emptyList() : shown.getTimetableSnapshot();
 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             prepareTimetableColumns();
 
             // Update the data
-            this.timetableCapture.setSelected(this.model.getAutoLayout().isTimetableCapture());
+            this.timetableCapture.setSelected(shown != null && shown.isTimetableCapture());
             
             // Do nothing if what the table SHOWS has not changed (MT-149).
             //
