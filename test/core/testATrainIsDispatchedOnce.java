@@ -1548,4 +1548,44 @@ public class testATrainIsDispatchedOnce
     {
         return Arrays.asList(layout.getEdge("DSP_a", "DSP_b"));
     }
+
+    /**
+     * A tail answered while Return Home is planning is not written (RLV13-C3).  Return Home plans with nothing yet
+     * running, so the railway's `isRunning` reads false while the flow is under way; every other refusal of a setup edit
+     * asks whether autonomy is busy, which counts the planning.  `whereTheAnswerGoes` asked `isRunning` alone.
+     *
+     * MUTATION: let `whereTheAnswerGoes` answer while a staging flow owns the railway, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testATailAnsweredWhileReturnHomePlansIsNotWritten() throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.createPoint("TQ", true, "194");
+
+        org.traincontrol.automation.Point at = layout.getPoint("TQ");
+
+        Locomotive train = model.getLocByName(model.getLocList().get(0));
+
+        at.setLocomotive(train);
+
+        assertEquals(org.traincontrol.gui.TailCrossedPrompt.whereTheAnswerGoes(layout, at, train, at.getArrivedFrom(),
+            at.getArrivedAlong(), true), at, "precondition: at rest, the answer does not go to the square it was asked"
+            + " about");
+
+        layout.setStagingInProgress(true);
+
+        try
+        {
+            assertEquals(org.traincontrol.gui.TailCrossedPrompt.whereTheAnswerGoes(layout, at, train, at.getArrivedFrom(),
+                at.getArrivedAlong(), true), null, "a tail answered while Return Home plans - nothing running yet - was"
+                + " written into the setup and onto the railway (RLV13-C3)");
+        }
+        finally
+        {
+            layout.setStagingInProgress(false);
+        }
+    }
 }

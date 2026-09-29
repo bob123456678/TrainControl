@@ -1131,4 +1131,568 @@ public class testNoSetupEditDuringARun
 
         return null;
     }
+
+    /**
+     * A send queued ahead of the editor's build is not sent (RLV13-C2).  The editor is asked for on the event thread and
+     * built in a task posted after it, and the one gate asked only whether the editor's window existed - so a send that
+     * ran between the two passed it, and the editor opened over the run it started.  The event thread is held here, as a
+     * slow refresh holds it, with an Auto tab double-click and the editor's request queued behind it.
+     *
+     * MUTATION: let the gate see only an editor already built, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testASendQueuedAheadOfTheEditorsBuildIsNotSent() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final List<String> asked = Collections.synchronizedList(new ArrayList<>());
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final AutonomySession session = ui[0].getAutonomySession();
+
+            TileKey square = null;
+
+            for (TileKey tile : session.getGraph().getTiles().keySet())
+            {
+                if (square == null && "1 - Main".equals(tile.getPage())) square = tile;
+            }
+
+            assertNotNull(square, "precondition: no square on the main page");
+
+            final Object[] offered = anAutoTabListOfPaths(ui[0]);
+
+            final javax.swing.JList<?> list = (javax.swing.JList<?>) offered[0];
+            final org.traincontrol.base.Locomotive sent = (org.traincontrol.base.Locomotive) offered[1];
+
+            startAnsweringYes(asked, going);
+
+            SwingUtilities.invokeAndWait(() -> list.setSize(400, Math.max(100, list.getPreferredSize().height)));
+
+            // THE EVENT THREAD HELD, with the operator's two clicks queued behind it: the double-click, then the editor
+            holdTheEventThread(1500);
+
+            SwingUtilities.invokeLater(() ->
+            {
+                java.awt.Rectangle cell = list.getCellBounds(0, 0);
+
+                list.dispatchEvent(new java.awt.event.MouseEvent(list, java.awt.event.MouseEvent.MOUSE_CLICKED,
+                    System.currentTimeMillis(), 0, cell.x + cell.width / 2, cell.y + cell.height / 2, 2, false,
+                    java.awt.event.MouseEvent.BUTTON1));
+            });
+
+            final TrainControlUI window = ui[0];
+            final TileKey at = square;
+
+            SwingUtilities.invokeLater(() -> window.openAutonomyEditor(at, Collections.<TileKey>emptyList()));
+
+            final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
+
+            long until = System.currentTimeMillis() + 10000;
+
+            while (!(ui[0].isLayoutEditorOpen() && railway.isAlreadyUnderway(sent)) && System.currentTimeMillis() < until)
+            {
+                Thread.sleep(200);
+            }
+
+            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertFalse(ui[0].isLayoutEditorOpen() && railway.isAlreadyUnderway(sent), "a send queued ahead of the"
+                + " editor's build sent " + sent.getName() + ", and the editor then opened over the run - a square"
+                + " clicked in it edits the setup under the trains (RLV13-C2): asked " + asked);
+        }
+        finally
+        {
+            going.set(false);
+
+            stopWhatTheClaimSent(ui[0]);
+
+            try
+            {
+                if (ui[0] != null) closeTheEditor(ui[0]);
+            }
+            finally
+            {
+                putTheFolderBack(folderWas);
+
+                if (ui[0] != null)
+                {
+                    final TrainControlUI closing = ui[0];
+
+                    SwingUtilities.invokeAndWait(() -> closing.dispose());
+                }
+
+                if (sandbox != null) sandbox.close();
+            }
+        }
+    }
+
+    /**
+     * Start pressed ahead of the editor's request does not run under the editor (RLV13-C2).  Start's click asks the gate
+     * and starts its worker, and the worker comes back to the event thread for the atomic-routes gate before it starts
+     * the trains - behind an editor asked for in between, whose request found nothing running yet.  So the worker asks
+     * again there.
+     *
+     * MUTATION: let Start's worker start the trains without asking again whether an editor has come, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testStartQueuedAheadOfTheEditorsBuildDoesNotRunUnderIt() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final List<String> asked = Collections.synchronizedList(new ArrayList<>());
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final AutonomySession session = ui[0].getAutonomySession();
+
+            TileKey square = null;
+
+            for (TileKey tile : session.getGraph().getTiles().keySet())
+            {
+                if (square == null && "1 - Main".equals(tile.getPage())) square = tile;
+            }
+
+            java.lang.reflect.Field startField = TrainControlUI.class.getDeclaredField("startAutonomy");
+
+            startField.setAccessible(true);
+
+            final javax.swing.JButton start = (javax.swing.JButton) startField.get(ui[0]);
+
+            assertTrue(start.isEnabled(), "precondition: Start is not offered on his railway");
+
+            startAnsweringYes(asked, going);
+
+            holdTheEventThread(1500);
+
+            SwingUtilities.invokeLater(() -> start.doClick());
+
+            final TrainControlUI window = ui[0];
+            final TileKey at = square;
+
+            SwingUtilities.invokeLater(() -> window.openAutonomyEditor(at, Collections.<TileKey>emptyList()));
+
+            long until = System.currentTimeMillis() + 15000;
+
+            while (!(ui[0].isLayoutEditorOpen() && ui[0].getModel().isAutonomyRunning())
+                && System.currentTimeMillis() < until)
+            {
+                Thread.sleep(200);
+            }
+
+            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertFalse(ui[0].isLayoutEditorOpen() && ui[0].getModel().isAutonomyRunning(), "Start, pressed ahead of an"
+                + " editor asked for in the same busy moment, started the trains under the editor (RLV13-C2): asked "
+                + asked);
+        }
+        finally
+        {
+            going.set(false);
+
+            stopWhatTheClaimSent(ui[0]);
+
+            try
+            {
+                if (ui[0] != null) closeTheEditor(ui[0]);
+            }
+            finally
+            {
+                putTheFolderBack(folderWas);
+
+                if (ui[0] != null)
+                {
+                    final TrainControlUI closing = ui[0];
+
+                    SwingUtilities.invokeAndWait(() -> closing.dispose());
+                }
+
+                if (sandbox != null) sandbox.close();
+            }
+        }
+    }
+
+    /**
+     * An editor asked for at rest is not built over a run that began before its build ran, and the Edit button comes back
+     * (RLV13-C2).  The request asked whether trains run and posted the build, which asked nothing.  Return Home's
+     * planning stands in for the run here: it is what makes the window busy with nothing yet moving.
+     *
+     * MUTATION: let the posted build open the editor without asking again, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAnEditorIsNotBuiltOverARunBegunBeforeItsBuild() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final List<String> asked = Collections.synchronizedList(new ArrayList<>());
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        final java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
+
+        staging.setAccessible(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final AutonomySession session = ui[0].getAutonomySession();
+
+            TileKey square = null;
+
+            for (TileKey tile : session.getGraph().getTiles().keySet())
+            {
+                if (square == null && "1 - Main".equals(tile.getPage())) square = tile;
+            }
+
+            startAnsweringYes(asked, going);
+
+            final TrainControlUI window = ui[0];
+            final TileKey at = square;
+
+            // THE REQUEST, and then - before its posted build runs - a run begins
+            SwingUtilities.invokeAndWait(() ->
+            {
+                window.openAutonomyEditor(at, Collections.<TileKey>emptyList());
+
+                try
+                {
+                    staging.set(window, true);
+                }
+                catch (IllegalAccessException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            for (int turn = 0; turn < 10; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            Thread.sleep(1000);
+
+            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertFalse(ui[0].isLayoutEditorOpen(), "an editor asked for at rest was built over a run that began before"
+                + " its build ran (RLV13-C2)");
+
+            assertTrue(asked.contains(I18n.t("autolayout.errorCannotEditWhileRunning")), "the editor's build, refused"
+                + " once a run had begun, did not say why: " + asked);
+
+            java.lang.reflect.Field button = TrainControlUI.class.getDeclaredField("editLayoutButton");
+
+            button.setAccessible(true);
+
+            assertTrue(((javax.swing.JButton) button.get(ui[0])).isEnabled(), "the editor's build refused, and did not"
+                + " give the Edit button back");
+        }
+        finally
+        {
+            going.set(false);
+
+            if (ui[0] != null) staging.set(ui[0], false);
+
+            try
+            {
+                if (ui[0] != null) closeTheEditor(ui[0]);
+            }
+            finally
+            {
+                putTheFolderBack(folderWas);
+
+                if (ui[0] != null)
+                {
+                    final TrainControlUI closing = ui[0];
+
+                    SwingUtilities.invokeAndWait(() -> closing.dispose());
+                }
+
+                if (sandbox != null) sandbox.close();
+            }
+        }
+    }
+
+    /**
+     * The diagram's Edit Locomotive refuses at OK once a run has begun while its dialog was open (RLV13-C9).  The run is
+     * begun from the answering thread, which is how one starts while the dialog holds the window: the scripting door,
+     * `requestStartAutonomy`, is on no window.
+     *
+     * MUTATION: take the refusal at OK out, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheDiagramsEditLocomotiveRefusesAtOkOnceARunBegins() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final Thread[] driving = new Thread[1];
+
+        final List<String> asked = Collections.synchronizedList(new ArrayList<>());
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final AutonomySession session = ui[0].getAutonomySession();
+            final String inUse = session.getStore().getActiveConfiguration();
+            final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
+
+            org.traincontrol.automation.Point at = null;
+
+            for (org.traincontrol.automation.Point p : railway.getPoints())
+            {
+                if (at == null && p.isDestination() && p.getCurrentLocomotive() != null
+                    && session.getStationIndex().squareOf(p.getName()) != null)
+                {
+                    at = p;
+                }
+            }
+
+            assertNotNull(at, "precondition: no station with a train standing on it");
+
+            final TileKey square = session.getStationIndex().squareOf(at.getName());
+            final String standing = at.getCurrentLocomotive().getName();
+
+            java.lang.reflect.Constructor<?> make = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu")
+                .getDeclaredConstructors()[0];
+
+            make.setAccessible(true);
+
+            final javax.swing.JPopupMenu[] menu = new javax.swing.JPopupMenu[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    menu[0] = (javax.swing.JPopupMenu) make.newInstance(ui[0], null, square, null);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            java.lang.reflect.Method label = org.traincontrol.gui.GraphLocAssign.class.getDeclaredMethod("menuLabelFor",
+                org.traincontrol.automation.Point.class);
+
+            label.setAccessible(true);
+
+            final javax.swing.JMenuItem edit = itemCalled(menu[0], (String) label.invoke(null, at));
+
+            assertNotNull(edit, "precondition: the diagram's menu at " + square + " has no Edit Locomotive item");
+
+            session.getStore().getConfiguration(inUse).getJSONObject("points").getJSONObject(square.toString())
+                .remove(AutonomyBuilder.FACING);
+
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.NOT_KNOWN);
+
+            // THE ANSWERING: the Edit dialog's OK only after a run has begun; every other dialog answered and recorded
+            final TrainControlUI window = ui[0];
+
+            Thread answering = new Thread(() ->
+            {
+                java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
+                while (going.get())
+                {
+                    try
+                    {
+                        Thread.sleep(150);
+                    }
+                    catch (InterruptedException stop)
+                    {
+                        return;
+                    }
+
+                    for (java.awt.Window w : java.awt.Window.getWindows())
+                    {
+                        if (!w.isShowing() || !(w instanceof javax.swing.JDialog)) continue;
+
+                        javax.swing.JOptionPane pane = findPane(((javax.swing.JDialog) w).getContentPane());
+
+                        if (pane == null || !handled.add(pane)) continue;
+
+                        if (pane.getMessage() instanceof java.awt.Component && driving[0] == null)
+                        {
+                            try
+                            {
+                                driving[0] = (Thread) dispatchATrainFrom(window, standing)[3];
+                            }
+                            catch (Exception e)
+                            {
+                                asked.add("could not begin a run: " + e);
+                            }
+                        }
+                        else
+                        {
+                            asked.add(String.valueOf(pane.getMessage()));
+                        }
+
+                        final Object[] options = pane.getOptions();
+
+                        SwingUtilities.invokeLater(() -> pane.setValue(options != null && options.length > 0
+                            ? options[0] : Integer.valueOf(javax.swing.JOptionPane.OK_OPTION)));
+                    }
+                }
+            }, "answering at OK");
+
+            answering.setDaemon(true);
+            answering.start();
+
+            SwingUtilities.invokeAndWait(() -> edit.doClick());
+
+            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertNotNull(driving[0], "precondition: no run began while the Edit dialog was open: " + asked);
+
+            org.json.JSONObject after = session.getStore().getConfiguration(inUse).getJSONObject("points")
+                .getJSONObject(square.toString());
+
+            assertFalse(after.has(AutonomyBuilder.FACING), "the diagram's Edit Locomotive, answered OK after a run began"
+                + " while its dialog was open, wrote " + standing + "'s facing into the setup (RLV13-C9): " + after);
+
+            assertTrue(asked.contains(I18n.t("autolayout.errorCannotEditWhileRunning")), "the diagram's Edit Locomotive,"
+                + " answered OK once a run had begun, did not say why it did nothing: " + asked);
+        }
+        finally
+        {
+            going.set(false);
+
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+
+            if (driving[0] != null) driving[0].interrupt();
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** The first option pane anywhere in this container. */
+    private static javax.swing.JOptionPane findPane(java.awt.Container container)
+    {
+        for (java.awt.Component c : container.getComponents())
+        {
+            if (c instanceof javax.swing.JOptionPane) return (javax.swing.JOptionPane) c;
+
+            if (c instanceof java.awt.Container)
+            {
+                javax.swing.JOptionPane found = findPane((java.awt.Container) c);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
+    }
+
+    /** The import door's dispatch, leaving this train standing: its name, where it set off, where it is bound, the thread. */
+    private static Object[] dispatchATrainFrom(TrainControlUI ui, String notThis) throws Exception
+    {
+        return testTheImportDoorReadsAnOldFile.dispatchATrain(ui, notThis);
+    }
+
+    /** An Auto tab list offering a standing train a path, and the train. */
+    private static Object[] anAutoTabListOfPaths(TrainControlUI ui) throws Exception
+    {
+        java.lang.reflect.Field panelField = TrainControlUI.class.getDeclaredField("autoLocPanel");
+        java.lang.reflect.Field pathsField = org.traincontrol.gui.AutoLocomotiveStatus.class.getDeclaredField("paths");
+        java.lang.reflect.Field listField = org.traincontrol.gui.AutoLocomotiveStatus.class.getDeclaredField("locAvailPaths");
+        java.lang.reflect.Field locField = org.traincontrol.gui.AutoLocomotiveStatus.class.getDeclaredField("locomotive");
+
+        panelField.setAccessible(true);
+        pathsField.setAccessible(true);
+        listField.setAccessible(true);
+        locField.setAccessible(true);
+
+        long until = System.currentTimeMillis() + 30000;
+
+        while (System.currentTimeMillis() < until)
+        {
+            SwingUtilities.invokeAndWait(() -> { });
+
+            for (Component c : ((javax.swing.JPanel) panelField.get(ui)).getComponents())
+            {
+                if (!(c instanceof org.traincontrol.gui.AutoLocomotiveStatus)) continue;
+
+                List<?> paths = (List<?>) pathsField.get(c);
+                javax.swing.JList<?> list = (javax.swing.JList<?>) listField.get(c);
+
+                if (paths != null && !paths.isEmpty() && list.getModel().getSize() > 0)
+                {
+                    return new Object[] {list, locField.get(c)};
+                }
+            }
+
+            Thread.sleep(250);
+        }
+
+        throw new AssertionError("precondition: no train on the Auto tab offers a path");
+    }
+
+    /** Holds the event thread for a while, as a slow refresh does, so what is queued behind it runs in one go. */
+    private static void holdTheEventThread(final long millis)
+    {
+        SwingUtilities.invokeLater(() ->
+        {
+            try
+            {
+                Thread.sleep(millis);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+            }
+        });
+    }
 }

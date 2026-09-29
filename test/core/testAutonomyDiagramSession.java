@@ -8711,7 +8711,9 @@ public class testAutonomyDiagramSession
         String[][] doors = {
             {"src/org/traincontrol/gui/TrainControlUI.java", "boolean isAutonomyBusy()"},
             {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "private static PathOptions gatherPathOptions("},
-            {"src/org/traincontrol/gui/LayoutLabel.java", "private static boolean aboutToClearProtection("}};
+            {"src/org/traincontrol/gui/LayoutLabel.java", "private static boolean aboutToClearProtection("},
+            // Graceful Stop's worker waits out the coast-down, while Unload is allowed (RLV13-C7)
+            {"src/org/traincontrol/gui/TrainControlUI.java", "private void gracefulStopActionPerformed("}};
 
         for (String[] door : doors)
         {

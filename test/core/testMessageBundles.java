@@ -1055,4 +1055,102 @@ public class testMessageBundles
         assertTrue(empty.isEmpty(), "a key has no value in a language - a blank would show where its sentence should be: "
             + empty);
     }
+
+    /**
+     * The findings that name the turning setting quote it as its menu item says it (RLV13-C5).  French and Italian quoted
+     * words the menu does not use, and the terminus finding named "may turn round", which no menu item is called.
+     *
+     * MUTATION: quote the setting in any words but the menu item's, in any language, and this fails.
+     */
+    @Test
+    public void testTheTurnSettingIsQuotedAsItsMenuItemSaysIt() throws Exception
+    {
+        List<String> wrong = new ArrayList<>();
+
+        for (File bundle : bundles())
+        {
+            java.util.Properties values = valuesOf(bundle);
+
+            String item = values.getProperty("autosetup.ui.menuTurnMay");
+
+            for (String key : new String[] {"autosetup.ui.checkMayTurnOnDeadEnd", "autosetup.ui.checkArrivalTrapped",
+                "autosetup.ui.checkTerminusTwoWaysIn"})
+            {
+                String text = values.getProperty(key);
+
+                if (item == null || text == null || !text.toLowerCase(java.util.Locale.ROOT).contains(
+                    item.toLowerCase(java.util.Locale.ROOT)))
+                {
+                    wrong.add(bundle.getName() + " " + key + " does not quote \"" + item + "\": " + text);
+                }
+            }
+        }
+
+        assertTrue(wrong.isEmpty(), "a finding names the turning setting in words its menu does not use, so the reader"
+            + " looks for an item that is not there: " + wrong);
+    }
+
+    /**
+     * The refusals of non-atomic routes do not put their count before a plural noun (RLV13-C4): "1 locomotives have no
+     * train length" in every language, and Polish wrong for 1 to 4.
+     *
+     * MUTATION: put the count back before the noun in any language, and this fails.
+     */
+    @Test
+    public void testACountIsNotTheSubjectOfAPluralNoun() throws Exception
+    {
+        Map<String, String[]> nouns = new HashMap<>();
+
+        nouns.put("messages.properties", new String[] {"locomotives", "pieces"});
+        nouns.put("messages_da.properties", new String[] {"lokomotiver", "spor"});
+        nouns.put("messages_de.properties", new String[] {"Lokomotiven", "Gleisabschnitte"});
+        nouns.put("messages_es.properties", new String[] {"locomotoras", "tramos"});
+        nouns.put("messages_fr.properties", new String[] {"locomotives", "sections"});
+        nouns.put("messages_it.properties", new String[] {"locomotive", "tratti"});
+        nouns.put("messages_nl.properties", new String[] {"locomotieven", "spoorstukken"});
+        nouns.put("messages_pl.properties", new String[] {"lokomotyw", "odcink"});
+
+        List<String> wrong = new ArrayList<>();
+
+        for (File bundle : bundles())
+        {
+            java.util.Properties values = valuesOf(bundle);
+
+            String[] its = nouns.get(bundle.getName());
+
+            assertNotNull(its, "a bundle this does not know: " + bundle.getName());
+
+            for (String key : new String[] {"autolayout.errorNonAtomicNeedsTrainLengths",
+                "autolayout.errorNonAtomicNeedsLengths"})
+            {
+                String text = values.getProperty(key);
+
+                for (String noun : its)
+                {
+                    if (text != null && text.contains("{0} " + noun)) wrong.add(bundle.getName() + " " + key + ": " + text);
+                }
+            }
+        }
+
+        assertTrue(wrong.isEmpty(), "a refusal puts its count before a plural noun, and reads wrong for one: " + wrong);
+    }
+
+    /**
+     * The lighter touch kept the reasons the reader decides by (RLV13-C6): the half-measured approach's condition, and
+     * that a save tidies nothing while the page numbering is in doubt.
+     *
+     * MUTATION: drop either, and this fails.
+     */
+    @Test
+    public void testTheLighterTouchKeptTheReasonsItNeeds() throws Exception
+    {
+        java.util.Properties english = valuesOf(new File(new File("src" + BUNDLE_DIR), ENGLISH_BUNDLE));
+
+        assertTrue(english.getProperty("autosetup.ui.checkHalfMeasuredApproach").contains("while part of its approach is"
+            + " measured and part is not"), "the half-measured approach's finding no longer says when it applies, so"
+            + " clearing the lengths reads as a way to silence it (RLV13-C6)");
+
+        assertTrue(english.getProperty("autosetup.ui.warnPageRenumbered").contains("a save included"), "the renumbered"
+            + " page's notice no longer says a save tidies nothing while it stands (RLV13-C6)");
+    }
 }

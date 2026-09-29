@@ -390,6 +390,31 @@ public class testSwitchingToACentralStationLayout
                     org.traincontrol.util.I18n.t("autosetup.ui.menuNoSetupPossible"), "the greyed Start explains"
                     + " itself with a reason that is not the refusal's: over a Central Station layout it is that"
                     + " autonomy needs a layout on this computer, which is what pressing Start says (REG2-C2)");
+
+                // AND PRESSING IT IS REFUSED SO, by the one gate every door that sends a train asks (RLV13-C9)
+                final java.lang.reflect.Method gate = org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod(
+                    "whyNoTrainMayBeSent", boolean.class);
+
+                gate.setAccessible(true);
+
+                final Object[] said = new Object[1];
+
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    try
+                    {
+                        said[0] = gate.invoke(ui, true);
+                    }
+                    catch (ReflectiveOperationException e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
+                });
+
+                assertEquals(said[0], org.traincontrol.util.I18n.t("autosetup.ui.menuNoSetupPossible"), "Start pressed"
+                    + " over a layout that lives on the Central Station is not refused with 'autonomy needs a layout on"
+                    + " this computer' - the gate asks the editor, the setup and the power, and Start's half of the"
+                    + " setup question is where this refusal lives (OB-104, RLV13-C9)");
             }
             finally
             {
