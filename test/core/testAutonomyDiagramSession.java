@@ -8673,4 +8673,61 @@ public class testAutonomyDiagramSession
             "a genuine 2.8.1 file was reported as a modern export, which would put a warning on every "
             + "supported migration");
     }
+
+    /**
+     * The model, and the doors that ask about the railway off the event thread, ask for it once (RLV11-C5, RLV12-C5).
+     * `hasAutoLayout()` then `getAutoLayout()` is two takes of the model's lock, and Unload, on the event thread, can
+     * clear the model between them; the second then builds an empty railway that `hasAutoLayout` answers yes about.  The
+     * sync and a route edit reach the model's pairs, the switching thread the protection question, a worker the path
+     * options; `getAutoLayoutIfLoaded()` asks once.
+     *
+     * Read from the source, because the moment between the two calls cannot be held open from here.  It knows the
+     * model's file as a whole and the three methods it names, and nothing else.
+     *
+     * MUTATION: put back any one of the pairs, and this fails.
+     *
+     * @throws Exception reading the source
+     */
+    @Test
+    public void testTheModelAndTheDoorsOffTheEventThreadAskForTheRailwayOnce() throws Exception
+    {
+        String model = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/marklin/MarklinControlStation.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        java.util.List<String> pairs = new java.util.ArrayList<>();
+
+        for (String line : model.split("\n"))
+        {
+            String code = line.trim();
+
+            if (code.startsWith("//") || code.startsWith("*") || code.startsWith("/*")) continue;
+
+            if (code.contains("hasAutoLayout()") && !code.contains("boolean hasAutoLayout()")) pairs.add(code);
+        }
+
+        assertTrue(pairs.isEmpty(), "the model asks whether there is a railway and then asks for it - Unload between the"
+            + " two leaves it building an empty one (RLV12-C5): " + pairs);
+
+        String[][] doors = {
+            {"src/org/traincontrol/gui/TrainControlUI.java", "boolean isAutonomyBusy()"},
+            {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "private static PathOptions gatherPathOptions("},
+            {"src/org/traincontrol/gui/LayoutLabel.java", "private static boolean aboutToClearProtection("}};
+
+        for (String[] door : doors)
+        {
+            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(door[0])),
+                java.nio.charset.StandardCharsets.UTF_8).replace("\r\n", "\n");
+
+            int start = source.indexOf(door[1]);
+
+            assertTrue(start > 0, door[1] + " is not in " + door[0] + " any more; this check guards nothing there");
+
+            int end = source.indexOf("\n    }\n", start);
+
+            String body = source.substring(start, end < 0 ? source.length() : end);
+
+            assertFalse(body.contains("hasAutoLayout()") && body.contains("getAutoLayout()"), door[1] + " asks whether"
+                + " there is a railway and then asks for it, off the event thread (RLV12-C5)");
+        }
+    }
 }

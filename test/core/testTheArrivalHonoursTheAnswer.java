@@ -604,4 +604,119 @@ public class testTheArrivalHonoursTheAnswer
         assertFalse(layout.turnsOnArrival(layout.getPoint("MT368_PLAIN"), loc, null),
             "autonomy turns a train at an ordinary platform");
     }
+
+    /**
+     * A train arriving on a railway retired on its way is not turned (RLV12-C5).  The milestones' check stops a train
+     * whose railway was retired - Unload, a reload - and the arrival after the last of them went on to turn the locomotive
+     * at a terminus, on a railway nothing reads any more, after the pause before the turn in which Unload could come.
+     * The fold at Unload wrote the train as it was; turned afterwards, it faces the other way from that record.
+     *
+     * The railway is retired from the arrival's own callback, after the last check and before the turn.
+     *
+     * MUTATION: turn a train at its destination without asking whether its railway is still the current one, and this
+     * fails.
+     *
+     * @throws Exception from the railway or reflection
+     */
+    @Test
+    public void testATrainArrivingOnARailwayRetiredOnTheWayIsNotTurned() throws Exception
+    {
+        Point from = layout.createPoint("RLV12_FROM", true, model.newFeedback(2218, null).getName());
+        Point end = layout.createPoint("RLV12_END", true, model.newFeedback(2219, null).getName());
+
+        end.setTerminus(true);
+
+        layout.createEdge("RLV12_FROM", "RLV12_END");
+
+        final java.util.List<org.traincontrol.automation.Edge> path =
+            java.util.Arrays.asList(layout.getEdge("RLV12_FROM", "RLV12_END"));
+
+        assertNotNull(path.get(0), "the fixture produced no edge, so nothing below is exercised");
+
+        assertTrue(layout.turnsOnArrival(end, loc, null), "precondition: a train arriving at the terminus is not turned");
+
+        model.setFeedbackState(from.getS88(), true);
+        model.setFeedbackState(end.getS88(), false);
+
+        from.setLocomotive(loc);
+
+        final boolean forward = loc.goingForward();
+
+        final java.lang.reflect.Field version = Layout.class.getDeclaredField("version");
+
+        version.setAccessible(true);
+
+        final int current = version.getInt(layout);
+
+        final int minWas = layout.getMinDelay();
+        final int maxWas = layout.getMaxDelay();
+
+        layout.setMinDelay(0);
+        layout.setMaxDelay(0);
+
+        // RETIRED FROM THE ARRIVAL'S CALLBACK, after the last milestone's check and before the turn
+        layout.setCallback("rlv12-retire", (edges, train, underWay) ->
+        {
+            java.util.List<Point> reached = layout.getReachedMilestones(train);
+
+            if (Boolean.TRUE.equals(underWay) && train == loc && reached != null && reached.contains(end))
+            {
+                try
+                {
+                    version.setInt(layout, current - 1000);
+                }
+                catch (IllegalAccessException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            }
+
+            return null;
+        });
+
+        layout.runLocomotives();
+
+        final Layout running = layout;
+        final Locomotive driver = loc;
+
+        Thread run = new Thread(() -> running.executePath(path, driver, 20, null), "arriving on a retired railway");
+
+        run.setDaemon(true);
+        run.start();
+
+        try
+        {
+            assertTrue(waitFor(() -> running.isRunning() && driver.getSpeed() > 0, 15000),
+                "the train never set off, so no arrival happened and this claim tested nothing");
+
+            model.setFeedbackState(end.getS88(), true);
+            model.setFeedbackState(from.getS88(), false);
+
+            assertTrue(waitFor(() -> !run.isAlive(), 30000), "the run never finished after the destination's sensor went"
+                + " on, so the arrival this claim is about was never reached");
+
+            assertTrue(version.getInt(layout) != current, "precondition: the arrival's callback never retired the"
+                + " railway, so this claim tested nothing");
+        }
+        finally
+        {
+            // Put down, as a callback is: the map holds no nulls
+            layout.setCallback("rlv12-retire", (edges, train, underWay) -> null);
+
+            version.setInt(layout, current);
+
+            layout.stopLocomotives();
+
+            run.interrupt();
+
+            layout.setMinDelay(minWas);
+            layout.setMaxDelay(maxWas);
+        }
+
+        assertEquals(loc.goingForward(), forward, "a train arriving at a terminus on a railway retired on its way was"
+            + " turned - after Unload wrote where it stood and which way it faced (RLV12-C5)");
+
+        assertEquals(layout.turnedOnArrivalAt(loc.getName()), null, "a turn on a retired railway was recorded as owed"
+            + " (RLV12-C5)");
+    }
 }
