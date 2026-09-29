@@ -2240,4 +2240,179 @@ public class testNoSetupEditDuringARun
 
         return showing[0];
     }
+
+    /**
+     * Closing TrainControl while trains run warns, lets the operator keep it open, and changes nothing about the trains
+     * (Adam, 2026-09-29, RSA-C7: *"If autonomy, display a warning popup to the user allowing them to keep the app open,
+     * or to proceed to close.  For simplicity, don't change train state here."*).  The close pressed Graceful Stop before
+     * it asked, so keeping the window open still ended the run, and its question spoke of saving rather than of the
+     * trains left moving.
+     *
+     * MUTATION: let the close stop the run before it asks, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testClosingWhileTrainsRunWarnsAndLeavesTheTrainsAlone() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        org.traincontrol.automation.Layout railway = null;
+
+        java.lang.reflect.Field running = null;
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final List<String> asked = Collections.synchronizedList(new ArrayList<>());
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        final SecurityManager guardWas = System.getSecurityManager();
+
+        try
+        {
+            // NO EXIT, whatever happens: an answer the claim did not mean to give must not end the test's JVM
+            System.setSecurityManager(new SecurityManager()
+            {
+                @Override
+                public void checkExit(int status)
+                {
+                    throw new SecurityException("the close tried to exit the test's JVM");
+                }
+
+                @Override
+                public void checkPermission(java.security.Permission perm)
+                {
+                }
+
+                @Override
+                public void checkPermission(java.security.Permission perm, Object context)
+                {
+                }
+            });
+
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            railway = ui[0].getModel().getAutoLayout();
+
+            // AUTONOMY RUNNING, as Start leaves it
+            running = org.traincontrol.automation.Layout.class.getDeclaredField("running");
+
+            running.setAccessible(true);
+
+            running.setBoolean(railway, true);
+
+            assertTrue(railway.isRunning(), "precondition: the railway does not read as running");
+
+            answeringKeepOpen(asked, going);
+
+            final java.lang.reflect.Method close = TrainControlUI.class.getDeclaredMethod("WindowClosed",
+                java.awt.event.WindowEvent.class);
+
+            close.setAccessible(true);
+
+            final TrainControlUI window = ui[0];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    close.invoke(window, (Object) null);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            assertTrue(asked.contains(I18n.t("autolayout.ui.confirmExitAutonomyRunning")), "closing while trains run"
+                + " did not warn in its own words: asked " + asked);
+
+            assertTrue(ui[0].isDisplayable(), "the window closed although the operator chose to keep it open");
+
+            assertTrue(railway.isAutoRunning(), "closing, and then keeping TrainControl open, stopped autonomy - the close"
+                + " changed the trains' state before it asked (RSA-C7)");
+
+            java.lang.reflect.Field graceful = TrainControlUI.class.getDeclaredField("gracefulStopRequested");
+
+            graceful.setAccessible(true);
+
+            assertFalse(graceful.getBoolean(ui[0]), "the close pressed Graceful Stop before it asked (RSA-C7)");
+        }
+        finally
+        {
+            going.set(false);
+
+            if (railway != null && running != null) running.setBoolean(railway, false);
+
+            putTheFolderBack(folderWas);
+
+            try
+            {
+                if (ui[0] != null)
+                {
+                    final TrainControlUI closing = ui[0];
+
+                    SwingUtilities.invokeAndWait(() -> closing.dispose());
+                }
+
+                if (sandbox != null) sandbox.close();
+            }
+            finally
+            {
+                System.setSecurityManager(guardWas);
+            }
+        }
+    }
+
+    /** Answers every question with its second option - No, keep it open - until `going` is lowered. */
+    private static void answeringKeepOpen(final List<String> asked, final java.util.concurrent.atomic.AtomicBoolean going)
+    {
+        Thread answering = new Thread(() ->
+        {
+            java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
+            while (going.get())
+            {
+                try
+                {
+                    Thread.sleep(150);
+                }
+                catch (InterruptedException stop)
+                {
+                    return;
+                }
+
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (!window.isShowing() || !(window instanceof javax.swing.JDialog)) continue;
+
+                    javax.swing.JOptionPane pane = null;
+
+                    for (Component c : ((javax.swing.JDialog) window).getContentPane().getComponents())
+                    {
+                        if (c instanceof javax.swing.JOptionPane) pane = (javax.swing.JOptionPane) c;
+                    }
+
+                    if (pane == null || !handled.add(pane)) continue;
+
+                    asked.add(String.valueOf(pane.getMessage()));
+
+                    final javax.swing.JOptionPane answered = pane;
+                    final Object[] options = pane.getOptions();
+
+                    SwingUtilities.invokeLater(() -> answered.setValue(options != null && options.length > 1
+                        ? options[1] : Integer.valueOf(javax.swing.JOptionPane.NO_OPTION)));
+                }
+            }
+        }, "answering keep open");
+
+        answering.setDaemon(true);
+        answering.start();
+    }
 }
