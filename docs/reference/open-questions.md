@@ -235,7 +235,7 @@ resume note that has been deleted.
 
 ## Setup and start-up
 
-**Open** (2026-09-25, RLA3-B1 with RLU3-C4, RLA2-C4, RLU2-C11 and RLA4-C8): **a second import of an old file cannot
+**Decided** (Adam, 2026-09-28: *"agreed on RLA3-B1"* - option (a), built in `fd31f56f`: both gap-fill questions add the sentence `autosetup.ui.importTakesTheFilesForDefaults`, mutation CRA red; raised 2026-09-25, RLA3-B1 with RLU3-C4, RLA2-C4, RLU2-C11 and RLA4-C8): **a second import of an old file cannot
 tell a setting you returned to its default from one never set.**  Every editor door stores a default as nothing - a
 maximum of 0, Can Be Chosen ticked, a square switched back on, priority 0, speed 100%, an exclusion list emptied, a home
 taken off - and a capture writes a station maximum of 0 for every station; the gap-fill (MT-298) reads nothing as a gap,
