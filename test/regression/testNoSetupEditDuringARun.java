@@ -1138,7 +1138,12 @@ public class testNoSetupEditDuringARun
      * ran between the two passed it, and the editor opened over the run it started.  The event thread is held here, as a
      * slow refresh holds it, with an Auto tab double-click and the editor's request queued behind it.
      *
-     * MUTATION: let the gate see only an editor already built, and this fails.
+     * The send is queued AHEAD of the editor's request, so the gate finds no editor on its way; what refuses here is
+     * the editor's build, which looks at the railway again and opens no editor over a run -
+     * testTheGateRefusesWhileAnEditorIsOnItsWay reaches the gate's own "on its way".
+     *
+     * MUTATION: let the editor's posted build skip its second look at the railway, with the gate seeing only an
+     * editor already built, and this fails.
      *
      * @throws Exception from the window
      */
@@ -1241,12 +1246,205 @@ public class testNoSetupEditDuringARun
     }
 
     /**
+     * The one gate counts an editor on its way as open (RLV13-C2).  Edit Layout sets `editorOnItsWay` before it posts the
+     * editor's build, and until that build has run the gate must refuse every door in the editor's own words.  The
+     * build's second look at the railway does not make this redundant: a hand send hands its train to a thread and
+     * returns, so the railway can still read idle when the build asks.
+     *
+     * testASendQueuedAheadOfTheEditorsBuildIsNotSent cannot reach this: its send is queued ahead of the editor's
+     * request, so no editor is on its way when the gate is asked, and the build's second look is what refuses there.
+     *
+     * MUTATION: let the gate see only an editor already built, or let the editor's question forget the editor on its
+     * way, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheGateRefusesWhileAnEditorIsOnItsWay() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        TrainControlUI ui = null;
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui = openTheWindow();
+
+            final String editorsWords = I18n.t("autosetup.ui.menuEditorOpen");
+
+            for (boolean start : new boolean[] {false, true})
+            {
+                String door = start ? "Start" : "a hand send";
+
+                // THE CONTROL: with no editor asked for, the gate does not answer in the editor's words
+                String atRest = askTheGate(ui, false, start);
+
+                assertFalse(editorsWords.equals(atRest), "precondition: with no editor open or asked for, the gate"
+                    + " already refused " + door + " for an editor: " + atRest);
+
+                // AN EDITOR ON ITS WAY: asked for, its build posted and not yet run
+                assertEquals(askTheGate(ui, true, start), editorsWords, "with the editor asked for and its build"
+                    + " not yet run, the one gate let " + door + " through - the train then runs under the editor"
+                    + " the build opens (RLV13-C2)");
+            }
+        }
+        finally
+        {
+            try
+            {
+                if (ui != null) askTheGate(ui, false, false);
+            }
+            finally
+            {
+                putTheFolderBack(folderWas);
+
+                if (ui != null)
+                {
+                    final TrainControlUI closing = ui;
+
+                    SwingUtilities.invokeAndWait(() -> closing.dispose());
+                }
+
+                if (sandbox != null) sandbox.close();
+            }
+        }
+    }
+
+    /**
+     * Start's worker looks again, at its event-thread moment, for an editor that has come since the press (RLV13-C2).  An
+     * armed route makes the worker ask the operator before it comes back, and the editor asked for just after Start is
+     * built while that question waits - the railway still reads idle, so the build's own second look lets it open.  When
+     * the worker comes back the editor is open, and only the worker's look stops the trains starting under it.
+     *
+     * MUTATION: let Start's worker start the trains without asking again whether an editor has come, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testStartsWorkerLooksAgainOnceTheEditorHasOpened() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final List<String> asked = Collections.synchronizedList(new ArrayList<>());
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        final String probe = "RLV13-C2 armed route";
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final AutonomySession session = ui[0].getAutonomySession();
+
+            TileKey square = null;
+
+            for (TileKey tile : session.getGraph().getTiles().keySet())
+            {
+                if (square == null && "1 - Main".equals(tile.getPage())) square = tile;
+            }
+
+            java.lang.reflect.Field startField = TrainControlUI.class.getDeclaredField("startAutonomy");
+
+            startField.setAccessible(true);
+
+            final javax.swing.JButton start = (javax.swing.JButton) startField.get(ui[0]);
+
+            assertTrue(start.isEnabled(), "precondition: Start is not offered on his railway");
+
+            // AN ARMED ROUTE, so Start's worker asks the operator before it comes back to the event thread
+            assertTrue(ui[0].getModel().newRoute(probe, new ArrayList<>(), 0,
+                org.traincontrol.base.Route.s88Triggers.CLEAR_THEN_OCCUPIED, false, null),
+                "precondition: the probe route was not made");
+
+            ((org.traincontrol.marklin.MarklinRoute) ui[0].getModel().getRoute(probe)).enable();
+
+            startAnsweringYes(asked, going);
+
+            holdTheEventThread(1500);
+
+            SwingUtilities.invokeLater(() -> start.doClick());
+
+            final TrainControlUI window = ui[0];
+            final TileKey at = square;
+
+            SwingUtilities.invokeLater(() -> window.openAutonomyEditor(at, Collections.<TileKey>emptyList()));
+
+            final String refused = I18n.t("autosetup.ui.menuEditorOpen");
+
+            long until = System.currentTimeMillis() + 15000;
+
+            while (!asked.contains(refused) && !(ui[0].isLayoutEditorOpen() && ui[0].getModel().isAutonomyRunning())
+                && System.currentTimeMillis() < until)
+            {
+                Thread.sleep(200);
+            }
+
+            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertTrue(asked.contains(I18n.t("route.ui.confirmConditionalRoutesActiveProceed")), "precondition: Start's"
+                + " worker did not ask about the armed route, so nothing held it while the editor was built: asked "
+                + asked);
+
+            assertTrue(ui[0].isLayoutEditorOpen(), "precondition: the editor was not built while Start's worker waited,"
+                + " so this claim did not reach the worker's own look: asked " + asked);
+
+            assertFalse(ui[0].getModel().isAutonomyRunning(), "Start's worker came back to the event thread with the"
+                + " editor open and started the trains under it (RLV13-C2): asked " + asked);
+        }
+        finally
+        {
+            going.set(false);
+
+            stopWhatTheClaimSent(ui[0]);
+
+            try
+            {
+                if (ui[0] != null) closeTheEditor(ui[0]);
+            }
+            finally
+            {
+                if (ui[0] != null && ui[0].getModel().getRoute(probe) != null) ui[0].getModel().deleteRoute(probe);
+
+                putTheFolderBack(folderWas);
+
+                if (ui[0] != null)
+                {
+                    final TrainControlUI closing = ui[0];
+
+                    SwingUtilities.invokeAndWait(() -> closing.dispose());
+                }
+
+                if (sandbox != null) sandbox.close();
+            }
+        }
+    }
+
+    /**
      * Start pressed ahead of the editor's request does not run under the editor (RLV13-C2).  Start's click asks the gate
      * and starts its worker, and the worker comes back to the event thread for the atomic-routes gate before it starts
      * the trains - behind an editor asked for in between, whose request found nothing running yet.  So the worker asks
      * again there.
      *
-     * MUTATION: let Start's worker start the trains without asking again whether an editor has come, and this fails.
+     * In this claim's order the worker is back before the editor's build, and the build's own second look at the
+     * railway is what refuses; testStartsWorkerLooksAgainOnceTheEditorHasOpened holds the worker on a question
+     * so that the build runs first.
+     *
+     * MUTATION: let Start's worker start the trains without asking again whether an editor has come, with the
+     * editor's build skipping its second look, and this fails.
      *
      * @throws Exception from the window
      */
@@ -1678,6 +1876,44 @@ public class testNoSetupEditDuringARun
         }
 
         throw new AssertionError("precondition: no train on the Auto tab offers a path");
+    }
+
+    /**
+     * Sets whether an editor is on its way, as Edit Layout does before it posts the editor's build, and asks the one gate
+     * - both on the event thread, where the doors ask it.
+     */
+    private static String askTheGate(final TrainControlUI ui, final boolean editorAskedFor, final boolean start)
+        throws Exception
+    {
+        final java.lang.reflect.Field onItsWay = TrainControlUI.class.getDeclaredField("editorOnItsWay");
+
+        final java.lang.reflect.Method gate = TrainControlUI.class.getDeclaredMethod("whyNoTrainMayBeSent", boolean.class);
+
+        onItsWay.setAccessible(true);
+
+        gate.setAccessible(true);
+
+        final Object[] said = new Object[1];
+
+        final Exception[] failed = new Exception[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                onItsWay.setBoolean(ui, editorAskedFor);
+
+                said[0] = gate.invoke(ui, start);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                failed[0] = e;
+            }
+        });
+
+        if (failed[0] != null) throw failed[0];
+
+        return (String) said[0];
     }
 
     /** Holds the event thread for a while, as a slow refresh does, so what is queued behind it runs in one go. */
