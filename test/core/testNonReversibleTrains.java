@@ -408,10 +408,23 @@ public class testNonReversibleTrains
     @Test
     public void testEveryManualDoorHandsOverAPrompt() throws Exception
     {
+        // ONE HAND DOOR since 2026-09-29 (Adam: "can all the checks go through a single door?"): the track diagram's
+        // destinations and the Auto tab's list both send through TrainControlUI.sendATrainByHand, and dispatch nothing
+        // themselves
+        for (String hand : new String[] {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java",
+            "src/org/traincontrol/gui/AutoLocomotiveStatus.java"})
+        {
+            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(hand)),
+                java.nio.charset.StandardCharsets.UTF_8).replaceAll("(?s)/[*].*?[*]/", " ").replaceAll("//[^\r\n]*", " ");
+
+            assertTrue(source.contains("sendATrainByHand("), hand + " no longer sends through the one hand door");
+
+            assertFalse(source.contains("executePath("), hand + " dispatches a train itself, past the one hand door");
+        }
+
         final String[][] doors =
         {
-            {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "the track diagram"},
-            {"src/org/traincontrol/gui/AutoLocomotiveStatus.java", "the Locomotive commands tab"},
+            {"src/org/traincontrol/gui/TrainControlUI.java", "the one hand door both hand doors send through"},
         };
 
         for (String[] door : doors)
@@ -430,6 +443,13 @@ public class testNonReversibleTrains
             // doors use since Adam asked for the question to be put BEFORE dispatch rather than from
             // inside the run: "make it be on departure itself, that way there is no dispatch prior to
             // user input."
+            // IN THE ONE HAND DOOR, before its dispatch
+            int at = source.indexOf("void sendATrainByHand(");
+
+            assertTrue(at > 0, "precondition: the one hand door has gone from " + door[0]);
+
+            source = source.substring(at, Math.max(at, source.indexOf("executePath(", at)));
+
             assertTrue(source.contains("ManualReversalPrompt.forJourney(")
                     || source.contains("ManualReversalPrompt.forOperator(")
                     || source.contains("ManualReversalPrompt.ask("),

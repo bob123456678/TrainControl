@@ -384,7 +384,8 @@ public class testATrainCoversTheTrackBehindIt
             + " the arrival wrote - and on a curve it will, which blocks nothing while looking correct");
 
         int written = flat.indexOf("arrived.setArrivedFrom(");
-        int turned = flat.indexOf("loc.delay(this.getMinDelay(), this.getMaxDelay()).switchDirection()");
+        // The turn, which since RLV12-C5 asks whether its railway is still the current one after the pause before it
+        int turned = flat.indexOf("if (stillThisRailway) loc.switchDirection()");
 
         assertTrue(turned > written,
             "the arrival side is recorded AFTER the train is turned round. Turning it does not move"
