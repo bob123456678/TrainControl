@@ -221,8 +221,17 @@ public class testARouteOverATrainAtItsDoors
 
         String held = I18n.f("route.refusedAccessoryOnActivePath", ROUTE, accessoryName(SWITCH_A));
 
-        assertTrue(new ArrayList<>(logged.subList(from, logged.size())).contains(held), "the log does not name switch A as"
-            + " held back (MT-506): " + logged.subList(from, logged.size()));
+        // COPIED UNDER THE LIST'S OWN LOCK, as `testAFailedDispatchSaysWhichKindItWas.tail` copies: the model's log thread
+        // appends to it, and a view taken outside the lock is spoilt by the next line logged - a
+        // ConcurrentModificationException in the battery of 2026-09-29, the route's stop now logged after it is sent.
+        final List<String> since;
+
+        synchronized (logged)
+        {
+            since = new ArrayList<>(logged.subList(from, logged.size()));
+        }
+
+        assertTrue(since.contains(held), "the log does not name switch A as held back (MT-506): " + since);
     }
 
     /**
