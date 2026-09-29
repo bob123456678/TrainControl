@@ -20149,16 +20149,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             if (this.model.getAutoLayout().isRunning())
             {
-                gracefulStopActionPerformed(null);
+                // A WARNING, AND NOTHING DONE TO THE TRAINS (Adam, 2026-09-29, RSA-C7: "If autonomy, display a warning
+                // popup to the user allowing them to keep the app open, or to proceed to close.  For simplicity, don't
+                // change train state here.").  This pressed Graceful Stop before it asked, so keeping TrainControl open
+                // still ended the run, and its question spoke of saving rather than of the trains left moving.  Now
+                // neither answer touches a train: kept open, the run goes on; closed, the trains run on as they were,
+                // which the warning says.  Keeping it open is the default.
                 int dialogResult = JOptionPane.showOptionDialog(
                     this,
                     I18n.t("autolayout.ui.confirmExitAutonomyRunning"),
                     I18n.t("autolayout.ui.dialogConfirmExit"),
                     JOptionPane.YES_NO_OPTION,
-                    JOptionPane.PLAIN_MESSAGE,
+                    JOptionPane.WARNING_MESSAGE,
                     null,
                     YES_NO_OPTS,
-                    YES_NO_OPTS[0]
+                    YES_NO_OPTS[1]
                 );
                 
                 // Anything but Yes, so that Escape and the close box do not shut the application
