@@ -2641,6 +2641,23 @@ RLV10-D6	RLV10.md	Closed	Checked - clean, apart from RLV10-C2 and RLV10-C5 (V3).
 RLV10-D7	RLV10.md	Closed	Checked - clean, apart from RLV10-C3.	RLV9-C5: the jump carries the squares, and the editor opened outlines them
 RLV10-D8	RLV10.md	Closed	Checked - clean.	RLV9-C6 and RLV9-C8: the comments, and the switch-of-source rule at every door
 RLV10-D9	RLV10.md	Closed	Checked - clean, apart from RLV10-C5.	The round's claims ran green on the archive, and each goes red with its fix undone
+RLV11-B1	RLV11.md	Closed	Answered by Adam's ruling (2026-09-28: *"There should be no setup edit possible during a r	A train placed by hand while a run declined the rebuild is put back where the railway had it: at Stop Using Autonomy now, as at every load since the c
+RLV11-B2	RLV11.md	Closed	Answered by Adam's ruling (2026-09-28: *"There should be no setup edit possible during a r	The exit, and a switch of layout source, still keep nothing while an edit a run declined waits: the next start builds every train the run moved back w
+RLV11-C1	RLV11.md	Closed	Fixed - Layout.keptApart: a train that cannot keep its point takes a free station ahead it	The station ahead passes over another train's kept point even where that is the only station the train holds - its destination - so the train stays wh
+RLV11-C2	RLV11.md	Closed	Fixed - Layout.keptApart keeps no two trains on one point: the one recorded on it first, t	Two trains under way kept at one point that neither holds and nobody stands on are written as one: the other is erased in every order, and the carry a
+RLV11-C3	RLV11.md	Closed	Fixed - faceTheWayItCameIn writes no turn for a train under way again (it owes nothing: it	Writing the turns during a run moves a train that turned and has set off again from where it turned, sweeping its reservation while it is under way -
+RLV11-C4	RLV11.md	Closed	Fixed in 8ca5eb12 - the monitor guard lists keepWhereTheTrainsStand with its thread and re	Round 12 left the event-thread monitor guard red: `keepWhereTheTrainsStand` takes the railway's monitor (`toJSON`) and is not written down
+RLV11-C5	RLV11.md	Closed	Fixed - the departure and arrival callbacks ask getAutoLayoutIfLoaded (mutations CC5a red,	A railway is still built after Unload: a train turning at its destination when Unload lands calls `getAutoLayout` from its arrival callback, on its ow
+RLV11-C6	RLV11.md	Closed	Fixed - claims: Stop Using Autonomy while an edit waits writes a train's tail and facing, 	What the round's claims do not reach: the placement-only write's tail, facing, globals and squares gone, and the station labels' builder caught four t
+RLV11-D1	RLV11.md	Closed	Checked - clean, apart from RLV11-B1, B2, C4 and C6.	RLV10-B1 at Unload: the placement-only write keeps the run's moves and the edit, and touches what the carry would put back and nothing else
+RLV11-D2	RLV11.md	Closed	Checked - clean, apart from RLV11-C3.	RLV10-C1: the turns at Unload, at another configuration, and after the carry before it; the drain extracted
+RLV11-D3	RLV11.md	Closed	Checked - clean, apart from RLV11-C1 and C2.	RLV10-C2 for the arrangement it measured, and every reader of the rule
+RLV11-D4	RLV11.md	Closed	Checked - clean.	RLV10-C3: one predicate at both lists
+RLV11-D5	RLV11.md	Closed	Checked - clean.	RLV10-C4: the sequential flag's comments
+RLV11-D6	RLV11.md	Closed	Checked - clean, apart from RLV11-C6.	RLV10-C5's claims
+RLV11-D7	RLV11.md	Closed	Checked - clean, apart from RLV11-C5 and C6.	The station labels' builder that RLV10-B1's claim found
+RLV11-D8	RLV11.md	Closed	Checked - clean, apart from RLV11-C4.	Baseline
+RLV11-D9	RLV11.md	Closed	Checked - clean, apart from RLV11-C3 (C1's disposition repeats its premise).	The records
 RLV6-B1	RLV6.md	Closed	Fixed - while a declined edit waits, every load carries each train across and lowers the f	RLA5-B1's fix reaches one of the four doors round 5 named; three still put every moved train back on its pre-run square and leave the flag up
 RLV6-C1	RLV6.md	Closed	Fixed - the carried load is the one asked for, interactive or not, so a train driven by ha	With the flag up, the Autonomy menu's, a page tick's and an import's reload of the configuration running is the editor doors' quiet one: hand-driven t
 RLV6-C2	RLV6.md	Closed	Fixed - the walk remembers the path, not every route asked. claims 528fd305 (red first), f	`hasEmergencyStop` shares one visited set across every branch it walks, so a route that reaches a split route by two paths, the longer first, is count
