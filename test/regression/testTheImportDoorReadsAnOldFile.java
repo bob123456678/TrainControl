@@ -283,8 +283,12 @@ public class testTheImportDoorReadsAnOldFile
             List<String> said = importFromTheMenu(ui[0], MT298, "MT-298 import");
 
             // ASKED WHAT IT DOES (RLA-B2, RLU-B1, RLD-C4): an old file fills gaps, so the door does not ask to replace.
-            assertTrue(said.contains(I18n.f("autosetup.ui.confirmImportFillsGaps", "MT-298 import")), "importing an old"
-                + " file into a configuration of that name did not ask whether to fill in what it does not have: " + said);
+            // AND SAYS WHAT COUNTS AS NOT SET (RLA3-B1; Adam, 2026-09-28): a setting at its default, a home taken off or
+            // an emptied exclusion list reads as a gap, and takes the file's
+            assertTrue(said.contains(I18n.f("autosetup.ui.confirmImportFillsGaps", "MT-298 import") + "  "
+                + I18n.t("autosetup.ui.importTakesTheFilesForDefaults")), "importing an old file into a configuration of"
+                + " that name did not ask whether to fill in what it does not have, saying what counts as not having it"
+                + " (RLA3-B1): " + said);
 
             assertFalse(said.contains(I18n.f("autosetup.ui.confirmImportOverwrites", "MT-298 import")), "importing an old"
                 + " file into a configuration of that name asked to replace it, and then filled gaps: " + said);
@@ -827,8 +831,10 @@ public class testTheImportDoorReadsAnOldFile
                 + inUse + " was captured over by the reload after the import (RLU4-C2, RLA-C2): " + said);
 
             // AND THE QUESTION SAID NONE WOULD BE PLACED (RLU4-C3)
-            assertTrue(said.contains(I18n.f("autosetup.ui.confirmImportFillsGapsInUse", inUse)), "the question into "
-                + inUse + ", the configuration in use, promised the file's trains, and Yes placed none (RLU4-C3): " + said);
+            assertTrue(said.contains(I18n.f("autosetup.ui.confirmImportFillsGapsInUse", inUse) + "  "
+                + I18n.t("autosetup.ui.importTakesTheFilesForDefaults")), "the question into " + inUse + ", the"
+                + " configuration in use, promised the file's trains, and Yes placed none (RLU4-C3), or did not say what"
+                + " counts as not set (RLA3-B1): " + said);
         }
         finally
         {
@@ -3325,6 +3331,630 @@ public class testTheImportDoorReadsAnOldFile
         for (int turn = 0; turn < 10; turn++) SwingUtilities.invokeAndWait(() -> { });
 
         open.set(ui, null);
+    }
+
+    /**
+     * No setup edit is made while trains run (Adam, 2026-09-28: *"There should be no setup edit possible during a
+     * run"*).  The diagram's Autonomy Setup menu is offered only at rest; one opened then and clicked after a run began
+     * wrote the setup, and the rebuild it asked for was declined - an edit waiting against a running railway, which every
+     * door that keeps where the trains stand then had to work around (RLV11-B1, RLV11-B2).  Refused at the click, and
+     * said.
+     *
+     * MUTATION: let the menu's items write while trains run, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testASetupMenuOpenedAtRestRefusesOnceTrainsRun() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
+
+        declined.setAccessible(true);
+
+        Thread driving = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final AutonomySession session = ui[0].getAutonomySession();
+
+            // A STATION'S SETUP MENU, opened at rest
+            TileKey station = null;
+
+            for (org.traincontrol.automation.Point p : ui[0].getModel().getAutoLayout().getPoints())
+            {
+                TileKey s = p.isDestination() ? session.getStationIndex().squareOf(p.getName()) : null;
+
+                if (station == null && s != null) station = s;
+            }
+
+            assertNotNull(station, "precondition: no station on his railway");
+
+            final TileKey at = station;
+
+            final javax.swing.JPopupMenu[] menu = new javax.swing.JPopupMenu[1];
+
+            SwingUtilities.invokeAndWait(() -> menu[0] = ui[0].buildAutonomyTileMenu(at));
+
+            final javax.swing.JMenuItem choose = itemCalled(menu[0], I18n.t("autosetup.ui.menuAutoDestination"));
+
+            assertNotNull(choose, "precondition: the setup menu of " + at + " has no item for whether autonomy may choose"
+                + " it");
+
+            final boolean was = session.isAutoDestination(at);
+
+            // THEN A RUN BEGINS
+            final Object[] dispatched = dispatchATrain(ui[0], null);
+
+            driving = (Thread) dispatched[3];
+
+            assertTrue(ui[0].getModel().isAutonomyRunning(), "precondition: autonomy does not read busy with " + dispatched[0]
+                + " under way");
+
+            List<String> asked = answeringYes(() -> choose.doClick());
+
+            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertEquals(session.isAutoDestination(at), was, "a setup menu opened at rest wrote the setup when clicked"
+                + " while " + dispatched[0] + " was under way - no setup edit is made during a run: " + asked);
+
+            assertFalse((Boolean) declined.get(ui[0]), "a setup menu clicked during a run left an edit waiting against"
+                + " the running railway");
+
+            assertTrue(asked.contains(I18n.t("autolayout.errorCannotEditWhileRunning")), "a setup menu clicked during a"
+                + " run did not say why it did nothing: " + asked);
+        }
+        finally
+        {
+            if (driving != null) driving.interrupt();
+
+            if (ui[0] != null) declined.set(ui[0], false);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** The first item anywhere in this menu with this text. */
+    private static javax.swing.JMenuItem itemCalled(java.awt.Container menu, String text)
+    {
+        if (menu == null) return null;
+
+        java.awt.Component[] parts = menu instanceof javax.swing.JMenu
+            ? ((javax.swing.JMenu) menu).getMenuComponents() : menu.getComponents();
+
+        for (java.awt.Component part : parts)
+        {
+            if (part instanceof javax.swing.JMenu)
+            {
+                javax.swing.JMenuItem found = itemCalled((javax.swing.JMenu) part, text);
+
+                if (found != null) return found;
+            }
+            else if (part instanceof javax.swing.JMenuItem && text.equals(((javax.swing.JMenuItem) part).getText()))
+            {
+                return (javax.swing.JMenuItem) part;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Writing the turns the railway owes during a run leaves a train that turned and has set off again on its path
+     * (RLV11-C3).  A train's locked path records it on its start, where it turned, so the write took it for one still
+     * standing there and stood it on the copy facing the way it came in - which swept it off every other point of its
+     * path while it was under way.
+     *
+     * MUTATION: write a turn for a train under way, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testWritingTheTurnsLeavesATrainUnderWayOnItsPath() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        Thread driving = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final AutonomySession session = ui[0].getAutonomySession();
+
+            final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
+
+            // A STANDING TRAIN ON A SPLIT SQUARE whose recorded side has a copy of its own, not this one, and a path away
+            org.traincontrol.automation.Point at = null;
+            List<org.traincontrol.automation.Edge> path = null;
+
+            for (org.traincontrol.automation.Point p : railway.getPoints())
+            {
+                org.traincontrol.base.Locomotive l = p.getCurrentLocomotive();
+
+                if (at != null || l == null || p.getArrivedFrom() == null || railway.isAlreadyUnderway(l)) continue;
+
+                TileKey square = session.getStationIndex().squareOf(p.getName());
+
+                if (square == null) continue;
+
+                org.traincontrol.automationui.TilePorts.Side came = null;
+
+                for (org.traincontrol.automationui.TilePorts.Side s : org.traincontrol.automationui.TilePorts.Side.values())
+                {
+                    if (s.name().equals(p.getArrivedFrom())) came = s;
+                }
+
+                if (came == null) continue;
+
+                org.traincontrol.automation.Point target = session.copyFacing(square, came, railway);
+
+                if (target == null || target == p) continue;
+
+                List<org.traincontrol.automation.Edge> away = null;
+
+                for (List<org.traincontrol.automation.Edge> candidate : railway.getPossiblePaths(l, false))
+                {
+                    if (away == null && candidate != null && candidate.size() >= 2 && candidate.get(0).getStart() == p)
+                    {
+                        away = candidate;
+                    }
+                }
+
+                if (away == null) continue;
+
+                at = p;
+                path = away;
+            }
+
+            assertNotNull(at, "precondition: no standing train on a split square whose side has another copy, with a"
+                + " path away");
+
+            final org.traincontrol.base.Locomotive train = at.getCurrentLocomotive();
+            final List<org.traincontrol.automation.Edge> route = path;
+
+            java.util.Map<String, String> owed = new java.util.HashMap<>();
+
+            owed.put(train.getName(), at.getName());
+
+            railway.restoreReversalsOnArrival(owed);
+
+            // IT SETS OFF AGAIN from where it turned, and waits on a sensor nothing sets
+            driving = new Thread(() -> railway.executePath(route, train, 30, null), "dispatched by the claim");
+
+            driving.setDaemon(true);
+            driving.start();
+
+            long until = System.currentTimeMillis() + 60000;
+
+            while (!railway.getActiveLocomotives().containsKey(train) && driving.isAlive()
+                && System.currentTimeMillis() < until)
+            {
+                Thread.sleep(50);
+            }
+
+            Thread.sleep(1000);
+
+            assertTrue(railway.isAlreadyUnderway(train), "precondition: " + train.getName() + " did not get under way");
+
+            final int before = pointsHeldBy(railway, train);
+
+            assertTrue(before >= 2, "precondition: " + train.getName() + " under way holds " + before + " points");
+
+            final java.lang.reflect.Method write = TrainControlUI.class.getDeclaredMethod("writeTheTurnsOwed");
+
+            write.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    write.invoke(ui[0]);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            assertEquals(pointsHeldBy(railway, train), before, "writing the turns during a run stood "
+                + train.getName() + ", under way from where it turned, on another copy of that square - sweeping it off"
+                + " the rest of its path, which then reads free (RLV11-C3)");
+        }
+        finally
+        {
+            if (driving != null) driving.interrupt();
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** How many points of the railway record this train. */
+    private static int pointsHeldBy(org.traincontrol.automation.Layout railway, org.traincontrol.base.Locomotive train)
+    {
+        int held = 0;
+
+        for (org.traincontrol.automation.Point p : railway.getPoints())
+        {
+            if (p.getCurrentLocomotive() == train) held++;
+        }
+
+        return held;
+    }
+
+    /**
+     * A train's arrival after Unload builds no railway (RLV11-C5).  Its thread runs the arrival callback after its last
+     * check of whether its railway is still the current one, and the callback asked the model for its railway to decide
+     * whether to switch the train's functions off - which builds an empty one where there is none, and `hasAutoLayout`
+     * then answered yes about nothing.  The callbacks are fired here as the train's thread fires them.
+     *
+     * MUTATION: ask `getAutoLayout` in the arrival or the departure callback, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testATrainArrivingAfterUnloadBuildsNoRailway() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
+
+            org.traincontrol.base.Locomotive train = null;
+
+            for (org.traincontrol.automation.Point p : railway.getPoints())
+            {
+                if (train == null && p.getCurrentLocomotive() != null) train = p.getCurrentLocomotive();
+            }
+
+            assertNotNull(train, "precondition: no train on his railway");
+
+            java.util.function.Consumer<org.traincontrol.base.Locomotive> arrived =
+                train.getCallback(org.traincontrol.automation.Layout.CB_ROUTE_END);
+            java.util.function.Consumer<org.traincontrol.base.Locomotive> departed =
+                train.getCallback(org.traincontrol.automation.Layout.CB_ROUTE_START);
+
+            assertTrue(arrived != null && departed != null, "precondition: " + train.getName() + " has no arrival or"
+                + " departure callback");
+
+            // No waiting in the callbacks' delays
+            railway.setMinDelay(0);
+            railway.setMaxDelay(0);
+
+            answeringYes(() -> ui[0].unloadAutonomy());
+
+            assertFalse(ui[0].getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
+
+            arrived.accept(train);
+
+            assertFalse(ui[0].getModel().hasAutoLayout(), "a train's arrival after Unload built an empty railway, which"
+                + " hasAutoLayout then answers yes about (RLV11-C5)");
+
+            departed.accept(train);
+
+            assertFalse(ui[0].getModel().hasAutoLayout(), "a train's departure after Unload built an empty railway"
+                + " (RLV11-C5)");
+        }
+        finally
+        {
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * Nothing the station labels ask after Unload builds a railway (RLV11-C6): the update a train's arrival or a
+     * placement posts, run after Unload has cleared the model, as it can land.  RLV10-B1's claim caught the labels'
+     * builder only when that timing happened; this runs the label code itself.
+     *
+     * MUTATION: ask `getAutoLayout` in the labels' arrow, their tile lookups or their update, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheStationLabelsBuildNoRailwayAfterUnload() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final AutonomySession session = ui[0].getAutonomySession();
+
+            org.traincontrol.automation.Point standing = null;
+
+            for (org.traincontrol.automation.Point p : ui[0].getModel().getAutoLayout().getPoints())
+            {
+                if (standing == null && p.getCurrentLocomotive() != null
+                    && session.getStationIndex().squareOf(p.getName()) != null)
+                {
+                    standing = p;
+                }
+            }
+
+            assertNotNull(standing, "precondition: no train standing on a station");
+
+            final org.traincontrol.automation.Point at = standing;
+            final TileKey square = session.getStationIndex().squareOf(at.getName());
+
+            answeringYes(() -> ui[0].unloadAutonomy());
+
+            assertFalse(ui[0].getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
+
+            final java.lang.reflect.Method arrow = TrainControlUI.class.getDeclaredMethod("facingArrowOf",
+                org.traincontrol.automation.Point.class, TileKey.class);
+            final java.lang.reflect.Method labels = TrainControlUI.class.getDeclaredMethod("updateStationLabels",
+                org.traincontrol.automation.Point.class);
+
+            arrow.setAccessible(true);
+            labels.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    labels.invoke(ui[0], at);
+                    arrow.invoke(ui[0], at, square);
+                    ui[0].getAutonomyPointForTile(square);
+                    ui[0].getAutonomyOccupantsForTile(square);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertFalse(ui[0].getModel().hasAutoLayout(), "the station labels, updated after Unload, built an empty"
+                + " railway, which hasAutoLayout then answers yes about (RLV10-B1's builder, RLV11-C6)");
+        }
+        finally
+        {
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * Stop Using Autonomy while an edit a run declined waits writes where the trains stand - the train, the side and
+     * road of its tail, and the facing of the copy it stands on - and nothing else (RLV11-C6): not the Auto tab's
+     * settings, not a square whose tile is gone, not a home's facing.  RLV10-B1's claim moved a train with no tail onto
+     * an unsplit square and waited on a priority, so it could see none of these.
+     *
+     * MUTATION: write no tail or no facing, or write the settings, prune squares gone or clear a home's facing in that
+     * write, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAnUnloadWhileAnEditWaitsWritesWhereTheTrainsStandAndNothingElse() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        java.lang.reflect.Field declined = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
+
+        declined.setAccessible(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final AutonomySession session = ui[0].getAutonomySession();
+
+            final String inUse = session.getStore().getActiveConfiguration();
+
+            final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
+
+            // A TRAIN WITH A TAIL on a split square
+            org.traincontrol.automation.Point at = null;
+
+            for (org.traincontrol.automation.Point p : railway.getPoints())
+            {
+                if (at != null || p.getCurrentLocomotive() == null || p.getArrivedFrom() == null) continue;
+
+                if (session.getStationIndex().squareOf(p.getName()) == null) continue;
+
+                for (org.traincontrol.automation.Point q : railway.getPoints())
+                {
+                    if (q != p && p.isSamePlaceAs(q)) at = p;
+                }
+            }
+
+            assertNotNull(at, "precondition: no train with a tail on a split square");
+
+            final TileKey square = session.getStationIndex().squareOf(at.getName());
+
+            org.json.JSONObject railwaysPoint = null;
+
+            for (Object point : new org.json.JSONObject(railway.toJSON()).getJSONArray("points"))
+            {
+                if (at.getName().equals(((org.json.JSONObject) point).optString("name")))
+                {
+                    railwaysPoint = (org.json.JSONObject) point;
+                }
+            }
+
+            assertTrue(railwaysPoint != null && railwaysPoint.has("arrivedFrom"), "precondition: the railway does not"
+                + " write " + at.getName() + "'s side");
+
+            final String side = railwaysPoint.getString("arrivedFrom");
+            final Object road = railwaysPoint.opt("arrivedAlong");
+            final String facing = session.getStationIndex().facingsAt(square).get(at.getName()) == null ? null
+                : session.getStationIndex().facingsAt(square).get(at.getName()).name();
+
+            assertNotNull(facing, "precondition: " + at.getName() + " is a copy with no facing");
+
+            org.json.JSONObject configuration = session.getStore().getConfiguration(inUse);
+            org.json.JSONObject points = configuration.getJSONObject("points");
+
+            // THE CONFIGURATION WITHOUT THEM, so the write is what puts them there
+            org.json.JSONObject extras = points.getJSONObject(square.toString());
+
+            extras.remove("arrivedFrom");
+            extras.remove("arrivedAlong");
+            extras.remove(AutonomyBuilder.FACING);
+
+            // A SQUARE WHOSE TILE IS GONE, on a page in play
+            final String gone = square.getPage() + ":99,99";
+
+            points.put(gone, new org.json.JSONObject().put("priority", 3));
+
+            // A HOME'S FACING on a station that has no home, which only the whole fold clears
+            TileKey other = null;
+
+            for (org.traincontrol.automation.Point p : railway.getPoints())
+            {
+                TileKey s = p.isDestination() ? session.getStationIndex().squareOf(p.getName()) : null;
+
+                if (other == null && s != null && !s.equals(square)
+                    && (points.optJSONObject(s.toString()) == null || !points.getJSONObject(s.toString()).has("home")))
+                {
+                    other = s;
+                }
+            }
+
+            assertNotNull(other, "precondition: no station without a home");
+
+            if (points.optJSONObject(other.toString()) == null) points.put(other.toString(), new org.json.JSONObject());
+
+            points.getJSONObject(other.toString()).put(AutonomyBuilder.HOME_FACING, "N");
+
+            // AND A SETTING the run changed
+            final int delayWas = configuration.optJSONObject("globals") == null ? -1
+                : configuration.getJSONObject("globals").optInt("maxDelay", -1);
+
+            railway.setMaxDelay(delayWas == 7 ? 8 : 7);
+
+            declined.set(ui[0], true);
+
+            answeringYes(() -> ui[0].unloadAutonomy());
+
+            assertFalse(ui[0].getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
+
+            org.json.JSONObject after = ui[0].getAutonomySession().getStore().getConfiguration(inUse);
+            org.json.JSONObject written = after.getJSONObject("points").getJSONObject(square.toString());
+
+            assertEquals(written.optString("arrivedFrom", null), side, "Stop Using Autonomy while an edit waited did not"
+                + " write " + at.getCurrentLocomotive().getName() + "'s tail side on " + square + " (RLV11-C6)");
+
+            if (road != null)
+            {
+                assertEquals(String.valueOf(written.opt("arrivedAlong")), String.valueOf(road), "Stop Using Autonomy"
+                    + " while an edit waited did not write " + at.getCurrentLocomotive().getName() + "'s tail road"
+                    + " (RLV11-C6)");
+            }
+
+            assertEquals(written.optString(AutonomyBuilder.FACING, null), facing, "Stop Using Autonomy while an edit"
+                + " waited did not write the facing of the copy " + at.getCurrentLocomotive().getName() + " stands on"
+                + " (RLV11-C6)");
+
+            assertTrue(after.getJSONObject("points").has(gone), "Stop Using Autonomy while an edit waited pruned a"
+                + " square whose tile is gone - the setup's business, not where the trains stand (RLV11-C6)");
+
+            assertTrue(after.getJSONObject("points").getJSONObject(other.toString()).has(AutonomyBuilder.HOME_FACING),
+                "Stop Using Autonomy while an edit waited cleared a home's facing (RLV11-C6)");
+
+            assertEquals(after.optJSONObject("globals") == null ? -1
+                : after.getJSONObject("globals").optInt("maxDelay", -1), delayWas, "Stop Using Autonomy while an"
+                + " edit waited wrote the Auto tab's settings, which the edit waits against (RLV11-C6)");
+        }
+        finally
+        {
+            if (ui[0] != null) declined.set(ui[0], false);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
     }
 
     /**

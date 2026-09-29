@@ -815,6 +815,247 @@ public class testATrainIsDispatchedOnce
             + " which is no station, or read or write one of them on no point (RLV10-C2, RLV10-C5): " + wrong);
     }
 
+    /**
+     * A train bound for the station another train was last seen at takes it, and the other - past it, since the station
+     * was released behind it and then locked for the first - is kept on the station ahead it holds (RLV11-C1).  The rule
+     * ahead passed over another's kept point, so where that was the only station the first train held, its destination,
+     * it stayed where a third train now stands and a fold erased it, in every order.
+     *
+     * A set off from TA along TA-TJ-TS, past no sensor, and B has since stopped on TA; C set off from TS towards TC, past
+     * no sensor, and TS was released behind it and locked for A.
+     *
+     * MUTATION: pass over another's kept point with no way to move that one on, and this fails.
+     *
+     * @throws Exception from reflection
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testATrainBoundForAnothersKeptStationTakesItAndTheOtherGoesOn() throws Exception
+    {
+        java.lang.reflect.Method reserve = org.traincontrol.automation.Point.class.getDeclaredMethod("reserve",
+            Locomotive.class);
+
+        reserve.setAccessible(true);
+
+        java.lang.reflect.Method kept = Layout.class.getMethod("toJSON", java.util.Map.class);
+
+        List<String> wrong = new ArrayList<>();
+
+        int pairs = 0;
+
+        List<String> names = model.getLocList().subList(0, Math.min(7, model.getLocList().size()));
+
+        for (String nameA : names)
+        {
+            for (String nameC : names)
+            {
+                if (nameA.equals(nameC)) continue;
+
+                String nameB = null;
+
+                for (String other : names)
+                {
+                    if (nameB == null && !other.equals(nameA) && !other.equals(nameC)) nameB = other;
+                }
+
+                Locomotive a = model.getLocByName(nameA);
+                Locomotive b = model.getLocByName(nameB);
+                Locomotive c = model.getLocByName(nameC);
+
+                Layout layout = new Layout(model);
+
+                layout.createPoint("TA", true, "194");
+                layout.createPoint("TJ", false, null);
+                layout.createPoint("TS", true, "195");
+                layout.createPoint("TC", true, "197");
+
+                layout.createEdge("TA", "TJ");
+                layout.createEdge("TJ", "TS");
+                layout.createEdge("TS", "TC");
+
+                reserve.invoke(layout.getPoint("TC"), c);
+                reserve.invoke(layout.getPoint("TJ"), a);
+                reserve.invoke(layout.getPoint("TS"), a);
+
+                layout.getPoint("TA").setLocomotive(b);
+
+                java.util.Map<Locomotive, List<Edge>> active =
+                    (java.util.Map<Locomotive, List<Edge>>) field(layout, "activeLocomotives");
+                java.util.Map<Locomotive, List<org.traincontrol.automation.Point>> milestones =
+                    (java.util.Map<Locomotive, List<org.traincontrol.automation.Point>>) field(layout, "locomotiveMilestones");
+
+                active.put(a, Arrays.asList(layout.getEdge("TA", "TJ"), layout.getEdge("TJ", "TS")));
+                milestones.put(a, new java.util.concurrent.CopyOnWriteArrayList<>(Arrays.asList(layout.getPoint("TA"))));
+
+                active.put(c, Arrays.asList(layout.getEdge("TS", "TC")));
+                milestones.put(c, new java.util.concurrent.CopyOnWriteArrayList<>(Arrays.asList(layout.getPoint("TS"))));
+
+                pairs++;
+
+                String said = keptReadAndWritten(layout, kept, nameA, nameB, nameC);
+
+                if (!said.equals("A@TS C@TC | carry A@TS C@TC | fold A@TS B@TA C@TC")) wrong.add(nameA + "/" + nameC + ": " + said);
+
+                active.clear();
+                milestones.clear();
+            }
+        }
+
+        assertTrue(pairs >= 6, "precondition: fewer than three locomotives to pair");
+
+        assertTrue(wrong.isEmpty(), wrong.size() + " of " + pairs + " orders do not keep A on TS, its destination, and"
+            + " C on TC ahead of it - one of them is kept, read or written nowhere (RLV11-C1): " + wrong);
+    }
+
+    /**
+     * Two trains under way last seen at one station that neither holds and nobody stands on are both kept, on different
+     * points, and the carry and a fold keep the same ones (RLV11-C2): one keeps the station, the other the station ahead
+     * it holds.  Both were kept at the station, the carry read one and a fold wrote the other, and one of them was erased
+     * from the configuration in every order.
+     *
+     * K1 set off from KP towards KS1 and K2 towards KS2, each past no sensor, and KP was released behind both.
+     *
+     * MUTATION: leave two trains kept at one point, and this fails.
+     *
+     * @throws Exception from reflection
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testTwoTrainsLastSeenAtOneStationAreBothKept() throws Exception
+    {
+        java.lang.reflect.Method reserve = org.traincontrol.automation.Point.class.getDeclaredMethod("reserve",
+            Locomotive.class);
+
+        reserve.setAccessible(true);
+
+        java.lang.reflect.Method kept = Layout.class.getMethod("toJSON", java.util.Map.class);
+
+        List<String> wrong = new ArrayList<>();
+
+        int pairs = 0;
+
+        List<String> names = model.getLocList().subList(0, Math.min(7, model.getLocList().size()));
+
+        for (String name1 : names)
+        {
+            for (String name2 : names)
+            {
+                if (name1.equals(name2)) continue;
+
+                Locomotive k1 = model.getLocByName(name1);
+                Locomotive k2 = model.getLocByName(name2);
+
+                Layout layout = new Layout(model);
+
+                layout.createPoint("KP", true, "194");
+                layout.createPoint("KJ1", false, null);
+                layout.createPoint("KJ2", false, null);
+                layout.createPoint("KS1", true, "195");
+                layout.createPoint("KS2", true, "196");
+
+                layout.createEdge("KP", "KJ1");
+                layout.createEdge("KJ1", "KS1");
+                layout.createEdge("KP", "KJ2");
+                layout.createEdge("KJ2", "KS2");
+
+                reserve.invoke(layout.getPoint("KJ1"), k1);
+                reserve.invoke(layout.getPoint("KS1"), k1);
+                reserve.invoke(layout.getPoint("KJ2"), k2);
+                reserve.invoke(layout.getPoint("KS2"), k2);
+
+                java.util.Map<Locomotive, List<Edge>> active =
+                    (java.util.Map<Locomotive, List<Edge>>) field(layout, "activeLocomotives");
+                java.util.Map<Locomotive, List<org.traincontrol.automation.Point>> milestones =
+                    (java.util.Map<Locomotive, List<org.traincontrol.automation.Point>>) field(layout, "locomotiveMilestones");
+
+                active.put(k1, Arrays.asList(layout.getEdge("KP", "KJ1"), layout.getEdge("KJ1", "KS1")));
+                milestones.put(k1, new java.util.concurrent.CopyOnWriteArrayList<>(Arrays.asList(layout.getPoint("KP"))));
+
+                active.put(k2, Arrays.asList(layout.getEdge("KP", "KJ2"), layout.getEdge("KJ2", "KS2")));
+                milestones.put(k2, new java.util.concurrent.CopyOnWriteArrayList<>(Arrays.asList(layout.getPoint("KP"))));
+
+                pairs++;
+
+                java.util.Map<Locomotive, org.traincontrol.automation.Point> keptAt = layout.getLastPointsReached();
+
+                java.util.Map<String, String[]> read = org.traincontrol.gui.TrainControlUI.whereTheTrainsAre(layout);
+
+                java.util.Map<String, String> written = new java.util.HashMap<>();
+
+                for (Object point : new org.json.JSONObject((String) kept.invoke(layout, keptAt)).getJSONArray("points"))
+                {
+                    org.json.JSONObject p = (org.json.JSONObject) point;
+
+                    if (p.has("loc")) written.put(p.getJSONObject("loc").getString("name"), p.getString("name"));
+                }
+
+                String at1 = keptAt.get(k1) == null ? null : keptAt.get(k1).getName();
+                String at2 = keptAt.get(k2) == null ? null : keptAt.get(k2).getName();
+
+                boolean apart = at1 != null && at2 != null && !at1.equals(at2);
+                boolean eachOwn = ("KP".equals(at1) || "KS1".equals(at1)) && ("KP".equals(at2) || "KS2".equals(at2));
+                boolean readSo = read.get(name1) != null && at1 != null && at1.equals(read.get(name1)[0])
+                    && read.get(name2) != null && at2 != null && at2.equals(read.get(name2)[0]);
+                boolean writtenSo = at1 != null && at1.equals(written.get(name1)) && at2 != null
+                    && at2.equals(written.get(name2));
+
+                if (!apart || !eachOwn || !readSo || !writtenSo)
+                {
+                    wrong.add(name1 + "@" + at1 + ", " + name2 + "@" + at2 + "; read " + (read.get(name1) == null ? null
+                        : read.get(name1)[0]) + "/" + (read.get(name2) == null ? null : read.get(name2)[0])
+                        + "; written " + written);
+                }
+
+                active.clear();
+                milestones.clear();
+            }
+        }
+
+        assertTrue(pairs >= 6, "precondition: fewer than two locomotives to pair");
+
+        assertTrue(wrong.isEmpty(), wrong.size() + " of " + pairs + " orders keep two trains last seen at KP on one"
+            + " point, or read and write them differently (RLV11-C2): " + wrong);
+    }
+
+    /** Where A, B and C are kept, read by the carry and written by a fold, as one line. */
+    private static String keptReadAndWritten(Layout layout, java.lang.reflect.Method kept, String nameA, String nameB,
+        String nameC) throws Exception
+    {
+        java.util.Map<Locomotive, org.traincontrol.automation.Point> keptAt = layout.getLastPointsReached();
+
+        java.util.Map<String, String[]> read = org.traincontrol.gui.TrainControlUI.whereTheTrainsAre(layout);
+
+        java.util.TreeMap<String, String> written = new java.util.TreeMap<>();
+
+        for (Object point : new org.json.JSONObject((String) kept.invoke(layout, keptAt)).getJSONArray("points"))
+        {
+            org.json.JSONObject p = (org.json.JSONObject) point;
+
+            if (!p.has("loc")) continue;
+
+            String who = p.getJSONObject("loc").getString("name");
+
+            written.put(who.equals(nameA) ? "A" : who.equals(nameB) ? "B" : who.equals(nameC) ? "C" : who, p.getString("name"));
+        }
+
+        Locomotive a = model.getLocByName(nameA);
+        Locomotive c = model.getLocByName(nameC);
+
+        StringBuilder fold = new StringBuilder();
+
+        for (java.util.Map.Entry<String, String> w : written.entrySet())
+        {
+            if (fold.length() > 0) fold.append(' ');
+
+            fold.append(w.getKey()).append('@').append(w.getValue());
+        }
+
+        return "A@" + (keptAt.get(a) == null ? null : keptAt.get(a).getName()) + " C@"
+            + (keptAt.get(c) == null ? null : keptAt.get(c).getName()) + " | carry A@"
+            + (read.get(nameA) == null ? null : read.get(nameA)[0]) + " C@"
+            + (read.get(nameC) == null ? null : read.get(nameC)[0]) + " | fold " + fold;
+    }
+
     private static Object field(Object target, String name) throws Exception
     {
         java.lang.reflect.Field f = target.getClass().getDeclaredField(name);
