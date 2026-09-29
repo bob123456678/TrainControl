@@ -8732,4 +8732,30 @@ public class testAutonomyDiagramSession
                 + " there is a railway and then asks for it, off the event thread (RLV12-C5)");
         }
     }
+
+    /**
+     * The diagram's path gather asks for the railway once, and asks every question of that one (RSA2-C5).  It read the
+     * railway once at its head and then asked the model for it again, build-on-miss, twice per path on its worker: Unload
+     * in between built an empty railway, and a load in between put the new railway's questions to the old one's Points.
+     *
+     * MUTATION: let the gather ask the model for the railway again, and this fails.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheDiagramsGatherAsksForTheRailwayOnce() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java")), java.nio.charset.StandardCharsets.UTF_8)
+            .replace("\r\n", "\n");
+
+        int start = source.indexOf("private static PathOptions gatherPathOptions(");
+
+        assertTrue(start > 0, "cannot find gatherPathOptions");
+
+        String body = source.substring(start, source.indexOf("\n    }\n", start));
+
+        assertFalse(body.contains("getAutoLayout()"), "the diagram's path gather asks the model for the railway again on"
+            + " its worker, where Unload can leave it building an empty one (RSA2-C5)");
+    }
 }

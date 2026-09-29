@@ -511,4 +511,44 @@ public class testTheRefusalsAreAskedAtTheDoors
 
         assertTrue(carried, "the gathered paths do not carry the railway they were found on (RSA-C6)");
     }
+
+    /**
+     * The doors that choose a journey carry the stops counted where it was chosen (RSA2-C1, RSA2-C2): Return Home runs
+     * its plan with the count read at the press and refreshes the Auto tab as it starts, a hand send carries the count
+     * read at the click, and autonomy reads it before it chooses.
+     *
+     * MUTATION: let any of the three read the count later, or Return Home leave the Auto tab as it was, and this fails.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheDoorsCarryTheStopsCountedWhereTheyChose() throws Exception
+    {
+        String window = withoutComments(read(WINDOW));
+
+        String home = bodyOf(window, "requestReturnToHome");
+
+        assertTrue(home.contains(".executeTimetable(stopsAtPress)"), "Return Home runs its plan with the stops counted"
+            + " when it starts running, not when it was pressed - a Yes while it plans does not end it (RSA2-C1)");
+
+        assertTrue(home.indexOf("stopsOrdered()") >= 0 && home.indexOf("stopsOrdered()") < home.indexOf("new Thread("),
+            "Return Home does not count the stops at the press, before its worker (RSA2-C1)");
+
+        assertTrue(home.indexOf("repaintAutoLocList(true)") >= 0
+            && home.indexOf("repaintAutoLocList(true)") < home.indexOf("loadReturnToHomeTimetable()"),
+            "Return Home does not refresh the Auto tab before it plans, so its paths stay offered (RSA2-C3)");
+
+        String hand = bodyOf(window, "sendATrainByHand");
+
+        assertTrue(hand.contains("stopsOrdered()") && hand.contains("answered, stopsAtClick)"), "a hand send does not"
+            + " carry the stops counted at the click (RSA2-C2)");
+
+        String layout = withoutComments(read("src/org/traincontrol/automation/Layout.java"));
+
+        String loop = bodyOf(layout, "runLocomotive");
+
+        assertTrue(loop.indexOf("stopsOrdered.get()") >= 0 && loop.indexOf("stopsOrdered.get()") < loop.indexOf("pickPath(")
+            && loop.contains("ALWAYS_REVERSE, stopsAtChoice)"), "autonomy does not count the stops before it chooses, and"
+            + " carry that count to its journey (RSA2-C2)");
+    }
 }

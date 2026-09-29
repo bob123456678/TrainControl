@@ -2139,4 +2139,105 @@ public class testNoSetupEditDuringARun
                 java.awt.event.MouseEvent.BUTTON1));
         });
     }
+
+    /**
+     * The Auto tab offers no paths while Return Home owns the railway (RSA2-C3).  Round 16 made the double-click send
+     * nothing then, and it said nothing - under a list that still read "Double-click a path to execute".  The list is
+     * hidden while a staging flow owns the railway, as it is while autonomy runs, so the offer and the refusal agree.
+     *
+     * MUTATION: let the Auto tab show its paths while Return Home plans, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheAutoTabOffersNoPathsWhileReturnHomeOwnsTheRailway() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        org.traincontrol.automation.Layout railway = null;
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            railway = ui[0].getModel().getAutoLayout();
+
+            final javax.swing.JList<?> offered = (javax.swing.JList<?>) anAutoTabListOfPaths(ui[0])[0];
+
+            final boolean[] shown = new boolean[1];
+
+            SwingUtilities.invokeAndWait(() -> shown[0] = offered.isVisible());
+
+            assertTrue(shown[0], "precondition: at rest the Auto tab shows no paths, so this claim cannot tell");
+
+            // RETURN HOME PLANNING, and the Auto tab refreshed as the press refreshes it
+            railway.setStagingInProgress(true);
+
+            ui[0].repaintAutoLocList(true);
+
+            long until = System.currentTimeMillis() + 10000;
+
+            while (anAutoTabListIsShowing(ui[0]) && System.currentTimeMillis() < until) Thread.sleep(200);
+
+            assertFalse(anAutoTabListIsShowing(ui[0]), "the Auto tab still offers paths to double-click while Return"
+                + " Home owns the railway, and the double-click then does nothing, saying nothing (RSA2-C3)");
+        }
+        finally
+        {
+            if (railway != null) railway.setStagingInProgress(false);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** Whether any train's list of paths on the Auto tab is showing, read on the event thread. */
+    private static boolean anAutoTabListIsShowing(final TrainControlUI ui) throws Exception
+    {
+        final java.lang.reflect.Field panelField = TrainControlUI.class.getDeclaredField("autoLocPanel");
+        final java.lang.reflect.Field listField = org.traincontrol.gui.AutoLocomotiveStatus.class
+            .getDeclaredField("locAvailPaths");
+
+        panelField.setAccessible(true);
+        listField.setAccessible(true);
+
+        final boolean[] showing = new boolean[1];
+        final Exception[] failed = new Exception[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                for (Component c : ((javax.swing.JPanel) panelField.get(ui)).getComponents())
+                {
+                    if (c instanceof org.traincontrol.gui.AutoLocomotiveStatus
+                        && ((Component) listField.get(c)).isVisible()) showing[0] = true;
+                }
+            }
+            catch (ReflectiveOperationException e)
+            {
+                failed[0] = e;
+            }
+        });
+
+        if (failed[0] != null) throw failed[0];
+
+        return showing[0];
+    }
 }

@@ -456,4 +456,34 @@ public class testAStopRouteStandsAlone
             power.setBoolean(model, powerWas);
         }
     }
+
+    /**
+     * The latency cut-off cuts the power whatever the model believes about it (RSA2-C6), as a route's stop does
+     * (RSA-C4): it asked only while the power flag read on, and that flag is only the last echo heard.
+     *
+     * MUTATION: send the latency cut-off's stop only while the power flag reads on, and this fails.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheLatencyCutOffIsSentWhateverThePowerFlagSays() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8)
+            .replace("\r\n", "\n");
+
+        int start = source.indexOf("private void checkAutoLayoutLatency(");
+
+        assertTrue(start > 0, "cannot find checkAutoLayoutLatency");
+
+        String body = source.substring(start, source.indexOf("\n    }\n", start));
+
+        int stop = body.indexOf("this.model.stop();");
+
+        assertTrue(stop > 0, "the latency cut-off no longer cuts the power");
+
+        assertFalse(body.substring(0, stop).contains("getPowerState()) {")
+            || body.substring(0, stop).replaceAll("\\s+", " ").contains("if (model.getPowerState()) {"),
+            "the latency cut-off cuts the power only while the model believes it is on - the last echo heard (RSA2-C6)");
+    }
 }

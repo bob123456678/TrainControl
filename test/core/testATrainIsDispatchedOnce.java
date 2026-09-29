@@ -2040,4 +2040,403 @@ public class testATrainIsDispatchedOnce
 
         loc.setSpeed(0);
     }
+
+    /**
+     * A route may not end at, or pass, a sensor another train's route is still waiting on (RSA2-B1).  Two places on one
+     * sensor - a feedback double curve's two arcs, which are two pieces of metal (Adam, OB-238) with one contact - were
+     * kept apart by nothing: two trains were sent to them at once, the first arrival ended both journeys, and the second
+     * was recorded as arrived with its route handed back while it was still on it.  A journey waits on every sensor of
+     * its route it has not reached, so no other route may wait on one of them.
+     *
+     * MUTATION: let a route wait on a sensor another train's route is waiting on, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testARouteMayNotWaitOnASensorAnotherTrainAwaits() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(1851, 5);
+
+        final Locomotive x = model.getLocByName(model.getLocList().get(5));
+        final Locomotive y = model.getLocByName(model.getLocList().get(6));
+
+        Thread sent = null;
+
+        // Two places on ONE sensor, s[1]: ONE and TWO, as a feedback double curve's arcs are; and PASS, on the same sensor,
+        // on the way to FAR
+        final Layout rail = new Layout(model);
+
+        try
+        {
+            x.setSpeed(0);
+            y.setSpeed(0);
+
+            rail.createPoint("SXA", true, s[0].getName());
+            rail.createPoint("ONE", true, s[1].getName());
+            rail.createPoint("SYA", true, s[2].getName());
+            rail.createPoint("TWO", true, s[1].getName());
+            rail.createPoint("PASS", false, s[1].getName());
+            rail.createPoint("FAR", true, s[4].getName());
+            rail.createEdge("SXA", "ONE");
+            rail.createEdge("SYA", "TWO");
+            rail.createEdge("SYA", "PASS");
+            rail.createEdge("PASS", "FAR");
+            rail.makeCurrent();
+
+            rail.getPoint("SXA").setLocomotive(x);
+            rail.getPoint("SYA").setLocomotive(y);
+
+            final List<Edge> toTheOtherArc = through(rail, "SYA", "TWO");
+            final List<Edge> pastIt = through(rail, "SYA", "PASS", "FAR");
+
+            assertTrue(rail.isPathClear(toTheOtherArc, y, false), "precondition: with nothing under way, the other arc"
+                + " is not clear - so this claim cannot tell the rule from the fixture: " + Layout.getLastError());
+
+            // X SENT TO ONE: its journey now waits on the shared sensor
+            sent = sendOn(rail, through(rail, "SXA", "ONE"), x);
+
+            assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+                "precondition: the first train was not sent");
+
+            assertFalse(rail.isPathClear(toTheOtherArc, y, false), "a second train was offered the other place on the"
+                + " sensor the first train's journey is waiting on - the first arrival would end both journeys (RSA2-B1)");
+
+            assertFalse(rail.isPathClear(pastIt, y, false), "a second train was offered a route past the sensor the first"
+                + " train's journey is waiting on (RSA2-B1)");
+
+            // It arrives: its journey waits on nothing now, and the sensor clears behind it
+            model.setFeedbackState(s[1].getName(), true);
+
+            sent.join(10000);
+
+            model.setFeedbackState(s[1].getName(), false);
+
+            assertTrue(rail.isPathClear(toTheOtherArc, y, false), "the other arc stays refused once the first train has"
+                + " arrived and its journey waits on nothing: " + Layout.getLastError());
+        }
+        finally
+        {
+            letGo(s, x, sent);
+
+            y.setSpeed(0);
+        }
+    }
+
+    /**
+     * The reload's Yes ends a Return Home that was still planning (RSA2-C1).  Return Home plans on a worker with nothing
+     * yet moving; a load chosen then asked the Yes, and where the load was then refused, nothing was retired and the plan
+     * ran - trains moving after a Yes that said the run was abandoned.  The timetable is run with the stops counted when
+     * Return Home was pressed, and a stop ordered since starts nothing.
+     *
+     * MUTATION: let a timetable start after a stop ordered since it was chosen, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testTheYesEndsAReturnHomeStillPlanning() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(1861, 2);
+
+        final Locomotive r = model.getLocByName(model.getLocList().get(7));
+
+        final Layout rail = aLine(s, "RHA", "RHB");
+
+        final boolean[] completed = new boolean[1];
+
+        Thread running = null;
+
+        try
+        {
+            r.setSpeed(0);
+
+            rail.getPoint("RHA").setLocomotive(r);
+
+            rail.setTimetable(new ArrayList<>(Arrays.asList(new org.traincontrol.automation.TimetablePath(r,
+                through(rail, "RHA", "RHB"), 0))));
+
+            // THE PRESS: the stops counted then
+            final int atThePress = (Integer) Layout.class.getMethod("stopsOrdered").invoke(rail);
+
+            // THE YES, while it plans
+            theYes(rail);
+
+            // AND THE PLAN RUN AFTER IT, as the worker runs it when the load is refused
+            final java.lang.reflect.Method execute = Layout.class.getMethod("executeTimetable", int.class);
+
+            running = new Thread(() ->
+            {
+                try
+                {
+                    completed[0] = (Boolean) execute.invoke(rail, atThePress);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }, "return-home-after-the-yes");
+
+            running.setDaemon(true);
+            running.start();
+
+            final Thread timetable = running;
+
+            assertTrue(waitFor(() -> !timetable.isAlive(), 5000), "the timetable Return Home planned did not end after the"
+                + " operator's Yes: it keeps trying to send trains (RSA2-C1)");
+
+            assertTrue(completed[0], "the timetable after the Yes reported a move abandoned, where it should have started"
+                + " nothing (RSA2-C1)");
+
+            assertFalse(r.getSpeed() > 0 || rail.isAlreadyUnderway(r), "Return Home sent a train after the operator's Yes"
+                + " (RSA2-C1)");
+        }
+        finally
+        {
+            rail.stopLocomotives();
+
+            if (running != null) running.join(5000);
+
+            letGo(s, r, null);
+        }
+    }
+
+    /**
+     * A journey chosen before the Yes is not sent after it (RSA2-C2, RSA2-C8).  Autonomy's thread asked whether it still
+     * ran, and the journey read the stops only when it began - so a thread held between the two sent its train after the
+     * Yes.  A journey carries the stops counted where it was chosen, and one chosen before a stop sends nothing and says
+     * so in the log.
+     *
+     * MUTATION: let a journey chosen before a stop claim its route, or send it without a word, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAJourneyChosenBeforeTheYesIsNotSent() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(1871, 2);
+
+        final Locomotive q = model.getLocByName(model.getLocList().get(8));
+
+        final Layout rail = aLine(s, "CHA", "CHB");
+
+        final List<String> logged = java.util.Collections.synchronizedList(new ArrayList<>());
+
+        final java.util.logging.Handler tap = aTapOn(logged);
+
+        try
+        {
+            q.setSpeed(0);
+
+            rail.getPoint("CHA").setLocomotive(q);
+
+            // CHOSEN: the stops counted where the journey was chosen
+            final int chosen = (Integer) Layout.class.getMethod("stopsOrdered").invoke(rail);
+
+            // THE YES
+            theYes(rail);
+
+            // SENT, carrying the count it was chosen with
+            final Object sent = Layout.class.getMethod("executePath", List.class, Locomotive.class, int.class,
+                org.traincontrol.automation.TimetablePath.class, Layout.ReversalPolicy.class, int.class)
+                .invoke(rail, through(rail, "CHA", "CHB"), q, 30, null, Layout.ALWAYS_REVERSE, chosen);
+
+            assertEquals(sent, Boolean.FALSE, "a journey chosen before the operator's Yes was sent after it (RSA2-C2)");
+
+            assertFalse(q.getSpeed() > 0 || rail.isAlreadyUnderway(q), "a journey chosen before the operator's Yes"
+                + " claimed its route or set off after it (RSA2-C2)");
+
+            assertTrue(logged.contains(org.traincontrol.util.I18n.f("autolayout.log.notSentAfterTheStop", q.getName())),
+                "a journey the Yes overtook was not sent and the log does not say why - a hand send then says \"check"
+                + " log\" over a log with no line (RSA2-C8): " + logged);
+        }
+        finally
+        {
+            java.util.logging.Logger.getLogger(org.traincontrol.marklin.MarklinControlStation.class.getName())
+                .removeHandler(tap);
+
+            letGo(s, q, null);
+        }
+    }
+
+    /**
+     * A turn's wait for its resumed speed gives up on a stop or a retirement (RSA2-C2).  A turn resumes its speed and
+     * waits for the train to reach it; a Yes landing between the two left the wait untimed and woken by nothing, so the
+     * thread outlived its railway until the next driver gave the train that speed - and then stopped it.
+     *
+     * MUTATION: let the wait ignore what it is told to give up on, or let a retirement not wake it, and this fails.
+     *
+     * @throws Exception from the locomotive
+     */
+    @Test
+    public void testATurnsResumeWaitGivesUpWhenItIsTold() throws Exception
+    {
+        final Locomotive t = model.getLocByName(model.getLocList().get(9));
+
+        final java.util.concurrent.atomic.AtomicBoolean gone = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+        final java.lang.reflect.Method wait = Locomotive.class.getMethod("waitForSpeedAtOrAbove", int.class,
+            java.util.function.BooleanSupplier.class);
+
+        t.setSpeed(0);
+
+        Thread waiting = new Thread(() ->
+        {
+            try
+            {
+                java.util.function.BooleanSupplier told = gone::get;
+
+                wait.invoke(t, 50, told);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }, "resume-wait");
+
+        waiting.setDaemon(true);
+        waiting.start();
+
+        try
+        {
+            Thread.sleep(300);
+
+            assertTrue(waiting.isAlive(), "precondition: the wait ended before the train reached the speed or was told");
+
+            // TOLD TO GIVE UP, and a retirement wakes it - with no speed written
+            gone.set(true);
+
+            Locomotive.wakeEveryWait();
+
+            final Thread asked = waiting;
+
+            assertTrue(waitFor(() -> !asked.isAlive(), 1000), "a turn's wait for its resumed speed went on after it was"
+                + " told to give up and woken, waiting for a speed only the next driver would give (RSA2-C2)");
+        }
+        finally
+        {
+            gone.set(true);
+
+            t.setSpeed(0);
+
+            waiting.join(2000);
+        }
+    }
+
+    /**
+     * Each retirement wakes the journeys waiting on its railway, once their waits have gone untimed (RSA2-C4).  A wait
+     * polls until its advisory is given and then waits untimed, so after five minutes only a wake ends it.  The round 16
+     * claim retired by building a railway and making it current, which wake twice over; each door is claimed alone here,
+     * with the advisory lowered so the wait is untimed at once.
+     *
+     * MUTATION: take the wake out of Unload's retirement, a load made current, or a railway built, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testEachRetirementWakesAnUntimedWait() throws Exception
+    {
+        assertTrue(anUntimedJourneyEndsWhen("Unload's retirement", 1881, null, () -> Layout.retireEveryLayout()),
+            "Unload's retirement left a journey waiting on a sensor its stopped train will not reach (RSA2-C4, RSA-B1)");
+
+        final Layout[] waitingToBeLoaded = new Layout[1];
+
+        assertTrue(anUntimedJourneyEndsWhen("a load made current", 1883, () ->
+        {
+            try
+            {
+                waitingToBeLoaded[0] = new Layout(model);
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        }, () -> waitingToBeLoaded[0].makeCurrent()),
+            "a load made current left the retired railway's journey waiting (RSA2-C4, RSA-B1)");
+
+        assertTrue(anUntimedJourneyEndsWhen("a railway built", 1885, null, () ->
+        {
+            try
+            {
+                new Layout(model);
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        }), "a railway built left the retired railway's journey waiting (RSA2-C4, RSA-B1)");
+    }
+
+    /**
+     * A journey sent on a railway of its own, its wait untimed at once, and then one retirement: whether the journey
+     * ends within two seconds.
+     */
+    private static boolean anUntimedJourneyEndsWhen(String door, int firstSensor, Runnable before, Runnable retire)
+        throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(firstSensor, 2);
+
+        final Locomotive w = model.getLocByName(model.getLocList().get(10));
+
+        final long advisoryWas = Locomotive.FEEDBACK_ADVISORY_MS;
+
+        Thread journey = null;
+
+        try
+        {
+            w.setSpeed(0);
+
+            // UNTIMED AT ONCE, as every real wait is after five minutes
+            Locomotive.FEEDBACK_ADVISORY_MS = 50;
+
+            if (before != null) before.run();
+
+            final Layout rail = aLine(s, "UWA" + firstSensor, "UWB" + firstSensor);
+
+            rail.getPoint("UWA" + firstSensor).setLocomotive(w);
+
+            journey = sendOn(rail, through(rail, "UWA" + firstSensor, "UWB" + firstSensor), w);
+
+            assertTrue(waitFor(() -> w.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(w), 10000),
+                "precondition (" + door + "): the train was not sent");
+
+            // Past its advisory: the wait is untimed now
+            Thread.sleep(600);
+
+            retire.run();
+
+            assertFalse(rail.isCurrentLayout(), "precondition (" + door + "): the railway was not retired");
+
+            final Thread waiting = journey;
+
+            return waitFor(() -> !waiting.isAlive(), 2000);
+        }
+        finally
+        {
+            Locomotive.FEEDBACK_ADVISORY_MS = advisoryWas;
+
+            letGo(s, w, journey);
+        }
+    }
+
+    /** A handler on the model's own logger, collecting every message into `into` - removed by the caller. */
+    private static java.util.logging.Handler aTapOn(final List<String> into)
+    {
+        java.util.logging.Handler tap = new java.util.logging.Handler()
+        {
+            @Override
+            public void publish(java.util.logging.LogRecord record)
+            {
+                if (record != null && record.getMessage() != null) into.add(record.getMessage());
+            }
+
+            @Override
+            public void flush() { }
+
+            @Override
+            public void close() { }
+        };
+
+        java.util.logging.Logger.getLogger(org.traincontrol.marklin.MarklinControlStation.class.getName()).addHandler(tap);
+
+        return tap;
+    }
 }
