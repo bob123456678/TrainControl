@@ -585,7 +585,9 @@ public class TailCrossedPrompt
      * the train is put back on it with its side and the road the running railway had, and the answer belongs there.
      * And nowhere once the door's setup is not the window's any more (`sameSetup`), a session replaced (TDU4-C2).  Another
      * configuration loaded in the wait keeps the session, and the answer follows the train onto the copy that holds it as
-     * it was put (Adam, 2026-09-24, TDD5-C1: *"Follow the train."*).
+     * it was put (Adam, 2026-09-24, TDD5-C1: *"Follow the train."*).  And nowhere while trains run (Adam, 2026-09-28:
+     * *"There should be no setup edit possible during a run"*; RLV12-C3): the question waits with the window live, Start
+     * or a hand send in the wait is not refused, and every door that asks it takes where to write from here.
      *
      * @param running the railway running now, or null to ask the copy itself
      * @param asked the copy the train was put on when the question was asked
@@ -599,6 +601,8 @@ public class TailCrossedPrompt
         String side, List<Edge> road, boolean sameSetup)
     {
         if (!sameSetup || asked == null) return null;
+
+        if (running != null && running.isRunning()) return null;
 
         Point now = running == null ? asked : running.getPoint(asked.getName());
 
@@ -631,7 +635,8 @@ public class TailCrossedPrompt
      */
     public static Layout runningNow(org.traincontrol.model.ViewListener model)
     {
-        return model == null || !model.hasAutoLayout() ? null : model.getAutoLayout();
+        // Asked once (RLV12-C5)
+        return model == null ? null : model.getAutoLayoutIfLoaded();
     }
 
     /**
@@ -672,7 +677,8 @@ public class TailCrossedPrompt
     }
 
     /**
-     * The same, saying why this answer was dropped - an editor opened in the wait (RLU-C9), or the square changed.
+     * The same, saying why this answer was dropped - an editor opened in the wait (RLU-C9), trains began running in it
+     * (RLV12-C3), or the square changed.
      *
      * @param model where the log goes
      * @param train the train the question was about
@@ -684,9 +690,16 @@ public class TailCrossedPrompt
     {
         if (model == null) return;
 
+        Layout now = runningNow(model);
+
         if (answer != null && answer.anEditorOpenedInTheWait())
         {
             model.logf("autolayout.ui.logTailAnswerDroppedEditorOpened", train, where);
+        }
+        else if (now != null && now.isRunning())
+        {
+            // TRAINS BEGAN RUNNING IN THE WAIT (RLV12-C3), which `whereTheAnswerGoes` drops the answer for
+            model.logf("autolayout.ui.logTailAnswerDroppedRunning", train, where);
         }
         else
         {

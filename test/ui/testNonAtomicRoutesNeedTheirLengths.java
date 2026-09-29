@@ -515,10 +515,9 @@ public class testNonAtomicRoutesNeedTheirLengths
                 "private void executeTimetableActionPerformed(", "executeTimetable();"},
             {"src/org/traincontrol/gui/TrainControlUI.java",
                 "public void requestReturnToHome()", "executeTimetable();"},
-            {"src/org/traincontrol/gui/AutoLocomotiveStatus.java",
-                "ManualReversalPrompt.forJourney(", "executePath("},
-            {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java",
-                "ManualReversalPrompt.forJourney(", "executePath("},
+            // THE TWO HAND DOORS ARE ONE since 2026-09-29: both send through `sendATrainByHand`
+            {"src/org/traincontrol/gui/TrainControlUI.java",
+                "void sendATrainByHand(", "executePath("},
         };
 
         for (String[] door : doors)
@@ -621,7 +620,9 @@ public class testNonAtomicRoutesNeedTheirLengths
         String returnHome = source.substring(home, homeEnd);
 
         int homeBusy = returnHome.indexOf("HomeStaging.Outcome.LOCOMOTIVES_RUNNING");
-        int homePower = returnHome.indexOf("autolayout.ui.powerOnToStart");
+
+        // THE POWER IS THE ONE GATE'S since 2026-09-29: `refusedToSendATrain` asks it for every door that sends a train
+        int homePower = returnHome.indexOf("refusedToSendATrain(");
         int homeGate = returnHome.indexOf(gate);
 
         assertTrue(homeBusy > 0 && homePower > 0 && homeGate > 0, "precondition: Return Home no longer refuses a busy"
@@ -645,7 +646,7 @@ public class testNonAtomicRoutesNeedTheirLengths
 
         String startDoor = source.substring(start, end);
 
-        int power = startDoor.indexOf("autolayout.ui.powerOnToStart");
+        int power = startDoor.indexOf("refusedToSendATrain(");
         int none = startDoor.indexOf("autolayout.ui.infoPleaseAddLocomotivesToGraph");
         int asks = startDoor.indexOf(gate);
 

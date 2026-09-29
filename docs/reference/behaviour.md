@@ -2472,12 +2472,15 @@ where it set off; so the Auto tab's settings and a timetable captured this sessi
 RLV8-B1).  The timetable written is the configuration's own, not a plan Return Home has borrowed it for (RLV9-B1); the
 destination turns the railway has made and not yet written down are kept across the load (RLV9-C1); and a train under
 way whose last station another has since stopped on is written on the first station ahead on its path that it still
-holds and no other train under way is kept at (RLV9-C4, RLV10-C2).  Unload folds the running layout into the
+holds and no other train under way is kept at - or one another is kept at that can itself be moved on, along the
+chain - and no two trains are kept on one square, its copies counting as one (RLV9-C4, RLV10-C2, RLV12-C1, RLV12-C2).  Unload folds the running layout into the
 configuration first, as a reload does, so a load after it has the trains where the run left them (RLV9-A1); while a
 setup edit a run declined waits it writes where the trains stand and nothing else, as a load then carries them
-(RLV10-B1).  No setup edit is made while trains run (Adam, 2026-09-28): the diagram's setup menu is offered only at rest
-and its items refuse, and say so, when clicked after a run has begun, so an edit waits only where a run begins in the
-moment between an edit and its rebuild (RLV11-B1, RLV11-B2).  Unload, and choosing another configuration, write the turns the railway owes into the configuration they
+(RLV10-B1).  No setup edit is made while trains run (Adam, 2026-09-28): the diagram's setup menu and its Edit
+Locomotive are offered only at rest and refuse, and say so, when clicked after a run has begun; no train is sent - from
+the Auto tab either - while the editor is open; a tail question answered once trains run, and a direction change
+followed once they run, write nothing - so an edit waits only where a run begins in the moment between an edit and its
+rebuild (RLV11-B1, RLV11-B2, RLV12-B1, RLV12-C3, RLV12-C4).  Unload, and choosing another configuration, write the turns the railway owes into the configuration they
 leave (RLV10-C1).  Unload, a deleted setup and a switch of railway forget the
 railway loaded, so a load after them carries nothing across (RLV7-C2) - a switch only to another source, not to the one
 in use chosen again (RLV8-C5), the folder the Central Station's layout was downloaded into counting as the one in use
@@ -2491,12 +2494,13 @@ Into a configuration that exists, an old file fills what that configuration does
 door asks exactly that - *"Add to it what the file has and {0} does not?"* - where a bundle replaces the
 configuration and asks to replace it.  The question also says that a setting at its default, a home taken off or an
 emptied exclusion list counts as not set and takes the file's value: a default is stored as nothing (RLA3-B1; Adam,
-2026-09-28).  A train the configuration already has standing somewhere is not placed again,
+2026-09-28).  It says too that once the configuration has been loaded each of its stations keeps its own maximum train
+length, no limit included (RLV12-C6).  A train the configuration already has standing somewhere is not placed again,
 and is named in the message; a train that already has a home keeps it, and is named too (RLA2-C3) - one train in two
 places refuses the whole configuration (RLA-B2).  A train the file places faces the way the file ran it, over
 the facing the square's last occupant left there (RLA2-B3); where the file cannot say, the last occupant's stays.  A value
 the configuration holds is kept - including a station maximum of 0, which a capture writes for every station; whether a
-setting at its default should count as set is put to Adam (RLA3-B1).  A file the import cannot read to its end leaves the setup as it was: nothing made, chosen or
+setting at its default should count as set was put to Adam, who kept the gap-fill (RLA3-B1).  A file the import cannot read to its end leaves the setup as it was: nothing made, chosen or
 saved (RLA-C3).  `core.testASecondImportFillsGapsAndDoesNotOverwrite.testAnImportGoesIntoTheConfigurationNamed`, and
 `regression.testTheImportDoorReadsAnOldFile`.
 

@@ -6101,7 +6101,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @return
      */
     /**
-     * Refuses to start autonomy while the setup has errors in it.
+     * Why autonomy may not start over this setup, or null - Start's half of `whyNoTrainMayBeSent`, in Start's own words.
      *
      * The button's enabled state is not enough on its own.  It is computed when the tabs are built and
      * when a configuration is loaded, and an error can appear long after either - a page renamed, a
@@ -6116,9 +6116,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Asked of the same check() the editor and the viewer panel show, so the count in the dialog is
      * the count on screen rather than a second opinion.
      *
-     * @return true when the caller must not proceed
+     * @return the sentence, or null
      */
-    private boolean refuseAutonomyStartWhileBroken()
+    private String whyAutonomyStartIsRefused()
     {
         // Not over a layout that lives on the Central Station (OB-104).
         //
@@ -6127,14 +6127,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Start button over an errored setup, the download offer that could click to nothing, the
         // strip that mirrored a refused Start. Greying the tab is an affordance. This is the action,
         // and it is the last thing between a defunct configuration and real switches.
-        if (isRemoteLayout())
-        {
-            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.menuNoSetupPossible"));
+        if (isRemoteLayout()) return I18n.t("autosetup.ui.menuNoSetupPossible");
 
-            return true;
-        }
-
-        if (getAutonomySession() == null) return false;
+        if (getAutonomySession() == null) return null;
 
         // Asked of the session rather than counted here, so that the strip deciding what to OFFER and
         // this deciding what to ALLOW cannot drift apart.  They had (OB-090).
@@ -6148,7 +6143,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // The count below is only for the message.  It can legitimately be zero while this refuses:
         // a graph that cannot be BUILT is a blocking problem, and the disjunction covers it whether or
         // not the checks also managed to turn it into a finding.
-        if (!getAutonomySession().hasErrors()) return false;
+        if (!getAutonomySession().hasErrors()) return null;
 
         // THROUGH THE ONE RULE (MT-263), which is where the wording and the counting now live.
         //
@@ -6157,9 +6152,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // unconditionally - as the tooltip and the scripting API both took it - three blocking problems
         // read as one thing to deal with (DY3-C7).  The load door counts and says why: "1 things" in the
         // one message a user meets before their railway will run is not the first impression to make.
-        JOptionPane.showMessageDialog(this, whyAutonomyWillNotStart());
-
-        return true;
+        return whyAutonomyWillNotStart();
     }
 
     /**
@@ -6443,7 +6436,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * @return true when the caller must not proceed
      */
-    private boolean refuseWhileEditorOpen()
+    boolean refuseWhileEditorOpen()
     {
         if (!isLayoutEditorOpen()) return false;
 
@@ -6469,6 +6462,128 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         return true;
+    }
+
+    /**
+     * What stops a train being sent now, or null - the one question every door that sends a train asks: the Auto tab's list
+     * of paths and the diagram's destinations (through `sendATrainByHand`), Start, Execute Timetable and Return Home (Adam,
+     * 2026-09-29: *"can all the checks go through a single door?"*).  Each door asked its own copy - the editor, the setup,
+     * the power - in its own order and place, and the Auto tab's copy had no editor question, so an editor opened at rest
+     * stayed open for the run it sent (RLV12-B1).
+     *
+     * In this order: an open editor holds the diagram the trains would run on, and no setup edit is made during a run
+     * (OB-047, MT-135); a setup with errors sends nothing (MT-263); the power comes before any question about the journey
+     * (SPEC-C4).  What a door asks besides is its own action's - a hand send's path (`whyThisPathCannotBeTaken`), the
+     * trains already running for the three that start a run.
+     *
+     * @param startingAutonomy whether the door is Start, which refuses a broken setup in its own words
+     * @return the sentence to show, or null where a train may be sent
+     */
+    String whyNoTrainMayBeSent(boolean startingAutonomy)
+    {
+        if (isLayoutEditorOpen()) return I18n.t("autosetup.ui.menuEditorOpen");
+
+        String broken = startingAutonomy ? whyAutonomyStartIsRefused() : whyAHandSendIsRefused();
+
+        if (broken != null) return broken;
+
+        if (this.model == null || !this.model.getPowerState()) return I18n.t("autolayout.ui.powerOnToStart");
+
+        return null;
+    }
+
+    /**
+     * Refuses a train sent now where `whyNoTrainMayBeSent` says so, saying why over this window - on the event thread, as
+     * `refuseWhileEditorOpen` does, since Return Home is asked from a worker at the end of a staging run.
+     *
+     * @param startingAutonomy whether the door is Start
+     * @return true when the door must not send it
+     */
+    boolean refusedToSendATrain(boolean startingAutonomy)
+    {
+        final String why = whyNoTrainMayBeSent(startingAutonomy);
+
+        if (why == null) return false;
+
+        if (javax.swing.SwingUtilities.isEventDispatchThread())
+        {
+            JOptionPane.showMessageDialog(this, why);
+        }
+        else
+        {
+            javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, why));
+        }
+
+        return true;
+    }
+
+    /**
+     * Why this train cannot take this path whatever the minute, or null - the standing rules a hand send explains before it
+     * asks anything: the train's length (MT-262), a berth that cannot hold it (PRW-C2), a loop into its own tail (OB-294).
+     * Each is the railway's own rule, which `isPathClear` asks at dispatch too, so a door and the railway cannot disagree;
+     * what clears itself in a minute - a busy sensor - is left to the dispatch, where it is not a dialog.
+     *
+     * @param railway the railway the path is on
+     * @param path the path
+     * @param train the train
+     * @return the sentence to show, or null
+     */
+    static String whyThisPathCannotBeTaken(Layout railway, List<org.traincontrol.automation.Edge> path, Locomotive train)
+    {
+        String why = Layout.whyTooLongForThisRoute(path, train);
+
+        if (why == null) why = Layout.whyABerthCannotHoldIt(path, train);
+
+        if (why == null) why = railway.whyItWouldMeetItsOwnTail(path, train);
+
+        return why;
+    }
+
+    /**
+     * Sends one train along one path by hand - the one door both hand doors go through: the Auto tab's list of paths and the
+     * diagram's destinations (Adam, 2026-09-29).  They were two copies of one sequence, and what one learned the other did
+     * not (RLV12-B1; the diagram's copy carried a TODO to share it).
+     *
+     * In this order, on the event thread: whether a train may be sent at all (`refusedToSendATrain`); whether this path can
+     * take this train (`whyThisPathCannotBeTaken`); the reversal question, on departure itself so that nothing is dispatched
+     * before the answer (Adam, 2026-09-06); the atomic-routes gate (GS-B1).  Then the dispatch on its own thread, since it
+     * holds the railway's monitor for the whole path (OB-192); a dispatch the railway turns down says so.  The graph hears
+     * where the run ends from `executePath` itself, which announces it when its thread count falls to zero (W7-A2).
+     *
+     * @param railway the railway the path was offered on
+     * @param path the path, as read where the operator chose it
+     * @param train the train
+     * @param asking what the reversal question is shown over
+     */
+    void sendATrainByHand(final Layout railway, final List<org.traincontrol.automation.Edge> path, final Locomotive train,
+        Component asking)
+    {
+        if (railway == null || path == null || path.isEmpty() || train == null) return;
+
+        if (refusedToSendATrain(false)) return;
+
+        String why = whyThisPathCannotBeTaken(railway, path, train);
+
+        if (why != null)
+        {
+            JOptionPane.showMessageDialog(this, why);
+
+            return;
+        }
+
+        final Layout.ReversalPolicy answered =
+            ManualReversalPrompt.forJourney(getAutonomySession(), asking, path, train);
+
+        keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
+
+        new Thread(() ->
+        {
+            if (!railway.executePath(path, train, train.getPreferredSpeed(), null, answered))
+            {
+                javax.swing.SwingUtilities.invokeLater(() ->
+                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.autoFailedCheckLog")));
+            }
+        }, "sent by hand").start();
     }
 
     /**
@@ -6881,7 +6996,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // DOES carry edits: closing the track diagram editor is how a geometry change arrives.  What
         // makes excluding it safe is that it cannot reach here while autonomy is busy: the editor
         // cannot be opened while a run is going (OB-047), and `refuseWhileEditorOpen()` guards every
-        // door that starts one.  So the decline it would record cannot happen.
+        // door that starts one - through `whyNoTrainMayBeSent`, the one gate every sending door asks since
+        // 2026-09-29; the Auto tab's double-click had not asked (RLV12-B1).  So the decline it would record
+        // cannot happen.
         //
         // Written down because it was not: a reviewer closed five doors looking for a counter-example
         // and found none, which is a proof that lives in somebody's head until somebody types it.  If
@@ -13044,29 +13161,47 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // renderer is idle.  What moves is the work.
             final String name = loc.getName();
 
-            javax.swing.SwingUtilities.invokeLater(() ->
-            {
-                org.traincontrol.automationui.AutonomySession session = getAutonomySession();
-
-                if (session == null) return;
-
-                // The running layout too, on Adam's ruling (DIR-B3): the setup and the layout are two
-                // records of one fact, and captureFromLayout writes the layout's answer back over the
-                // setup at the next editor open.
-                // Asked, not built (RLV11-C5): posted, and it can land after Unload - the setup is then written alone
-                final org.traincontrol.automationui.TileGraph.TileKey moved =
-                    session.flipFacing(name, this.model.getAutoLayoutIfLoaded());
-
-                if (moved == null) return;
-
-                // Said out loud: the setup has been changed by something the operator did to a train,
-                // and a silent edit to a stored configuration is the thing this project keeps filing
-                // against itself.
-                this.model.logf("autosetup.infoFacingFollowedDirection", name, String.valueOf(moved));
-
-                autonomySetupChanged();
-            });
+            javax.swing.SwingUtilities.invokeLater(() -> followTheTurn(name));
         }
+    }
+
+    /**
+     * Follows one train's direction change into the setup and the running layout, on the event thread (DIR-B3, DIR-B4).
+     *
+     * **Not once trains run, asked here again** (RLV12-C4).  `followDirectionChanges` decides on the Central Station's
+     * thread and posts this, which runs later - so a hand send queued ahead of it was under way when it landed, and the
+     * setup was written during the run.  A direction change during a run is ignored, on Adam's ruling (*"if a manual
+     * command is sent, ignore it, as this is likely corrective by the user"*), and no setup edit is made during a run
+     * (Adam, 2026-09-28).
+     *
+     * @param name the locomotive
+     * @return the square whose facing was written, or null where nothing was
+     */
+    private org.traincontrol.automationui.TileGraph.TileKey followTheTurn(String name)
+    {
+        if (isAutonomyBusy()) return null;
+
+        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+
+        if (session == null) return null;
+
+        // The running layout too, on Adam's ruling (DIR-B3): the setup and the layout are two
+        // records of one fact, and captureFromLayout writes the layout's answer back over the
+        // setup at the next editor open.
+        // Asked, not built (RLV11-C5): posted, and it can land after Unload - the setup is then written alone
+        final org.traincontrol.automationui.TileGraph.TileKey moved =
+            session.flipFacing(name, this.model.getAutoLayoutIfLoaded());
+
+        if (moved == null) return null;
+
+        // Said out loud: the setup has been changed by something the operator did to a train,
+        // and a silent edit to a stored configuration is the thing this project keeps filing
+        // against itself.
+        this.model.logf("autosetup.infoFacingFollowedDirection", name, String.valueOf(moved));
+
+        autonomySetupChanged();
+
+        return moved;
     }
     /**
      * Gets the locomotive name to display in pop-up window titles
@@ -24418,18 +24553,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void requestReturnToHome()
     {
         // As Start Autonomy and Execute Timetable: this drives every train on the layout, and an open
-        // editor means the diagram it is driving over is being changed underneath it.
-        if (refuseWhileEditorOpen()) return;
-
-        // AND NOT OVER A SETUP WITH ERRORS (MT-263's rule, TDU-B1), as Start and every other door that moves trains.
-        String broken = whyAHandSendIsRefused();
-
-        if (broken != null)
-        {
-            JOptionPane.showMessageDialog(this, broken);
-
-            return;
-        }
+        // editor means the diagram it is driving over is being changed underneath it.  THROUGH THE ONE GATE (Adam,
+        // 2026-09-29): the editor, the setup (MT-263's rule, TDU-B1) and the power, as every door that moves trains.
+        if (refusedToSendATrain(false)) return;
 
         final Layout layout = this.model.getAutoLayout();
 
@@ -24441,12 +24567,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // exists to prevent.
             JOptionPane.showMessageDialog(this,
                 describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null));
-            return;
-        }
-
-        if (!this.getModel().getPowerState())
-        {
-            JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart"));
             return;
         }
 
@@ -24681,10 +24801,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (this.stagingFlowActive) return true;
 
-        // hasAutoLayout, not getAutoLayout: the latter builds a graph when none exists, and a question
-        // about whether autonomy is busy must not bring a Layout into being to answer it
-        return this.model != null && this.model.hasAutoLayout()
-            && this.model.getAutoLayout().isRunning();
+        // ASKED ONCE, AND NOT BUILT (RLV12-C5).  A question about whether autonomy is busy must not bring a Layout
+        // into being to answer it; and it is asked off the event thread too - the path gather's worker - where Unload
+        // can clear the model between asking whether there is a railway and asking for it.
+        final Layout shown = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
+
+        return shown != null && shown.isRunning();
     }
 
     /**
@@ -27191,32 +27313,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Return Home start trains just as surely, over a diagram the editor is still changing.
         // isAutonomyBusy, which both of them do ask, knows nothing about an editor being open.
         //
-        // Refused BEFORE the button is greyed, so a refusal cannot leave it dead.
-        if (refuseWhileEditorOpen()) return;
-
-        // AND NOT OVER A SETUP WITH ERRORS (MT-263's rule, TDU-B1).  A timetable run drives over the railway the setup
-        // built, through the same dispatch as a hand send, and Start is refused on the same question - so this is too,
-        // in the setup's own words.
-        String broken = whyAHandSendIsRefused();
-
-        if (broken != null)
-        {
-            JOptionPane.showMessageDialog(this, broken);
-
-            return;
-        }
+        // Refused BEFORE the button is greyed, so a refusal cannot leave it dead.  THROUGH THE ONE GATE (Adam, 2026-09-29):
+        // the editor, the setup - a timetable run drives over the railway the setup built, through the same dispatch as a
+        // hand send (MT-263, TDU-B1) - and the power.
+        if (refusedToSendATrain(false)) return;
 
         this.executeTimetable.setEnabled(false);
 
         javax.swing.SwingUtilities.invokeLater(() ->
             {
-                if (!this.getModel().getPowerState())
-                {
-                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart"));
-                    this.executeTimetable.setEnabled(true);
-                    return;
-                }
-
                 if (this.isAutonomyBusy())
                 {
                     JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop"));
@@ -27405,9 +27510,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Adam, MT-135: "I was also able to start autonomy while the editor was open.  This should not
         // be possible."  The editor holds the pages the session is built from, so starting underneath
         // it runs trains over a diagram that is still being changed.
-        if (refuseWhileEditorOpen()) return;
-
-        if (refuseAutonomyStartWhileBroken()) return;
+        // THROUGH THE ONE GATE (Adam, 2026-09-29): the editor, the setup in Start's own words, and the power - asked here,
+        // before the button is greyed and the worker started, rather than by the worker (SPEC-C4).
+        if (refusedToSendATrain(true)) return;
 
         // AND NOT NON-ATOMIC OVER A RAILWAY THAT COULD RELEASE TRACK UNDER A TRAIN (VD16-B2).
         //
@@ -27448,12 +27553,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 try
                 {
-                    if (!this.model.getPowerState())
-                    {
-                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart")));
-                        return;
-                    }
-
                     for (String routeName : this.model.getRouteList())
                     {
                         Route r = this.model.getRoute(routeName);

@@ -509,6 +509,12 @@ JAVA_FLAGS="$JAVA_FLAGS -Dtraincontrol.batteryRun=$RUN_ID"
 # Overridable, because the number is a guess about this machine rather than a property of the tests.
 JAVA_FLAGS="$JAVA_FLAGS ${TC_JAVA_HEAP:--Xmx512m}"
 
+# AND OUT, NOT STUCK, WHEN IT RUNS OUT (2026-09-29).  A class that filled its heap - every window a test opens keeps its
+# threads - lost TestNG's main thread in the report, with the error on the stderr the application swallows and no summary
+# printed; the JVM then sat on its pool threads until the class cap, an hour.  Exiting on the error ends it at once, and
+# the branch that reads a missing summary says it ran out.
+JAVA_FLAGS="$JAVA_FLAGS -XX:+ExitOnOutOfMemoryError"
+
 # ------------------------------------------------------------------------------------------------
 # THIS RUN'S OWN STATE: copies of the locomotive database and the UI state, and a preference node of
 # its own.
@@ -746,6 +752,9 @@ do
         if echo "$out" | grep -qE "Could not reserve enough space|Unable to allocate.*heap"
         then
             fail=$((fail+1)); failed="$failed\n  $cls: DID NOT RUN - no heap (machine busy, rerun)"
+        elif echo "$out" | grep -q "OutOfMemoryError"
+        then
+            fail=$((fail+1)); failed="$failed\n  $cls: RAN OUT OF MEMORY - split the class, or raise TC_JAVA_HEAP"
         else
             fail=$((fail+1)); failed="$failed\n  $cls: DID NOT RUN"
         fi

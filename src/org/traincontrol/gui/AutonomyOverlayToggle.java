@@ -325,7 +325,7 @@ public class AutonomyOverlayToggle extends JPanel
         // Fix it rather than Start, when starting would be refused (OB-090).
         //
         // The Start button's enabled state says nothing about the checks - errors are asked at press
-        // time, in refuseAutonomyStartWhileBroken - so this strip mirrored a live Start button while
+        // time, in whyAutonomyStartIsRefused - so this strip mirrored a live Start button while
         // every press of it produced a dialog saying no.  That is the OB-057 shape at a third site:
         // "it says there are errors, but the start autonomy button is still visible."
         //
@@ -358,7 +358,7 @@ public class AutonomyOverlayToggle extends JPanel
         // `lastTotalErrors` is what the last `setFindings` left behind, and it is read only when there
         // is no window to ask - a strip built before its owner, not a running application.  As a
         // standing answer it would be a third opinion about "would Start be refused", alongside
-        // `canStartAutonomy` and `refuseAutonomyStartWhileBroken`, which both ask the session live.
+        // `canStartAutonomy` and `whyAutonomyStartIsRefused`, which both ask the session live.
         boolean broken = ui != null ? ui.autonomyHasErrors() : lastTotalErrors > 0;
 
         fixing = source != null && source == start && broken;

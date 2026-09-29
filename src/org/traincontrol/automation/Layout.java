@@ -1596,8 +1596,8 @@ public class Layout
      *   its destination at worst (RLV9-C4).  Kept where the other stands, it was kept on no point: the carry and the fold
      *   each give that point to the train standing there, and the fold then erased the one under way from the
      *   configuration.  Ahead is track it is heading over, and holds.  A train only passing through the point gives way
-     *   to the one kept there (RLV8-C4).  No two trains are kept at one point, in whatever order the map yields them -
-     *   `keptApart` says how (RLV10-C2, RLV11-C1, RLV11-C2).
+     *   to the one kept there (RLV8-C4).  No two trains are kept on one square, in whatever order the map yields them -
+     *   `keptApart` says how (RLV10-C2, RLV11-C1, RLV11-C2, RLV12-C1, RLV12-C2).
      *
      * Read without the railway's monitor, which the event thread must not take: the maps are concurrent, and a train
      * setting off or arriving as this runs is read on one side of it or the other.
@@ -1624,23 +1624,27 @@ public class Layout
             if (known != null) out.put(running.getKey(), known);
         }
 
-        // NO TWO ON ONE POINT, NOR ON ONE A STANDING TRAIN STANDS ON (RLV9-C4, RLV10-C2, RLV11-C1, RLV11-C2)
+        // NO TWO ON ONE SQUARE, NOR ON ONE A STANDING TRAIN STANDS ON (RLV9-C4, RLV10-C2, RLV11-C1, RLV11-C2, RLV12-C1,
+        // RLV12-C2)
         return this.keptApart(out);
     }
 
     /**
-     * Where each train under way is kept, no two on one point and none on a point a standing train stands on - see
-     * `getLastPointsReached`.
+     * Where each train under way is kept, no two on one square and none on a square a standing train stands on - see
+     * `getLastPointsReached`.  A square is one place whichever copy of it a train is on (`Point.isSamePlaceAs`): kept by
+     * point, a train under way stood on one copy while another train stood on the other, and the carry, putting the first
+     * back, took the second off the railway (RLV12-C2).
      *
-     * - A standing train's point is its own: a train under way kept there takes a station ahead (RLV9-C4).
-     * - Otherwise a train under way keeps the point it was last seen at - the one recorded on that point first, then the
-     *   others by name, so the answer does not follow a map's order (RLV10-C2).  A train only passing through a point
-     *   is kept elsewhere and does not count (RLV8-C4).
-     * - A train that cannot keep its point takes the first station ahead on its path that it holds and nobody is kept
-     *   at; failing that, one another train is kept at where that train can itself go on to a free station ahead, which it
-     *   then does.  So a train bound for the station another was last seen at takes it, and the other - past it, since it
-     *   was released behind it and then locked - goes on (RLV11-C1); and of two trains last seen at one station nobody
-     *   stands on, one keeps it and the other goes on (RLV11-C2).
+     * - A standing train's square is its own: a train under way kept there takes a station ahead (RLV9-C4).
+     * - Otherwise a train under way keeps the point it was last seen at - the one that point records first, then the
+     *   others by name, so the answer does not follow a map's order (RLV10-C2).  A train only passing through a point is
+     *   kept elsewhere and does not count (RLV8-C4).
+     * - A train that cannot keep its point takes the first station ahead on its path that it holds and nobody is kept at;
+     *   failing that, one another train is kept at, where that one can itself be moved on - to a free station ahead, or to
+     *   one a third is kept at that can be moved on, and so along the chain (RLV11-C1, RLV12-C1).  Each step moves a
+     *   train to a station ahead that it holds, so the walk ends.  So a train bound for the station another was last seen
+     *   at takes it, and the other goes on; and of two trains last seen at one station nobody stands on, one keeps it and
+     *   the other goes on (RLV11-C2).
      * - With nothing left, a train stays at its point, as it always did.
      *
      * @param read each train under way against the point it was last seen at
@@ -1648,13 +1652,13 @@ public class Layout
      */
     private Map<Locomotive, Point> keptApart(Map<Locomotive, Point> read)
     {
-        Set<Point> standing = new HashSet<>();
+        Set<Object> standing = new HashSet<>();
 
         for (Point p : this.getPoints())
         {
             Locomotive there = p.getCurrentLocomotive();
 
-            if (there != null && !read.containsKey(there)) standing.add(p);
+            if (there != null && !read.containsKey(there)) standing.add(placeOf(p));
         }
 
         List<Locomotive> order = new ArrayList<>(read.keySet());
@@ -1670,64 +1674,98 @@ public class Layout
         });
 
         Map<Locomotive, Point> out = new HashMap<>();
-        Map<Point, Locomotive> keptThere = new HashMap<>();
+        Map<Object, Locomotive> keptThere = new HashMap<>();
         List<Locomotive> goingOn = new ArrayList<>();
 
         for (Locomotive loc : order)
         {
-            Point p = read.get(loc);
+            Object place = placeOf(read.get(loc));
 
-            if (standing.contains(p) || keptThere.containsKey(p))
+            if (standing.contains(place) || keptThere.containsKey(place))
             {
                 goingOn.add(loc);
             }
             else
             {
-                out.put(loc, p);
-                keptThere.put(p, loc);
+                out.put(loc, read.get(loc));
+                keptThere.put(place, loc);
             }
         }
 
         for (Locomotive loc : goingOn)
         {
-            Point chosen = null;
-
-            for (Point ahead : this.stationsAheadItHolds(loc, read.get(loc)))
-            {
-                if (chosen == null && !standing.contains(ahead) && !keptThere.containsKey(ahead)) chosen = ahead;
-            }
-
-            // A STATION AHEAD ANOTHER IS KEPT AT, where that one can go on to a free station of its own
-            for (Point ahead : chosen != null ? Collections.<Point>emptyList() : this.stationsAheadItHolds(loc, read.get(loc)))
-            {
-                Locomotive other = keptThere.get(ahead);
-
-                if (chosen != null || other == null) continue;
-
-                for (Point further : this.stationsAheadItHolds(other, ahead))
-                {
-                    if (chosen == null && !standing.contains(further) && !keptThere.containsKey(further))
-                    {
-                        out.put(other, further);
-                        keptThere.put(further, other);
-
-                        chosen = ahead;
-                    }
-                }
-            }
-
-            if (chosen == null)
+            // With nothing left, it stays at its point, as it always did
+            if (!this.movedOn(loc, read.get(loc), standing, keptThere, out, new HashSet<Locomotive>()))
             {
                 out.put(loc, read.get(loc));
-            }
-            else
-            {
-                out.put(loc, chosen);
-                keptThere.put(chosen, loc);
             }
         }
 
         return out;
+    }
+
+    /**
+     * Moves a train on to a station ahead on its path that it holds: a free one, or one another train is kept at that can
+     * itself be moved on, along the chain (RLV12-C1).  Nothing is changed unless the whole chain moves.
+     *
+     * @param loc the train
+     * @param from the point it is kept at, or was last seen at
+     * @param standing the squares standing trains stand on
+     * @param keptThere each square against the train kept on it
+     * @param out each train against the point it is kept at
+     * @param moving the trains this chain is already moving, so that it cannot come round to one of them
+     * @return whether it was moved on
+     */
+    private boolean movedOn(Locomotive loc, Point from, Set<Object> standing, Map<Object, Locomotive> keptThere,
+        Map<Locomotive, Point> out, Set<Locomotive> moving)
+    {
+        if (!moving.add(loc)) return false;
+
+        List<Point> ahead = this.stationsAheadItHolds(loc, from);
+
+        Point chosen = null;
+
+        for (Point station : ahead)
+        {
+            Object place = placeOf(station);
+
+            if (chosen == null && !standing.contains(place) && !keptThere.containsKey(place)) chosen = station;
+        }
+
+        // A STATION AHEAD ANOTHER IS KEPT AT, where that one can be moved on in its turn
+        for (Point station : chosen != null ? Collections.<Point>emptyList() : ahead)
+        {
+            Object place = placeOf(station);
+            Locomotive other = keptThere.get(place);
+
+            if (chosen == null && other != null && !standing.contains(place)
+                && this.movedOn(other, out.get(other), standing, keptThere, out, moving))
+            {
+                chosen = station;
+            }
+        }
+
+        if (chosen == null) return false;
+
+        Point was = out.get(loc);
+
+        if (was != null && keptThere.get(placeOf(was)) == loc) keptThere.remove(placeOf(was));
+
+        out.put(loc, chosen);
+        keptThere.put(placeOf(chosen), loc);
+
+        return true;
+    }
+
+    /**
+     * The square a point is part of, for `keptApart`: the block its copies share, or the point itself where it has none.
+     *
+     * @param point the point
+     * @return its square
+     */
+    private static Object placeOf(Point point)
+    {
+        return point.getBlock() != null ? "block:" + point.getBlock() : point;
     }
 
     /**
@@ -9401,7 +9439,15 @@ public class Layout
                 "autolayout.infoLocomotiveReachedTerminusOrFinalReversingStation",
                 loc.getName()
             );
-            loc.delay(this.getMinDelay(), this.getMaxDelay()).switchDirection().delay(1000); // pause to avoid network issues
+            loc.delay(this.getMinDelay(), this.getMaxDelay());
+
+            // NOT ON A RAILWAY RETIRED ON THE WAY (RLV11-C5, RLV12-C5).  The milestones' check stops a train whose railway
+            // was retired - Unload, a reload - and this arrival comes after the last of them, and after the pause just
+            // above, in which Unload can come.  The fold that retired the railway wrote the train as it stood; turned now,
+            // the locomotive faces the other way from that record, and the turn is owed to a railway nothing reads.
+            final boolean stillThisRailway = isCurrentLayout();
+
+            if (stillThisRailway) loc.switchDirection().delay(1000); // pause to avoid network issues
 
             // AND THE GRAPH IS TOLD, at the destination, which is the only place that knows (Adam,
             // 2026-09-07).  See `reversedOnArrival` for why neither of the two paths that follow a
@@ -9421,7 +9467,7 @@ public class Layout
             //
             // One locomotive's arrivals all happen on its own driver thread, so nothing races for a
             // given key.
-            if (loc.getName() != null) this.reversedOnArrival.put(loc.getName(), arrived.getName());
+            if (stillThisRailway && loc.getName() != null) this.reversedOnArrival.put(loc.getName(), arrived.getName());
         }
         else
         {

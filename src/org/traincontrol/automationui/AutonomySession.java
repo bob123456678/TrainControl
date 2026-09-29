@@ -2102,6 +2102,12 @@ public class AutonomySession
         // Nowhere to put it, or it is not standing on this square in the running layout at all.
         if (onto == null || train == null) return;
 
+        // NOT A TRAIN UNDER WAY (RLV11-C3, RLV12-C4).  A locked path records its train on every point of it, its start
+        // among them, so a train under way reads as standing on each square it will pass - and standing it on another copy
+        // sweeps it off the rest of its path while it runs.  Here, so that every caller has it: the turn written after an
+        // arrival, the direction follow and the facing menu.
+        if (running.isAlreadyUnderway(train)) return;
+
         if (onto.getCurrentLocomotive() == train) return;
 
         // AND THE TAIL COMES WITH IT (REV9-B1).

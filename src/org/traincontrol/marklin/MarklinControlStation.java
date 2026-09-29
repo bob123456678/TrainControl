@@ -3795,14 +3795,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
             r.disable();
 
             // Update auto layout route selections.
-            // hasAutoLayout, not getAutoLayout() != null: getAutoLayout() CREATES a Layout when none
-            // exists, so the old test was always true and deleting a route on a setup with no autonomy
-            // silently instantiated one - bumping the static layoutVersion along with it.
-            if (this.hasAutoLayout())
+            // Not getAutoLayout() != null: getAutoLayout() CREATES a Layout when none exists, so that test
+            // was always true and deleting a route on a setup with no autonomy silently instantiated one -
+            // bumping the static layoutVersion along with it.  And asked once (RLV12-C5): the sync's thread
+            // and a route edit's reach this, and Unload can clear the model between two questions.
+            final Layout layout = this.getAutoLayoutIfLoaded();
+
+            if (layout != null)
             {
-                if (this.getAutoLayout().getActivateRouteIDs().contains((Integer) r.getId()))
+                if (layout.getActivateRouteIDs().contains((Integer) r.getId()))
                 {
-                    this.getAutoLayout().getActivateRouteIDs().remove((Integer) r.getId());
+                    layout.getActivateRouteIDs().remove((Integer) r.getId());
                 }
             }
             
@@ -3855,13 +3858,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // id changes leaves its old tile pointing at it and its new tile pointing at nothing.
         rebindRouteTiles();
         
-        // Update auto layout route selections
-        if (this.hasAutoLayout())
+        // Update auto layout route selections - asked once, not built (RLV12-C5)
+        final Layout layout = this.getAutoLayoutIfLoaded();
+
+        if (layout != null)
         {
-            if (this.getAutoLayout().getActivateRouteIDs().contains(oldId))
+            if (layout.getActivateRouteIDs().contains(oldId))
             {
-                this.getAutoLayout().getActivateRouteIDs().remove(oldId);
-                this.getAutoLayout().getActivateRouteIDs().add(newId);
+                layout.getActivateRouteIDs().remove(oldId);
+                layout.getActivateRouteIDs().add(newId);
             }
         }
         
@@ -3902,11 +3907,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     public void restoreRouteActivation(int id, boolean wasActivated)
     {
-        if (!wasActivated || !this.hasAutoLayout()) return;
+        // Asked once, not built (RLV12-C5): the sync's thread and a route edit's reach this
+        final Layout layout = wasActivated ? this.getAutoLayoutIfLoaded() : null;
 
-        if (!this.getAutoLayout().getActivateRouteIDs().contains((Integer) id))
+        if (layout == null) return;
+
+        if (!layout.getActivateRouteIDs().contains((Integer) id))
         {
-            this.getAutoLayout().getActivateRouteIDs().add(id);
+            layout.getActivateRouteIDs().add(id);
         }
     }
 

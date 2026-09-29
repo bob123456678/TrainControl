@@ -32,6 +32,9 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 {
     private static final String REFUSAL = "whyAHandSendIsRefused()";
 
+    /** The one gate every sending door asks (Adam, 2026-09-29), which asks REFUSAL for every door but Start. */
+    private static final String GATE = "refusedToSendATrain(false)";
+
     /**
      * The setup's own words, with however many things there are to deal with - and never autonomy's.
      *
@@ -74,13 +77,41 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
     @Test
     public void testBothHandDoorsAskItFirst() throws Exception
     {
-        door("src/org/traincontrol/gui/AutoLocomotiveStatus.java", "private void locAvailPathsMouseClicked(",
-            "the Auto tab's list of paths");
+        // THROUGH ONE DOOR (Adam, 2026-09-29: "can all the checks go through a single door?"): both hand doors send through
+        // `sendATrainByHand`, and neither dispatches past it
+        for (String[] hand : new String[][] {
+            {"src/org/traincontrol/gui/AutoLocomotiveStatus.java", "private void locAvailPathsMouseClicked(",
+                "the Auto tab's list of paths"},
+            {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "private JMenuItem destinationItem(",
+                "the track diagram's right-click destinations"}})
+        {
+            String source = read(hand[0]);
 
-        door("src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "private JMenuItem destinationItem(",
-            "the track diagram's right-click destinations");
+            int start = source.indexOf(hand[1]);
+
+            assertTrue(start >= 0, "cannot find " + hand[1] + " in " + hand[0] + " - if the door moved, move this");
+
+            int end = source.indexOf("\n    }", start);
+
+            String body = source.substring(start, end < 0 ? source.length() : end);
+
+            assertTrue(body.contains("sendATrainByHand("), hand[2] + " does not send through the one door both hand doors"
+                + " share, so what one asks the other can miss (RLV12-B1)");
+
+            assertFalse(body.contains("executePath("), hand[2] + " dispatches a train itself, past the one door");
+        }
+
+        door("src/org/traincontrol/gui/TrainControlUI.java", "void sendATrainByHand(",
+            "the one door both hand doors send through");
 
         String window = read("src/org/traincontrol/gui/TrainControlUI.java");
+
+        int gate = window.indexOf("String whyNoTrainMayBeSent(");
+
+        assertTrue(gate >= 0, "the window has no whyNoTrainMayBeSent for the doors to ask");
+
+        assertTrue(window.substring(gate, window.indexOf("\n    }", gate)).contains(REFUSAL), "the gate every door asks"
+            + " does not ask " + REFUSAL + " - a hand send goes out over a setup Start refuses (MT-263)");
 
         int rule = window.indexOf("public String " + REFUSAL);
 
@@ -117,12 +148,12 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
             assertTrue(start >= 0, "cannot find " + door[0] + " - if the door moved, move this");
 
-            int asked = window.indexOf(REFUSAL, start);
+            int asked = window.indexOf(GATE, start);
             int acts = window.indexOf(door[1], start);
 
             assertTrue(acts > start, "precondition: " + door[2] + " no longer does " + door[1]);
 
-            assertTrue(asked > start && asked < acts, door[2] + " runs trains without asking " + REFUSAL + " - over a setup"
+            assertTrue(asked > start && asked < acts, door[2] + " runs trains without asking " + GATE + " - over a setup"
                 + " Start refuses (TDU-B1)");
         }
     }
@@ -361,28 +392,35 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
     @Test
     public void testBothHandDoorsSayWhenATrainWouldMeetItsOwnTail() throws Exception
     {
-        for (String[] door : new String[][] {
-            {"src/org/traincontrol/gui/AutoLocomotiveStatus.java", "private void locAvailPathsMouseClicked(",
-                "the Auto tab's list of paths"},
-            {"src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java", "private JMenuItem destinationItem(",
-                "the track diagram's right-click destinations"}})
-        {
-            String source = read(door[0]);
+        // ONE PLACE FOR BOTH (Adam, 2026-09-29): the standing rules are `whyThisPathCannotBeTaken`, which the one hand door
+        // asks before the reversal question
+        String window = read("src/org/traincontrol/gui/TrainControlUI.java");
 
-            int start = source.indexOf(door[1]);
+        int rules = window.indexOf("static String whyThisPathCannotBeTaken(");
 
-            assertTrue(start >= 0, "cannot find " + door[1] + " in " + door[0]);
+        assertTrue(rules >= 0, "the standing rules a hand send explains are no longer asked in one place");
 
-            int berth = source.indexOf("whyABerthCannotHoldIt(", start);
-            int ownTail = source.indexOf("whyItWouldMeetItsOwnTail(", start);
-            int question = source.indexOf("ManualReversalPrompt.forJourney(", start);
+        String body = window.substring(rules, window.indexOf("\n    }", rules));
 
-            assertTrue(berth > start && question > berth, "precondition: " + door[2] + " no longer asks the berth rule and"
-                + " then the reversal question");
+        int berth = body.indexOf("whyABerthCannotHoldIt(");
+        int ownTail = body.indexOf("whyItWouldMeetItsOwnTail(");
 
-            assertTrue(ownTail > berth && ownTail < question, door[2] + " does not say when a train would run into its own"
-                + " tail (OB-294) - the send is refused at dispatch with \"check the log\"");
-        }
+        assertTrue(berth > 0, "precondition: the standing rules no longer ask the berth rule");
+
+        assertTrue(ownTail > berth, "the hand doors do not say when a train would run into its own tail (OB-294) - the"
+            + " send is refused at dispatch with \"check the log\"");
+
+        int door = window.indexOf("void sendATrainByHand(");
+
+        assertTrue(door >= 0, "the one hand door has gone");
+
+        String send = window.substring(door, window.indexOf("\n    }", door));
+
+        int asked = send.indexOf("whyThisPathCannotBeTaken(");
+        int question = send.indexOf("ManualReversalPrompt.forJourney(");
+
+        assertTrue(asked > 0 && question > asked, "the one hand door asks the reversal question before the standing"
+            + " rules, or not at all - a question about a journey that is going to be refused reads as answered");
     }
 
     /**
@@ -791,9 +829,9 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
         String body = source.substring(start, end < 0 ? source.length() : end);
 
-        int asked = body.indexOf(REFUSAL);
+        int asked = body.indexOf(GATE);
 
-        assertTrue(asked >= 0, what + " sends a train without asking " + REFUSAL + " - MT-263, \"trains can still be"
+        assertTrue(asked >= 0, what + " sends a train without asking " + GATE + " - MT-263, \"trains can still be"
             + " moved manually ... which should throw an error instead\"");
 
         int question = body.indexOf("ManualReversalPrompt.forJourney(");
@@ -802,7 +840,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
         assertTrue(question < 0 || asked < question, what + " asks which way the train should face before it"
             + " refuses the send - a question about a journey that is going to be refused reads as answered");
 
-        assertTrue(dispatch >= 0 && asked < dispatch, what + " dispatches before it asks " + REFUSAL);
+        assertTrue(dispatch >= 0 && asked < dispatch, what + " dispatches before it asks " + GATE);
     }
 
     private static String said(int errors, int blocking) throws Exception

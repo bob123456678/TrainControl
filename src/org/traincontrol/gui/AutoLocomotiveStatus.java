@@ -1074,148 +1074,19 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
                 if (!layout.isAutoRunning() && !this.paths.isEmpty())
                 {
-                    if (!this.control.getPowerState())
-                    {
-                        JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.powerOnToStart"));
-                        return;
-                    }
-
-                    // NOT WHILE THE SETUP HAS ERRORS, any more than autonomy starts (MT-263; Adam, 2026-09-24: "trains can
-                    // still be moved manually ... which should throw an error instead").  The same question Start is
-                    // refused on, asked at every door that moves a train: here, the diagram's right-click destinations,
-                    // Execute Timetable and Return Home (TDU-B1).
-                    String broken = this.parent.whyAHandSendIsRefused();
-
-                    if (broken != null)
-                    {
-                        JOptionPane.showMessageDialog(this, broken);
-                        return;
-                    }
-
-                    // Ensure there are no automatic routes
-                    /* for (String routeName : this.control.getRouteList())
-                    {
-                        Route r = this.control.getRoute(routeName);
-
-                        if (r.isEnabled())
-                        {
-                            this.control.log(r.toString());
-                            JOptionPane.showMessageDialog(this, "Please first disable all automatic routes.");
-                            return;
-                        }
-                    }*/
-
-                    // Read here, on the EDT, and not again on the thread below.  updateState
-                    // reassigns this list whenever any locomotive arrives or departs - dispatching one
-                    // train recomputes another's paths - so a list that changed between the click and
-                    // the dispatch sent this locomotive to whatever had moved into that index.  The
-                    // movement was valid and locked, which is exactly why nothing reported it.
+                    // Read here, on the EDT, where the operator chose it.  updateState reassigns this list whenever any
+                    // locomotive arrives or departs - dispatching one train recomputes another's paths - so a list that
+                    // changed between the click and the dispatch sent this locomotive to whatever had moved into that index.
+                    // The movement was valid and locked, which is exactly why nothing reported it.
                     if (index >= this.paths.size()) return;
 
                     final List<Edge> chosen = this.paths.get(index);
 
-                    // AND THE ONE REFUSAL THIS DOOR CAN EXPLAIN (MT-262).
-                    //
-                    // Adam, 2026-09-05, on a four-unit train being sent into two units of track:
-                    // **"there is no notice that can help state/debug this."**  A send the railway
-                    // then turns down ended at `autolayout.ui.autoFailedCheckLog` - "check the log".
-                    //
-                    // `Layout.whyTooLongForThisRoute` is the rule rather than a copy: `isPathClear`
-                    // asks the same method, so this door and the railway cannot disagree.  Asked here
-                    // because `this.paths` is a snapshot - the comment above says why that matters -
-                    // and because the sentence is what Adam asked for.
-                    //
-                    // Its twin on the diagram's right-click menu does the same thing in the same
-                    // place.  Two hand-driven doors, one question: `guard-and-affordance-same-question`
-                    // is this file's own history, and the power check three lines up is there because
-                    // one of them had it and the other did not.
-                    String tooLong = org.traincontrol.automation.Layout.whyTooLongForThisRoute(chosen,
-                        locomotive);
-
-                    if (tooLong != null)
-                    {
-                        JOptionPane.showMessageDialog(this, tooLong);
-
-                        return;
-                    }
-
-                    // AND THE OTHER REFUSAL THAT HAS A SENTENCE (PRW-C2).
-                    //
-                    // The berth rule refuses a train whose tail would lie across another road, and
-                    // says so in `errorBerthWouldFoulAnotherRoad` - which reached the log and never
-                    // the operator, because this door pre-checked only the length rule and everything
-                    // else fell through to "check the log".
-                    //
-                    // `error-must-have-a-remedy`: the remedy is in the message, and a door that has
-                    // the message and shows a different one is the case that rule is about.  Same
-                    // method the railway asks, for the reason given just above about the length rule.
-
-                    String foulsARoad =
-                        org.traincontrol.automation.Layout.whyABerthCannotHoldIt(chosen, locomotive);
-
-                    if (foulsARoad != null)
-                    {
-                        JOptionPane.showMessageDialog(this, foulsARoad);
-
-                        return;
-                    }
-
-                    // AND ROUND A LOOP INTO ITS OWN TAIL (OB-294) - the third standing refusal with a sentence, asked
-                    // of the railway for the same reason as the two above.
-                    String ownTail = this.layout.whyItWouldMeetItsOwnTail(chosen, locomotive);
-
-                    if (ownTail != null)
-                    {
-                        JOptionPane.showMessageDialog(this, ownTail);
-
-                        return;
-                    }
-
-                    // ASKED HERE, ON THE EVENT THREAD, BEFORE THE THREAD BELOW STARTS (Adam,
-                    // 2026-09-06): "make it be on departure itself, that way there is no dispatch
-                    // prior to user input."
-                    //
-                    // Both hand-driven doors ask, and both ask now rather than from inside the run.
-                    final org.traincontrol.automation.Layout.ReversalPolicy answered =
-                        org.traincontrol.gui.ManualReversalPrompt.forJourney(
-                            this.parent == null ? null : this.parent.getAutonomySession(),
-                            this, chosen, locomotive);
-
-                    // AND NOT NON-ATOMIC OVER TRACK THIS RUN COULD RELEASE UNDER THE TRAIN (GS-B1).
-                    // A hand dispatch goes through `executePath` like any other, so it releases edges
-                    // behind the train exactly as a timetable run does.
-                    //
-                    // UNCONDITIONAL (VD17-T2): the `!= null` this was written with could not be
-                    // false - the constructor dereferences `parent` - and a guard that cannot fail
-                    // around a safety question is a hole in the rule that holds it, because the rule
-                    // is a source-shape one and cannot see a condition.
-                    this.parent.keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
-
-                    new Thread(() ->
-                    {
-                        boolean success = this.layout.executePath(chosen, locomotive,
-                            locomotive.getPreferredSpeed(), null,
-                            answered);
-
-                        // AND THE GRAPH IS TOLD WHERE EVERY RUN ENDS, WHICH IS NOT HERE (W7-A2).
-                        //
-                        // This door and its twin each carried a copy of the same comment and the same
-                        // `updateVisiblePoints()` call, and the two doors that were NOT swept - the
-                        // timetable button and Return Home - drive trains over the same shared arrival
-                        // path and so end with the same reversals pending.  The per-caller shape is
-                        // what left them out.
-                        //
-                        // `executePath` above announces the run finished when its thread count falls
-                        // to zero, which is this journey returning with nothing else running, and the
-                        // window's single refresh callback tells the graph when it does.  One place,
-                        // all four doors.
-
-                        if (!success)
-                        {
-                            javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.autoFailedCheckLog")));
-                        }
-                        
-                    }).start();
+                    // THROUGH THE ONE DOOR both hand doors send through (Adam, 2026-09-29: "can all the checks go through
+                    // a single door?"): whether a train may be sent at all - the editor, which this copy did not ask
+                    // (RLV12-B1), the setup, the power - this path's standing rules, the reversal question, the
+                    // atomic-routes gate and the dispatch, in that order.
+                    this.parent.sendATrainByHand(this.layout, chosen, locomotive, this);
                 }
             } 
         });

@@ -141,13 +141,9 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         // `executePath` holds the monitor for a whole dispatch, across a CONFIGURE_SLEEP per accessory
         // of the path.  On the event thread that is OB-192 exactly: a frozen interface with trains
         // still running.
-        ALLOWED.put("AutoLocomotiveStatus.java#locAvailPathsMouseClicked",
-            "OFF THE EVENT THREAD: the click handler dispatches the run on a `new Thread`, and the"
-            + " completion is put back on the event thread with invokeLater.");
-
-        ALLOWED.put("LayoutRightclickAutonomyMenu.java#destinationItem",
-            "OFF THE EVENT THREAD: the menu item's action starts a `new Thread` for the dispatch."
-            + "  The menu is built on the event thread; nothing it builds runs the railway there.");
+        ALLOWED.put("TrainControlUI.java#sendATrainByHand",
+            "OFF THE EVENT THREAD: the one door both hand doors send through (2026-09-29) dispatches the run on"
+            + " a `new Thread`, and a refusal is put back on the event thread with invokeLater.");
 
         ALLOWED.put("TrainControlUI.java#executeTimetableActionPerformed",
             "OFF THE EVENT THREAD: the button disables itself on the event thread and then runs the"

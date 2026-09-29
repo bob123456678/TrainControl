@@ -195,6 +195,21 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     }
 
     /**
+     * Whether a setup edit from this menu is refused because trains are running, having said so (Adam, 2026-09-28:
+     * *"There should be no setup edit possible during a run"*; RLV12-C3) - as the setup menu's own items refuse.
+     *
+     * @return true where the edit is refused
+     */
+    private boolean refusedWhileRunning()
+    {
+        if (!ui.isAutonomyBusy()) return false;
+
+        JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
+
+        return true;
+    }
+
+    /**
      * Asks the railway everything the paths section needs, on the caller's thread.
      *
      * MUST NOT BE CALLED ON THE EVENT THREAD, which is what `showFor` exists to arrange and what
@@ -221,7 +236,12 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // options in that case and the section is simply absent, which is what it was.
         if (ui == null || current == null || ui.isLayoutEditorOpen()) return null;
 
-        if (ui.getModel() == null || !ui.getModel().hasAutoLayout()) return null;
+        // ASKED ONCE, NOT BUILT (RLV12-C5): this runs on a worker, and Unload can clear the model between asking whether
+        // there is a railway and asking for it
+        final org.traincontrol.automation.Layout running = ui.getModel() == null ? null
+            : ui.getModel().getAutoLayoutIfLoaded();
+
+        if (running == null) return null;
 
         if (ui.isAutonomyBusy()) return null;
 
@@ -233,10 +253,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         // If we want to view paths, locomotive must not be running.  See the constructor for OB-164,
         // which is why this is a per-locomotive gate rather than isAutoRunning().
-        if (ui.getModel().getAutoLayout().getActiveLocomotives().containsKey(locomotive)) return null;
+        if (running.getActiveLocomotives().containsKey(locomotive)) return null;
 
-        List<List<Edge>> paths = withoutGoingNowhere(ui,
-            ui.getModel().getAutoLayout().getPossiblePaths(locomotive, true));
+        List<List<Edge>> paths = withoutGoingNowhere(ui, running.getPossiblePaths(locomotive, true));
 
         paths.sort((List<Edge> p1, List<Edge> p2) -> Edge.pathToString(p1).compareTo(Edge.pathToString(p2)));
 
@@ -407,7 +426,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                 // time. So a setup in the "fix it" state offered this item live, and pressing it got
                 // a dialog. Two controls on one window, feet apart, disagreeing about one action.
                 //
-                // canStartAutonomy asks refuseAutonomyStartWhileBroken's own number now, which is the
+                // canStartAutonomy asks whyAutonomyStartIsRefused's own number now, which is the
                 // rule this repository has paid for six times in two days: the control that OFFERS an
                 // action asks the predicate the guard asks.
                 // Asked as few times as the answers allow, and this is not tidiness (LD-C6): once where Start
@@ -789,8 +808,14 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
                     {
                         // Edit locomotive
                         menuItem = new JMenuItem(GraphLocAssign.menuLabelFor(current));
-                        menuItem.addActionListener(event -> 
+                        menuItem.addActionListener(event ->
                         {
+                            // NOT WHILE TRAINS RUN (Adam, 2026-09-28: *"There should be no setup edit possible during
+                            // a run"*; RLV12-C3).  Offered only at rest, and clicked after a run began it wrote the
+                            // placement, the facing and the tail into the setup and saved it.  Asked at the click and
+                            // again at OK.
+                            if (refusedWhileRunning()) return;
+
                             // THE SETUP GOES IN WITH IT (REV9-B2): the dialog offers the arrival
                             // side now, and works this square's sides out from the build to do it.
                             GraphLocAssign edit = new GraphLocAssign(ui, current, false,
@@ -813,6 +838,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                             if (dialogResult == JOptionPane.OK_OPTION)
                             {
+                                if (refusedWhileRunning()) return;
+
                                 // AND INTO THE SETUP, which this door never did (REG8-B2).
                                 //
                                 // It committed to the running layout and repainted, so an assignment
@@ -1391,164 +1418,13 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     {
         JMenuItem item = new JMenuItem("-> " + stationName(path.get(path.size() - 1).getEnd()));
 
-        item.addActionListener(event ->
-        {
-            try
-            {
-                // THE POWER FIRST, THEN THE QUESTION (SPEC-C4).
-                //
-                // These were the other way round, so the operator was asked which way the train
-                // should face and only then told the track is dead.  A question about a journey that
-                // is already going to be refused is worse than a slow refusal: it reads as though the
-                // answer was taken and acted on.  Its sibling in the Locomotive commands tab checked
-                // first and this one did not - `guard-and-affordance-same-question` again, one door of
-                // two.
-                //
-                // Cheap and non-blocking, so it belongs on the event thread beside the dialog rather
-                // than inside the worker.
-                //
-                // EVERY MESSAGE HERE BELONGS TO THE MAIN WINDOW, not to this menu (RLU-B2).  By the time an
-                // item's action runs the menu has left its window, so a message parented on it belonged to
-                // Swing's hidden frame - and with Window Always on Top, the default, it opened beneath the
-                // main window and held every window with nothing to show why.
-                if (!ui.getModel().getPowerState())
-                {
-                    JOptionPane.showMessageDialog(ui, I18n.t("autolayout.ui.powerOnToStart"));
-
-                    return;
-                }
-
-                // NOT WHILE THE SETUP HAS ERRORS, any more than autonomy starts (MT-263; Adam, 2026-09-24: "trains can
-                // still be moved manually ... which should throw an error instead").  The question Start is refused
-                // on, asked at every door that moves a train: both hand doors - this one and the Auto tab's list of
-                // paths - and Execute Timetable and Return Home (TDU-B1).
-                String broken = ui.whyAHandSendIsRefused();
-
-                if (broken != null)
-                {
-                    JOptionPane.showMessageDialog(ui, broken);
-
-                    return;
-                }
-
-                // AND THE ONE REFUSAL THIS DOOR CAN EXPLAIN (MT-262).
-                //
-                // Adam, 2026-09-05, on a four-unit train being sent into two units of track: **"there
-                // is no notice that can help state/debug this."**  A send the railway then turns down
-                // ended at `autolayout.ui.autoFailedCheckLog` - "check the log" - which is the least
-                // useful thing a dialog can say about a refusal the operator could act on.
-                //
-                // `Layout.whyTooLongForThisRoute` is the rule, not a copy of it: `isPathClear` asks the
-                // same method, so this cannot come to a different answer than the railway does.  Asked
-                // HERE because the list this item was built from is a snapshot - the menu is assembled
-                // once and stays open while trains move and lengths are edited - and because the
-                // sentence is what Adam asked for.
-                //
-                // The STANDING rules only, deliberately.  Everything else `isPathClear` asks is
-                // about this minute and clears itself; refusing here on a busy sensor would turn a
-                // momentary block into a dialog.
-                String tooLong = org.traincontrol.automation.Layout.whyTooLongForThisRoute(path,
-                    locomotive);
-
-                if (tooLong != null)
-                {
-                    JOptionPane.showMessageDialog(ui, tooLong);
-
-                    return;
-                }
-
-                // AND THE BERTH RULE, WHICH IS ONE OF THEM (PRW-C2).
-                //
-                // It refuses a train whose tail would lie across another road at a parking berth, and
-                // it has a sentence of its own - `errorBerthWouldFoulAnotherRoad` - which reached the
-                // log and never the operator, because only the length rule was asked here and
-                // everything else fell through to "check the log".
-                //
-                // It belongs by the test the paragraph above sets: a berth that cannot hold this
-                // train cannot hold it in a minute either.  Length and geometry do not clear
-                // themselves, and those are the two standing refusals this door can explain.
-                //
-                // `error-must-have-a-remedy` is the rule being followed - the remedy is in the
-                // message - and `guard-and-affordance-same-question` is why both hand doors ask it.
-                String foulsARoad =
-                    org.traincontrol.automation.Layout.whyABerthCannotHoldIt(path, locomotive);
-
-                if (foulsARoad != null)
-                {
-                    JOptionPane.showMessageDialog(ui, foulsARoad);
-
-                    return;
-                }
-
-                // AND ROUND A LOOP INTO ITS OWN TAIL (OB-294), by the same test: the loop is not shorter in a minute.
-                String ownTail = ui.getModel().getAutoLayout().whyItWouldMeetItsOwnTail(path, locomotive);
-
-                if (ownTail != null)
-                {
-                    JOptionPane.showMessageDialog(ui, ownTail);
-
-                    return;
-                }
-
-                // ASKED HERE, ON THE EVENT THREAD, BEFORE ANYTHING IS DISPATCHED (Adam,
-                // 2026-09-06): "make it be on departure itself, that way there is no dispatch prior
-                // to user input."
-                //
-                // The train is standing where the operator left it, so there is nothing to stop and
-                // nothing already reserved.  The answer is then carried into the run.
-                final org.traincontrol.automation.Layout.ReversalPolicy answered =
-                    org.traincontrol.gui.ManualReversalPrompt.forJourney(session,
-                        javax.swing.SwingUtilities.getWindowAncestor(this), path, locomotive);
-
-                // AND THE GATE, as at the other hand door and the three that start a run (GS-B1).
-                // Unconditional, for the reason the other hand door states (VD17-T2): the same `ui`
-                // is dereferenced at the dispatch below, so a null check here guards nothing and
-                // hides the call from the rule that holds it.
-                ui.keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
-
-                // TODO there is commonality with AutoLocomotiveStatus - reuse code
-                new Thread(() ->
-                {
-                    {
-                        boolean success = ui.getModel().getAutoLayout().executePath(
-                            path, locomotive, locomotive.getPreferredSpeed(), null,
-                        // ASKED, not assumed (Adam, 2026-09-06).
-                        //
-                        // "In manual mode, if the user decides to send a train to a 'may reverse'
-                        // point, explicitly ask the user if the train should change direction."
-                        //
-                        // The intent lives in the leg AFTER this one - the train may be going there to
-                        // back into a berth next time, or may simply be passing - so nothing here can
-                        // work it out.  A true terminus is not asked about: the train has run out of
-                        // track and the policy is never consulted there.
-                        answered);
-
-                        // AND THE GRAPH IS TOLD WHERE EVERY RUN ENDS, WHICH IS NOT HERE (W7-A2).
-                        //
-                        // This door and its twin each carried a copy of the same comment and the same
-                        // `updateVisiblePoints()` call, and the two doors that were NOT swept - the
-                        // timetable button and Return Home - drive trains over the same shared arrival
-                        // path and so end with the same reversals pending.  The per-caller shape is
-                        // what left them out.
-                        //
-                        // `executePath` above announces the run finished when its thread count falls
-                        // to zero, which is this journey returning with nothing else running, and the
-                        // window's single refresh callback tells the graph when it does.  One place,
-                        // all four doors.
-
-                        if (!success)
-                        {
-                            javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                                ui, I18n.t("autolayout.ui.autoFailedCheckLog")));
-                        }
-                    }
-                }).start();
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(ui, e.getMessage());
-            }
-        });
+        // THROUGH THE ONE DOOR both hand doors send through (Adam, 2026-09-29: "can all the checks go through a single
+        // door?"): whether a train may be sent at all - the editor, which this copy did not ask at the click (RLV12-B1), the
+        // setup, the power - this path's standing rules, the reversal question, the atomic-routes gate and the dispatch.
+        // Every message there belongs to the main window, not to this menu, which has left its window by the time an item's
+        // action runs (RLU-B2).
+        item.addActionListener(event -> ui.sendATrainByHand(ui.getModel().getAutoLayout(), path, locomotive,
+            javax.swing.SwingUtilities.getWindowAncestor(this)));
 
         return item;
     }

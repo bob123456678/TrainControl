@@ -401,6 +401,12 @@ JAVA_FLAGS="${TC_JAVA_FLAGS:--Dtraincontrol.anyReceivePort=true}"
 
 JAVA_FLAGS="$JAVA_FLAGS ${TC_JAVA_HEAP:--Xmx512m}"
 
+# AND OUT, NOT STUCK, WHEN IT RUNS OUT (2026-09-29).  A class that filled its heap - every window a test opens keeps its
+# threads - lost TestNG's main thread in the report, with the error on the stderr the application swallows and no summary
+# printed; the JVM then sat on its pool threads until the class cap, an hour.  Exiting on the error ends it at once, and
+# the branch that reads a missing summary says it ran out.
+JAVA_FLAGS="$JAVA_FLAGS -XX:+ExitOnOutOfMemoryError"
+
 # ------------------------------------------------------------------------------------------------
 # THIS RUN'S OWN STATE: copies of the locomotive database and the UI state, and a preference node of
 # its own.
@@ -481,6 +487,9 @@ do
     # that leaves something running is not a green class, whatever its summary says.
     RUN_OUT="$S/one-run.txt"
 
+    # NOT THE LAST RUN'S RESULTS, which the check of the methods asked for reads below (RLV12-C8)
+    rm -f "$S/oneout/testng-results.xml"
+
     "$JAVA" $JAVA_FLAGS -Dtraincontrol.batteryRun="$RUN_ID" \
         -cp "$BUILD;$CP" org.testng.TestNG $TARGS -d "$S/oneout" > "$RUN_OUT" 2>&1 &
 
@@ -527,6 +536,9 @@ do
         echo "*** $T HUNG - $HUNG; this run's JVMs were ended ***"
 
         BAD=$((BAD+1))
+
+        # ONCE, NOT TWICE (2026-09-29): a class that hung before its summary was counted again below as printing none
+        continue
     fi
 
     grep -E "Total tests run|Configuration Failures|FAILED|java.lang.Assertion|at regression|at core" \
@@ -545,6 +557,9 @@ do
         if grep -qE "Could not reserve enough space|Unable to allocate.*heap" "$S/one-run.txt"
         then
             echo "*** $T DID NOT RUN - no heap (machine busy, rerun)"
+        elif grep -q "OutOfMemoryError" "$S/one-run.txt"
+        then
+            echo "*** $T RAN OUT OF MEMORY - its heap is ${TC_JAVA_HEAP:--Xmx512m}; split the class, or raise TC_JAVA_HEAP ***"
         else
             echo "*** $T PRINTED NO SUMMARY - it did not run.  Last lines:"
             tail -5 "$S/one-run.txt" | sed "s/^/    /"
@@ -581,6 +596,33 @@ do
 
         continue
     fi
+
+    # EVERY METHOD ASKED FOR RAN (RLV12-C8).  TestNG's -methods drops a name that matches no method without a word, and
+    # the summary counts only what ran - so a list with one misspelled name ran the rest and read green, and a mutation
+    # aimed at the misspelled claim read as survived.  Each name is looked for in the results TestNG wrote for this run.
+    case "$T" in
+        *:*)
+            missing=""
+
+            for m in $(echo "${T#*:}" | tr ',' ' ')
+            do
+                if ! grep -F "signature=\"${m##*.}(" "$S/oneout/testng-results.xml" 2>/dev/null \
+                    | grep -qF "instance:${m%.*}@"
+                then
+                    missing="$missing ${m}"
+                fi
+            done
+
+            if [ -n "$missing" ]
+            then
+                echo "*** $T DID NOT RUN EVERY METHOD ASKED FOR - no result for:$missing ***"
+
+                BAD=$((BAD+1))
+
+                continue
+            fi
+            ;;
+    esac
 
     # GREEN IS NOT "no failures" (the other half of the same omission, V33-B1).
     #

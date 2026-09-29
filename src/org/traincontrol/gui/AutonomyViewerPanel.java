@@ -1226,9 +1226,12 @@ public class AutonomyViewerPanel extends JPanel
 
             // AN OLD FILE'S QUESTION SAYS WHAT COUNTS AS NOT SET (RLA3-B1; Adam, 2026-09-28: keep the gap-fill and say so).
             // A default is stored as nothing, so a setting returned to its default, a home taken off or an emptied
-            // exclusion list reads as a gap and takes the file's - which "nothing already set is changed" did not say.
+            // exclusion list reads as a gap and takes the file's - which "nothing already set is changed" did not say.  And
+            // the one setting that does not: once the configuration has been loaded, every station records its maximum, no
+            // limit included, so the file's maximum is kept out (RLV12-C6).
             String asked = format != AutonomySession.ImportFormat.LEGACY_GRAPH ? I18n.f(question, name.trim())
-                : I18n.f(question, name.trim()) + "  " + I18n.t("autosetup.ui.importTakesTheFilesForDefaults");
+                : I18n.f(question, name.trim()) + "  " + I18n.t("autosetup.ui.importTakesTheFilesForDefaults")
+                    + "  " + I18n.f("autosetup.ui.importKeepsTheStationMaximums", name.trim());
 
             int replace = JOptionPane.showOptionDialog(ui, asked,
                 I18n.t("autosetup.ui.title"), JOptionPane.YES_NO_OPTION,

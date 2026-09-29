@@ -2006,7 +2006,11 @@ public final class LayoutLabel extends JLabel
     {
         if (accessory == null || tcUI == null || tcUI.getModel() == null) return false;
 
-        if (!tcUI.getModel().hasAutoLayout() || tcUI.getModel().getAutoLayout() == null) return false;
+        // ASKED ONCE, NOT BUILT (RLV12-C5): this is the switching thread, and Unload can clear the model between asking
+        // whether there is a railway and asking for it
+        final org.traincontrol.automation.Layout running = tcUI.getModel().getAutoLayoutIfLoaded();
+
+        if (running == null) return false;
 
         // AND ONLY WHILE AUTONOMY IS RUNNING, which is what the other two doors ask (REL-A1).
         //
@@ -2030,6 +2034,6 @@ public final class LayoutLabel extends JLabel
         // A tile TOGGLES, so the click is about to command green exactly when the accessory is not
         // straight now.  The rest of the question - and the reason the aspect is half of it - lives on
         // `Layout.clearsProtection`, which the switch keyboard asks too (V31-C2).
-        return tcUI.getModel().getAutoLayout().clearsProtection(accessory, !accessory.isStraight());
+        return running.clearsProtection(accessory, !accessory.isStraight());
     }
 }

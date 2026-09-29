@@ -40,7 +40,7 @@ import org.testng.annotations.Test;
  * for ten minutes on 2026-09-09. Said here rather than implied, so nobody reads this class as more
  * than it is.
  *
- * MUTATION: delete the `refuseWhileEditorOpen()` call from `requestReturnToHome` - the door
+ * MUTATION: delete the `refusedToSendATrain(` call from `requestReturnToHome` - the door
  * `38ccbfc8` was filed for - and the first test fails, naming it.
  *
  * @author Adam
@@ -54,6 +54,12 @@ public class testTheRefusalsAreAskedAtTheDoors
     private static final String AUTONOMY = "refuseWhileAutonomyRunning(";
 
     /**
+     * The one gate every door that sends a train asks since 2026-09-29 (Adam: *"can all the checks go through a single
+     * door?"*) - the editor, the setup and the power, in `whyNoTrainMayBeSent`.
+     */
+    private static final String GATE = "refusedToSendATrain(";
+
+    /**
      * Every door, the refusal it must ask for, and why that door needs it.
      *
      * A named list rather than a count, following this suite's convention: a count says something is
@@ -63,9 +69,9 @@ public class testTheRefusalsAreAskedAtTheDoors
     private static final String[][] DOORS =
     {
         // THE FOUR 38ccbfc8 WAS FILED FOR.
-        {"executeTimetableActionPerformed", EDITOR,
+        {"executeTimetableActionPerformed", GATE,
             "a timetable starts trains, and an editor holds the diagram they would run on"},
-        {"requestReturnToHome", EDITOR,
+        {"requestReturnToHome", GATE,
             "Return Home is a timetable by another name and starts trains the same way"},
         {"switchCSLayoutMenuItemActionPerformed", AUTONOMY + "|" + EDITOR,
             "it replaces the whole diagram - during a run the capture is skipped BECAUSE trains are "
@@ -74,8 +80,11 @@ public class testTheRefusalsAreAskedAtTheDoors
             "swapping the layout folder replaces the diagram, for the same reason"},
 
         // AND THE REST, which were longhand at four doors before the two methods collected them.
-        {"startAutonomyActionPerformed", EDITOR,
+        {"startAutonomyActionPerformed", GATE,
             "starting autonomy against a diagram somebody is still editing"},
+        {"sendATrainByHand", GATE,
+            "the one door both hand doors send through - the Auto tab's list and the diagram's destinations; the Auto"
+            + " tab's own copy never asked about an editor (RLV12-B1)"},
         {"addLocomotiveMenuItemActionPerformed", AUTONOMY,
             "MT-141: no modification to the locomotive database while the layout is running"},
         {"syncFullLocStateMenuItemActionPerformed", AUTONOMY,
@@ -140,6 +149,39 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
+     * The one gate asks what every door that sends a train used to ask for itself: the editor, the setup and the power
+     * (Adam, 2026-09-29) - and the hand doors in the other two files send through the one door that asks it.
+     *
+     * MUTATION: take any of the three out of `whyNoTrainMayBeSent`, or send from a hand door past the one door, and this
+     * fails.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheOneGateAsksTheEditorTheSetupAndThePower() throws Exception
+    {
+        String gate = bodyOf(withoutComments(read(WINDOW)), "whyNoTrainMayBeSent");
+
+        assertFalse(gate.isEmpty(), "cannot find whyNoTrainMayBeSent in " + WINDOW);
+
+        for (String asked : new String[] {"isLayoutEditorOpen()", "whyAutonomyStartIsRefused()", "whyAHandSendIsRefused()",
+            "getPowerState()"})
+        {
+            assertTrue(gate.contains(asked), "the one gate every sending door asks no longer asks " + asked);
+        }
+
+        for (String hand : new String[] {"src/org/traincontrol/gui/AutoLocomotiveStatus.java",
+            "src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java"})
+        {
+            String source = withoutComments(read(hand));
+
+            assertTrue(source.contains("sendATrainByHand("), hand + " no longer sends through the one door");
+
+            assertFalse(source.contains("executePath("), hand + " dispatches a train itself, past the one door");
+        }
+    }
+
+    /**
      * And no door has quietly appeared that asks nothing.
      *
      * **A ratchet, and it runs LAST on purpose** (REG9-B1): a staleness detector that pre-empts a
@@ -156,7 +198,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         String source = withoutComments(read(WINDOW));
 
         // One of each occurrence is the declaration of the method itself.
-        int asked = occurrences(source, EDITOR) - 1 + occurrences(source, AUTONOMY) - 1;
+        int asked = occurrences(source, EDITOR) - 1 + occurrences(source, AUTONOMY) - 1 + occurrences(source, GATE) - 1;
 
         // COUNTED INSIDE THE DECLARED DOORS, not from the list's own arithmetic.
         //
@@ -172,7 +214,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         {
             String body = bodyOf(source, door[0]);
 
-            inDeclaredDoors += occurrences(body, EDITOR) + occurrences(body, AUTONOMY);
+            inDeclaredDoors += occurrences(body, EDITOR) + occurrences(body, AUTONOMY) + occurrences(body, GATE);
         }
 
         assertEquals(inDeclaredDoors, asked,

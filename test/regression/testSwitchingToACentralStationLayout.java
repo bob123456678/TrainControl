@@ -937,6 +937,9 @@ public class testSwitchingToACentralStationLayout
         // the run's own copy of the data, opening a sandbox first.
         // 64 the same day: regression.testASetupMovesToAOnePageLayout imports his setup onto MT-380's one-page
         // layout through the Autonomy menu, opening a sandbox first.
+        // Still 64 on 2026-09-29: regression.testNoSetupEditDuringARun, which took RLV12's window claims out of the import
+        // door's class when that ran out of memory with them, builds its windows through that class's openTheWindow - seen
+        // here once, in that class - and each of its claims opens a sandbox first.
         assertEquals(checked, 64,
             checked + " test classes were found to build a window, not the 64 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
