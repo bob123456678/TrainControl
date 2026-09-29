@@ -309,7 +309,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             // They are not counted towards the ellipsis either: a square somebody switched off is
             // not a destination missing from this list, it is one they went out of their way to take
             // out of use, and the autonomy tab lists it.
-            if (!ui.getModel().getAutoLayout().isOfferableToOperator(end, locomotive))
+            if (!running.isOfferableToOperator(end, locomotive))
             {
                 continue;
             }
@@ -321,7 +321,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             // is left is a property of the square - a reversing point, a square marked as not an
             // automatic destination - and the square form is the same predicate the "no available
             // paths" window and the diagram's captions ask, which is what that javadoc is for.
-            if (ui.getModel().getAutoLayout().isChoosableByAutonomy(end))
+            if (running.isChoosableByAutonomy(end))
             {
                 shownPaths.add(path);
             }

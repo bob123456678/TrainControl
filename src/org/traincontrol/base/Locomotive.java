@@ -663,11 +663,25 @@ public abstract class Locomotive
      */
     public Locomotive waitForSpeedAtOrAbove(int threshold)
     {
+        return waitForSpeedAtOrAbove(threshold, null);
+    }
+
+    /**
+     * The same, given up once `abandon` says so (RSA2-C2) - asked whenever the wait wakes, which a change of speed and a
+     * retirement (`wakeEveryWait`) both do.  A turn's resume passes "a stop ordered, or my railway gone": a Yes landing
+     * between the resume and this wait left it waiting for a speed only the next driver would give.
+     *
+     * @param threshold the speed to reach
+     * @param abandon when to stop waiting, or null never to
+     * @return this
+     */
+    public Locomotive waitForSpeedAtOrAbove(int threshold, java.util.function.BooleanSupplier abandon)
+    {
         boolean interrupted = false;
 
         synchronized(speedMonitor)
         {        
-            while (this.getSpeed() < threshold)
+            while (this.getSpeed() < threshold && !givenUp(abandon))
             {
                 try
                 {
@@ -786,14 +800,19 @@ public abstract class Locomotive
     }
 
     /**
-     * Wakes every thread waiting on a sensor, so each asks again whether to go on waiting (RSA-B1).  Called when a
-     * railway is retired; a wait with nothing to give up on goes back to waiting.
+     * Wakes every thread waiting on a sensor or a speed, so each asks again whether to go on waiting (RSA-B1,
+     * RSA2-C2).  Called when a railway is retired; a wait with nothing to give up on goes back to waiting.
      */
     public static void wakeEveryWait()
     {
         synchronized (monitor)
         {
             monitor.notifyAll();
+        }
+
+        synchronized (speedMonitor)
+        {
+            speedMonitor.notifyAll();
         }
     }
 

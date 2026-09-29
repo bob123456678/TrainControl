@@ -1689,6 +1689,10 @@ public class testATrainIsDispatchedOnce
 
         final Layout rail = aLine(s, "HA", "HB", "HC", "HD", "HE");
 
+        final List<String> logged = java.util.Collections.synchronizedList(new ArrayList<>());
+
+        final java.util.logging.Handler tap = aTapOn(logged);
+
         try
         {
             y.setSpeed(0);
@@ -1717,9 +1721,16 @@ public class testATrainIsDispatchedOnce
 
             assertEquals(rail.getPoint("HA").getCurrentLocomotive(), y, "the train given back is not standing where it"
                 + " was (RSA-C1)");
+
+            // AND SAYS SO (RSA2-C8): a hand send answers the false with "check log"
+            assertTrue(logged.contains(org.traincontrol.util.I18n.f("autolayout.log.notSentAfterTheStop", y.getName())),
+                "a claim given back after the operator's Yes said nothing in the log (RSA2-C8): " + logged);
         }
         finally
         {
+            java.util.logging.Logger.getLogger(org.traincontrol.marklin.MarklinControlStation.class.getName())
+                .removeHandler(tap);
+
             letGo(s, y, claiming);
         }
     }

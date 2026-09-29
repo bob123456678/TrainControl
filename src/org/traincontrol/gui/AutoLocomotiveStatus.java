@@ -339,7 +339,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 this.locAvailPaths.setVisible(false);
             }
             // Layout is in auto mode but loc is not running - show status message and hide the list
-            else if (layout.isAutoRunning())
+            // AND WHILE A STAGING FLOW OWNS THE RAILWAY (RSA2-C3): the double-click sends nothing then, so nothing is
+            // offered to double-click
+            else if (layout.isAutoRunning() || layout.isStagingInProgress())
             {
                 if (layout.getLocomotiveLocation(locomotive) != null)
                 {

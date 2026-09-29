@@ -2161,19 +2161,80 @@ public class Layout
     /**
      * Stops every train where it is, now: the reload's and Unload's Yes (RSA-C1).
      *
-     * `stopLocomotives` is the graceful stop, which lets every journey finish.  This one counts a stop first - every
-     * journey dispatched before it reads the count before each speed it writes and again after (`drive`) - so a train
-     * still claiming its route is given it back unrun, one reaching its next sensor is not given its speed back, and one
-     * set off at the same instant is put back to a stand.  Then autonomy stops choosing, and every train under way stops.
-     * Not `synchronized`: the event thread calls it, and nothing there may wait on this railway's monitor.
+     * `stopLocomotives` is the graceful stop, which lets every journey finish.  This one also counts a stop, which every
+     * journey carries from where it was chosen and asks before and after each speed it writes (`drive`) - so a journey
+     * chosen before it sends nothing, a train still claiming its route is given it back unrun, one reaching its next
+     * sensor is not given its speed back, and one set off at the same instant is put back to a stand.  Then every train
+     * under way stops.
+     *
+     * **`running` cleared first and the stop counted second, under the lock a timetable takes to start** (RSA2-C1,
+     * RSA2-C2): autonomy asks `running` once its choice is made, so a thread that reads the count after it has been
+     * counted reads `running` cleared; and a timetable that sets `running` asks the count under the same lock, so the
+     * two cannot interleave.  Not `synchronized` on the railway: the event thread calls it, and nothing there may wait
+     * on this railway's monitor.
      */
     public void stopEveryTrainWhereItIs()
     {
-        this.stopsOrdered.incrementAndGet();
+        synchronized (this.activeLocomotives)
+        {
+            stopLocomotives();
 
-        stopLocomotives();
+            this.stopsOrdered.incrementAndGet();
+        }
 
         for (Locomotive active : this.activeLocomotives.keySet()) active.setSpeed(0);
+    }
+
+    /**
+     * How many times the operator has stopped every train where it stood - read where a journey is chosen, and carried
+     * to it (RSA2-C2): a journey chosen before a stop sends nothing after it.
+     *
+     * @return the stops counted so far
+     */
+    public int stopsOrdered()
+    {
+        return this.stopsOrdered.get();
+    }
+
+    /**
+     * The train whose journey is still waiting on this sensor, other than the one asking, or null (RSA2-B1).  A journey
+     * under way waits on every sensor of its route it has not reached, and one still claiming its route on all of them;
+     * the first time the sensor is occupied ends every such wait, whichever train occupies it.
+     *
+     * @param s88 the sensor
+     * @param asking the train whose route is being asked about
+     * @return the train another route over this sensor would wake, or null
+     */
+    private Locomotive whoseJourneyAwaits(String s88, Locomotive asking)
+    {
+        if (s88 == null) return null;
+
+        for (Map.Entry<Locomotive, List<Edge>> journey : this.activeLocomotives.entrySet())
+        {
+            if (journey.getKey() == asking) continue;
+
+            List<Point> reached = this.locomotiveMilestones.get(journey.getKey());
+
+            for (Edge e : journey.getValue())
+            {
+                if (s88.equals(e.getEnd().getS88()) && (reached == null || !reached.contains(e.getEnd())))
+                {
+                    return journey.getKey();
+                }
+            }
+        }
+
+        for (Map.Entry<Locomotive, List<Edge>> claim : this.takingPath.entrySet())
+        {
+            if (claim.getKey() == asking) continue;
+
+            for (Edge e : claim.getValue())
+            {
+                if (s88.equals(e.getEnd().getS88())) return claim.getKey();
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -2222,6 +2283,9 @@ public class Layout
         }
 
         this.takingPath.remove(loc);
+
+        // AND SAYS SO (RSA2-C8): a hand send answers a false with "check log"
+        this.control.logf("autolayout.log.notSentAfterTheStop", loc.getName());
     }
 
     /**
@@ -2841,6 +2905,22 @@ public class Layout
             {
                 logPathError(loc, path, logFailures,
                     I18n.f("autolayout.errorFeedbackNotClear", e.getEnd().getS88())
+                );
+                return false;
+            }
+
+            // NOR A SENSOR ANOTHER TRAIN'S JOURNEY IS STILL WAITING ON (RSA2-B1).  A journey waits on every sensor of
+            // its route it has not reached, and the first time the sensor is occupied ends the wait, whichever train
+            // occupies it.  Two places on one sensor - a feedback double curve's two arcs, two pieces of metal (Adam,
+            // OB-238) with one contact - were kept apart by nothing: two trains were sent to them at once, and the first
+            // arrival ended both journeys, recording the second as arrived with its route handed back while it was
+            // still on it.
+            Locomotive awaiting = whoseJourneyAwaits(e.getEnd().getS88(), loc);
+
+            if (awaiting != null)
+            {
+                logPathError(loc, path, logFailures,
+                    I18n.f("autolayout.errorFeedbackAwaitedByAnotherTrain", e.getEnd().getS88(), awaiting.getName())
                 );
                 return false;
             }
@@ -4940,6 +5020,10 @@ public class Layout
             {
             while(running)
             {                
+                // THE STOPS COUNTED BEFORE THE CHOICE, carried to the journey (RSA2-C2): `running` is asked again once
+                // the choice is made, and a Yes landing after that question is one the journey still obeys
+                final int stopsAtChoice = this.stopsOrdered.get();
+
                 List<Edge> path = this.pickPath(loc);
 
                 // AND STILL RUNNING once the choice is made (RSA-C1): a choice takes the railway's monitor, which a
@@ -4954,7 +5038,7 @@ public class Layout
                     // Logged and carried on instead: the next pass picks a fresh path.
                     try
                     {
-                        this.executePath(path, loc, speed, null);
+                        this.executePath(path, loc, speed, null, ALWAYS_REVERSE, stopsAtChoice);
                     }
                     catch (Throwable e)
                     {
@@ -6599,13 +6683,26 @@ public class Layout
      */
     public boolean executeTimetable()
     {
+        return executeTimetable(this.stopsOrdered.get());
+    }
+
+    /**
+     * The same, with the stops counted where the run was chosen (RSA2-C1): Return Home counts them at its press and
+     * plans before it runs, so the reload's Yes while it plans - nothing yet moving - is answered by starting nothing,
+     * whether the load that asked it then succeeds or is refused.
+     *
+     * @param stopsAtChoice `stopsOrdered()` as read where the run was chosen
+     * @return as `executeTimetable()`; true, having started nothing, after a stop ordered since
+     */
+    public boolean executeTimetable(int stopsAtChoice)
+    {
         // The flag is set here rather than inside, so that nothing thrown from the run can leave it
         // set - which would silently disable timetable capture for the rest of the session.
         this.timetableExecuting = true;
 
         try
         {
-            return executeTimetableInternal();
+            return executeTimetableInternal(stopsAtChoice);
         }
         finally
         {
@@ -6613,7 +6710,7 @@ public class Layout
         }
     }
 
-    private boolean executeTimetableInternal()
+    private boolean executeTimetableInternal(int stopsAtChoice)
     {
         // Returning after setting running would leave it set with nothing to clear it: no entry means
         // no thread, and isRunning() stayed true for the session - blocking autonomy and locomotive
@@ -6626,6 +6723,10 @@ public class Layout
 
         synchronized (this.activeLocomotives)
         {
+            // NOT AFTER A STOP ORDERED SINCE THE RUN WAS CHOSEN (RSA2-C1), asked under the lock the Yes takes to clear
+            // `running` and count its stop, so the two cannot interleave
+            if (this.stopsOrdered.get() != stopsAtChoice) return true;
+
             this.running = true;
         }
 
@@ -6713,7 +6814,8 @@ public class Layout
                             // When this entry first refused, so a parallel run can give up on time
                             long refusingSince = 0;
 
-                            while (this.running && !this.executePath(ttp.getPath(), ttp.getLoc(), ttp.getLoc().getPreferredSpeed(), ttp))
+                            while (this.running && !this.executePath(ttp.getPath(), ttp.getLoc(),
+                                ttp.getLoc().getPreferredSpeed(), ttp, ALWAYS_REVERSE, stopsAtChoice))
                             {
                                 // A SPEED IS NOT A BUSY TRACK (SG-A5).
                                 //
@@ -8603,6 +8705,26 @@ public class Layout
     public boolean executePath(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp,
         ReversalPolicy reversals)
     {
+        return executePath(path, loc, speed, ttp, reversals, -1);
+    }
+
+    /**
+     * The same, carrying the stops counted where the journey was chosen (RSA2-C2): before autonomy's choice, at a hand
+     * send's click, at a timetable's start or Return Home's press.  A stop ordered since sends nothing, where a count
+     * read only when the journey begins let a thread held between its choice and its dispatch send its train after the
+     * operator's Yes.
+     *
+     * @param path the route
+     * @param loc the train
+     * @param speed how fast
+     * @param ttp the timetable entry, or null
+     * @param reversals asked at each may-reverse point on the way; see ReversalPolicy
+     * @param stopsAtChoice `stopsOrdered()` as read where the journey was chosen, or -1 to read it now
+     * @return whether the train arrived
+     */
+    public boolean executePath(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp,
+        ReversalPolicy reversals, int stopsAtChoice)
+    {
         // A dispatch is a train under way, however it was asked for.
         //
         // runLocomotive counts autonomy's driving threads so that a locomotive between one path and the
@@ -8641,7 +8763,7 @@ public class Layout
         {
             try
             {
-                return executePathInternal(path, loc, speed, ttp, reversals);
+                return executePathInternal(path, loc, speed, ttp, reversals, stopsAtChoice);
             }
             catch (RuntimeException e)
             {
@@ -8852,11 +8974,20 @@ public class Layout
      * @return 
      */
     private boolean executePathInternal(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp,
-        ReversalPolicy reversals)
+        ReversalPolicy reversals, int stopsAtChoice)
     {    
-        // THE STOPS ORDERED WHEN THIS JOURNEY WAS DISPATCHED (RSA-C1), read first - before the claim, which can wait
-        // seconds behind another train's switches - so a stop ordered while it waits is one this journey obeys.
-        final int stopsAtDispatch = this.stopsOrdered.get();
+        // THE STOPS COUNTED WHERE THIS JOURNEY WAS CHOSEN (RSA-C1, RSA2-C2) - before autonomy's choice, at a hand
+        // send's click, at a timetable's start - or, for a caller that chose nothing, now: before the claim, which can
+        // wait seconds behind another train's switches.  A stop ordered since is one this journey obeys.
+        final int stopsAtDispatch = stopsAtChoice < 0 ? this.stopsOrdered.get() : stopsAtChoice;
+
+        // AND ONE ORDERED ALREADY SENDS NOTHING, and says so (RSA2-C2, RSA2-C8)
+        if (this.stopsOrdered.get() != stopsAtDispatch)
+        {
+            this.control.logf("autolayout.log.notSentAfterTheStop", loc.getName());
+
+            return false;
+        }
 
         // Sanity check
         if (!this.isValid())
@@ -9208,7 +9339,13 @@ public class Layout
                         (double) speed * current.getSpeedMultiplier()), 100);
 
                     // Not after a stop ordered since dispatch (RSA-C1) - and then not waited for either
-                    if (drive(loc, resume, stopsAtDispatch)) loc.waitForSpeedAtOrAbove(resume);
+                    if (drive(loc, resume, stopsAtDispatch))
+                    {
+                        // GIVEN UP on a stop ordered since, or a retired railway (RSA2-C2): a Yes landing between the
+                        // write and this wait leaves the speed where only the next driver would raise it
+                        loc.waitForSpeedAtOrAbove(resume, () -> this.stopsOrdered.get() != stopsAtDispatch
+                            || !this.isCurrentLayout());
+                    }
                 }
                 
                 // We can also clear the edges dynamically 
@@ -9431,9 +9568,11 @@ public class Layout
                 // Stop before abandoning the path.  The layout that owned this run has been retired,
                 // and stopLocomotives() only clears the dispatch flag - it never commands anything, so
                 // returning here would leave a locomotive running between stations with nothing left
-                // that will ever stop it, and a new graph that knows nothing about it.  It is standing
-                // at a known milestone point right now, which is exactly where a graceful stop would
-                // have put it.
+                // that will ever stop it, and a new graph that knows nothing about it.  Two ways in (RSA2-C8):
+                // a wait given up at the retirement (RSA-B1) - the usual one, the train stopped between two
+                // sensors by the reload's or Unload's Yes, which the stop below repeats - and a sensor reached
+                // after the retirement, the train standing at a known milestone point, as a graceful stop
+                // would have put it.
                 loc.setSpeed(0);
 
                 if (control.isDebug())

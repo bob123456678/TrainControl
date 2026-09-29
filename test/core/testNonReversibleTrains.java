@@ -982,7 +982,11 @@ public class testNonReversibleTrains
         //
         // Written through `drive` since RSA-C1, which leaves a stop ordered since dispatch standing - and then the
         // wait for the speed is not made either.
-        assertTrue(flat.contains("if (drive(loc, resume, stopsAtDispatch)) loc.waitForSpeedAtOrAbove(resume);"),
+        //
+        // And its wait for the speed gives up on a stop or a retirement since RSA2-C2.
+        assertTrue(flat.contains("if (drive(loc, resume, stopsAtDispatch)) {")
+            && flat.contains("loc.waitForSpeedAtOrAbove(resume, () -> this.stopsOrdered.get() != stopsAtDispatch"
+            + " || !this.isCurrentLayout());"),
             "the reversal stop gives the point speed multiplier back when it accelerates again "
             + "(REG6-B3)");
 

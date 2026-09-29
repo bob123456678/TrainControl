@@ -6624,9 +6624,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
 
+        // THE STOPS COUNTED AT THE CLICK, carried to the journey (RSA2-C2): the reload's Yes between here and the
+        // dispatch's own thread is one it obeys
+        final int stopsAtClick = railway.stopsOrdered();
+
         new Thread(() ->
         {
-            if (!railway.executePath(path, train, train.getPreferredSpeed(), null, answered))
+            if (!railway.executePath(path, train, train.getPreferredSpeed(), null, answered, stopsAtClick))
             {
                 javax.swing.SwingUtilities.invokeLater(() ->
                     JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.autoFailedCheckLog")));
@@ -11022,20 +11026,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void checkAutoLayoutLatency(double latency)
     {
-        if (model.getPowerState())
-        {
-            // ASKED, NOT BUILT (RLV8-C2): with nothing loaded there is nothing to check, and building an empty railway
-            // on every reply made what hasAutoLayout answers depend on the power and the time since start-up
-            Layout l = model.getAutoLayoutIfLoaded();
+        // ASKED, NOT BUILT (RLV8-C2): with nothing loaded there is nothing to check, and building an empty railway
+        // on every reply made what hasAutoLayout answers depend on the power and the time since start-up
+        Layout l = model.getAutoLayoutIfLoaded();
 
-            if (l != null && l.isRunning() && l.getMaxLatency() > 0 && latency > l.getMaxLatency())
+        if (l != null && l.isRunning() && l.getMaxLatency() > 0 && latency > l.getMaxLatency())
+        {
+            // WHATEVER THE POWER FLAG SAYS (RSA2-C6), as a route's stop is (RSA-C4): the flag is only the last GO or
+            // STOP echo heard, and one lost GO kept this cut-off from firing with the track live.  It chooses the log
+            // line and the dialog now, and nothing else - a STOP sent to a station already stopped does nothing.
+            final boolean wasOn = model.getPowerState();
+
+            this.model.stop();
+
+            if (wasOn)
             {
                 this.model.logf(
                     "ui.errorPowerOffLatencyExceeded",
                     l.getMaxLatency()
                 );
-
-                this.model.stop();
 
                 javax.swing.SwingUtilities.invokeLater(() ->
                 {
@@ -24683,6 +24692,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // the fix was to make the affordance agree with the guard rather than to add a guard.
         this.timetableCapture.setEnabled(false);
 
+        // THE STOPS COUNTED AT THE PRESS (RSA2-C1): the plan runs with them, so the reload's Yes while it is worked out
+        // - nothing yet moving - is answered by starting nothing, whether the load that asked it succeeds or not
+        final int stopsAtPress = layout.stopsOrdered();
+
         new Thread(() ->
         {
             // Whether this flow was the one that disabled those two buttons, so the finally can put
@@ -24691,6 +24704,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             try
             {
+                // THE AUTO TAB STOPS OFFERING PATHS (RSA2-C3): its double-click sends nothing while this flow owns the
+                // railway, so its lists are hidden, as they are while autonomy runs - refreshed from this worker, as the
+                // finally refreshes it
+                this.repaintAutoLocList(true);
+
                 // Planned ONCE.  Asking planReturnToHome and then letting loadReturnToHomeTimetable
                 // plan again meant two answers that can genuinely differ - getNeighbors shuffles, and
                 // the state can move underneath - where the second decided whether the timetable was
@@ -24758,7 +24776,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.repaintTimetable();
 
                 // Blocks until every train has arrived, not merely until the last one set off
-                final boolean completed = layout.executeTimetable();
+                final boolean completed = layout.executeTimetable(stopsAtPress);
 
                 // Trusting the boolean means trusting a chain: every move completed or was abandoned,
                 // and executePath completes only on arrival.  That holds today.  Asking outright costs
