@@ -497,8 +497,8 @@ public class testNonAtomicRoutesNeedTheirLengths
      * know the doors it names, so the failure message says to add the new door here as well.  What it
      * buys is that the next door cannot be added in silence, which is how this one came to exist.
      *
-     * MUTATION: delete the call from any one of the five and this names that one (VD17-T7: it said
-     * four, over a five-entry list).
+     * MUTATION: delete the call from any one of the four and this names that one (VD17-T7; four since the two
+     * hand doors became one, 2026-09-29, RLV13-C8).
      *
      * @throws Exception on a failure to read the source
      */

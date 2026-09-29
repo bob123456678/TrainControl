@@ -602,7 +602,9 @@ public class TailCrossedPrompt
     {
         if (!sameSetup || asked == null) return null;
 
-        if (running != null && running.isRunning()) return null;
+        // RUNNING, OR OWNED BY A STAGING FLOW (RLV13-C3): Return Home plans with nothing yet running, and every other
+        // refusal of a setup edit asks whether autonomy is busy, which counts that
+        if (running != null && (running.isRunning() || running.isStagingInProgress())) return null;
 
         Point now = running == null ? asked : running.getPoint(asked.getName());
 
@@ -696,7 +698,7 @@ public class TailCrossedPrompt
         {
             model.logf("autolayout.ui.logTailAnswerDroppedEditorOpened", train, where);
         }
-        else if (now != null && now.isRunning())
+        else if (now != null && (now.isRunning() || now.isStagingInProgress()))
         {
             // TRAINS BEGAN RUNNING IN THE WAIT (RLV12-C3), which `whereTheAnswerGoes` drops the answer for
             model.logf("autolayout.ui.logTailAnswerDroppedRunning", train, where);

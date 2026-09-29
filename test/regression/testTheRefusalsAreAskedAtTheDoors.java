@@ -150,7 +150,9 @@ public class testTheRefusalsAreAskedAtTheDoors
 
     /**
      * The one gate asks what every door that sends a train used to ask for itself: the editor, the setup and the power
-     * (Adam, 2026-09-29) - and the hand doors in the other two files send through the one door that asks it.
+     * (Adam, 2026-09-29) - and the hand doors in the other two files send through the one door that asks it.  The
+     * editor is asked as one open OR on its way (RLV13-C2): Edit Layout posts the editor's build, and a send queued ahead
+     * of that build would otherwise find no editor and run under it.
      *
      * MUTATION: take any of the three out of `whyNoTrainMayBeSent`, or send from a hand door past the one door, and this
      * fails.
@@ -164,10 +166,17 @@ public class testTheRefusalsAreAskedAtTheDoors
 
         assertFalse(gate.isEmpty(), "cannot find whyNoTrainMayBeSent in " + WINDOW);
 
-        for (String asked : new String[] {"isLayoutEditorOpen()", "whyAutonomyStartIsRefused()", "whyAHandSendIsRefused()",
+        for (String asked : new String[] {"anEditorIsOpenOrOnItsWay()", "whyAutonomyStartIsRefused()", "whyAHandSendIsRefused()",
             "getPowerState()"})
         {
             assertTrue(gate.contains(asked), "the one gate every sending door asks no longer asks " + asked);
+        }
+
+        String editor = bodyOf(withoutComments(read(WINDOW)), "anEditorIsOpenOrOnItsWay");
+
+        for (String asked : new String[] {"isLayoutEditorOpen()", "this.editorOnItsWay"})
+        {
+            assertTrue(editor.contains(asked), "the gate's question about the editor no longer asks " + asked);
         }
 
         for (String hand : new String[] {"src/org/traincontrol/gui/AutoLocomotiveStatus.java",

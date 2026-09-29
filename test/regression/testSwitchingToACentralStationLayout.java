@@ -341,7 +341,7 @@ public class testSwitchingToACentralStationLayout
     /**
      * Start is not offered over a layout that lives on the Central Station, which Start refuses (REG-C3).
      *
-     * `refuseAutonomyStartWhileBroken`'s first test is `isRemoteLayout`, and the diagram's right-click menu decides
+     * `whyAutonomyStartIsRefused`'s first test is `isRemoteLayout`, and the diagram's right-click menu decides
      * whether to offer Start by `canStartAutonomy` - which asked the button and the setup's errors and not that.  Its
      * javadoc said the button is always disabled on a remote layout, so the term would be dead weight; but an
      * `autonomy.json` loads on a Central Station layout and enables the button, and the menu then offered what the

@@ -5387,10 +5387,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         final org.traincontrol.automationui.AutonomySession opening = wantsAutonomy ? session : null;
 
+        // ON ITS WAY from here until the posted build shows it (RLV13-C2) - every door that sends a train asks this too
+        this.editorOnItsWay = true;
+
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             try
             {
+                // NOT OVER A RUN THAT BEGAN SINCE IT WAS ASKED FOR (RLV13-C2).  Whether trains run was asked above, and this
+                // is posted: a door that had already passed its own question - Start's worker, a staging flow's planning -
+                // can have begun a run in between, and the editor would open over it.  Refused and said, and the Edit
+                // button given back, as the question above does.
+                if (this.isAutonomyBusy())
+                {
+                    this.editorOnItsWay = false;
+
+                    setEditLayoutEnabled(true);
+
+                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.errorCannotEditWhileRunning"));
+
+                    return;
+                }
+
                 LayoutEditor editor = openEditor = new LayoutEditor(
                     this.model.getLayout(this.LayoutList.getSelectedItem().toString()),
                     this.layoutSizes.get(this.SizeList.getSelectedItem().toString()),
@@ -5403,6 +5421,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 editor.render();
 
                 if (opening != null) editor.setAutonomyMode(opening);
+
+                // SHOWN BY render()'s OWN POSTED TASK, which this runs after (RLV13-C2)
+                javax.swing.SwingUtilities.invokeLater(() -> this.editorOnItsWay = false);
 
                 // Posted, twice over.  render() and setAutonomyMode both only QUEUE the work that
                 // builds the grid, so calling reveal here ran while the grid was still null and it
@@ -5431,6 +5452,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // The button was disabled before the editor was asked for, so a failure here has to give
                 // it back or autonomy setup is unreachable until the application is restarted.
                 setEditLayoutEnabled(true);
+
+                this.editorOnItsWay = false;
 
                 if (this.model.isDebug()) this.model.log(e);
             }
@@ -6318,17 +6341,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * answer.  The same is true at a dispatch, where there is nobody to answer either: the operator
      * pressed Start, not "tell me about my train lengths".
      *
-     * **SIX CALLERS, AND THE COUNT HERE HAS BEEN WRONG TWICE (VD17-B1).**  One is the parse door this
-     * was written for, the editor's own apply in `AutonomyViewerPanel`; the other, the Validate button
-     * on the old autonomy JSON panel, went with that panel (OB-254).  The other five are the dispatch
-     * doors: Start, Execute
-     * Timetable, Return Home, and the two hand dispatches in `AutoLocomotiveStatus` and
-     * `LayoutRightclickAutonomyMenu`.  A train length is written on the LIVE layout, long after a
+     * **FIVE CALLERS, AND THE COUNT HERE HAS BEEN WRONG THREE TIMES (VD17-B1, RLV13-C8).**  One is the parse door
+     * this was written for, the editor's own apply in `AutonomyViewerPanel`; the other, the Validate button on the old
+     * autonomy JSON panel, went with that panel (OB-254).  The other four are the dispatch doors: Start, Execute
+     * Timetable, Return Home, and `sendATrainByHand`, the one door both hand dispatches - the Auto tab's list and the
+     * diagram's destinations - send through since 2026-09-29.  A train length is written on the LIVE layout, long after a
      * parse, so a door that dispatches without asking is a door that runs a zero-length train over
      * track it will hand back underneath itself.
      *
-     * `ui.testNonAtomicRoutesNeedTheirLengths.testEveryDispatchDoorAsksTheGate` holds the five; if you
-     * add a sixth, add it there and correct the number in this paragraph.
+     * `ui.testNonAtomicRoutesNeedTheirLengths.testEveryDispatchDoorAsksTheGate` holds the four; if you
+     * add a fifth, add it there and correct the numbers in this paragraph.
      *
      * The control is put back in step with the railway afterwards: leaving the tick showing OFF while
      * the layout runs atomic would be the two-controls-disagreeing fault OB-090 is named for.
@@ -6481,7 +6503,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     String whyNoTrainMayBeSent(boolean startingAutonomy)
     {
-        if (isLayoutEditorOpen()) return I18n.t("autosetup.ui.menuEditorOpen");
+        // OR ON ITS WAY (RLV13-C2): the editor is built in a posted task, and a send that ran in between passed this
+        if (anEditorIsOpenOrOnItsWay()) return I18n.t("autosetup.ui.menuEditorOpen");
 
         String broken = startingAutonomy ? whyAutonomyStartIsRefused() : whyAHandSendIsRefused();
 
@@ -6494,7 +6517,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Refuses a train sent now where `whyNoTrainMayBeSent` says so, saying why over this window - on the event thread, as
-     * `refuseWhileEditorOpen` does, since Return Home is asked from a worker at the end of a staging run.
+     * `refuseWhileEditorOpen` does.  Every door asks it on the event thread today; the posted branch is there so that a
+     * caller on a worker can never show a dialog off it (RLV13-C8).
      *
      * @param startingAutonomy whether the door is Start
      * @return true when the door must not send it
@@ -6513,6 +6537,34 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, why));
         }
+
+        return true;
+    }
+
+    /**
+     * Whether an editor holds the diagram or is on its way to it (RLV13-C2).  The editor is built in a task posted after
+     * it is asked for, so between the two its window does not exist yet: a door that asked only `isLayoutEditorOpen` in
+     * that moment sent a train, and the editor then opened over the run.
+     *
+     * @return true while an editor is open, or asked for and not yet shown
+     */
+    private boolean anEditorIsOpenOrOnItsWay()
+    {
+        return isLayoutEditorOpen() || this.editorOnItsWay;
+    }
+
+    /**
+     * Refuses to dispatch where an editor has come since the door's click, and says so - asked by the run doors at their
+     * last event-thread moment before the dispatch, which runs after anything the event thread took in between
+     * (RLV13-C2).  On the event thread.
+     *
+     * @return true when the door must not dispatch
+     */
+    boolean refusedForAnEditorOnItsWay()
+    {
+        if (!anEditorIsOpenOrOnItsWay()) return false;
+
+        JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.menuEditorOpen"));
 
         return true;
     }
@@ -7161,6 +7213,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * it - which is the same reason the editor has to be handed this window rather than looking it up.
      */
     private LayoutEditor openEditor;
+
+    /**
+     * An editor asked for and not yet shown - from the request until its posted build has shown the window, or refused, or
+     * failed (RLV13-C2).  Read by `anEditorIsOpenOrOnItsWay`.  Event thread only.
+     */
+    private boolean editorOnItsWay;
 
     /**
      * A message with every line longer than a dialog should be broken at spaces, so a dialog showing it fits the screen
@@ -24318,7 +24376,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * because a remote layout has no autonomy session, so the Start button would already be disabled -
      * and said that if that ever stopped being true, this is where it had to be added.  It is not true:
      * an `autonomy.json` still loads on a Central Station layout and enables the button, and the diagram's
-     * right-click menu then offered Start while `refuseAutonomyStartWhileBroken` refused it.
+     * right-click menu then offered Start while `whyAutonomyStartIsRefused` refused it.
      *
      * @return whether Start would be accepted
      */
@@ -24377,7 +24435,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public String whyAutonomyWillNotStart()
     {
-        // OVER A CENTRAL STATION LAYOUT, THE GUARD'S OWN FIRST REASON (REG2-C2).  `refuseAutonomyStartWhileBroken` asks
+        // OVER A CENTRAL STATION LAYOUT, THE GUARD'S OWN FIRST REASON (REG2-C2).  `whyAutonomyStartIsRefused` asks
         // `isRemoteLayout` before anything about the setup, and `canStartAutonomy` asks it too - so the greyed item
         // this sentence explains is greyed for that, and the rule below, which knows only the setup, answered "wait
         // for the trains".
@@ -24483,7 +24541,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * The number, for saying WHAT is wrong - not the question that decides (TS3-B6).
      *
-     * `refuseAutonomyStartWhileBroken` read exactly this until the guard was widened to `hasErrors()`,
+     * `whyAutonomyStartIsRefused` read exactly this until the guard was widened to `hasErrors()`,
      * which also covers a graph that will not build at all.  The two are the same on any setup where a
      * blocking problem also produced a finding, which is every one we have - but "the same in practice"
      * is what OB-090 was, twice.  `autonomyHasErrors()` is the question now, and this is the count the
@@ -24663,9 +24721,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // rule): a refused press should change nothing, and this writes the setting - which the planner does
                 // not read.  On the event thread, where the setting's checkbox lives; a gate that fails stops the run,
                 // and the finally hands the timetable back.
+                // AND NO EDITOR COME SINCE THE PRESS (RLV13-C2), asked at the same event-thread moment as the gate
+                final boolean[] editorCame = {false};
+
                 try
                 {
-                    javax.swing.SwingUtilities.invokeAndWait(() -> keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack());
+                    javax.swing.SwingUtilities.invokeAndWait(() ->
+                    {
+                        editorCame[0] = refusedForAnEditorOnItsWay();
+
+                        if (!editorCame[0]) keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
+                    });
                 }
                 catch (InterruptedException | java.lang.reflect.InvocationTargetException gate)
                 {
@@ -24673,6 +24739,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     return;
                 }
+
+                if (editorCame[0]) return;
 
                 tookTheButtons = true;
 
@@ -27427,6 +27495,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // away from its start switched the running railway to atomic on its way to being refused, and a
                 // refused press should change nothing.
                 //
+                // AND NO EDITOR COME SINCE THE PRESS (RLV13-C2): this is posted, and an editor asked for after the press,
+                // with nothing running yet, is on its way or built by now.
+                if (refusedForAnEditorOnItsWay())
+                {
+                    this.executeTimetable.setEnabled(true);
+
+                    return;
+                }
+
                 // AND A GATE THAT FAILS STOPS THE RUN AND GIVES THE BUTTON BACK (TDU3-C4), as at Start and Return Home.
                 try
                 {
@@ -27609,9 +27686,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         // THE ATOMIC ROUTES GATE, after every refusal (TDU-C8) and on the event thread, which the setting's
                         // checkbox lives on.  A gate that fails stops Start (TDU2-C2): it is what keeps a run atomic over
                         // unmeasured track, and the finally below gives the button back.
+                        // AND NO EDITOR COME SINCE THE CLICK (RLV13-C2).  This runs after whatever the event thread took in
+                        // between: an editor asked for after Start was pressed, with nothing running yet, is on its way or
+                        // built by now, and the run would begin under it.
+                        final boolean[] editorCame = {false};
+
                         try
                         {
-                            javax.swing.SwingUtilities.invokeAndWait(() -> keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack());
+                            javax.swing.SwingUtilities.invokeAndWait(() ->
+                            {
+                                editorCame[0] = refusedForAnEditorOnItsWay();
+
+                                if (!editorCame[0]) keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
+                            });
                         }
                         catch (InterruptedException | java.lang.reflect.InvocationTargetException gate)
                         {
@@ -27619,6 +27706,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                             return;
                         }
+
+                        if (editorCame[0]) return;
 
                         started.set(true);
 
@@ -27690,7 +27779,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         new Thread(() ->
             {
-                this.getModel().getAutoLayout().stopLocomotives();
+                // THE RAILWAY THE STOP WAS ASKED OF, read once and not built (RLV13-C7): this is a worker, Unload is
+                // allowed during the coast-down, and asking whether there is one and then for it builds an empty one
+                // where Unload cleared the model between the two
+                final Layout stopping = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
+
+                if (stopping == null)
+                {
+                    javax.swing.SwingUtilities.invokeLater(() -> this.startAutonomy.setEnabled(true));
+
+                    return;
+                }
+
+                stopping.stopLocomotives();
 
                 // Ensure list is updated after stopping a timetable run
                 this.repaintAutoLocListLite();
@@ -27707,7 +27808,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // thread already exists for exactly this transition and nothing else owns it - an
                 // unbounded wait, like every other wait in this file for a railway event rather than
                 // an acknowledgement.
-                while (this.model.hasAutoLayout() && this.model.getAutoLayout().isRunning())
+                // Until its trains stop, or the model has let it go - Unload, another configuration
+                while (stopping.isRunning() && this.model.getAutoLayoutIfLoaded() == stopping)
                 {
                     try
                     {
