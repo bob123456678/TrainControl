@@ -2498,4 +2498,77 @@ public class testATrainIsDispatchedOnce
 
         return tap;
     }
+
+    /**
+     * A sensor another train's journey has passed is free again for other routes (RSA2-B1; Adam, 2026-09-29: *"that is OK
+     * as long as non-atomic rules are respected (it should be allowed once unlocked)"*).  Only a sensor a journey has not
+     * yet reached is one it waits on; once its head is past, the lock and release rules decide the track, as they always
+     * did.
+     *
+     * MUTATION: let a journey count a sensor it has passed as one it still waits on, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testASensorAJourneyHasPassedIsFreeAgain() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(1891, 5);
+
+        final Locomotive x = model.getLocByName(model.getLocList().get(11));
+        final Locomotive y = model.getLocByName(model.getLocList().get(12));
+
+        Thread sent = null;
+
+        // X runs PXA -> PXM -> PXB, past PXM on the shared sensor s[1]; Y's road ends at PYP, a different place on the
+        // same sensor
+        final Layout rail = new Layout(model);
+
+        try
+        {
+            x.setSpeed(0);
+            y.setSpeed(0);
+
+            rail.createPoint("PXA", true, s[0].getName());
+            rail.createPoint("PXM", false, s[1].getName());
+            rail.createPoint("PXB", true, s[2].getName());
+            rail.createPoint("PYA", true, s[3].getName());
+            rail.createPoint("PYP", true, s[1].getName());
+            rail.createEdge("PXA", "PXM");
+            rail.createEdge("PXM", "PXB");
+            rail.createEdge("PYA", "PYP");
+            rail.setAtomicRoutes(false);
+            rail.makeCurrent();
+
+            rail.getPoint("PXA").setLocomotive(x);
+            rail.getPoint("PYA").setLocomotive(y);
+
+            final List<Edge> toTheSharedSensor = through(rail, "PYA", "PYP");
+
+            sent = sendOn(rail, through(rail, "PXA", "PXM", "PXB"), x);
+
+            assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+                "precondition: the first train was not sent");
+
+            assertFalse(rail.isPathClear(toTheSharedSensor, y, false), "precondition: the sensor ahead of the first"
+                + " train is not refused to the second, so this claim cannot tell");
+
+            // ITS HEAD PASSES THE SHARED SENSOR
+            model.setFeedbackState(s[1].getName(), true);
+
+            assertTrue(waitFor(() -> rail.getReachedMilestones(x) != null
+                && rail.getReachedMilestones(x).contains(rail.getPoint("PXM")), 5000),
+                "precondition: the first train's journey did not record passing the shared sensor");
+
+            model.setFeedbackState(s[1].getName(), false);
+
+            assertTrue(rail.isPathClear(toTheSharedSensor, y, false), "a sensor the first train has already passed is"
+                + " still refused to another route, though its journey waits on it no more: " + Layout.getLastError());
+        }
+        finally
+        {
+            letGo(s, x, sent);
+
+            y.setSpeed(0);
+        }
+    }
 }
