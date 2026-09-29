@@ -586,9 +586,13 @@ public class MarklinRoute extends Route
     {
         if (rc == null || !rc.isAccessory()) return null;
 
-        if (!this.network.hasAutoLayout() || !this.network.isAutonomyRunning()) return null;
+        // ASKED ONCE, NOT BUILT (RLV11-C5): a route runs on its own thread, and Unload can clear the railway between
+        // asking whether there is one and asking for it
+        final org.traincontrol.automation.Layout railway = this.network.getAutoLayoutIfLoaded();
 
-        java.util.Collection<Accessory> locked = this.network.getAutoLayout().getActiveAccs();
+        if (railway == null || !this.network.isAutonomyRunning()) return null;
+
+        java.util.Collection<Accessory> locked = railway.getActiveAccs();
 
         if (locked == null) return null;
 
@@ -637,7 +641,7 @@ public class MarklinRoute extends Route
         // accessory tile - which asks the locked-path half two lines above - never got this half at
         // all: a route setting a platform's signal green was refused while clicking the same signal
         // green by hand was not.  One rule now, in the one place both can reach.
-        if (!rc.getSetting() && this.network.getAutoLayout().protectsAnOccupiedSquare(accessory))
+        if (!rc.getSetting() && railway.protectsAnOccupiedSquare(accessory))
         {
             return new String[] {accessory.getName(),
                 "route.refusedSignalProtectingOccupiedPlatform"};
@@ -1018,14 +1022,17 @@ public class MarklinRoute extends Route
                             }
                             else if (rc.isAutonomyLightsOn())
                             {
-                                if (this.network.hasAutoLayout())
+                                // Asked once, not built (RLV11-C5)
+                                final org.traincontrol.automation.Layout railway = this.network.getAutoLayoutIfLoaded();
+
+                                if (railway != null)
                                 {
                                     this.network.logf(
                                         "route.turningOnAutonomyLights",
                                         this.getName()
                                     );
 
-                                    this.network.lightsOn(this.network.getAutoLayout().getLocomotivesToRun().stream().map(Locomotive::getName).collect(Collectors.toList()));
+                                    this.network.lightsOn(railway.getLocomotivesToRun().stream().map(Locomotive::getName).collect(Collectors.toList()));
                                 }
                             }
                             else if (rc.isLightsOn())

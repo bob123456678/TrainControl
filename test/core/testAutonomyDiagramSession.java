@@ -8325,7 +8325,8 @@ public class testAutonomyDiagramSession
             "src/org/traincontrol/gui/TrainControlUI.java")),
             java.nio.charset.StandardCharsets.UTF_8).replaceAll("\\s+", " ");
 
-        assertTrue(source.contains("session.flipFacing(name, this.model.getAutoLayout())"),
+        // Asked without building one since RLV11-C5: the follow is posted, and can land after Unload
+        assertTrue(source.contains("session.flipFacing(name, this.model.getAutoLayoutIfLoaded())"),
             "the window no longer hands the running layout to flipFacing, so the setup moves and the "
             + "layout does not - and captureFromLayout will write the layout's answer back over it "
             + "at the next editor open (DIR-B3)");

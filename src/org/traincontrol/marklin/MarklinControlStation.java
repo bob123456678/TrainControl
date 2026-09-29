@@ -1753,9 +1753,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // address change is held back until the run has stopped, and swept by the sync that makes it; new members of a
         // Central Station multi-unit are taken at once, and one that arrives during a run is swept by the next load or
         // Place (OB-303).
-        if (!sweptAfterTheSync.isEmpty() && this.hasAutoLayout() && !this.isAutonomyRunning())
+        // Asked once, not built (RLV11-C5): the event thread can clear the railway between two questions
+        final Layout loadedNow = this.getAutoLayoutIfLoaded();
+
+        if (!sweptAfterTheSync.isEmpty() && loadedNow != null && !this.isAutonomyRunning())
         {
-            Layout layout = this.getAutoLayout();
+            Layout layout = loadedNow;
 
             synchronized (layout)
             {
@@ -3382,8 +3385,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // isRunning() alone reported the whole window as idle - and every guard that asks the model
         // rather than the UI permitted a locomotive to be deleted, renamed or re-addressed out from
         // under a plan about to drive it.
-        return this.hasAutoLayout()
-            && (this.getAutoLayout().isRunning() || this.getAutoLayout().isStagingInProgress());
+        // ASKED ONCE, NOT BUILT (RLV11-C5): route and message threads ask this, and asking whether there is a railway and
+        // then for it built an empty one where Unload cleared it between the two
+        final Layout layout = this.getAutoLayoutIfLoaded();
+
+        return layout != null && (layout.isRunning() || layout.isStagingInProgress());
     }
     
     /**
@@ -3641,7 +3647,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // AND THE RUNNING LAYOUT'S RECORD OF WHERE IT WAS TURNED, which is keyed by name for the reason
             // the setup is (RTX-C3, SVA-C4): a train turned on arrival and renamed before the window drained
             // that record lost the turn, and kept the facing it drove in with.
-            if (this.hasAutoLayout()) this.getAutoLayout().locRenamed(name, newName);
+            // Asked once, not built (RLV11-C5)
+            final Layout loadedNow = this.getAutoLayoutIfLoaded();
+
+            if (loadedNow != null) loadedNow.locRenamed(name, newName);
             
             // Update names in routes
             for (MarklinRoute r : this.getRoutes())
@@ -3875,8 +3884,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     public boolean isRouteActivatedByAutonomy(int id)
     {
-        return this.hasAutoLayout()
-            && this.getAutoLayout().getActivateRouteIDs().contains((Integer) id);
+        // Asked once, not built (RLV11-C5)
+        final Layout layout = this.getAutoLayoutIfLoaded();
+
+        return layout != null && layout.getActivateRouteIDs().contains((Integer) id);
     }
 
     /**

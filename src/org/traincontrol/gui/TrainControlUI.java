@@ -7822,7 +7822,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * idle, and after Yes a train stopped between sensors keeps it running, so every turn made since the run started was
      * dropped with the railway: the configuration had the train facing the way it arrived, and the next dispatch was
      * offered paths for that heading (OB-189).  "Only while idle" is about a train between two copies; a turn is written
-     * only for a train still standing where it turned (`faceTheWayItCameIn`), which is no such train.
+     * only for a train still standing where it turned and not under way again (`faceTheWayItCameIn`, RLV11-C3), which is
+     * no such train.
      */
     void writeTheTurnsOwed()
     {
@@ -13007,9 +13008,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // the Central Station's message arrived on, and `getAutonomySession()` is the lazy builder - every
             // page parsed, files possibly rewritten.  `repaintTimetable` states the rule (SV-B2).  No session
             // yet means nothing to follow; the event thread builds one when something there needs it.
-            if (this.model == null || !this.model.hasAutoLayout()
-                || this.model.getAutoLayout().isRunning()
-                || this.autonomySession == null)
+            // ASKED ONCE, NOT BUILT (RLV11-C5): this is the Central Station's thread, and Unload can clear the model
+            // between asking whether there is a railway and asking for it
+            final Layout shown = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
+
+            if (shown == null || shown.isRunning() || this.autonomySession == null)
             {
                 // A BASELINE for a train never seen before, and nothing more.  Without this a
                 // locomotive first met mid-journey has no recorded direction at all, and the first
@@ -13050,8 +13053,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // The running layout too, on Adam's ruling (DIR-B3): the setup and the layout are two
                 // records of one fact, and captureFromLayout writes the layout's answer back over the
                 // setup at the next editor open.
+                // Asked, not built (RLV11-C5): posted, and it can land after Unload - the setup is then written alone
                 final org.traincontrol.automationui.TileGraph.TileKey moved =
-                    session.flipFacing(name, this.model.getAutoLayout());
+                    session.flipFacing(name, this.model.getAutoLayoutIfLoaded());
 
                 if (moved == null) return;
 
@@ -29406,26 +29410,37 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // through here, not through Lite.
             this.refreshReturnHomeButton();
 
+            // ASKED ONCE, NOT BUILT (RLV11-C5): posted by callers that asked first, and it can land after Unload
+            final Layout shown = this.model.getAutoLayoutIfLoaded();
+
             // Display locomotive status and possible paths
             this.autoLocPanel.removeAll();
+
+            if (shown == null)
+            {
+                this.autoLocPanel.revalidate();
+                this.autoLocPanel.repaint();
+
+                return;
+            }
 
             // Number of columns in the grid
             int gridCols = 3;
 
             autoLocPanel.setLayout(new java.awt.GridLayout(
-                (int) Math.ceil((double) this.model.getAutoLayout().getLocomotivesToRun().size() / gridCols), 
+                (int) Math.ceil((double) shown.getLocomotivesToRun().size() / gridCols), 
                 gridCols, // cols
                 5, // padding
                 5)
             );
             
             // Sort alphabetically, with parked locomotives last
-            List<Locomotive> locs = new LinkedList<>(this.model.getAutoLayout().getLocomotivesToRun());
+            List<Locomotive> locs = new LinkedList<>(shown.getLocomotivesToRun());
             
             locs.sort((Locomotive l1, Locomotive l2) ->
             {
-                Point loc1Point = this.model.getAutoLayout().getLocomotiveLocation(l1);
-                Point loc2Point = this.model.getAutoLayout().getLocomotiveLocation(l2);
+                Point loc1Point = shown.getLocomotiveLocation(l1);
+                Point loc2Point = shown.getLocomotiveLocation(l2);
                 
                 if (loc1Point != null && loc2Point != null)
                 {

@@ -2475,7 +2475,9 @@ way whose last station another has since stopped on is written on the first stat
 holds and no other train under way is kept at (RLV9-C4, RLV10-C2).  Unload folds the running layout into the
 configuration first, as a reload does, so a load after it has the trains where the run left them (RLV9-A1); while a
 setup edit a run declined waits it writes where the trains stand and nothing else, as a load then carries them
-(RLV10-B1).  Unload, and choosing another configuration, write the turns the railway owes into the configuration they
+(RLV10-B1).  No setup edit is made while trains run (Adam, 2026-09-28): the diagram's setup menu is offered only at rest
+and its items refuse, and say so, when clicked after a run has begun, so an edit waits only where a run begins in the
+moment between an edit and its rebuild (RLV11-B1, RLV11-B2).  Unload, and choosing another configuration, write the turns the railway owes into the configuration they
 leave (RLV10-C1).  Unload, a deleted setup and a switch of railway forget the
 railway loaded, so a load after them carries nothing across (RLV7-C2) - a switch only to another source, not to the one
 in use chosen again (RLV8-C5), the folder the Central Station's layout was downloaded into counting as the one in use
@@ -2487,7 +2489,9 @@ the one in use, and the name asked for was thrown away.
 
 Into a configuration that exists, an old file fills what that configuration does not already say (MT-298), and the
 door asks exactly that - *"Add to it what the file has and {0} does not?"* - where a bundle replaces the
-configuration and asks to replace it.  A train the configuration already has standing somewhere is not placed again,
+configuration and asks to replace it.  The question also says that a setting at its default, a home taken off or an
+emptied exclusion list counts as not set and takes the file's value: a default is stored as nothing (RLA3-B1; Adam,
+2026-09-28).  A train the configuration already has standing somewhere is not placed again,
 and is named in the message; a train that already has a home keeps it, and is named too (RLA2-C3) - one train in two
 places refuses the whole configuration (RLA-B2).  A train the file places faces the way the file ran it, over
 the facing the square's last occupant left there (RLA2-B3); where the file cannot say, the last occupant's stays.  A value

@@ -1596,9 +1596,8 @@ public class Layout
      *   its destination at worst (RLV9-C4).  Kept where the other stands, it was kept on no point: the carry and the fold
      *   each give that point to the train standing there, and the fold then erased the one under way from the
      *   configuration.  Ahead is track it is heading over, and holds.  A train only passing through the point gives way
-     *   to the one kept there (RLV8-C4).  Not a station another train under way is kept at, and decided against the
-     *   map as first read, not as it is rewritten (RLV10-C2): the station ahead could be another's kept point, and which
-     *   of the two then kept it followed the map's order.
+     *   to the one kept there (RLV8-C4).  No two trains are kept at one point, in whatever order the map yields them -
+     *   `keptApart` says how (RLV10-C2, RLV11-C1, RLV11-C2).
      *
      * Read without the railway's monitor, which the event thread must not take: the maps are concurrent, and a train
      * setting off or arriving as this runs is read on one side of it or the other.
@@ -1625,42 +1624,127 @@ public class Layout
             if (known != null) out.put(running.getKey(), known);
         }
 
-        // WHERE ANOTHER TRAIN NOW STANDS THERE, the station ahead it holds (RLV9-C4) - see above.  Standing: not under way,
-        // or kept at that point itself; one whose path only runs through it is kept elsewhere, and gives way (RLV8-C4).
-        // Each asked of the map as first read (RLV10-C2)
-        Map<Locomotive, Point> read = new HashMap<>(out);
+        // NO TWO ON ONE POINT, NOR ON ONE A STANDING TRAIN STANDS ON (RLV9-C4, RLV10-C2, RLV11-C1, RLV11-C2)
+        return this.keptApart(out);
+    }
 
-        for (Entry<Locomotive, Point> kept : read.entrySet())
+    /**
+     * Where each train under way is kept, no two on one point and none on a point a standing train stands on - see
+     * `getLastPointsReached`.
+     *
+     * - A standing train's point is its own: a train under way kept there takes a station ahead (RLV9-C4).
+     * - Otherwise a train under way keeps the point it was last seen at - the one recorded on that point first, then the
+     *   others by name, so the answer does not follow a map's order (RLV10-C2).  A train only passing through a point
+     *   is kept elsewhere and does not count (RLV8-C4).
+     * - A train that cannot keep its point takes the first station ahead on its path that it holds and nobody is kept
+     *   at; failing that, one another train is kept at where that train can itself go on to a free station ahead, which it
+     *   then does.  So a train bound for the station another was last seen at takes it, and the other - past it, since it
+     *   was released behind it and then locked - goes on (RLV11-C1); and of two trains last seen at one station nobody
+     *   stands on, one keeps it and the other goes on (RLV11-C2).
+     * - With nothing left, a train stays at its point, as it always did.
+     *
+     * @param read each train under way against the point it was last seen at
+     * @return each against the point it is kept at
+     */
+    private Map<Locomotive, Point> keptApart(Map<Locomotive, Point> read)
+    {
+        Set<Point> standing = new HashSet<>();
+
+        for (Point p : this.getPoints())
         {
-            Locomotive there = kept.getValue().getCurrentLocomotive();
+            Locomotive there = p.getCurrentLocomotive();
 
-            if (there == null || there == kept.getKey()) continue;
+            if (there != null && !read.containsKey(there)) standing.add(p);
+        }
 
-            if (read.containsKey(there) && read.get(there) != kept.getValue()) continue;
+        List<Locomotive> order = new ArrayList<>(read.keySet());
 
-            Point ahead = this.stationAheadItHolds(kept.getKey(), kept.getValue(), read);
+        order.sort((x, y) ->
+        {
+            boolean xOwn = read.get(x).getCurrentLocomotive() == x;
+            boolean yOwn = read.get(y).getCurrentLocomotive() == y;
 
-            if (ahead != null) out.put(kept.getKey(), ahead);
+            if (xOwn != yOwn) return xOwn ? -1 : 1;
+
+            return String.valueOf(x.getName()).compareTo(String.valueOf(y.getName()));
+        });
+
+        Map<Locomotive, Point> out = new HashMap<>();
+        Map<Point, Locomotive> keptThere = new HashMap<>();
+        List<Locomotive> goingOn = new ArrayList<>();
+
+        for (Locomotive loc : order)
+        {
+            Point p = read.get(loc);
+
+            if (standing.contains(p) || keptThere.containsKey(p))
+            {
+                goingOn.add(loc);
+            }
+            else
+            {
+                out.put(loc, p);
+                keptThere.put(p, loc);
+            }
+        }
+
+        for (Locomotive loc : goingOn)
+        {
+            Point chosen = null;
+
+            for (Point ahead : this.stationsAheadItHolds(loc, read.get(loc)))
+            {
+                if (chosen == null && !standing.contains(ahead) && !keptThere.containsKey(ahead)) chosen = ahead;
+            }
+
+            // A STATION AHEAD ANOTHER IS KEPT AT, where that one can go on to a free station of its own
+            for (Point ahead : chosen != null ? Collections.<Point>emptyList() : this.stationsAheadItHolds(loc, read.get(loc)))
+            {
+                Locomotive other = keptThere.get(ahead);
+
+                if (chosen != null || other == null) continue;
+
+                for (Point further : this.stationsAheadItHolds(other, ahead))
+                {
+                    if (chosen == null && !standing.contains(further) && !keptThere.containsKey(further))
+                    {
+                        out.put(other, further);
+                        keptThere.put(further, other);
+
+                        chosen = ahead;
+                    }
+                }
+            }
+
+            if (chosen == null)
+            {
+                out.put(loc, read.get(loc));
+            }
+            else
+            {
+                out.put(loc, chosen);
+                keptThere.put(chosen, loc);
+            }
         }
 
         return out;
     }
 
     /**
-     * The first station after this point on the path a train is under way on, or still locking, that it still holds and
-     * no other train is kept at - its destination at worst (RLV9-C4, RLV10-C2).
+     * The stations after this point on the path a train is under way on, or still locking, that it still holds, in path
+     * order - its destination last (RLV9-C4).
      *
      * @param loc the train
      * @param from the point it was kept at
-     * @param keptAt where each train under way is kept, as first read
-     * @return the station, or null where it holds none ahead
+     * @return the stations, empty where it holds none ahead
      */
-    private Point stationAheadItHolds(Locomotive loc, Point from, Map<Locomotive, Point> keptAt)
+    private List<Point> stationsAheadItHolds(Locomotive loc, Point from)
     {
+        List<Point> ahead = new ArrayList<>();
         List<Edge> path = this.activeLocomotives.containsKey(loc) ? this.activeLocomotives.get(loc)
             : this.takingPath.get(loc);
 
-        if (path == null) return null;
+        if (path == null) return ahead;
 
         boolean past = false;
 
@@ -1670,23 +1754,15 @@ public class Layout
 
             if (!past) continue;
 
-            Point ahead = e.getEnd();
+            Point end = e.getEnd();
 
-            boolean anotherIsKeptThere = false;
-
-            for (Entry<Locomotive, Point> other : keptAt.entrySet())
+            if (end.getCurrentLocomotive() == loc && (end.isDestination() || this.isABarredCopyOfAStation(end)))
             {
-                if (other.getKey() != loc && other.getValue() == ahead) anotherIsKeptThere = true;
-            }
-
-            if (ahead.getCurrentLocomotive() == loc && !anotherIsKeptThere
-                && (ahead.isDestination() || this.isABarredCopyOfAStation(ahead)))
-            {
-                return ahead;
+                ahead.add(end);
             }
         }
 
-        return null;
+        return ahead;
     }
 
     /**
@@ -12034,8 +12110,9 @@ public class Layout
     {        
         l.setCallback(Layout.CB_ROUTE_START, (lc) -> 
         {
-            // Optionally skip turning on the functions
-            Layout layout = lc.getModel().getAutoLayout();
+            // Optionally skip turning on the functions.  ASKED, NOT BUILT (RLV11-C5): this runs on the train's own thread,
+            // after Unload as well, and asking for the railway built an empty one where there was none
+            Layout layout = lc.getModel().getAutoLayoutIfLoaded();
             
             if (layout != null && layout.isTurnOnFunctionsOnDeparture())
             {
@@ -12059,8 +12136,8 @@ public class Layout
 
         l.setCallback(Layout.CB_ROUTE_END, (lc) ->
         {
-            // Optionally disable the arrival functions
-            Layout layout = lc.getModel().getAutoLayout();
+            // Optionally disable the arrival functions.  Asked, not built, as above (RLV11-C5)
+            Layout layout = lc.getModel().getAutoLayoutIfLoaded();
             
             if (layout != null && layout.isTurnOffFunctionsOnArrival())
             {

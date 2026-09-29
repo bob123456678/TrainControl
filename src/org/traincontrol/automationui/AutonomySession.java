@@ -2193,6 +2193,11 @@ public class AutonomySession
             return null;
         }
 
+        // AND NOT UNDER WAY AGAIN (RLV11-C3).  A train's locked path records it on its start - where it turned - so one that
+        // turned and was sent off again read as standing there, and standing it on another copy swept it off the rest of
+        // its path while it ran.  It owes nothing now: its next arrival writes the record again or clears it.
+        if (running != null && running.isAlreadyUnderway(turnedAt.getCurrentLocomotive())) return null;
+
         String came = turnedAt.getArrivedFrom();
 
         if (came == null) return null;

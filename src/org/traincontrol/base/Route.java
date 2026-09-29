@@ -342,7 +342,10 @@ abstract public class Route
         }
         else if (rc.isAutoLocomotive())
         {
-            if (!control.hasAutoLayout())
+            // ASKED ONCE, NOT BUILT (RLV11-C5): a route's conditions are asked on its own thread
+            Layout layout = control.getAutoLayoutIfLoaded();
+
+            if (layout == null)
             {
                 return false;
             }
@@ -353,8 +356,6 @@ abstract public class Route
             {
                 return false;
             }
-
-            Layout layout = control.getAutoLayout();
             String s88 = Integer.toString(rc.getAddress());
 
             // Avoid a race condition and ensure the autonomy resolution finishes first

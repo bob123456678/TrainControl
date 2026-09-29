@@ -1224,7 +1224,13 @@ public class AutonomyViewerPanel extends JPanel
             String question = format != AutonomySession.ImportFormat.LEGACY_GRAPH ? "autosetup.ui.confirmImportOverwrites"
                 : intoTheOneInUse ? "autosetup.ui.confirmImportFillsGapsInUse" : "autosetup.ui.confirmImportFillsGaps";
 
-            int replace = JOptionPane.showOptionDialog(ui, I18n.f(question, name.trim()),
+            // AN OLD FILE'S QUESTION SAYS WHAT COUNTS AS NOT SET (RLA3-B1; Adam, 2026-09-28: keep the gap-fill and say so).
+            // A default is stored as nothing, so a setting returned to its default, a home taken off or an emptied
+            // exclusion list reads as a gap and takes the file's - which "nothing already set is changed" did not say.
+            String asked = format != AutonomySession.ImportFormat.LEGACY_GRAPH ? I18n.f(question, name.trim())
+                : I18n.f(question, name.trim()) + "  " + I18n.t("autosetup.ui.importTakesTheFilesForDefaults");
+
+            int replace = JOptionPane.showOptionDialog(ui, asked,
                 I18n.t("autosetup.ui.title"), JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE, null,
                 TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]);

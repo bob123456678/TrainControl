@@ -2622,12 +2622,35 @@ public class AutonomyEditorPanel extends JPanel
         return false;
     }
 
+    /**
+     * Whether a setup edit is refused because trains are running, having said so (Adam, 2026-09-28: *"There should be no
+     * setup edit possible during a run"*).  The diagram's Autonomy Setup menu is offered only at rest and the editor
+     * cannot be opened during a run (OB-047), but a menu opened at rest can be clicked after a run has begun: it wrote the
+     * setup, and the rebuild it asked for was declined, leaving an edit waiting against the running railway that every
+     * door keeping where the trains stand had to work around (RLV11-B1, RLV11-B2).  Asked at every item's click.
+     *
+     * @return true where the edit is refused
+     */
+    private boolean refusedWhileRunning()
+    {
+        TrainControlUI window = parentWindow();
+
+        if (window == null || !window.isAutonomyBusy()) return false;
+
+        JOptionPane.showMessageDialog(owner(), I18n.t("autolayout.errorCannotEditWhileRunning"));
+
+        return true;
+    }
+
     private javax.swing.JMenuItem item(String text, final Runnable action)
     {
         javax.swing.JMenuItem menuItem = new javax.swing.JMenuItem(text);
 
         menuItem.addActionListener(e ->
         {
+            // NOT WHILE TRAINS RUN (Adam, 2026-09-28) - see `refusedWhileRunning`
+            if (refusedWhileRunning()) return;
+
             try
             {
                 action.run();
@@ -2741,6 +2764,9 @@ public class AutonomyEditorPanel extends JPanel
 
         menuItem.addActionListener(e ->
         {
+            // NOT WHILE TRAINS RUN (Adam, 2026-09-28) - see `refusedWhileRunning`
+            if (refusedWhileRunning()) return;
+
             // Guarded, as `item` beside it is (C11).
             //
             // Its sibling wraps the action and goes on to redraw regardless, and the comment there
@@ -4152,6 +4178,9 @@ public class AutonomyEditorPanel extends JPanel
 
         menuItem.addActionListener(e ->
         {
+            // NOT WHILE TRAINS RUN (Adam, 2026-09-28) - see `refusedWhileRunning`
+            if (refusedWhileRunning()) return;
+
             action.run();
 
             // placementChanged, not refresh (TD-1).
@@ -9136,6 +9165,9 @@ public class AutonomyEditorPanel extends JPanel
 
         item.addActionListener(e ->
         {
+            // NOT WHILE TRAINS RUN (Adam, 2026-09-28) - see `refusedWhileRunning`
+            if (refusedWhileRunning()) return;
+
             // Set on the run, not the tile: a run of plain track has one direction, and setting it a
             // tile at a time is both busywork and a way to end up with a run that contradicts itself.
             if (session.setRunDirection(tile, routeId, direction) == 0)
@@ -9503,7 +9535,7 @@ public class AutonomyEditorPanel extends JPanel
             // ASKING TO BE TOLD IF IT IS DECLINED (VD11-C8).
             //
             // This is the door where a decline is a surprise.  The edit was made against a railway
-            // that was not running - the editor's other doors warn about that when it is - and the
+            // that was not running - no item edits while one is (`refusedWhileRunning`) - and the
             // rebuild is posted one event later, so a run starting in between throws the edit away.
             // `TrainControlUI.autonomyEditorClosed()` passes false because it has already said it.
             // AND WHOSE PLACEMENTS THIS GESTURE EDITED, drained so each edit is claimed once
