@@ -2677,6 +2677,25 @@ RLV12-D6	RLV12.md	Closed	Checked - clean, apart from RLV12-C8.	The runners' hang
 RLV12-D7	RLV12.md	Closed	Checked - clean.	`8ca5eb12`: the monitor guard's allowance for Unload's placement-only write
 RLV12-D8	RLV12.md	Closed	Checked - clean.	Baseline
 RLV12-D9	RLV12.md	Closed	Checked - clean, apart from RLV12-B1 (behaviour.md's sentence and B1's and B2's dispositio	The records
+RLV13-C1	RLV13.md	Closed	Fixed in b513f86a - testATrainCoversTheTrackBehindIt pins the turn by the statement that t	The round leaves the battery red: two older claims pin text the round took away, one the arrival's turn and one the hand doors' prompt
+RLV13-C2	RLV13.md	Closed	Fixed - an editor on its way counts: the gate asks anEditorIsOpenOrOnItsWay (editorOnItsWa	An editor asked for at rest is built in a task that does not ask again: a send queued ahead of that task runs with the editor open, and a square click
+RLV13-C3	RLV13.md	Closed	Fixed - whereTheAnswerGoes, and the log line with it, drop an answer while a staging flow 	A tail answered while Return Home is planning is still written: `whereTheAnswerGoes` asks `Layout.isRunning`, where every other setup-edit refusal ask
+RLV13-C4	RLV13.md	Closed	Fixed - both refusals of non-atomic routes put the count after the subject again, "{0} in 	Two rewritten refusals now count in words, and say "1 locomotives have no train length" in every language
+RLV13-C5	RLV13.md	Closed	Fixed - checkMayTurnOnDeadEnd quotes the menu item's own words in French and Italian, and 	Two rewritten setup findings quote on-screen labels that are not on screen, and the pass kept them
+RLV13-C6	RLV13.md	Closed	Fixed - checkHalfMeasuredApproach says again when it applies (while part of its approach i	The pass dropped the reason behind a remedy in one setup finding and the reassurance behind Save in another
+RLV13-C7	RLV13.md	Closed	Fixed - Graceful Stop's worker reads the railway once (getAutoLayoutIfLoaded), stops that 	One check-then-build pair is left off the event thread: the graceful stop's wait for the trains to stop, which the source claim does not know
+RLV13-C8	RLV13.md	Closed	Fixed in e19d2b63 - refusedToSendATrain's javadoc says every door asks it on the event thr	Comments the round left saying what is not so: Return Home "asked from a worker", six callers of the atomic-routes gate, and a renamed method named th
+RLV13-C9	RLV13.md	Closed	Fixed - claims: Start over a Central Station layout is refused by the gate in its own word	What round 14's claims do not reach: Start's refusal over a Central Station layout, now one arm of the gate, and Edit Locomotive's second refusal
+RLV13-D1	RLV13.md	Closed	Checked - clean, apart from RLV13-C2 (an editor still being built), RLV13-C8 (its javadoc)	The one gate: every door that sends a train asks it first, nothing sends past it, and nothing is newly refused but an open editor
+RLV13-D10	RLV13.md	Closed	Checked - clean, apart from RLV13-C2 and RLV13-C3 (behaviour.md's new sentence says an edi	The records
+RLV13-D2	RLV13.md	Closed	Checked - clean.	`keptApart`, `movedOn` and `placeOf`: the chain along any number of trains, squares by block, cycles, a train still locking its path, and what the car
+RLV13-D3	RLV13.md	Closed	Checked - clean, apart from RLV13-C3 (Return Home's planning) and RLV13-C9 (the second ref	RLV12-C3: the diagram's Edit Locomotive refuses, and a tail answered once trains run is dropped at all three doors that ask it
+RLV13-D4	RLV13.md	Closed	Checked - clean.	RLV12-C4: `moveOntoFacingCopy` declines a train under way for all three of its callers, and the posted follow's new question ends a turn as the ruling
+RLV13-D5	RLV13.md	Closed	Checked - clean, apart from RLV13-C7.	RLV12-C5: the changed pairs, and the arrival's turn on a retired railway
+RLV13-D6	RLV13.md	Closed	Checked - clean.	RLV12-C6: the stations' maxima sentence, in eight languages
+RLV13-D7	RLV13.md	Closed	Checked - clean.	The runners: a method list with a name that did not run, a JVM that runs out of memory, a hung class counted once
+RLV13-D8	RLV13.md	Closed	Checked - clean, apart from RLV13-C4, RLV13-C5 and RLV13-C6.	The message pass, apart from RLV13-C4, C5 and C6
+RLV13-D9	RLV13.md	Closed	Checked - clean.	Baseline
 RLV6-B1	RLV6.md	Closed	Fixed - while a declined edit waits, every load carries each train across and lowers the f	RLA5-B1's fix reaches one of the four doors round 5 named; three still put every moved train back on its pre-run square and leave the flag up
 RLV6-C1	RLV6.md	Closed	Fixed - the carried load is the one asked for, interactive or not, so a train driven by ha	With the flag up, the Autonomy menu's, a page tick's and an import's reload of the configuration running is the editor doors' quiet one: hand-driven t
 RLV6-C2	RLV6.md	Closed	Fixed - the walk remembers the path, not every route asked. claims 528fd305 (red first), f	`hasEmergencyStop` shares one visited set across every branch it walks, so a route that reaches a split route by two paths, the longer first, is count
