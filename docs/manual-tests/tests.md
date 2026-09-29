@@ -21719,6 +21719,10 @@ Beside the ordinary layout files, the CS3's own files are there too - `CS3_mags.
 
 **To run now:** as written.  **Expect:** `CS3_mags.json` and the CS3's route file beside the ordinary layout files.  No fix is recorded since MT-170 found them missing, so a failure here is still news.
 
+**Adam, 2026-09-29 (triage).** Works.
+
+*Run against commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-406"></a>
@@ -25631,6 +25635,10 @@ Filed from this test: FR-103 (feature request - Update color of "autonomy won't 
 
 **FR-103, filed from this test, is built** (2026-09-27) - MT-587.
 
+**Adam, 2026-09-29 (triage).** Works.
+
+*Run against commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-493"></a>
@@ -26102,6 +26110,12 @@ Works, but also highlight the affected signals when the notice is clicked.
 **Claude, 2026-09-27.**
 
 **Your note is built** (2026-09-27, `0d597c1a`): clicking the notice outlines the signal as well as the station, and shows the station; the notice for a signal on both of a station's guard lists does the same.  `core.testAutonomyDiagramSession.testClickingAGuardNoticeOutlinesItsSignal`.
+
+**Adam, 2026-09-29 (triage).** Could not run this.
+
+For bottomMainB, when I try to select Signal 86 (not on its path) as entry guard, I can't select it- it doesn't get added to the list in the popup after clicking on it on the diagram.
+
+*Run against commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -27018,6 +27032,10 @@ This option should never be greyed out completely (show the number of missing tr
 
 *Run against commit 5e3aeffa, in English - build\classes, compiled 26 Sep 08:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Adam, 2026-09-29 (triage).** Works.
+
+*Run against commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-534"></a>
@@ -27523,6 +27541,12 @@ Validated on your *Works* of 2026-09-24.
 - Nothing else in the menu can be chosen.
 
 *What this is:* `regression.testTheOldAutonomyTabIsGone.testTheAutonomyMenuOpensOnACentralStationLayout` and `testOnlyTheDownloadAndTheGuideCanBeChosenThere`.  The download itself is MT-177's step 4, validated on 2026-08-25.
+
+**Adam, 2026-09-29 (triage).** Works, with notes.
+
+works, but what is the cs3 has no layout?  give the user the choice to either download or create a new one, which redirects to the corresponding option under layouts.
+
+*Run against commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -28191,6 +28215,10 @@ Works, but prefill the textbox with the current length, if any.
 
 **Your note is built** (2026-09-27, `0d597c1a`): going through every train, the length box holds the train's length, selected, so a number typed replaces it; OK or Enter keeps it, as Skip does.  In step 2 the first prompt's box shows its length.  `core.testMassAssignLengths.testWithEveryTrainMeasuredTheWalkShowsEachAndSkipKeepsIt`.
 
+**Adam, 2026-09-29 (triage).** Works.
+
+*Run against commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-567"></a>
@@ -28223,6 +28251,10 @@ Change "Locomotive Train Lengths" to just "Train Lengths", andkeep "Station Max 
 **Claude, 2026-09-27.**
 
 **Your note is built** (2026-09-27, `0d597c1a`): the item reads **Mass Assign Train Lengths (N missing)...** - and, with nothing to count, **Mass Assign Train Lengths...** - in all eight languages; the two station items are as they were.  The Expected line above still gives the old name: this is the one to check.  `core.testMassAssignLengths.testTrainLengthsAndStationMaximaAreNamedApart` now pins the English words.
+
+**Adam, 2026-09-29 (triage).** Works.
+
+*Run against commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -28295,6 +28327,10 @@ Change "Locomotive Train Lengths" to just "Train Lengths", andkeep "Station Max 
 **Claude, 2026-09-27.**
 
 **Your note is built** (2026-09-27, `0d597c1a`): Exit Guard reads *"Signals held at red while this station is occupied - ..."*, in English and French; the other six languages already said occupied.  `regression.testTheEditorSaysWhatItsToolsDo.testTheGuardItemsSayWhatTheGuardsDo`.
+
+**Adam, 2026-09-29 (triage).** Works.
+
+*Run against commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -28925,5 +28961,9 @@ make them a medium dark gray that's just slightly darker than labels."*
 
 *What this is:* `core.testAutonomyDiagramMonitor.testASquareAutonomyWillNotChooseIsGrey`, red under the orange.  The
 shade is what only you can judge: say if you want it lighter or darker.
+
+**Adam, 2026-09-29 (triage).** Works.
+
+*Run against commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---

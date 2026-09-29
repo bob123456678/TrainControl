@@ -1372,6 +1372,35 @@ Found by the 3.0.0 release review's seventh round (RLV7-C3), 2026-09-26.  While 
 
 Update color of "autonomy won't choose these" stations - instead of orange, make them a medium dark gray that's just slightly darker than labels.
 
+### FR-104 - 2026-09-29 - editing icons for locomotives.
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-29 08:23  
+**Build:** commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+instead of "right click to change icon", add a wrench icon to the upper-left of the locomotive icon.  also, make central station supplied icons croppable locally.  
+
+also, increase the opacity of the default locomotive icon by 10%, so it's slightly lighter.
+
+### OB-307 - 2026-09-29 - still see orange lines when autonomy isn't loaded
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-29 08:33  
+**Build:** commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+even when autonomy isn't loaded (i.e. when switching diagram types from CS to local), the orange lines with tran locations are painted.  also, right click menus on sensors are also live.  orange should only be painted with autonomy loaded, and right click menus also only visible if autonomy loaded.
+
+### OB-308 - 2026-09-29 - local layout folder remembered
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-09-29 08:37  
+**Build:** commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+layouts -> open layout should default to the last used local layout folder.  this seems like a regression
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
