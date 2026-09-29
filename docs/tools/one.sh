@@ -464,8 +464,70 @@ do
     # Only THIS RUN's leftovers, before the class and again after the last one (V33-C1, V33-C2).
     reap
 
+    # A CLASS, OR SOME OF ITS METHODS (2026-09-29): "label:pkg.Class.m1,pkg.Class.m2" runs those methods only.  What a
+    # mutation needs: the claim it targets is the whole question, and a class like the import door's takes six minutes
+    # where one of its claims takes seconds.  Across 129 mutations no whole-class run turned red only a test the mutation
+    # did not target.
+    case "$T" in
+        *:*) TARGS="-methods ${T#*:}";;
+        *) TARGS="-testclass $T";;
+    esac
+
+    # WATCHED, NOT WAITED FOR (2026-09-29).  A JVM that has printed TestNG's summary and does not exit - a window or a
+    # thread a test left behind - held this loop, the machine and every later run for nine hours on 2026-09-28, and the
+    # reap that would have ended it never ran, because the loop never got there.  So the JVM runs in the background and
+    # is watched: once its summary is out it has TC_HANG_GRACE seconds to exit (120 by default), and it has TC_CLASS_CAP
+    # seconds in all (3600); past either, this run's own JVMs are reaped and the class is reported as HUNG - a class
+    # that leaves something running is not a green class, whatever its summary says.
+    RUN_OUT="$S/one-run.txt"
+
     "$JAVA" $JAVA_FLAGS -Dtraincontrol.batteryRun="$RUN_ID" \
-        -cp "$BUILD;$CP" org.testng.TestNG -testclass "$T" -d "$S/oneout" > "$S/one-run.txt" 2>&1
+        -cp "$BUILD;$CP" org.testng.TestNG $TARGS -d "$S/oneout" > "$RUN_OUT" 2>&1 &
+
+    JVM=$!
+
+    HUNG=""
+    started=$(date +%s)
+    summarised=""
+
+    while kill -0 "$JVM" 2>/dev/null
+    do
+        sleep 2
+
+        now=$(date +%s)
+
+        if [ -z "$summarised" ] && grep -q "Total tests run" "$RUN_OUT" 2>/dev/null; then summarised=$now; fi
+
+        if [ -n "$summarised" ] && [ $((now - summarised)) -ge "${TC_HANG_GRACE:-120}" ]
+        then
+            HUNG="its JVM did not exit ${TC_HANG_GRACE:-120} s after its summary"
+
+            break
+        fi
+
+        if [ $((now - started)) -ge "${TC_CLASS_CAP:-3600}" ]
+        then
+            HUNG="its JVM was still running after ${TC_CLASS_CAP:-3600} s"
+
+            break
+        fi
+    done
+
+    if [ -n "$HUNG" ]
+    then
+        reap
+
+        kill -9 "$JVM" 2>/dev/null
+    fi
+
+    wait "$JVM" 2>/dev/null
+
+    if [ -n "$HUNG" ]
+    then
+        echo "*** $T HUNG - $HUNG; this run's JVMs were ended ***"
+
+        BAD=$((BAD+1))
+    fi
 
     grep -E "Total tests run|Configuration Failures|FAILED|java.lang.Assertion|at regression|at core" \
         "$S/one-run.txt"
