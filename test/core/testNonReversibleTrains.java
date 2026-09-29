@@ -979,7 +979,10 @@ public class testNonReversibleTrains
         // forty lines above - so a train that stopped to turn resumed at full line speed on a stretch
         // its owner had set to run slow, and stayed there until the next point recalculated.  The stop
         // was added for the reversal question; handing back a speed limit was not part of it.
-        assertTrue(flat.contains("loc.setSpeed(resume).waitForSpeedAtOrAbove(resume);"),
+        //
+        // Written through `drive` since RSA-C1, which leaves a stop ordered since dispatch standing - and then the
+        // wait for the speed is not made either.
+        assertTrue(flat.contains("if (drive(loc, resume, stopsAtDispatch)) loc.waitForSpeedAtOrAbove(resume);"),
             "the reversal stop gives the point speed multiplier back when it accelerates again "
             + "(REG6-B3)");
 

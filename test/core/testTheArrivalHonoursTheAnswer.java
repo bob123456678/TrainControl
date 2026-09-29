@@ -759,6 +759,9 @@ public class testTheArrivalHonoursTheAnswer
         rail.getPoint("RSMP").setProtectingSignal(guard.getName());
         rail.createEdge("RSMS", "RSMT");
         rail.createEdge("RSMS", "RSMP");
+
+        // The side the train comes in by, as the builder records it, so the arrival has one to carry across
+        rail.getEdge("RSMS", "RSMT").setEntrySide("W");
         rail.makeCurrent();
 
         final Point turning = rail.getPoint("RSMT");
@@ -835,7 +838,7 @@ public class testTheArrivalHonoursTheAnswer
                 + " the platform's exit guard GREEN over the standing train, the square reading empty for a moment"
                 + " (RSA-C3): " + atTheArrival);
 
-            assertTrue(plain.getArrivedFrom() != null, "the plain copy was given the train without the side it came in by,"
+            assertEquals(plain.getArrivedFrom(), "W", "the plain copy was given the train without the side it came in by,"
                 + " so its tail is nowhere (RSA-C3)");
         }
         finally

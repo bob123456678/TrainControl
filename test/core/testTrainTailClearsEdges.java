@@ -227,7 +227,10 @@ public class testTrainTailClearsEdges
         // this morning.  Re-wrapping the call in the editor would do it too.
         String call = source.replaceAll("\\s+", " ");
 
-        assertTrue(call.contains("tailHasProvablyPassed(pathIsUnmeasured, waiting[1], loc.getTrainLength())"),
+        // THE LENGTH AS THE JOURNEY WAS DISPATCHED (RSA-A1): read once, so a length written while the train runs
+        // cannot shorten what it holds - and read from the locomotive, which is the half this asks.
+        assertTrue(call.contains("tailHasProvablyPassed(pathIsUnmeasured, waiting[1], lengthAtDispatch)")
+            && call.contains("final Integer lengthAtDispatch = loc.getTrainLength();"),
             "the clearing loop no longer passes the locomotive's length to tailHasProvablyPassed, so "
             + "the rule compares against nothing and every edge is handed back the moment the head "
             + "leaves it");

@@ -989,15 +989,23 @@ public class MarklinRoute extends Route
                             }
                             else if (rc.isStop())
                             {                        
-                                // Only send stop command once
-                                if (this.network.getPowerState())
+                                // SENT WHATEVER THE POWER FLAG SAYS (RSA-C4; behaviour.md 7a: an
+                                // emergency stop is obeyed whatever else is true).  The flag is only
+                                // the last GO or STOP echo heard, so one lost GO skipped the stop of a
+                                // route that fired with nobody present.  It decides the notice and the
+                                // log line now, and nothing else: a STOP sent to a station already
+                                // stopped does nothing.
+                                final boolean wasOn = this.network.getPowerState();
+
+                                this.network.stop();
+
+                                if (wasOn)
                                 {
                                     this.network.logf(
                                         "route.powerTurnedOffCondition",
                                         this.getName()
                                     );
-                                    this.network.stop();
-                                
+
                                     if (auto && this.network.getGUI() != null)
                                     {
                                         this.network.getGUI().emergencyStopTriggered(this);

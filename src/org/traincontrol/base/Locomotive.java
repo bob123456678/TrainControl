@@ -757,13 +757,50 @@ public abstract class Locomotive
      */
     public Locomotive waitForOccupiedFeedback(String name, int minDuration, long adviseAfterMs)
     {
+        return waitForOccupiedFeedback(name, minDuration, adviseAfterMs, null);
+    }
+
+    /**
+     * The same, given up without the sensor once `abandon` says so (RSA-B1).  It is asked whenever the wait wakes, and
+     * every wait is woken when a railway is retired (`wakeEveryWait`): a journey passes "my railway has gone", so a
+     * train the reload's Yes stopped short of its sensor leaves no thread behind to stop it later, whoever drives it
+     * then.  A route's trigger passes nothing and waits for as long as the layout runs.
+     *
+     * @param name the feedback to wait for
+     * @param minDuration how long the feedback must stay occupied to count
+     * @param adviseAfterMs say something once after this long, or 0 to stay quiet
+     * @param abandon when to stop waiting without the sensor, or null never to
+     * @return this
+     */
+    public Locomotive waitForOccupiedFeedback(String name, int minDuration, long adviseAfterMs,
+        java.util.function.BooleanSupplier abandon)
+    {
         return waitForOccupiedFeedback(name, minDuration, adviseAfterMs,
-            System.currentTimeMillis(), adviseAfterMs <= 0);
+            System.currentTimeMillis(), adviseAfterMs <= 0, abandon);
+    }
+
+    /** Whether a wait has been given up (RSA-B1). */
+    private static boolean givenUp(java.util.function.BooleanSupplier abandon)
+    {
+        return abandon != null && abandon.getAsBoolean();
+    }
+
+    /**
+     * Wakes every thread waiting on a sensor, so each asks again whether to go on waiting (RSA-B1).  Called when a
+     * railway is retired; a wait with nothing to give up on goes back to waiting.
+     */
+    public static void wakeEveryWait()
+    {
+        synchronized (monitor)
+        {
+            monitor.notifyAll();
+        }
     }
 
     /**
      * @param originMs when the WAIT began, which is not when this call began
      * @param alreadyAdvised whether the advisory has been given for this wait
+     * @param abandon when to give the wait up without the sensor (RSA-B1), or null never to
      *
      * A sensor that makes for a moment and lets go restarts the wait - the tile bounced, or a bogie
      * bridged it, and a train that has not really arrived must not be treated as though it had.  The
@@ -775,7 +812,7 @@ public abstract class Locomotive
      * sent, which is the only number that answers the question somebody is asking when they read it.
      */
     private Locomotive waitForOccupiedFeedback(String name, int minDuration, long adviseAfterMs,
-        long originMs, boolean alreadyAdvised)
+        long originMs, boolean alreadyAdvised, java.util.function.BooleanSupplier abandon)
     {
         boolean interrupted = false;
 
@@ -786,7 +823,7 @@ public abstract class Locomotive
 
         synchronized(monitor)
         {
-            while (!this.isFeedbackSet(name) || !this.getFeedbackState(name))
+            while ((!this.isFeedbackSet(name) || !this.getFeedbackState(name)) && !givenUp(abandon))
             {
                 if (!advised && System.currentTimeMillis() - began >= adviseAfterMs)
                 {
@@ -825,6 +862,15 @@ public abstract class Locomotive
             }  
         }
 
+        // GIVEN UP, not arrived (RSA-B1): the journey's railway has been retired, and its thread goes without the
+        // debounce - the train it drove may be another railway's now.
+        if (givenUp(abandon))
+        {
+            if (interrupted) Thread.currentThread().interrupt();
+
+            return this;
+        }
+
         if (minDuration > 0)
         {
             this.delay(minDuration);
@@ -839,7 +885,7 @@ public abstract class Locomotive
                 // wrong: past the threshold the remainder is negative, and flooring it at 1ms made a
                 // flicker announce the same train again a millisecond later, as "0 minutes".  The
                 // javadoc says once per wait and this is what makes that true.
-                return this.waitForOccupiedFeedback(name, minDuration, adviseAfterMs, began, advised);
+                return this.waitForOccupiedFeedback(name, minDuration, adviseAfterMs, began, advised, abandon);
             }
         }
 

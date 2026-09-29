@@ -4391,14 +4391,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             this.gracefulStopRequested = true;
 
-            // Order matters: clear the dispatch flag first, so no locomotive thread can pick up a new
-            // path in between, then stop everything that is currently moving.
-            this.model.getAutoLayout().stopLocomotives();
-
-            for (Locomotive active : this.model.getAutoLayout().getActiveLocomotives().keySet())
-            {
-                active.setSpeed(0);
-            }
+            // THE RAILWAY'S OWN STOP (RSA-C1): a stop counted first, which every journey dispatched before it obeys -
+            // a train still claiming or choosing its route is not sent, one reaching its next sensor is not given its
+            // speed back - then autonomy stops choosing, then every train under way stops where it is.
+            this.model.getAutoLayout().stopEveryTrainWhereItIs();
         }
 
         resetLayoutStationLabels();
@@ -28360,6 +28356,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (l == null) return;
 
+        // NOT WHILE TRAINS RUN (RSA-A1; Adam, MT-141: "Never allow any modifications to a running layout.  This
+        // includes locomotive database").  A run hands the track behind a train back by this number, so a length
+        // cleared mid-run gave back the track the train was lying across.  Refused at the click, and again below at OK.
+        if (refuseWhileAutonomyRunning(evt == null ? null : evt.getComponent())) return;
+
         Integer current = l.getTrainLength();
 
         // THE SAME LIST THE AUTONOMY EDITOR OFFERS: 0 to `ROUTE_TRAIN_LENGTH_MAX` (Adam).
@@ -28417,6 +28418,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void applyTrainLength(Locomotive l, int units)
     {
         if (l == null) return;
+
+        // AND AT OK, for a dialog that was open when a run began (RSA-A1)
+        if (refuseWhileAutonomyRunning(null)) return;
 
         l.setTrainLength(units);
 

@@ -682,7 +682,9 @@ public class Layout
     private boolean turnOnFunctionsOnDeparture;
     private double preArrivalSpeedReduction = 0.5;
     private int maxLocInactiveSeconds = 0; // Locomotives that have not run for at least this many seconds will be prioritized
-    private boolean atomicRoutes = true; // if false, routes will be unlocked as milestones are passed
+    // VOLATILE (RSA-C5): read by every running train at every sensor, and written by the atomic-routes gate on the
+    // event thread while trains run (GUI-A1) - a train already driving need never see a write to a plain field.
+    private volatile boolean atomicRoutes = true; // if false, routes will be unlocked as milestones are passed
     private boolean timetableCapture = false;
 
     // Staging plans are only valid executed one train at a time.  Set by loadReturnToHomeTimetable and
@@ -876,6 +878,12 @@ public class Layout
             Layout.layoutVersion += 1;
             this.version = Layout.layoutVersion;
         }
+
+        // EVERY JOURNEY OF A RAILWAY THIS RETIRES ASKS AGAIN whether to go on waiting (RSA-B1): the reload's and
+        // Unload's Yes stop the trains between two sensors, and a journey left waiting on a sensor its train will not
+        // reach stopped whichever train next occupied it - by then, perhaps, one the next railway was driving.
+        Locomotive.wakeEveryWait();
+
         Layout.lastError = "";
     }
     
@@ -1871,6 +1879,11 @@ public class Layout
         {
             Layout.layoutVersion += 1;
         }
+
+        // EVERY JOURNEY OF A RAILWAY THIS RETIRES ASKS AGAIN whether to go on waiting (RSA-B1): the reload's and
+        // Unload's Yes stop the trains between two sensors, and a journey left waiting on a sensor its train will not
+        // reach stopped whichever train next occupied it - by then, perhaps, one the next railway was driving.
+        Locomotive.wakeEveryWait();
     }
 
     /**
@@ -1885,6 +1898,11 @@ public class Layout
             Layout.layoutVersion += 1;
             this.version = Layout.layoutVersion;
         }
+
+        // EVERY JOURNEY OF A RAILWAY THIS RETIRES ASKS AGAIN whether to go on waiting (RSA-B1): the reload's and
+        // Unload's Yes stop the trains between two sensors, and a journey left waiting on a sensor its train will not
+        // reach stopped whichever train next occupied it - by then, perhaps, one the next railway was driving.
+        Locomotive.wakeEveryWait();
     }
 
     /**
@@ -2131,6 +2149,81 @@ public class Layout
         return this.running && !this.timetableExecuting;
     }
     
+    /**
+     * How many times the operator has stopped every train where it stood (RSA-C1): counted by
+     * `stopEveryTrainWhereItIs`, read by each journey when it is dispatched and again around every speed it writes.
+     */
+    private final java.util.concurrent.atomic.AtomicInteger stopsOrdered = new java.util.concurrent.atomic.AtomicInteger();
+
+    /** Whether this railway has been retired: what a journey's sensor waits give up on (RSA-B1). */
+    private final java.util.function.BooleanSupplier retiredRailway = () -> !this.isCurrentLayout();
+
+    /**
+     * Stops every train where it is, now: the reload's and Unload's Yes (RSA-C1).
+     *
+     * `stopLocomotives` is the graceful stop, which lets every journey finish.  This one counts a stop first - every
+     * journey dispatched before it reads the count before each speed it writes and again after (`drive`) - so a train
+     * still claiming its route is given it back unrun, one reaching its next sensor is not given its speed back, and one
+     * set off at the same instant is put back to a stand.  Then autonomy stops choosing, and every train under way stops.
+     * Not `synchronized`: the event thread calls it, and nothing there may wait on this railway's monitor.
+     */
+    public void stopEveryTrainWhereItIs()
+    {
+        this.stopsOrdered.incrementAndGet();
+
+        stopLocomotives();
+
+        for (Locomotive active : this.activeLocomotives.keySet()) active.setSpeed(0);
+    }
+
+    /**
+     * Writes a journey's speed unless a stop has been ordered since the journey was dispatched, or its railway has been
+     * retired (RSA-C1, GS-C1).  Asked again once the command has gone: a stop ordered while it was on its way wins, and
+     * the train is put back to a stand.
+     *
+     * @param loc the train
+     * @param speed the speed to write
+     * @param stopsAtDispatch `stopsOrdered` as the journey read it when it was dispatched
+     * @return whether the speed was written and stands
+     */
+    private boolean drive(Locomotive loc, int speed, int stopsAtDispatch)
+    {
+        if (this.stopsOrdered.get() != stopsAtDispatch || !isCurrentLayout()) return false;
+
+        loc.setSpeed(speed);
+
+        if (this.stopsOrdered.get() == stopsAtDispatch) return true;
+
+        loc.setSpeed(0);
+
+        return false;
+    }
+
+    /**
+     * Gives back a route claimed for a journey that a stop has overtaken, before the train has moved (RSA-C1): the
+     * track and the squares it reserved are released, and the train stands reserved where it was - as a route that
+     * could not be configured is given back (`handleMisconfiguredPath`).
+     *
+     * @param path the route claimed
+     * @param loc the train
+     */
+    private void giveBackUnrun(List<Edge> path, Locomotive loc)
+    {
+        synchronized (this)
+        {
+            for (Edge e : path)
+            {
+                e.setUnoccupied();
+
+                if (loc.equals(e.getEnd().getCurrentLocomotive())) e.getEnd().setLocomotive(null);
+            }
+
+            path.get(0).getStart().reserve(loc);
+        }
+
+        this.takingPath.remove(loc);
+    }
+
     /**
      * Stops locomotives gracefully (i.e., at their next station for those that are running)
      */
@@ -3808,16 +3901,22 @@ public class Layout
             // the sibling clears both on the copy it leaves, so what is read after the move is nothing.
             java.util.List<Edge> along = arrived.getArrivedAlong();
 
-            // `setLocomotive` takes the train off wherever else it is standing, so clearing the copy
-            // it is leaving by hand first is redundant - and it was the line that gave up this run's
-            // reservations early when this ran before the unlock (PRV-B2).
-            sibling.setLocomotive(loc);
+            // ONTO THE PLAIN COPY FIRST, WITH THE SIDE AND THE ROAD IT CAME IN BY, AND ONLY THEN OFF THE TURNING ONE
+            // (RSA-C3).  `setLocomotive` sweeps the train off every other copy before it places it, so the square read
+            // empty for a moment: a claim on another thread saw no train and no tail there, and the platform's exit
+            // guard, which follows the square, was commanded GREEN and then RED again over the standing train.
+            // Reserved here, both copies hold it until the turning one lets go, so the square is never empty and the
+            // signal never changes.  After the unlock still: until then the Points `clearLocomotiveExcept` sweeps are
+            // this run's reservations (PRV-B2).
+            sibling.reserve(loc);
 
             sibling.setArrivedFrom(tail);
 
             // AND THE ROUTE, which describes the same arrival from this copy as from the one it
             // declined (MT-335) - the value read before the move, not after it.
             sibling.setArrivedAlong(along);
+
+            clearLocomotiveExcept(loc, sibling);
 
             // THE STATION, NOT THE COPY (Adam, 2026-09-13: "the whole copy thing needs to be masked
             // from the user").  Both Points are one square; which of them the graph keeps the train on
@@ -4843,7 +4942,10 @@ public class Layout
             {                
                 List<Edge> path = this.pickPath(loc);
 
-                if (path != null)
+                // AND STILL RUNNING once the choice is made (RSA-C1): a choice takes the railway's monitor, which a
+                // dispatch holds for as long as it throws its switches, and a stop - graceful, or the operator's Yes -
+                // that came meanwhile sends nothing.
+                if (path != null && running)
                 {
                     // Guarded for the same reason the callbacks are, and it is the same consequence.
                     // executePath's own handler deliberately does NOT unlock a failed path, so an
@@ -8752,6 +8854,10 @@ public class Layout
     private boolean executePathInternal(List<Edge> path, Locomotive loc, int speed, TimetablePath ttp,
         ReversalPolicy reversals)
     {    
+        // THE STOPS ORDERED WHEN THIS JOURNEY WAS DISPATCHED (RSA-C1), read first - before the claim, which can wait
+        // seconds behind another train's switches - so a stop ordered while it waits is one this journey obeys.
+        final int stopsAtDispatch = this.stopsOrdered.get();
+
         // Sanity check
         if (!this.isValid())
         {
@@ -8884,6 +8990,16 @@ public class Layout
         }
         else
         {
+            // A STOP ORDERED WHILE THIS CLAIMED ITS ROUTE (RSA-C1, GS-C1): the operator's Yes stopped the trains under
+            // way, and this one was not yet among them - so the route is given back unrun, and the train stands where
+            // it was.
+            if (this.stopsOrdered.get() != stopsAtDispatch)
+            {
+                giveBackUnrun(path, loc);
+
+                return false;
+            }
+
             synchronized (this.activeLocomotives)
             {                
                 // CopyOnWriteArrayList: this list is only ever appended to (below) and read by the UI
@@ -8925,11 +9041,15 @@ public class Layout
             loc.getCallback(CB_ROUTE_START).accept(loc);
         }
         
-        loc.setSpeed(speed);
-        this.control.logf(
-            "autolayout.infoLocomotiveStarted",
-            loc.getName()
-        );
+        // FENCED AS EVERY SPEED BELOW IS (GS-C1, RSA-C1): a stop ordered since this journey was dispatched keeps the
+        // train standing, and so does a railway retired while its route was claimed.
+        if (drive(loc, speed, stopsAtDispatch))
+        {
+            this.control.logf(
+                "autolayout.infoLocomotiveStarted",
+                loc.getName()
+            );
+        }
 
         // When !this.atomicRoutes: track edges to unlock based on length of train
         // Edges waiting to be released, each with how far the HEAD has travelled since the end of it.
@@ -8953,6 +9073,10 @@ public class Layout
         // running total instead answered "not yet" for every step before the first measured edge.
         boolean pathIsUnmeasured = pathIsUnmeasured(path);
 
+        // THE TRAIN'S LENGTH AS IT WAS DISPATCHED (RSA-A1): what this journey hands back behind the train is measured
+        // by it, and a length changed while the train runs - which no door allows - must not shorten what it holds.
+        final Integer lengthAtDispatch = loc.getTrainLength();
+
         for (int i = 0; i < path.size(); i++)
         {
             Point current = path.get(i).getEnd();
@@ -8965,14 +9089,15 @@ public class Layout
                     int calculatedSpeed = (int) Math.ceil((double) speed * current.getSpeedMultiplier());
                     calculatedSpeed = Math.min(calculatedSpeed, 100);
                     
-                    if (loc.getSpeed() != calculatedSpeed)
+                    // Not after a stop ordered since dispatch (RSA-C1): a train stopped between two sensors that
+                    // brakes onto the one ahead is not given the next leg's speed back.
+                    if (loc.getSpeed() != calculatedSpeed && drive(loc, calculatedSpeed, stopsAtDispatch))
                     {
                         this.control.logf(
                             "autolayout.infoAdjustingSpeedForLocomotive",
                             calculatedSpeed,
                             loc.getName()
                         );
-                        loc.setSpeed(calculatedSpeed);
                     }
                 }
                 
@@ -8997,7 +9122,7 @@ public class Layout
                     // trigger monitor uses the same wait and is supposed to sit on its sensor for as
                     // long as the layout runs.
                     loc.waitForOccupiedFeedback(current.getS88(),
-                        Locomotive.FEEDBACK_DURATION_THRESHOLD, Locomotive.FEEDBACK_ADVISORY_MS);
+                        Locomotive.FEEDBACK_DURATION_THRESHOLD, Locomotive.FEEDBACK_ADVISORY_MS, this.retiredRailway);
                     
                     if (this.simulate)
                     {            
@@ -9082,7 +9207,8 @@ public class Layout
                     int resume = Math.min((int) Math.ceil(
                         (double) speed * current.getSpeedMultiplier()), 100);
 
-                    loc.setSpeed(resume).waitForSpeedAtOrAbove(resume);
+                    // Not after a stop ordered since dispatch (RSA-C1) - and then not waited for either
+                    if (drive(loc, resume, stopsAtDispatch)) loc.waitForSpeedAtOrAbove(resume);
                 }
                 
                 // We can also clear the edges dynamically 
@@ -9161,7 +9287,7 @@ public class Layout
                             // of `releasedEarly`, recorded beside this set (GUI-A1) - are what his railway
                             // actually does.  That is the premise `VD10-A1` turned on.
                             if (!tailHasProvablyPassed(pathIsUnmeasured, waiting[1],
-                                loc.getTrainLength()))
+                                lengthAtDispatch))
                             {
                                 // Still under the train.  In atomic mode nothing was going to be
                                 // unlocked anyway, so this only reports in the mode it can happen in.
@@ -9169,7 +9295,7 @@ public class Layout
                                 {
                                     this.control.logf(
                                         "autolayout.infoNotUnlockingTraversedEdgeDueToTrainLength",
-                                        loc.getTrainLength(),
+                                        lengthAtDispatch,
                                         waiting[1],
                                         path.get(waiting[0]).getName()
                                     );
@@ -9249,12 +9375,16 @@ public class Layout
                 if (isCurrentLayout())
                 {        
                     // Destination is next - reduce speed and wait for occupied feedback
-                    loc.setSpeed((int) Math.ceil((double) speed * Math.min(preArrivalSpeedReduction, current.getSpeedMultiplier())));
-                    this.control.logf(
-                        "autolayout.infoPreArrivalSpeedForLocomotive",
-                        loc.getSpeed(),
-                        loc.getName()
-                    );
+                    // Not after a stop ordered since dispatch (RSA-C1)
+                    if (drive(loc, (int) Math.ceil((double) speed * Math.min(preArrivalSpeedReduction,
+                        current.getSpeedMultiplier())), stopsAtDispatch))
+                    {
+                        this.control.logf(
+                            "autolayout.infoPreArrivalSpeedForLocomotive",
+                            loc.getSpeed(),
+                            loc.getName()
+                        );
+                    }
 
                     if (loc.hasCallback(CB_PRE_ARRIVAL))
                     {
@@ -9274,7 +9404,7 @@ public class Layout
 
                     // With an advisory - see the intermediate points above
                     loc.waitForOccupiedFeedback(current.getS88(),
-                        Locomotive.FEEDBACK_DURATION_THRESHOLD, Locomotive.FEEDBACK_ADVISORY_MS);
+                        Locomotive.FEEDBACK_DURATION_THRESHOLD, Locomotive.FEEDBACK_ADVISORY_MS, this.retiredRailway);
                        
                     if (this.simulate)
                     {            

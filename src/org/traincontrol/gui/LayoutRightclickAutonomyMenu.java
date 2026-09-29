@@ -157,8 +157,17 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // Removed rather than corrected, so the mistake is unavailable instead of merely fixed: with
         // no such field there is no wrong number to hand the rule.
 
-        private PathOptions(Locomotive locomotive, List<List<Edge>> shown, List<List<Edge>> other)
+        /**
+         * The railway these paths were found on, which the destination sends on (RSA-C6): a railway replaced between
+         * the gather and the click then refuses at its own fence, rather than the new one locking the old one's
+         * track.  The Auto tab sends on the railway its list was found on too.
+         */
+        final org.traincontrol.automation.Layout railway;
+
+        private PathOptions(org.traincontrol.automation.Layout railway, Locomotive locomotive, List<List<Edge>> shown,
+            List<List<Edge>> other)
         {
+            this.railway = railway;
             this.locomotive = locomotive;
             this.shown = shown;
             this.other = other;
@@ -322,7 +331,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             }
         }
 
-        return new PathOptions(locomotive, shownPaths, otherPaths);
+        return new PathOptions(running, locomotive, shownPaths, otherPaths);
     }
 
     /**
@@ -565,7 +574,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                         for (List<Edge> path : paths)
                         {
-                            add(destinationItem(ui, path, locomotive));
+                            add(destinationItem(ui, options.railway, path, locomotive));
 
                             // The way through, whenever anything at all has been left out.
                             //
@@ -652,7 +661,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
                             for (List<Edge> path : otherPaths)
                             {
-                                more.add(destinationItem(ui, path, locomotive));
+                                more.add(destinationItem(ui, options.railway, path, locomotive));
                             }
 
                             add(more);
@@ -1410,11 +1419,13 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      * the event thread, and `executePath` blocks until the train arrives.
      *
      * @param ui the window, for the model and for the dialogs
+     * @param railway the railway the path was found on, which it is sent on (RSA-C6)
      * @param path the route to take
      * @param locomotive the train to send
      * @return the item
      */
-    private JMenuItem destinationItem(TrainControlUI ui, List<Edge> path, Locomotive locomotive)
+    private JMenuItem destinationItem(TrainControlUI ui, org.traincontrol.automation.Layout railway, List<Edge> path,
+        Locomotive locomotive)
     {
         JMenuItem item = new JMenuItem("-> " + stationName(path.get(path.size() - 1).getEnd()));
 
@@ -1423,7 +1434,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // setup, the power - this path's standing rules, the reversal question, the atomic-routes gate and the dispatch.
         // Every message there belongs to the main window, not to this menu, which has left its window by the time an item's
         // action runs (RLU-B2).
-        item.addActionListener(event -> ui.sendATrainByHand(ui.getModel().getAutoLayout(), path, locomotive,
+        item.addActionListener(event -> ui.sendATrainByHand(railway, path, locomotive,
             javax.swing.SwingUtilities.getWindowAncestor(this)));
 
         return item;

@@ -1072,7 +1072,11 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 // trap, since before this class existed.
                 if (index < 0 || !list.getCellBounds(index, index).contains(evt.getPoint())) return;
 
-                if (!layout.isAutoRunning() && !this.paths.isEmpty())
+                // NOR WHILE RETURN HOME OWNS THE RAILWAY (RSA-C2): autonomy's flag is down while it plans, and a train
+                // sent by hand then spent the press on positions the railway no longer had.  A second hand send while
+                // another runs stays allowed here (Adam, OB-164: "The user can rely on full autonomy or the panels to
+                // send trains more clearly.").
+                if (!layout.isAutoRunning() && !layout.isStagingInProgress() && !this.paths.isEmpty())
                 {
                     // Read here, on the EDT, where the operator chose it.  updateState reassigns this list whenever any
                     // locomotive arrives or departs - dispatching one train recomputes another's paths - so a list that
