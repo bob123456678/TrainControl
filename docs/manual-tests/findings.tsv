@@ -2393,7 +2393,7 @@ RLA2-B3	RLA2.md	Closed	Fixed - on the running railway by RLA2-B1's refusal; and 
 RLA2-C1	RLA2.md	Closed	Fixed in the records - behaviour.md states the rule the code has (cc56a7a8).	behaviour.md still says a locomotive edit sweeps only where the edited train stands
 RLA2-C2	RLA2.md	Open - deferred	Follow-up - filed as OB-301: pre-existing, and it needs two mistakes in one dialog; the ne	Change Name or Address: a refused new name returns after the address has changed, before the sweep
 RLA2-C3	RLA2.md	Closed	Fixed - a home the configuration already has is kept and named in the message. claims 5322	A home the configuration already has is skipped without a word, and nothing claims the home half
-RLA2-C4	RLA2.md	Open - Adam's decision	Fixed as RLA2-B1 for placements - nothing is imported into the configuration running. For 	RLA-C2 is fixed for homes, reversed for placements, and not fixed for maxima
+RLA2-C4	RLA2.md	Closed	Fixed as RLA2-B1 for placements - nothing is imported into the configuration running. For 	RLA-C2 is fixed for homes, reversed for placements, and not fixed for maxima
 RLA2-C5	RLA2.md	Closed	Fixed in the records - RLA-C4 is recorded as hardening no door reaches today, and its clai	RLA-C4 fixed a state no door reaches, and its claim builds that state by calling the prompt directly
 RLA2-C6	RLA2.md	Closed	Fixed - one rule for a copy a train may be started from, asked by the start and by "turn i	RLA-C5's claim pins the one clause the builder never lets differ between copies; the barred-copy clause is unpinned
 RLA2-C7	RLA2.md	Closed	Fixed - the clause is gone from the sentence in all eight languages, the user guide and be	The either-way sentence says "a station where trains turn round is never chosen"; autonomy chooses a terminus
@@ -2406,7 +2406,7 @@ RLA2-D4	RLA2.md	Closed	Checked - clean.	RLA-C3: a failed old-file import puts ba
 RLA2-D5	RLA2.md	Closed	Checked - clean.	RLA-C7's records are true, and Routes > Import's question names exactly the routes the model re-arms
 RLA2-D6	RLA2.md	Closed	Checked - clean.	The eight bundles agree after the round's five new keys
 RLA2-D7	RLA2.md	Closed	Checked - clean.	RLU-C9's drop: the question asks about an editor as it is put and as it is answered, and all three doors read it
-RLA3-B1	RLA3.md	Open - Adam's decision	Open - Adam's decision: a gap-fill cannot tell a setting returned to its default from one 	A second import puts the file's setting back wherever the operator returned one to its default, because every editor door stores a default as nothing
+RLA3-B1	RLA3.md	Closed	Open - Adam's decision: a gap-fill cannot tell a setting returned to its default from one 	A second import puts the file's setting back wherever the operator returned one to its default, because every editor door stores a default as nothing
 RLA3-C1	RLA3.md	Open - deferred	Follow-up - filed as OB-303.	RLA2-B2's membership half: a Central Station multi-unit's new members that arrive during a run are applied and never swept
 RLA3-C2	RLA3.md	Open - deferred	Follow-up - filed as OB-303.	RLA2-B2's claim covers the address half only: the membership half and the running guard can go with every test green
 RLA3-C3	RLA3.md	Open - deferred	Follow-up - filed as OB-303.	The sync's new sweep takes a train off the graph and refreshes nothing autonomy draws; the window doors it copies refresh three things after the same
@@ -2556,7 +2556,7 @@ RLU-D3	RLU.md	Closed	Checked - clean.	the eight bundles agree: the same 1,831 ke
 RLU-D4	RLU.md	Closed	Checked - clean.	a successful old-file import leaves the configuration in use as it was
 RLU2-C1	RLU2.md	Closed	Fixed - the ratchet is 86 with AutonomyViewerPanel at 2 (5322fb65); green in the fix run.	`regression.testJavadocsAreAttached` is red at HEAD: RLU-C6's fix removed an orphan the exact ratchet still counts (86 found, 87 pinned)
 RLU2-C10	RLU2.md	Closed	Fixed - the either-way sentence names the side a train would arrive on, under the arrivals	RLU-C4's either-way sentence still has no remedy for a station reachable only on a side trains may not arrive at
-RLU2-C11	RLU2.md	Open - Adam's decision	Not a defect - a 0 is how a configuration states "no limit", by hand or by a capture; the 	"Add to it what the file has and {0} does not?" brings no station maximum into a configuration that has ever run: every station there states 0
+RLU2-C11	RLU2.md	Closed	Not a defect - a 0 is how a configuration states "no limit", by hand or by a capture; the 	"Add to it what the file has and {0} does not?" brings no station maximum into a configuration that has ever run: every station there states 0
 RLU2-C12	RLU2.md	Open - deferred	Follow-up - filed as OB-302: narrow and cosmetic; the next import excludes the pages again	an old-file import that fails puts back the page exclusions its first dialog has just announced
 RLU2-C13	RLU2.md	Open - deferred	Not a defect - the placement is in memory and in the editor's copy, and the next save writ	RLU-C9's "save nothing" also leaves unsaved the placement the door wrote before its question: after an editor opened in the wait, nothing writes where
 RLU2-C2	RLU2.md	Closed	Fixed - the call is gone with the round-1 capture (cc56a7a8); the census is green in the f	`regression.testNothingOnTheEventThreadTakesTheRailwaysMonitor` is red at HEAD: RLA-C2's capture in `importLegacyGraph` is a door onto `Layout.toJSON`
@@ -2579,7 +2579,7 @@ RLU2-D9	RLU2.md	Closed	Checked - clean.	the eight bundles at HEAD: 1,836 keys, i
 RLU3-C1	RLU3.md	Closed	Fixed - the either-way sentence no longer names a side to open. claims cca48e96 (red first	RLU2-C10's new remedy tells the operator to open a closed side even at a station every train turns round at - the remedy Adam ruled out at GUI4-C3, wh
 RLU3-C2	RLU3.md	Closed	Fixed - where the other way reaches a station but autonomy starts no train there, the sent	Since RLA-C5 the either-way sentence is also what a train gets where the other way does reach a station, and there it is untrue: the barred copy, pinn
 RLU3-C3	RLU3.md	Closed	Fixed - the setup's tidy report is pinned with the menus (cca48e96).	RLU2-C5 is pinned at ten of its eleven messages: the setup's tidy report in `AutonomyViewerPanel.save` - IND9X-C4's site - has no pin, and `this` put
-RLU3-C4	RLU3.md	Open - Adam's decision	Open - Adam's decision: a gap-fill cannot tell a setting returned to its default from one 	RLU2-C11's "not a defect" rests on a 0 nobody types: by hand "no limit" is stored as no key, only the capture writes 0, and every other reader of a ma
+RLU3-C4	RLU3.md	Closed	Open - Adam's decision: a gap-fill cannot tell a setting returned to its default from one 	RLU2-C11's "not a defect" rests on a 0 nobody types: by hand "no limit" is stored as no key, only the capture writes 0, and every other reader of a ma
 RLU3-C5	RLU3.md	Open - deferred	Follow-up - filed as OB-305.	RLU2-C13's disposition answers a save when the late answer comes back, which RLU2-C13 did not propose; its direction - save before the question, when
 RLU3-C6	RLU3.md	Closed	Fixed - the ratchet's dated line, and the old every-key test's javadoc (cca48e96).	Two records round 2 left: the ratchet's history has no line for 87 -> 86, and the old every-key test still promises to catch an emptied key it cannot
 RLU3-D1	RLU3.md	Closed	Checked - clean.	RLU2-C1 and RLU2-C2: both battery classes, re-run by their own rules in memory, are green at HEAD, and the census was red at the claims commit on exac
@@ -2658,6 +2658,25 @@ RLV11-D6	RLV11.md	Closed	Checked - clean, apart from RLV11-C6.	RLV10-C5's claims
 RLV11-D7	RLV11.md	Closed	Checked - clean, apart from RLV11-C5 and C6.	The station labels' builder that RLV10-B1's claim found
 RLV11-D8	RLV11.md	Closed	Checked - clean, apart from RLV11-C4.	Baseline
 RLV11-D9	RLV11.md	Closed	Checked - clean, apart from RLV11-C3 (C1's disposition repeats its premise).	The records
+RLV12-B1	RLV12.md	Closed	Fixed through one gate (Adam, 2026-09-29: *"can all the checks go through a single door?"*	An editor opened at rest stays open for a train sent from the Auto tab, and edits the setup through the run: a square clicked in it writes the setup a
+RLV12-C1	RLV12.md	Closed	Fixed - keptApart moves trains on along the chain (Layout.movedOn): a train takes a statio	The train moved on is moved one step only: a chain of three trains under way leaves the first where a standing train stands, and the fold erases it in
+RLV12-C2	RLV12.md	Closed	Fixed - keptApart keeps trains apart by square: the block a split square's copies share is	`keptApart` keeps trains apart by Point, not by square: on a split square a train under way is kept on one copy while another stands on the other, the
+RLV12-C3	RLV12.md	Closed	Fixed - the diagram's Edit Locomotive refuses, and says so, when clicked after a run began	The diagram's own Edit Locomotive item, which no factory builds, writes the setup and saves it when clicked after a run began - and a tail question as
+RLV12-C4	RLV12.md	Closed	Fixed - the rule is in the primitive: moveOntoFacingCopy declines a train under way (activ	RLV11-C3's rule sits in one of the two callers of the primitive that sweeps: `flipFacing`, the direction follow's posted body, still stands a train un
+RLV12-C5	RLV12.md	Closed	Fixed - deleteRoute, changeRouteId, restoreRouteActivation, isAutonomyBusy, gatherPathOpti	RLV11-C5 reached where it was measured: three of the model's check-then-build pairs remain on the sync's and a route edit's threads, the window's `isA
+RLV12-C6	RLV12.md	Closed	Fixed - both old-file questions add a sentence, autosetup.ui.importKeepsTheStationMaximums	The new question says a setting at its default takes the file's value; a station's maximum at its default does not, in any configuration that has run
+RLV12-C7	RLV12.md	Closed	Fixed - claims where the round's did not reach: every kind of setup item (a plain item, a 	What round 13's claims do not reach: three of the four refusals, the rule that the train a point still records keeps it, and a train still locking its
+RLV12-C8	RLV12.md	Closed	Fixed in fa641a6e - one.sh looks each method of a list up in the run's testng-results.xml 	`one.sh` given a method list with a misspelled name runs the others and reports green
+RLV12-C9	RLV12.md	Closed	Fixed in the records - RLA3-B1, RLU3-C4, RLA2-C4 and RLU2-C11 are Closed in the store with	RLA3-B1 and the three findings it superseded still read "Open - Adam's decision" in the finding store after the decision and the fix
+RLV12-D1	RLV12.md	Closed	Checked - clean, apart from RLV12-B1, C3 and C7.	The ruling at the diagram: the four factories refuse and say so, and nothing that is not a setup edit is newly refused
+RLV12-D2	RLV12.md	Closed	Checked - clean, apart from RLV12-C1, C2 and C7.	`keptApart` at RLV11-C1's and C2's arrangements, and every reader of the rule
+RLV12-D3	RLV12.md	Closed	Checked - clean, apart from RLV12-C4 and C7.	RLV11-C3 at `faceTheWayItCameIn`, and every caller of it
+RLV12-D4	RLV12.md	Closed	Checked - clean, apart from RLV12-C5.	RLV11-C5's changed sites
+RLV12-D5	RLV12.md	Closed	Checked - clean, apart from RLV12-C6.	The gap-fill's new sentence in eight languages
+RLV12-D6	RLV12.md	Closed	Checked - clean, apart from RLV12-C8.	The runners' hang watch
+RLV12-D7	RLV12.md	Closed	Checked - clean.	`8ca5eb12`: the monitor guard's allowance for Unload's placement-only write
+RLV12-D8	RLV12.md	Closed	Checked - clean.	Baseline
+RLV12-D9	RLV12.md	Closed	Checked - clean, apart from RLV12-B1 (behaviour.md's sentence and B1's and B2's dispositio	The records
 RLV6-B1	RLV6.md	Closed	Fixed - while a declined edit waits, every load carries each train across and lowers the f	RLA5-B1's fix reaches one of the four doors round 5 named; three still put every moved train back on its pre-run square and leave the flag up
 RLV6-C1	RLV6.md	Closed	Fixed - the carried load is the one asked for, interactive or not, so a train driven by ha	With the flag up, the Autonomy menu's, a page tick's and an import's reload of the configuration running is the editor doors' quiet one: hand-driven t
 RLV6-C2	RLV6.md	Closed	Fixed - the walk remembers the path, not every route asked. claims 528fd305 (red first), f	`hasEmergencyStop` shares one visited set across every branch it walks, so a route that reaches a split route by two paths, the longer first, is count
