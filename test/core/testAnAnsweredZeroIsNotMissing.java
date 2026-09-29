@@ -266,7 +266,8 @@ public class testAnAnsweredZeroIsNotMissing
         assertFalse(notices.isEmpty(), "precondition: the editor lists nothing under Worth tidying on his railway: "
             + everything);
 
-        String stands = "stands across that switch while it is here, and may block other parts of the layout until it leaves";
+        // The wording of 2026-09-29's message pass (Adam: "lighter touch")
+        String stands = "stands across that switch here and may block other trains until it leaves";
 
         java.util.Map<String, Integer> figures = new java.util.LinkedHashMap<>();
 
@@ -282,7 +283,7 @@ public class testAnAnsweredZeroIsNotMissing
 
             for (String row : notices)
             {
-                if (row.contains(" " + platform.getKey() + " ") || row.contains(platform.getKey() + " is set to take"))
+                if (row.contains(" " + platform.getKey() + " ") || row.contains(platform.getKey() + " is set for a train"))
                 {
                     if (row.contains(stands)) line = row;
                 }
@@ -297,7 +298,7 @@ public class testAnAnsweredZeroIsNotMissing
             }
             else
             {
-                String refused = "Coming in the shortest way, over " + platform.getValue() + " of measured track, a train"
+                String refused = "Coming in the shortest way, over " + platform.getValue() + ", a train"
                     + " longer than " + platform.getValue() + " is refused instead.";
 
                 assertTrue(line.indexOf(refused) > line.indexOf(stands), platform.getKey() + " does not say, after the"
