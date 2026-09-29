@@ -2150,6 +2150,8 @@ public class testATrainIsDispatchedOnce
 
         final Locomotive r = model.getLocByName(model.getLocList().get(7));
 
+        final int preferredWas = r.getPreferredSpeed();
+
         final Layout rail = aLine(s, "RHA", "RHB");
 
         final boolean[] completed = new boolean[1];
@@ -2159,6 +2161,10 @@ public class testATrainIsDispatchedOnce
         try
         {
             r.setSpeed(0);
+
+            // A SPEED IT MAY RUN AT, so a leg refused after the Yes is tried again - as it would be - rather than given
+            // up at once as a train that cannot run, which would end the run and hide the question asked here
+            r.setPreferredSpeed(30);
 
             rail.getPoint("RHA").setLocomotive(r);
 
@@ -2206,6 +2212,8 @@ public class testATrainIsDispatchedOnce
 
             if (running != null) running.join(5000);
 
+            r.setPreferredSpeed(preferredWas);
+
             letGo(s, r, null);
         }
     }
@@ -2233,11 +2241,23 @@ public class testATrainIsDispatchedOnce
 
         final java.util.logging.Handler tap = aTapOn(logged);
 
+        Thread journey = null;
+
         try
         {
             q.setSpeed(0);
 
             rail.getPoint("CHA").setLocomotive(q);
+
+            // A SWITCH ON ITS WAY, which claiming the route throws: a journey turned back at the start never throws it,
+            // where one given back after its claim already has
+            final org.traincontrol.marklin.MarklinAccessory onTheWay = model.newSwitch(283,
+                org.traincontrol.base.Accessory.accessoryDecoderType.MM2, false);
+
+            onTheWay.setSwitched(false);
+
+            rail.getEdge("CHA", "CHB").addConfigCommand(onTheWay.getName(),
+                org.traincontrol.base.Accessory.accessorySetting.TURN);
 
             // CHOSEN: the stops counted where the journey was chosen
             final int chosen = (Integer) Layout.class.getMethod("stopsOrdered").invoke(rail);
@@ -2245,15 +2265,43 @@ public class testATrainIsDispatchedOnce
             // THE YES
             theYes(rail);
 
-            // SENT, carrying the count it was chosen with
-            final Object sent = Layout.class.getMethod("executePath", List.class, Locomotive.class, int.class,
-                org.traincontrol.automation.TimetablePath.class, Layout.ReversalPolicy.class, int.class)
-                .invoke(rail, through(rail, "CHA", "CHB"), q, 30, null, Layout.ALWAYS_REVERSE, chosen);
+            // SENT, carrying the count it was chosen with - on a thread of its own, as a door sends it, so a journey that
+            // does set off waits on its sensor there rather than holding this claim
+            final java.lang.reflect.Method execute = Layout.class.getMethod("executePath", List.class, Locomotive.class,
+                int.class, org.traincontrol.automation.TimetablePath.class, Layout.ReversalPolicy.class, int.class);
 
-            assertEquals(sent, Boolean.FALSE, "a journey chosen before the operator's Yes was sent after it (RSA2-C2)");
+            final Object[] sent = new Object[1];
+
+            journey = new Thread(() ->
+            {
+                try
+                {
+                    sent[0] = execute.invoke(rail, through(rail, "CHA", "CHB"), q, 30, null, Layout.ALWAYS_REVERSE,
+                        chosen);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }, "chosen-before-the-yes");
+
+            journey.setDaemon(true);
+            journey.start();
+
+            final Thread sending = journey;
+
+            assertTrue(waitFor(() -> !sending.isAlive(), 5000), "a journey chosen before the operator's Yes was sent"
+                + " after it, and is under way (RSA2-C2)");
+
+            assertEquals(sent[0], Boolean.FALSE, "a journey chosen before the operator's Yes was sent after it"
+                + " (RSA2-C2)");
 
             assertFalse(q.getSpeed() > 0 || rail.isAlreadyUnderway(q), "a journey chosen before the operator's Yes"
                 + " claimed its route or set off after it (RSA2-C2)");
+
+            // NOTHING CLAIMED AT ALL
+            assertFalse(onTheWay.isSwitched(), "a journey chosen before the operator's Yes claimed its route, throwing its"
+                + " switch, before it was turned back (RSA2-C2)");
 
             assertTrue(logged.contains(org.traincontrol.util.I18n.f("autolayout.log.notSentAfterTheStop", q.getName())),
                 "a journey the Yes overtook was not sent and the log does not say why - a hand send then says \"check"
@@ -2264,7 +2312,7 @@ public class testATrainIsDispatchedOnce
             java.util.logging.Logger.getLogger(org.traincontrol.marklin.MarklinControlStation.class.getName())
                 .removeHandler(tap);
 
-            letGo(s, q, null);
+            letGo(s, q, journey);
         }
     }
 
