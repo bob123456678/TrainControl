@@ -87,6 +87,11 @@ public class testTheRefusalsAreAskedAtTheDoors
             + " tab's own copy never asked about an editor (RLV12-B1)"},
         {"addLocomotiveMenuItemActionPerformed", AUTONOMY,
             "MT-141: no modification to the locomotive database while the layout is running"},
+        {"promptTrainLength", AUTONOMY,
+            "RSA-A1, MT-141: a train's length is part of the locomotive database, and a run hands the track behind a"
+            + " train back by it"},
+        {"applyTrainLength", AUTONOMY,
+            "the same, at OK, for a dialog that was open when a run began (RSA-A1)"},
         {"syncFullLocStateMenuItemActionPerformed", AUTONOMY,
             "a full sync rewrites the locomotive database under a running railway"},
         {"deleteLayoutMenuItemActionPerformed", AUTONOMY + "|" + EDITOR,
@@ -472,5 +477,38 @@ public class testTheRefusalsAreAskedAtTheDoors
     private static String withoutComments(String source)
     {
         return source.replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("(?m)//[^\n]*", "");
+    }
+
+    /**
+     * The diagram's destination sends on the railway its paths were found on (RSA-C6), as the Auto tab's does - so a
+     * railway replaced between the gather and the click would refuse the send at its own fence, rather than the new
+     * railway locking the old one's track and driving the train over rails it does not hold.
+     *
+     * MUTATION: dispatch the destination on the railway current at the click, and this fails.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheDiagramsDestinationSendsOnTheRailwayItsPathsCameFrom() throws Exception
+    {
+        String item = bodyOf(withoutComments(read("src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java")),
+            "destinationItem");
+
+        assertFalse(item.isEmpty(), "cannot find destinationItem");
+
+        assertTrue(item.contains("sendATrainByHand("), "the diagram's destination no longer sends through the one door");
+
+        assertFalse(item.contains("getAutoLayout"), "the diagram's destination asks for the railway again at the click,"
+            + " not the one its paths were found on (RSA-C6)");
+
+        boolean carried = false;
+
+        for (java.lang.reflect.Field field : Class.forName(
+            "org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions").getDeclaredFields())
+        {
+            if (field.getType() == org.traincontrol.automation.Layout.class) carried = true;
+        }
+
+        assertTrue(carried, "the gathered paths do not carry the railway they were found on (RSA-C6)");
     }
 }

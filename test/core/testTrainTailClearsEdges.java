@@ -548,4 +548,157 @@ public class testTrainTailClearsEdges
 
         return behindHeld;
     }
+
+    /**
+     * A train's length changed while it runs does not shorten what the run holds (RSA-A1).  With Atomic Routes off, a run
+     * hands the track behind a train back once the head is the train's length past it, and the locomotive's menu could
+     * set that length to 0 ("not set") mid-run: from the next sensor every edge the head had finished was given back with
+     * the train still lying on it, and a road across its switch read clear for another train.  The run reads the length
+     * once, when it is dispatched.  The same run with the length left at 4 is the control.
+     *
+     * MUTATION: let the run read the train's length at every sensor again, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testALengthChangedDuringARunDoesNotShortenWhatTheTrainHolds() throws Exception
+    {
+        assertEquals(runWithTheLengthChanged(1741, false), "held and refused", "precondition: with the length left at 4"
+            + " the first rail was not held at the second sensor, so this fixture cannot tell a shortened hold from a"
+            + " broken one");
+
+        assertEquals(runWithTheLengthChanged(1751, true), "held and refused", "a train's length set to 0 while it ran"
+            + " handed back the rail it was lying across at its next sensor, and a road over that rail's switch read"
+            + " clear for another train (RSA-A1)");
+    }
+
+    /**
+     * Atomic Routes is read by every running train at every sensor and written by the atomic-routes gate on the event
+     * thread while trains run, so it is volatile, as the other flags a driving thread reads are (RSA-C5).
+     *
+     * MUTATION: take `volatile` off `Layout.atomicRoutes`, and this fails.
+     *
+     * @throws Exception from reflection
+     */
+    @Test
+    public void testTheAtomicRoutesSettingIsVolatile() throws Exception
+    {
+        assertTrue(java.lang.reflect.Modifier.isVolatile(Layout.class.getDeclaredField("atomicRoutes").getModifiers()),
+            "Layout.atomicRoutes is not volatile: the gate writes it on the event thread while trains run, and a train"
+            + " already driving need never see the write (RSA-C5)");
+    }
+
+    /**
+     * A 4-unit train sent over three measured rails of 1, 1 and 4 units on a non-atomic railway, beside a road that
+     * shares the first rail's metal.  After its first sensor its length is set to 0, or left alone; at its second sensor -
+     * the head one unit past the end of the first rail - the first rail is read.
+     *
+     * @param base the first of the six sensor addresses this run uses
+     * @param clear whether to set the length to 0 after the first sensor
+     * @return "held and refused" where the first rail is still held and the crossing road refused, else what was seen
+     * @throws Exception from the railway
+     */
+    private static String runWithTheLengthChanged(int base, boolean clear) throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] f = new org.traincontrol.marklin.MarklinFeedback[6];
+
+        for (int i = 0; i < 6; i++)
+        {
+            f[i] = model.newFeedback(base + i, null);
+            model.setFeedbackState(f[i].getName(), false);
+        }
+
+        final Locomotive x = model.getLocByName(model.getLocList().get(clear ? 3 : 4));
+        final Locomotive y = model.getLocByName(model.getLocList().get(5));
+
+        final Integer xWas = x.getTrainLength();
+        final Integer yWas = y.getTrainLength();
+
+        final Layout rail = new Layout(model);
+        final String p = clear ? "RLK" : "RLC";
+
+        Thread driving = null;
+
+        try
+        {
+            x.setSpeed(0);
+            x.setTrainLength(4);
+            y.setTrainLength(1);
+
+            rail.createPoint(p + "0", true, f[0].getName());
+            rail.createPoint(p + "1", false, f[1].getName());
+            rail.createPoint(p + "2", false, f[2].getName());
+            rail.createPoint(p + "3", true, f[3].getName());
+            rail.createPoint(p + "Y", true, f[4].getName());
+            rail.createPoint(p + "Z", true, f[5].getName());
+            rail.createEdge(p + "0", p + "1");
+            rail.createEdge(p + "1", p + "2");
+            rail.createEdge(p + "2", p + "3");
+            rail.createEdge(p + "Y", p + "Z");
+
+            final Edge first = rail.getEdge(p + "0", p + "1");
+            final Edge crossing = rail.getEdge(p + "Y", p + "Z");
+
+            final List<Edge> path = Arrays.asList(first, rail.getEdge(p + "1", p + "2"), rail.getEdge(p + "2", p + "3"));
+
+            path.get(0).setLength(1);
+            path.get(1).setLength(1);
+            path.get(2).setLength(4);
+            crossing.setLength(1);
+
+            // The crossing road shares the first rail's metal - the other leg of its switch - as the reducer's lock edges say
+            first.addLockEdge(crossing);
+            crossing.addLockEdge(first);
+
+            rail.setAtomicRoutes(false);
+            rail.makeCurrent();
+            rail.getPoint(p + "0").setLocomotive(x);
+
+            driving = new Thread(() -> rail.executePath(path, x, 30, null), "length-claim-" + x.getName());
+            driving.setDaemon(true);
+            driving.start();
+
+            long until = System.currentTimeMillis() + 10000;
+
+            while (!(x.getSpeed() == 30 && rail.getActiveLocomotives().containsKey(x)) && System.currentTimeMillis() < until)
+            {
+                Thread.sleep(20);
+            }
+
+            assertTrue(rail.getActiveLocomotives().containsKey(x), "precondition: the 4-unit train was not dispatched: "
+                + Layout.getLastError());
+
+            // Its first sensor
+            model.setFeedbackState(f[1].getName(), true);
+            Thread.sleep(700);
+            model.setFeedbackState(f[1].getName(), false);
+
+            // THE MENU'S WRITE, as TrainControlUI.applyTrainLength made it while trains ran
+            if (clear) x.setTrainLength(0);
+
+            // Its second sensor: the head one unit past the end of the first rail, a 4-unit train still over it
+            model.setFeedbackState(f[2].getName(), true);
+            Thread.sleep(700);
+
+            boolean held = first.isLockHeld(y);
+            boolean refused = !rail.isPathClear(Arrays.asList(crossing), y, false);
+
+            return held && refused ? "held and refused" : "first rail held=" + held + ", crossing refused=" + refused;
+        }
+        finally
+        {
+            // It arrives
+            for (int i = 0; i < 3; i++) model.setFeedbackState(f[i].getName(), false);
+
+            model.setFeedbackState(f[3].getName(), true);
+
+            if (driving != null) driving.join(10000);
+
+            for (org.traincontrol.marklin.MarklinFeedback each : f) model.setFeedbackState(each.getName(), false);
+
+            x.setSpeed(0);
+            x.setTrainLength(xWas);
+            y.setTrainLength(yWas);
+        }
+    }
 }

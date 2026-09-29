@@ -719,4 +719,135 @@ public class testTheArrivalHonoursTheAnswer
         assertEquals(layout.turnedOnArrivalAt(loc.getName()), null, "a turn on a retired railway was recorded as owed"
             + " (RLV12-C5)");
     }
+
+    /**
+     * A train that kept its direction is stood on the plain copy without the square ever reading empty (RSA-C3).  The
+     * re-stand after a declined turn took the train off the turning copy and then put it on the plain one, so for a moment
+     * the square held nobody and the train was nowhere - and the platform's exit-guard signal, which follows the square,
+     * was commanded GREEN and then RED again over the standing train.  It is put on the plain copy, with the side and the
+     * road it came in by, before it is taken off the turning one.
+     *
+     * MUTATION: take the train off the turning copy before putting it on the plain one, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testTheReStandNeverShowsTheSquareEmpty() throws Exception
+    {
+        MarklinFeedback ms = model.newFeedback(1961, null);
+        MarklinFeedback mm = model.newFeedback(1962, null);
+
+        model.setFeedbackState(ms.getName(), false);
+        model.setFeedbackState(mm.getName(), false);
+
+        final org.traincontrol.base.Accessory guard = model.newSignal(293,
+            org.traincontrol.base.Accessory.accessoryDecoderType.MM2, false);
+
+        final Locomotive x = model.getLocByName(model.getLocList().get(6));
+
+        final Integer lengthWas = x.getTrainLength();
+
+        final Layout rail = new Layout(model);
+
+        rail.createPoint("RSMS", true, ms.getName());
+        rail.createPoint("RSMT", true, mm.getName());
+        rail.createPoint("RSMP", true, mm.getName());
+        rail.getPoint("RSMT").setTerminus(true);
+        rail.getPoint("RSMT").setBlock("RSM");
+        rail.getPoint("RSMP").setBlock("RSM");
+        rail.getPoint("RSMT").setProtectingSignal(guard.getName());
+        rail.getPoint("RSMP").setProtectingSignal(guard.getName());
+        rail.createEdge("RSMS", "RSMT");
+        rail.createEdge("RSMS", "RSMP");
+        rail.makeCurrent();
+
+        final Point turning = rail.getPoint("RSMT");
+        final Point plain = rail.getPoint("RSMP");
+
+        // THE OPERATOR SAID KEEP THE DIRECTION: asked about the turning copy, and no
+        final Layout.ReversalPolicy keep = new Layout.ReversalPolicy()
+        {
+            @Override
+            public boolean shouldReverse(Locomotive loc, Point at)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean asksAbout(Point at)
+            {
+                return at == turning;
+            }
+        };
+
+        final java.util.concurrent.atomic.AtomicBoolean arriving = new java.util.concurrent.atomic.AtomicBoolean(false);
+        final java.util.List<String> atTheArrival = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+
+        // Every signal command sent once the train reaches its sensor, with who stands on the square as it goes out
+        model.setSentMessageObserver(m ->
+        {
+            if (!arriving.get() || m == null || m.getCommand() == null
+                || m.getCommand() != org.traincontrol.marklin.udp.CS2Message.CMD_ACC_SWITCH) return;
+
+            byte[] data = m.getData();
+
+            atTheArrival.add((data != null && data.length > 4 && data[4] == 0 ? "RED" : "GREEN") + " with "
+                + (turning.getCurrentLocomotive() == null ? "nobody" : "the train") + " on the turning copy and "
+                + (plain.getCurrentLocomotive() == null ? "nobody" : "the train") + " on the plain one");
+        });
+
+        Thread journey = null;
+
+        try
+        {
+            x.setSpeed(0);
+            x.setTrainLength(2);
+
+            rail.getPoint("RSMS").setLocomotive(x);
+
+            journey = new Thread(() -> rail.executePath(java.util.Arrays.asList(rail.getEdge("RSMS", "RSMT")), x, 30, null,
+                keep), "restand-claim");
+
+            journey.setDaemon(true);
+            journey.start();
+
+            long until = System.currentTimeMillis() + 10000;
+
+            while (!(x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x)) && System.currentTimeMillis() < until)
+            {
+                Thread.sleep(20);
+            }
+
+            assertTrue(rail.getActiveLocomotives().containsKey(x), "precondition: the train was not sent to the turning"
+                + " copy: " + Layout.getLastError());
+
+            // It arrives, and is stood on the plain copy
+            arriving.set(true);
+
+            model.setFeedbackState(mm.getName(), true);
+
+            journey.join(10000);
+
+            assertEquals(plain.getCurrentLocomotive(), x, "precondition: the train was not stood on the plain copy, so"
+                + " the re-stand never ran");
+
+            assertFalse(atTheArrival.stream().anyMatch(command -> command.startsWith("GREEN")), "the re-stand commanded"
+                + " the platform's exit guard GREEN over the standing train, the square reading empty for a moment"
+                + " (RSA-C3): " + atTheArrival);
+
+            assertTrue(plain.getArrivedFrom() != null, "the plain copy was given the train without the side it came in by,"
+                + " so its tail is nowhere (RSA-C3)");
+        }
+        finally
+        {
+            model.setSentMessageObserver(null);
+            model.setFeedbackState(mm.getName(), false);
+            model.setFeedbackState(ms.getName(), false);
+
+            if (journey != null) journey.join(5000);
+
+            x.setSpeed(0);
+            x.setTrainLength(lengthWas);
+        }
+    }
 }

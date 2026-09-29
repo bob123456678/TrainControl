@@ -1931,4 +1931,212 @@ public class testNoSetupEditDuringARun
             }
         });
     }
+
+    /**
+     * A train's length is not changed while trains run (RSA-A1; Adam, MT-141: *"Never allow any modifications to a
+     * running layout.  This includes locomotive database"*).  The locomotive's Autonomy train length item wrote the
+     * length straight onto the running train, 0 included, and a non-atomic run hands the track behind a train back by that
+     * number.  Refused at the click, and again at OK for a dialog that was open when a run began; at rest it writes.
+     *
+     * MUTATION: let the dialog's answer, or the click, through while trains run, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testATrainsLengthIsNotChangedWhileTrainsRun() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        TrainControlUI ui = null;
+
+        org.traincontrol.automation.Layout railway = null;
+
+        org.traincontrol.base.Locomotive loc = null;
+
+        Integer was = null;
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final List<String> asked = Collections.synchronizedList(new ArrayList<>());
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui = openTheWindow();
+
+            railway = ui.getModel().getAutoLayout();
+
+            loc = ui.getModel().getLocByName(ui.getModel().getLocList().get(0));
+
+            was = loc.getTrainLength();
+
+            final int other = was == null || was != 7 ? 7 : 8;
+
+            final TrainControlUI window = ui;
+            final org.traincontrol.base.Locomotive train = loc;
+
+            startAnsweringYes(asked, going);
+
+            final String refused = I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning");
+
+            // TRAINS RUNNING, as Return Home's planning makes the railway busy
+            railway.setStagingInProgress(true);
+
+            try
+            {
+                // AT OK: the dialog's answer, for a dialog opened at rest
+                SwingUtilities.invokeAndWait(() -> window.applyTrainLength(train, other));
+
+                assertEquals(loc.getTrainLength(), was, "a train's length was written while trains ran (RSA-A1): asked "
+                    + asked);
+
+                assertTrue(asked.contains(refused), "the length was refused without saying why: asked " + asked);
+
+                // AT THE CLICK: no length is asked for at all
+                asked.clear();
+
+                SwingUtilities.invokeAndWait(() -> window.promptTrainLength(train, null));
+
+                assertFalse(asked.contains(I18n.t("autolayout.ui.trainLength")), "a train's length was asked for while"
+                    + " trains ran (RSA-A1): asked " + asked);
+
+                assertTrue(asked.contains(refused), "the click was refused without saying why: asked " + asked);
+            }
+            finally
+            {
+                railway.setStagingInProgress(false);
+            }
+
+            // THE CONTROL: at rest the same door writes
+            SwingUtilities.invokeAndWait(() -> window.applyTrainLength(train, other));
+
+            assertEquals(loc.getTrainLength(), Integer.valueOf(other), "precondition: the door writes nothing even at"
+                + " rest, so this claim cannot tell a refusal from a broken door");
+        }
+        finally
+        {
+            going.set(false);
+
+            if (loc != null) loc.setTrainLength(was);
+
+            putTheFolderBack(folderWas);
+
+            if (ui != null)
+            {
+                final TrainControlUI closing = ui;
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * The Auto tab sends no train while Return Home owns the railway (RSA-C2).  It asked only whether autonomy's own flag
+     * was up, and that is down while Return Home plans - so a train sent by hand then was dispatched under the planner,
+     * and the press of Return Home was spent on positions the railway no longer had.  A second hand send while another
+     * runs stays allowed from the Auto tab (Adam, 2026-08-31, OB-164: *"The user can rely on full autonomy or the panels
+     * to send trains more clearly."*).
+     *
+     * MUTATION: let the Auto tab's double-click ask only whether autonomy is running, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheAutoTabSendsNothingWhileReturnHomeOwnsTheRailway() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final List<String> asked = Collections.synchronizedList(new ArrayList<>());
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
+
+            startAnsweringYes(asked, going);
+
+            Object[] offered = anAutoTabListOfPaths(ui[0]);
+
+            final org.traincontrol.base.Locomotive sent = (org.traincontrol.base.Locomotive) offered[1];
+
+            // RETURN HOME PLANNING: the railway owned by a staging flow, nothing yet running
+            railway.setStagingInProgress(true);
+
+            try
+            {
+                doubleClickTheFirstPath((javax.swing.JList<?>) offered[0]);
+
+                Thread.sleep(3000);
+
+                assertFalse(railway.isAlreadyUnderway(sent), "the Auto tab sent " + sent.getName() + " by hand while"
+                    + " Return Home was planning (RSA-C2): asked " + asked);
+            }
+            finally
+            {
+                railway.setStagingInProgress(false);
+            }
+
+            // THE CONTROL: at rest the same double-click sends it
+            offered = anAutoTabListOfPaths(ui[0]);
+
+            final org.traincontrol.base.Locomotive control = (org.traincontrol.base.Locomotive) offered[1];
+
+            doubleClickTheFirstPath((javax.swing.JList<?>) offered[0]);
+
+            long until = System.currentTimeMillis() + 15000;
+
+            while (!railway.isAlreadyUnderway(control) && System.currentTimeMillis() < until) Thread.sleep(200);
+
+            assertTrue(railway.isAlreadyUnderway(control), "precondition: the double-click sends nothing even at rest, so"
+                + " this claim cannot tell a refusal from a broken door: asked " + asked);
+        }
+        finally
+        {
+            going.set(false);
+
+            stopWhatTheClaimSent(ui[0]);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** A double-click on the first path of an Auto tab list, as the operator makes it. */
+    private static void doubleClickTheFirstPath(final javax.swing.JList<?> list) throws Exception
+    {
+        SwingUtilities.invokeAndWait(() ->
+        {
+            list.setSize(400, Math.max(100, list.getPreferredSize().height));
+
+            java.awt.Rectangle cell = list.getCellBounds(0, 0);
+
+            list.dispatchEvent(new java.awt.event.MouseEvent(list, java.awt.event.MouseEvent.MOUSE_CLICKED,
+                System.currentTimeMillis(), 0, cell.x + cell.width / 2, cell.y + cell.height / 2, 2, false,
+                java.awt.event.MouseEvent.BUTTON1));
+        });
+    }
 }

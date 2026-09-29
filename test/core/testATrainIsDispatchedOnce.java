@@ -1588,4 +1588,456 @@ public class testATrainIsDispatchedOnce
             layout.setStagingInProgress(false);
         }
     }
+
+    /**
+     * A retired railway's journey ends with its railway (RSA-B1).  The reload's and Unload's Yes stop every train between
+     * two sensors, and each journey's thread went on waiting, with no time limit, for a sensor its stopped train would not
+     * reach - until any train occupied it, when the thread stopped its locomotive: by then, perhaps, a train the next
+     * railway was driving, left standing mid-route with its route held.  A retirement now wakes every wait, and a journey
+     * whose railway has gone ends there.
+     *
+     * MUTATION: let a retirement wake nothing, or let the wait go on past its railway, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testARetiredRailwaysJourneyEndsWithItsRailway() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(1801, 4);
+
+        final Locomotive x = model.getLocByName(model.getLocList().get(0));
+
+        Thread before = null;
+        Thread after = null;
+
+        try
+        {
+            x.setSpeed(0);
+
+            // THE OLD RAILWAY: GA -> GB -> GC, and GA -> GD
+            final Layout old = aForkedRailway(s);
+
+            old.getPoint("GA").setLocomotive(x);
+
+            before = sendOn(old, Arrays.asList(old.getEdge("GA", "GB"), old.getEdge("GB", "GC")), x);
+
+            assertTrue(waitFor(() -> x.getSpeed() == 30 && old.getActiveLocomotives().containsKey(x), 10000),
+                "precondition: the train was not sent on the old railway");
+
+            // THE YES, as the reload's door answers it, and then the next railway
+            old.stopLocomotives();
+
+            for (Locomotive active : old.getActiveLocomotives().keySet()) active.setSpeed(0);
+
+            final Layout fresh = aForkedRailway(s);
+
+            fresh.getPoint("GA").setLocomotive(x);
+
+            assertFalse(old.isCurrentLayout(), "precondition: the old railway was not retired");
+
+            // THE OLD JOURNEY ENDS WITH ITS RAILWAY, with no sensor occupied
+            final Thread waiting = before;
+
+            // Two seconds, under the wait's five-second poll: it is the retirement that must end it, not the clock
+            assertTrue(waitFor(() -> !waiting.isAlive(), 2000), "the retired railway's journey is still waiting on "
+                + s[1].getName() + ", a sensor its stopped train will not reach, and when anything occupies it the"
+                + " thread will stop its locomotive - whichever railway is driving it then (RSA-B1)");
+
+            // THE NEXT RAILWAY SENDS THE SAME TRAIN ELSEWHERE, and another train then crosses the old journey's sensor
+            after = sendOn(fresh, Arrays.asList(fresh.getEdge("GA", "GD")), x);
+
+            assertTrue(waitFor(() -> x.getSpeed() > 0 && fresh.getActiveLocomotives().containsKey(x), 10000),
+                "precondition: the next railway did not send the train");
+
+            final int driven = x.getSpeed();
+
+            model.setFeedbackState(s[1].getName(), true);
+
+            Thread.sleep(1500);
+
+            assertEquals(x.getSpeed(), driven, "a sensor the retired railway's journey had waited on stopped a train the"
+                + " next railway is driving (RSA-B1)");
+        }
+        finally
+        {
+            model.setFeedbackState(s[1].getName(), false);
+            model.setFeedbackState(s[3].getName(), true);
+
+            if (after != null) after.join(10000);
+
+            letGo(s, x, before);
+        }
+    }
+
+    /**
+     * The reload's Yes stops a train still claiming its route (RSA-C1, GS-C1).  The Yes stopped the trains already under
+     * way; one still locking its route - seconds, on a path with switches - was not among them, and when the lock came
+     * through it set off.  A claim that completes after the Yes is given back unrun, and the train stands where it was.
+     *
+     * MUTATION: let a claim completed after the Yes go on to run, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testTheYesStopsATrainStillClaimingItsRoute() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(1811, 5);
+
+        final Locomotive y = model.getLocByName(model.getLocList().get(1));
+
+        Thread claiming = null;
+
+        final Layout rail = aLine(s, "HA", "HB", "HC", "HD", "HE");
+
+        try
+        {
+            y.setSpeed(0);
+
+            rail.getPoint("HA").setLocomotive(y);
+
+            // THE RAILWAY'S MONITOR HELD, so the dispatch waits to claim its route - as it does behind a slow switch
+            synchronized (rail)
+            {
+                claiming = sendOn(rail, through(rail, "HA", "HB", "HC", "HD", "HE"), y);
+
+                final Thread blocked = claiming;
+
+                assertTrue(waitFor(() -> blocked.getState() == Thread.State.BLOCKED, 5000),
+                    "precondition: the dispatch did not reach its claim");
+
+                // THE YES
+                theYes(rail);
+            }
+
+            assertFalse(waitFor(() -> y.getSpeed() > 0, 2000), "a train still claiming its route when the operator"
+                + " answered Yes set off once the claim came through (RSA-C1, GS-C1)");
+
+            assertFalse(rail.getActiveLocomotives().containsKey(y), "a claim completed after the Yes was kept as a"
+                + " journey, holding its route with its train stopped at the start (RSA-C1)");
+
+            assertEquals(rail.getPoint("HA").getCurrentLocomotive(), y, "the train given back is not standing where it"
+                + " was (RSA-C1)");
+        }
+        finally
+        {
+            letGo(s, y, claiming);
+        }
+    }
+
+    /**
+     * The reload's Yes stops a train whose journey has just been counted and not yet set off (RSA-C1, GS-C1): the
+     * departure's speed is asked of the Yes as every other speed is.
+     *
+     * MUTATION: let the departure write its speed whatever the Yes said, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testTheYesStopsATrainAtItsDeparture() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(1841, 3);
+
+        final Locomotive w = model.getLocByName(model.getLocList().get(4));
+
+        Thread departing = null;
+
+        final Layout rail = aLine(s, "LA", "LB", "LC");
+
+        final java.util.function.Consumer<Locomotive> startWas = w.hasCallback(Layout.CB_ROUTE_START)
+            ? w.getCallback(Layout.CB_ROUTE_START) : l -> { };
+
+        try
+        {
+            w.setSpeed(0);
+
+            rail.getPoint("LA").setLocomotive(w);
+
+            // THE YES, answered as the journey is counted - the route-start callback runs between that and the departure
+            w.setCallback(Layout.CB_ROUTE_START, l -> theYesUnchecked(rail));
+
+            departing = sendOn(rail, through(rail, "LA", "LB", "LC"), w);
+
+            assertTrue(waitFor(() -> rail.getActiveLocomotives().containsKey(w), 5000), "precondition: the journey was not"
+                + " counted");
+
+            assertFalse(waitFor(() -> w.getSpeed() > 0, 2000), "a train whose journey was counted when the operator"
+                + " answered Yes set off after it (RSA-C1, GS-C1)");
+        }
+        finally
+        {
+            w.setCallback(Layout.CB_ROUTE_START, startWas);
+
+            letGo(s, w, departing);
+        }
+    }
+
+    /**
+     * The reload's Yes is not undone at the next sensor (RSA-C1).  A train the Yes stopped between two sensors, braking
+     * onto the one ahead before any load had retired its railway, was given its speed back by its own journey - the next
+     * leg's, and then the pre-arrival speed.
+     *
+     * MUTATION: let the next leg's speed, or the pre-arrival speed, be written whatever the Yes said, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testTheYesIsNotUndoneAtTheNextSensor() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(1821, 4);
+
+        final Locomotive z = model.getLocByName(model.getLocList().get(2));
+
+        Thread running = null;
+
+        final Layout rail = aLine(s, "IA", "IB", "IC", "ID");
+
+        try
+        {
+            z.setSpeed(0);
+
+            rail.getPoint("IA").setLocomotive(z);
+
+            running = sendOn(rail, through(rail, "IA", "IB", "IC", "ID"), z);
+
+            assertTrue(waitFor(() -> z.getSpeed() == 30 && rail.getActiveLocomotives().containsKey(z), 10000),
+                "precondition: the train was not sent");
+
+            theYes(rail);
+
+            assertEquals(z.getSpeed(), 0, "precondition: the Yes did not stop the train");
+
+            // It brakes onto the sensor ahead, before any load has retired this railway: the next leg
+            model.setFeedbackState(s[1].getName(), true);
+
+            Thread.sleep(1200);
+
+            assertEquals(z.getSpeed(), 0, "a train the operator's Yes had stopped was given the next leg's speed back"
+                + " by its own journey at the sensor ahead (RSA-C1)");
+
+            // And the one after it: the leg into the destination
+            model.setFeedbackState(s[1].getName(), false);
+            model.setFeedbackState(s[2].getName(), true);
+
+            Thread.sleep(1200);
+
+            assertEquals(z.getSpeed(), 0, "a train the operator's Yes had stopped was given the pre-arrival speed back by"
+                + " its own journey (RSA-C1)");
+        }
+        finally
+        {
+            letGo(s, z, running);
+        }
+    }
+
+    /**
+     * The reload's Yes stops a train still choosing its route (RSA-C1).  Autonomy's thread for a train chooses a route
+     * and then sends it, and it did not ask again in between whether the railway was still running - so a train whose
+     * choice was under way when the Yes came was sent after it.
+     *
+     * MUTATION: let autonomy's thread send the route it chose without asking whether the railway still runs, and this
+     * fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testTheYesStopsATrainStillChoosingItsRoute() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(1831, 2);
+
+        final Locomotive v = model.getLocByName(model.getLocList().get(3));
+
+        final int preferredWas = v.getPreferredSpeed();
+
+        final Layout rail = aLine(s, "KA", "KB");
+
+        try
+        {
+            v.setSpeed(0);
+            v.setPreferredSpeed(30);
+
+            rail.getPoint("KA").setLocomotive(v);
+            rail.setLocomotivesToRun(Arrays.asList(v));
+
+            // THE ROUTE'S RAIL HELD, so autonomy's thread waits in the middle of choosing - where its check of the
+            // route asks the rail whether it is occupied
+            synchronized (rail.getEdge("KA", "KB"))
+            {
+                rail.runLocomotives();
+
+                assertTrue(waitFor(() -> aThreadIsBlockedIn("pickPath"), 5000), "precondition: autonomy's thread did"
+                    + " not reach its choice");
+
+                theYes(rail);
+            }
+
+            assertFalse(waitFor(() -> v.getSpeed() > 0 || rail.isAlreadyUnderway(v), 2000), "a train autonomy was"
+                + " choosing a route for when the operator answered Yes was sent along it after the Yes (RSA-C1)");
+        }
+        finally
+        {
+            rail.stopLocomotives();
+
+            v.setPreferredSpeed(preferredWas);
+
+            letGo(s, v, null);
+        }
+    }
+
+    /**
+     * The reload's door stops the trains through the railway's own stop, the one every journey asks (RSA-C1).
+     *
+     * MUTATION: let the door stop the trains itself, one speed at a time, and this fails.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheReloadsYesIsTheRailwaysOwnStop() throws Exception
+    {
+        String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(
+            "src/org/traincontrol/gui/TrainControlUI.java")), java.nio.charset.StandardCharsets.UTF_8);
+
+        int at = source.indexOf("public boolean prepareAutonomyReload()");
+
+        assertTrue(at >= 0, "cannot find prepareAutonomyReload");
+
+        String door = source.substring(at, source.indexOf("resetLayoutStationLabels();", at));
+
+        assertTrue(door.contains(".stopEveryTrainWhereItIs()"), "the reload's Yes does not stop the trains through the"
+            + " railway's own stop, so a journey still claiming, choosing or reaching its next sensor goes on (RSA-C1)");
+    }
+
+    /** New sensors, all clear, at consecutive addresses from `first`. */
+    private static org.traincontrol.marklin.MarklinFeedback[] sensors(int first, int count)
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = new org.traincontrol.marklin.MarklinFeedback[count];
+
+        for (int i = 0; i < count; i++)
+        {
+            s[i] = model.newFeedback(first + i, null);
+
+            model.setFeedbackState(s[i].getName(), false);
+        }
+
+        return s;
+    }
+
+    /** A railway, made current: GA -> GB -> GC, and GA -> GD, on the four sensors given. */
+    private static Layout aForkedRailway(org.traincontrol.marklin.MarklinFeedback[] s) throws Exception
+    {
+        Layout railway = new Layout(model);
+
+        railway.createPoint("GA", true, s[0].getName());
+        railway.createPoint("GB", false, s[1].getName());
+        railway.createPoint("GC", true, s[2].getName());
+        railway.createPoint("GD", true, s[3].getName());
+        railway.createEdge("GA", "GB");
+        railway.createEdge("GB", "GC");
+        railway.createEdge("GA", "GD");
+        railway.makeCurrent();
+
+        return railway;
+    }
+
+    /** A railway, made current: one line through the points named, one sensor each, its two ends stations. */
+    private static Layout aLine(org.traincontrol.marklin.MarklinFeedback[] s, String... names) throws Exception
+    {
+        Layout railway = new Layout(model);
+
+        for (int i = 0; i < names.length; i++)
+        {
+            railway.createPoint(names[i], i == 0 || i == names.length - 1, s[i].getName());
+        }
+
+        for (int i = 0; i + 1 < names.length; i++) railway.createEdge(names[i], names[i + 1]);
+
+        railway.makeCurrent();
+
+        return railway;
+    }
+
+    /** The path along the points named, in order. */
+    private static List<Edge> through(Layout railway, String... names)
+    {
+        List<Edge> path = new ArrayList<>();
+
+        for (int i = 0; i + 1 < names.length; i++) path.add(railway.getEdge(names[i], names[i + 1]));
+
+        return path;
+    }
+
+    /** Sends a train along a path on its own thread, as a door does. */
+    private static Thread sendOn(final Layout railway, final List<Edge> path, final Locomotive loc)
+    {
+        Thread thread = new Thread(() -> railway.executePath(path, loc, 30, null), "claim-journey-" + loc.getName());
+
+        thread.setDaemon(true);
+        thread.start();
+
+        return thread;
+    }
+
+    /** The reload's and Unload's Yes, as the door answers it: the railway's own stop. */
+    private static void theYes(Layout railway) throws Exception
+    {
+        Layout.class.getMethod("stopEveryTrainWhereItIs").invoke(railway);
+    }
+
+    /** The same, from a callback that cannot throw. */
+    private static void theYesUnchecked(Layout railway)
+    {
+        try
+        {
+            theYes(railway);
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** Whether some thread is waiting for a monitor inside the method named. */
+    private static boolean aThreadIsBlockedIn(String method)
+    {
+        for (java.util.Map.Entry<Thread, StackTraceElement[]> each : Thread.getAllStackTraces().entrySet())
+        {
+            if (each.getKey().getState() != Thread.State.BLOCKED) continue;
+
+            for (StackTraceElement frame : each.getValue())
+            {
+                if (method.equals(frame.getMethodName())) return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Waits for a condition, polling. */
+    private static boolean waitFor(java.util.function.BooleanSupplier condition, long ms) throws InterruptedException
+    {
+        long until = System.currentTimeMillis() + ms;
+
+        while (System.currentTimeMillis() < until)
+        {
+            if (condition.getAsBoolean()) return true;
+
+            Thread.sleep(20);
+        }
+
+        return condition.getAsBoolean();
+    }
+
+    /** Ends whatever a claim left: a newer railway retires its journeys, the sensors clear, the train stands. */
+    private static void letGo(org.traincontrol.marklin.MarklinFeedback[] s, Locomotive loc, Thread journey)
+        throws InterruptedException
+    {
+        new Layout(model).makeCurrent();
+
+        for (org.traincontrol.marklin.MarklinFeedback each : s) model.setFeedbackState(each.getName(), true);
+
+        if (journey != null) journey.join(5000);
+
+        for (org.traincontrol.marklin.MarklinFeedback each : s) model.setFeedbackState(each.getName(), false);
+
+        loc.setSpeed(0);
+    }
 }

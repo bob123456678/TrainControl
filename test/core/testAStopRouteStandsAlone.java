@@ -390,4 +390,70 @@ public class testAStopRouteStandsAlone
                 + " stop with other commands", none);
         }
     }
+
+    /**
+     * A route's emergency stop is sent whatever the model believes about the power (RSA-C4).  It was skipped while the
+     * power flag read off - and that flag is only the last GO or STOP echo the Central Station sent, so one lost GO left
+     * a stop route that fired with nobody present cutting nothing.  behaviour.md 7a: an emergency stop is obeyed whatever
+     * else is true.  The flag now decides only whether the notice is shown.
+     *
+     * MUTATION: send the stop only while the power flag reads on, and this fails.
+     *
+     * @throws Exception from the model
+     */
+    @Test
+    public void testARoutesStopIsSentWhenThePowerAlreadyReadsOff() throws Exception
+    {
+        // THE MODEL BELIEVES THE POWER IS OFF - the last echo it heard was a STOP - whatever the track is doing
+        java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
+
+        power.setAccessible(true);
+
+        final boolean powerWas = power.getBoolean(model);
+
+        power.setBoolean(model, false);
+
+        assertFalse(model.getPowerState(), "precondition: the power flag did not go down");
+
+        final List<String> sent = java.util.Collections.synchronizedList(new ArrayList<>());
+
+        model.setSentMessageObserver(m ->
+        {
+            if (m == null || m.getCommand() == null || m.getCommand() != org.traincontrol.marklin.udp.CS2Message.CMD_SYSTEM)
+            {
+                return;
+            }
+
+            byte[] data = m.getData();
+
+            if (data != null && data.length > 4 && data[4] == org.traincontrol.marklin.udp.CS2Message.CMD_SYSSUB_STOP)
+            {
+                sent.add("STOP");
+            }
+        });
+
+        try
+        {
+            List<RouteCommand> commands = new ArrayList<>();
+
+            commands.add(RouteCommand.RouteCommandStop());
+
+            MarklinRoute route = new MarklinRoute(model, "RSA-C4 stop probe", 9811, commands, 0,
+                MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+            route.execRoute(false);
+
+            // `execRoute` runs on a thread of its own
+            for (int waited = 0; waited < 60 && sent.isEmpty(); waited++) Thread.sleep(50);
+
+            assertFalse(sent.isEmpty(), "a route's emergency stop was not sent because the model believed the power was"
+                + " already off - a belief that is only the last echo heard (RSA-C4)");
+        }
+        finally
+        {
+            model.setSentMessageObserver(null);
+
+            power.setBoolean(model, powerWas);
+        }
+    }
 }
