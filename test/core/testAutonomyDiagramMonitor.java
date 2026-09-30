@@ -1073,43 +1073,42 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * A square nothing can pass is drawn in the colour that means "autonomy leaves this alone".
+     * A square nothing can pass - drawn with an X - is orange, and a parking berth grey (Adam, 2026-09-29: *"make the
+     * nothing can pass (X stations) be orange again"*).
      *
-     * Adam: "should they always be orange with the 'full autonomy' option just greyed out?"  One
-     * colour, which is a medium grey since FR-103 (Adam, from MT-492); it was orange.
+     * FR-103 made both grey, the colour of "autonomy will not send a train here", which both answer; the X is orange
+     * again, as it was before, so a square shut to every train reads apart from a berth autonomy merely does not choose.
+     * Asked as the editor and the diagram build a switched-off square - parking AND shut, since a square nothing can
+     * pass is also one autonomy does not choose - and with shut alone.
      *
-     * The cross used to take whichever colour the square would have had if it were working, so the
-     * same switched-off square came out blue or orange depending on a setting that means nothing while
-     * it is switched off - a difference the reader can see and cannot use.  The inactive colour,
-     * because the two colour constants are declared to keep the views agreeing.
+     * MUTATION: let parking decide the colour first, or draw the X grey, and this fails.
      *
-     * The badge is NOT a parking berth in the first case, which is what makes this a test: parking was
-     * already the inactive colour, and a fixture that set both would pass on the old rule as well.
-     *
-     * MUTATION: dropping isImpassable from the colour makes the first assertion fail.
+     * @throws Exception from painting
      */
     @Test
-    public void testASwitchedOffSquareTakesTheColourAutonomySkips() throws Exception
+    public void testASquareNothingCanPassIsOrange() throws Exception
     {
         final int size = 40;
 
-        java.awt.Color shut = markColour(plainBadge(false, true), size);
+        java.awt.Color shut = markColour(plainBadge(true, true), size);
+        java.awt.Color shutAlone = markColour(plainBadge(false, true), size);
         java.awt.Color parking = markColour(plainBadge(true, false), size);
         java.awt.Color working = markColour(plainBadge(false, false), size);
 
-        assertEquals(shut, parking,
-            "a switched-off square is drawn in a different colour from a parking berth, though the "
-            + "colour on this diagram answers one question - will autonomy send a train here - and "
-            + "both of them answer it no");
+        assertTrue(shut.getRed() > 200 && shut.getGreen() > 60 && shut.getGreen() < 150 && shut.getBlue() < 60,
+            "a square nothing can pass is not drawn orange - Adam: \"make the nothing can pass (X stations) be orange"
+            + " again\": " + shut);
 
-        assertNotEquals(shut, working,
-            "a switched-off square is drawn in the same colour as one in use, so the only thing "
-            + "telling them apart is the mark, and colour is saying nothing");
+        assertEquals(shutAlone, shut, "a square nothing can pass takes another colour when it is not also parking");
+
+        assertNotEquals(shut, parking, "a square nothing can pass is drawn in the parking berth's grey");
+
+        assertNotEquals(shut, working, "a square nothing can pass is drawn in the colour of one in use");
     }
 
     /**
-     * A square autonomy will not choose - a parking berth, or one switched off - is drawn in a medium dark grey, not
-     * orange (FR-103).
+     * A square autonomy will not choose - a parking berth - is drawn in a medium dark grey, not orange (FR-103).  One
+     * switched off is orange again, the X - `testASquareNothingCanPassIsOrange`.
      *
      * Adam, 2026-09-26, from MT-492: *"instead of orange, make them a medium dark gray that's just slightly darker than
      * labels."*  Grey as the grey station labels are, and darker than they are.

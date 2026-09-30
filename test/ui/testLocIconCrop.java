@@ -1004,4 +1004,200 @@ public class testLocIconCrop
         assertTrue(unmatched <= ink / 10, "the wrench turned half round is not the same drawing - " + unmatched + " of "
             + ink + " pixels differ - so it has a jaw at one end only, and reads as a wine glass (MT-591)");
     }
+
+    /**
+     * The picture's tools wait for the power to be off, and while it is on the picture says so (MT-591).
+     *
+     * Adam, 2026-09-29, on MT-591: *"hide hover edit controls when the power is on ... Add a tooltip (if power is on)
+     * saying turn power off to manage icon."*  Told through the window's own door for a change of power, so it follows
+     * the power as it changes.
+     *
+     * MUTATION: offer the tools whatever the power, or say nothing while it is on, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testTheIconToolsWaitForThePowerOff() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+        org.traincontrol.marklin.MarklinControlStation model = null;
+        TrainControlUI ui = null;
+
+        java.lang.reflect.Field power = org.traincontrol.marklin.MarklinControlStation.class.getDeclaredField("powerState");
+
+        power.setAccessible(true);
+
+        try
+        {
+            // OPENED INSIDE THE TRY (TSX-B8, OB-111)
+            sandbox = support.LayoutSandbox.open();
+
+            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+
+            ui = windowOver(model);
+
+            final javax.swing.JLabel picture = field(ui, "locIcon", javax.swing.JLabel.class);
+
+            java.lang.reflect.Field active = TrainControlUI.class.getDeclaredField("activeLoc");
+
+            active.setAccessible(true);
+            active.set(ui, new org.traincontrol.marklin.MarklinLocomotive(model, 87,
+                org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, "MT-591 power"));
+
+            java.lang.reflect.Method offers = TrainControlUI.class.getDeclaredMethod("offersTheIconTools");
+
+            offers.setAccessible(true);
+
+            // THE POWER ON, told as the station tells it
+            power.set(model, true);
+
+            ui.updatePowerState();
+
+            settle();
+
+            assertFalse((Boolean) offers.invoke(ui), "the picture's tools are offered while the power is on (MT-591)");
+
+            assertEquals(picture.getToolTipText(), org.traincontrol.util.I18n.t("loc.ui.tooltip.powerOffToManageIcon"),
+                "the picture does not say to turn the power off while it is on (MT-591)");
+
+            // AND OFF
+            power.set(model, false);
+
+            ui.updatePowerState();
+
+            settle();
+
+            assertTrue((Boolean) offers.invoke(ui), "the picture's tools are not offered with the power off");
+
+            assertNull(picture.getToolTipText(), "the picture still says to turn the power off once it is off");
+        }
+        finally
+        {
+            if (model != null) power.set(model, true);
+
+            closeTheWindow(ui);
+
+            if (model != null) model.stop();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * Over a Central Station picture replaced or cropped, a revert stands in the wrench's place, and clears the icon of
+     * this computer's (MT-591).
+     *
+     * Adam, 2026-09-29, on MT-591: *"if there is a cs icon and we switched to a local icon or cropped it, replace the
+     * wrench icon with a revert icon (circular arrow symbol) that has the same function as "clear local locomotive
+     * icon"."*  Over a locomotive with no Central Station picture, the wrench stays: there is nothing to go back to.
+     *
+     * MUTATION: keep the wrench there, or wire the revert to the chooser, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testARevertStandsInTheWrenchsPlaceOverAReplacedStationPicture() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+        org.traincontrol.marklin.MarklinControlStation model = null;
+        TrainControlUI ui = null;
+
+        try
+        {
+            // OPENED INSIDE THE TRY (TSX-B8, OB-111)
+            sandbox = support.LayoutSandbox.open();
+
+            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+
+            ui = windowOver(model);
+
+            final javax.swing.JLabel wrench = field(ui, "iconWrench", javax.swing.JLabel.class);
+
+            java.lang.reflect.Field active = TrainControlUI.class.getDeclaredField("activeLoc");
+
+            active.setAccessible(true);
+
+            java.lang.reflect.Method fit = TrainControlUI.class.getDeclaredMethod("fitTheIconTools");
+
+            fit.setAccessible(true);
+
+            final TrainControlUI window = ui;
+
+            // A LOCAL ICON AND NO STATION PICTURE: the wrench
+            final org.traincontrol.marklin.MarklinLocomotive own = new org.traincontrol.marklin.MarklinLocomotive(model,
+                88, org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, "MT-591 own picture");
+
+            own.setLocalImageURL(new File("MT-591-own.png").toURI().toString());
+
+            active.set(ui, own);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> invoke(fit, window));
+
+            assertEquals(wrench.getToolTipText(), org.traincontrol.util.I18n.t("loc.ui.menuSetLocalLocomotiveIcon"),
+                "over a locomotive with no Central Station picture to go back to, the wrench is replaced");
+
+            // A STATION PICTURE, REPLACED: the revert
+            final org.traincontrol.marklin.MarklinLocomotive replaced = new org.traincontrol.marklin.MarklinLocomotive(model,
+                89, org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, "MT-591 station picture");
+
+            replaced.setImageURL("http://cs/MT-591.png");
+            replaced.setLocalImageURL(new File("MT-591-replaced.png").toURI().toString());
+
+            active.set(ui, replaced);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> invoke(fit, window));
+
+            assertEquals(wrench.getToolTipText(), org.traincontrol.util.I18n.t("loc.ui.menuClearLocalLocomotiveIcon"),
+                "over a Central Station picture replaced by one of this computer's, no revert stands in the wrench's place"
+                + " (MT-591)");
+
+            assertTrue(wrench.getIcon() != null && wrench.getIcon().getClass().getSimpleName().contains("Revert"),
+                "the revert is not drawn as one: " + wrench.getIcon());
+
+            // AND A CLICK ON IT CLEARS THE ICON OF THIS COMPUTER'S, as Clear Local Locomotive Icon does
+            javax.swing.SwingUtilities.invokeAndWait(() -> wrench.dispatchEvent(new java.awt.event.MouseEvent(wrench,
+                java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON1_MASK,
+                5, 5, 1, false, java.awt.event.MouseEvent.BUTTON1)));
+
+            long giveUp = System.currentTimeMillis() + 10000;
+
+            while (replaced.getLocalImageURL() != null && System.currentTimeMillis() < giveUp) Thread.sleep(50);
+
+            assertNull(replaced.getLocalImageURL(), "a click on the revert did not clear the icon of this computer's"
+                + " (MT-591)");
+
+            assertEquals(replaced.getImageURL(), "http://cs/MT-591.png", "the Central Station's picture is not back");
+
+            assertNull(awaitAChooser(500), "the revert opened the icon chooser as the wrench does");
+        }
+        finally
+        {
+            closeTheWindow(ui);
+
+            if (model != null) model.stop();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    private static void invoke(java.lang.reflect.Method method, Object on)
+    {
+        try
+        {
+            method.invoke(on);
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void settle() throws Exception
+    {
+        for (int pass = 0; pass < 4; pass++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
+    }
 }

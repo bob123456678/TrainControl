@@ -1667,8 +1667,8 @@ public final class LayoutLabel extends JLabel
      * **The orange the diagram used for a square autonomy does not choose** (Adam, 2026-09-12: *"make
      * the orange of the lines match the orange of inactive stations"*), which is the graph window's own
      * inactive colour.  It was rgb(255,140,0), half a shade off, which on a diagram carrying both at once
-     * reads as two colours that were each meant to be something.  Those squares are grey since FR-103
-     * (Adam, 2026-09-26); the train keeps the orange, which is now its own.
+     * reads as two colours that were each meant to be something.  A parking berth is grey since FR-103
+     * (Adam, 2026-09-26); a square nothing can pass - the X - is this orange again (2026-09-29).
      */
     public static final Color TRAIN_MARK = new Color(255, 102, 0);
 
