@@ -26135,6 +26135,12 @@ Every refusal of a guard signal is now a popup in front of it as well - MT-588, 
 bottomMainB.  If it says Signal 86 is already bottomMainB's exit guard, that is AUT-C2 (one signal cannot guard both
 ways); choose another signal off the way in, and this entry can be run.
 
+**Adam, 2026-09-29 (triage).** Works, with notes.
+
+works, but if a non-signal is clicked during selection mode, the dialog goes away.  it should send the user back to the existing popup so they can click on another square.
+
+*Run against commit d851714c, in English - build\classes, compiled 29 Sep 21:00 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-506"></a>
@@ -29054,6 +29060,13 @@ window.
 `testANonSignalClickedAsAGuardIsAPopup`; a signal refused when given **By Address** is said in the popup that reports
 the addresses, `testARefusedGuardAddressIsAPopup`.
 
+**Adam, 2026-09-29 (triage).** Does not work.
+
+step 1 OK
+step 2 fails in exit guard - the dialog closes and we have to reopen everything again.
+
+*Run against commit d851714c, in English - build\classes, compiled 29 Sep 21:00 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-589"></a>
@@ -29084,6 +29097,10 @@ The folder is remembered from this build on.  If TrainControl last closed on the
 folder by hand once first.
 
 *What this is:* `regression.testTheOldAutonomyTabIsGone.testOpenLayoutStartsAtTheLastLayoutFolder`.
+
+**Adam, 2026-09-29 (triage).** Works.
+
+*Run against commit d851714c, in English - build\classes, compiled 29 Sep 21:00 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -29117,6 +29134,10 @@ painted with autonomy loaded, and right click menus also only visible if autonom
 
 *What this is:* `ui.testTheGreyAppearsAtIdleToo.testNoTrainsLineWithoutALoadedSetup` and
 `testASquaresMenuOpensOnlyWithASetupLoaded`.
+
+**Adam, 2026-09-29 (triage).** Works.
+
+*Run against commit d851714c, in English - build\classes, compiled 29 Sep 21:00 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -29156,6 +29177,14 @@ regular"*.
 *What this is:* `ui.testLocIconCrop.testTheWrenchChoosesTheIconAndThePointerIsPlain` and
 `testACentralStationPictureCanBeCropped`; `ui.testThePlaceholderLocomotive.testItIsATenthLighter`.  How light, and how
 the wrench looks, are yours to judge.
+
+**Adam, 2026-09-29 (triage).** Works, with notes.
+
+make the wrench icon look like a wrench on both sides.  it looks more like a wine glass right now
+
+CS croppability not yet tested, update this MT that I still need to do that.
+
+*Run against commit d851714c, in English - build\classes, compiled 29 Sep 21:00 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
