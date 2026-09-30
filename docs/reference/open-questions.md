@@ -250,9 +250,11 @@ waiting on**, since the first time a sensor is occupied ends every journey waiti
 two arcs stay two pieces of metal and two places (OB-238); once a journey has passed a sensor it waits on it no more,
 and the lock and release rules decide the track as before.  Built in `4824d40c`, claims `02c4d0bc` and `3a8ff7c0`.
 
-**Decided, to be built** (Adam, 2026-09-29, RSA2-C7: *"Go with a."*): **a station no track arrives at records which
-way a train placed on it faces**, as other stations do, so only the routes that way are offered - where today it is
-built as one copy with no facing and a train placed there by hand is offered both ways out.
+**Decided** (Adam, 2026-09-29, RSA2-C7: *"Go with a."*): **a station no track arrives at records which way a train
+placed on it faces**, as other stations do, so only the routes that way are offered - where it was built as one copy
+with no facing, and a train placed there by hand was offered both ways out.  Such a square with more than one way out
+is one copy per way out; one way out, or none, is still one Point.  Built in `240d5948`,
+`core.testAutonomyDiagramSession.testASquareNothingArrivesAtFacesItsPlacedTrain`.
 
 **Decided** (Adam, 2026-09-28: *"agreed on RLA3-B1"* - option (a), built in `fd31f56f`: both gap-fill questions add the sentence `autosetup.ui.importTakesTheFilesForDefaults`, mutation CRA red; raised 2026-09-25, RLA3-B1 with RLU3-C4, RLA2-C4, RLU2-C11 and RLA4-C8): **a second import of an old file cannot
 tell a setting you returned to its default from one never set.**  Every editor door stores a default as nothing - a

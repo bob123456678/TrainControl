@@ -28,10 +28,14 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-505](#mt-505) | 2026-09-24 | A guard signal that no way into its station passes is noticed | fixed unvalidated | AUT-C2, MT-493 |
-| [MT-548](#mt-548) | 2026-09-24 | On a Central Station layout the Autonomy menu opens, and only the download and Documentation can be chosen | fixed unvalidated | OB-254, OB-093, MT-544 |
+| [MT-588](#mt-588) | 2026-09-29 | A guard signal refused says why in a popup | fixed unvalidated | MT-505 |
+| [MT-589](#mt-589) | 2026-09-29 | Open Layout starts at your last layout folder | fixed unvalidated | OB-308 |
+| [MT-590](#mt-590) | 2026-09-29 | No trains' lines and no square menus with autonomy not loaded | fixed unvalidated | OB-307 |
+| [MT-591](#mt-591) | 2026-09-29 | The locomotive picture: a wrench, the plain pointer, and Central Station pictures croppable | fixed unvalidated | FR-104 |
+| [MT-592](#mt-592) | 2026-09-29 | On the Central Station's layout, the Autonomy menu offers to download or create a layout | fixed unvalidated | MT-548 |
 
-Everything else - 585 of 587 - needs nothing from you unless the area changes again:
-462 **fixed validated** and 123 **superseded**.
+Everything else - 586 of 592 - needs nothing from you unless the area changes again:
+463 **fixed validated** and 123 **superseded**.
 
 ---
 
@@ -26124,6 +26128,13 @@ For bottomMainB, when I try to select Signal 86 (not on its path) as entry guard
 
 *Run against commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-29.**
+
+**Your Signal 86** (2026-09-29): the click was refused, and why was said only on the grey line behind the guard window.
+Every refusal of a guard signal is now a popup in front of it as well - MT-588, whose step 1 is your Signal 86 on
+bottomMainB.  If it says Signal 86 is already bottomMainB's exit guard, that is AUT-C2 (one signal cannot guard both
+ways); choose another signal off the way in, and this entry can be run.
+
 ---
 
 <a id="mt-506"></a>
@@ -27533,7 +27544,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-548 - 2026-09-24 - On a Central Station layout the Autonomy menu opens, and only the download and Documentation can be chosen
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-254, OB-093, MT-544
 
 **Written:** 2026-09-24
@@ -27558,6 +27569,16 @@ Validated on your *Works* of 2026-09-24.
 works, but what is the cs3 has no layout?  give the user the choice to either download or create a new one, which redirects to the corresponding option under layouts.
 
 *Run against commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-29.**
+
+**Your note is built** (2026-09-29): on the Central Station's layout the Autonomy menu's sentence opens a choice of
+the Layouts menu's own **Download Central Station Layout Files** and **Create New Layout**, the download greyed with a
+reason where there is nothing to download.  It is MT-592.
+
+**Claude, 2026-09-29.**
+
+Validated on your *Works* of 2026-09-29; the note goes on as MT-592.
 
 ---
 
@@ -28996,5 +29017,175 @@ shade is what only you can judge: say if you want it lighter or darker.
 **Claude, 2026-09-29.**
 
 Validated on your *Works* of 2026-09-29.
+
+---
+
+<a id="mt-588"></a>
+
+### MT-588 - 2026-09-29 - A guard signal refused says why in a popup
+
+**Disposition:** fixed unvalidated
+**From:** MT-505
+
+**Written:** 2026-09-29
+
+Your words, 2026-09-29, on MT-505: *"For bottomMainB, when I try to select Signal 86 (not on its path) as entry
+guard, I can't select it- it doesn't get added to the list in the popup after clicking on it on the diagram."*  And
+then: *"any rejection errors should trigger a popup."*  The reason was said only on the grey line, behind the guard
+window.
+
+**Steps**
+
+1. In the autonomy editor, right-click bottomMainB, choose **Entry Guard Signal...**, press **Click It on the
+   Diagram**, and click Signal 86.
+2. In the guard window that comes back, press **Click It on the Diagram** again and click a square that is not a
+   signal - a piece of track.
+3. Click a signal, then press **Done**.  If a signal was added in step 1 or 3 and you do not want it, open the window
+   again, select it, and press **Remove**.
+
+**Expected**
+
+- Step 1: if the signal cannot be the entry guard, a popup in front of the guard window says why - for instance that it
+  is already bottomMainB's exit guard - and after it the guard window comes back with the list as it was.  If it can,
+  it is added to the list.
+- Step 2: a popup says the square is not a signal.  After it, the next click on a signal still pairs it.
+
+*What this is:* `regression.testTheEditorSaysWhatItsToolsDo.testARefusedGuardClickIsAPopup` and
+`testANonSignalClickedAsAGuardIsAPopup`; a signal refused when given **By Address** is said in the popup that reports
+the addresses, `testARefusedGuardAddressIsAPopup`.
+
+---
+
+<a id="mt-589"></a>
+
+### MT-589 - 2026-09-29 - Open Layout starts at your last layout folder
+
+**Disposition:** fixed unvalidated
+**From:** OB-308
+
+**Written:** 2026-09-29
+
+Your words, 2026-09-29: *"layouts -> open layout should default to the last used local layout folder.  this seems
+like a regression"*.
+
+**Steps**
+
+1. With the Central Station on, Layouts > **Switch to Central Station Layout**.
+2. Layouts > **Open Layout...**, and look where the window opens.
+3. Press **Open** to go back to your layout.
+
+**Expected**
+
+- Step 2: the window opens in the folder that holds your layout folder, with your layout folder selected - not in
+  Documents.
+- Step 3: your own layout is back.
+
+The folder is remembered from this build on.  If TrainControl last closed on the Central Station's layout, open your
+folder by hand once first.
+
+*What this is:* `regression.testTheOldAutonomyTabIsGone.testOpenLayoutStartsAtTheLastLayoutFolder`.
+
+---
+
+<a id="mt-590"></a>
+
+### MT-590 - 2026-09-29 - No trains' lines and no square menus with autonomy not loaded
+
+**Disposition:** fixed unvalidated
+**From:** OB-307
+
+**Written:** 2026-09-29
+
+Your words, 2026-09-29: *"even when autonomy isn't loaded (i.e. when switching diagram types from CS to local), the
+orange lines with tran locations are painted.  also, right click menus on sensors are also live.  orange should only be
+painted with autonomy loaded, and right click menus also only visible if autonomy loaded."*
+
+**Steps**
+
+1. With autonomy loaded, look at the track diagram, and right-click a station.
+2. Layouts > **Switch to Central Station Layout**, then Layouts > **Open Layout...** and open your layout folder again.
+   Do not load autonomy.
+3. Look at the track diagram.  Right-click a station, then a piece of track, then the diagram's empty background.
+4. Load autonomy again.
+
+**Expected**
+
+- Step 1: the trains' orange lines are drawn, and the station's autonomy menu opens.
+- Step 3: no orange lines.  Right-clicking a station or track opens nothing; right-clicking the background still opens
+  the diagram's menu, which offers the autonomy setup.
+- Step 4: the orange lines are back, and the stations' menus open again.
+
+*What this is:* `ui.testTheGreyAppearsAtIdleToo.testNoTrainsLineWithoutALoadedSetup` and
+`testASquaresMenuOpensOnlyWithASetupLoaded`.
+
+---
+
+<a id="mt-591"></a>
+
+### MT-591 - 2026-09-29 - The locomotive picture: a wrench, the plain pointer, and Central Station pictures croppable
+
+**Disposition:** fixed unvalidated
+**From:** FR-104
+
+**Written:** 2026-09-29
+
+Your words, 2026-09-29: *"instead of "right click to change icon", add a wrench icon to the upper-left of the
+locomotive icon.  also, make central station supplied icons croppable locally.  also, increase the opacity of the default
+locomotive icon by 10%, so it's slightly lighter."*  And: *"change the cover icon for the loc icon from the hand to
+regular"*.
+
+**Steps**
+
+1. Select a locomotive that shows the Central Station's own picture - no icon of your own - and hover over its big
+   picture.
+2. Click the crop mark in the upper right, move the frame, and press **OK**.
+3. Hover again, click the wrench in the upper left, and press **Cancel** in the window that opens.
+4. Select a locomotive with no picture at all, and hover over the placeholder.
+5. For the locomotive in step 1, right-click its button and choose **Manage Locomotive...** > **Clear Local
+   Locomotive Icon**.
+
+**Expected**
+
+- Step 1: the pointer stays the ordinary arrow.  A wrench shows in the upper left and a crop mark in the upper right;
+  no "Right-click to change icon".
+- Step 2: the crop window opens on the Central Station's picture, and after OK the locomotive shows your crop.
+- Step 3: the icon chooser opens - the one right-clicking the picture still opens.
+- Step 4: the placeholder is slightly lighter than before.  The wrench shows; the crop mark does not.
+- Step 5: the Central Station's picture is back.
+
+*What this is:* `ui.testLocIconCrop.testTheWrenchChoosesTheIconAndThePointerIsPlain` and
+`testACentralStationPictureCanBeCropped`; `ui.testThePlaceholderLocomotive.testItIsATenthLighter`.  How light, and how
+the wrench looks, are yours to judge.
+
+---
+
+<a id="mt-592"></a>
+
+### MT-592 - 2026-09-29 - On the Central Station's layout, the Autonomy menu offers to download or create a layout
+
+**Disposition:** fixed unvalidated
+**From:** MT-548
+
+**Written:** 2026-09-29
+
+Your words, 2026-09-29, on MT-548: *"works, but what is the cs3 has no layout?  give the user the choice to either
+download or create a new one, which redirects to the corresponding option under layouts."*
+
+**Steps**
+
+1. With the Central Station on, Layouts > **Switch to Central Station Layout**.
+2. Open the **Autonomy** menu and point at **Autonomy needs a layout stored on this computer**.
+3. Choose **Create New Layout**, read the note, and press **Cancel** in the folder window.
+4. Switch back to your own layout folder.
+
+**Expected**
+
+- Step 2: it opens a submenu with **Download Central Station Layout Files** and **Create New Layout** - the Layouts
+  menu's own two items.  Download can be chosen when the Central Station is connected and has a layout; otherwise it is
+  greyed, and its tooltip says why.
+- Step 3: what Layouts > Create New Layout does: a note to pick a folder for the new layout, then the folder window.
+  Nothing is created.
+
+*What this is:* `regression.testTheOldAutonomyTabIsGone.testWithNothingToDownloadANewLayoutIsOffered`.
 
 ---
