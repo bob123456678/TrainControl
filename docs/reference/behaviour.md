@@ -2012,7 +2012,11 @@ train stands on is its direction, and a one-way run set through a station agains
 the square no copy facing it: the rebuild could not put the train back, and a build from the setup turned it round in
 silence.  So every direction door - a click on the track, a switch's arms, the per-route radio, All branches, One-Way
 Run - asks first, of the railway's trains and the setup's, and a refusal names the train and the station and says to
-move the train first.  `core.testAutonomyDiagramSession.testADirectionThatWouldTurnAStandingTrainIsRefused`.
+move the train first.  **So does a link switched off** beside a train that came in through it (RSA6-A3).  A copy that
+records no facing - a dead end nothing arrives at - faces its only way out, so a train facing the buffer there is not
+left facing a way out behind it (RSA6-B3).  Every session knows where the railway's trains stand from the moment it is
+made, not only once a station's Facing menu or the editor has told it (RSA6-A1).
+`core.testAutonomyDiagramSession.testADirectionThatWouldTurnAStandingTrainIsRefused`.
 
 **So the Facing menu is about the train the RAILWAY has on the square** (TDY4-C5, 2026-09-24). After a run
 the setup can still name a square's pre-run occupant while another train stands there. The menu named the
@@ -2476,12 +2480,18 @@ left somewhere, its road and a turn it is owed, to the same copy under the squar
 same way.  **By the square, not the name** (RSA5-A1, RSA5-C2): a station renamed to the name another has hands that name
 to the renamed square, so each running Point says which square it is a copy of, and a stored name the build now gives
 another square is traced from the square it named.  Where no copy of the square faces a train's way there is none to
-put it on - and the direction that would do that is refused while it stands there (6a).  A page renamed, or a square
-with no name of its own moved on its page, carries the names made from it - *page x,y* - into every configuration's
-timetable and roads (RSA5-B2).
+put it on - and the direction that would do that is refused while it stands there (6a).  **The fold reads the running
+layout the same way** (RSA6-A2): each running Point is written into the square it says it is a copy of, with its copy's
+facing, so a page ticked out after a run keeps where the run left the trains on it.  A page renamed, or a square with
+no name of its own moved on its page, carries the names made from it - *page x,y* - into every configuration's timetable
+and roads (RSA5-B2); and no fold follows a move until the setup is opened again, since the railway running still names
+the squares as they were (RSA6-B2) - opening the editor folded already.  A station name two pages share is settled over
+every page, those out of autonomy too, so the plain name does not move to the other page while one is out (RSA6-C1).
 
-**A page ticked out of autonomy and back in keeps its timetable entries** (RSA4-B2, RSA5-B1).  Its load drops every
-entry through it, and each fold while it is out keeps them - through whatever else happens to the timetable meanwhile:
+**A page ticked out of autonomy and back in keeps its timetable entries** (RSA4-B2, RSA5-B1, RSA6-B1), whichever door
+ticks it.  Its load drops every entry through it, and each fold of a railway built without it keeps them - which pages
+are out is asked of the running layout, not of the setup a tick has just changed - through whatever else happens to the
+timetable meanwhile:
 an entry recorded, deleted or moved, or another dropped by the load for its own reason.  Each goes back after the entry
 its nearest earlier neighbour became, or first where none is left.  **Clear clears them with the rest**, at once
 (RSA5-C1).  Nothing else the load could not read is kept: an entry naming a station removed, or a locomotive the

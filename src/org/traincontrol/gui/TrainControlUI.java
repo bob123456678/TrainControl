@@ -2981,6 +2981,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return loc == null ? null : loc.getTrainLength();
         });
 
+        // AND THE RAILWAY RUNNING, from the moment it is made (RSA6-A1): the refusal of a direction or a link asks where
+        // the railway's trains stand, and a session told only by a station's Facing menu or the editor judged one set
+        // from a plain track square's menu against the setup alone - where the run began.
+        session.setRunningLayoutSource(() -> this.model == null ? null : this.model.getAutoLayoutIfLoaded());
+
         autonomySession = session;
 
         return autonomySession;

@@ -99,6 +99,15 @@ public class AutonomySession
     private boolean pagesStale = false;
 
     /**
+     * Whether squares have been moved since the railway running was built (RSA6-B2, RSA6-A2): the fold is refused until
+     * the next `open`, as it is after a page rename.  That railway names and places what it knows by the squares as they
+     * were, so the track editor's Save folded the old names back over the ones the move carried - and, where the move
+     * reordered two stations of one name, each train onto the other's.  Opening the editor folded already, and nothing
+     * runs while it is open, so nothing the refusal keeps out is new.
+     */
+    private boolean squaresMoved = false;
+
+    /**
      * Says that a page has been renamed and these page objects no longer describe the setup.
      *
      * Called by the rename itself. Cleared by the next `open`, which is what makes it true again.
@@ -118,6 +127,7 @@ public class AutonomySession
     {
         // These pages are current by definition: they are the ones just read from disk.
         this.pagesStale = false;
+        this.squaresMoved = false;
 
         this.pages = diagrams == null ? new ArrayList<LayoutDiagram>() : new ArrayList<>(diagrams);
 
@@ -556,7 +566,7 @@ public class AutonomySession
         if (copies == 1 && facingOfNameNow.get(only) == null) return only;
 
         // NO COPY FACES ITS WAY: none, rather than one facing the other way - the copy is the direction (RSA5-A2).  A
-        // direction that would do this is refused while a train stands there: `trainsTheDirectionsTurn`.
+        // direction that would do this is refused while a train stands there: `trainsTheSetupWouldTurn`.
         return null;
     }
 
@@ -3257,6 +3267,16 @@ public class AutonomySession
         // and wrote every file of the setup.  `deleteSelection` does that once per picked square.
         boolean changed = store.moveTiles(moves, builtOver);
 
+        // AND NO FOLD OF THE RAILWAY BUILT BEFORE THE MOVE (RSA6-B2) - see `squaresMoved`
+        for (Map.Entry<TileKey, TileKey> move : moves == null ? Collections.<TileKey, TileKey>emptyMap().entrySet()
+            : moves.entrySet())
+        {
+            if (move.getKey() != null && move.getValue() != null && !move.getKey().equals(move.getValue()))
+            {
+                squaresMoved = true;
+            }
+        }
+
         // The graph is built from the squares, so it is now describing the old ones - and touched()
         // is what rebuilds it.  This used to call rebuild() again immediately afterwards, so every
         // move paid for two full passes: a fresh TileGraph over every page, a GraphReducer.reduce, and
@@ -5042,6 +5062,7 @@ public class AutonomySession
             .withProtectingSignals(protectingSignalNames())
             .withEntrySignals(entrySignalNames())
             .withBlockingPoints(store.getBlockingPoints())
+            .withNamesOutOfPlay(namesOutOfPlay())
             .withPiecesToMeasure(piecesToMeasure());
     }
 
@@ -5895,7 +5916,7 @@ public class AutonomySession
         // adds is whatever the RUNNING layout knows that the store does not - and a rename is refused
         // while autonomy is running, so there is nothing in that gap. The session is about to be
         // discarded and rebuilt from the renamed pages in any case.
-        if (pagesStale) return;
+        if (pagesStale || squaresMoved) return;
 
         org.json.JSONObject configuration = store.getConfiguration(configurationName);
 
@@ -5913,6 +5934,9 @@ public class AutonomySession
         // Which way a train standing on each emitted Point is pointing.  See the facing capture below.
         Map<String, TilePorts.Side> facings = naming.facingByName();
 
+        // Every square of the diagram, every page's: what a running Point's square is checked against
+        Set<TileKey> diagram = squaresOfTheDiagram();
+
         org.json.JSONObject points = new org.json.JSONObject();
 
         if (root.has("points"))
@@ -5921,7 +5945,12 @@ public class AutonomySession
             {
                 org.json.JSONObject point = (org.json.JSONObject) o;
 
-                TileKey tile = tilesByName.get(point.optString("name"));
+                // BY THE SQUARE THE RUNNING POINT IS A COPY OF (RSA6-A2), where it names one this diagram has - not by
+                // its name through today's naming, which a page ticked out, or a name moved to another square, has
+                // changed since the railway was built: the trains on the page were skipped, and kept where the run began.
+                TileKey tile = squareOf(point, diagram);
+
+                if (tile == null) tile = tilesByName.get(point.optString("name"));
 
                 if (tile == null) continue;
 
@@ -5958,7 +5987,15 @@ public class AutonomySession
                 // Which way the train ended up pointing, learned rather than asked for.  A square is
                 // several Points once it is split, and the one a locomotive is standing on says which
                 // way round it is - so after autonomy has run once, nobody has to answer that question.
-                TilePorts.Side facing = facings.get(point.optString("name"));
+                //
+                // The copy's own facing, where the running layout says it (RSA6-A2); else the naming's, for a name it still
+                // gives that square.
+                TilePorts.Side facing = sideNamed(point.optString(AutonomyBuilder.COPY_FACING, null));
+
+                if (facing == null && tile.equals(tilesByName.get(point.optString("name"))))
+                {
+                    facing = facings.get(point.optString("name"));
+                }
 
                 if (facing != null && extras.has("loc"))
                 {
@@ -6146,7 +6183,7 @@ public class AutonomySession
         if (globals.has("timetable") && storedGlobals != null)
         {
             globals.put("timetable", withTheEntriesOfPagesOut(storedGlobals.optJSONArray("timetable"),
-                globals.optJSONArray("timetable")));
+                globals.optJSONArray("timetable"), pagesTheRunningLayoutLeftOut(root)));
         }
 
         configuration.put("globals", globals);
@@ -6166,12 +6203,12 @@ public class AutonomySession
      *
      * @param stored the configuration's timetable
      * @param running the running layout's
+     * @param pagesOut the pages the running layout was built without (RSA6-B1)
      * @return the timetable to store
      */
-    private org.json.JSONArray withTheEntriesOfPagesOut(org.json.JSONArray stored, org.json.JSONArray running)
+    private org.json.JSONArray withTheEntriesOfPagesOut(org.json.JSONArray stored, org.json.JSONArray running,
+        java.util.Set<String> pagesOut)
     {
-        java.util.Set<String> pagesOut = new java.util.HashSet<>(store.getExcludedPages());
-
         if (stored == null || running == null || pagesOut.isEmpty()) return running;
 
         // EACH KEPT ENTRY AFTER THE RUNNING ENTRY ITS NEAREST EARLIER NEIGHBOUR BECAME, or first where none survives
@@ -6253,7 +6290,8 @@ public class AutonomySession
         TileKey best = null;
         String bestName = null;
 
-        for (TileKey tile : graph.getTiles().keySet())
+        // THE PAGES' OWN SQUARES, not the graph's - which leaves out every page out of autonomy (RSA6-B1)
+        for (TileKey tile : squaresOfTheDiagram())
         {
             if (!pagesOut.contains(tile.getPage())) continue;
 
@@ -6269,6 +6307,103 @@ public class AutonomySession
         }
 
         return best;
+    }
+
+    /**
+     * The squares with names of their own on pages out of autonomy, and those names (RSA6-C1): they take their turn in
+     * the naming though they are not built, so a name shared with a page in play is settled as if they were.
+     */
+    private Map<TileKey, String> namesOutOfPlay()
+    {
+        Set<String> out = new java.util.HashSet<>(store.getExcludedPages());
+
+        if (out.isEmpty()) return Collections.emptyMap();
+
+        Map<TileKey, String> names = new LinkedHashMap<>();
+
+        for (LayoutDiagram page : pages)
+        {
+            if (!out.contains(page.getName())) continue;
+
+            for (LayoutDiagramComponent component : page.getAll())
+            {
+                TileKey tile = new TileKey(page.getName(), component.getX(), component.getY());
+
+                String name = store.getPointName(tile);
+
+                if (name != null && !name.trim().isEmpty()) names.put(tile, name);
+            }
+        }
+
+        return names;
+    }
+
+    /**
+     * The square of the diagram a running Point says it is a copy of, where the diagram has it, or null (RSA6-A2).
+     *
+     * @param point a Point as the running layout writes it
+     * @param diagram every square of the diagram
+     * @return its square, or null
+     */
+    private static TileKey squareOf(org.json.JSONObject point, Set<TileKey> diagram)
+    {
+        String square = point.optString("square", null);
+
+        TileKey tile = square == null ? null : AutonomyCompanionStore.parseTileKey(square);
+
+        return tile != null && diagram.contains(tile) ? tile : null;
+    }
+
+    /**
+     * Every square of the diagram, on every page - those out of autonomy too, which the graph leaves out.
+     */
+    private Set<TileKey> squaresOfTheDiagram()
+    {
+        Set<TileKey> out = new java.util.HashSet<>();
+
+        for (LayoutDiagram page : pages)
+        {
+            for (LayoutDiagramComponent component : page.getAll())
+            {
+                out.add(new TileKey(page.getName(), component.getX(), component.getY()));
+            }
+        }
+
+        return out;
+    }
+
+    /**
+     * The pages the running layout was built without, read off its Points' squares (RSA6-B1) - or, where it says none,
+     * the pages the setup has out of autonomy.  A fold made at a tick sees the page's new state and the railway's old one:
+     * asked of the setup, the fold going out kept a page's entries beside the running ones, and the fold coming back
+     * erased them all.
+     */
+    private Set<String> pagesTheRunningLayoutLeftOut(org.json.JSONObject root)
+    {
+        Set<String> built = new java.util.HashSet<>();
+
+        org.json.JSONArray points = root.optJSONArray("points");
+
+        for (int i = 0; points != null && i < points.length(); i++)
+        {
+            org.json.JSONObject point = points.optJSONObject(i);
+
+            TileKey tile = point == null || !point.has("square") ? null
+                : AutonomyCompanionStore.parseTileKey(point.optString("square"));
+
+            if (tile != null) built.add(tile.getPage());
+        }
+
+        if (built.isEmpty()) return new java.util.HashSet<>(store.getExcludedPages());
+
+        Set<String> out = new java.util.HashSet<>();
+
+        for (LayoutDiagram page : pages)
+        {
+            if (!built.contains(page.getName())) out.add(page.getName());
+        }
+
+        return out;
     }
 
     /** Whether two timetable entries send the same train the same way. */
@@ -7124,7 +7259,8 @@ public class AutonomySession
     private String directionRefusal;
 
     /**
-     * Why the last direction asked for was not set, or null where it was - taken, so it is said once (RSA5-A2).
+     * Why the last direction asked for, or link switched off, was not set, or null where it was - taken, so it is said
+     * once (RSA5-A2, RSA6-A3).
      *
      * @return the sentence, or null
      */
@@ -7159,7 +7295,7 @@ public class AutonomySession
      */
     private boolean directionsTouched()
     {
-        Map<String, String> turned = trainsTheDirectionsTurn();
+        Map<String, String> turned = trainsTheSetupWouldTurn();
 
         if (!turned.isEmpty())
         {
@@ -7189,7 +7325,7 @@ public class AutonomySession
      * station it stands on (RSA5-A2): the railway's trains, and the setup's where the railway has none of them, read by
      * a reduction of the graph as it now stands - nothing derived from it, and nothing carried.
      */
-    private Map<String, String> trainsTheDirectionsTurn()
+    private Map<String, String> trainsTheSetupWouldTurn()
     {
         Map<String, Object[]> standing = new LinkedHashMap<>();
 
@@ -7200,8 +7336,13 @@ public class AutonomySession
             for (org.traincontrol.automation.Point point : running.getPoints())
             {
                 Locomotive loc = point.getCurrentLocomotive();
-                TileKey square = squareOfNameNow.get(point.getName());
-                Side facing = facingOfNameNow.get(point.getName());
+
+                // BY THE SQUARE AND FACING THE RUNNING POINT SAYS (RSA6-A2), else by its name through today's naming
+                TileKey square = point.getSquare() == null ? null : AutonomyCompanionStore.parseTileKey(point.getSquare());
+                Side facing = sideNamed(point.getCopyFacing());
+
+                if (square == null) square = squareOfNameNow.get(point.getName());
+                if (facing == null) facing = facingOfNameNow.get(point.getName());
 
                 if (loc == null || loc.getName() == null || square == null || facing == null) continue;
 
@@ -7227,7 +7368,15 @@ public class AutonomySession
 
         if (standing.isEmpty()) return Collections.emptyMap();
 
-        GraphReducer trial = new GraphReducer(graph, store.asAuthored());
+        // A GRAPH MADE AS A REBUILD MAKES IT, from the setup as it now stands - a direction recorded, or a link switched
+        // off (RSA6-A3), which the graph held now does not reflect
+        TileGraph trialGraph = new TileGraph(pages, store.getExcludedPages());
+
+        store.applyTo(trialGraph);
+
+        trialGraph.validatePortals();
+
+        GraphReducer trial = new GraphReducer(trialGraph, store.asAuthored());
 
         trial.reduce();
 
@@ -7247,9 +7396,20 @@ public class AutonomySession
             boolean facesSomeWay = false;
             boolean facesItsWay = false;
 
+            int copies = 0;
+
+            for (TileKey each : tiles.values())
+            {
+                if (square.equals(each)) copies++;
+            }
+
             for (Map.Entry<String, TileKey> copy : tiles.entrySet())
             {
                 Side way = square.equals(copy.getValue()) ? facings.get(copy.getKey()) : null;
+
+                // A COPY RECORDING NO FACING FACES ITS ONLY WAY OUT (RSA6-B3): a dead end made one way away is one copy
+                // nothing arrives at, and a train facing the buffer there was offered the way out behind it
+                if (way == null && copies == 1 && square.equals(copy.getValue())) way = naming.onlyWayOutFacing(square);
 
                 if (way == null) continue;
 
@@ -7333,7 +7493,25 @@ public class AutonomySession
      */
     public void setPortalDisabled(TileKey tile, boolean disabled)
     {
+        boolean was = store.isPortalDisabled(tile);
+
         store.setPortalDisabled(tile, disabled);
+
+        // NOT FROM UNDER A STANDING TRAIN (RSA6-A3): a link switched off beside a station takes away the copy a train that
+        // came in through it stands on, as a direction can - so it is asked as a direction is, and put back where it would
+        Map<String, String> turned = trainsTheSetupWouldTurn();
+
+        if (!turned.isEmpty())
+        {
+            store.setPortalDisabled(tile, was);
+
+            Map.Entry<String, String> first = turned.entrySet().iterator().next();
+
+            directionRefusal = I18n.f("autosetup.ui.errorLinkTurnsATrain", first.getKey(), first.getValue());
+
+            return;
+        }
+
         touched();
     }
 

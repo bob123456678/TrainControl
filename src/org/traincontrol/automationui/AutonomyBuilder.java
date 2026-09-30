@@ -1622,6 +1622,20 @@ public class AutonomyBuilder
     }
 
     /**
+     * Which way a train on a square of one copy that records no facing points: toward its only way out (RSA6-B3) - or
+     * null where it has none, or more than one.
+     *
+     * @param tile the square
+     * @return the side its front faces, or null
+     */
+    public TilePorts.Side onlyWayOutFacing(TileKey tile)
+    {
+        List<TilePorts.Side> behind = sidesBehindTheWaysOut(tile);
+
+        return behind.size() == 1 ? facingOf(new Node(tile, behind.get(0), false)) : null;
+    }
+
+    /**
      * Every emitted name of a turning copy: a train that came in and turned round there (RSA4-A1).
      *
      * @return the names
@@ -1683,25 +1697,36 @@ public class AutonomyBuilder
         Map<TileKey, String> out = new LinkedHashMap<>();
         Map<String, Integer> seen = new LinkedHashMap<>();
 
-        List<ReducedPoint> points = new ArrayList<>(reducer.getPoints().values());
-        Collections.sort(points, new Comparator<ReducedPoint>()
+        // SETTLED OVER EVERY PAGE (RSA6-C1): the named squares of a page out of autonomy take their turn as if it were in,
+        // and are not emitted - so a name two pages share is suffixed the same way whichever is out, and a page ticked
+        // out and back in does not move the plain name to the other page and back
+        Map<TileKey, String> named = new LinkedHashMap<>();
+
+        for (ReducedPoint point : reducer.getPoints().values()) named.put(point.getTile(), point.getName());
+
+        for (Map.Entry<TileKey, String> out0 : namesOutOfPlay.entrySet()) named.putIfAbsent(out0.getKey(), out0.getValue());
+
+        List<TileKey> squares = new ArrayList<>(named.keySet());
+        Collections.sort(squares, new Comparator<TileKey>()
         {
             @Override
-            public int compare(ReducedPoint a, ReducedPoint b)
+            public int compare(TileKey a, TileKey b)
             {
-                return a.getTile().toString().compareTo(b.getTile().toString());
+                return a.toString().compareTo(b.toString());
             }
         });
 
-        for (ReducedPoint point : points)
+        for (TileKey square : squares)
         {
-            String base = point.getName();
+            String base = named.get(square);
             Integer count = seen.get(base);
+            boolean emitted = reducer.getPoints().containsKey(square);
 
             if (count == null)
             {
                 seen.put(base, 1);
-                out.put(point.getTile(), base);
+
+                if (emitted) out.put(square, base);
 
                 continue;
             }
@@ -1721,9 +1746,25 @@ public class AutonomyBuilder
             seen.put(base, suffix);
             seen.put(candidate, 1);
 
-            out.put(point.getTile(), candidate);
+            if (emitted) out.put(square, candidate);
         }
 
         return out;
     }
+
+    /**
+     * The names of squares on pages out of autonomy, which take their turn in `uniqueNames` without being emitted
+     * (RSA6-C1).
+     *
+     * @param names each such named square, and its own name
+     * @return this
+     */
+    public AutonomyBuilder withNamesOutOfPlay(Map<TileKey, String> names)
+    {
+        this.namesOutOfPlay = names == null ? Collections.<TileKey, String>emptyMap() : names;
+
+        return this;
+    }
+
+    private Map<TileKey, String> namesOutOfPlay = Collections.emptyMap();
 }

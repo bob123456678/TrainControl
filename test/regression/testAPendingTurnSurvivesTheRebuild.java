@@ -361,4 +361,32 @@ public class testAPendingTurnSurvivesTheRebuild
             }
         }
     }
+
+    /**
+     * The session sees the running railway from the moment the window makes it (RSA6-A1): the direction refusal asks
+     * where the railway's trains stand, and the session was told only when a station's Facing menu was built or the
+     * setup editor entered autonomy - so after start-up, or any reset, a direction set from a plain track square's menu
+     * was judged against the setup alone, which is where the run began.
+     *
+     * MUTATION: tell the session only from the menus, and this fails.
+     *
+     * @throws Exception on an event-thread failure
+     */
+    @Test
+    public void testTheSessionSeesTheRailwayFromTheStart() throws Exception
+    {
+        AutonomySession made = ui.getAutonomySession();
+
+        assertNotNull(made, "precondition: the window made no session");
+
+        java.lang.reflect.Field source = AutonomySession.class.getDeclaredField("runningLayout");
+
+        source.setAccessible(true);
+
+        Object supplier = source.get(made);
+
+        assertTrue(supplier != null && ((java.util.function.Supplier<?>) supplier).get() == model.getAutoLayoutIfLoaded(),
+            "the session the window made cannot see the running railway, so a direction refused over a train the run"
+            + " left is judged against where the setup last had it (RSA6-A1): " + supplier);
+    }
 }

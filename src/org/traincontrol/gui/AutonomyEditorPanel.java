@@ -1959,6 +1959,9 @@ public class AutonomyEditorPanel extends JPanel
                 {
                     session.setPortalDisabled(target, !on);
 
+                    // NOT FROM UNDER A STANDING TRAIN (RSA6-A3)
+                    if (refusedUnderATrain()) return;
+
                     // A shut link is a missing edge in the running graph, so the railway has to be
                     // told (VD10-B2).  This wrote straight from the lambda and was the one writer
                     // not inside a door at all - which is also why it pushes no undo point (VD9-B3).
@@ -4291,12 +4294,13 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Says why the session refused the direction just asked for, in a popup, where it did (RSA5-A2): one that would leave
-     * a train standing on a square with no copy facing its way.  Every direction door asks it.
+     * Says why the session refused the direction just asked for, or the link just switched off, in a popup, where it did
+     * (RSA5-A2, RSA6-A3): one that would leave a train standing on a square with no copy facing its way.  Every direction
+     * door asks it, and the link's switch.
      *
      * @return true when it was refused
      */
-    private boolean refusedADirection()
+    private boolean refusedUnderATrain()
     {
         String why = session.takeDirectionRefusal();
 
@@ -4311,7 +4315,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         session.setDirection(new LinkedHashSet<>(java.util.Arrays.asList(tile)), direction);
 
-        if (refusedADirection()) return;
+        if (refusedUnderATrain()) return;
 
         // THE ARROWS, NOT THE DIAGRAM (MT-334).
         //
@@ -7422,7 +7426,7 @@ public class AutonomyEditorPanel extends JPanel
                 ? session.setOneWayRun(from, tile)
                 : session.setOneWayRun(tile, from);
 
-            if (refusedADirection())
+            if (refusedUnderATrain())
             {
                 refresh();
                 return;
@@ -7637,7 +7641,7 @@ public class AutonomyEditorPanel extends JPanel
 
         int changed = session.setRunDirection(target, only.getKey(), next);
 
-        if (refusedADirection())
+        if (refusedUnderATrain())
         {
             refresh();
             return;
@@ -7755,7 +7759,7 @@ public class AutonomyEditorPanel extends JPanel
         // One re-derivation for the tile, not one per branch
         session.setDirections(target, wanted);
 
-        if (refusedADirection()) return false;
+        if (refusedUnderATrain()) return false;
 
         // THE ARROWS, NOT THE DIAGRAM (MT-334).
         //
@@ -9256,7 +9260,7 @@ public class AutonomyEditorPanel extends JPanel
             // tile at a time is both busywork and a way to end up with a run that contradicts itself.
             int set = session.setRunDirection(tile, routeId, direction);
 
-            if (refusedADirection())
+            if (refusedUnderATrain())
             {
                 refresh();
                 return;
