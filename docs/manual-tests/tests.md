@@ -27,11 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-595](#mt-595) | 2026-09-29 | A square nothing can pass is orange again | fixed unvalidated | FR-103 |
-| [MT-596](#mt-596) | 2026-09-29 | The picture's tools wait for the power off, and a revert stands beside the wrench | fixed unvalidated | MT-591, MT-594 |
 
-Everything else - 594 of 596 - needs nothing from you unless the area changes again:
-469 **fixed validated** and 125 **superseded**.
+
+Everything else - 596 of 596 - needs nothing from you unless the area changes again:
+471 **fixed validated** and 125 **superseded**.
 
 ---
 
@@ -29357,7 +29356,7 @@ with a solid head.  This entry's step 3 expects it in the wrench's place, so MT-
 
 ### MT-595 - 2026-09-29 - A square nothing can pass is orange again
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-103
 
 **Written:** 2026-09-29
@@ -29381,13 +29380,17 @@ Your words, 2026-09-29: *"make the nothing can pass (X stations) be orange again
 
 *Run against commit 345dd13e, regular mode (no simulate, no debug) - in English - build\classes, compiled 29 Sep 23:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-29.**
+
+Validated on your *Works* of 2026-09-29.
+
 ---
 
 <a id="mt-596"></a>
 
 ### MT-596 - 2026-09-29 - The picture's tools wait for the power off, and a revert stands beside the wrench
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-591, MT-594
 
 **Written:** 2026-09-29
@@ -29425,5 +29428,9 @@ is yours to judge.
 **Adam, 2026-09-29 (triage).** Works.
 
 *Run against commit 345dd13e, regular mode (no simulate, no debug) - in English - build\classes, compiled 29 Sep 23:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-29.**
+
+Validated on your *Works* of 2026-09-29.
 
 ---
