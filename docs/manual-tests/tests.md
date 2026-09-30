@@ -27,13 +27,21 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-597](#mt-597) | 2026-09-30 | Import waits for autonomy to stop, and a station renamed after a run keeps its train | fixed unvalidated | RSA4-C5, RSA4-A1 |
-| [MT-598](#mt-598) | 2026-09-30 | A page ticked out keeps its timetable entries, and a direction is refused under a train facing against it | fixed unvalidated | RSA5-B1, RSA5-C1, RSA5-A2 |
-| [MT-599](#mt-599) | 2026-09-30 | A link switched off, or a dead end made one way, is refused under a train facing against it | fixed unvalidated | RSA6-A3, RSA6-B3, RSA6-A1 |
-| [MT-600](#mt-600) | 2026-09-30 | The Pages dialog waits for the run to stop and rebuilds after it; a Cancel after a delete keeps the station | fixed unvalidated | RSA7-A1, RSA7-B2, RSA7-B1 |
+| [MT-601](#mt-601) | 2026-09-30 | Import waits for autonomy to stop | fixed unvalidated | RSA4-C5 |
+| [MT-602](#mt-602) | 2026-09-30 | A station renamed after a run keeps the train the run left there | fixed unvalidated | RSA4-A1 |
+| [MT-603](#mt-603) | 2026-09-30 | A page ticked out keeps its timetable entries through an edit | fixed unvalidated | RSA5-B1 |
+| [MT-604](#mt-604) | 2026-09-30 | Clear also clears the timetable entries of a page ticked out | fixed unvalidated | RSA5-C1 |
+| [MT-605](#mt-605) | 2026-09-30 | A direction is refused under a train facing against it | fixed unvalidated | RSA5-A2 |
+| [MT-606](#mt-606) | 2026-09-30 | A link is not switched off under a train that came in through it | fixed unvalidated | RSA6-A3, RSA6-A1 |
+| [MT-607](#mt-607) | 2026-09-30 | A dead end is not made one way away from a train facing the buffer | fixed unvalidated | RSA6-B3 |
+| [MT-608](#mt-608) | 2026-09-30 | The Pages dialog waits for autonomy to stop | fixed unvalidated | RSA7-B2 |
+| [MT-609](#mt-609) | 2026-09-30 | A page ticked out in the Pages dialog is no longer run | fixed unvalidated | RSA7-B2 |
+| [MT-610](#mt-610) | 2026-09-30 | Cancel after a delete in the track editor keeps the station's train and settings | fixed unvalidated | RSA7-A1 |
+| [MT-611](#mt-611) | 2026-09-30 | A dead end is not made two way under a train facing out of it | fixed unvalidated | RSA7-B1 |
+| [MT-612](#mt-612) | 2026-09-30 | A train at a one-way dead end does not block directions elsewhere | fixed unvalidated | RSA7-B1 |
 
-Everything else - 596 of 600 - needs nothing from you unless the area changes again:
-471 **fixed validated** and 125 **superseded**.
+Everything else - 600 of 612 - needs nothing from you unless the area changes again:
+471 **fixed validated** and 129 **superseded**.
 
 ---
 
@@ -29442,7 +29450,7 @@ Validated on your *Works* of 2026-09-29.
 
 ### MT-597 - 2026-09-30 - Import waits for autonomy to stop, and a station renamed after a run keeps its train
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** RSA4-C5, RSA4-A1
 
 **Written:** 2026-09-30
@@ -29470,13 +29478,17 @@ had started.  Your rule of 28 September: *"There should be no setup edit possibl
 *What this is:* `regression.testTheImportDoorReadsAnOldFile.testAnImportIsRefusedWhileAutonomyRuns` and
 `testARenameAfterARunKeepsTheTrainOnTheStation`.
 
+**Claude, 2026-09-30.**
+
+Superseded by MT-601 and MT-602: this entry held several checks you judge apart, against README's ONE TEST PER ENTRY (your ruling of 2026-09-07), so each is now an entry of its own, with the same steps and the same expected result.  Nothing here has been run.
+
 ---
 
 <a id="mt-598"></a>
 
 ### MT-598 - 2026-09-30 - A page ticked out keeps its timetable entries, and a direction is refused under a train facing against it
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** RSA5-B1, RSA5-C1, RSA5-A2
 
 **Written:** 2026-09-30
@@ -29506,13 +29518,17 @@ back through whatever else you do to the timetable meanwhile; only Clear clears 
 `regression.testTheImportDoorReadsAnOldFile.testClearEmptiesTheTimetableTheConfigurationKeeps` and
 `regression.testAnEditedPlacementSurvivesTheRebuild.testADirectionUnderATrainTheRunLeftIsRefused`.
 
+**Claude, 2026-09-30.**
+
+Superseded by MT-603, MT-604 and MT-605: this entry held several checks you judge apart, against README's ONE TEST PER ENTRY (your ruling of 2026-09-07), so each is now an entry of its own, with the same steps and the same expected result.  Nothing here has been run.
+
 ---
 
 <a id="mt-599"></a>
 
 ### MT-599 - 2026-09-30 - A link switched off, or a dead end made one way, is refused under a train facing against it
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** RSA6-A3, RSA6-B3, RSA6-A1
 
 **Written:** 2026-09-30
@@ -29538,13 +29554,17 @@ was put back where the setup last had it, or offered the way out behind it.
 `testADirectionThatLeavesADeadEndFacingAwayIsRefused`, and `regression.testAPendingTurnSurvivesTheRebuild.testTheSessionSeesTheRailwayFromTheStart`
 (no menu needs to be opened first).
 
+**Claude, 2026-09-30.**
+
+Superseded by MT-606 and MT-607: this entry held several checks you judge apart, against README's ONE TEST PER ENTRY (your ruling of 2026-09-07), so each is now an entry of its own, with the same steps and the same expected result.  Nothing here has been run.
+
 ---
 
 <a id="mt-600"></a>
 
 ### MT-600 - 2026-09-30 - The Pages dialog waits for the run to stop and rebuilds after it; a Cancel after a delete keeps the station
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** RSA7-A1, RSA7-B2, RSA7-B1
 
 **Written:** 2026-09-30
@@ -29572,5 +29592,318 @@ rebuilt the railway, and the track editor's Cancel after a delete put a station 
 *What this is:* `regression.testTheImportDoorReadsAnOldFile.testThePagesDialogIsRefusedWhileRunningAndReloadsAtRest`,
 `core.testAutonomyDiagramSession.testACancelledDeleteKeepsTheSquaresSetup`,
 `testADeadEndMadeTwoWayUnderATrainFacingOutIsRefused` and `testAStaleFacingAtADeadEndRefusesNothingElse`.
+
+**Claude, 2026-09-30.**
+
+Superseded by MT-608, MT-609, MT-610, MT-611 and MT-612: this entry held several checks you judge apart, against README's ONE TEST PER ENTRY (your ruling of 2026-09-07), so each is now an entry of its own, with the same steps and the same expected result.  Nothing here has been run.
+
+---
+
+<a id="mt-601"></a>
+
+### MT-601 - 2026-09-30 - Import waits for autonomy to stop
+
+**Disposition:** fixed unvalidated
+**From:** RSA4-C5
+
+**Written:** 2026-09-30
+
+From the fifth release review (RSA4), taken out of MT-597.  Your rule of 28 September: *"There should be no setup
+edit possible during a run."*
+
+**Steps**
+
+1. Start autonomy.  While it runs, choose **Autonomy > Import...**.
+
+**Expected**
+
+- A message at once says autonomy is running, so nothing was imported, and to stop autonomy and import the file again.
+  No file chooser opens.
+
+*What this is:* `regression.testTheImportDoorReadsAnOldFile.testAnImportIsRefusedWhileAutonomyRuns`.
+
+---
+
+<a id="mt-602"></a>
+
+### MT-602 - 2026-09-30 - A station renamed after a run keeps the train the run left there
+
+**Disposition:** fixed unvalidated
+**From:** RSA4-A1
+
+**Written:** 2026-09-30
+
+From the fifth release review (RSA4), taken out of MT-597.  A station renamed from the track diagram after a run put
+the train the run had left there back where it started.
+
+**Steps**
+
+1. Run autonomy, press **Graceful Stop** and wait until every train has stopped.  Pick a station a train has just
+   stopped on - one it did not start the run on.
+2. Right-click that station on the track diagram, choose its name item, and give it a new name.
+3. Give it its old name back the same way.
+
+**Expected**
+
+- After each rename the train is still on that station, and the station shows as occupied - it is not back where it
+  started the run.
+
+*What this is:* `regression.testTheImportDoorReadsAnOldFile.testARenameAfterARunKeepsTheTrainOnTheStation`.
+
+---
+
+<a id="mt-603"></a>
+
+### MT-603 - 2026-09-30 - A page ticked out keeps its timetable entries through an edit
+
+**Disposition:** fixed unvalidated
+**From:** RSA5-B1
+
+**Written:** 2026-09-30
+
+From the fifth release validator (RSA5), taken out of MT-598, and your question of 30 September about the entries
+of a page ticked out: *"is it reliable?"*  Since round 23 they are kept in a list of their own while the page is out.
+
+**Steps**
+
+1. Have a timetable with entries on two pages.  Tick one page out of autonomy (**Autonomy > Pages**).
+2. In the timetable, delete one entry of the page still in.
+3. Tick the page back in.
+
+**Expected**
+
+- The ticked-out page's entries are back, where they were; the entry you deleted stays deleted.
+
+*What this is:* `core.testAutonomyDiagramSession.testAPageOutKeepsItsEntriesThroughAnEdit`.
+
+---
+
+<a id="mt-604"></a>
+
+### MT-604 - 2026-09-30 - Clear also clears the timetable entries of a page ticked out
+
+**Disposition:** fixed unvalidated
+**From:** RSA5-C1
+
+**Written:** 2026-09-30
+
+From the fifth release validator (RSA5), taken out of MT-598.
+
+**Steps**
+
+1. Have a timetable with entries on two pages.  Tick one page out of autonomy (**Autonomy > Pages**).
+2. Press **Clear** on the timetable.
+3. Tick the page back in.
+
+**Expected**
+
+- The timetable is empty - nothing comes back with the page.
+
+*What this is:* `regression.testTheImportDoorReadsAnOldFile.testClearEmptiesTheTimetableTheConfigurationKeeps`.
+
+---
+
+<a id="mt-605"></a>
+
+### MT-605 - 2026-09-30 - A direction is refused under a train facing against it
+
+**Disposition:** fixed unvalidated
+**From:** RSA5-A2
+
+**Written:** 2026-09-30
+
+From the fifth release validator (RSA5), taken out of MT-598.
+
+**Steps**
+
+1. Stand a train on a two-way station, facing one way.
+2. Right-click the track on one side of it and make it one way, against the way the train faces; then the other side
+   the same way.
+
+**Expected**
+
+- When the second side would leave the station no way to face as the train does, a message says the train stands there
+  facing the other way and the direction was not set; the track stays as it was.  Move the train and it can be set.
+
+*What this is:* `regression.testAnEditedPlacementSurvivesTheRebuild.testADirectionUnderATrainTheRunLeftIsRefused`.
+
+---
+
+<a id="mt-606"></a>
+
+### MT-606 - 2026-09-30 - A link is not switched off under a train that came in through it
+
+**Disposition:** fixed unvalidated
+**From:** RSA6-A3, RSA6-A1
+
+**Written:** 2026-09-30
+
+From the sixth release validator (RSA6), taken out of MT-599.
+
+**Steps**
+
+1. Run autonomy until a train has come in through a page link and stopped at the station beside it, and stop.
+2. Right-click the link and switch **Autonomy Uses This Link** off.
+
+**Expected**
+
+- A message says the train came in through this link, so it was not switched off.  The link stays on.  Move the train
+  first and it can be switched off.
+
+*What this is:* `core.testAutonomyDiagramSession.testALinkSwitchedOffUnderATrainIsRefused` and
+`regression.testAPendingTurnSurvivesTheRebuild.testTheSessionSeesTheRailwayFromTheStart`.
+
+---
+
+<a id="mt-607"></a>
+
+### MT-607 - 2026-09-30 - A dead end is not made one way away from a train facing the buffer
+
+**Disposition:** fixed unvalidated
+**From:** RSA6-B3
+
+**Written:** 2026-09-30
+
+From the sixth release validator (RSA6), taken out of MT-599.
+
+**Steps**
+
+1. Stand a train at a dead-end station, facing the buffer.
+2. Right-click the track leading out of it and make it one way, away from the station.
+
+**Expected**
+
+- A message says the train stands there facing the other way, so the direction was not set.  The track stays as it
+  was.
+
+*What this is:* `core.testAutonomyDiagramSession.testADirectionThatLeavesADeadEndFacingAwayIsRefused`.
+
+---
+
+<a id="mt-608"></a>
+
+### MT-608 - 2026-09-30 - The Pages dialog waits for autonomy to stop
+
+**Disposition:** fixed unvalidated
+**From:** RSA7-B2
+
+**Written:** 2026-09-30
+
+From the seventh release validator (RSA7), taken out of MT-600.  The Autonomy panel's Pages dialog changed the setup
+during a run.
+
+**Steps**
+
+1. Start autonomy.  On the Autonomy panel press **Pages...**.
+
+**Expected**
+
+- A message says it cannot be edited while running, and the dialog does not open.
+
+*What this is:* `regression.testNoSetupEditDuringARun.testThePagesDialogIsRefusedWhileRunningAndReloadsAtRest`.
+
+---
+
+<a id="mt-609"></a>
+
+### MT-609 - 2026-09-30 - A page ticked out in the Pages dialog is no longer run
+
+**Disposition:** fixed unvalidated
+**From:** RSA7-B2
+
+**Written:** 2026-09-30
+
+From the seventh release validator (RSA7), taken out of MT-600.  The Pages dialog never rebuilt the railway, so a page
+ticked out there went on being run.
+
+**Steps**
+
+1. With autonomy stopped, if the page you will tick out is joined to another by a link, right-click the link and switch
+   **Autonomy Uses This Link** off first - a link left pointing at a page that is out stops the setup being used, as it
+   does after the Autonomy menu's tick.
+2. On the Autonomy panel press **Pages...**, untick that page, and press OK.
+3. Press **Pages...** again and tick it back in.
+
+**Expected**
+
+- After step 2 the railway is rebuilt without the page: autonomy sends no train to its stations.  After step 3 it is
+  rebuilt with the page again.
+
+*What this is:* `regression.testNoSetupEditDuringARun.testThePagesDialogIsRefusedWhileRunningAndReloadsAtRest`.
+
+---
+
+<a id="mt-610"></a>
+
+### MT-610 - 2026-09-30 - Cancel after a delete in the track editor keeps the station's train and settings
+
+**Disposition:** fixed unvalidated
+**From:** RSA7-A1
+
+**Written:** 2026-09-30
+
+From the seventh release validator (RSA7), taken out of MT-600.
+
+**Steps**
+
+1. With a train standing at a station that has a home or a maximum length, open the track editor.
+2. Delete that station's sensor, then press **Cancel** (do not save).
+
+**Expected**
+
+- The station is back with its train, its home and its length.
+
+*What this is:* `core.testAutonomyDiagramSession.testACancelledDeleteKeepsTheSquaresSetup`.
+
+---
+
+<a id="mt-611"></a>
+
+### MT-611 - 2026-09-30 - A dead end is not made two way under a train facing out of it
+
+**Disposition:** fixed unvalidated
+**From:** RSA7-B1
+
+**Written:** 2026-09-30
+
+From the seventh release validator (RSA7), taken out of MT-600.
+
+**Steps**
+
+1. Pick a dead-end station whose track out is one way, away from it.  Place a train there by hand.
+2. Right-click that track and make it two way.
+
+**Expected**
+
+- A message says the train stands there facing the other way, so the direction was not set.  The track stays one way.
+
+*What this is:* `core.testAutonomyDiagramSession.testADeadEndMadeTwoWayUnderATrainFacingOutIsRefused` and
+`testADeadEndMadeTwoWayIsRefusedWhateverTheLastTrainLeft`.
+
+---
+
+<a id="mt-612"></a>
+
+### MT-612 - 2026-09-30 - A train at a one-way dead end does not block directions elsewhere
+
+**Disposition:** fixed unvalidated
+**From:** RSA7-B1
+
+**Written:** 2026-09-30
+
+From the seventh release validator (RSA7), taken out of MT-600.  A facing an earlier train left at such a dead end
+refused every direction on the railway.
+
+**Steps**
+
+1. Pick a dead-end station whose track out is one way, away from it.  Place a train there by hand.
+2. Change the direction of some track elsewhere on the railway, away from any train.
+
+**Expected**
+
+- The direction is set, with no message.
+
+*What this is:* `core.testAutonomyDiagramSession.testAStaleFacingAtADeadEndRefusesNothingElse` and
+`testATrainFacingNoCopyIsNotAskedAbout`.
 
 ---
