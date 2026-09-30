@@ -2507,7 +2507,7 @@ removed, or a locomotive the database no longer has, is erased by the next fold,
 
 **The Autonomy panel's Pages dialog is a door like the Autonomy menu's tick** (RSA7-B2): refused while autonomy runs
 (MT-141), it asks first where a train is moving, and it rebuilds the railway from the pages it now uses - so a page ticked
-out there is not run on, and one ticked in is run.  `regression.testTheImportDoorReadsAnOldFile`.
+out there is not run on, and one ticked in is run.  `regression.testNoSetupEditDuringARun`.
 
 **The Yes to "reloading will stop the trains" stops every train where it is** (RSA-C1).  Graceful Stop lets each journey
 finish; the Yes also counts a stop, which every journey carries from where it was chosen and asks before and after each
