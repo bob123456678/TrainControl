@@ -247,8 +247,10 @@ Built in `daa52445`, claim `8a6c6f9a`, mutation MX7 red.
 **Decided** (Adam, 2026-09-29, RSA2-B1: *"For the sensors, that is OK as long as non-atomic rules are respected (it
 should be allowed once unlocked)."*): **a route may not end at, or pass, a sensor another train's journey is still
 waiting on**, since the first time a sensor is occupied ends every journey waiting on it.  A feedback double curve's
-two arcs stay two pieces of metal and two places (OB-238); once a journey has passed a sensor it waits on it no more,
-and the lock and release rules decide the track as before.  Built in `4824d40c`, claims `02c4d0bc` and `3a8ff7c0`.
+two arcs stay two pieces of metal and two places (OB-238).  **The sensor is held until the rail to it is given back**
+- *"once unlocked"* - not only until the head reaches it: once the tail has passed, where the track is measured; one
+sensor on, where it is not; at the journey's end, with Atomic Routes on (RSA3-C3, built in `116bec78`, where it had
+been freed as the head reached it).  Built in `4824d40c`, claims `02c4d0bc` and `3a8ff7c0`; behaviour.md 5d.
 
 **Decided** (Adam, 2026-09-29, RSA2-C7: *"Go with a."*): **a station no track arrives at records which way a train
 placed on it faces**, as other stations do, so only the routes that way are offered - where it was built as one copy

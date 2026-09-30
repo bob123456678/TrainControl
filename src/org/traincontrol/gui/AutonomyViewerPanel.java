@@ -1139,6 +1139,18 @@ public class AutonomyViewerPanel extends JPanel
      */
     public void importConfiguration()
     {
+        // NOT WHILE AUTONOMY RUNS (RSA4-C5; Adam, 2026-09-28: *"There should be no setup edit possible during a run"*), as
+        // Delete beside it is refused, and before anything is asked.  Into any configuration an import writes the setup's
+        // shared half - a station's name among it - and the fold after a declined reload read the running railway through
+        // names it had changed: a train on a square it renamed was written nowhere.  It was refused into the configuration
+        // in use alone (RLU4-C1); what it says says what to do instead (RLU5-C2, RLA5-C1).
+        if (ui.isAutonomyBusy())
+        {
+            JOptionPane.showMessageDialog(ui, I18n.t("autosetup.ui.errorImportWhileRunning"));
+
+            return;
+        }
+
         javax.swing.JFileChooser chooser = chooser();
 
         if (chooser.showOpenDialog(ui) != javax.swing.JFileChooser.APPROVE_OPTION) return;
@@ -1200,19 +1212,6 @@ public class AutonomyViewerPanel extends JPanel
         {
             JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.errorImportIntoConfigurationInUse", inUse,
                 I18n.t("autosetup.ui.menuAutonomy") + " > " + I18n.f("autosetup.ui.menuConfigurations", inUse)));
-
-            return;
-        }
-
-        // NOR AN OLD FILE WHILE AUTONOMY RUNS (RLU4-C1, RLA4-C1, RLD4-C1), as Delete beside it is refused.  What the running
-        // layout knows goes into the configuration before the import only while nothing is moving; while something was, the
-        // reload stopped the trains and captured where they stopped - back over the homes and settings the import had just
-        // written and counted - and with the stop declined, the next fold did the same.
-        if (intoTheOneInUse && ui.isAutonomyBusy())
-        {
-            // With what to do instead (RLU5-C2, RLA5-C1)
-            JOptionPane.showMessageDialog(ui, I18n.f("autosetup.ui.errorImportIntoConfigurationInUseWhileRunning",
-                name.trim()));
 
             return;
         }

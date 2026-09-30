@@ -536,20 +536,24 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * An import while trains are moving, whose reload is then declined, leaves the configuration in use as the one the
-     * next start resumes (RLD-C3).
+     * An import while autonomy runs is refused before it asks for anything, whatever it would be imported into, as
+     * Delete beside it is (RSA4-C5; Adam, 2026-09-28: *"There should be no setup edit possible during a run"*).
      *
-     * The door saved with the imported configuration chosen and put the running one back only by reloading it - so
-     * answering No to "reloading stops running locomotives" left setup.json naming the imported one.
+     * Into a configuration not in use it went on while trains ran: a bundle, or an old file, fills the gaps of the
+     * setup's shared half - a station's name among them - and saves, and the reload it then asks may be declined.
+     * Nothing marked the setup newer than the running railway, so the next fold read the running railway through names
+     * the import had changed, and a train on a square it renamed was written nowhere.  Refused with it is the case
+     * RLD-C3 was: a declined reload after an import while trains moved, which left the imported configuration chosen
+     * for the next start.
      *
      * The trains are "moving" as a Return Home in progress makes them: the flag the window asks.
      *
-     * MUTATION: save with the imported configuration chosen, and this fails.
+     * MUTATION: let an import into another configuration in while autonomy runs, and this fails.
      *
      * @throws Exception from the window or the import
      */
     @Test
-    public void testADeclinedReloadLeavesHisConfigurationChosen() throws Exception
+    public void testAnImportIsRefusedWhileAutonomyRuns() throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
@@ -573,25 +577,33 @@ public class testTheImportDoorReadsAnOldFile
 
             AutonomySession session = ui[0].getAutonomySession();
 
-            String inUse = session.getStore().getActiveConfiguration();
+            final String inUse = session.getStore().getActiveConfiguration();
 
             assertNotNull(inUse, "precondition: the frozen railway has no configuration in use");
 
+            String before = session.getStore().getConfiguration(inUse).toString();
+            List<String> namesBefore = new ArrayList<>(session.getStore().getConfigurationNames());
+            String onDiskBefore = setupOnDisk(session).toString();
+
             staging.set(ui[0], true);
 
-            String stopsThem = I18n.t("autolayout.ui.confirmReloadJsonStopsRunningLocomotives");
-
-            List<String> said = importFromTheMenu(ui[0], MT491, "MT-491 declined", Collections.singleton(stopsThem));
-
-            assertTrue(said.contains(stopsThem), "precondition: the reload never asked whether to stop the trains: " + said);
+            Answerer asked = pressImport(ui[0], MT491, "MT-491 while running", Collections.<String>emptySet());
 
             session = ui[0].getAutonomySession();
 
-            assertTrue(session.getStore().getConfigurationNames().contains("MT-491 declined"), "precondition: the import made"
-                + " no configuration of the name given");
+            assertTrue(asked.said.contains(I18n.t("autosetup.ui.errorImportWhileRunning")), "an old file was imported"
+                + " into another configuration while autonomy ran (RSA4-C5), or refused without saying what to do"
+                + " instead: " + asked.said);
 
-            assertEquals(setupOnDisk(session).optString("activeConfiguration"), inUse, "with the reload declined, the"
-                + " setup the next start resumes names the imported configuration in place of " + inUse + " (RLD-C3)");
+            assertFalse(asked.chose, "the import asked for a file it then refused, where Delete refuses at once");
+
+            assertEquals(new ArrayList<>(session.getStore().getConfigurationNames()), namesBefore, "an import refused"
+                + " left a configuration behind");
+
+            assertEquals(session.getStore().getConfiguration(inUse).toString(), before, "an import refused changed "
+                + inUse);
+
+            assertEquals(setupOnDisk(session).toString(), onDiskBefore, "an import refused changed the setup on disk");
         }
         finally
         {
@@ -1093,15 +1105,14 @@ public class testTheImportDoorReadsAnOldFile
 
             staging.set(ui[0], true);
 
-            String stopsThem = I18n.t("autolayout.ui.confirmReloadJsonStopsRunningLocomotives");
-
-            List<String> said = importFromTheMenu(ui[0], MT491, inUse, Collections.singleton(stopsThem));
+            // REFUSED AT ONCE, into any configuration (RSA4-C5), and saying what to do instead (RLU5-C2, RLA5-C1)
+            List<String> said = pressImport(ui[0], MT491, inUse, Collections.<String>emptySet()).said;
 
             session = ui[0].getAutonomySession();
 
-            assertTrue(said.contains(I18n.f("autosetup.ui.errorImportIntoConfigurationInUseWhileRunning", inUse)), "an"
-                + " old file was taken into " + inUse + ", the configuration in use, while autonomy runs (RLU4-C1), or"
-                + " refused without saying what to do instead (RLU5-C2, RLA5-C1): " + said);
+            assertTrue(said.contains(I18n.t("autosetup.ui.errorImportWhileRunning")), "an old file was taken into "
+                + inUse + ", the configuration in use, while autonomy runs (RLU4-C1), or refused without saying what to"
+                + " do instead (RLU5-C2, RLA5-C1): " + said);
 
             assertEquals(session.getStore().getConfiguration(inUse).toString(), before, "an import refused changed " + inUse);
 
@@ -4638,6 +4649,21 @@ public class testTheImportDoorReadsAnOldFile
     private static List<String> importFromTheMenu(TrainControlUI ui, File file, String name, Set<String> no)
         throws Exception
     {
+        Answerer answerer = pressImport(ui, file, name, no);
+
+        assertTrue(answerer.chose, "precondition: the import never showed the file chooser");
+        assertTrue(answerer.named, "precondition: the import never asked for the configuration's name");
+
+        return new ArrayList<>(answerer.said);
+    }
+
+    /**
+     * Presses Import and answers whatever it asks, as above - where it may refuse before it asks anything (RSA4-C5).
+     *
+     * @return what it was answered: what it said, and whether it asked for a file and a name
+     */
+    private static Answerer pressImport(TrainControlUI ui, File file, String name, Set<String> no) throws Exception
+    {
         Answerer answerer = new Answerer(file.getAbsoluteFile(), name, no);
 
         Thread answering = new Thread(answerer, "import door answerer");
@@ -4665,10 +4691,7 @@ public class testTheImportDoorReadsAnOldFile
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 
-            assertTrue(answerer.chose, "precondition: the import never showed the file chooser");
-            assertTrue(answerer.named, "precondition: the import never asked for the configuration's name");
-
-            return new ArrayList<>(answerer.said);
+            return answerer;
         }
         finally
         {
@@ -4917,6 +4940,85 @@ public class testTheImportDoorReadsAnOldFile
         synchronized (LOGGED)
         {
             return LOGGED.toString();
+        }
+    }
+
+    /**
+     * A train the run moved onto a station is still on it after that station is renamed from the diagram's setup menu
+     * (RSA4-A1): the rebuild the rename makes puts each train back by the name the rename gave the Point it stands on.
+     *
+     * The door's own path, on his railway: the setup's rename, then the rebuild every setup gesture on the diagram makes
+     * - which captures nothing, so where the run left the train lives on the running layout alone.  Put back by the
+     * name recorded, the train was left where the setup last had it, and the station it stands on read free.
+     *
+     * MUTATION: put the trains back at the door by the names recorded alone, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testARenameAfterARunKeepsTheTrainOnTheStation() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final AutonomySession session = ui[0].getAutonomySession();
+
+            // THE RUN'S RESULT, on the running railway alone
+            final String[] move = moveAStandingTrain(ui[0], session);
+
+            final TileKey square = session.getStationIndex().squareOf(move[2]);
+
+            assertNotNull(square, "precondition: " + move[2] + " is no square of the diagram");
+
+            final Object before = ui[0].getModel().getAutoLayout();
+
+            final String renamed = "RSA4 renamed station";
+
+            // THE RENAME, as the diagram's setup menu makes it, and the rebuild after it
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.setPointName(square, renamed);
+
+                ui[0].rebuildRunningLayoutFromSetup(true, null);
+            });
+
+            assertTrue(ui[0].getModel().getAutoLayout() != before, "precondition: the rename rebuilt nothing");
+
+            org.traincontrol.automation.Point where = ui[0].getModel().getAutoLayout().getLocomotiveLocation(
+                ui[0].getModel().getLocByName(move[0]));
+
+            assertNotNull(where, move[0] + " is off the railway after its station was renamed (RSA4-A1)");
+
+            assertEquals(ui[0].getAutonomySession().getStationIndex().squareOf(where.getName()), square, move[0]
+                + ", moved by the run to " + move[2] + ", is on " + where.getName() + " once that station was renamed "
+                + renamed + " - where the setup last had it, the station it stands on reading free (RSA4-A1)");
+
+            assertTrue(where.getName().startsWith(renamed), move[0] + " is on " + where.getName() + ", not the renamed"
+                + " copy of " + move[2]);
+        }
+        finally
+        {
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
         }
     }
 }

@@ -1618,6 +1618,26 @@ public class AutonomyBuilder
     }
 
     /**
+     * Every emitted name of a turning copy: a train that came in and turned round there (RSA4-A1).
+     *
+     * @return the names
+     */
+    public Set<String> turningNames()
+    {
+        Set<String> out = new java.util.LinkedHashSet<>();
+
+        for (Map.Entry<TileKey, String> entry : uniqueNames().entrySet())
+        {
+            for (Node node : nodesFor(entry.getKey()))
+            {
+                if (node.reverse) out.add(nodeName(entry.getValue(), node));
+            }
+        }
+
+        return out;
+    }
+
+    /**
      * Every emitted edge name - "start -> end" over Point names - mapped to the reduced edge it came
      * from.  Several names can share one reduced edge once a tile is split.
      *

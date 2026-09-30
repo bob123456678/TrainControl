@@ -582,7 +582,8 @@ public class Layout
 
     /**
      * The timetable entries alive, each counted from before its thread starts until it leaves (RSA3-C5) - including
-     * while it pauses between refusals, when no journey of it is under way.  Uncounted, a run the Yes had stopped read
+     * while it pauses between refusals, when no journey of it is under way - and the timetable's own loop while it
+     * dispatches them, pausing between entries (RSA4-C1).  Uncounted, a run the Yes had stopped read
      * idle while an entry paused; its call returned, the next run began, and the entry woke into that run and stopped it
      * at its stuck limit, blaming the track.
      */
@@ -594,6 +595,16 @@ public class Layout
      * Held only to wait or to notify, never while taking another lock.
      */
     private final Object entryPause = new Object();
+
+    /**
+     * Held by the Yes across its two statements - `running` cleared, the stop counted - and by a timetable starting across
+     * its two - `running` set, the count read - so that neither pair falls between the other's (RSA4-C2).  Unheld, the
+     * Yes could clear, a timetable set `running` and read the count not yet moved, and the Yes then count: the run
+     * started after the Yes.  No journey takes it, and neither holder waits inside it on anything but `entryPause`, which
+     * is held only to wait or to notify - so the event thread, which makes the Yes, is never kept behind a journey
+     * (RSA3-C4).
+     */
+    private final Object stopLock = new Object();
     
     // Is the layout state valid?
     private boolean isValid = true;
@@ -1047,14 +1058,16 @@ public class Layout
         //
         // activeLocomotives wins where both hold an entry: it is the fuller answer, and it is the one
         // the milestone and clearing bookkeeping is keyed to.
-        Map<Locomotive, List<Edge>> underway = new LinkedHashMap<>(this.activeLocomotives);
+        //
+        // THE CLAIMS READ FIRST (RSA4-C3), for the reason `pathHeldBy` gives: the hand-over writes the journey and then
+        // takes the claim away, so a train missing from the claims is among the journeys read after them.  Journeys
+        // first, a train handing over between the two reads was in neither, and none of its route's switches was
+        // reported.
+        Map<Locomotive, List<Edge>> underway = new LinkedHashMap<>(this.takingPath);
 
-        for (Map.Entry<Locomotive, List<Edge>> claiming : this.takingPath.entrySet())
+        for (Map.Entry<Locomotive, List<Edge>> journey : this.activeLocomotives.entrySet())
         {
-            if (claiming.getValue() != null && !underway.containsKey(claiming.getKey()))
-            {
-                underway.put(claiming.getKey(), claiming.getValue());
-            }
+            if (journey.getValue() != null) underway.put(journey.getKey(), journey.getValue());
         }
 
         for (Map.Entry<Locomotive, List<Edge>> active : underway.entrySet())
@@ -1802,8 +1815,7 @@ public class Layout
     private List<Point> stationsAheadItHolds(Locomotive loc, Point from)
     {
         List<Point> ahead = new ArrayList<>();
-        List<Edge> path = this.activeLocomotives.containsKey(loc) ? this.activeLocomotives.get(loc)
-            : this.takingPath.get(loc);
+        List<Edge> path = this.pathHeldBy(loc);
 
         if (path == null) return ahead;
 
@@ -2184,20 +2196,26 @@ public class Layout
      *
      * **`running` cleared first and the stop counted second** (RSA2-C1, RSA2-C2): autonomy asks `running` once its
      * choice is made, so a thread that reads the count after it has been counted reads `running` cleared; and a
-     * timetable sets `running` and then asks the count, so whichever comes first the run is not started.  No lock, and
-     * not `synchronized` on the railway (RSA3-C4): the event thread calls it, and nothing there may wait on a lock a
-     * journey holds while it waits for this railway's monitor.
+     * timetable sets `running` and then asks the count.  The two statements are held together against a timetable's two
+     * by `stopLock`, which no journey takes (RSA4-C2) - not the journeys' lock, nor `synchronized` on the railway
+     * (RSA3-C4): the event thread calls it, and nothing there may wait on a lock a journey holds while it waits for this
+     * railway's monitor.
      */
     public void stopEveryTrainWhereItIs()
     {
-        // NO LOCK (RSA3-C4).  This took the journeys' lock, on the event thread, and an arrival holds that lock while it
+        // NOT THE JOURNEYS' LOCK (RSA3-C4).  This took it, on the event thread, and an arrival holds that lock while it
         // waits for the railway's monitor - which a dispatch holds for as long as it throws a route's switches.  So the
-        // window froze and every train ran on until the other route was set.  A timetable starting asks the count AFTER
-        // setting `running` and clears it again where the count has moved, so every order of the two ends with the run
-        // not started - see `executeTimetableInternal`.
-        stopLocomotives();
+        // window froze and every train ran on until the other route was set.
+        //
+        // `stopLock` INSTEAD (RSA4-C2), which only this and a timetable starting take.  With no lock the Yes could clear
+        // `running`, a timetable set it and read the count not yet moved, and the Yes then count: the run started after
+        // the Yes.  Held, a timetable starting sees both statements or neither - see `executeTimetableInternal`.
+        synchronized (this.stopLock)
+        {
+            stopLocomotives();
 
-        this.stopsOrdered.incrementAndGet();
+            this.stopsOrdered.incrementAndGet();
+        }
 
         for (Locomotive active : this.activeLocomotives.keySet()) active.setSpeed(0);
     }
@@ -5248,10 +5266,8 @@ public class Layout
         // for a train standing at `RampDown (southbound)`, and the tail overlay drew nothing at all.
         //
         // `takingPath` as well as `activeLocomotives`, for the window `configureAndLockPath` opens
-        // before its caller records the run (RC-A10, VD12-B3).
-        List<Edge> given = this.activeLocomotives.get(loc);
-
-        if (given == null || given.isEmpty()) given = this.takingPath.get(loc);
+        // before its caller records the run (RC-A10, VD12-B3) - the claims first (RSA4-C3), see `pathHeldBy`.
+        List<Edge> given = this.pathHeldBy(loc);
 
         if (given != null && !given.isEmpty() && given.get(0).getStart() != null)
         {
@@ -6287,13 +6303,30 @@ public class Layout
     {
         if (rail == null || loc == null) return false;
 
-        List<Edge> mine = this.activeLocomotives.get(loc);
-
-        if (mine != null && mine.contains(rail)) return true;
-
-        mine = this.takingPath.get(loc);
+        // Either map, the claims first (RSA4-C3): one train holds one path, in the one map or the other, and in both only
+        // while it hands over - see `pathHeldBy`
+        List<Edge> mine = this.pathHeldBy(loc);
 
         return mine != null && mine.contains(rail);
+    }
+
+    /**
+     * The path a train is under way on or still claiming (RC-A10, VD12-B3), the claims read first (RSA4-C3).
+     *
+     * The hand-over from claim to journey writes the journey and then takes the claim away, outside the railway's
+     * monitor, so a train missing from the claims when they are read is among the journeys read after them.  Read the
+     * other way round, a train handing over between the two reads was in neither: the tail rule anchored its tail at
+     * whichever Point it had reserved came first, and a second train was routed over the track behind its start.  The
+     * readers of the two maps as a union read them in the same order (RSA3-C1).
+     *
+     * @param loc the train
+     * @return its path, or null where it holds none
+     */
+    private List<Edge> pathHeldBy(Locomotive loc)
+    {
+        List<Edge> path = this.takingPath.get(loc);
+
+        return path != null && !path.isEmpty() ? path : this.activeLocomotives.get(loc);
     }
 
     /**
@@ -6731,24 +6764,19 @@ public class Layout
      * with "the delay settings may be zero" written against it.  This is the same thought, applied to
      * the other two places that wait.
      *
-     * @param loc
+     * AND ANY STOP CUTS IT SHORT (RSA4-C1), as it does an entry's own pause (RSA3-C5).  It paused in the train's own
+     * delay, a sleep nothing ended, so after a stop the loop lived on inside the timetable for the rest of the operator's
+     * delay - long enough for Start to come back and begin a run the loop then sent its next entry into.
      */
-    private void pacedWait(Locomotive loc)
+    private void pacedWait()
     {
-        if (this.getMinDelay() == 0 && this.getMaxDelay() == 0)
+        try
         {
-            try
-            {
-                Thread.sleep(COMPLETION_POLL);
-            }
-            catch (InterruptedException e)
-            {
-                Thread.currentThread().interrupt();
-            }
+            this.pauseUnlessStopped(this.pacedWaitMillis());
         }
-        else
+        catch (InterruptedException e)
         {
-            loc.delay(this.getMinDelay(), this.getMaxDelay());
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -6802,15 +6830,19 @@ public class Layout
         }
 
         // NOT AFTER A STOP ORDERED SINCE THE RUN WAS CHOSEN (RSA2-C1): `running` set, THEN the count asked, and cleared
-        // again where it has moved.  The Yes clears `running` and then counts, with no lock (RSA3-C4): a Yes before this
-        // line is seen by the question below, one after it clears what this set, and one between the two does both.
-        this.running = true;
-
-        if (this.stopsOrdered.get() != stopsAtChoice)
+        // again where it has moved - the two held as one against the Yes's two, which clear `running` and then count,
+        // by `stopLock` (RSA4-C2).  A Yes before is seen by the question, and one after clears what this set.  Unheld, a
+        // Yes could clear before the set and count after the read, and the run started after it.
+        synchronized (this.stopLock)
         {
-            this.stopLocomotives();
+            this.running = true;
 
-            return true;
+            if (this.stopsOrdered.get() != stopsAtChoice)
+            {
+                this.stopLocomotives();
+
+                return true;
+            }
         }
 
         // See runLocomotives: no sweep, on Adam's ruling of 2026-08-31.
@@ -6842,6 +6874,13 @@ public class Layout
             startIndex + 1
         );        
         
+        // THE LOOP COUNTED WHILE IT DISPATCHES (RSA4-C1), as each entry's thread is (RSA3-C5) - see `timetableEntries`.
+        // Between entries it pauses with no train moving, and uncounted, a stop made in that pause read idle: Start came
+        // back, and the loop woke into the run Start began and sent the timetable's next train into it.
+        this.timetableEntries.incrementAndGet();
+
+      try
+      {
         for (int i = startIndex; i < this.timetable.size(); i++)
         {
             TimetablePath ttp = this.timetable.get(i);
@@ -7069,9 +7108,14 @@ public class Layout
                     break;
                 }  
 
-                this.pacedWait(ttp.getLoc());
+                this.pacedWait();
             }                
         }
+      }
+      finally
+      {
+        this.timetableEntries.decrementAndGet();
+      }
 
         // The loop above only DISPATCHES the last entry - its own thread is still driving that
         // train, and is what finally clears the running state.  Returning here handed control back
@@ -7946,9 +7990,9 @@ public class Layout
             // train can be routed onto track this one's body is lying over.
             //
             // `getActiveAccs` was given this same union for this same window (RC-A10), and says so.
-            List<Edge> running = this.activeLocomotives.get(loc);
-
-            if (running == null || running.isEmpty()) running = this.takingPath.get(loc);
+            //
+            // The claims first (RSA4-C3), see `pathHeldBy`.
+            List<Edge> running = this.pathHeldBy(loc);
 
             if (running != null && !running.isEmpty())
             {

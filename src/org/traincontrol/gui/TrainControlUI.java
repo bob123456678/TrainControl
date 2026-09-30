@@ -6818,9 +6818,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Puts each train back where it was standing before the rebuild (OB-183).
      *
-     * **Only where the point still exists.** An edit that renamed or removed a square is an edit about
-     * that square, and the setup's answer is the only one left - so those are left where the rebuild
-     * put them rather than dropped on the floor.
+     * **On the Point the rebuild gives the copy the train stood on** (RSA4-A1): by the name recorded, or where a square
+     * was renamed or its copies changed, by the name the session traces it to - the same copy under the square's new
+     * name, or the copy facing the same way.  A train whose square is gone has no Point to go back on, and is left where
+     * the rebuild put it rather than dropped on the floor.
      *
      * The arrival side goes back with the train, because `Point.setLocomotive` clears it when the
      * occupant changes - which is right when a different train arrives and wrong when the same train is
@@ -6835,7 +6836,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (this.model == null || !this.model.hasAutoLayout()) return;
 
-        putTheTrainsBack(this.model.getAutoLayout(), standing, this.model::log, placementsJustEdited);
+        // BY THE NAMES THE REBUILD GIVES THE SAME POINTS (RSA4-A1), which the session traces
+        org.traincontrol.automationui.AutonomySession naming = this.autonomySession;
+
+        putTheTrainsBack(this.model.getAutoLayout(), standing, this.model::log, placementsJustEdited,
+            naming == null ? null : naming::pointNamedNow);
     }
 
     /**
@@ -6886,6 +6891,64 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param log where to say that one train could not be put back
      * @param placementsJustEdited locomotives the setup was just given a new placement for, or null
      */
+    public static void putTheTrainsBack(org.traincontrol.automation.Layout built,
+        java.util.Map<String, String[]> standing, java.util.function.Consumer<String> log,
+        java.util.Set<String> placementsJustEdited, java.util.function.UnaryOperator<String> namedNow)
+    {
+        putTheTrainsBack(built, namedNow == null ? standing : namedNow(standing, namedNow), log, placementsJustEdited);
+    }
+
+    /**
+     * What `whereTheTrainsAre` recorded, in the names the rebuild gives the same Points (RSA4-A1): the Point each train
+     * stands on, and the road it came in on.
+     *
+     * @param standing what `whereTheTrainsAre` recorded, or null
+     * @param namedNow a recorded Point name to the name the rebuild gives that Point
+     * @return the same, renamed
+     */
+    private static java.util.Map<String, String[]> namedNow(java.util.Map<String, String[]> standing,
+        java.util.function.UnaryOperator<String> namedNow)
+    {
+        if (standing == null) return null;
+
+        java.util.Map<String, String[]> out = new java.util.LinkedHashMap<>();
+
+        for (java.util.Map.Entry<String, String[]> was : standing.entrySet())
+        {
+            String[] now = was.getValue() == null ? null : was.getValue().clone();
+
+            if (now != null && now.length > 0 && now[0] != null) now[0] = namedNow.apply(now[0]);
+
+            if (now != null && now.length > 2 && now[2] != null)
+            {
+                try
+                {
+                    org.json.JSONArray road = new org.json.JSONArray(now[2]);
+
+                    for (int i = 0; i < road.length(); i++)
+                    {
+                        org.json.JSONArray step = road.optJSONArray(i);
+
+                        for (int j = 0; step != null && j < step.length(); j++)
+                        {
+                            if (step.opt(j) instanceof String) step.put(j, namedNow.apply(step.getString(j)));
+                        }
+                    }
+
+                    now[2] = road.toString();
+                }
+                catch (org.json.JSONException notARoad)
+                {
+                    // left as it is, and `roadNamed` finds no road in it, as before
+                }
+            }
+
+            out.put(was.getKey(), now);
+        }
+
+        return out;
+    }
+
     public static void putTheTrainsBack(org.traincontrol.automation.Layout built,
         java.util.Map<String, String[]> standing, java.util.function.Consumer<String> log,
         java.util.Set<String> placementsJustEdited)

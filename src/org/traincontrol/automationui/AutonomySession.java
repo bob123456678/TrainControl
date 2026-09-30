@@ -466,8 +466,75 @@ public class AutonomySession
     /** And the square's own name as that build gave it, which the rest of the Point's name follows. */
     private final Map<String, String> baseOfNameSeen = new java.util.HashMap<>();
 
+    /** And which way a train standing on it faced, where that build said (RSA4-A1). */
+    private final Map<String, Side> facingOfNameSeen = new java.util.HashMap<>();
+
+    /** The latest build's Point names, to their squares (RSA4-A1). */
+    private Map<String, TileKey> squareOfNameNow = Collections.emptyMap();
+
+    /** Its squares, to their own names. */
+    private Map<TileKey, String> nameOfSquareNow = Collections.emptyMap();
+
+    /** Its Points, to the way a train standing on each faces. */
+    private Map<String, Side> facingOfNameNow = Collections.emptyMap();
+
+    /** Its turning copies. */
+    private Set<String> turningNow = Collections.emptySet();
+
     /**
-     * Carries the active configuration's captured timetable to the names this build gives its Points (RSA3-B1).
+     * The name the latest build gives the Point an earlier build of this session called this (RSA4-A1): the name itself
+     * where it is still built; otherwise the same copy under its square's name now - what follows a square's name is its
+     * copy's heading - or, where that copy is gone, the copy of the square facing the same way, a turning copy last.  A
+     * copy is its facing, so no other is offered.  A name no build of this session gave, or whose square is gone, is
+     * answered as it is.
+     *
+     * Where the trains stand after a run lives on the running layout alone, and a rebuild from the setup puts each back
+     * by the name of the Point it stood on (OB-183) - a name that a station renamed, or a square's copies changed, had
+     * just replaced, so the train was left where the setup last had it and the square it stood on read free.
+     *
+     * Each name is taken as the latest build to give it had it.  A rename rebuilds the running layout at once - the
+     * setup's doors offer one only at rest - so the names a train is recorded by are that build's or the one before.
+     *
+     * @param name a Point name an earlier build gave
+     * @return the name of that Point now
+     */
+    public String pointNamedNow(String name)
+    {
+        if (name == null || squareOfNameNow.containsKey(name)) return name;
+
+        TileKey square = squareOfNameSeen.get(name);
+        String base = baseOfNameSeen.get(name);
+        String own = square == null ? null : nameOfSquareNow.get(square);
+
+        if (own == null || base == null || !name.startsWith(base)) return name;
+
+        // THE SAME COPY under the square's name now
+        String same = own + name.substring(base.length());
+
+        if (square.equals(squareOfNameNow.get(same))) return same;
+
+        // THE COPY FACING THE SAME WAY, where that copy is gone
+        Side facing = facingOfNameSeen.get(name);
+
+        String facingSo = null;
+
+        for (Map.Entry<String, TileKey> copy : squareOfNameNow.entrySet())
+        {
+            if (facing == null || !square.equals(copy.getValue()) || facing != facingOfNameNow.get(copy.getKey())) continue;
+
+            if (facingSo == null || turningNow.contains(facingSo) && !turningNow.contains(copy.getKey()))
+            {
+                facingSo = copy.getKey();
+            }
+        }
+
+        return facingSo != null ? facingSo : name;
+    }
+
+    /**
+     * Carries the names every configuration stores - its captured timetable, and the road each standing train came in on
+     * (RSA4-C4) - to the names this build gives its Points (RSA3-B1): the configuration in use by its build, every other
+     * across a square renamed (RSA4-B1).
      *
      * A captured timetable names Points, and a Point is named after its square - the square's name, and a heading where
      * the square is more than one copy.  A station renamed, or a square given more copies or fewer, left every leg
@@ -478,48 +545,96 @@ public class AutonomySession
      * written before this session, as that square's own name with or without a heading - and then to a copy of it: the
      * same copy under the square's name now, or where that copy is gone, the one copy every leg through it is an edge
      * from or to.  A name that cannot be traced is left as it is, and the load drops that entry as before.
+     *
+     * Every other configuration is carried across a renamed square alone (RSA4-B1): its own build can differ from this
+     * one - which squares trains may turn round at is its own - so a name this build lacks for any other reason is left
+     * for that build to carry when the configuration is next the one in use.  The carry reached the configuration in use
+     * alone, and the names in the others could be traced only by the session that saw them: after a restart the load
+     * dropped their entries and the next fold erased them.
      */
-    private void carryTheTimetableAcross(AutonomyBuilder naming)
+    private void carryTheNamesAcross(AutonomyBuilder naming)
     {
         if (store == null) return;
 
         Map<String, TileKey> tiles = naming.tilesByName();
+        Map<TileKey, String> bases = naming.uniqueNames();
 
         try
         {
             String active = store.getActiveConfiguration();
 
-            org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
+            for (String name : store.getConfigurationNames())
+            {
+                org.json.JSONObject configuration = store.getConfiguration(name);
 
-            org.json.JSONObject stored = configuration == null ? null : configuration.optJSONObject("globals");
+                if (configuration == null) continue;
 
-            org.json.JSONArray table = stored == null ? null : stored.optJSONArray("timetable");
+                List<NamedLeg> legs = legsOf(configuration);
 
-            if (table != null && carry(table, tiles, naming.uniqueNames(), naming.edgesByName().keySet())) dirty = true;
+                if (name.equals(active) ? carry(legs, tiles, bases, naming.edgesByName().keySet())
+                    : rename(legs, tiles, bases))
+                {
+                    dirty = true;
+                }
+            }
         }
         finally
         {
             // REMEMBERED for the next build to carry from, whatever became of this one
             squareOfNameSeen.putAll(tiles);
             baseOfNameSeen.putAll(naming.baseNames());
+
+            Map<String, Side> facings = naming.facingByName();
+
+            facingOfNameSeen.putAll(facings);
+
+            // AND THIS BUILD'S, for the trains a rebuild puts back (RSA4-A1)
+            squareOfNameNow = tiles;
+            nameOfSquareNow = bases;
+            facingOfNameNow = facings;
+            turningNow = naming.turningNames();
+        }
+    }
+
+    /** A pair of Point names a configuration stores: a timetable leg's two ends, or one step of a train's road. */
+    private static final class NamedLeg
+    {
+        private final org.json.JSONObject leg;
+        private final org.json.JSONArray step;
+
+        NamedLeg(org.json.JSONObject leg, org.json.JSONArray step)
+        {
+            this.leg = leg;
+            this.step = step;
+        }
+
+        /** @param end 0 for its start, 1 for its end */
+        String get(int end)
+        {
+            return leg != null ? leg.optString(end == 0 ? "start" : "end") : step.optString(end);
+        }
+
+        void set(int end, String name)
+        {
+            if (leg != null) leg.put(end == 0 ? "start" : "end", name);
+            else step.put(end, name);
         }
     }
 
     /**
-     * The legs of a captured timetable carried to this build's names, in place.
-     *
-     * @param table the stored timetable
-     * @param tiles this build's Point names, to their squares
-     * @param bases this build's squares, to their own names
-     * @param edges this build's edges, as "start -> end"
-     * @return whether any leg was changed
+     * Every pair of Point names a configuration stores: its timetable's legs, and the steps of the road each standing
+     * train came in on (RSA4-C4) - which a load drops whole where one names a Point it does not build, so the tail fell
+     * back to stopping at the first fork.
      */
-    private boolean carry(org.json.JSONArray table, Map<String, TileKey> tiles, Map<TileKey, String> bases,
-        java.util.Set<String> edges)
+    private static List<NamedLeg> legsOf(org.json.JSONObject configuration)
     {
-        List<org.json.JSONObject> legs = new ArrayList<>();
+        List<NamedLeg> legs = new ArrayList<>();
 
-        for (int i = 0; i < table.length(); i++)
+        org.json.JSONObject globals = configuration.optJSONObject("globals");
+
+        org.json.JSONArray table = globals == null ? null : globals.optJSONArray("timetable");
+
+        for (int i = 0; table != null && i < table.length(); i++)
         {
             org.json.JSONObject entry = table.optJSONObject(i);
 
@@ -529,17 +644,123 @@ public class AutonomySession
             {
                 org.json.JSONObject leg = path.optJSONObject(j);
 
-                if (leg != null && leg.has("start") && leg.has("end")) legs.add(leg);
+                if (leg != null && leg.has("start") && leg.has("end")) legs.add(new NamedLeg(leg, null));
             }
         }
 
+        org.json.JSONObject points = configuration.optJSONObject("points");
+
+        for (String id : points == null ? Collections.<String>emptySet() : points.keySet())
+        {
+            org.json.JSONObject point = points.optJSONObject(id);
+
+            org.json.JSONArray road = point == null ? null : point.optJSONArray("arrivedAlong");
+
+            for (int j = 0; road != null && j < road.length(); j++)
+            {
+                org.json.JSONArray step = road.optJSONArray(j);
+
+                if (step != null && step.length() == 2 && step.opt(0) instanceof String && step.opt(1) instanceof String)
+                {
+                    legs.add(new NamedLeg(null, step));
+                }
+            }
+        }
+
+        return legs;
+    }
+
+    /**
+     * The square a name written before this session stands for: the square whose own name it is, whole or with a
+     * heading - the longest that fits.
+     *
+     * @return the square and its name, or null
+     */
+    private static Map.Entry<TileKey, String> squareCalled(String name, Map<TileKey, String> bases)
+    {
+        Map.Entry<TileKey, String> best = null;
+
+        for (Map.Entry<TileKey, String> own : bases.entrySet())
+        {
+            String called = own.getValue();
+
+            if ((name.equals(called) || name.startsWith(called + " ("))
+                && (best == null || called.length() > best.getValue().length()))
+            {
+                best = own;
+            }
+        }
+
+        return best;
+    }
+
+    /**
+     * Another configuration's names carried across a renamed square (RSA4-B1), in place: a name this build lacks, whose
+     * square is now called something else, to the same heading under the new name.  A name no build of this session gave
+     * is remembered by the square whose name it begins with, so that a rename later can carry it.
+     *
+     * @return whether any name was changed
+     */
+    private boolean rename(List<NamedLeg> legs, Map<String, TileKey> tiles, Map<TileKey, String> bases)
+    {
+        boolean changed = false;
+
+        for (NamedLeg leg : legs)
+        {
+            for (int end = 0; end < 2; end++)
+            {
+                String name = leg.get(end);
+
+                if (tiles.containsKey(name)) continue;
+
+                TileKey square = squareOfNameSeen.get(name);
+                String base = baseOfNameSeen.get(name);
+
+                if (square == null)
+                {
+                    Map.Entry<TileKey, String> called = squareCalled(name, bases);
+
+                    if (called != null)
+                    {
+                        squareOfNameSeen.put(name, called.getKey());
+                        baseOfNameSeen.put(name, called.getValue());
+                    }
+
+                    continue;
+                }
+
+                String own = bases.get(square);
+
+                if (own == null || base == null || own.equals(base) || !name.startsWith(base)) continue;
+
+                leg.set(end, own + name.substring(base.length()));
+
+                changed = true;
+            }
+        }
+
+        return changed;
+    }
+
+    /**
+     * The names of the configuration in use carried to this build's names, in place.
+     *
+     * @param legs its stored pairs of names
+     * @param tiles this build's Point names, to their squares
+     * @param bases this build's squares, to their own names
+     * @param edges this build's edges, as "start -> end"
+     * @return whether any name was changed
+     */
+    private boolean carry(List<NamedLeg> legs, Map<String, TileKey> tiles, Map<TileKey, String> bases,
+        java.util.Set<String> edges)
+    {
         // EVERY NAME THIS BUILD DOES NOT HAVE, traced to its square
         Map<String, TileKey> stale = new LinkedHashMap<>();
         Map<String, String> carried = new LinkedHashMap<>();
 
-        for (org.json.JSONObject leg : legs)
+        for (NamedLeg leg : legs)
         {
-            for (String name : new String[] {leg.optString("start"), leg.optString("end")})
+            for (String name : new String[] {leg.get(0), leg.get(1)})
             {
                 if (tiles.containsKey(name) || stale.containsKey(name)) continue;
 
@@ -549,16 +770,12 @@ public class AutonomySession
                 // WRITTEN BEFORE THIS SESSION: the square's own name, whole or with a heading - the longest that fits
                 if (square == null)
                 {
-                    for (Map.Entry<TileKey, String> own : bases.entrySet())
-                    {
-                        String called = own.getValue();
+                    Map.Entry<TileKey, String> called = squareCalled(name, bases);
 
-                        if ((name.equals(called) || name.startsWith(called + " ("))
-                            && (base == null || called.length() > base.length()))
-                        {
-                            square = own.getKey();
-                            base = called;
-                        }
+                    if (called != null)
+                    {
+                        square = called.getKey();
+                        base = called.getValue();
                     }
                 }
 
@@ -587,10 +804,10 @@ public class AutonomySession
 
                 boolean every = true;
 
-                for (org.json.JSONObject leg : legs)
+                for (NamedLeg leg : legs)
                 {
-                    String start = leg.optString("start");
-                    String end = leg.optString("end");
+                    String start = leg.get(0);
+                    String end = leg.get(1);
 
                     if (!start.equals(each.getKey()) && !end.equals(each.getKey())) continue;
 
@@ -612,15 +829,15 @@ public class AutonomySession
 
         boolean changed = false;
 
-        for (org.json.JSONObject leg : legs)
+        for (NamedLeg leg : legs)
         {
-            for (String key : new String[] {"start", "end"})
+            for (int end = 0; end < 2; end++)
             {
-                String now = carried.get(leg.optString(key));
+                String now = carried.get(leg.get(end));
 
                 if (now != null)
                 {
-                    leg.put(key, now);
+                    leg.set(end, now);
 
                     changed = true;
                 }
@@ -5077,10 +5294,10 @@ public class AutonomySession
 
         stationIndex = derived;
 
-        // AND THE CAPTURED TIMETABLE CARRIED TO THE NAMES THIS BUILD GIVES (RSA3-B1).  Here rather than in `rebuild`,
-        // because every edit that can rename a Point comes through here and not all of them rebuild: a square marked as
-        // somewhere trains may turn round gains its turning copies, named, with no rebuild at all.
-        if (naming != null) carryTheTimetableAcross(naming);
+        // AND THE NAMES THE CONFIGURATIONS STORE CARRIED TO THE NAMES THIS BUILD GIVES (RSA3-B1, RSA4-B1, RSA4-C4).  Here
+        // rather than in `rebuild`, because every edit that can rename a Point comes through here and not all of them
+        // rebuild: a square marked as somewhere trains may turn round gains its turning copies, named, with no rebuild.
+        if (naming != null) carryTheNamesAcross(naming);
 
         return derived;
     }
@@ -5826,9 +6043,112 @@ public class AutonomySession
             if (!"points".equals(key) && !"edges".equals(key)) globals.put(key, root.get(key));
         }
 
+        // AND THE TIMETABLE'S ENTRIES THE LOAD COULD NOT READ, where the timetable is otherwise the one stored (RSA4-B2)
+        org.json.JSONObject storedGlobals = configuration.optJSONObject("globals");
+
+        if (globals.has("timetable") && storedGlobals != null)
+        {
+            java.util.Set<String> built = new java.util.HashSet<>();
+
+            for (Object o : root.has("points") ? root.getJSONArray("points") : new org.json.JSONArray())
+            {
+                if (o instanceof org.json.JSONObject) built.add(((org.json.JSONObject) o).optString("name"));
+            }
+
+            globals.put("timetable", withTheEntriesItsLoadDropped(storedGlobals.optJSONArray("timetable"),
+                globals.optJSONArray("timetable"), built));
+        }
+
         configuration.put("globals", globals);
 
         dirty = true;
+    }
+
+    /**
+     * The timetable a fold stores: the running layout's, with each stored entry its load could not read put back in its
+     * place, where the running one is the stored one without them (RSA4-B2).
+     *
+     * A load drops an entry naming a Point its build does not have - a page ticked out of autonomy, which is built to be
+     * undone, among the ways - and the fold after it wrote the shorter timetable over the configuration, so the page came
+     * back without its entries.  Where the operator has changed the timetable since - recorded, cleared, deleted or
+     * reordered an entry - the running one is theirs, and is stored as it is.
+     *
+     * @param stored the configuration's timetable
+     * @param running the running layout's
+     * @param built the running layout's Point names
+     * @return the timetable to store
+     */
+    private static org.json.JSONArray withTheEntriesItsLoadDropped(org.json.JSONArray stored, org.json.JSONArray running,
+        java.util.Set<String> built)
+    {
+        if (stored == null || running == null) return running;
+
+        org.json.JSONArray out = new org.json.JSONArray();
+
+        int next = 0;
+
+        for (int i = 0; i < stored.length(); i++)
+        {
+            org.json.JSONObject entry = stored.optJSONObject(i);
+
+            if (next < running.length() && sameRun(entry, running.optJSONObject(next)))
+            {
+                out.put(running.get(next++));
+            }
+            else if (entry != null && namesAPointNotBuilt(entry, built))
+            {
+                out.put(entry);
+            }
+            else
+            {
+                return running;
+            }
+        }
+
+        return next == running.length() ? out : running;
+    }
+
+    /** Whether two timetable entries send the same train the same way. */
+    private static boolean sameRun(org.json.JSONObject a, org.json.JSONObject b)
+    {
+        if (a == null || b == null || !a.optString("loc").equals(b.optString("loc"))) return false;
+
+        org.json.JSONArray p = a.optJSONArray("path");
+        org.json.JSONArray q = b.optJSONArray("path");
+
+        if (p == null || q == null || p.length() != q.length()) return false;
+
+        for (int i = 0; i < p.length(); i++)
+        {
+            org.json.JSONObject x = p.optJSONObject(i);
+            org.json.JSONObject y = q.optJSONObject(i);
+
+            if (x == null || y == null || !x.optString("start").equals(y.optString("start"))
+                || !x.optString("end").equals(y.optString("end")))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /** Whether a timetable entry names a Point the running layout does not have: one its load dropped. */
+    private static boolean namesAPointNotBuilt(org.json.JSONObject entry, java.util.Set<String> built)
+    {
+        org.json.JSONArray path = entry.optJSONArray("path");
+
+        for (int i = 0; path != null && i < path.length(); i++)
+        {
+            org.json.JSONObject leg = path.optJSONObject(i);
+
+            if (leg != null && (!built.contains(leg.optString("start")) || !built.contains(leg.optString("end"))))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -405,6 +405,336 @@ public class testAutonomyDiagramSession
         assertEquals(legOf(next, 0)[0], "main 3,1 (eastbound)", "the leg was not carried to the copy it leaves by");
     }
 
+    /**
+     * A station renamed keeps every configuration's timetable, not only the one in use (RSA4-B1): the next start of
+     * TrainControl, with another configuration made the one in use, still reads its legs through the renamed station.
+     *
+     * The carry reached the configuration in use; another configuration's legs kept the old names, and a session that
+     * had not seen them could not trace them back to the square - its next load dropped them, its next fold erased them.
+     *
+     * MUTATION: carry the configuration in use alone, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testARenamedStationKeepsEveryConfigurationsTimetable() throws Exception
+    {
+        LayoutDiagram page = threeStationsInARow("A");
+
+        session.setPointName(new TileKey("main", 1, 1), "Alpha");
+        session.setPointName(new TileKey("main", 3, 1), "Beta");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+
+        String[] leg = anEdgeBetween(new org.json.JSONObject(session.buildConfiguration()), "Beta", "Gamma");
+
+        assertNotNull(leg, "precondition: no edge from Beta to Gamma");
+
+        session.setGlobal("timetable", aTimetableOf(leg));
+
+        // B, A's copy, not in use
+        session.getStore().createConfiguration("B", "A");
+        session.save();
+
+        // THE RENAME, with A in use
+        session.setPointName(new TileKey("main", 3, 1), "Bravo");
+        session.save();
+
+        // THE NEXT START, with B made the one in use
+        AutonomySession next = new AutonomySession(layout);
+
+        next.open(Arrays.asList(page));
+        next.getStore().setActiveConfiguration("B");
+        next.rebuild();
+
+        assertTheTimetableIsLoadable(next, "renaming Beta to Bravo while another configuration was in use", 1);
+
+        assertEquals(legOf(next, 0)[0], "Bravo" + leg[0].substring("Beta".length()), "the other configuration's leg"
+            + " did not follow the rename (RSA4-B1)");
+    }
+
+    /**
+     * A station renamed carries the road a standing train came in on (RSA4-C4): the road is stored as Point names, and
+     * one naming a Point no longer built is dropped whole, so the tail fell back to stopping at the first fork.
+     *
+     * MUTATION: carry the timetable and not the roads, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testARenamedStationKeepsATrainsRoad() throws Exception
+    {
+        threeStationsInARow("C4");
+
+        session.setPointName(new TileKey("main", 1, 1), "Alpha");
+        session.setPointName(new TileKey("main", 3, 1), "Beta");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+
+        String[] leg = anEdgeBetween(new org.json.JSONObject(session.buildConfiguration()), "Beta", "Gamma");
+
+        assertNotNull(leg, "precondition: no edge from Beta to Gamma");
+
+        // A TRAIN AT GAMMA, come in from the west along Beta -> Gamma
+        TileKey gamma = new TileKey("main", 5, 1);
+
+        session.placeLocomotive(gamma, "C4 train");
+        session.setArrivedFrom(gamma, "W");
+        session.setArrivedAlong(gamma, new org.json.JSONArray().put(new org.json.JSONArray().put(leg[0]).put(leg[1]))
+            .toString());
+
+        session.setPointName(new TileKey("main", 3, 1), "Bravo");
+
+        org.json.JSONArray road = new org.json.JSONArray(String.valueOf(session.getArrivedAlong(gamma)));
+
+        assertEquals(road.getJSONArray(0).getString(0), "Bravo" + leg[0].substring("Beta".length()), "the road the train"
+            + " came in on did not follow the rename, so the load drops it and its tail stops at the fork (RSA4-C4): "
+            + road);
+
+        assertEquals(road.getJSONArray(0).getString(1), leg[1], "the road's other end changed");
+    }
+
+    /**
+     * A page ticked out of autonomy and back in keeps its timetable entries (RSA4-B2): the fold made while it is out
+     * keeps the stored entries its build cannot hold, as it keeps that page's placements.
+     *
+     * Ticking a page off is built to be undone; the reload it makes folded the running layout's timetable - without
+     * the entries the build had dropped - over the configuration, and the page came back without them.
+     *
+     * MUTATION: fold the running layout's timetable alone, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAPageTickedOutKeepsItsTimetable() throws Exception
+    {
+        LayoutDiagram main = new LayoutDiagram("main", 7, 3, null, null);
+        LayoutDiagram second = new LayoutDiagram("second", 7, 3, null, null);
+
+        int address = 70;
+
+        for (LayoutDiagram page : new LayoutDiagram[] {main, second})
+        {
+            page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, address, address, accessoryDecoderType.MM2, null);
+            page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, address + 1, address + 1, accessoryDecoderType.MM2,
+                null);
+            page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, address + 2, address + 2, accessoryDecoderType.MM2,
+                null);
+
+            address += 10;
+        }
+
+        main.setPageId("1");
+        second.setPageId("2");
+
+        session.open(Arrays.asList(main, second));
+        session.initialize("B2");
+
+        String[] names = {"Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta"};
+
+        for (int i = 0; i < 6; i++)
+        {
+            TileKey square = new TileKey(i < 3 ? "main" : "second", 1 + 2 * (i % 3), 1);
+
+            session.setStation(square, true);
+            session.setPointName(square, names[i]);
+        }
+
+        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+        String[] onMain = anEdgeBetween(built, "Beta", "Gamma");
+        String[] onSecond = anEdgeBetween(built, "Epsilon", "Zeta");
+
+        assertTrue(onMain != null && onSecond != null, "precondition: the two pages' edges are not built");
+
+        session.setGlobal("timetable", aTimetableOf(onMain, onSecond));
+
+        // TICKED OUT, and the reload's fold made from what that load reads: the entry on `second` dropped
+        session.setPageExcluded("second", true);
+        session.rebuild();
+
+        org.json.JSONObject running = new org.json.JSONObject(session.buildConfiguration());
+
+        java.util.Set<String> edges = new java.util.HashSet<>();
+
+        for (Object o : running.getJSONArray("edges"))
+        {
+            edges.add(((org.json.JSONObject) o).getString("start") + " -> " + ((org.json.JSONObject) o).getString("end"));
+        }
+
+        org.json.JSONArray loaded = new org.json.JSONArray();
+
+        for (Object o : running.getJSONArray("timetable"))
+        {
+            org.json.JSONObject leg = ((org.json.JSONObject) o).getJSONArray("path").getJSONObject(0);
+
+            if (edges.contains(leg.getString("start") + " -> " + leg.getString("end"))) loaded.put(o);
+        }
+
+        assertEquals(loaded.length(), 1, "precondition: the load of the page ticked out does not drop its entry");
+
+        running.put("timetable", loaded);
+
+        session.captureFromLayout(running.toString());
+
+        // AND BACK IN
+        session.setPageExcluded("second", false);
+        session.rebuild();
+
+        assertEquals(new org.json.JSONArray(String.valueOf(session.getGlobal("timetable"))).length(), 2, "the page ticked"
+            + " out and back in lost its timetable entry to the fold made while it was out (RSA4-B2)");
+
+        assertTheTimetableIsLoadable(session, "the page ticked out and back in", 2);
+    }
+
+    /**
+     * A station renamed keeps a timetable leg only another configuration's build names (RSA4-B1): a copy that
+     * configuration alone has - Beta marked, in it alone, as somewhere trains may turn round - is remembered by the square
+     * its name begins with when the session is opened, so a rename made with another configuration in use carries it.
+     *
+     * MUTATION: remember no name this session has not built, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testARenamedStationKeepsALegOnlyAnotherConfigurationBuilds() throws Exception
+    {
+        LayoutDiagram page = threeStationsInARow("A");
+
+        TileKey beta = new TileKey("main", 3, 1);
+
+        session.setPointName(new TileKey("main", 1, 1), "Alpha");
+        session.setPointName(beta, "Beta");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+
+        // B, A's copy, where Beta alone turns trains round - and a leg from the turning copy
+        session.getStore().createConfiguration("B", "A");
+        session.getStore().setActiveConfiguration("B");
+        session.setPointFlag(beta, AutonomyBuilder.CAN_REVERSE, true);
+
+        String[] turned = null;
+
+        for (Object o : new org.json.JSONObject(session.buildConfiguration()).getJSONArray("edges"))
+        {
+            org.json.JSONObject e = (org.json.JSONObject) o;
+
+            if (e.getString("start").startsWith("Beta") && e.getString("start").contains("reverse")
+                && e.getString("end").startsWith("Alpha")) turned = new String[] {e.getString("start"), e.getString("end")};
+        }
+
+        assertNotNull(turned, "precondition: no edge from Beta's turning copy to Alpha in B");
+
+        session.setGlobal("timetable", aTimetableOf(turned));
+
+        // A IN USE AGAIN, and saved so
+        session.getStore().setActiveConfiguration("A");
+        session.save();
+
+        // THE NEXT START, with A in use: a session that has never built B - and the rename
+        AutonomySession next = new AutonomySession(layout);
+
+        next.open(Arrays.asList(page));
+
+        assertEquals(next.getStore().getActiveConfiguration(), "A", "precondition: A is not the one in use");
+
+        next.setPointName(beta, "Bravo");
+        next.save();
+
+        // AND B CHOSEN, by a session of its own
+        AutonomySession after = new AutonomySession(layout);
+
+        after.open(Arrays.asList(page));
+        after.getStore().setActiveConfiguration("B");
+        after.rebuild();
+
+        assertTheTimetableIsLoadable(after, "renaming Beta to Bravo with A in use, B alone building the leg's copy", 1);
+
+        assertEquals(legOf(after, 0)[0], "Bravo" + turned[0].substring("Beta".length()), "the leg from a copy only B"
+            + " builds did not follow the rename (RSA4-B1)");
+    }
+
+    /**
+     * A timetable cleared while a page is ticked out stays cleared (RSA4-B2): the fold keeps the entries its load dropped
+     * only where the timetable is otherwise the one stored, so an operator's change - here, clearing it - is theirs.
+     *
+     * MUTATION: keep the entries the load dropped whatever became of the rest, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testATimetableClearedWhileAPageIsOutStaysCleared() throws Exception
+    {
+        String[][] legs = twoPagesWithATimetable("B2 cleared");
+
+        // TICKED OUT, and the timetable cleared on the running layout before its fold
+        session.setPageExcluded("second", true);
+        session.rebuild();
+
+        org.json.JSONObject running = new org.json.JSONObject(session.buildConfiguration());
+
+        running.put("timetable", new org.json.JSONArray());
+
+        session.captureFromLayout(running.toString());
+
+        session.setPageExcluded("second", false);
+        session.rebuild();
+
+        assertEquals(new org.json.JSONArray(String.valueOf(session.getGlobal("timetable"))).length(), 0, "a timetable"
+            + " cleared while a page was ticked out came back with that page's entries (RSA4-B2): "
+            + session.getGlobal("timetable") + " - legs " + Arrays.deepToString(legs));
+    }
+
+    /**
+     * Two pages of three stations each, in a configuration of this name, and a timetable of one entry on each: its legs.
+     */
+    private String[][] twoPagesWithATimetable(String configuration) throws Exception
+    {
+        LayoutDiagram main = new LayoutDiagram("main", 7, 3, null, null);
+        LayoutDiagram second = new LayoutDiagram("second", 7, 3, null, null);
+
+        int address = 90;
+
+        for (LayoutDiagram page : new LayoutDiagram[] {main, second})
+        {
+            page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, address, address, accessoryDecoderType.MM2, null);
+            page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, address + 1, address + 1, accessoryDecoderType.MM2,
+                null);
+            page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, address + 2, address + 2, accessoryDecoderType.MM2,
+                null);
+
+            address += 10;
+        }
+
+        main.setPageId("1");
+        second.setPageId("2");
+
+        session.open(Arrays.asList(main, second));
+        session.initialize(configuration);
+
+        String[] names = {"Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta"};
+
+        for (int i = 0; i < 6; i++)
+        {
+            TileKey square = new TileKey(i < 3 ? "main" : "second", 1 + 2 * (i % 3), 1);
+
+            session.setStation(square, true);
+            session.setPointName(square, names[i]);
+        }
+
+        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+        String[] onMain = anEdgeBetween(built, "Beta", "Gamma");
+        String[] onSecond = anEdgeBetween(built, "Epsilon", "Zeta");
+
+        assertTrue(onMain != null && onSecond != null, "precondition: the two pages' edges are not built");
+
+        session.setGlobal("timetable", aTimetableOf(onMain, onSecond));
+
+        return new String[][] {onMain, onSecond};
+    }
+
     /** Stations at 1,1, 3,1 and 5,1 of one line, both ways, in a configuration of this name: its page. */
     private LayoutDiagram threeStationsInARow(String configuration) throws Exception
     {

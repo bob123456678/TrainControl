@@ -2839,6 +2839,24 @@ public class testATrainIsDispatchedOnce
                 return super.containsKey(key);
             }
 
+            /** Read by `get` too, as the tail rule reads it (RSA4-C3) - for the train held, and no other. */
+            @Override
+            public List<Edge> get(Object key)
+            {
+                if (key == holding) reading(this);
+
+                return super.get(key);
+            }
+
+            /** A copy made by a map's constructor asks the size first, and reads no entry of an empty map (RSA4-C3). */
+            @Override
+            public int size()
+            {
+                reading(this);
+
+                return super.size();
+            }
+
             @Override
             public java.util.Set<java.util.Map.Entry<Locomotive, List<Edge>>> entrySet()
             {
@@ -3312,6 +3330,542 @@ public class testATrainIsDispatchedOnce
             t.setPreferredSpeed(preferredWas);
             t.setSpeed(0);
             w.setSpeed(0);
+        }
+    }
+
+    /**
+     * The route guard's list of switches in use sees a train handing over from claim to journey (RSA4-C3): a route set
+     * by a sensor asks it before it throws a switch, and a train in neither map had its route's switches missing.
+     *
+     * MUTATION: read the journeys before the claims in `getActiveAccs`, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testTheRouteGuardSeesATrainHandingOver() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(1981, 2);
+
+        final Locomotive x = model.getLocByName(model.getLocList().get(19));
+
+        final HandOver held = new HandOver(x, "getActiveAccs");
+
+        Thread sent = null;
+
+        final Layout rail = new Layout(model);
+
+        try
+        {
+            x.setSpeed(0);
+
+            rail.createPoint("GXA", true, s[0].getName());
+            rail.createPoint("GXB", true, s[1].getName());
+            rail.createEdge("GXA", "GXB");
+            rail.makeCurrent();
+
+            final org.traincontrol.marklin.MarklinAccessory onThePath = model.newSwitch(297,
+                org.traincontrol.base.Accessory.accessoryDecoderType.MM2, false);
+
+            onThePath.setSwitched(false);
+
+            // THE CENTRAL STATION'S ECHO, which a simulated station does not send: confirmed at TURN, so the claim's
+            // actuation check passes at once, as on a railway that answers
+            java.lang.reflect.Field confirmed = org.traincontrol.base.Accessory.class.getDeclaredField("actuationConfirmed");
+            java.lang.reflect.Field lastState = org.traincontrol.base.Accessory.class.getDeclaredField("stateAtLastActuation");
+
+            confirmed.setAccessible(true);
+            lastState.setAccessible(true);
+
+            confirmed.set(onThePath, true);
+            lastState.set(onThePath, true);
+
+            rail.getEdge("GXA", "GXB").addConfigCommand(onThePath.getName(),
+                org.traincontrol.base.Accessory.accessorySetting.TURN);
+
+            swap(rail, "locomotiveMilestones", held.milestones);
+            swap(rail, "activeLocomotives", held.journeys);
+            swap(rail, "takingPath", held.claims);
+
+            rail.getPoint("GXA").setLocomotive(x);
+
+            sent = sendOn(rail, through(rail, "GXA", "GXB"), x);
+
+            assertTrue(held.atHandOver.await(10, TimeUnit.SECONDS), "precondition: the train never reached its hand-over");
+
+            held.checker = Thread.currentThread();
+
+            java.util.Set<org.traincontrol.base.Accessory> active;
+
+            try
+            {
+                active = rail.getActiveAccs();
+            }
+            finally
+            {
+                held.checker = null;
+            }
+
+            assertTrue(active.contains(onThePath), "the switch on a route handing over from claim to journey is missing"
+                + " from the route guard's list, so a route set by a sensor may throw it (RSA4-C3): " + active);
+        }
+        finally
+        {
+            held.letGo.countDown();
+
+            letGo(s, x, sent);
+        }
+    }
+
+    /**
+     * The tail rule sees a train handing over from claim to journey (RSA4-C3): the track behind its start, which its
+     * body lies across, stays refused to a second train's route throughout.
+     *
+     * Across the hand-over the walk found the train in neither map and anchored its tail at whichever reserved Point
+     * the railway's map gave first - the start is named so that another comes first - and the track behind the train's
+     * start was claimed by nobody.
+     *
+     * MUTATION: read the journeys before the claims for the path a train holds, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testTheTailRuleSeesATrainHandingOver() throws Exception
+    {
+        Object answer = acrossATailedHandOver(1991, "walkStandingTrains", (rail, x, y, start) ->
+            rail.isPathClear(Arrays.asList(rail.getEdge("PU", "PV"), rail.getEdge("PV", "PW")), y, false));
+
+        assertEquals(answer, Boolean.FALSE, "a route over the track a train handing over from claim to journey lies"
+            + " across is admitted (RSA4-C3)");
+    }
+
+    /**
+     * Where a train handing over from claim to journey is, for the tail overlay, is its start (RSA4-C3).
+     *
+     * MUTATION: read the journeys before the claims for the path a train holds, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testWhereATrainHandingOverIsIsItsStart() throws Exception
+    {
+        final String[] start = new String[1];
+
+        Object answer = acrossATailedHandOver(2001, "whereTheTrainIs", (rail, x, y, from) ->
+        {
+            start[0] = from;
+
+            org.traincontrol.automation.Point at = rail.whereTheTrainIs(x);
+
+            return at == null ? null : at.getName();
+        });
+
+        assertEquals(answer, start[0], "a train handing over from claim to journey is placed somewhere other than its"
+            + " start (RSA4-C3)");
+    }
+
+    /** A question asked across a hand-over, of a railway where the train's tail lies behind its start. */
+    private interface AskedAcrossATail
+    {
+        Object ask(Layout rail, Locomotive x, Locomotive y, String start) throws Exception;
+    }
+
+    /**
+     * PV - PW - start - PXM - PXN in a line, every rail 100 long; X, 150 long, stands at the start come in from the west,
+     * its tail over PW -> start and PV -> PW; Y stands at PU, whose road runs PU -> PV -> PW.  X is sent start -> PXM ->
+     * PXN and held at its hand-over, and the question is asked with the hand-over let run to its end the moment the
+     * method named reads the second of the two maps.  The start is named so that it is not the first of X's reserved
+     * Points in the railway's map.
+     */
+    private static Object acrossATailedHandOver(int firstSensor, String inside, AskedAcrossATail question) throws Exception
+    {
+        String start = null;
+
+        for (String candidate : new String[] {"PXA", "QXA", "RXA", "SXA", "KXA", "LXA", "MXA", "NXA", "OXA", "WXA"})
+        {
+            java.util.Map<String, Object> order = new java.util.HashMap<>();
+
+            for (String name : new String[] {"PV", "PW", candidate, "PXM", "PXN", "PU"}) order.put(name, name);
+
+            for (String name : order.keySet())
+            {
+                if (name.equals(candidate)) break;
+
+                if (name.equals("PXM") || name.equals("PXN"))
+                {
+                    start = candidate;
+                    break;
+                }
+            }
+
+            if (start != null) break;
+        }
+
+        assertNotNullHere(start, "precondition: no start name puts another reserved Point first");
+
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(firstSensor, 6);
+
+        final Locomotive x = model.getLocByName(model.getLocList().get(20));
+        final Locomotive y = model.getLocByName(model.getLocList().get(21));
+
+        final Integer xLengthWas = x.getTrainLength();
+        final Integer yLengthWas = y.getTrainLength();
+
+        final HandOver held = new HandOver(x, inside);
+
+        Thread sent = null;
+
+        final Layout rail = new Layout(model);
+
+        try
+        {
+            x.setSpeed(0);
+            y.setSpeed(0);
+
+            x.setTrainLength(150);
+            y.setTrainLength(0);
+
+            rail.createPoint("PV", true, s[0].getName());
+            rail.createPoint("PW", true, s[1].getName());
+            rail.createPoint(start, true, s[2].getName());
+            rail.createPoint("PXM", false, s[3].getName());
+            rail.createPoint("PXN", true, s[4].getName());
+            rail.createPoint("PU", true, s[5].getName());
+            rail.createEdge("PV", "PW");
+            rail.createEdge("PW", start);
+            rail.createEdge(start, "PXM");
+            rail.createEdge("PXM", "PXN");
+            rail.createEdge("PU", "PV");
+
+            for (Edge e : rail.getEdges()) e.setLength(100);
+
+            rail.getEdge("PW", start).setEntrySide("W");
+
+            rail.makeCurrent();
+
+            rail.getPoint(start).setLocomotive(x);
+            rail.getPoint(start).setArrivedFrom("W");
+            rail.getPoint("PU").setLocomotive(y);
+
+            assertFalse(rail.isPathClear(Arrays.asList(rail.getEdge("PU", "PV"), rail.getEdge("PV", "PW")), y, false),
+                "precondition: at rest, the track X's body lies across is not refused, so the claim cannot tell");
+
+            swap(rail, "locomotiveMilestones", held.milestones);
+            swap(rail, "activeLocomotives", held.journeys);
+            swap(rail, "takingPath", held.claims);
+
+            sent = sendOn(rail, through(rail, start, "PXM", "PXN"), x);
+
+            assertTrue(held.atHandOver.await(10, TimeUnit.SECONDS), "precondition: the train never reached its hand-over");
+
+            held.checker = Thread.currentThread();
+
+            try
+            {
+                return question.ask(rail, x, y, start);
+            }
+            finally
+            {
+                held.checker = null;
+            }
+        }
+        finally
+        {
+            held.letGo.countDown();
+
+            letGo(s, x, sent);
+
+            x.setTrainLength(xLengthWas);
+            y.setTrainLength(yLengthWas);
+
+            y.setSpeed(0);
+        }
+    }
+
+    private static void assertNotNullHere(Object value, String message)
+    {
+        assertTrue(value != null, message);
+    }
+
+    /**
+     * A timetable's own loop is running until it has stopped dispatching, and a stop wakes its pause (RSA4-C1): after a
+     * stop with no train moving the railway reads busy while the loop is still inside the timetable, so no door starts a
+     * run it could join, and the loop leaves at once.
+     *
+     * Two entries, the second five seconds after the first, the operator's delays three seconds: the first run and
+     * arrived, the loop pausing before the second.  Held here with the pause's monitor taken, so the stop has cleared
+     * `running` and the loop cannot yet leave.
+     *
+     * MUTATION: count the loop not at all, or pause it in a sleep no stop wakes, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testATimetablesLoopIsRunningUntilItHasStopped() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(2011, 4);
+
+        final Locomotive t = model.getLocByName(model.getLocList().get(22));
+        final Locomotive u = model.getLocByName(model.getLocList().get(23));
+
+        final int tWas = t.getPreferredSpeed();
+        final int uWas = u.getPreferredSpeed();
+
+        final Layout rail = new Layout(model);
+
+        Thread executor = null;
+        Thread stopping = null;
+        Thread holding = null;
+
+        final java.util.concurrent.CountDownLatch held = new java.util.concurrent.CountDownLatch(1);
+        final java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+
+        try
+        {
+            t.setSpeed(0);
+            u.setSpeed(0);
+            t.setPreferredSpeed(30);
+            u.setPreferredSpeed(30);
+
+            rail.createPoint("TA", true, s[0].getName());
+            rail.createPoint("TB", true, s[1].getName());
+            rail.createPoint("TC", true, s[2].getName());
+            rail.createPoint("TD", true, s[3].getName());
+            rail.createEdge("TA", "TB");
+            rail.createEdge("TC", "TD");
+            rail.setMaxDelay(3);
+            rail.setMinDelay(3);
+            rail.makeCurrent();
+
+            rail.getPoint("TA").setLocomotive(t);
+            rail.getPoint("TC").setLocomotive(u);
+
+            List<org.traincontrol.automation.TimetablePath> table = new ArrayList<>();
+
+            table.add(new org.traincontrol.automation.TimetablePath(t, Arrays.asList(rail.getEdge("TA", "TB")), 0));
+            table.add(new org.traincontrol.automation.TimetablePath(u, Arrays.asList(rail.getEdge("TC", "TD")), 0));
+
+            // the second entry five seconds after the first sets off (the field is milliseconds)
+            table.get(1).setSecondsToNext(5000);
+
+            rail.setTimetable(table);
+
+            executor = new Thread(() -> rail.executeTimetable(), "a timetable run");
+            executor.setDaemon(true);
+            executor.start();
+
+            // THE FIRST ENTRY RUNS AND ARRIVES, its sensor left occupied: the train stands there
+            assertTrue(waitFor(() -> rail.getActiveLocomotives().containsKey(t), 10000), "precondition: the first entry"
+                + " was not sent");
+
+            model.setFeedbackState(s[1].getName(), true);
+
+            assertTrue(waitFor(() -> !rail.getActiveLocomotives().containsKey(t), 10000), "precondition: the first entry"
+                + " did not arrive");
+
+            Thread.sleep(500);
+
+            assertTrue(executor.isAlive(), "precondition: the timetable's call returned before its second entry");
+
+            // THE PAUSE'S MONITOR TAKEN, so the stop below clears `running` and the loop cannot yet leave
+            final Object pause = field(rail, "entryPause");
+
+            holding = new Thread(() ->
+            {
+                synchronized (pause)
+                {
+                    held.countDown();
+
+                    try
+                    {
+                        release.await(20, TimeUnit.SECONDS);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }, "holding the pause");
+
+            holding.setDaemon(true);
+            holding.start();
+
+            assertTrue(held.await(5, TimeUnit.SECONDS), "precondition: the pause's monitor was not taken");
+
+            // A STOP, with nothing moving
+            stopping = new Thread(rail::stopLocomotives, "a graceful stop");
+            stopping.setDaemon(true);
+            stopping.start();
+
+            assertTrue(waitFor(() -> !rail.isAutoRunning(), 5000), "precondition: the stop did not clear running");
+
+            assertTrue(rail.isRunning(), "a timetable's loop still inside the timetable after a stop is not counted as"
+                + " running, so Start can come back and begin a run the loop then joins (RSA4-C1)");
+
+            // AND LET GO: the loop, woken by the stop, leaves at once
+            final long letGo = System.currentTimeMillis();
+
+            release.countDown();
+
+            executor.join(5000);
+
+            assertFalse(executor.isAlive(), "the timetable's call never returned after the stop");
+
+            assertTrue(System.currentTimeMillis() - letGo < 1500, "the timetable's loop waited out its pause after the stop"
+                + " rather than being woken by it (RSA4-C1): " + (System.currentTimeMillis() - letGo) + " ms");
+
+            assertFalse(rail.getActiveLocomotives().containsKey(u), "the second entry was sent after the stop");
+        }
+        finally
+        {
+            release.countDown();
+
+            rail.stopLocomotives();
+
+            new Layout(model).makeCurrent();
+
+            for (org.traincontrol.marklin.MarklinFeedback each : s) model.setFeedbackState(each.getName(), true);
+
+            if (executor != null) executor.join(5000);
+            if (stopping != null) stopping.join(5000);
+
+            for (org.traincontrol.marklin.MarklinFeedback each : s) model.setFeedbackState(each.getName(), false);
+
+            t.setPreferredSpeed(tWas);
+            u.setPreferredSpeed(uWas);
+            t.setSpeed(0);
+            u.setSpeed(0);
+        }
+    }
+
+    /**
+     * The Yes and a timetable's start cannot straddle each other (RSA4-C2): a Yes that has cleared `running` and not yet
+     * counted holds back a timetable starting, which then reads the new count and starts nothing.
+     *
+     * Held here exactly: the Yes is made with the pause's monitor taken, so it blocks between clearing `running` and
+     * counting; a timetable is started meanwhile, with the count read before the Yes; then the Yes is let go.
+     *
+     * MUTATION: let the timetable set `running` and read the count with nothing held, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testTheYesAndATimetablesStartCannotStraddle() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(2021, 2);
+
+        final Locomotive t = model.getLocByName(model.getLocList().get(22));
+
+        final int tWas = t.getPreferredSpeed();
+        final long stuckWas = Layout.TIMETABLE_STUCK_MS;
+
+        final Layout rail = new Layout(model);
+
+        Thread yes = null;
+        Thread starting = null;
+        Thread holding = null;
+
+        final java.util.concurrent.CountDownLatch held = new java.util.concurrent.CountDownLatch(1);
+        final java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+
+        final boolean[] refused = new boolean[1];
+
+        try
+        {
+            t.setSpeed(0);
+            t.setPreferredSpeed(30);
+
+            Layout.TIMETABLE_STUCK_MS = 3000;
+
+            rail.createPoint("TA", true, s[0].getName());
+            rail.createPoint("TB", true, s[1].getName());
+            rail.createEdge("TA", "TB");
+            rail.makeCurrent();
+
+            rail.getPoint("TA").setLocomotive(t);
+
+            List<org.traincontrol.automation.TimetablePath> table = new ArrayList<>();
+
+            table.add(new org.traincontrol.automation.TimetablePath(t, Arrays.asList(rail.getEdge("TA", "TB")), 0));
+
+            rail.setTimetable(table);
+
+            // CHOSEN BEFORE THE YES
+            final int chosen = rail.stopsOrdered();
+
+            final Object pause = field(rail, "entryPause");
+
+            holding = new Thread(() ->
+            {
+                synchronized (pause)
+                {
+                    held.countDown();
+
+                    try
+                    {
+                        release.await(20, TimeUnit.SECONDS);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }, "holding the pause");
+
+            holding.setDaemon(true);
+            holding.start();
+
+            assertTrue(held.await(5, TimeUnit.SECONDS), "precondition: the pause's monitor was not taken");
+
+            // THE YES: `running` cleared, then held before it counts
+            yes = new Thread(() -> theYesUnchecked(rail), "the Yes");
+            yes.setDaemon(true);
+            yes.start();
+
+            final Thread asking = yes;
+
+            assertTrue(waitFor(() -> asking.getState() == Thread.State.BLOCKED, 5000), "precondition: the Yes did not"
+                + " block between clearing running and counting");
+
+            assertEquals(rail.stopsOrdered(), chosen, "precondition: the Yes counted before it was held");
+
+            // THE START, meanwhile
+            starting = new Thread(() -> refused[0] = rail.executeTimetable(chosen), "a timetable start");
+            starting.setDaemon(true);
+            starting.start();
+
+            Thread.sleep(500);
+
+            // AND THE YES LET GO
+            release.countDown();
+
+            yes.join(5000);
+            starting.join(8000);
+
+            assertFalse(rail.isAutoRunning(), "a timetable started while the Yes was between clearing running and"
+                + " counting is running after the Yes - its entry refused on the count until the stuck limit (RSA4-C2)");
+
+            assertFalse(starting.isAlive(), "the timetable's call did not return: its run started after the Yes"
+                + " (RSA4-C2)");
+        }
+        finally
+        {
+            release.countDown();
+
+            rail.stopLocomotives();
+
+            new Layout(model).makeCurrent();
+
+            for (org.traincontrol.marklin.MarklinFeedback each : s) model.setFeedbackState(each.getName(), true);
+
+            if (yes != null) yes.join(5000);
+            if (starting != null) starting.join(8000);
+
+            for (org.traincontrol.marklin.MarklinFeedback each : s) model.setFeedbackState(each.getName(), false);
+
+            Layout.TIMETABLE_STUCK_MS = stuckWas;
+
+            t.setPreferredSpeed(tWas);
+            t.setSpeed(0);
         }
     }
 }

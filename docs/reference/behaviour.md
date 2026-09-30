@@ -1687,6 +1687,17 @@ back in alphabetical order because the message shows only the first three of it.
 
 *(`VD12-R4`, `VD13-B1/B2/B3`, `VD14-B1/C6`, `VD16-B2`, `GS-B1`.  `MT-470` is the hands-on test.)*
 
+**A sensor is held for the train whose route runs to it until the rail to it is given back** (Adam, 2026-09-29, on
+RSA2-B1: *"it should be allowed once unlocked"*; RSA3-C3).  The first time a sensor reads occupied ends every journey
+waiting on it, so no route may end at, or pass, a sensor another train's journey is waiting on - nor one whose rail that
+journey has not yet given back.  A feedback double curve's two arcs are two pieces of metal with one contact (OB-238),
+and between the head's arrival and the release only the sensor's own reading kept a second train off the other arc: a
+gap between two axles reads clear.  The rail is given back as this section says - once the tail has passed where the
+track is measured, one sensor on where it is not, at the journey's end with Atomic Routes on.  A train still claiming its
+route holds its sensors as one under way does, and the claims are read before the journeys, since the hand-over from
+one to the other writes the journey and then takes the claim away (RSA3-C1, RSA4-C3).
+`core.testATrainIsDispatchedOnce`.
+
 ### 5e. Permanently-set turnouts: fork to base only, and they still bound a berth
 
 > *"They are trailable, so it's about intent and documentation.  They just can't go from the base to
@@ -2449,6 +2460,27 @@ the file loads as written - the next save writes it back without the dangling na
 The legacy importer behaves the same way and names what it left out, so the two doors agree about the
 same file.
 
+**A Point's name is carried wherever a configuration stores it** (RSA3-B1, RSA4-A1, RSA4-B1, RSA4-C4).  A timetable, a
+train's road and where the trains stand all name Points, and a Point is named after its square - the square's name, and
+a heading where the square is more than one copy.  So a station renamed, or a square given more copies or fewer, carries
+each to the copy it named: every configuration's timetable and roads - the one in use by its build, every other across a
+rename alone, since its own build may differ - and, across the rebuild the setup's doors make, each train the last run
+left somewhere, to the same copy under the square's new name or to the copy facing the same way.  A page ticked out of
+autonomy and back in keeps its timetable entries: its load drops them, and the fold made while it is out keeps each
+entry the load could not read, where the timetable is otherwise the one stored - one recorded, cleared, deleted or moved
+meanwhile is the operator's timetable, and is stored as it is (RSA4-B2).  `core.testAutonomyDiagramSession`,
+`regression.testAnEditedPlacementSurvivesTheRebuild`.
+
+**The Yes to "reloading will stop the trains" stops every train where it is** (RSA-C1).  Graceful Stop lets each journey
+finish; the Yes also counts a stop, which every journey carries from where it was chosen and asks before and after each
+speed it writes - so a journey chosen before it sends nothing, a train still claiming its route is given it back unrun,
+and one reaching its next sensor is not given its speed back (RSA2-C1, RSA2-C2).  A timetable - Return Home's plan among
+them - is not started after it: the Yes and a timetable starting are held apart, so one sees the other (RSA4-C2).  A
+timetable's entries and its own loop count as running until they leave, and any stop wakes their pauses, so the railway
+reads busy until the old timetable has gone and Start cannot come back into a run it would then join (RSA3-C5, RSA4-C1).
+The Yes waits for no lock a journey holds: it is answered on the window's own thread (RSA3-C4).
+`core.testATrainIsDispatchedOnce`.
+
 **An old autonomy.json goes into the configuration named at the Import prompt** (Adam, 2026-09-25, choosing
 between honouring the name typed and not asking for one: *"(a)"*), created where there is none of that name.  It is
 chosen only while the import writes into it: the configuration running stays the one in use, and is the one the next
@@ -2461,8 +2493,9 @@ after it captured the running railway straight back over its settings and timeta
 fills gaps as MT-298 has it, and places none of its trains, which its question says (RLU4-C3): what the running layout
 knows goes into the configuration first, the reload after the import does not capture again, and where a train stands
 on the railway running is the railway's to say (OB-183) - the message names the trains it did not place, and how to put
-one down.  While autonomy runs it is refused, as Delete is (RLU4-C1): the capture first is not made while trains move,
-and the reload's capture took back what the import had just brought.  And no import folds the running layout into the
+one down.  While autonomy runs every import is refused, as Delete is, before it asks for a file (RLU4-C1, RSA4-C5):
+into the configuration in use the reload's capture took back what the import had just brought, and into another the
+fold after a declined reload read the running railway through names the import had changed.  And no import folds the running layout into the
 setup while a setup edit a run declined waits for its rebuild - neither the capture first nor the reload (RLD4-C3,
 WKW-B2); every load then carries each train across from the running layout and lowers the flag once a layout carries
 the edit, and choosing another configuration first carries the one running, which is then folded as any configuration
