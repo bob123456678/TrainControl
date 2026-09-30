@@ -27,9 +27,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
+| [MT-597](#mt-597) | 2026-09-30 | Import waits for autonomy to stop, and a station renamed after a run keeps its train | fixed unvalidated | RSA4-C5, RSA4-A1 |
 
-
-Everything else - 596 of 596 - needs nothing from you unless the area changes again:
+Everything else - 596 of 597 - needs nothing from you unless the area changes again:
 471 **fixed validated** and 125 **superseded**.
 
 ---
@@ -29432,5 +29432,39 @@ is yours to judge.
 **Claude, 2026-09-29.**
 
 Validated on your *Works* of 2026-09-29.
+
+---
+
+<a id="mt-597"></a>
+
+### MT-597 - 2026-09-30 - Import waits for autonomy to stop, and a station renamed after a run keeps its train
+
+**Disposition:** fixed unvalidated
+**From:** RSA4-C5, RSA4-A1
+
+**Written:** 2026-09-30
+
+From the fifth release review (RSA4): an import made while trains ran could rename stations under the running
+railway, and a station renamed from the track diagram after a run put the train the run had left there back where it
+had started.  Your rule of 28 September: *"There should be no setup edit possible during a run."*
+
+**Steps**
+
+1. Start autonomy.  While it runs, choose **Autonomy > Import...**.
+2. Press **Graceful Stop** and wait until every train has stopped.  Pick a station a train has just stopped on - one it
+   did not start the run on.
+3. Right-click that station on the track diagram, choose its name item, and give it a new name.
+4. Give it its old name back the same way.
+
+**Expected**
+
+- Step 1: a message at once says autonomy is running, so nothing was imported, and to stop autonomy and import the file
+  again.  No file chooser opens.
+- Step 3: the train is still on that station, under its new name - not back where it started the run - and the station
+  shows as occupied.
+- Step 4: the same, under its old name.
+
+*What this is:* `regression.testTheImportDoorReadsAnOldFile.testAnImportIsRefusedWhileAutonomyRuns` and
+`testARenameAfterARunKeepsTheTrainOnTheStation`.
 
 ---

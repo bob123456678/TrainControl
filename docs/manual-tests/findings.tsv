@@ -2824,6 +2824,25 @@ RSA3-D5	RSA3.md	Closed	Checked - clean, apart from RSA3-B1 (the rename) and C6 (
 RSA3-D6	RSA3.md	Closed	Checked - clean.	Round 18's batch outside the runtime: nothing in it reaches the railway
 RSA3-D7	RSA3.md	Closed	Checked - clean, as far as read.	What RSA2 did not reach, read lightly: TileGraph's checks, HomeStaging's plan and home rules
 RSA3-D8	RSA3.md	Closed	Checked - clean.	The probes' controls, the mutant and the baseline
+RSA4-A1	RSA4.md	Closed	Fixed - a rebuild puts each train back on the Point the rebuild gives the copy it stood on	A gesture from the diagram's setup menu that renames a Point - a station renamed, above all - puts a train the last run left there back where the setu
+RSA4-B1	RSA4.md	Closed	Fixed - the names every configuration stores are carried, not only the one in use's (Auton	The timetable is carried into the configuration running and no other: a station renamed while one configuration runs leaves another configuration's ca
+RSA4-B2	RSA4.md	Closed	Fixed - a fold keeps each stored timetable entry its load could not read, in its place, wh	A page ticked out of autonomy and back in loses every timetable entry through it: the tick's reload drops the entries it cannot build, and the next fo
+RSA4-C1	RSA4.md	Closed	Fixed - the timetable's own loop is counted in timetableEntries while it dispatches, and i	RSA3-C5's fix counts a timetable's entry threads and wakes their pauses, and the timetable's own loop still pauses between entries in a sleep no stop
+RSA4-C2	RSA4.md	Closed	Fixed - the Yes's two statements and a timetable starting's two are held by stopLock, whic	The Yes and a timetable's start no longer share a lock, and the one order the round's reasoning leaves out starts the run after the Yes: the Yes clear
+RSA4-C3	RSA4.md	Closed	Fixed - every reader of one train's path asks Layout.pathHeldBy, which reads the claims fi	RSA3-C1's order - the claims before the journeys - reached three readers; three more read the same hand-over journeys-first, among them the route guar
+RSA4-C4	RSA4.md	Closed	Fixed - each standing train's road is carried with the timetable (AutonomySession.legsOf):	The road a driven train's tail follows is stored as Point names, and the carry does not reach it: a station renamed drops the whole road of every trai
+RSA4-C5	RSA4.md	Closed	Fixed - Import is refused while autonomy runs, into any configuration, before it asks for 	Import is never greyed, and into a configuration not in use it writes the setup's shared half - names among it - while trains run; the reload it then
+RSA4-C6	RSA4.md	Closed	Fixed - open-questions.md's decided entry for RSA2-B1 states the rule round 19 built: the 	open-questions.md's decided entry for RSA2-B1 still states the rule round 19 replaced: "once a journey has passed a sensor it waits on it no more"
+RSA4-D1	RSA4.md	Closed	Checked - clean, apart from RSA4-C3 (the readers not named).	RSA3-C1 and C2: the claims read before the journeys in the three readers named, and the claim half of the sensor rule claimed with a real hold
+RSA4-D10	RSA4.md	Closed	Checked - clean.	The probes' controls, and the baseline
+RSA4-D2	RSA4.md	Closed	Checked - clean, apart from RSA4-C6 (the decided entry).	RSA3-C3: a sensor held until the rail to it is given back
+RSA4-D3	RSA4.md	Closed	Checked - clean, apart from RSA4-C2 (the order the reasoning leaves out).	RSA3-C4: the Yes takes no lock the event thread can wait on
+RSA4-D4	RSA4.md	Closed	Checked - clean, apart from RSA4-C1 (the loop that starts them).	RSA3-C5: a timetable's entry threads counted while they live, and their pauses woken by every stop
+RSA4-D5	RSA4.md	Closed	Checked - clean.	RSA3-C6: a copy of a square nothing arrives at is no arrival, for every reader
+RSA4-D6	RSA4.md	Closed	Checked - clean, apart from RSA4-A1, B1, B2 and C4 (the readers and configurations it does	RSA3-B1 in the configuration running: renames, round 18's split, a copy more or fewer, the editor's Cancel and undo
+RSA4-D7	RSA4.md	Closed	Checked - clean.	Round 19's notes beside the fixes: the guard window and the wrench
+RSA4-D8	RSA4.md	Closed	Checked - clean, as far as read.	HomeStaging's search: the pre-scan, the greedy pass, A* in its budget shares, and the route search
+RSA4-D9	RSA4.md	Closed	Checked - clean, apart from RSA4-C1 (the gap in what "busy" reads) and C5 (Import).	The timetable's doors and the page doors ask whether autonomy is busy
 RT3-B1	2026-09-02-autonomy-routing-review.md	Closed	open	the reversal-room rule's `continue` is defeated by the route search's own dominance pruning
 RT3-B2	2026-09-02-autonomy-routing-review.md	Closed	open	the staging audit has no exemption for the planner's non-station-origin rule
 RT3-C1	2026-09-02-autonomy-routing-review.md	Closed	open	`connected` carries a pre-stop reversal credit through a terminus stop
