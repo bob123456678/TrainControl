@@ -29213,6 +29213,12 @@ CS croppability not yet tested, update this MT that I still need to do that.
 it looks the same turned round (`ui.testLocIconCrop.testTheWrenchHasAJawAtEachEnd`).  **Still yours:** step 2, cropping a
 Central Station picture, which you have not run yet - run steps 1 to 3, and look at the wrench again as you do.
 
+**Adam, 2026-09-29 (triage).** Works, with notes.
+
+Works, but: hide hover edit controls when the power is on, and if there is a cs icon and we switched to a local icon or cropped it, replace the wrench icon with a revert icon (circular arrow symbol) that has the same function as "clear local locomotive icon".  Add a tooltip (if power is on) saying turn power off to manage icon.
+
+*Run against commit 345dd13e, regular mode (no simulate, no debug) - in English - build\classes, compiled 29 Sep 21:27 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-592"></a>
@@ -29244,6 +29250,10 @@ download or create a new one, which redirects to the corresponding option under 
 
 *What this is:* `regression.testTheOldAutonomyTabIsGone.testWithNothingToDownloadANewLayoutIsOffered`.
 
+**Adam, 2026-09-29 (triage).** Works.
+
+*Run against commit 345dd13e, regular mode (no simulate, no debug) - in English - build\classes, compiled 29 Sep 21:27 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-593"></a>
@@ -29274,5 +29284,9 @@ OK step 2 fails in exit guard - the dialog closes and we have to reopen everythi
   back again.
 
 *What this is:* `regression.testTheEditorSaysWhatItsToolsDo.testANonSignalClickedAsAGuardIsAPopup`.
+
+**Adam, 2026-09-29 (triage).** Works.
+
+*Run against commit 345dd13e, in English - build\classes, compiled 29 Sep 21:27 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
