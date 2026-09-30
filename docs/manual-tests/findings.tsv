@@ -2843,6 +2843,22 @@ RSA4-D6	RSA4.md	Closed	Checked - clean, apart from RSA4-A1, B1, B2 and C4 (the r
 RSA4-D7	RSA4.md	Closed	Checked - clean.	Round 19's notes beside the fixes: the guard window and the wrench
 RSA4-D8	RSA4.md	Closed	Checked - clean, as far as read.	HomeStaging's search: the pre-scan, the greedy pass, A* in its budget shares, and the route search
 RSA4-D9	RSA4.md	Closed	Checked - clean, apart from RSA4-C1 (the gap in what "busy" reads) and C5 (Import).	The timetable's doors and the page doors ask whether autonomy is busy
+RSA5-A1	RSA5.md	Closed	Fixed - a train is carried across a rebuild by the square its Point was a copy of, not by 	A station renamed to the name another station has - or one of two stations that share a name renamed - moves that name onto another square; the carry
+RSA5-A2	RSA5.md	Closed	Fixed - a direction that would leave a standing train on a square with no copy facing its 	A direction set from the diagram's menu through a station, against the facing of a train the last run left there: no copy faces its way, `pointNamedNo
+RSA5-B1	RSA5.md	Closed	Fixed - a fold keeps each stored timetable entry on a page out of autonomy through whateve	Adam's question: the entries of a page ticked out come back only while every other stored entry loads and the visible timetable is untouched - an entr
+RSA5-B2	RSA5.md	Closed	Fixed - a page renamed, or a square moved on its page, carries the names made from it (pag	A page renamed, or a tile moved in the track diagram, renames every Point on it that has no name of its own, and nothing carries that into a timetable
+RSA5-C1	RSA5.md	Closed	Fixed - only the entries a page out of autonomy explains are kept; any other entry a load 	An entry no load can read again is now kept for ever, unseen and undeletable, and a timetable cleared while every entry of it is on a page out comes b
+RSA5-C2	RSA5.md	Closed	Fixed - the turns owed are carried across a rebuild by the square and facing of the Point 	The turns the railway owes are carried across a rebuild by the Point name the train turned at, which `pointNamedNow` does not reach: after a rename, a
+RSA5-D1	RSA5.md	Closed	Checked - clean.	RSA4-C1: a timetable's own loop counted while it dispatches, and its pause woken by every stop
+RSA5-D10	RSA5.md	Closed	Checked - clean.	The probes' controls, and the baseline
+RSA5-D2	RSA5.md	Closed	Checked - clean.	RSA4-C2: the Yes and a timetable starting held apart by `stopLock`
+RSA5-D3	RSA5.md	Closed	Checked - clean.	RSA4-C3: every reader of one train's path reads the claims first
+RSA5-D4	RSA5.md	Closed	Checked - clean.	RSA4-C5: Import refused while autonomy runs, before it asks for a file
+RSA5-D5	RSA5.md	Closed	Checked - clean, apart from behaviour.md 8's name-carry paragraph (RSA5-A1, B1, B2, C1).	RSA4-C6: the sensor rule and the Yes written as built
+RSA5-D6	RSA5.md	Closed	Checked - clean, apart from RSA5-A1 (a name moved to another square) and A2 (no copy facin	RSA4-A1 where the names stay on their squares: a plain rename, a square split since, turning and must-turn copies, a station with no facing
+RSA5-D7	RSA5.md	Closed	Checked - clean, apart from RSA5-A1 (a name moved to another square) and B2 (a page rename	RSA4-B1 and C4: every configuration's timetable and roads carried across a rename
+RSA5-D8	RSA5.md	Closed	Checked - clean.	The other stored Point names: homes, exclusions, `blockedBy`, locks
+RSA5-D9	RSA5.md	Closed	Checked - clean, as far as read.	HomeStaging's `canEnter`, `blockedSensors` and the tail helpers
 RT3-B1	2026-09-02-autonomy-routing-review.md	Closed	open	the reversal-room rule's `continue` is defeated by the route search's own dominance pruning
 RT3-B2	2026-09-02-autonomy-routing-review.md	Closed	open	the staging audit has no exemption for the planner's non-station-origin rule
 RT3-C1	2026-09-02-autonomy-routing-review.md	Closed	open	`connected` carries a pre-stop reversal credit through a terminus stop

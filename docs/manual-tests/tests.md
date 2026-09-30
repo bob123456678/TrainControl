@@ -28,8 +28,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-597](#mt-597) | 2026-09-30 | Import waits for autonomy to stop, and a station renamed after a run keeps its train | fixed unvalidated | RSA4-C5, RSA4-A1 |
+| [MT-598](#mt-598) | 2026-09-30 | A page ticked out keeps its timetable entries, and a direction is refused under a train facing against it | fixed unvalidated | RSA5-B1, RSA5-C1, RSA5-A2 |
 
-Everything else - 596 of 597 - needs nothing from you unless the area changes again:
+Everything else - 596 of 598 - needs nothing from you unless the area changes again:
 471 **fixed validated** and 125 **superseded**.
 
 ---
@@ -29466,5 +29467,41 @@ had started.  Your rule of 28 September: *"There should be no setup edit possibl
 
 *What this is:* `regression.testTheImportDoorReadsAnOldFile.testAnImportIsRefusedWhileAutonomyRuns` and
 `testARenameAfterARunKeepsTheTrainOnTheStation`.
+
+---
+
+<a id="mt-598"></a>
+
+### MT-598 - 2026-09-30 - A page ticked out keeps its timetable entries, and a direction is refused under a train facing against it
+
+**Disposition:** fixed unvalidated
+**From:** RSA5-B1, RSA5-C1, RSA5-A2
+
+**Written:** 2026-09-30
+
+From the fifth release validator (RSA5), and your question of 30 September about the timetable entries of a page
+ticked out of autonomy: *"that behavior of entries coming back sounds promising, but is it reliable?"*  They now come
+back through whatever else you do to the timetable meanwhile; only Clear clears them.
+
+**Steps**
+
+1. Have a timetable with entries on two pages.  Tick one page out of autonomy (Autonomy > Pages).
+2. In the timetable, delete one entry of the page still in.
+3. Tick the page back in.
+4. Tick it out again, press **Clear** on the timetable, and tick it back in.
+5. Stand a train on a two-way station, facing one way.  Right-click the track on one side of it and make it one way,
+   against the way the train faces; then the other side the same way.
+
+**Expected**
+
+- Step 3: the ticked-out page's entries are back, where they were; the entry you deleted stays deleted.
+- Step 4: the timetable is empty - nothing comes back with the page.
+- Step 5: when the second side would leave the station no way to face as the train does, a message says the train
+  stands there facing the other way and the direction was not set; the track stays as it was.  Move the train and it
+  can be set.
+
+*What this is:* `core.testAutonomyDiagramSession.testAPageOutKeepsItsEntriesThroughAnEdit`,
+`regression.testTheImportDoorReadsAnOldFile.testClearEmptiesTheTimetableTheConfigurationKeeps` and
+`regression.testAnEditedPlacementSurvivesTheRebuild.testADirectionUnderATrainTheRunLeftIsRefused`.
 
 ---
