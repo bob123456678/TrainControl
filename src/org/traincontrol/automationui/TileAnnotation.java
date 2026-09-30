@@ -139,10 +139,17 @@ public class TileAnnotation
     private static final Color POINT_INACTIVE = new Color(128, 130, 134);
 
     /**
+     * And a square nothing can pass - the X - in orange again (Adam, 2026-09-29: *"make the nothing can pass (X
+     * stations) be orange again"*): the orange it had before FR-103, which is the train line's orange
+     * (`LayoutLabel.TRAIN_MARK`).  A square shut to every train reads apart from a berth autonomy merely does not choose.
+     */
+    private static final Color POINT_IMPASSABLE = new Color(255, 102, 0);
+
+    /**
      * What a sensor has been designated as, drawn as a badge on its tile.
      *
      * The SHAPE says what turning means here; the SIZE says whether it is a station.  Blue means
-     * autonomy uses it, grey means it does not (FR-103).
+     * autonomy uses it, grey means it does not (FR-103), and orange that nothing can pass (the X).
      *
      *                       trains do not turn    trains MAY turn    trains ALWAYS turn
      *     a station              big circle          big diamond         big square
@@ -1715,7 +1722,8 @@ public class TileAnnotation
      *   terminus          square, or a cross where turning round is optional
      *   reversing         small square
      *   blue              autonomy uses it
-     *   grey              autonomy leaves it alone (parking, or switched off) - FR-103; it was orange
+     *   grey              autonomy leaves it alone (parking) - FR-103; it was orange
+     *   orange            nothing can pass (the X, switched off) - orange again since 2026-09-29
      *
      * Parity on purpose: the shapes and the two colours are exactly what TrainControlUI already paints
      * on the graph, so nobody has to learn a second vocabulary to read the same railway.
@@ -1795,14 +1803,18 @@ public class TileAnnotation
         //
         // It stays because the two flags are independent in the type even where they are not in those
         // two callers: a Badge built any other way - by a test, or by a third site added later - must
-        // still take the inactive colour when nothing can pass, and the test pins that.  What was
+        // still take the X's colour when nothing can pass, and the test pins that.  What was
         // actually wrong with the cross, and what Adam was seeing, is the SHAPE rule below, not this.
         //
         // Colour and shape stay separate questions, as they are everywhere else on this diagram: the
         // colour says whether autonomy uses the square, the mark says what the square does.  Parking
-        // and out-of-service are both "autonomy leaves this alone", so they share the colour; only one
+        // and out-of-service are both "autonomy leaves this alone", so they shared the colour; only one
         // of them is a place a train can stand, and the cross is what says so.
-        Color colour = badge.isParking() || badge.isImpassable() ? POINT_INACTIVE : POINT_ACTIVE;
+        //
+        // AND NOW THE COLOUR SAYS IT TOO (Adam, 2026-09-29: "make the nothing can pass (X stations) be orange
+        // again"): a square nothing can pass is orange, a parking berth grey.  Impassable asked FIRST, because
+        // every square switched off is parking as well - see the paragraph above.
+        Color colour = badge.isImpassable() ? POINT_IMPASSABLE : badge.isParking() ? POINT_INACTIVE : POINT_ACTIVE;
 
         // A station takes a bigger badge than a passing point, as it does on the graph: 20px against
         // 17px there, the same proportion here.

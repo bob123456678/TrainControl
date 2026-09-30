@@ -1326,6 +1326,17 @@ public abstract class Locomotive
     }
     
     /**
+     * The Central Station's own picture of this locomotive, whether or not a local one is shown over it (MT-591): what
+     * clearing the local icon goes back to.
+     *
+     * @return its URL, or null
+     */
+    public String getCentralStationImageURL()
+    {
+        return this.imageURL;
+    }
+
+    /**
      * Returns the local image URL, if any
      * @return 
      */
