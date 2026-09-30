@@ -6925,36 +6925,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The same, told which trains the setup has just been given a new placement for (D2-A1 / W7-A1).
-     *
-     * **The question this method cannot answer for itself.** The rebuild has regenerated every
-     * placement from the setup, and `standing` is where the running railway had those trains a moment
-     * ago. Where the two disagree, one of them is newer, and which one it is does not show in either:
-     *
-     * - the setup is newer where somebody has just placed a train in the editor, which writes `loc`
-     *   into the setup and nowhere else (`AutonomySession.placeLocomotive`) - that is `MT-337`;
-     * - the record is newer where a run moved a train after the last capture, because `currentLoc` is
-     *   the only place that lives and nothing folds it back when a run ends - that is `OB-183`.
-     *
-     * `MT-337` made the setup win always, on the reasoning that a rebuild is only ever asked for
-     * because the setup just changed. That is true, and it does not follow: the gesture that asked can
-     * be about something else entirely. The track diagram viewer's right-click autonomy menu is an
-     * `AutonomyEditorPanel`, so setting a home, a priority or a caption from the diagram ends in a
-     * rebuild - and nothing on that path ever captures the running layout. After a run, that rebuild
-     * put every moved train back where it had started, in the model and then on disk, and occupancy is
-     * `currentLoc` rather than the s88, so the next dispatch could route into an occupied block.
-     *
-     * So the doors that know say so, and this decides per TRAIN rather than per door: a train named
-     * here keeps where the rebuild put it, and every other train goes back where the railway had it.
-     * Naming nothing is the honest answer for a gesture that edited no placement, and it is what the
-     * three-argument form above means.
-     *
-     * @param built the layout the rebuild just produced
-     * @param standing what `whereTheTrainsAre` recorded before it
-     * @param log where to say that one train could not be put back
-     * @param placementsJustEdited locomotives the setup was just given a new placement for, or null
-     */
-    /**
      * Where a Point a rebuild's record names is now: given its name, and the square and facing it had (RSA5-A1).
      * `AutonomySession.pointNamedNow` is the answer.
      */
@@ -6969,6 +6939,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         String pointNamedNow(String name, String square, String facing);
     }
 
+    /**
+     * The same, each train and its road put back on the Point the rebuild gives the copy it stood on (RSA4-A1, RSA5-A1):
+     * found by `namedNow` from the name, square and facing recorded.
+     *
+     * @param built the layout the rebuild just produced
+     * @param standing what `whereTheTrainsAre` recorded before it
+     * @param log where to say that one train could not be put back
+     * @param placementsJustEdited locomotives the setup was just given a new placement for, or null
+     * @param namedNow where each recorded Point is now, or null to go by the names recorded
+     */
     public static void putTheTrainsBack(org.traincontrol.automation.Layout built,
         java.util.Map<String, String[]> standing, java.util.function.Consumer<String> log,
         java.util.Set<String> placementsJustEdited, NamedNow namedNow)
@@ -7054,6 +7034,36 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return out;
     }
 
+    /**
+     * The same, told which trains the setup has just been given a new placement for (D2-A1 / W7-A1).
+     *
+     * **The question this method cannot answer for itself.** The rebuild has regenerated every
+     * placement from the setup, and `standing` is where the running railway had those trains a moment
+     * ago. Where the two disagree, one of them is newer, and which one it is does not show in either:
+     *
+     * - the setup is newer where somebody has just placed a train in the editor, which writes `loc`
+     *   into the setup and nowhere else (`AutonomySession.placeLocomotive`) - that is `MT-337`;
+     * - the record is newer where a run moved a train after the last capture, because `currentLoc` is
+     *   the only place that lives and nothing folds it back when a run ends - that is `OB-183`.
+     *
+     * `MT-337` made the setup win always, on the reasoning that a rebuild is only ever asked for
+     * because the setup just changed. That is true, and it does not follow: the gesture that asked can
+     * be about something else entirely. The track diagram viewer's right-click autonomy menu is an
+     * `AutonomyEditorPanel`, so setting a home, a priority or a caption from the diagram ends in a
+     * rebuild - and nothing on that path ever captures the running layout. After a run, that rebuild
+     * put every moved train back where it had started, in the model and then on disk, and occupancy is
+     * `currentLoc` rather than the s88, so the next dispatch could route into an occupied block.
+     *
+     * So the doors that know say so, and this decides per TRAIN rather than per door: a train named
+     * here keeps where the rebuild put it, and every other train goes back where the railway had it.
+     * Naming nothing is the honest answer for a gesture that edited no placement, and it is what the
+     * three-argument form above means.
+     *
+     * @param built the layout the rebuild just produced
+     * @param standing what `whereTheTrainsAre` recorded before it
+     * @param log where to say that one train could not be put back
+     * @param placementsJustEdited locomotives the setup was just given a new placement for, or null
+     */
     public static void putTheTrainsBack(org.traincontrol.automation.Layout built,
         java.util.Map<String, String[]> standing, java.util.function.Consumer<String> log,
         java.util.Set<String> placementsJustEdited)

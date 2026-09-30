@@ -7116,9 +7116,6 @@ public class AutonomySession
     }
 
     /**
-     * Records a direction without re-deriving, for callers that are about to set several.
-     */
-    /**
      * The directions recorded since the last were settled, each route's as it was: what a refusal puts back (RSA5-A2).
      */
     private final Map<List<Object>, Direction> directionsBefore = new LinkedHashMap<>();
@@ -7140,6 +7137,9 @@ public class AutonomySession
         return why;
     }
 
+    /**
+     * Records a direction without re-deriving, for callers that are about to set several.
+     */
     private void record(TileKey tile, RouteId routeId, Direction direction)
     {
         directionsBefore.putIfAbsent(java.util.Arrays.<Object>asList(tile, routeId), graph.getDirection(tile, routeId));
