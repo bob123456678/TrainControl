@@ -659,6 +659,12 @@ public class Point
     private String block;
 
     /**
+     * The square of the diagram this Point is a copy of, as the build names it, or null on a Point written by hand
+     * (RSA5-A1).  A rebuild carries each train by it: a rename can hand a Point's name to another square.
+     */
+    private String square;
+
+    /**
      * The accessories thrown to red while this platform is claimed.
      *
      * A station's protection, not a side's: every copy of a square carries the same ones, because the
@@ -1151,6 +1157,22 @@ public class Point
     }
 
     /**
+     * @return the square of the diagram this Point is a copy of, or null where no build said (RSA5-A1)
+     */
+    public String getSquare()
+    {
+        return this.square;
+    }
+
+    /**
+     * @param square the square of the diagram this Point is a copy of, or null
+     */
+    public void setSquare(String square)
+    {
+        this.square = square;
+    }
+
+    /**
      * @return the way a train standing on this copy points, or null on a square that is one Point (OB-282)
      */
     public String getCopyFacing()
@@ -1266,6 +1288,9 @@ public class Point
         {
             jsonObj.put("block", this.block);
         }
+
+        // Read back too, for the same reason (RSA5-A1)
+        if (this.square != null) jsonObj.put("square", this.square);
 
         // written only when it differs from the default, so a file gains no noise from a setting
         // nobody has touched

@@ -9303,6 +9303,7 @@
   "timetable": [],
   "points": [
     {
+      "square": "1 - Main:0,11",
       "loc": {"name": "EN57-947"},
       "s88": 1016,
       "protectingSignal": "Signal 108",
@@ -9316,6 +9317,7 @@
       "copyFacing": "E"
     },
     {
+      "square": "1 - Main:0,11",
       "s88": 1016,
       "protectingSignal": "Signal 108",
       "name": "TopMainR2Inter (westbound)",
@@ -9328,6 +9330,7 @@
       "copyFacing": "N"
     },
     {
+      "square": "1 - Main:0,3",
       "s88": 1025,
       "name": "1 - Main 0,3 (southbound)",
       "station": false,
@@ -9337,6 +9340,7 @@
       "copyFacing": "S"
     },
     {
+      "square": "1 - Main:0,3",
       "s88": 1025,
       "name": "1 - Main 0,3 (northbound)",
       "station": false,
@@ -9346,6 +9350,7 @@
       "copyFacing": "N"
     },
     {
+      "square": "1 - Main:1,10",
       "s88": 1015,
       "protectingSignal": "Signal 107",
       "name": "TopMainR1Inter (southbound)",
@@ -9358,6 +9363,7 @@
       "copyFacing": "E"
     },
     {
+      "square": "1 - Main:1,10",
       "loc": {"name": "EN57-203"},
       "s88": 1015,
       "protectingSignal": "Signal 107",
@@ -9371,6 +9377,7 @@
       "copyFacing": "N"
     },
     {
+      "square": "1 - Main:1,3",
       "s88": 1026,
       "name": "1 - Main 1,3 (southbound)",
       "station": false,
@@ -9380,6 +9387,7 @@
       "copyFacing": "S"
     },
     {
+      "square": "1 - Main:1,3",
       "s88": 1026,
       "name": "1 - Main 1,3 (northbound)",
       "station": false,
@@ -9389,6 +9397,7 @@
       "copyFacing": "N"
     },
     {
+      "square": "1 - Main:10,7",
       "s88": 1030,
       "speedMultiplier": 0.9,
       "name": "TunnelPre (southbound)",
@@ -9399,6 +9408,7 @@
       "copyFacing": "S"
     },
     {
+      "square": "1 - Main:10,7",
       "s88": 1030,
       "speedMultiplier": 0.9,
       "name": "TunnelPre (northbound)",
@@ -9409,6 +9419,7 @@
       "copyFacing": "N"
     },
     {
+      "square": "1 - Main:11,7",
       "s88": 1008,
       "name": "1 - Main 11,7",
       "station": false,
@@ -9416,6 +9427,7 @@
       "y": 420
     },
     {
+      "square": "1 - Main:12,11",
       "s88": 1009,
       "name": "BottomSecondary",
       "station": true,
@@ -9424,6 +9436,7 @@
       "y": 660
     },
     {
+      "square": "1 - Main:12,9",
       "s88": 1011,
       "name": "BottomInner (northbound)",
       "station": true,
@@ -9443,6 +9456,7 @@
       "copyFacing": "W"
     },
     {
+      "square": "1 - Main:12,9",
       "s88": 1011,
       "name": "BottomInner (eastbound)",
       "station": true,
@@ -9462,6 +9476,7 @@
       "copyFacing": "S"
     },
     {
+      "square": "1 - Main:13,3",
       "s88": 2011,
       "name": "BottomInnerOtherside",
       "station": true,
@@ -9479,6 +9494,7 @@
       "priority": -2
     },
     {
+      "square": "1 - Main:16,10",
       "s88": 8,
       "name": "1 - Main 16,10 (westbound)",
       "station": false,
@@ -9488,6 +9504,7 @@
       "copyFacing": "W"
     },
     {
+      "square": "1 - Main:16,10",
       "s88": 8,
       "name": "1 - Main 16,10 (eastbound)",
       "station": false,
@@ -9497,6 +9514,7 @@
       "copyFacing": "E"
     },
     {
+      "square": "1 - Main:17,7",
       "s88": 14,
       "mustReverse": true,
       "name": "BottomCrossover",
@@ -9511,6 +9529,7 @@
       "reversing": true
     },
     {
+      "square": "1 - Main:18,7",
       "s88": 15,
       "name": "1 - Main 18,7 (southbound)",
       "station": false,
@@ -9520,6 +9539,7 @@
       "copyFacing": "S"
     },
     {
+      "square": "1 - Main:18,7",
       "s88": 15,
       "name": "1 - Main 18,7 (northbound)",
       "station": false,
@@ -9529,6 +9549,7 @@
       "copyFacing": "N"
     },
     {
+      "square": "1 - Main:19,12",
       "s88": 9,
       "protectingSignal": [
         "Signal 40",
@@ -9543,6 +9564,7 @@
       "copyFacing": "W"
     },
     {
+      "square": "1 - Main:19,12",
       "s88": 9,
       "protectingSignal": [
         "Signal 40",
@@ -9557,6 +9579,7 @@
       "copyFacing": "E"
     },
     {
+      "square": "1 - Main:19,13",
       "s88": 10,
       "protectingSignal": [
         "Signal 38",
@@ -9571,6 +9594,7 @@
       "copyFacing": "W"
     },
     {
+      "square": "1 - Main:19,13",
       "s88": 10,
       "protectingSignal": [
         "Signal 38",
@@ -9585,6 +9609,7 @@
       "copyFacing": "E"
     },
     {
+      "square": "1 - Main:19,14",
       "s88": 4,
       "protectingSignal": "Signal 94",
       "name": "BottomMainC (eastbound)",
@@ -9597,6 +9622,7 @@
       "copyFacing": "E"
     },
     {
+      "square": "1 - Main:19,14",
       "s88": 4,
       "protectingSignal": "Signal 94",
       "name": "BottomMainC (eastbound, reverse)",
@@ -9610,6 +9636,7 @@
       "copyFacing": "W"
     },
     {
+      "square": "1 - Main:2,1",
       "s88": 1027,
       "name": "RampUp",
       "station": false,
@@ -9617,6 +9644,7 @@
       "y": 60
     },
     {
+      "square": "1 - Main:20,6",
       "s88": 2012,
       "name": "RampDown (southbound)",
       "station": false,
@@ -9626,6 +9654,7 @@
       "copyFacing": "S"
     },
     {
+      "square": "1 - Main:20,6",
       "s88": 2012,
       "name": "RampDown (southbound, reverse)",
       "station": false,
@@ -9636,6 +9665,7 @@
       "copyFacing": "N"
     },
     {
+      "square": "1 - Main:20,6",
       "s88": 2012,
       "name": "RampDown (northbound)",
       "station": false,
@@ -9645,6 +9675,7 @@
       "copyFacing": "N"
     },
     {
+      "square": "1 - Main:20,6",
       "s88": 2012,
       "name": "RampDown (northbound, reverse)",
       "station": false,
@@ -9655,6 +9686,7 @@
       "copyFacing": "S"
     },
     {
+      "square": "1 - Main:21,6",
       "s88": 2013,
       "name": "BottomMainPost (southbound)",
       "station": false,
@@ -9664,6 +9696,7 @@
       "copyFacing": "S"
     },
     {
+      "square": "1 - Main:21,6",
       "s88": 2013,
       "name": "BottomMainPost (southbound, reverse)",
       "station": false,
@@ -9674,6 +9707,7 @@
       "copyFacing": "N"
     },
     {
+      "square": "1 - Main:21,6",
       "s88": 2013,
       "name": "BottomMainPost (northbound)",
       "station": false,
@@ -9683,6 +9717,7 @@
       "copyFacing": "N"
     },
     {
+      "square": "1 - Main:21,6",
       "s88": 2013,
       "name": "BottomMainPost (northbound, reverse)",
       "station": false,
@@ -9693,6 +9728,7 @@
       "copyFacing": "S"
     },
     {
+      "square": "1 - Main:3,3",
       "s88": 1021,
       "name": "1 - Main 3,3 (southbound)",
       "station": false,
@@ -9702,6 +9738,7 @@
       "copyFacing": "S"
     },
     {
+      "square": "1 - Main:3,3",
       "s88": 1021,
       "name": "1 - Main 3,3 (northbound)",
       "station": false,
@@ -9711,6 +9748,7 @@
       "copyFacing": "N"
     },
     {
+      "square": "1 - Main:3,5",
       "s88": 1010,
       "mustReverse": true,
       "name": "TopMainR0",
@@ -9723,6 +9761,7 @@
       "priority": 1
     },
     {
+      "square": "1 - Main:4,4",
       "loc": {"name": "2-8-4 3505 SP"},
       "s88": 1022,
       "protectingSignal": "Signal 63",
@@ -9736,6 +9775,7 @@
       "copyFacing": "S"
     },
     {
+      "square": "1 - Main:4,4",
       "s88": 1022,
       "protectingSignal": "Signal 63",
       "name": "TopMainR1 (northbound)",
@@ -9748,6 +9788,7 @@
       "copyFacing": "N"
     },
     {
+      "square": "1 - Main:4,9",
       "s88": 1012,
       "name": "TopMainR1Pre (southbound)",
       "station": false,
@@ -9757,6 +9798,7 @@
       "copyFacing": "S"
     },
     {
+      "square": "1 - Main:4,9",
       "s88": 1012,
       "name": "TopMainR1Pre (northbound)",
       "station": false,
@@ -9766,6 +9808,7 @@
       "copyFacing": "N"
     },
     {
+      "square": "1 - Main:5,4",
       "s88": 1023,
       "protectingSignal": "Signal 64",
       "name": "TopMainR2 (southbound)",
@@ -9778,6 +9821,7 @@
       "copyFacing": "S"
     },
     {
+      "square": "1 - Main:5,4",
       "s88": 1023,
       "protectingSignal": "Signal 64",
       "name": "TopMainR2 (northbound)",
@@ -9790,6 +9834,7 @@
       "copyFacing": "N"
     },
     {
+      "square": "1 - Main:5,9",
       "s88": 1013,
       "name": "TopMainR2Pre (southbound)",
       "station": false,
@@ -9799,6 +9844,7 @@
       "copyFacing": "S"
     },
     {
+      "square": "1 - Main:5,9",
       "s88": 1013,
       "name": "TopMainR2Pre (northbound)",
       "station": false,
@@ -9808,6 +9854,7 @@
       "copyFacing": "N"
     },
     {
+      "square": "1 - Main:6,1",
       "s88": 2014,
       "name": "1 - Main 6,1 (westbound)",
       "station": false,
@@ -9817,6 +9864,7 @@
       "copyFacing": "W"
     },
     {
+      "square": "1 - Main:6,1",
       "s88": 2014,
       "name": "1 - Main 6,1 (eastbound)",
       "station": false,
@@ -9826,6 +9874,7 @@
       "copyFacing": "E"
     },
     {
+      "square": "1 - Main:6,2",
       "s88": 2015,
       "name": "TopMainPost (westbound)",
       "station": false,
@@ -9835,6 +9884,7 @@
       "copyFacing": "W"
     },
     {
+      "square": "1 - Main:6,2",
       "s88": 2015,
       "name": "TopMainPost (eastbound)",
       "station": false,
@@ -9844,6 +9894,7 @@
       "copyFacing": "E"
     },
     {
+      "square": "1 - Main:6,7",
       "loc": {"name": "ET22-245"},
       "s88": 1032,
       "name": "Tunnel",
@@ -9854,6 +9905,7 @@
       "priority": -2
     },
     {
+      "square": "1 - Main:7,6",
       "s88": 1028,
       "mustReverse": true,
       "name": "TunnelLeftPark",
@@ -9866,6 +9918,7 @@
       "autoDestination": false
     },
     {
+      "square": "1 - Main:8,12",
       "s88": 1007,
       "name": "BottomMainAPre (westbound)",
       "station": false,
@@ -9875,6 +9928,7 @@
       "copyFacing": "W"
     },
     {
+      "square": "1 - Main:8,12",
       "s88": 1007,
       "name": "BottomMainAPre (eastbound)",
       "station": false,
@@ -9884,6 +9938,7 @@
       "copyFacing": "E"
     },
     {
+      "square": "1 - Main:8,6",
       "s88": 1031,
       "mustReverse": true,
       "name": "TunnelCenterPark",
@@ -9896,6 +9951,7 @@
       "autoDestination": false
     },
     {
+      "square": "1 - Main:9,13",
       "s88": 1006,
       "name": "BottomMainBCPre (westbound)",
       "station": false,
@@ -9905,6 +9961,7 @@
       "copyFacing": "W"
     },
     {
+      "square": "1 - Main:9,13",
       "s88": 1006,
       "name": "BottomMainBCPre (eastbound)",
       "station": false,
@@ -9914,6 +9971,7 @@
       "copyFacing": "E"
     },
     {
+      "square": "1 - Main:9,6",
       "s88": 1029,
       "mustReverse": true,
       "name": "TunnelRightPark",
@@ -9926,6 +9984,7 @@
       "autoDestination": false
     },
     {
+      "square": "1 - Main:9,9",
       "s88": 1018,
       "mustReverse": true,
       "name": "TunnelLongPark",
@@ -9938,6 +9997,7 @@
       "autoDestination": false
     },
     {
+      "square": "2 - Bottom:11,13",
       "s88": 1001,
       "name": "LowerDownPre",
       "station": false,
@@ -9945,6 +10005,7 @@
       "y": 780
     },
     {
+      "square": "2 - Bottom:11,2",
       "s88": 2004,
       "mustReverse": true,
       "name": "ParkingTrack11",
@@ -9957,6 +10018,7 @@
       "autoDestination": false
     },
     {
+      "square": "2 - Bottom:13,13",
       "s88": 3,
       "name": "2 - Bottom 13,13",
       "station": false,
@@ -9964,6 +10026,7 @@
       "y": 780
     },
     {
+      "square": "2 - Bottom:13,14",
       "s88": 5,
       "name": "LowerFront",
       "station": true,
@@ -9973,6 +10036,7 @@
       "active": false
     },
     {
+      "square": "2 - Bottom:13,5",
       "s88": 2016,
       "mustReverse": true,
       "name": "ParkingTrack10",
@@ -9985,6 +10049,7 @@
       "autoDestination": false
     },
     {
+      "square": "2 - Bottom:14,10",
       "s88": 2,
       "name": "2 - Bottom 14,10 (westbound)",
       "station": false,
@@ -9994,6 +10059,7 @@
       "copyFacing": "W"
     },
     {
+      "square": "2 - Bottom:14,10",
       "s88": 2,
       "name": "2 - Bottom 14,10 (eastbound)",
       "station": false,
@@ -10003,6 +10069,7 @@
       "copyFacing": "E"
     },
     {
+      "square": "2 - Bottom:14,4",
       "s88": 2007,
       "mustReverse": true,
       "name": "ParkingTrack9",
@@ -10015,6 +10082,7 @@
       "autoDestination": false
     },
     {
+      "square": "2 - Bottom:15,4",
       "s88": 2006,
       "mustReverse": true,
       "name": "ParkingTrack8",
@@ -10027,6 +10095,7 @@
       "autoDestination": false
     },
     {
+      "square": "2 - Bottom:16,13",
       "s88": 6,
       "name": "2 - Bottom 16,13",
       "station": false,
@@ -10034,6 +10103,7 @@
       "y": 780
     },
     {
+      "square": "2 - Bottom:16,5",
       "s88": 2008,
       "mustReverse": true,
       "name": "ParkingTrack7",
@@ -10046,6 +10116,7 @@
       "autoDestination": false
     },
     {
+      "square": "2 - Bottom:16,9",
       "s88": 2002,
       "mustReverse": true,
       "name": "ParkingTrack4",
@@ -10058,6 +10129,7 @@
       "autoDestination": false
     },
     {
+      "square": "2 - Bottom:17,10",
       "s88": 2001,
       "name": "LowerDown",
       "station": false,
@@ -10065,6 +10137,7 @@
       "y": 600
     },
     {
+      "square": "2 - Bottom:17,12",
       "s88": 7,
       "name": "2 - Bottom 17,12",
       "station": false,
@@ -10072,6 +10145,7 @@
       "y": 720
     },
     {
+      "square": "2 - Bottom:17,6",
       "s88": 2009,
       "mustReverse": true,
       "name": "ParkingTrack6",
@@ -10084,6 +10158,7 @@
       "autoDestination": false
     },
     {
+      "square": "2 - Bottom:17,8",
       "s88": 2003,
       "mustReverse": true,
       "name": "ParkingTrack5",
@@ -10096,6 +10171,7 @@
       "autoDestination": false
     },
     {
+      "square": "2 - Bottom:19,0",
       "s88": 2005,
       "name": "LowerBack",
       "station": true,
@@ -10104,6 +10180,7 @@
       "y": 0
     },
     {
+      "square": "2 - Bottom:22,10",
       "s88": 1,
       "name": "LowerBackPre",
       "station": false,
@@ -10111,6 +10188,7 @@
       "y": 600
     },
     {
+      "square": "2 - Bottom:3,7",
       "s88": 1003,
       "mustReverse": true,
       "name": "LowerParkingReverse",
@@ -10120,6 +10198,7 @@
       "reversing": true
     },
     {
+      "square": "2 - Bottom:4,6",
       "s88": 1004,
       "name": "2 - Bottom 4,6",
       "station": false,
@@ -10127,6 +10206,7 @@
       "y": 360
     },
     {
+      "square": "2 - Bottom:7,1",
       "s88": 2010,
       "name": "2 - Bottom 7,1",
       "station": false,
@@ -10134,6 +10214,7 @@
       "y": 60
     },
     {
+      "square": "2 - Bottom:7,12",
       "s88": 1014,
       "name": "2 - Bottom 7,12",
       "station": false,
@@ -10141,6 +10222,7 @@
       "y": 720
     },
     {
+      "square": "2 - Bottom:8,14",
       "s88": 1002,
       "name": "LowerFrontPre",
       "station": false,
@@ -10148,6 +10230,7 @@
       "y": 840
     },
     {
+      "square": "2 - Bottom:8,7",
       "s88": 1020,
       "mustReverse": true,
       "name": "ParkingTrack12",

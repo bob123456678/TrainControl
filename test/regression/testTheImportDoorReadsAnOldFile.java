@@ -5021,4 +5021,78 @@ public class testTheImportDoorReadsAnOldFile
             if (sandbox != null) sandbox.close();
         }
     }
+
+    /**
+     * Clear empties the timetable the configuration keeps as well as the one running, at once (RSA5-C1): the fold keeps
+     * the entries of a page ticked out of autonomy for its return, so a Clear pressed while it was out came back with
+     * the page.  Cleared in the configuration too, nothing is kept for any page.
+     *
+     * MUTATION: clear the running timetable alone, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testClearEmptiesTheTimetableTheConfigurationKeeps() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final List<String> asked = Collections.synchronizedList(new ArrayList<>());
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final AutonomySession session = ui[0].getAutonomySession();
+
+            String kept = session.getGlobal("timetable");
+
+            assertTrue(kept != null && new org.json.JSONArray(kept).length() > 0, "precondition: his railway keeps no"
+                + " timetable: " + kept);
+
+            startAnsweringYes(asked, going);
+
+            SwingUtilities.invokeAndWait(() -> ui[0].clearTimetable());
+
+            long until = System.currentTimeMillis() + 10000;
+
+            while (System.currentTimeMillis() < until && !ui[0].getModel().getAutoLayout().getTimetable().isEmpty())
+            {
+                Thread.sleep(50);
+            }
+
+            assertTrue(ui[0].getModel().getAutoLayout().getTimetable().isEmpty(), "precondition: Clear did not clear the"
+                + " running timetable; asked: " + asked);
+
+            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            String after = session.getGlobal("timetable");
+
+            assertTrue(after == null || new org.json.JSONArray(after).length() == 0, "Clear left the timetable the"
+                + " configuration keeps, which comes back with a page ticked out of autonomy (RSA5-C1): " + after);
+        }
+        finally
+        {
+            going.set(false);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
 }

@@ -1079,6 +1079,10 @@ public class AutonomyBuilder
                 json.put("station", stops);
                 json.put("s88", point.getS88());
 
+                // WHICH SQUARE THIS IS A COPY OF (RSA5-A1): a rebuild carries each train by it, since a rename can hand
+                // a Point's name to another square
+                json.put("square", point.getTile().toString());
+
                 // Which copies are the same piece of track.
                 //
                 // Only where a square is emitted as more than one Point: below that there is nothing to

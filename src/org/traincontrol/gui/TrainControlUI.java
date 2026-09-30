@@ -3068,7 +3068,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         java.util.Map<String, String[]> standing = whereTheTrainsAre();
 
-        java.util.Map<String, String> pendingTurns = takeThePendingTurns();
+        java.util.Map<String, String[]> pendingTurns = takeThePendingTurns();
 
         // ASKED, NOT BUILT (RLV7-C2): `getAutoLayout` makes a Layout where there is none, and hasAutoLayout then answers
         // yes about nothing (CS3-C4)
@@ -3136,7 +3136,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     void keepThePendingTurnsAcross(Runnable load)
     {
-        java.util.Map<String, String> pendingTurns = takeThePendingTurns();
+        java.util.Map<String, String[]> pendingTurns = takeThePendingTurns();
 
         try
         {
@@ -6723,7 +6723,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * on the layout it has just built.
      *
      * @param layout the running layout
-     * @return locomotive name to {point name, arrival side, road}, the side and the road possibly null
+     * **And the square and facing of the Point each stands on, and of each on its road** (RSA5-A1): a rebuild carries
+     * them by those, since a rename can hand a Point's name to another square.
+     *
+     * @return locomotive name to {point name, arrival side, road, square, facing, the road's squares}, all but the first
+     *         possibly null
      */
     public static java.util.Map<String, String[]> whereTheTrainsAre(org.traincontrol.automation.Layout layout)
     {
@@ -6748,7 +6752,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             if (underWay.containsKey(loc) && underWay.get(loc) != point) continue;
 
             standing.put(loc.getName(), new String[]{point.getName(), point.getArrivedFrom(),
-                org.traincontrol.automation.Layout.namesOfRoad(point.getArrivedAlong())});
+                org.traincontrol.automation.Layout.namesOfRoad(point.getArrivedAlong()), point.getSquare(),
+                point.getCopyFacing(), squaresOfRoad(point.getArrivedAlong())});
         }
 
         // AND WHERE A RELEASE HAS ALREADY CLEARED THAT POINT BEHIND IT - atomic routes off - still there, unless another
@@ -6772,10 +6777,39 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (anotherStands) continue;
 
-            standing.put(name, new String[]{kept.getValue().getName(), null, null});
+            standing.put(name, new String[]{kept.getValue().getName(), null, null, kept.getValue().getSquare(),
+                kept.getValue().getCopyFacing(), null});
         }
 
         return standing;
+    }
+
+    /**
+     * The square and facing of each Point on a road, by name, as `whereTheTrainsAre` records it (RSA5-A1): what the
+     * road's names are carried by across a rebuild.
+     *
+     * @param road the rails a train came in along, or null
+     * @return a JSON object of each Point name to [square, facing], or null
+     */
+    private static String squaresOfRoad(java.util.List<org.traincontrol.automation.Edge> road)
+    {
+        if (road == null || road.isEmpty()) return null;
+
+        org.json.JSONObject out = new org.json.JSONObject();
+
+        for (org.traincontrol.automation.Edge edge : road)
+        {
+            for (org.traincontrol.automation.Point at : new org.traincontrol.automation.Point[] {edge.getStart(),
+                edge.getEnd()})
+            {
+                if (at == null || at.getName() == null) continue;
+
+                out.put(at.getName(), new org.json.JSONArray().put(at.getSquare() == null ? org.json.JSONObject.NULL
+                    : at.getSquare()).put(at.getCopyFacing() == null ? org.json.JSONObject.NULL : at.getCopyFacing()));
+            }
+        }
+
+        return out.toString();
     }
 
     /**
@@ -6786,13 +6820,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * `putThePendingTurnsBack` is `whereTheTrainsAre`/`putTheTrainsBack` for the same reason and in
      * the same place.
      *
-     * @return the locomotive names against the Points they turned at, never null
+     * @return each locomotive against the Point it turned at, with that Point's square and facing (RSA5-C2), never
+     *         null
      */
-    private java.util.Map<String, String> takeThePendingTurns()
+    private java.util.Map<String, String[]> takeThePendingTurns()
     {
         if (this.model == null || !this.model.hasAutoLayout()) return java.util.Collections.emptyMap();
 
-        return this.model.getAutoLayout().takeReversalsOnArrival();
+        org.traincontrol.automation.Layout layout = this.model.getAutoLayout();
+
+        java.util.Map<String, String[]> out = new java.util.LinkedHashMap<>();
+
+        // WITH THE SQUARE AND FACING OF THE POINT EACH TURN WAS MADE AT (RSA5-C2), read off this railway before the load
+        // replaces it: the turn goes back on the Point the rebuild gives that copy, however it is named then
+        for (java.util.Map.Entry<String, String> turn : layout.takeReversalsOnArrival().entrySet())
+        {
+            org.traincontrol.automation.Point at = turn.getValue() == null ? null : layout.getPoint(turn.getValue());
+
+            out.put(turn.getKey(), new String[] {turn.getValue(), at == null ? null : at.getSquare(),
+                at == null ? null : at.getCopyFacing()});
+        }
+
+        return out;
     }
 
     /**
@@ -6806,13 +6855,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * @param turns what `takeThePendingTurns` drained, may be null or empty
      */
-    private void putThePendingTurnsBack(java.util.Map<String, String> turns)
+    private void putThePendingTurnsBack(java.util.Map<String, String[]> turns)
     {
         if (turns == null || turns.isEmpty()) return;
 
         if (this.model == null || !this.model.hasAutoLayout()) return;
 
-        this.model.getAutoLayout().restoreReversalsOnArrival(turns);
+        org.traincontrol.automationui.AutonomySession naming = this.autonomySession;
+
+        java.util.Map<String, String> named = new java.util.LinkedHashMap<>();
+
+        for (java.util.Map.Entry<String, String[]> turn : turns.entrySet())
+        {
+            String[] at = turn.getValue();
+
+            // BY THE NAME THE REBUILD GIVES THE SAME COPY (RSA5-C2); where it has none, the name recorded, owed as before
+            String now = naming == null || at[0] == null ? at[0] : naming.pointNamedNow(at[0], at[1], at[2]);
+
+            named.put(turn.getKey(), now != null ? now : at[0]);
+        }
+
+        this.model.getAutoLayout().restoreReversalsOnArrival(named);
     }
 
     /**
@@ -6891,23 +6954,39 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param log where to say that one train could not be put back
      * @param placementsJustEdited locomotives the setup was just given a new placement for, or null
      */
+    /**
+     * Where a Point a rebuild's record names is now: given its name, and the square and facing it had (RSA5-A1).
+     * `AutonomySession.pointNamedNow` is the answer.
+     */
+    public interface NamedNow
+    {
+        /**
+         * @param name the Point's name when it was recorded
+         * @param square the square it was a copy of, or null where the railway did not say
+         * @param facing the way a train on it faced, or null
+         * @return its name now, or null where the rebuild has no copy of that square facing that way
+         */
+        String pointNamedNow(String name, String square, String facing);
+    }
+
     public static void putTheTrainsBack(org.traincontrol.automation.Layout built,
         java.util.Map<String, String[]> standing, java.util.function.Consumer<String> log,
-        java.util.Set<String> placementsJustEdited, java.util.function.UnaryOperator<String> namedNow)
+        java.util.Set<String> placementsJustEdited, NamedNow namedNow)
     {
         putTheTrainsBack(built, namedNow == null ? standing : namedNow(standing, namedNow), log, placementsJustEdited);
     }
 
     /**
      * What `whereTheTrainsAre` recorded, in the names the rebuild gives the same Points (RSA4-A1): the Point each train
-     * stands on, and the road it came in on.
+     * stands on, and the road it came in on - each by the square it was a copy of and its facing (RSA5-A1).  A train
+     * whose Point the rebuild does not have is left out, and stays where the rebuild put it.
      *
      * @param standing what `whereTheTrainsAre` recorded, or null
      * @param namedNow a recorded Point name to the name the rebuild gives that Point
      * @return the same, renamed
      */
     private static java.util.Map<String, String[]> namedNow(java.util.Map<String, String[]> standing,
-        java.util.function.UnaryOperator<String> namedNow)
+        NamedNow namedNow)
     {
         if (standing == null) return null;
 
@@ -6917,7 +6996,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             String[] now = was.getValue() == null ? null : was.getValue().clone();
 
-            if (now != null && now.length > 0 && now[0] != null) now[0] = namedNow.apply(now[0]);
+            if (now != null && now.length > 0 && now[0] != null)
+            {
+                now[0] = namedNow.pointNamedNow(now[0], now.length > 3 ? now[3] : null, now.length > 4 ? now[4] : null);
+
+                if (now[0] == null) continue;
+            }
+
+            org.json.JSONObject roadSquares = null;
+
+            try
+            {
+                roadSquares = now != null && now.length > 5 && now[5] != null ? new org.json.JSONObject(now[5]) : null;
+            }
+            catch (org.json.JSONException notSquares)
+            {
+                roadSquares = null;
+            }
 
             if (now != null && now.length > 2 && now[2] != null)
             {
@@ -6931,7 +7026,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                         for (int j = 0; step != null && j < step.length(); j++)
                         {
-                            if (step.opt(j) instanceof String) step.put(j, namedNow.apply(step.getString(j)));
+                            if (step.opt(j) instanceof String)
+                            {
+                                org.json.JSONArray of = roadSquares == null ? null
+                                    : roadSquares.optJSONArray(step.getString(j));
+
+                                String then = namedNow.pointNamedNow(step.getString(j),
+                                    of == null || of.isNull(0) ? null : of.optString(0),
+                                    of == null || of.isNull(1) ? null : of.optString(1));
+
+                                if (then != null) step.put(j, then);
+                            }
                         }
                     }
 
@@ -7214,7 +7319,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             //
             // Carried the same way the placements above are, and for the same reason: what the railway
             // did is a fact, and the file is a record of it.
-            java.util.Map<String, String> pendingTurns = takeThePendingTurns();
+            java.util.Map<String, String[]> pendingTurns = takeThePendingTurns();
 
             // Asked, not built, as the carry asks (RLV7-C2, CS3-C4)
             final Object runningBefore = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
@@ -22866,6 +22971,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             if (dialogResult != JOptionPane.YES_OPTION) return;
 
             this.model.getAutoLayout().setTimetable(new LinkedList<>());
+
+            // AND THE TIMETABLE THE CONFIGURATION KEEPS, at once (RSA5-C1): a fold keeps the entries of a page ticked out
+            // of autonomy for its return, so a Clear pressed while it was out came back with the page
+            org.traincontrol.automationui.AutonomySession keeping = this.autonomySession;
+
+            if (keeping != null && this.activeDiagramConfiguration != null)
+            {
+                try
+                {
+                    keeping.setGlobal("timetable", new org.json.JSONArray());
+                }
+                catch (java.io.IOException e)
+                {
+                    this.model.log(e);
+                }
+            }
+
             this.repaintTimetable();
             this.repaintAutoLocListLite();
         });

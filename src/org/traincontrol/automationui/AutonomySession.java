@@ -482,23 +482,102 @@ public class AutonomySession
     private Set<String> turningNow = Collections.emptySet();
 
     /**
-     * The name the latest build gives the Point an earlier build of this session called this (RSA4-A1): the name itself
-     * where it is still built; otherwise the same copy under its square's name now - what follows a square's name is its
-     * copy's heading - or, where that copy is gone, the copy of the square facing the same way, a turning copy last.  A
-     * copy is its facing, so no other is offered.  A name no build of this session gave, or whose square is gone, is
-     * answered as it is.
+     * The name the latest build gives a Point of the running layout (RSA4-A1), found by the square it was a copy of and
+     * the way a train on it faced (RSA5-A1): the name itself where the build still gives it to that square; otherwise the
+     * same copy under the square's name now - what follows a square's name is its copy's heading - or, where that copy is
+     * gone, the copy of the square facing the same way, a turning copy last.  A copy is its facing, so no other is
+     * offered, and where none faces that way, or the square is gone, there is none.  By the square and not the name:
+     * a station renamed to the name another has hands that name to the other square, and the train recorded there was
+     * stood on the renamed station and the one on it taken off the railway.
      *
      * Where the trains stand after a run lives on the running layout alone, and a rebuild from the setup puts each back
      * by the name of the Point it stood on (OB-183) - a name that a station renamed, or a square's copies changed, had
      * just replaced, so the train was left where the setup last had it and the square it stood on read free.
      *
-     * Each name is taken as the latest build to give it had it.  A rename rebuilds the running layout at once - the
-     * setup's doors offer one only at rest - so the names a train is recorded by are that build's or the one before.
-     *
-     * @param name a Point name an earlier build gave
-     * @return the name of that Point now
+     * @param name the Point's name on the running layout
+     * @param square the square of the diagram it is a copy of, as the running layout says, or null
+     * @param facing the way a train on it faces, as the running layout says, or null
+     * @return the name of that Point now, or null where the build has no copy of the square facing that way
      */
-    public String pointNamedNow(String name)
+    public String pointNamedNow(String name, String square, String facing)
+    {
+        TileKey at = square == null ? null : AutonomyCompanionStore.parseTileKey(square);
+
+        // A RAILWAY THAT DOES NOT SAY WHICH SQUARE: by the name alone
+        if (at == null) return pointNamedByName(name);
+
+        if (name == null) return null;
+
+        // THE SAME POINT, where the rebuild still gives this square the name
+        if (at.equals(squareOfNameNow.get(name))) return name;
+
+        String own = nameOfSquareNow.get(at);
+
+        // THE SQUARE GONE: no Point to go back on - and not the name, which may be another square's now (RSA5-A1)
+        if (own == null) return null;
+
+        // THE SAME COPY under the square's name now: what follows a square's name is its copy's heading
+        String base = baseOfNameSeen.get(name);
+
+        if (base != null && name.startsWith(base))
+        {
+            String same = own + name.substring(base.length());
+
+            if (at.equals(squareOfNameNow.get(same))) return same;
+        }
+
+        // THE COPY FACING THE SAME WAY, where that copy is gone - a turning copy last
+        Side way = sideNamed(facing);
+
+        if (way == null) way = facingOfNameSeen.get(name);
+
+        String facingSo = null;
+        String only = null;
+        int copies = 0;
+
+        for (Map.Entry<String, TileKey> copy : squareOfNameNow.entrySet())
+        {
+            if (!at.equals(copy.getValue())) continue;
+
+            copies++;
+            only = copy.getKey();
+
+            if (way == null || way != facingOfNameNow.get(copy.getKey())) continue;
+
+            if (facingSo == null || turningNow.contains(facingSo) && !turningNow.contains(copy.getKey()))
+            {
+                facingSo = copy.getKey();
+            }
+        }
+
+        if (facingSo != null) return facingSo;
+
+        // A SQUARE OF ONE COPY THAT RECORDS NO FACING: that copy - a square of one Point is one place
+        if (copies == 1 && facingOfNameNow.get(only) == null) return only;
+
+        // NO COPY FACES ITS WAY: none, rather than one facing the other way - the copy is the direction (RSA5-A2).  A
+        // direction that would do this is refused while a train stands there: `trainsTheDirectionsTurn`.
+        return null;
+    }
+
+    /**
+     * The side of that name, or null.
+     */
+    private static Side sideNamed(String name)
+    {
+        for (Side side : Side.values())
+        {
+            if (side.name().equals(name)) return side;
+        }
+
+        return null;
+    }
+
+    /**
+     * The same by the name alone, for a railway that does not say which square each Point is a copy of - one written by
+     * hand, or before round 21.
+     */
+    private String pointNamedByName(String name)
     {
         if (name == null || squareOfNameNow.containsKey(name)) return name;
 
@@ -711,10 +790,11 @@ public class AutonomySession
             {
                 String name = leg.get(end);
 
-                if (tiles.containsKey(name)) continue;
-
                 TileKey square = squareOfNameSeen.get(name);
                 String base = baseOfNameSeen.get(name);
+
+                // STILL BUILT, ON THE SQUARE IT NAMED - or on one no build of this session placed it (RSA5-A1)
+                if (tiles.containsKey(name) && (square == null || square.equals(tiles.get(name)))) continue;
 
                 if (square == null)
                 {
@@ -754,7 +834,7 @@ public class AutonomySession
     private boolean carry(List<NamedLeg> legs, Map<String, TileKey> tiles, Map<TileKey, String> bases,
         java.util.Set<String> edges)
     {
-        // EVERY NAME THIS BUILD DOES NOT HAVE, traced to its square
+        // EVERY NAME THIS BUILD DOES NOT HAVE, OR GIVES ANOTHER SQUARE, traced to its square
         Map<String, TileKey> stale = new LinkedHashMap<>();
         Map<String, String> carried = new LinkedHashMap<>();
 
@@ -762,10 +842,15 @@ public class AutonomySession
         {
             for (String name : new String[] {leg.get(0), leg.get(1)})
             {
-                if (tiles.containsKey(name) || stale.containsKey(name)) continue;
+                if (stale.containsKey(name)) continue;
 
                 TileKey square = squareOfNameSeen.get(name);
                 String base = baseOfNameSeen.get(name);
+
+                // STILL BUILT, ON THE SQUARE IT NAMED (RSA5-A1).  A station renamed to the name another has hands that
+                // name to the renamed square, and a name the build still gives was left - naming the renamed station.
+                // Seen by the build before this one, which is this carry's: the memory is written after it.
+                if (tiles.containsKey(name) && (square == null || square.equals(tiles.get(name)))) continue;
 
                 // WRITTEN BEFORE THIS SESSION: the square's own name, whole or with a heading - the longest that fits
                 if (square == null)
@@ -4936,7 +5021,19 @@ public class AutonomySession
      */
     public AutonomyBuilder builder(AutonomyBuilder.Globals globals)
     {
-        return new AutonomyBuilder(reducer, globals)
+        return builder(reducer, globals);
+    }
+
+    /**
+     * The same over a reduction of its own - one tried, not installed (RSA5-A2).
+     *
+     * @param reduction the reduction
+     * @param globals the run-wide settings, or null when only the naming is wanted
+     * @return a fresh builder
+     */
+    private AutonomyBuilder builder(GraphReducer reduction, AutonomyBuilder.Globals globals)
+    {
+        return new AutonomyBuilder(reduction, globals)
             .withPointExtras(pointExtras())
             .withReversibleTiles(reversibleTiles())
             .withMandatoryTurns(mandatoryTurnTiles())
@@ -6043,20 +6140,13 @@ public class AutonomySession
             if (!"points".equals(key) && !"edges".equals(key)) globals.put(key, root.get(key));
         }
 
-        // AND THE TIMETABLE'S ENTRIES THE LOAD COULD NOT READ, where the timetable is otherwise the one stored (RSA4-B2)
+        // AND THE TIMETABLE'S ENTRIES ON A PAGE OUT OF AUTONOMY, which its load could not read (RSA4-B2, RSA5-B1)
         org.json.JSONObject storedGlobals = configuration.optJSONObject("globals");
 
         if (globals.has("timetable") && storedGlobals != null)
         {
-            java.util.Set<String> built = new java.util.HashSet<>();
-
-            for (Object o : root.has("points") ? root.getJSONArray("points") : new org.json.JSONArray())
-            {
-                if (o instanceof org.json.JSONObject) built.add(((org.json.JSONObject) o).optString("name"));
-            }
-
-            globals.put("timetable", withTheEntriesItsLoadDropped(storedGlobals.optJSONArray("timetable"),
-                globals.optJSONArray("timetable"), built));
+            globals.put("timetable", withTheEntriesOfPagesOut(storedGlobals.optJSONArray("timetable"),
+                globals.optJSONArray("timetable")));
         }
 
         configuration.put("globals", globals);
@@ -6065,47 +6155,120 @@ public class AutonomySession
     }
 
     /**
-     * The timetable a fold stores: the running layout's, with each stored entry its load could not read put back in its
-     * place, where the running one is the stored one without them (RSA4-B2).
+     * The timetable a fold stores: the running layout's, with each stored entry on a page out of autonomy put back after
+     * the entry its nearest earlier neighbour became (RSA4-B2, RSA5-B1, RSA5-C1).
      *
-     * A load drops an entry naming a Point its build does not have - a page ticked out of autonomy, which is built to be
-     * undone, among the ways - and the fold after it wrote the shorter timetable over the configuration, so the page came
-     * back without its entries.  Where the operator has changed the timetable since - recorded, cleared, deleted or
-     * reordered an entry - the running one is theirs, and is stored as it is.
+     * A page ticked out of autonomy is built to be undone, and its load drops every entry through it; the fold after it
+     * wrote the shorter timetable over the configuration, so the page came back without its entries.  Kept through
+     * anything else - an entry dropped for another reason, one deleted, one recorded - since the operator cannot see
+     * them in the timetable they are editing; Clear clears them too, at its door.  Nothing else is kept: an entry no page
+     * out explains - its station gone, its locomotive gone - is erased, as a load drops it.
      *
      * @param stored the configuration's timetable
      * @param running the running layout's
-     * @param built the running layout's Point names
      * @return the timetable to store
      */
-    private static org.json.JSONArray withTheEntriesItsLoadDropped(org.json.JSONArray stored, org.json.JSONArray running,
-        java.util.Set<String> built)
+    private org.json.JSONArray withTheEntriesOfPagesOut(org.json.JSONArray stored, org.json.JSONArray running)
     {
-        if (stored == null || running == null) return running;
+        java.util.Set<String> pagesOut = new java.util.HashSet<>(store.getExcludedPages());
 
-        org.json.JSONArray out = new org.json.JSONArray();
+        if (stored == null || running == null || pagesOut.isEmpty()) return running;
 
-        int next = 0;
+        // EACH KEPT ENTRY AFTER THE RUNNING ENTRY ITS NEAREST EARLIER NEIGHBOUR BECAME, or first where none survives
+        Map<Integer, List<Object>> after = new java.util.HashMap<>();
+
+        int last = -1;
 
         for (int i = 0; i < stored.length(); i++)
         {
             org.json.JSONObject entry = stored.optJSONObject(i);
 
-            if (next < running.length() && sameRun(entry, running.optJSONObject(next)))
+            if (entry == null) continue;
+
+            if (namesAPointOnAPageOut(entry, pagesOut))
             {
-                out.put(running.get(next++));
+                after.computeIfAbsent(last, k -> new ArrayList<>()).add(entry);
+
+                continue;
             }
-            else if (entry != null && namesAPointNotBuilt(entry, built))
+
+            for (int j = last + 1; j < running.length(); j++)
             {
-                out.put(entry);
-            }
-            else
-            {
-                return running;
+                if (sameRun(entry, running.optJSONObject(j)))
+                {
+                    last = j;
+
+                    break;
+                }
             }
         }
 
-        return next == running.length() ? out : running;
+        if (after.isEmpty()) return running;
+
+        org.json.JSONArray out = new org.json.JSONArray();
+
+        for (Object kept : after.getOrDefault(-1, Collections.emptyList())) out.put(kept);
+
+        for (int j = 0; j < running.length(); j++)
+        {
+            out.put(running.get(j));
+
+            for (Object kept : after.getOrDefault(j, Collections.emptyList())) out.put(kept);
+        }
+
+        return out;
+    }
+
+    /**
+     * Whether a timetable entry names a Point on a page out of autonomy: traced by the builds this session has seen, or
+     * by the name of a square on such a page - its own, or the one made from where it is (RSA5-B1).
+     */
+    private boolean namesAPointOnAPageOut(org.json.JSONObject entry, java.util.Set<String> pagesOut)
+    {
+        org.json.JSONArray path = entry.optJSONArray("path");
+
+        for (int i = 0; path != null && i < path.length(); i++)
+        {
+            org.json.JSONObject leg = path.optJSONObject(i);
+
+            for (String name : leg == null ? new String[0] : new String[] {leg.optString("start"), leg.optString("end")})
+            {
+                TileKey square = squareOfNameSeen.get(name);
+
+                if (square == null) square = squareOnAPageOut(name, pagesOut);
+
+                if (square != null && pagesOut.contains(square.getPage())) return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The square on a page out of autonomy a Point name stands for, by the square's own name or the one made from where
+     * it is, whole or with a heading - the longest that fits - or null.
+     */
+    private TileKey squareOnAPageOut(String name, java.util.Set<String> pagesOut)
+    {
+        TileKey best = null;
+        String bestName = null;
+
+        for (TileKey tile : graph.getTiles().keySet())
+        {
+            if (!pagesOut.contains(tile.getPage())) continue;
+
+            String own = store.getPointName(tile);
+
+            if (own == null) own = GraphReducer.generatedName(tile);
+
+            if ((name.equals(own) || name.startsWith(own + " (")) && (bestName == null || own.length() > bestName.length()))
+            {
+                best = tile;
+                bestName = own;
+            }
+        }
+
+        return best;
     }
 
     /** Whether two timetable entries send the same train the same way. */
@@ -6131,24 +6294,6 @@ public class AutonomySession
         }
 
         return true;
-    }
-
-    /** Whether a timetable entry names a Point the running layout does not have: one its load dropped. */
-    private static boolean namesAPointNotBuilt(org.json.JSONObject entry, java.util.Set<String> built)
-    {
-        org.json.JSONArray path = entry.optJSONArray("path");
-
-        for (int i = 0; path != null && i < path.length(); i++)
-        {
-            org.json.JSONObject leg = path.optJSONObject(i);
-
-            if (leg != null && (!built.contains(leg.optString("start")) || !built.contains(leg.optString("end"))))
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -6967,13 +7112,162 @@ public class AutonomySession
     public void setDirection(TileKey tile, RouteId routeId, Direction direction)
     {
         record(tile, routeId, direction);
-        touched();
+        directionsTouched();
     }
 
     /**
      * Records a direction without re-deriving, for callers that are about to set several.
      */
+    /**
+     * The directions recorded since the last were settled, each route's as it was: what a refusal puts back (RSA5-A2).
+     */
+    private final Map<List<Object>, Direction> directionsBefore = new LinkedHashMap<>();
+
+    /** Why the last direction asked for was not set, until a door takes it to say so. */
+    private String directionRefusal;
+
+    /**
+     * Why the last direction asked for was not set, or null where it was - taken, so it is said once (RSA5-A2).
+     *
+     * @return the sentence, or null
+     */
+    public String takeDirectionRefusal()
+    {
+        String why = directionRefusal;
+
+        directionRefusal = null;
+
+        return why;
+    }
+
     private void record(TileKey tile, RouteId routeId, Direction direction)
+    {
+        directionsBefore.putIfAbsent(java.util.Arrays.<Object>asList(tile, routeId), graph.getDirection(tile, routeId));
+
+        apply(tile, routeId, direction);
+    }
+
+    /**
+     * The directions recorded settled: derived from, or - where they would leave a train standing on a square with no
+     * copy facing its way - put back, and the refusal kept for the door to say (RSA5-A2).
+     *
+     * The copy a train stands on is its direction.  A one-way run set through a station against the way a train there
+     * faces leaves the square no copy facing it: the rebuild left the train where the setup last had it, the square it
+     * stands on reading free, and a build from the setup turned it round in silence.  Refused while it stands there.
+     *
+     * @return whether they were set
+     */
+    private boolean directionsTouched()
+    {
+        Map<String, String> turned = trainsTheDirectionsTurn();
+
+        if (!turned.isEmpty())
+        {
+            for (Map.Entry<List<Object>, Direction> was : directionsBefore.entrySet())
+            {
+                apply((TileKey) was.getKey().get(0), (RouteId) was.getKey().get(1), was.getValue());
+            }
+
+            directionsBefore.clear();
+
+            Map.Entry<String, String> first = turned.entrySet().iterator().next();
+
+            directionRefusal = I18n.f("autosetup.ui.errorDirectionTurnsATrain", first.getKey(), first.getValue());
+
+            return false;
+        }
+
+        directionsBefore.clear();
+
+        touched();
+
+        return true;
+    }
+
+    /**
+     * The trains the directions recorded would leave on a square with no copy facing their way, each against the
+     * station it stands on (RSA5-A2): the railway's trains, and the setup's where the railway has none of them, read by
+     * a reduction of the graph as it now stands - nothing derived from it, and nothing carried.
+     */
+    private Map<String, String> trainsTheDirectionsTurn()
+    {
+        Map<String, Object[]> standing = new LinkedHashMap<>();
+
+        org.traincontrol.automation.Layout running = runningLayout == null ? null : runningLayout.get();
+
+        if (running != null)
+        {
+            for (org.traincontrol.automation.Point point : running.getPoints())
+            {
+                Locomotive loc = point.getCurrentLocomotive();
+                TileKey square = squareOfNameNow.get(point.getName());
+                Side facing = facingOfNameNow.get(point.getName());
+
+                if (loc == null || loc.getName() == null || square == null || facing == null) continue;
+
+                standing.putIfAbsent(loc.getName(), new Object[] {square, facing});
+            }
+        }
+
+        String active = store.getActiveConfiguration();
+
+        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
+
+        org.json.JSONObject points = configuration == null ? null : configuration.optJSONObject("points");
+
+        for (String id : points == null ? Collections.<String>emptySet() : points.keySet())
+        {
+            TileKey square = AutonomyCompanionStore.parseTileKey(id);
+
+            String train = square == null ? null : getLocomotiveNameAt(square);
+            Side facing = square == null ? null : getFacing(square);
+
+            if (train != null && facing != null) standing.putIfAbsent(train, new Object[] {square, facing});
+        }
+
+        if (standing.isEmpty()) return Collections.emptyMap();
+
+        GraphReducer trial = new GraphReducer(graph, store.asAuthored());
+
+        trial.reduce();
+
+        AutonomyBuilder naming = builder(trial, null);
+
+        Map<String, TileKey> tiles = naming.tilesByName();
+        Map<String, Side> facings = naming.facingByName();
+        Map<TileKey, String> bases = naming.uniqueNames();
+
+        Map<String, String> turned = new LinkedHashMap<>();
+
+        for (Map.Entry<String, Object[]> train : standing.entrySet())
+        {
+            TileKey square = (TileKey) train.getValue()[0];
+            Side facing = (Side) train.getValue()[1];
+
+            boolean facesSomeWay = false;
+            boolean facesItsWay = false;
+
+            for (Map.Entry<String, TileKey> copy : tiles.entrySet())
+            {
+                Side way = square.equals(copy.getValue()) ? facings.get(copy.getKey()) : null;
+
+                if (way == null) continue;
+
+                facesSomeWay = true;
+
+                if (way == facing) facesItsWay = true;
+            }
+
+            if (facesSomeWay && !facesItsWay)
+            {
+                turned.put(train.getKey(), bases.containsKey(square) ? bases.get(square) : square.toString());
+            }
+        }
+
+        return turned;
+    }
+
+    private void apply(TileKey tile, RouteId routeId, Direction direction)
     {
         graph.setDirection(tile, routeId, direction);
 
@@ -7006,7 +7300,7 @@ public class AutonomySession
             }
         }
 
-        touched();
+        directionsTouched();
     }
 
     /**
@@ -7028,7 +7322,7 @@ public class AutonomySession
             record(tile, entry.getKey(), entry.getValue());
         }
 
-        touched();
+        directionsTouched();
     }
 
     /**
@@ -9271,9 +9565,7 @@ public class AutonomySession
             }
         }
 
-        touched();
-
-        return changed;
+        return directionsTouched() ? changed : 0;
     }
 
     public void setTileLength(TileKey tile, int length)
@@ -9987,6 +10279,10 @@ public class AutonomySession
     private void touched()
     {
         dirty = true;
+
+        // Whatever directions were recorded are settled now, however they came
+        directionsBefore.clear();
+
         rebuild();
     }
 

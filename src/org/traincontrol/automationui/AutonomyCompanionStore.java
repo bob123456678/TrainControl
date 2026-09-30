@@ -2862,6 +2862,72 @@ public class AutonomyCompanionStore
 
             configuration.put("points", renamedPoints);
         }
+
+        // AND THE NAMES MADE FROM THE PAGE'S NAME, where a timetable leg or a train's road stores them (RSA5-B2).  A square
+        // with no name of its own is named "page x,y", so the rename renamed its Points, and the load then dropped every
+        // leg through it and every road.
+        final java.util.regex.Pattern made = java.util.regex.Pattern.compile("^" + java.util.regex.Pattern.quote(from)
+            + " (\\d+,\\d+)( \\(.*)?$");
+
+        for (JSONObject configuration : configurations.values())
+        {
+            renameStoredPoints(configuration, name ->
+            {
+                java.util.regex.Matcher m = made.matcher(name);
+
+                return m.matches() ? to + " " + m.group(1) + (m.group(2) == null ? "" : m.group(2)) : name;
+            });
+        }
+    }
+
+    /**
+     * Every Point name a configuration stores by name - its timetable's legs and each standing train's road - through a
+     * rename, in place (RSA5-B2).  Everything else in it is keyed by square.
+     *
+     * @param configuration the configuration
+     * @param rename a Point name to what it is called now, or itself
+     */
+    static void renameStoredPoints(JSONObject configuration, java.util.function.UnaryOperator<String> rename)
+    {
+        JSONObject globals = configuration.optJSONObject("globals");
+
+        JSONArray table = globals == null ? null : globals.optJSONArray("timetable");
+
+        for (int i = 0; table != null && i < table.length(); i++)
+        {
+            JSONObject entry = table.optJSONObject(i);
+
+            JSONArray path = entry == null ? null : entry.optJSONArray("path");
+
+            for (int j = 0; path != null && j < path.length(); j++)
+            {
+                JSONObject leg = path.optJSONObject(j);
+
+                for (String end : new String[] {"start", "end"})
+                {
+                    if (leg != null && leg.opt(end) instanceof String) leg.put(end, rename.apply(leg.getString(end)));
+                }
+            }
+        }
+
+        JSONObject points = configuration.optJSONObject("points");
+
+        for (String id : points == null ? java.util.Collections.<String>emptySet() : points.keySet())
+        {
+            JSONObject point = points.optJSONObject(id);
+
+            JSONArray road = point == null ? null : point.optJSONArray("arrivedAlong");
+
+            for (int j = 0; road != null && j < road.length(); j++)
+            {
+                JSONArray step = road.optJSONArray(j);
+
+                for (int k = 0; step != null && k < step.length(); k++)
+                {
+                    if (step.opt(k) instanceof String) step.put(k, rename.apply(step.getString(k)));
+                }
+            }
+        }
     }
 
     /**
@@ -3142,6 +3208,26 @@ public class AutonomyCompanionStore
             }
 
             configuration.put("points", moved);
+        }
+
+        // AND THE NAMES MADE FROM WHERE A MOVED SQUARE WAS, where a timetable leg or a train's road stores them (RSA5-B2):
+        // a square with no name of its own is named "page x,y", so a move renamed its Points
+        for (JSONObject configuration : configurations.values())
+        {
+            renameStoredPoints(configuration, name ->
+            {
+                for (Map.Entry<TileKey, TileKey> move : byKey.entrySet())
+                {
+                    String was = GraphReducer.generatedName(move.getKey());
+
+                    if (name.equals(was) || name.startsWith(was + " ("))
+                    {
+                        return GraphReducer.generatedName(move.getValue()) + name.substring(was.length());
+                    }
+                }
+
+                return name;
+            });
         }
 
         // A real move always changes the keys it is given, so the answer above is only interesting for

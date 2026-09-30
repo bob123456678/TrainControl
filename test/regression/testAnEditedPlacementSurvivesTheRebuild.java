@@ -588,4 +588,172 @@ public class testAnEditedPlacementSurvivesTheRebuild
             new Layout(model).makeCurrent();
         }
     }
+
+    /**
+     * A station renamed to the name another station has keeps both trains the last run left on the two (RSA5-A1): the
+     * name moves to the renamed square, the other square is called something else, and each train goes back on its own
+     * square.
+     *
+     * The carry took a name the rebuild still gives as the same Point, and the rebuild gives it to the other square: the
+     * train recorded there was stood on the renamed station, the train that stood on it was taken off the railway, and
+     * the square the first really stands on read free.  A train is carried by the square it stood on and its facing.
+     *
+     * MUTATION: take a name the rebuild still gives as the same Point, whatever square it is on now, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testARenameToAnotherStationsNameKeepsBothTrains() throws Exception
+    {
+        org.traincontrol.automationui.AutonomySession session = aRow("rsa5-a1", 8421, "Alpha", "Beta", "Gamma", "Delta");
+
+        try
+        {
+            model.parseAuto(session.buildConfiguration());
+
+            Layout running = model.getAutoLayout();
+
+            assertNotNull(running.getPoint("Beta (eastbound)"), "precondition: no Beta (eastbound): " + namesOf(running));
+            assertNotNull(running.getPoint("Gamma (eastbound)"), "precondition: no Gamma (eastbound): " + namesOf(running));
+
+            // THE RUN'S RESULT: one train on each, facing east - on the running layout alone
+            assertTrue(running.moveLocomotive(MOVED, "Beta (eastbound)", false), "precondition: " + MOVED + " not stood");
+            assertTrue(running.moveLocomotive(STAYER, "Gamma (eastbound)", false), "precondition: " + STAYER + " not stood");
+
+            Map<String, String[]> standing = TrainControlUI.whereTheTrainsAre(running);
+
+            // BETA RENAMED GAMMA, and the rebuild it makes: the name goes to main 3,1, main 5,1 becomes Gamma (2)
+            session.setPointName(new org.traincontrol.automationui.TileGraph.TileKey("main", 3, 1), "Gamma");
+
+            model.parseAuto(session.buildConfiguration());
+
+            Layout built = model.getAutoLayout();
+
+            assertNotNull(built.getPoint("Gamma (2) (eastbound)"), "precondition: main 5,1 is not Gamma (2): "
+                + namesOf(built));
+
+            TrainControlUI.putTheTrainsBack(built, standing, null, null, session::pointNamedNow);
+
+            Point renamed = built.getPoint("Gamma (eastbound)");
+            Point other = built.getPoint("Gamma (2) (eastbound)");
+
+            assertTrue(renamed.getCurrentLocomotive() != null && MOVED.equals(renamed.getCurrentLocomotive().getName()),
+                MOVED + ", left on Beta, is not on it once Beta was renamed Gamma (RSA5-A1): " + standingOn(built));
+
+            assertTrue(other.getCurrentLocomotive() != null && STAYER.equals(other.getCurrentLocomotive().getName()),
+                STAYER + ", left on the station that was Gamma, is not on it once another station took the name - moved"
+                + " onto the renamed one, or off the railway (RSA5-A1): " + standingOn(built));
+        }
+        finally
+        {
+            new Layout(model).makeCurrent();
+        }
+    }
+
+    /**
+     * Stations in a row at 1,1, 3,1, 5,1 and on, one per name, on sensors from the one given: a session of its own, in a
+     * folder of its own.
+     */
+    private static org.traincontrol.automationui.AutonomySession aRow(String folderName, int firstSensor,
+        String... names) throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory(folderName).toFile();
+
+        folder.deleteOnExit();
+
+        org.traincontrol.base.LayoutDiagram page = new org.traincontrol.base.LayoutDiagram("main", 2 * names.length + 1,
+            3, null, null);
+
+        for (int i = 0; i < names.length; i++)
+        {
+            page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK, 1 + 2 * i, 1, 0, 0,
+                firstSensor + i, firstSensor + i, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+
+            if (i + 1 < names.length)
+            {
+                page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.STRAIGHT, 2 + 2 * i, 1, 0, 0,
+                    0, 0, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+            }
+        }
+
+        page.setPageId("1");
+
+        org.traincontrol.automationui.AutonomySession session = new org.traincontrol.automationui.AutonomySession(folder);
+
+        session.open(java.util.Arrays.asList(page));
+        session.initialize(folderName);
+
+        for (int i = 0; i < names.length; i++)
+        {
+            org.traincontrol.automationui.TileGraph.TileKey square =
+                new org.traincontrol.automationui.TileGraph.TileKey("main", 1 + 2 * i, 1);
+
+            session.setStation(square, true);
+            session.setPointName(square, names[i]);
+        }
+
+        return session;
+    }
+
+    private static String standingOn(Layout layout)
+    {
+        java.util.List<String> out = new java.util.ArrayList<>();
+
+        for (Point p : layout.getPoints())
+        {
+            if (p.getCurrentLocomotive() != null) out.add(p.getCurrentLocomotive().getName() + " on " + p.getName());
+        }
+
+        return out.toString();
+    }
+
+    /**
+     * A direction that would leave a train the last run left on a station with no copy facing its way is refused (RSA5-A2):
+     * the train stands where the running layout has it, facing west, and the setup still has it where the run began -
+     * so the railway's trains are asked, not only the setup's.
+     *
+     * MUTATION: ask the setup's trains alone, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testADirectionUnderATrainTheRunLeftIsRefused() throws Exception
+    {
+        org.traincontrol.automationui.AutonomySession session = aRow("rsa5-a2", 8431, "Alpha", "Beta", "Gamma");
+
+        try
+        {
+            model.parseAuto(session.buildConfiguration());
+
+            Layout running = model.getAutoLayout();
+
+            session.setRunningLayoutSource(() -> model.getAutoLayout());
+
+            // THE RUN'S RESULT: on Beta, facing west - on the running layout alone
+            assertTrue(running.moveLocomotive(MOVED, "Beta (westbound)", false), "precondition: " + MOVED
+                + " not stood on Beta (westbound): " + namesOf(running));
+
+            // ONE WAY, EASTWARD, either side of Beta, from the diagram's menu
+            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> either = new java.util.LinkedHashSet<>();
+
+            either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 2, 1));
+            either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 4, 1));
+
+            session.setDirection(either, org.traincontrol.automationui.TileGraph.Direction.TOWARD_A);
+
+            String refused = session.takeDirectionRefusal();
+
+            assertTrue(refused != null && refused.contains(MOVED), "a direction that leaves " + MOVED + ", standing on"
+                + " Beta facing west, with no copy facing its way was not refused (RSA5-A2): " + refused);
+
+            assertTrue(session.pointNamesFor("Beta").contains("Beta (westbound)"), "a direction refused was set anyway: "
+                + session.pointNamesFor("Beta"));
+        }
+        finally
+        {
+            session.setRunningLayoutSource(null);
+
+            new Layout(model).makeCurrent();
+        }
+    }
 }

@@ -13050,6 +13050,13 @@ public class Layout
                     layout.getPoint(point.getString("name")).setBlock(point.optString("block", null));
                 }
 
+                // AND WHICH SQUARE OF THE DIAGRAM IT IS A COPY OF (RSA5-A1): what a rebuild carries a train by, since a
+                // rename can hand a Point's name to another square
+                if (point.has("square"))
+                {
+                    layout.getPoint(point.getString("name")).setSquare(point.optString("square", null));
+                }
+
                 // The signals thrown to red while this platform is claimed.  Absent everywhere they
                 // have not been paired, and on everything hand-written.
                 //

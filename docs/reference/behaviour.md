@@ -2007,6 +2007,13 @@ surface that reaches this most often has no editor in it at all - the track diag
 right-click autonomy menu rebuilds after every gesture, and nothing on that path ever captures where
 the trains are.
 
+**A direction that would leave a standing train with no copy facing its way is refused** (RSA5-A2).  The copy a
+train stands on is its direction, and a one-way run set through a station against the way a train there faces leaves
+the square no copy facing it: the rebuild could not put the train back, and a build from the setup turned it round in
+silence.  So every direction door - a click on the track, a switch's arms, the per-route radio, All branches, One-Way
+Run - asks first, of the railway's trains and the setup's, and a refusal names the train and the station and says to
+move the train first.  `core.testAutonomyDiagramSession.testADirectionThatWouldTurnAStandingTrainIsRefused`.
+
 **So the Facing menu is about the train the RAILWAY has on the square** (TDY4-C5, 2026-09-24). After a run
 the setup can still name a square's pre-run occupant while another train stands there. The menu named the
 setup's train, ticked the railway's, and a click turned neither - it wrote the setup's record and looked for
@@ -2465,11 +2472,21 @@ train's road and where the trains stand all name Points, and a Point is named af
 a heading where the square is more than one copy.  So a station renamed, or a square given more copies or fewer, carries
 each to the copy it named: every configuration's timetable and roads - the one in use by its build, every other across a
 rename alone, since its own build may differ - and, across the rebuild the setup's doors make, each train the last run
-left somewhere, to the same copy under the square's new name or to the copy facing the same way.  A page ticked out of
-autonomy and back in keeps its timetable entries: its load drops them, and the fold made while it is out keeps each
-entry the load could not read, where the timetable is otherwise the one stored - one recorded, cleared, deleted or moved
-meanwhile is the operator's timetable, and is stored as it is (RSA4-B2).  `core.testAutonomyDiagramSession`,
-`regression.testAnEditedPlacementSurvivesTheRebuild`.
+left somewhere, its road and a turn it is owed, to the same copy under the square's new name or to the copy facing the
+same way.  **By the square, not the name** (RSA5-A1, RSA5-C2): a station renamed to the name another has hands that name
+to the renamed square, so each running Point says which square it is a copy of, and a stored name the build now gives
+another square is traced from the square it named.  Where no copy of the square faces a train's way there is none to
+put it on - and the direction that would do that is refused while it stands there (6a).  A page renamed, or a square
+with no name of its own moved on its page, carries the names made from it - *page x,y* - into every configuration's
+timetable and roads (RSA5-B2).
+
+**A page ticked out of autonomy and back in keeps its timetable entries** (RSA4-B2, RSA5-B1).  Its load drops every
+entry through it, and each fold while it is out keeps them - through whatever else happens to the timetable meanwhile:
+an entry recorded, deleted or moved, or another dropped by the load for its own reason.  Each goes back after the entry
+its nearest earlier neighbour became, or first where none is left.  **Clear clears them with the rest**, at once
+(RSA5-C1).  Nothing else the load could not read is kept: an entry naming a station removed, or a locomotive the
+database no longer has, is erased by the next fold, as it was before.  `core.testAutonomyDiagramSession`,
+`regression.testAnEditedPlacementSurvivesTheRebuild`, `regression.testTheImportDoorReadsAnOldFile`.
 
 **The Yes to "reloading will stop the trains" stops every train where it is** (RSA-C1).  Graceful Stop lets each journey
 finish; the Yes also counts a stop, which every journey carries from where it was chosen and asks before and after each

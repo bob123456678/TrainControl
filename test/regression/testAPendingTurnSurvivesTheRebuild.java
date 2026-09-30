@@ -253,4 +253,112 @@ public class testAPendingTurnSurvivesTheRebuild
     {
         javax.swing.SwingUtilities.invokeAndWait(() -> { });
     }
+
+    /**
+     * A turn the railway owes at a station renamed since is carried to the station's new name (RSA5-C2): the turns owed
+     * are carried across a rebuild by the name of the Point the train turned at, and after a rename no Point had it -
+     * the turn was never written and never forgotten, and the train stayed on the copy facing the way it came in.
+     *
+     * MUTATION: carry the turns owed by the names recorded alone, and this fails.
+     *
+     * @throws Exception on an event-thread failure
+     */
+    @Test
+    public void testATurnOwedAtARenamedStationFollowsTheRename() throws Exception
+    {
+        Layout before = model.getAutoLayout();
+
+        assertNotNull(before, "there is no running layout to record a turn on");
+
+        // A COPY OF A STATION WITH A NAME OF ITS OWN, nobody on it
+        org.traincontrol.automation.Point at = null;
+        org.traincontrol.automationui.TileGraph.TileKey square = null;
+
+        for (org.traincontrol.automation.Point p : before.getPoints())
+        {
+            if (at != null || !p.isDestination() || p.getCurrentLocomotive() != null) continue;
+
+            org.traincontrol.automationui.TileGraph.TileKey sq = session.getStationIndex().squareOf(p.getName());
+
+            if (sq != null && session.getStore().getPointName(sq) != null)
+            {
+                at = p;
+                square = sq;
+            }
+        }
+
+        assertNotNull(at, "precondition: his railway has no named station free");
+
+        final org.traincontrol.automationui.TileGraph.TileKey renamedSquare = square;
+        final String oldName = session.getStore().getPointName(square);
+        final String renamed = "RSA5 turn renamed";
+
+        Map<String, String> owed = before.takeReversalsOnArrival();
+
+        try
+        {
+            before.restoreReversalsOnArrival(Collections.singletonMap(PENDING_LOC, at.getName()));
+
+            // THE PRECONDITION, MEASURED: nobody can write it, so it is still owed at the rename
+            ui.reconcileFacingWhenIdle();
+
+            pump();
+
+            Map<String, String> stillOwed = before.takeReversalsOnArrival();
+
+            assertEquals(stillOwed.get(PENDING_LOC), at.getName(), "precondition: the drain consumed the turn");
+
+            before.restoreReversalsOnArrival(stillOwed);
+
+            // THE RENAME, from the diagram's setup menu, and the rebuild it makes
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                session.setPointName(renamedSquare, renamed);
+
+                ui.rebuildRunningLayoutFromSetup(true, null);
+            });
+
+            pump();
+
+            Layout after = model.getAutoLayout();
+
+            assertNotSame(after, before, "precondition: the rename rebuilt nothing");
+
+            Map<String, String> carried = after.takeReversalsOnArrival();
+
+            try
+            {
+                String now = carried.get(PENDING_LOC);
+
+                assertTrue(now != null && now.startsWith(renamed)
+                    && renamedSquare.equals(session.getStationIndex().squareOf(now)), "a turn owed at " + at.getName()
+                    + " was carried by that name, which the rename gave no Point, so it is never written (RSA5-C2): "
+                    + carried);
+            }
+            finally
+            {
+                after.restoreReversalsOnArrival(carried);
+            }
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                session.setPointName(renamedSquare, oldName);
+
+                ui.rebuildRunningLayoutFromSetup(true, null);
+            });
+
+            pump();
+
+            if (model.hasAutoLayout())
+            {
+                Layout now = model.getAutoLayout();
+
+                now.takeReversalsOnArrival();
+
+                now.restoreReversalsOnArrival(owed);
+            }
+        }
+    }
 }

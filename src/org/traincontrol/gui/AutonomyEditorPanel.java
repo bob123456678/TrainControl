@@ -4290,9 +4290,28 @@ public class AutonomyEditorPanel extends JPanel
         setupChanged();
     }
 
+    /**
+     * Says why the session refused the direction just asked for, in a popup, where it did (RSA5-A2): one that would leave
+     * a train standing on a square with no copy facing its way.  Every direction door asks it.
+     *
+     * @return true when it was refused
+     */
+    private boolean refusedADirection()
+    {
+        String why = session.takeDirectionRefusal();
+
+        if (why == null) return false;
+
+        JOptionPane.showMessageDialog(owner(), why);
+
+        return true;
+    }
+
     private void setAllBranches(TileKey tile, Direction direction)
     {
         session.setDirection(new LinkedHashSet<>(java.util.Arrays.asList(tile)), direction);
+
+        if (refusedADirection()) return;
 
         // THE ARROWS, NOT THE DIAGRAM (MT-334).
         //
@@ -7403,6 +7422,12 @@ public class AutonomyEditorPanel extends JPanel
                 ? session.setOneWayRun(from, tile)
                 : session.setOneWayRun(tile, from);
 
+            if (refusedADirection())
+            {
+                refresh();
+                return;
+            }
+
             say(hint, changed < 0 ? I18n.t("autosetup.ui.oneWayNoPath")
                 : I18n.f("autosetup.ui.oneWayDone", changed));
 
@@ -7612,6 +7637,12 @@ public class AutonomyEditorPanel extends JPanel
 
         int changed = session.setRunDirection(target, only.getKey(), next);
 
+        if (refusedADirection())
+        {
+            refresh();
+            return;
+        }
+
         // The tile that changed can be some way from the one clicked, at the head of a long run, so it
         // is flashed as well as named - a message about a square nobody can find is half an answer.
         if (!target.equals(tile) && onReveal != null) onReveal.accept(target);
@@ -7682,7 +7713,11 @@ public class AutonomyEditorPanel extends JPanel
             }
         }
 
-        applyArmMask(target, routes, sides, next);
+        if (!applyArmMask(target, routes, sides, next))
+        {
+            refresh();
+            return;
+        }
 
         say(hint, I18n.f("autosetup.ui.cycledSwitch", describeTile(target), armState(next, sides)));
 
@@ -7698,7 +7733,7 @@ public class AutonomyEditorPanel extends JPanel
      * directions are what the model stores.  One translation, used by the click and by the checkboxes,
      * so the two cannot come to different conclusions about the same square.
      */
-    private void applyArmMask(TileKey target,
+    private boolean applyArmMask(TileKey target,
         Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes,
         java.util.List<org.traincontrol.automationui.TilePorts.Side> sides, int mask)
     {
@@ -7720,6 +7755,8 @@ public class AutonomyEditorPanel extends JPanel
         // One re-derivation for the tile, not one per branch
         session.setDirections(target, wanted);
 
+        if (refusedADirection()) return false;
+
         // THE ARROWS, NOT THE DIAGRAM (MT-334).
         //
         // Adam, after OB-185's fix: "it still flickers, but less", and the whole diagram still
@@ -7732,6 +7769,8 @@ public class AutonomyEditorPanel extends JPanel
         // setupChanged does, which is what the note this replaces was about.
         // Directions are edges in the running graph (VD11-A1).
         annotationsChanged();
+
+        return true;
     }
 
     /**
@@ -9215,7 +9254,15 @@ public class AutonomyEditorPanel extends JPanel
 
             // Set on the run, not the tile: a run of plain track has one direction, and setting it a
             // tile at a time is both busywork and a way to end up with a run that contradicts itself.
-            if (session.setRunDirection(tile, routeId, direction) == 0)
+            int set = session.setRunDirection(tile, routeId, direction);
+
+            if (refusedADirection())
+            {
+                refresh();
+                return;
+            }
+
+            if (set == 0)
             {
                 say(hint, I18n.t("autosetup.ui.oneWayNoPath"));
             }
