@@ -756,4 +756,262 @@ public class testAnEditedPlacementSurvivesTheRebuild
             new Layout(model).makeCurrent();
         }
     }
+
+    /**
+     * A carry across a load after squares were moved puts each train back on its own station (RSA7-B3): while a declined
+     * edit waits the trains are carried by the square the railway says each stands on, and after a move the railway said
+     * the square as it was - so each train went on the station that had taken its old square.  A move moves the squares
+     * the railway's Points say they are copies of, as it moves the setup's.
+     *
+     * MUTATION: move the setup's squares and not the railway's, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testACarryAfterAMoveKeepsEachTrainOnItsStation() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("rsa7-b3-move").toFile();
+
+        folder.deleteOnExit();
+
+        org.traincontrol.automationui.AutonomySession session = sessionOn(folder, aRowPage("main", 0, 8441, 4), "B3 move",
+            "Alpha", "Beta", "Gamma", "Delta");
+
+        try
+        {
+            model.parseAuto(session.buildConfiguration());
+
+            Layout running = model.getAutoLayout();
+
+            session.setRunningLayoutSource(() -> model.getAutoLayout());
+
+            assertTrue(running.moveLocomotive(MOVED, "Gamma (eastbound)", false), "precondition: " + MOVED + " not stood"
+                + " on Gamma: " + namesOf(running));
+
+            // TWO COLUMNS INSERTED at the left, as the track editor moves the squares and tells the setup
+            java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey>
+                moves = new java.util.LinkedHashMap<>();
+
+            for (int x = 7; x >= 1; x--)
+            {
+                moves.put(new org.traincontrol.automationui.TileGraph.TileKey("main", x, 1),
+                    new org.traincontrol.automationui.TileGraph.TileKey("main", x + 2, 1));
+            }
+
+            session.moveTiles(moves);
+            session.saveWithoutReconciling();
+
+            // THE SAVE'S LOAD, a declined edit waiting: the trains carried across by where the railway says they stand
+            Map<String, String[]> standing = TrainControlUI.whereTheTrainsAre(running);
+
+            org.traincontrol.automationui.AutonomySession next = sessionOver(folder, aRowPage("main", 2, 8441, 4));
+
+            model.parseAuto(next.buildConfiguration());
+
+            Layout built = model.getAutoLayout();
+
+            TrainControlUI.putTheTrainsBack(built, standing, null, null, next::pointNamedNow);
+
+            assertTrue(stoodOn(built, MOVED, "main:7,1", "Gamma"), MOVED + ", left on Gamma, is not on it after Gamma's"
+                + " square was moved two columns (RSA7-B3): " + standingOn(built));
+        }
+        finally
+        {
+            new Layout(model).makeCurrent();
+        }
+    }
+
+    /**
+     * A carry across a load after a page was renamed puts each train back on its own station (RSA7-B3): the railway said
+     * each train's square under the page's old name, which no square has, so every train on the page was left where the
+     * setup last had it.  A rename moves the squares the railway's Points say they are copies of, as it moves the setup's.
+     *
+     * MUTATION: rename the setup's page and not the railway's squares, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testACarryAfterAPageRenameKeepsEachTrainOnItsStation() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("rsa7-b3-rename").toFile();
+
+        folder.deleteOnExit();
+
+        org.traincontrol.automationui.AutonomySession session = sessionOn(folder, aRowPage("main", 0, 8451, 4),
+            "B3 rename", "Alpha", "Beta", "Gamma", "Delta");
+
+        try
+        {
+            model.parseAuto(session.buildConfiguration());
+
+            Layout running = model.getAutoLayout();
+
+            session.setRunningLayoutSource(() -> model.getAutoLayout());
+
+            assertTrue(running.moveLocomotive(MOVED, "Gamma (eastbound)", false), "precondition: " + MOVED + " not stood"
+                + " on Gamma: " + namesOf(running));
+
+            // THE PAGE RENAMED, as the track diagram's rename makes it
+            session.renamePage("main", "yard");
+            session.saveWithoutReconciling();
+
+            Map<String, String[]> standing = TrainControlUI.whereTheTrainsAre(running);
+
+            org.traincontrol.automationui.AutonomySession next = sessionOver(folder, aRowPage("yard", 0, 8451, 4));
+
+            model.parseAuto(next.buildConfiguration());
+
+            Layout built = model.getAutoLayout();
+
+            TrainControlUI.putTheTrainsBack(built, standing, null, null, next::pointNamedNow);
+
+            assertTrue(stoodOn(built, MOVED, "yard:5,1", "Gamma"), MOVED + ", left on Gamma, is not on it after its page"
+                + " was renamed (RSA7-B3): " + standingOn(built));
+        }
+        finally
+        {
+            new Layout(model).makeCurrent();
+        }
+    }
+
+    /**
+     * A move cancelled puts the railway's squares back with the setup's (RSA7-B3): a move moves the squares the railway's
+     * Points say they are copies of, and a Cancel that put back the setup alone left the carry reading every train's
+     * square as the move had made it, against the pages as they were - each train on the station that had its square.
+     *
+     * MUTATION: put the setup back and not the railway's squares, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testACancelledMovePutsTheRailwaysSquaresBack() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("rsa7-b3-cancel").toFile();
+
+        folder.deleteOnExit();
+
+        org.traincontrol.automationui.AutonomySession session = sessionOn(folder, aRowPage("main", 0, 8461, 4),
+            "B3 cancel", "Alpha", "Beta", "Gamma", "Delta");
+
+        try
+        {
+            model.parseAuto(session.buildConfiguration());
+
+            Layout running = model.getAutoLayout();
+
+            session.setRunningLayoutSource(() -> model.getAutoLayout());
+
+            assertTrue(running.moveLocomotive(MOVED, "Gamma (eastbound)", false), "precondition: " + MOVED + " not stood"
+                + " on Gamma: " + namesOf(running));
+
+            // THE EDITOR OPENED, two columns inserted, and Cancel
+            org.json.JSONObject asOpened = session.snapshotSetup();
+
+            java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey>
+                moves = new java.util.LinkedHashMap<>();
+
+            for (int x = 7; x >= 1; x--)
+            {
+                moves.put(new org.traincontrol.automationui.TileGraph.TileKey("main", x, 1),
+                    new org.traincontrol.automationui.TileGraph.TileKey("main", x + 2, 1));
+            }
+
+            session.moveTiles(moves);
+
+            assertTrue(stoodOn(running, MOVED, "main:7,1", "Gamma"), "precondition: the move did not move the railway's"
+                + " squares: " + standingOn(running));
+
+            assertTrue(session.restoreSetup(asOpened), "precondition: Cancel could not put the setup back");
+
+            // THE RESET'S LOAD, a declined edit waiting, over the pages as they were
+            Map<String, String[]> standing = TrainControlUI.whereTheTrainsAre(running);
+
+            org.traincontrol.automationui.AutonomySession next = sessionOver(folder, aRowPage("main", 0, 8461, 4));
+
+            model.parseAuto(next.buildConfiguration());
+
+            Layout built = model.getAutoLayout();
+
+            TrainControlUI.putTheTrainsBack(built, standing, null, null, next::pointNamedNow);
+
+            assertTrue(stoodOn(built, MOVED, "main:5,1", "Gamma"), MOVED + ", left on Gamma, is not on it after a move"
+                + " was cancelled (RSA7-B3): " + standingOn(built));
+        }
+        finally
+        {
+            new Layout(model).makeCurrent();
+        }
+    }
+
+    /** One line of stations, one per sensor from the first given, starting that many columns in: its page. */
+    private static org.traincontrol.base.LayoutDiagram aRowPage(String name, int offset, int firstSensor, int count)
+        throws Exception
+    {
+        org.traincontrol.base.LayoutDiagram page = new org.traincontrol.base.LayoutDiagram(name, 2 * count + 1 + offset,
+            3, null, null);
+
+        for (int i = 0; i < count; i++)
+        {
+            page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK, offset + 1 + 2 * i, 1,
+                0, 0, firstSensor + i, firstSensor + i, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+
+            if (i + 1 < count)
+            {
+                page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.STRAIGHT, offset + 2 + 2 * i,
+                    1, 0, 0, 0, 0, org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+            }
+        }
+
+        page.setPageId("1");
+
+        return page;
+    }
+
+    /** A session over this page in this folder, a configuration of this name, its stations named in order. */
+    private static org.traincontrol.automationui.AutonomySession sessionOn(java.io.File folder,
+        org.traincontrol.base.LayoutDiagram page, String configuration, String... names) throws Exception
+    {
+        org.traincontrol.automationui.AutonomySession session = new org.traincontrol.automationui.AutonomySession(folder);
+
+        session.open(java.util.Arrays.asList(page));
+        session.initialize(configuration);
+
+        for (int i = 0; i < names.length; i++)
+        {
+            org.traincontrol.automationui.TileGraph.TileKey square =
+                new org.traincontrol.automationui.TileGraph.TileKey(page.getName(), 1 + 2 * i, 1);
+
+            session.setStation(square, true);
+            session.setPointName(square, names[i]);
+        }
+
+        session.save();
+
+        return session;
+    }
+
+    /** The next session over the setup in this folder, on this page, as a reset opens it. */
+    private static org.traincontrol.automationui.AutonomySession sessionOver(java.io.File folder,
+        org.traincontrol.base.LayoutDiagram page) throws Exception
+    {
+        org.traincontrol.automationui.AutonomySession next = new org.traincontrol.automationui.AutonomySession(folder);
+
+        next.open(java.util.Arrays.asList(page));
+
+        return next;
+    }
+
+    /** Whether the train stands on a Point of that square whose name begins so. */
+    private static boolean stoodOn(Layout layout, String train, String square, String name)
+    {
+        for (Point p : layout.getPoints())
+        {
+            if (p.getCurrentLocomotive() != null && train.equals(p.getCurrentLocomotive().getName()))
+            {
+                return square.equals(p.getSquare()) && p.getName().startsWith(name);
+            }
+        }
+
+        return false;
+    }
 }

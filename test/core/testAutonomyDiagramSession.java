@@ -1757,6 +1757,215 @@ public class testAutonomyDiagramSession
             + " left changed");
     }
 
+    /**
+     * A square deleted in the track editor, and the edit cancelled, keeps its train and its settings (RSA7-A1): Cancel
+     * puts the setup back as the editor opened it, and the reset's fold after it judged "a square whose tile is gone"
+     * against the page the editor had emptied - so it erased what Cancel had just put back.  No fold follows a square
+     * removed until the setup is opened again, as none follows a move: opening the editor folded already.
+     *
+     * MUTATION: let the fold run after a square is removed, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testACancelledDeleteKeepsTheSquaresSetup() throws Exception
+    {
+        LayoutDiagram page = threeStationsInARow("A1 cancel");
+
+        TileKey beta = new TileKey("main", 3, 1);
+
+        session.setPointName(new TileKey("main", 1, 1), "Alpha");
+        session.setPointName(beta, "Beta");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+
+        session.placeLocomotive(beta, "A1 train");
+        session.setPointProperty(beta, "maxTrainLength", 321);
+        session.rebuild();
+
+        // THE RAILWAY RUNNING, and the editor opened: its fold, then its undo point
+        org.json.JSONObject running = new org.json.JSONObject(session.buildConfiguration());
+
+        session.captureFromLayout(running.toString());
+
+        org.json.JSONObject asOpened = session.snapshotSetup();
+
+        // BETA DELETED, as the editor deletes a square: the page's own square emptied, and the setup told
+        page.addComponent(null, 3, 1);
+        session.forgetTiles(java.util.Collections.singletonList(beta));
+
+        assertNull(session.getLocomotiveNameAt(beta), "precondition: the delete forgot nothing");
+
+        // CANCEL: the setup put back as the editor opened it, then the reset's fold of the railway running
+        assertTrue(session.restoreSetup(asOpened), "precondition: Cancel could not put the setup back");
+
+        assertEquals(session.getLocomotiveNameAt(beta), "A1 train", "precondition: Cancel did not put the train back");
+
+        session.captureFromLayout(running.toString());
+
+        assertEquals(session.getLocomotiveNameAt(beta), "A1 train", "the fold after a Cancel erased the train the Cancel"
+            + " had put back on a square deleted and restored (RSA7-A1)");
+
+        assertEquals(String.valueOf(session.getPointProperty(beta, "maxTrainLength")), "321", "the fold after a Cancel"
+            + " erased the settings the Cancel had put back (RSA7-A1)");
+    }
+
+    /**
+     * A facing the last train at a dead end left there refuses no direction elsewhere (RSA7-B1): a train on a copy that
+     * records no facing faces its only way out, whatever an earlier train left written on the square, and the refusal
+     * asks only about a train the change itself would turn.  One stale record refused every direction and every link on
+     * the railway, naming a train nothing was changing.
+     *
+     * MUTATION: put the refusal back as it was - the facing from the setup's record, every train asked - and this fails.
+     * Either half of the fix alone keeps it: the two claims after it pin each.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAStaleFacingAtADeadEndRefusesNothingElse() throws Exception
+    {
+        threeStationsInARow("B1 stale");
+
+        TileKey alpha = new TileKey("main", 1, 1);
+
+        session.setPointName(alpha, "Alpha");
+        session.setPointName(new TileKey("main", 3, 1), "Beta");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+
+        // THE FACING THE LAST TRAIN THERE LEFT, toward the buffer - and the rail out made one way away while it stood empty
+        session.setFacing(alpha, org.traincontrol.automationui.TilePorts.Side.W);
+        session.setDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_A);
+
+        assertNull(session.takeDirectionRefusal(), "precondition: a direction with nothing standing there was refused");
+
+        // A TRAIN PLACED THERE BY HAND, the record left as it was
+        session.placeLocomotive(alpha, "B1 stale train");
+
+        assertEquals(session.getFacing(alpha), org.traincontrol.automationui.TilePorts.Side.W, "precondition: the old"
+            + " facing is not still recorded");
+
+        // A DIRECTION ELSEWHERE
+        session.setDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.TOWARD_A);
+
+        String refused = session.takeDirectionRefusal();
+
+        assertNull(refused, "a direction that turns no train was refused over the facing the last train at a dead end"
+            + " left there (RSA7-B1): " + refused);
+    }
+
+    /**
+     * A dead end whose only rail was made one way away, and a train placed there facing its way out: making the rail two
+     * way again, which would leave the train facing the buffer with no way out, is refused (RSA7-B1).  The copy records
+     * no facing, and the train on it was not asked about at all.
+     *
+     * MUTATION: take a train on a copy with no facing as facing nothing, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testADeadEndMadeTwoWayUnderATrainFacingOutIsRefused() throws Exception
+    {
+        threeStationsInARow("B1 out");
+
+        TileKey alpha = new TileKey("main", 1, 1);
+
+        session.setPointName(alpha, "Alpha");
+        session.setPointName(new TileKey("main", 3, 1), "Beta");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+
+        // THE RAIL OUT MADE ONE WAY AWAY, and a train placed there: it faces its only way out, and nothing is recorded
+        session.setDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_A);
+
+        assertNull(session.takeDirectionRefusal(), "precondition: a direction with nothing standing there was refused");
+
+        session.placeLocomotive(alpha, "B1 out train");
+
+        assertNull(session.getFacing(alpha), "precondition: a facing is recorded at the dead end");
+
+        // TWO WAY AGAIN
+        session.setDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.BOTH);
+
+        String refused = session.takeDirectionRefusal();
+
+        assertTrue(refused != null && refused.contains("B1 out train"), "making a dead end two way again, under a train"
+            + " facing its way out, was not refused - the train is left facing the buffer (RSA7-B1): " + refused);
+    }
+
+    /**
+     * A dead end made two way again under a train placed there by hand is refused whatever facing the last train there
+     * left (RSA7-B1): the train stands on a copy that records no facing, so it faces its only way out - the record said
+     * the buffer, and the refusal, reading it, let the rail be made two way and the train was left facing the buffer.
+     *
+     * MUTATION: read such a train's facing from the setup's record, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testADeadEndMadeTwoWayIsRefusedWhateverTheLastTrainLeft() throws Exception
+    {
+        threeStationsInARow("B1 left");
+
+        TileKey alpha = new TileKey("main", 1, 1);
+
+        session.setPointName(alpha, "Alpha");
+        session.setPointName(new TileKey("main", 3, 1), "Beta");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+
+        // THE FACING THE LAST TRAIN THERE LEFT, toward the buffer; the rail out made one way away; a train placed there
+        session.setFacing(alpha, org.traincontrol.automationui.TilePorts.Side.W);
+        session.setDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_A);
+
+        assertNull(session.takeDirectionRefusal(), "precondition: a direction with nothing standing there was refused");
+
+        session.placeLocomotive(alpha, "B1 left train");
+
+        // TWO WAY AGAIN
+        session.setDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.BOTH);
+
+        String refused = session.takeDirectionRefusal();
+
+        assertTrue(refused != null && refused.contains("B1 left train"), "making a dead end two way again, under a train"
+            + " placed there facing its only way out, was not refused because the last train there faced the buffer"
+            + " (RSA7-B1): " + refused);
+    }
+
+    /**
+     * A train recorded facing a way no copy of its square faces is not asked about by a direction that leaves its square
+     * as it was (RSA7-B1): the change does not turn it.  The refusal asked of every train whether it would face a copy its
+     * way after the change - not whether it did before - so a facing an earlier train left refused every direction.
+     *
+     * MUTATION: ask about every train, not only one the change turns, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testATrainFacingNoCopyIsNotAskedAbout() throws Exception
+    {
+        threeStationsInARow("B1 none");
+
+        TileKey beta = new TileKey("main", 3, 1);
+
+        session.setPointName(new TileKey("main", 1, 1), "Alpha");
+        session.setPointName(beta, "Beta");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+
+        // A FACING LEFT WESTWARD, and the line then made one way east through Beta: Beta's one copy faces east
+        session.setFacing(beta, org.traincontrol.automationui.TilePorts.Side.W);
+        session.setDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_A);
+        session.setDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.TOWARD_A);
+
+        assertNull(session.takeDirectionRefusal(), "precondition: a direction with nothing standing there was refused");
+
+        session.placeLocomotive(beta, "B1 none train");
+
+        // THE RAIL WEST OF BETA TWO WAY: Beta's copies are as they were
+        session.setDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.BOTH);
+
+        String refused = session.takeDirectionRefusal();
+
+        assertNull(refused, "a direction that leaves Beta's copies as they were was refused over a train the change does"
+            + " not turn (RSA7-B1): " + refused);
+    }
+
     /** Stations at 1,1, 3,1 and 5,1 of one line, both ways, in a configuration of this name: its page. */
     private LayoutDiagram threeStationsInARow(String configuration) throws Exception
     {

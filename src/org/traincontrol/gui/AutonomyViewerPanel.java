@@ -590,6 +590,14 @@ public class AutonomyViewerPanel extends JPanel
      */
     public void choosePages()
     {
+        // NOT WHILE AUTONOMY RUNS, as the Autonomy menu's tick is not (RSA7-B2) - see `applyPages`
+        if (ui.isAutonomyBusy())
+        {
+            JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
+
+            return;
+        }
+
         java.util.List<org.traincontrol.base.LayoutDiagram> pages = session().getPages();
 
         // BoxLayout, not GridLayout: a grid gives every row the height of its tallest, so the wrapped
@@ -625,13 +633,73 @@ public class AutonomyViewerPanel extends JPanel
             return;
         }
 
+        java.util.Map<String, Boolean> out = new java.util.LinkedHashMap<>();
+
         for (java.util.Map.Entry<String, javax.swing.JCheckBox> entry : boxes.entrySet())
         {
-            session().setPageExcluded(entry.getKey(), !entry.getValue().isSelected());
+            out.put(entry.getKey(), !entry.getValue().isSelected());
+        }
+
+        applyPages(out);
+    }
+
+    /**
+     * The Pages dialog's choice applied as the Autonomy menu's tick applies one (RSA7-B2): refused while autonomy runs,
+     * asked first where a train is moving, and the railway rebuilt from the pages it now uses.  The dialog asked nothing
+     * and rebuilt nothing, so during a run it edited the setup under the railway, and at rest the railway went on running
+     * a page the setup said was out.
+     *
+     * @param out each page, and whether it is now out of autonomy
+     */
+    public void applyPages(java.util.Map<String, Boolean> out)
+    {
+        if (ui.isAutonomyBusy())
+        {
+            JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
+
+            return;
+        }
+
+        java.util.Map<String, Boolean> changed = new java.util.LinkedHashMap<>();
+
+        for (java.util.Map.Entry<String, Boolean> entry : out.entrySet())
+        {
+            if (session().getStore().getExcludedPages().contains(entry.getKey()) != entry.getValue())
+            {
+                changed.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        if (changed.isEmpty()) return;
+
+        // THE REBUILD STOPS EVERY TRAIN, so a train driven by hand is asked about first, as the menu asks
+        if (ui.getActiveDiagramConfiguration() != null)
+        {
+            java.util.List<String> moving = ui.locomotivesMoving();
+
+            if (!moving.isEmpty()
+                && JOptionPane.showOptionDialog(ui,
+                    I18n.f("autosetup.ui.confirmExcludeStopsTrains", String.valueOf(moving.size())),
+                    I18n.t("ui.dialogConfirm"), JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE, null,
+                    TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != 0)
+            {
+                return;
+            }
+        }
+
+        for (java.util.Map.Entry<String, Boolean> entry : changed.entrySet())
+        {
+            session().setPageExcluded(entry.getKey(), entry.getValue());
         }
 
         save();
         refresh();
+
+        ui.autonomyMenuActed();
+
+        // AND THE RAILWAY, so what is drawn and what is driven are built from one list of pages
+        ui.reloadActiveDiagramConfiguration();
     }
 
     // --- configurations ---------------------------------------------------------------------------

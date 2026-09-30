@@ -99,13 +99,69 @@ public class AutonomySession
     private boolean pagesStale = false;
 
     /**
-     * Whether squares have been moved since the railway running was built (RSA6-B2, RSA6-A2): the fold is refused until
-     * the next `open`, as it is after a page rename.  That railway names and places what it knows by the squares as they
-     * were, so the track editor's Save folded the old names back over the ones the move carried - and, where the move
-     * reordered two stations of one name, each train onto the other's.  Opening the editor folded already, and nothing
-     * runs while it is open, so nothing the refusal keeps out is new.
+     * Whether squares have been moved, removed or built over since the railway running was built (RSA6-B2, RSA6-A2,
+     * RSA7-A1): the fold is refused until the next `open`, as it is after a page rename.  That railway names and places
+     * what it knows by the squares as they were, so the track editor's Save folded the old names back over the ones the
+     * move carried - and, where the move reordered two stations of one name, each train onto the other's.  And after a
+     * square deleted and the edit cancelled, the fold judged the squares Cancel had put back against the page the editor
+     * had emptied, and erased them again.  Opening the editor folded already, and nothing runs while it is open, so
+     * nothing the refusal keeps out is new.
      */
     private boolean squaresMoved = false;
+
+    /**
+     * A page renamed: the setup's squares on it, and the railway's (RSA7-B3).
+     *
+     * @param from the page's name as it was
+     * @param to its name now
+     */
+    public void renamePage(String from, String to)
+    {
+        store.renamePage(from, to);
+
+        markPagesStale();
+
+        moveTheRailwaysSquares(square -> from.equals(square.getPage()) ? new TileKey(to, square.getX(), square.getY())
+            : square);
+    }
+
+    /**
+     * The squares the railway running says its Points are copies of, moved as the setup's are (RSA7-B3).
+     *
+     * While an edit declined during a run waits, a load carries each train by the square the railway says it stands on.
+     * A move, or a page renamed, moved the setup's squares and not the railway's, so the carry read each train's square
+     * as it was: after a move each train went onto the station that had taken its old square, and after a rename every
+     * train on the page was left where the setup last had it.
+     *
+     * @param to each square, to where it is now
+     */
+    private void moveTheRailwaysSquares(java.util.function.UnaryOperator<TileKey> to)
+    {
+        org.traincontrol.automation.Layout running = runningLayout == null ? null : runningLayout.get();
+
+        if (running == null) return;
+
+        for (org.traincontrol.automation.Point point : running.getPoints())
+        {
+            TileKey square = point.getSquare() == null ? null : AutonomyCompanionStore.parseTileKey(point.getSquare());
+
+            TileKey now = square == null ? null : to.apply(square);
+
+            if (now == null || now.equals(square)) continue;
+
+            railwaySquaresAsTheySaid.putIfAbsent(point, point.getSquare());
+
+            point.setSquare(now.toString());
+        }
+    }
+
+    /**
+     * Each running Point's square as it said before this session first moved it (RSA7-B3): what `restoreSetup` puts back
+     * with the setup, so the track editor's Cancel undoes a move on the railway as well.  Every move is made in the
+     * editor, after the snapshot its Cancel restores, and the editor's reset makes a new session.
+     */
+    private final Map<org.traincontrol.automation.Point, String> railwaySquaresAsTheySaid =
+        new java.util.IdentityHashMap<>();
 
     /**
      * Says that a page has been renamed and these page objects no longer describe the setup.
@@ -3180,6 +3236,14 @@ public class AutonomySession
 
         store.restoreSetup(was);
 
+        // AND THE RAILWAY'S SQUARES, as they said before this session moved them (RSA7-B3)
+        for (Map.Entry<org.traincontrol.automation.Point, String> said : railwaySquaresAsTheySaid.entrySet())
+        {
+            said.getKey().setSquare(said.getValue());
+        }
+
+        railwaySquaresAsTheySaid.clear();
+
         rebuild();
 
         return saveQuietly();
@@ -3297,6 +3361,15 @@ public class AutonomySession
             {
                 squaresMoved = true;
             }
+        }
+
+        // NOR AFTER A SQUARE REMOVED OR BUILT OVER (RSA7-A1) - see `squaresMoved`
+        if (builtOver != null && !builtOver.isEmpty()) squaresMoved = true;
+
+        // AND THE RAILWAY'S SQUARES MOVED WITH THE SETUP'S (RSA7-B3) - see `moveTheRailwaysSquares`
+        if (moves != null)
+        {
+            moveTheRailwaysSquares(square -> moves.get(square) != null ? moves.get(square) : square);
         }
 
         // The graph is built from the squares, so it is now describing the old ones - and touched()
@@ -7419,6 +7492,9 @@ public class AutonomySession
     /** Why the last direction asked for was not set, until a door takes it to say so. */
     private String directionRefusal;
 
+    /** The naming before the directions recorded, where a train stands to ask about (RSA7-B1), or null. */
+    private AutonomyBuilder namingBefore;
+
     /**
      * Why the last direction asked for, or link switched off, was not set, or null where it was - taken, so it is said
      * once (RSA5-A2, RSA6-A3).
@@ -7439,6 +7515,9 @@ public class AutonomySession
      */
     private void record(TileKey tile, RouteId routeId, Direction direction)
     {
+        // THE NAMING BEFORE, at the first of a batch: what the refusal asks whether the change turns a train against
+        if (directionsBefore.isEmpty()) namingBefore = namingWhereATrainStands();
+
         directionsBefore.putIfAbsent(java.util.Arrays.<Object>asList(tile, routeId), graph.getDirection(tile, routeId));
 
         apply(tile, routeId, direction);
@@ -7456,7 +7535,9 @@ public class AutonomySession
      */
     private boolean directionsTouched()
     {
-        Map<String, String> turned = trainsTheSetupWouldTurn();
+        Map<String, String> turned = trainsTheSetupWouldTurn(namingBefore);
+
+        namingBefore = null;
 
         if (!turned.isEmpty())
         {
@@ -7482,11 +7563,11 @@ public class AutonomySession
     }
 
     /**
-     * The trains the directions recorded would leave on a square with no copy facing their way, each against the
-     * station it stands on (RSA5-A2): the railway's trains, and the setup's where the railway has none of them, read by
-     * a reduction of the graph as it now stands - nothing derived from it, and nothing carried.
+     * The trains standing, each to its square and the way it is said to face, or null: the railway's, by the square and
+     * facing each running Point says (RSA6-A2), else by its name through today's naming; and the setup's where the
+     * railway has none of them (RSA5-A2).
      */
-    private Map<String, String> trainsTheSetupWouldTurn()
+    private Map<String, Object[]> standingTrains()
     {
         Map<String, Object[]> standing = new LinkedHashMap<>();
 
@@ -7505,7 +7586,7 @@ public class AutonomySession
                 if (square == null) square = squareOfNameNow.get(point.getName());
                 if (facing == null) facing = facingOfNameNow.get(point.getName());
 
-                if (loc == null || loc.getName() == null || square == null || facing == null) continue;
+                if (loc == null || loc.getName() == null || square == null) continue;
 
                 standing.putIfAbsent(loc.getName(), new Object[] {square, facing});
             }
@@ -7522,15 +7603,19 @@ public class AutonomySession
             TileKey square = AutonomyCompanionStore.parseTileKey(id);
 
             String train = square == null ? null : getLocomotiveNameAt(square);
-            Side facing = square == null ? null : getFacing(square);
 
-            if (train != null && facing != null) standing.putIfAbsent(train, new Object[] {square, facing});
+            if (train != null) standing.putIfAbsent(train, new Object[] {square, getFacing(square)});
         }
 
-        if (standing.isEmpty()) return Collections.emptyMap();
+        return standing;
+    }
 
-        // A GRAPH MADE AS A REBUILD MAKES IT, from the setup as it now stands - a direction recorded, or a link switched
-        // off (RSA6-A3), which the graph held now does not reflect
+    /**
+     * The naming of a reduction of the graph as the setup now stands, made as a rebuild makes it and not installed
+     * (RSA5-A2) - a direction recorded, or a link switched off (RSA6-A3), which the graph held may not reflect.
+     */
+    private AutonomyBuilder trialNaming()
+    {
         TileGraph trialGraph = new TileGraph(pages, store.getExcludedPages());
 
         store.applyTo(trialGraph);
@@ -7541,45 +7626,101 @@ public class AutonomySession
 
         trial.reduce();
 
-        AutonomyBuilder naming = builder(trial, null);
+        return builder(trial, null);
+    }
 
-        Map<String, TileKey> tiles = naming.tilesByName();
-        Map<String, Side> facings = naming.facingByName();
-        Map<TileKey, String> bases = naming.uniqueNames();
+    /** The same where a train stands for a refusal to ask about, or null and nothing built. */
+    private AutonomyBuilder namingWhereATrainStands()
+    {
+        return standingTrains().isEmpty() ? null : trialNaming();
+    }
+
+    /** The only way out of a square that is one copy recording no facing (RSA6-B3), or null. */
+    private static Side soleWayOut(TileKey square, Map<String, TileKey> tiles, Map<String, Side> facings,
+        AutonomyBuilder naming)
+    {
+        String only = null;
+
+        int copies = 0;
+
+        for (Map.Entry<String, TileKey> copy : tiles.entrySet())
+        {
+            if (!square.equals(copy.getValue())) continue;
+
+            copies++;
+            only = copy.getKey();
+        }
+
+        return copies == 1 && facings.get(only) == null ? naming.onlyWayOutFacing(square) : null;
+    }
+
+    /** The ways a train on this square can face in this naming: a copy each, a copy recording none its only way out. */
+    private static Set<Side> waysOn(TileKey square, Map<String, TileKey> tiles, Map<String, Side> facings,
+        AutonomyBuilder naming)
+    {
+        Set<Side> ways = java.util.EnumSet.noneOf(Side.class);
+
+        Side out = soleWayOut(square, tiles, facings, naming);
+
+        if (out != null) ways.add(out);
+
+        for (Map.Entry<String, TileKey> copy : tiles.entrySet())
+        {
+            Side way = square.equals(copy.getValue()) ? facings.get(copy.getKey()) : null;
+
+            if (way != null) ways.add(way);
+        }
+
+        return ways;
+    }
+
+    /**
+     * The trains a change would turn round, each against the station it stands on (RSA5-A2): on a copy facing its way in
+     * the naming before the change, and on a square with no copy facing its way in a reduction of the graph as it now
+     * stands - nothing derived from it, and nothing carried.
+     *
+     * A train on a square that is one copy recording no facing faces its only way out, whatever the setup says an earlier
+     * train there faced (RSA7-B1), and a train the change does not turn is not asked about.  The refusal read such a
+     * train's facing from the setup, which keeps the last train's: a train placed on a dead end made one way away was
+     * taken as facing the buffer, so every direction and link on the railway was refused naming it - and one with no
+     * facing recorded was never asked about, so making its dead end two way again left it facing the buffer.
+     *
+     * @param before the naming before the change, or null where no train stood
+     */
+    private Map<String, String> trainsTheSetupWouldTurn(AutonomyBuilder before)
+    {
+        if (before == null) return Collections.emptyMap();
+
+        Map<String, Object[]> standing = standingTrains();
+
+        if (standing.isEmpty()) return Collections.emptyMap();
+
+        AutonomyBuilder after = trialNaming();
+
+        Map<String, TileKey> tilesBefore = before.tilesByName();
+        Map<String, Side> facingsBefore = before.facingByName();
+        Map<String, TileKey> tilesAfter = after.tilesByName();
+        Map<String, Side> facingsAfter = after.facingByName();
+        Map<TileKey, String> bases = after.uniqueNames();
 
         Map<String, String> turned = new LinkedHashMap<>();
 
         for (Map.Entry<String, Object[]> train : standing.entrySet())
         {
             TileKey square = (TileKey) train.getValue()[0];
-            Side facing = (Side) train.getValue()[1];
 
-            boolean facesSomeWay = false;
-            boolean facesItsWay = false;
+            // ITS WAY: out, on a square of one copy that records none (RSA7-B1); else as the railway or the setup says
+            Side facing = soleWayOut(square, tilesBefore, facingsBefore, before);
 
-            int copies = 0;
+            if (facing == null) facing = (Side) train.getValue()[1];
 
-            for (TileKey each : tiles.values())
-            {
-                if (square.equals(each)) copies++;
-            }
+            if (facing == null) continue;
 
-            for (Map.Entry<String, TileKey> copy : tiles.entrySet())
-            {
-                Side way = square.equals(copy.getValue()) ? facings.get(copy.getKey()) : null;
+            Set<Side> was = waysOn(square, tilesBefore, facingsBefore, before);
+            Set<Side> now = waysOn(square, tilesAfter, facingsAfter, after);
 
-                // A COPY RECORDING NO FACING FACES ITS ONLY WAY OUT (RSA6-B3): a dead end made one way away is one copy
-                // nothing arrives at, and a train facing the buffer there was offered the way out behind it
-                if (way == null && copies == 1 && square.equals(copy.getValue())) way = naming.onlyWayOutFacing(square);
-
-                if (way == null) continue;
-
-                facesSomeWay = true;
-
-                if (way == facing) facesItsWay = true;
-            }
-
-            if (facesSomeWay && !facesItsWay)
+            // ONLY A TRAIN THE CHANGE TURNS: on a copy its way before, and on a square with none its way after
+            if (was.contains(facing) && !now.isEmpty() && !now.contains(facing))
             {
                 turned.put(train.getKey(), bases.containsKey(square) ? bases.get(square) : square.toString());
             }
@@ -7656,11 +7797,13 @@ public class AutonomySession
     {
         boolean was = store.isPortalDisabled(tile);
 
+        AutonomyBuilder before = namingWhereATrainStands();
+
         store.setPortalDisabled(tile, disabled);
 
         // NOT FROM UNDER A STANDING TRAIN (RSA6-A3): a link switched off beside a station takes away the copy a train that
         // came in through it stands on, as a direction can - so it is asked as a direction is, and put back where it would
-        Map<String, String> turned = trainsTheSetupWouldTurn();
+        Map<String, String> turned = trainsTheSetupWouldTurn(before);
 
         if (!turned.isEmpty())
         {

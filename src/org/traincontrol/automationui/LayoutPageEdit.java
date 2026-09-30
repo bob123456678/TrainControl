@@ -284,8 +284,9 @@ public class LayoutPageEdit
             // review.
             if (session != null)
             {
-                // In memory always: it costs nothing and is right either way.
-                session.getStore().renamePage(currentLayout, newLayoutName);
+                // In memory always: it costs nothing and is right either way.  The setup's squares, and the
+                // railway's, which a carry reads (RSA7-B3).
+                session.renamePage(currentLayout, newLayoutName);
 
                 // And the session is now holding page objects that describe a layout that no longer
                 // exists under those names.  Everything derived from them - the graph, the reducer,
@@ -294,8 +295,8 @@ public class LayoutPageEdit
                 //
                 // Saying so here rather than leaving each reader to notice: the one reader that did
                 // not notice wrote every placement back a second time under the old page name, and a
-                // locomotive recorded in two places fails the entire setup (MT-135).
-                session.markPagesStale();
+                // locomotive recorded in two places fails the entire setup (MT-135).  `renamePage`
+                // above says so: `markPagesStale`.
             }
 
             try
