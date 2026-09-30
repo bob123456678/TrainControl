@@ -27,12 +27,11 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-591](#mt-591) | 2026-09-29 | The locomotive picture: a wrench, the plain pointer, and Central Station pictures croppable | fixed unvalidated | FR-104 |
-| [MT-592](#mt-592) | 2026-09-29 | On the Central Station's layout, the Autonomy menu offers to download or create a layout | fixed unvalidated | MT-548 |
-| [MT-593](#mt-593) | 2026-09-29 | A square that is not a signal, clicked as a guard, brings the guard window back | fixed unvalidated | MT-505, MT-588 |
+| [MT-594](#mt-594) | 2026-09-29 | The picture's tools wait for the power off, and a revert stands in for the wrench | fixed unvalidated | MT-591 |
+| [MT-595](#mt-595) | 2026-09-29 | A square nothing can pass is orange again | fixed unvalidated | FR-103 |
 
-Everything else - 590 of 593 - needs nothing from you unless the area changes again:
-466 **fixed validated** and 124 **superseded**.
+Everything else - 593 of 595 - needs nothing from you unless the area changes again:
+469 **fixed validated** and 124 **superseded**.
 
 ---
 
@@ -29031,6 +29030,11 @@ shade is what only you can judge: say if you want it lighter or darker.
 
 Validated on your *Works* of 2026-09-29.
 
+**Claude, 2026-09-29.**
+
+**Changed on your word of 2026-09-29** (`80a92d86`): *"make the nothing can pass (X stations) be orange again."*  A
+square switched off - the X - is orange again; a parking station keeps this entry's grey.  It is MT-595.
+
 ---
 
 <a id="mt-588"></a>
@@ -29166,7 +29170,7 @@ Validated on your *Works* of 2026-09-29.
 
 ### MT-591 - 2026-09-29 - The locomotive picture: a wrench, the plain pointer, and Central Station pictures croppable
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-104
 
 **Written:** 2026-09-29
@@ -29219,13 +29223,23 @@ Works, but: hide hover edit controls when the power is on, and if there is a cs 
 
 *Run against commit 345dd13e, regular mode (no simulate, no debug) - in English - build\classes, compiled 29 Sep 21:27 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-29.**
+
+**Your note is built** (2026-09-29, `80a92d86`): the wrench and the crop mark wait for the power to be off, and while
+it is on the picture says to turn it off to manage the icon; over a Central Station picture replaced or cropped, a
+circular arrow stands in the wrench's place and does what Clear Local Locomotive Icon does.  It is MT-594.
+
+**Claude, 2026-09-29.**
+
+Validated on your *Works* of 2026-09-29; the note goes on as MT-594.
+
 ---
 
 <a id="mt-592"></a>
 
 ### MT-592 - 2026-09-29 - On the Central Station's layout, the Autonomy menu offers to download or create a layout
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-548
 
 **Written:** 2026-09-29
@@ -29254,13 +29268,17 @@ download or create a new one, which redirects to the corresponding option under 
 
 *Run against commit 345dd13e, regular mode (no simulate, no debug) - in English - build\classes, compiled 29 Sep 21:27 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-29.**
+
+Validated on your *Works* of 2026-09-29.
+
 ---
 
 <a id="mt-593"></a>
 
 ### MT-593 - 2026-09-29 - A square that is not a signal, clicked as a guard, brings the guard window back
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-505, MT-588
 
 **Written:** 2026-09-29
@@ -29288,5 +29306,69 @@ OK step 2 fails in exit guard - the dialog closes and we have to reopen everythi
 **Adam, 2026-09-29 (triage).** Works.
 
 *Run against commit 345dd13e, in English - build\classes, compiled 29 Sep 21:27 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-29.**
+
+Validated on your *Works* of 2026-09-29.
+
+---
+
+<a id="mt-594"></a>
+
+### MT-594 - 2026-09-29 - The picture's tools wait for the power off, and a revert stands in for the wrench
+
+**Disposition:** fixed unvalidated
+**From:** MT-591
+
+**Written:** 2026-09-29
+
+Your words, 2026-09-29, on MT-591: *"hide hover edit controls when the power is on, and if there is a cs icon and we
+switched to a local icon or cropped it, replace the wrench icon with a revert icon (circular arrow symbol) that has the
+same function as "clear local locomotive icon". Add a tooltip (if power is on) saying turn power off to manage icon."*
+
+**Steps**
+
+1. With the power on, hover over a locomotive's big picture.
+2. Turn the power off, and hover over the picture of a locomotive that shows the Central Station's own picture - no icon
+   of your own.
+3. Give it an icon of your own - crop it with the crop mark, or right-click the picture and choose one - and hover
+   again.
+4. Click the circular arrow in the upper left.
+
+**Expected**
+
+- Step 1: no wrench and no crop mark, and the picture's tooltip says to turn the power off to manage the icon.
+- Step 2: the wrench and the crop mark show, and nothing is said about the power.
+- Step 3: a circular arrow stands where the wrench was; its tooltip is **Clear Local Locomotive Icon**.
+- Step 4: the Central Station's picture is back, and the wrench with it.
+
+*What this is:* `ui.testLocIconCrop.testTheIconToolsWaitForThePowerOff` and
+`testARevertStandsInTheWrenchsPlaceOverAReplacedStationPicture`.  How the arrow looks is yours to judge.
+
+---
+
+<a id="mt-595"></a>
+
+### MT-595 - 2026-09-29 - A square nothing can pass is orange again
+
+**Disposition:** fixed unvalidated
+**From:** FR-103
+
+**Written:** 2026-09-29
+
+Your words, 2026-09-29: *"make the nothing can pass (X stations) be orange again."*
+
+**Steps**
+
+1. With autonomy loaded, look at a station switched off - drawn with an X - on the track diagram, and in the autonomy
+   editor.
+2. Look at a parking station, and at a station autonomy uses.
+
+**Expected**
+
+- Step 1: the X square is orange - the orange of a train's line - as it was before FR-103.
+- Step 2: the parking station keeps its medium grey, and the station autonomy uses its blue.
+
+*What this is:* `core.testAutonomyDiagramMonitor.testASquareNothingCanPassIsOrange`.
 
 ---
