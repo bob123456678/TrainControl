@@ -2571,6 +2571,9 @@ public class testATrainIsDispatchedOnce
 
             model.setFeedbackState(s[4].getName(), false);
 
+            // THE RELEASE RECORDED a moment after the rail reads free: until then the sensor is refused, the safe way
+            waitFor(() -> rail.isPathClear(toTheSharedSensor, y, false), 5000);
+
             assertTrue(rail.isPathClear(toTheSharedSensor, y, false), "a sensor the first train has already passed is"
                 + " still refused to another route, though its journey waits on it no more: " + Layout.getLastError());
         }
@@ -3027,6 +3030,172 @@ public class testATrainIsDispatchedOnce
             release.countDown();
 
             arrival.join(5000);
+        }
+    }
+
+    /**
+     * A timetable the stop count refuses at its start leaves nothing running (RSA3-C4): it sets `running` before it asks
+     * the count - so a Yes between the two is seen either way - and clears it again where the count has moved.
+     *
+     * MUTATION: return without clearing it, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testATimetableTheCountRefusesLeavesNothingRunning() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(1961, 2);
+
+        final Locomotive t = model.getLocByName(model.getLocList().get(17));
+
+        final Layout rail = new Layout(model);
+
+        try
+        {
+            t.setSpeed(0);
+
+            rail.createPoint("TA", true, s[0].getName());
+            rail.createPoint("TB", true, s[1].getName());
+            rail.createEdge("TA", "TB");
+            rail.makeCurrent();
+
+            rail.getPoint("TA").setLocomotive(t);
+
+            List<org.traincontrol.automation.TimetablePath> table = new ArrayList<>();
+
+            table.add(new org.traincontrol.automation.TimetablePath(t, Arrays.asList(rail.getEdge("TA", "TB")), 0));
+
+            rail.setTimetable(table);
+
+            // CHOSEN, THEN THE YES, THEN THE START
+            final int chosen = rail.stopsOrdered();
+
+            theYes(rail);
+
+            assertTrue(rail.executeTimetable(chosen), "precondition: the refused start did not answer as having started"
+                + " nothing");
+
+            assertFalse(rail.isAutoRunning(), "a timetable the stop count refused left the railway running (RSA3-C4)");
+            assertFalse(rail.isRunning(), "a timetable the stop count refused left the railway busy (RSA3-C4)");
+        }
+        finally
+        {
+            rail.stopLocomotives();
+
+            new Layout(model).makeCurrent();
+
+            t.setSpeed(0);
+        }
+    }
+
+    /**
+     * A timetable entry is running until it has left (RSA3-C5): after a stop, as it finishes, the railway is not yet
+     * idle - so no door can start the next run while it is still there.  Held here at its last line, where it says its
+     * path is finished.
+     *
+     * MUTATION: count an entry not at all, and this fails.
+     *
+     * @throws Exception from the railway
+     */
+    @Test
+    public void testAnEntryIsRunningUntilItHasLeft() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(1971, 2);
+
+        final Locomotive t = model.getLocByName(model.getLocList().get(17));
+        final Locomotive w = model.getLocByName(model.getLocList().get(18));
+
+        final int preferredWas = t.getPreferredSpeed();
+
+        final Layout rail = new Layout(model);
+
+        final String finished = org.traincontrol.util.I18n.t("autolayout.infoTimetablePathFinished");
+
+        final java.util.concurrent.CountDownLatch atItsEnd = new java.util.concurrent.CountDownLatch(1);
+        final java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+
+        java.util.logging.Handler hold = new java.util.logging.Handler()
+        {
+            @Override
+            public void publish(java.util.logging.LogRecord record)
+            {
+                if (record == null || record.getMessage() == null || !record.getMessage().contains(finished)) return;
+
+                atItsEnd.countDown();
+
+                try
+                {
+                    release.await(10, TimeUnit.SECONDS);
+                }
+                catch (InterruptedException e)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }
+
+            @Override
+            public void flush() { }
+
+            @Override
+            public void close() { }
+        };
+
+        java.util.logging.Logger.getLogger(org.traincontrol.marklin.MarklinControlStation.class.getName()).addHandler(hold);
+
+        Thread executor = null;
+
+        try
+        {
+            t.setSpeed(0);
+            w.setSpeed(0);
+            t.setPreferredSpeed(30);
+
+            rail.createPoint("TA", true, s[0].getName());
+            rail.createPoint("TB", true, s[1].getName());
+            rail.createEdge("TA", "TB");
+            rail.setMaxDelay(3);
+            rail.setMinDelay(3);
+            rail.makeCurrent();
+
+            // THE ENTRY REFUSES: TB holds another train
+            rail.getPoint("TA").setLocomotive(t);
+            rail.getPoint("TB").setLocomotive(w);
+
+            List<org.traincontrol.automation.TimetablePath> table = new ArrayList<>();
+
+            table.add(new org.traincontrol.automation.TimetablePath(t, Arrays.asList(rail.getEdge("TA", "TB")), 0));
+
+            rail.setTimetable(table);
+
+            executor = new Thread(() -> rail.executeTimetable(), "a timetable run");
+            executor.setDaemon(true);
+            executor.start();
+
+            Thread.sleep(600);
+
+            theYes(rail);
+
+            assertTrue(atItsEnd.await(5, TimeUnit.SECONDS), "precondition: the entry did not reach its end after the Yes");
+
+            assertTrue(rail.isRunning(), "a timetable entry still there after the Yes is not counted as running, so the"
+                + " next run could begin while it is (RSA3-C5)");
+        }
+        finally
+        {
+            release.countDown();
+
+            java.util.logging.Logger.getLogger(org.traincontrol.marklin.MarklinControlStation.class.getName())
+                .removeHandler(hold);
+
+            rail.stopLocomotives();
+
+            new Layout(model).makeCurrent();
+
+            if (executor != null) executor.join(5000);
+
+            t.setPreferredSpeed(preferredWas);
+            t.setSpeed(0);
+            w.setSpeed(0);
         }
     }
 

@@ -325,9 +325,12 @@ public class testAutonomyDiagramSession
      *
      * A captured timetable names Points, and a station's Points are named after it.  Renamed, every leg through it named
      * a Point the next build no longer had: the load dropped the entry, with one line in the log, and the next capture
-     * wrote the shorter timetable over the configuration.
+     * wrote the shorter timetable over the configuration.  Beta is somewhere trains may turn round, so two of its copies
+     * run to Alpha - the one facing west, and the one that came in from the west and turned - and only the heading says
+     * which a leg meant.
      *
-     * MUTATION: carry nothing across a rebuild, and this fails.
+     * MUTATION: carry nothing across a rebuild, or carry a leg to a copy other than the one its heading names, and this
+     * fails.
      *
      * @throws Exception from the build
      */
@@ -339,27 +342,44 @@ public class testAutonomyDiagramSession
         session.setPointName(new TileKey("main", 1, 1), "Alpha");
         session.setPointName(new TileKey("main", 3, 1), "Beta");
         session.setPointName(new TileKey("main", 5, 1), "Gamma");
+        session.setPointFlag(new TileKey("main", 3, 1), AutonomyBuilder.CAN_REVERSE, true);
 
-        String[] leg = anEdgeBetween(new org.json.JSONObject(session.buildConfiguration()), "Beta", "Gamma");
+        org.json.JSONObject before = new org.json.JSONObject(session.buildConfiguration());
+
+        String[] leg = anEdgeBetween(before, "Beta", "Gamma");
+
+        // THE TURNING COPY'S WAY BACK, beside the plain copy's to the same place
+        String[] turned = null;
+
+        for (Object o : before.getJSONArray("edges"))
+        {
+            org.json.JSONObject e = (org.json.JSONObject) o;
+
+            if (e.getString("start").startsWith("Beta") && e.getString("start").contains("reverse")
+                && e.getString("end").startsWith("Alpha")) turned = new String[] {e.getString("start"), e.getString("end")};
+        }
 
         assertNotNull(leg, "precondition: no edge from Beta to Gamma");
+        assertNotNull(turned, "precondition: no edge from Beta's turning copy to Alpha");
 
-        session.setGlobal("timetable", aTimetableOf(leg));
+        session.setGlobal("timetable", aTimetableOf(leg, turned));
 
         // THE RENAME, as the editor's Name item makes it
         session.setPointName(new TileKey("main", 3, 1), "Bravo");
 
-        assertTheTimetableIsLoadable("renaming Beta to Bravo");
+        assertTheTimetableIsLoadable(session, "renaming Beta to Bravo", 2);
 
-        String[] kept = firstLeg();
+        assertEquals(legOf(session, 0)[0], "Bravo" + leg[0].substring("Beta".length()), "the leg did not follow the rename"
+            + " to the same copy of the square (RSA3-B1)");
 
-        assertEquals(kept[0], "Bravo" + leg[0].substring("Beta".length()), "the leg did not follow the rename to the same"
-            + " copy of the square (RSA3-B1)");
+        assertEquals(legOf(session, 1)[0], "Bravo" + turned[0].substring("Beta".length()), "the turning copy's leg was"
+            + " carried to another copy running to the same place, or to none (RSA3-B1)");
     }
 
     /**
      * A square round 18 split by its ways out keeps a timetable leg that set out from it under its old, whole name
-     * (RSA3-B1): carried to the copy that leg leaves by.
+     * (RSA3-B1): carried to the copy that leg leaves by - read as the next start of TrainControl reads it, by a session
+     * that has built nothing yet, as the first start after the upgrade does.
      *
      * MUTATION: carry nothing a build of this session did not name, and this fails.
      *
@@ -368,22 +388,25 @@ public class testAutonomyDiagramSession
     @Test
     public void testASquareSplitByItsWaysOutKeepsItsTimetable() throws Exception
     {
-        threeStationsInARow("B1 split");
+        LayoutDiagram page = threeStationsInARow("B1 split");
 
         oneWayAwayFromTheMiddle();
 
-        // A LEG AS A BUILD BEFORE ROUND 18 WROTE IT: the square's own name, whole
+        // A LEG AS A BUILD BEFORE ROUND 18 WROTE IT: the square's own name, whole - and saved
         session.setGlobal("timetable", aTimetableOf(new String[] {"main 3,1", "main 5,1"}));
 
-        session.rebuild();
+        // THE NEXT START
+        AutonomySession next = new AutonomySession(layout);
 
-        assertTheTimetableIsLoadable("the square being split by its ways out");
+        next.open(Arrays.asList(page));
 
-        assertEquals(firstLeg()[0], "main 3,1 (eastbound)", "the leg was not carried to the copy it leaves by");
+        assertTheTimetableIsLoadable(next, "the square being split by its ways out", 1);
+
+        assertEquals(legOf(next, 0)[0], "main 3,1 (eastbound)", "the leg was not carried to the copy it leaves by");
     }
 
-    /** Stations at 1,1, 3,1 and 5,1 of one line, both ways, in a configuration of this name. */
-    private void threeStationsInARow(String configuration) throws Exception
+    /** Stations at 1,1, 3,1 and 5,1 of one line, both ways, in a configuration of this name: its page. */
+    private LayoutDiagram threeStationsInARow(String configuration) throws Exception
     {
         LayoutDiagram page = new LayoutDiagram("main", 7, 3, null, null);
 
@@ -398,6 +421,8 @@ public class testAutonomyDiagramSession
         session.initialize(configuration);
 
         for (int x : new int[] {1, 3, 5}) session.setStation(new TileKey("main", x, 1), true);
+
+        return page;
     }
 
     /** The track either side of the middle station made one-way away from it, so nothing arrives there. */
@@ -424,27 +449,33 @@ public class testAutonomyDiagramSession
         return null;
     }
 
-    /** A captured timetable of one entry, one leg long, as the capture stores it. */
-    private static org.json.JSONArray aTimetableOf(String[] leg)
+    /** A captured timetable of one entry per leg, each one leg long, as the capture stores it. */
+    private static org.json.JSONArray aTimetableOf(String[]... legs)
     {
-        return new org.json.JSONArray().put(new org.json.JSONObject().put("loc", "B1 train").put("executionTime", 1L)
-            .put("secondsToNext", 5L).put("path", new org.json.JSONArray()
-                .put(new org.json.JSONObject().put("start", leg[0]).put("end", leg[1]))));
+        org.json.JSONArray table = new org.json.JSONArray();
+
+        for (String[] leg : legs)
+        {
+            table.put(new org.json.JSONObject().put("loc", "B1 train").put("executionTime", 1L).put("secondsToNext", 5L)
+                .put("path", new org.json.JSONArray().put(new org.json.JSONObject().put("start", leg[0]).put("end", leg[1]))));
+        }
+
+        return table;
     }
 
-    /** The first leg of the configuration's stored timetable. */
-    private String[] firstLeg()
+    /** The leg of one entry of the configuration's stored timetable. */
+    private static String[] legOf(AutonomySession of, int entry)
     {
-        org.json.JSONObject leg = new org.json.JSONArray(String.valueOf(session.getGlobal("timetable")))
-            .getJSONObject(0).getJSONArray("path").getJSONObject(0);
+        org.json.JSONObject leg = new org.json.JSONArray(String.valueOf(of.getGlobal("timetable")))
+            .getJSONObject(entry).getJSONArray("path").getJSONObject(0);
 
         return new String[] {leg.getString("start"), leg.getString("end")};
     }
 
     /** Every leg of the stored timetable is an edge the next build has - what the load reads it against. */
-    private void assertTheTimetableIsLoadable(String after)
+    private static void assertTheTimetableIsLoadable(AutonomySession of, String after, int entries)
     {
-        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+        org.json.JSONObject built = new org.json.JSONObject(of.buildConfiguration());
 
         java.util.Set<String> edges = new java.util.HashSet<>();
 
@@ -458,16 +489,20 @@ public class testAutonomyDiagramSession
         org.json.JSONArray table = built.optJSONArray("timetable");
 
         assertNotNull(table, "precondition: the build carries no timetable");
-        assertEquals(table.length(), 1, "precondition: the build's timetable is not the one entry stored");
+        assertEquals(table.length(), entries, "precondition: the build's timetable is not the entries stored");
 
-        for (Object p : table.getJSONObject(0).getJSONArray("path"))
+        for (int i = 0; i < table.length(); i++)
         {
-            org.json.JSONObject leg = (org.json.JSONObject) p;
+            for (Object p : table.getJSONObject(i).getJSONArray("path"))
+            {
+                org.json.JSONObject leg = (org.json.JSONObject) p;
 
-            String name = leg.getString("start") + " -> " + leg.getString("end");
+                String name = leg.getString("start") + " -> " + leg.getString("end");
 
-            assertTrue(edges.contains(name), "after " + after + ", the timetable's leg " + name + " is no edge of the"
-                + " build, so the next load drops the entry and the capture after erases it (RSA3-B1).  Edges: " + edges);
+                assertTrue(edges.contains(name), "after " + after + ", the timetable's leg " + name + " is no edge of the"
+                    + " build, so the next load drops the entry and the capture after erases it (RSA3-B1).  Edges: "
+                    + edges);
+            }
         }
     }
 

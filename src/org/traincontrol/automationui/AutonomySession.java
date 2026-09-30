@@ -455,9 +455,6 @@ public class AutonomySession
 
         // Now, on this thread, rather than on whichever thread happens to ask first
         deriveStationIndex();
-
-        // AND THE CAPTURED TIMETABLE CARRIED TO THE NAMES THIS BUILD GIVES (RSA3-B1)
-        carryTheTimetableAcross();
     }
 
     /**
@@ -482,11 +479,9 @@ public class AutonomySession
      * same copy under the square's name now, or where that copy is gone, the one copy every leg through it is an edge
      * from or to.  A name that cannot be traced is left as it is, and the load drops that entry as before.
      */
-    private void carryTheTimetableAcross()
+    private void carryTheTimetableAcross(AutonomyBuilder naming)
     {
-        if (reducer == null || store == null) return;
-
-        AutonomyBuilder naming = builder(null);
+        if (store == null) return;
 
         Map<String, TileKey> tiles = naming.tilesByName();
 
@@ -5076,9 +5071,16 @@ public class AutonomySession
      */
     private StationIndex deriveStationIndex()
     {
-        StationIndex derived = reducer == null ? StationIndex.EMPTY : new StationIndex(builder(null));
+        AutonomyBuilder naming = reducer == null ? null : builder(null);
+
+        StationIndex derived = naming == null ? StationIndex.EMPTY : new StationIndex(naming);
 
         stationIndex = derived;
+
+        // AND THE CAPTURED TIMETABLE CARRIED TO THE NAMES THIS BUILD GIVES (RSA3-B1).  Here rather than in `rebuild`,
+        // because every edit that can rename a Point comes through here and not all of them rebuild: a square marked as
+        // somewhere trains may turn round gains its turning copies, named, with no rebuild at all.
+        if (naming != null) carryTheTimetableAcross(naming);
 
         return derived;
     }
