@@ -2881,8 +2881,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Every Point name a configuration stores by name - its timetable's legs and each standing train's road - through a
-     * rename, in place (RSA5-B2).  Everything else in it is keyed by square.
+     * Every Point name a configuration stores by name - its timetable's legs, those of each entry set aside and of the
+     * entry it followed, and each standing train's road - through a rename, in place (RSA5-B2).  Everything else in it is keyed by square.
      *
      * @param configuration the configuration
      * @param rename a Point name to what it is called now, or itself
@@ -2893,10 +2893,23 @@ public class AutonomyCompanionStore
 
         JSONArray table = globals == null ? null : globals.optJSONArray("timetable");
 
-        for (int i = 0; table != null && i < table.length(); i++)
-        {
-            JSONObject entry = table.optJSONObject(i);
+        // AND EACH ENTRY SET ASIDE FOR A PAGE OUT OF AUTONOMY, with the entry it followed (Adam, 2026-09-30)
+        JSONArray aside = configuration.optJSONArray(AutonomySession.TIMETABLE_ASIDE);
 
+        List<JSONObject> entries = new ArrayList<>();
+
+        for (int i = 0; table != null && i < table.length(); i++) entries.add(table.optJSONObject(i));
+
+        for (int i = 0; aside != null && i < aside.length(); i++)
+        {
+            JSONObject item = aside.optJSONObject(i);
+
+            if (item != null) entries.add(item.optJSONObject("entry"));
+            if (item != null) entries.add(item.optJSONObject("after"));
+        }
+
+        for (JSONObject entry : entries)
+        {
             JSONArray path = entry == null ? null : entry.optJSONArray("path");
 
             for (int j = 0; path != null && j < path.length(); j++)

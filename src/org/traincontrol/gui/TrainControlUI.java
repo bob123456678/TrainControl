@@ -22987,15 +22987,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             this.model.getAutoLayout().setTimetable(new LinkedList<>());
 
-            // AND THE TIMETABLE THE CONFIGURATION KEEPS, at once (RSA5-C1): a fold keeps the entries of a page ticked out
-            // of autonomy for its return, so a Clear pressed while it was out came back with the page
+            // AND THE TIMETABLE THE CONFIGURATION KEEPS, at once, with the entries it has set aside for pages out of autonomy
+            // (RSA5-C1): kept for a page's return, a Clear pressed while it was out came back with the page
             org.traincontrol.automationui.AutonomySession keeping = this.autonomySession;
 
             if (keeping != null && this.activeDiagramConfiguration != null)
             {
                 try
                 {
-                    keeping.setGlobal("timetable", new org.json.JSONArray());
+                    keeping.clearTheTimetable();
                 }
                 catch (java.io.IOException e)
                 {

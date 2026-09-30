@@ -711,8 +711,8 @@ public class AutonomySession
     }
 
     /**
-     * Every pair of Point names a configuration stores: its timetable's legs, and the steps of the road each standing
-     * train came in on (RSA4-C4) - which a load drops whole where one names a Point it does not build, so the tail fell
+     * Every pair of Point names a configuration stores: its timetable's legs, those of each entry set aside and of the
+     * entry it followed, and the steps of the road each standing train came in on (RSA4-C4) - which a load drops whole where one names a Point it does not build, so the tail fell
      * back to stopping at the first fork.
      */
     private static List<NamedLeg> legsOf(org.json.JSONObject configuration)
@@ -734,6 +734,28 @@ public class AutonomySession
                 org.json.JSONObject leg = path.optJSONObject(j);
 
                 if (leg != null && leg.has("start") && leg.has("end")) legs.add(new NamedLeg(leg, null));
+            }
+        }
+
+        // AND EACH ENTRY SET ASIDE FOR A PAGE OUT OF AUTONOMY, with the entry it followed (Adam, 2026-09-30)
+        org.json.JSONArray aside = configuration.optJSONArray(TIMETABLE_ASIDE);
+
+        for (int i = 0; aside != null && i < aside.length(); i++)
+        {
+            org.json.JSONObject item = aside.optJSONObject(i);
+
+            for (String part : new String[] {"entry", "after"})
+            {
+                org.json.JSONObject entry = item == null ? null : item.optJSONObject(part);
+
+                org.json.JSONArray path = entry == null ? null : entry.optJSONArray("path");
+
+                for (int j = 0; path != null && j < path.length(); j++)
+                {
+                    org.json.JSONObject leg = path.optJSONObject(j);
+
+                    if (leg != null && leg.has("start") && leg.has("end")) legs.add(new NamedLeg(leg, null));
+                }
             }
         }
 
@@ -5025,6 +5047,9 @@ public class AutonomySession
      */
     public String buildConfiguration()
     {
+        // THE ENTRIES OF A PAGE OUT OF AUTONOMY SET ASIDE, and those of a page back brought back, first
+        settleTheTimetableAside();
+
         return builder(globals()).build();
     }
 
@@ -5810,6 +5835,8 @@ public class AutonomySession
             if (!store.getExcludedPages().contains(page.getName())) pageOrder.add(page.getName());
         }
 
+        settleTheTimetableAside();
+
         return builder(globals()).withCoordinatesFromTiles(pageOrder).build();
     }
 
@@ -6177,83 +6204,12 @@ public class AutonomySession
             if (!"points".equals(key) && !"edges".equals(key)) globals.put(key, root.get(key));
         }
 
-        // AND THE TIMETABLE'S ENTRIES ON A PAGE OUT OF AUTONOMY, which its load could not read (RSA4-B2, RSA5-B1)
-        org.json.JSONObject storedGlobals = configuration.optJSONObject("globals");
-
-        if (globals.has("timetable") && storedGlobals != null)
-        {
-            globals.put("timetable", withTheEntriesOfPagesOut(storedGlobals.optJSONArray("timetable"),
-                globals.optJSONArray("timetable"), pagesTheRunningLayoutLeftOut(root)));
-        }
+        // BUT AN ENTRY OF A PAGE OUT OF AUTONOMY SET ASIDE, not kept in the timetable (Adam, 2026-09-30)
+        setAsideFromTheRailway(configuration, globals);
 
         configuration.put("globals", globals);
 
         dirty = true;
-    }
-
-    /**
-     * The timetable a fold stores: the running layout's, with each stored entry on a page out of autonomy put back after
-     * the entry its nearest earlier neighbour became (RSA4-B2, RSA5-B1, RSA5-C1).
-     *
-     * A page ticked out of autonomy is built to be undone, and its load drops every entry through it; the fold after it
-     * wrote the shorter timetable over the configuration, so the page came back without its entries.  Kept through
-     * anything else - an entry dropped for another reason, one deleted, one recorded - since the operator cannot see
-     * them in the timetable they are editing; Clear clears them too, at its door.  Nothing else is kept: an entry no page
-     * out explains - its station gone, its locomotive gone - is erased, as a load drops it.
-     *
-     * @param stored the configuration's timetable
-     * @param running the running layout's
-     * @param pagesOut the pages the running layout was built without (RSA6-B1)
-     * @return the timetable to store
-     */
-    private org.json.JSONArray withTheEntriesOfPagesOut(org.json.JSONArray stored, org.json.JSONArray running,
-        java.util.Set<String> pagesOut)
-    {
-        if (stored == null || running == null || pagesOut.isEmpty()) return running;
-
-        // EACH KEPT ENTRY AFTER THE RUNNING ENTRY ITS NEAREST EARLIER NEIGHBOUR BECAME, or first where none survives
-        Map<Integer, List<Object>> after = new java.util.HashMap<>();
-
-        int last = -1;
-
-        for (int i = 0; i < stored.length(); i++)
-        {
-            org.json.JSONObject entry = stored.optJSONObject(i);
-
-            if (entry == null) continue;
-
-            if (namesAPointOnAPageOut(entry, pagesOut))
-            {
-                after.computeIfAbsent(last, k -> new ArrayList<>()).add(entry);
-
-                continue;
-            }
-
-            for (int j = last + 1; j < running.length(); j++)
-            {
-                if (sameRun(entry, running.optJSONObject(j)))
-                {
-                    last = j;
-
-                    break;
-                }
-            }
-        }
-
-        if (after.isEmpty()) return running;
-
-        org.json.JSONArray out = new org.json.JSONArray();
-
-        for (Object kept : after.getOrDefault(-1, Collections.emptyList())) out.put(kept);
-
-        for (int j = 0; j < running.length(); j++)
-        {
-            out.put(running.get(j));
-
-            for (Object kept : after.getOrDefault(j, Collections.emptyList())) out.put(kept);
-        }
-
-        return out;
     }
 
     /**
@@ -6373,37 +6329,242 @@ public class AutonomySession
     }
 
     /**
-     * The pages the running layout was built without, read off its Points' squares (RSA6-B1) - or, where it says none,
-     * the pages the setup has out of autonomy.  A fold made at a tick sees the page's new state and the railway's old one:
-     * asked of the setup, the fold going out kept a page's entries beside the running ones, and the fold coming back
-     * erased them all.
+     * Where a configuration keeps the timetable entries of a page out of autonomy: each entry, and the entry of the
+     * timetable it followed (Adam, 2026-09-30).  See `settleTheTimetableAside`.
      */
-    private Set<String> pagesTheRunningLayoutLeftOut(org.json.JSONObject root)
+    public static final String TIMETABLE_ASIDE = "timetableAside";
+
+    /**
+     * Sets the timetable's entries of a page out of autonomy aside, and brings back those whose page is back - at every
+     * build, so the railway is given only entries it can build, whichever door ticked the page (Adam, 2026-09-30: *"Do
+     * the simplification of the timetables"*).
+     *
+     * One list beside the timetable, and two moves.  An entry naming a Point on a page out goes aside, remembering the
+     * entry it followed.  An entry aside whose Points the build has again goes back after that entry - first where it
+     * followed none, last where that entry is gone.  An entry aside that no page out explains any more - its page
+     * deleted, its station gone - is dropped, as a load would drop it.  Nothing else touches the list: a fold only adds
+     * to it (`setAsideFromTheRailway`), and Clear clears it with the timetable.  Entries are told apart by train and path.
+     *
+     * Before this, the fold decided which entries to keep, and had to guess whether the railway it folded was built with
+     * the page or without it - which depended on the door that ticked it (RSA4-B2, RSA5-B1, RSA6-B1).
+     */
+    private void settleTheTimetableAside()
     {
-        Set<String> built = new java.util.HashSet<>();
+        String active = store.getActiveConfiguration();
 
-        org.json.JSONArray points = root.optJSONArray("points");
+        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
 
-        for (int i = 0; points != null && i < points.length(); i++)
+        org.json.JSONObject globals = configuration == null ? null : configuration.optJSONObject("globals");
+
+        if (globals == null) return;
+
+        org.json.JSONArray table = globals.optJSONArray("timetable");
+        org.json.JSONArray aside = configuration.optJSONArray(TIMETABLE_ASIDE);
+
+        if ((table == null || table.length() == 0) && (aside == null || aside.length() == 0)) return;
+
+        Set<String> pagesOut = new java.util.HashSet<>(store.getExcludedPages());
+
+        Map<String, TileKey> built = reducer == null ? Collections.<String, TileKey>emptyMap() : builder(null).tilesByName();
+
+        boolean changed = false;
+
+        // OUT: each entry of the timetable naming a page out, after the last entry kept before it
+        List<Object> kept = new ArrayList<>();
+        List<Object> setAside = new ArrayList<>();
+
+        org.json.JSONObject previous = null;
+
+        for (int i = 0; table != null && i < table.length(); i++)
         {
-            org.json.JSONObject point = points.optJSONObject(i);
+            org.json.JSONObject entry = table.optJSONObject(i);
 
-            TileKey tile = point == null || !point.has("square") ? null
-                : AutonomyCompanionStore.parseTileKey(point.optString("square"));
+            if (entry != null && namesAPointOnAPageOut(entry, pagesOut))
+            {
+                changed = true;
 
-            if (tile != null) built.add(tile.getPage());
+                if (!holdsTheRun(aside, entry) && !holdsTheRun(setAside, entry)) setAside.add(asideItem(entry, previous));
+
+                continue;
+            }
+
+            kept.add(table.get(i));
+
+            if (entry != null) previous = entry;
         }
 
-        if (built.isEmpty()) return new java.util.HashSet<>(store.getExcludedPages());
+        // BACK: each entry aside whose Points the build has again - and what nothing explains any more, dropped
+        List<Object> stillAside = new ArrayList<>();
+        java.util.Set<Object> putBack = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
-        Set<String> out = new java.util.HashSet<>();
-
-        for (LayoutDiagram page : pages)
+        for (int i = 0; aside != null && i < aside.length(); i++)
         {
-            if (!built.contains(page.getName())) out.add(page.getName());
+            org.json.JSONObject item = aside.optJSONObject(i);
+            org.json.JSONObject entry = item == null ? null : item.optJSONObject("entry");
+
+            if (entry != null && namesAPointOnAPageOut(entry, pagesOut))
+            {
+                stillAside.add(item);
+
+                continue;
+            }
+
+            changed = true;
+
+            if (entry != null && everyPointBuilt(entry, built)) putBackAfter(kept, entry, item.optJSONObject("after"), putBack);
         }
 
-        return out;
+        if (!changed) return;
+
+        stillAside.addAll(setAside);
+
+        globals.put("timetable", new org.json.JSONArray(kept));
+
+        if (stillAside.isEmpty()) configuration.remove(TIMETABLE_ASIDE);
+        else configuration.put(TIMETABLE_ASIDE, new org.json.JSONArray(stillAside));
+
+        dirty = true;
+    }
+
+    /**
+     * The timetable a fold stores: the railway's, but an entry naming a page out of autonomy set aside rather than kept in
+     * it (Adam, 2026-09-30) - a railway built before its page was ticked out still runs it.  Nothing aside comes back
+     * here: a railway built while the page was out has none of its entries, and is not asked why.
+     */
+    private void setAsideFromTheRailway(org.json.JSONObject configuration, org.json.JSONObject globals)
+    {
+        org.json.JSONArray running = globals.optJSONArray("timetable");
+
+        Set<String> pagesOut = new java.util.HashSet<>(store.getExcludedPages());
+
+        if (running == null || pagesOut.isEmpty()) return;
+
+        org.json.JSONArray aside = configuration.optJSONArray(TIMETABLE_ASIDE);
+
+        org.json.JSONArray kept = new org.json.JSONArray();
+        List<Object> setAside = new ArrayList<>();
+
+        org.json.JSONObject previous = null;
+
+        for (int i = 0; i < running.length(); i++)
+        {
+            org.json.JSONObject entry = running.optJSONObject(i);
+
+            if (entry != null && namesAPointOnAPageOut(entry, pagesOut))
+            {
+                if (!holdsTheRun(aside, entry) && !holdsTheRun(setAside, entry)) setAside.add(asideItem(entry, previous));
+
+                continue;
+            }
+
+            kept.put(running.get(i));
+
+            if (entry != null) previous = entry;
+        }
+
+        if (kept.length() == running.length()) return;
+
+        globals.put("timetable", kept);
+
+        if (!setAside.isEmpty())
+        {
+            org.json.JSONArray all = aside == null ? new org.json.JSONArray() : aside;
+
+            for (Object item : setAside) all.put(item);
+
+            configuration.put(TIMETABLE_ASIDE, all);
+        }
+    }
+
+    /**
+     * Clears the timetable of the configuration in use, and the entries it has set aside for pages out of autonomy with
+     * it (RSA5-C1): Clear clears the whole timetable.  Saved.
+     *
+     * @return whether there was a configuration to clear
+     * @throws IOException if the setup cannot be written
+     */
+    public boolean clearTheTimetable() throws IOException
+    {
+        String active = store.getActiveConfiguration();
+
+        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
+
+        if (configuration != null) configuration.remove(TIMETABLE_ASIDE);
+
+        return setGlobal("timetable", new org.json.JSONArray());
+    }
+
+    /** An entry set aside, and a copy of the entry it followed, or none. */
+    private static org.json.JSONObject asideItem(org.json.JSONObject entry, org.json.JSONObject previous)
+    {
+        return new org.json.JSONObject().put("entry", entry)
+            .put("after", previous == null ? org.json.JSONObject.NULL : new org.json.JSONObject(previous.toString()));
+    }
+
+    /** Whether a list of entries set aside - as JSON or as items - holds one sending this train this way. */
+    private static boolean holdsTheRun(Object items, org.json.JSONObject entry)
+    {
+        Iterable<?> each = items instanceof org.json.JSONArray ? (org.json.JSONArray) items
+            : items instanceof List ? (List<?>) items : Collections.emptyList();
+
+        for (Object item : each)
+        {
+            if (item instanceof org.json.JSONObject && sameRun(((org.json.JSONObject) item).optJSONObject("entry"), entry))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Whether every Point a timetable entry names is one this build has. */
+    private static boolean everyPointBuilt(org.json.JSONObject entry, Map<String, TileKey> built)
+    {
+        org.json.JSONArray path = entry.optJSONArray("path");
+
+        if (path == null || path.length() == 0) return false;
+
+        for (int i = 0; i < path.length(); i++)
+        {
+            org.json.JSONObject leg = path.optJSONObject(i);
+
+            if (leg == null || !built.containsKey(leg.optString("start")) || !built.containsKey(leg.optString("end")))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Puts an entry back after the entry it followed - first where it followed none, last where that entry is gone - and
+     * after any put back there before it, so several keep the order they were set aside in.
+     */
+    private static void putBackAfter(List<Object> kept, org.json.JSONObject entry, org.json.JSONObject after,
+        java.util.Set<Object> putBack)
+    {
+        int at = after == null ? 0 : kept.size();
+
+        for (int j = 0; after != null && j < kept.size(); j++)
+        {
+            Object candidate = kept.get(j);
+
+            if (candidate instanceof org.json.JSONObject && !putBack.contains(candidate)
+                && sameRun(after, (org.json.JSONObject) candidate))
+            {
+                at = j + 1;
+
+                break;
+            }
+        }
+
+        while (at < kept.size() && putBack.contains(kept.get(at))) at++;
+
+        kept.add(at, entry);
+
+        putBack.add(entry);
     }
 
     /** Whether two timetable entries send the same train the same way. */

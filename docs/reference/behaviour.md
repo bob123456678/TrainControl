@@ -2488,14 +2488,15 @@ and roads (RSA5-B2); and no fold follows a move until the setup is opened again,
 the squares as they were (RSA6-B2) - opening the editor folded already.  A station name two pages share is settled over
 every page, those out of autonomy too, so the plain name does not move to the other page while one is out (RSA6-C1).
 
-**A page ticked out of autonomy and back in keeps its timetable entries** (RSA4-B2, RSA5-B1, RSA6-B1), whichever door
-ticks it.  Its load drops every entry through it, and each fold of a railway built without it keeps them - which pages
-are out is asked of the running layout, not of the setup a tick has just changed - through whatever else happens to the
-timetable meanwhile:
-an entry recorded, deleted or moved, or another dropped by the load for its own reason.  Each goes back after the entry
-its nearest earlier neighbour became, or first where none is left.  **Clear clears them with the rest**, at once
-(RSA5-C1).  Nothing else the load could not read is kept: an entry naming a station removed, or a locomotive the
-database no longer has, is erased by the next fold, as it was before.  `core.testAutonomyDiagramSession`,
+**A page ticked out of autonomy keeps its timetable entries aside until it is back** (Adam, 2026-09-30: *"Do the
+simplification of the timetables"*; RSA4-B2, RSA5-B1, RSA6-B1), whichever door ticks it.  The configuration keeps a
+second list beside its timetable.  An entry naming a Point on a page out goes there - when the railway is next built,
+or when a railway still running it is folded - remembering the entry it followed.  When the railway is next built with
+that page in autonomy again, each comes back after that entry: first where it followed none, last where that entry is
+gone.  Nothing else moves them - an edit of the timetable meanwhile, an entry recorded, deleted or moved, leaves them
+where they are - and **Clear clears them with the rest**, at once (RSA5-C1).  An entry aside that no page out explains
+any more, its page deleted, is dropped.  Nothing else the load could not read is kept: an entry naming a station
+removed, or a locomotive the database no longer has, is erased by the next fold, as it was before.  `core.testAutonomyDiagramSession`,
 `regression.testAnEditedPlacementSurvivesTheRebuild`, `regression.testTheImportDoorReadsAnOldFile`.
 
 **The Yes to "reloading will stop the trains" stops every train where it is** (RSA-C1).  Graceful Stop lets each journey

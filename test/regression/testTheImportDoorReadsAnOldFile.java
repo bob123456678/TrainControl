@@ -5058,6 +5058,13 @@ public class testTheImportDoorReadsAnOldFile
             assertTrue(kept != null && new org.json.JSONArray(kept).length() > 0, "precondition: his railway keeps no"
                 + " timetable: " + kept);
 
+            // AND AN ENTRY SET ASIDE, as one is for a page out of autonomy
+            final org.json.JSONObject configuration =
+                session.getStore().getConfiguration(session.getStore().getActiveConfiguration());
+
+            configuration.put("timetableAside", new org.json.JSONArray().put(new org.json.JSONObject()
+                .put("entry", new org.json.JSONArray(kept).getJSONObject(0)).put("after", org.json.JSONObject.NULL)));
+
             startAnsweringYes(asked, going);
 
             SwingUtilities.invokeAndWait(() -> ui[0].clearTimetable());
@@ -5078,6 +5085,11 @@ public class testTheImportDoorReadsAnOldFile
 
             assertTrue(after == null || new org.json.JSONArray(after).length() == 0, "Clear left the timetable the"
                 + " configuration keeps, which comes back with a page ticked out of autonomy (RSA5-C1): " + after);
+
+            org.json.JSONArray aside = configuration.optJSONArray("timetableAside");
+
+            assertTrue(aside == null || aside.length() == 0, "Clear left the entries set aside for a page out of autonomy,"
+                + " which come back with it (RSA5-C1): " + aside);
         }
         finally
         {
