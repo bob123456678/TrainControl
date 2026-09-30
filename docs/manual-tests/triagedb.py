@@ -1039,7 +1039,11 @@ def stale_queue(conn):
     """
     passed = ("Works", "Works, with notes")
 
-    return [r for r in check(conn, disposition="needs test", triaged=True, reopened=False)
+    # BOTH DISPOSITIONS THE LIST SHOWS (2026-09-29).  This read "needs test" alone, and the list shows "fixed
+    # unvalidated" as well: MT-571, passed on 2026-09-26, stayed in Adam's queue three days, with seven more of the
+    # kind beside it by the next triage.  A passed entry still in the queue is the same miss under either word.
+    return [r for disposition in ("needs test", "fixed unvalidated")
+            for r in check(conn, disposition=disposition, triaged=True, reopened=False)
             if (r["latest"] or "") in passed]
 
 

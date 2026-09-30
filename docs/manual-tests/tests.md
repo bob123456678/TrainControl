@@ -27,20 +27,11 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-291](#mt-291) | 2026-09-07 | The Grid tooltip, in a language you read | needs test | FR-057 (split from MT-274) |
-| [MT-405](#mt-405) | 2026-09-14 | A Central Station download also brings the CS3's own data files | needs test | FR-062 |
-| [MT-492](#mt-492) | 2026-09-24 | Return Home finds a plan on a crowded railway | fixed unvalidated | OB-230, AMH-C1 |
 | [MT-505](#mt-505) | 2026-09-24 | A guard signal that no way into its station passes is noticed | fixed unvalidated | AUT-C2, MT-493 |
-| [MT-533](#mt-533) | 2026-09-24 | The train-length prompt takes typing without a click | fixed unvalidated | MT-474 |
 | [MT-548](#mt-548) | 2026-09-24 | On a Central Station layout the Autonomy menu opens, and only the download and Documentation can be chosen | fixed unvalidated | OB-254, OB-093, MT-544 |
-| [MT-566](#mt-566) | 2026-09-24 | The locomotive train-length walk is never greyed, and counts | fixed unvalidated | MT-533 |
-| [MT-567](#mt-567) | 2026-09-24 | Train lengths and station maximum lengths are named apart | fixed unvalidated | MT-533 |
-| [MT-569](#mt-569) | 2026-09-24 | The guard items say what each guard does | fixed unvalidated | OB-293 |
-| [MT-571](#mt-571) | 2026-09-24 | A train is not sent round a loop into its own tail | fixed unvalidated | OB-294 |
-| [MT-587](#mt-587) | 2026-09-27 | A station autonomy will not choose is marked grey, not orange | fixed unvalidated | FR-103 |
 
-Everything else - 576 of 587 - needs nothing from you unless the area changes again:
-453 **fixed validated** and 123 **superseded**.
+Everything else - 585 of 587 - needs nothing from you unless the area changes again:
+462 **fixed validated** and 123 **superseded**.
 
 ---
 
@@ -16456,7 +16447,7 @@ It saves, with no complaint about the empty s88 - the field only matters when au
 
 ### MT-291 - 2026-09-07 - The Grid tooltip, in a language you read
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-057 (split from MT-274)
 
 **Written:** 2026-09-07
@@ -16482,6 +16473,14 @@ one looks wrong, it probably is.
 **Adam, 2026-09-26 (triage).** Works.
 
 *Run against commit 5e3aeffa, in Deutsch - build\classes, compiled 26 Sep 08:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-09-29 (triage).** Works.
+
+*Run against commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-29.**
+
+Validated on your *Works* of 2026-09-29.
 
 ---
 
@@ -21697,7 +21696,7 @@ setup are left alone.  `core.testANameCannotEndInAHeading`.
 
 ### MT-405 - 2026-09-14 - A Central Station download also brings the CS3's own data files
 
-**Disposition:** needs test
+**Disposition:** fixed validated
 **From:** FR-062
 
 **Written:** 2026-09-14
@@ -21718,6 +21717,14 @@ Beside the ordinary layout files, the CS3's own files are there too - `CS3_mags.
 **Claude, 2026-09-24.**
 
 **To run now:** as written.  **Expect:** `CS3_mags.json` and the CS3's route file beside the ordinary layout files.  No fix is recorded since MT-170 found them missing, so a failure here is still news.
+
+**Adam, 2026-09-29 (triage).** Works.
+
+*Run against commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-29.**
+
+Validated on your *Works* of 2026-09-29.
 
 ---
 
@@ -25590,7 +25597,7 @@ The test above is `regression.testTheImportDoorReadsAnOldFile.testAnOldFileFromT
 
 ### MT-492 - 2026-09-24 - Return Home finds a plan on a crowded railway
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-230, AMH-C1
 
 **Written:** 2026-09-24
@@ -25630,6 +25637,14 @@ Filed from this test: FR-103 (feature request - Update color of "autonomy won't 
 **Claude, 2026-09-27.**
 
 **FR-103, filed from this test, is built** (2026-09-27) - MT-587.
+
+**Adam, 2026-09-29 (triage).** Works.
+
+*Run against commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-29.**
+
+Validated on your *Works* of 2026-09-29.
 
 ---
 
@@ -26102,6 +26117,12 @@ Works, but also highlight the affected signals when the notice is clicked.
 **Claude, 2026-09-27.**
 
 **Your note is built** (2026-09-27, `0d597c1a`): clicking the notice outlines the signal as well as the station, and shows the station; the notice for a signal on both of a station's guard lists does the same.  `core.testAutonomyDiagramSession.testClickingAGuardNoticeOutlinesItsSignal`.
+
+**Adam, 2026-09-29 (triage).** Could not run this.
+
+For bottomMainB, when I try to select Signal 86 (not on its path) as entry guard, I can't select it- it doesn't get added to the list in the popup after clicking on it on the diagram.
+
+*Run against commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -26984,7 +27005,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-533 - 2026-09-24 - The train-length prompt takes typing without a click
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-474
 
 **Written:** 2026-09-24
@@ -27017,6 +27038,14 @@ This option should never be greyed out completely (show the number of missing tr
 **Adam, 2026-09-26 (triage).** Works.
 
 *Run against commit 5e3aeffa, in English - build\classes, compiled 26 Sep 08:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Adam, 2026-09-29 (triage).** Works.
+
+*Run against commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-29.**
+
+Validated on your *Works* of 2026-09-29.
 
 ---
 
@@ -27523,6 +27552,12 @@ Validated on your *Works* of 2026-09-24.
 - Nothing else in the menu can be chosen.
 
 *What this is:* `regression.testTheOldAutonomyTabIsGone.testTheAutonomyMenuOpensOnACentralStationLayout` and `testOnlyTheDownloadAndTheGuideCanBeChosenThere`.  The download itself is MT-177's step 4, validated on 2026-08-25.
+
+**Adam, 2026-09-29 (triage).** Works, with notes.
+
+works, but what is the cs3 has no layout?  give the user the choice to either download or create a new one, which redirects to the corresponding option under layouts.
+
+*Run against commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -28155,7 +28190,7 @@ Validated on your *Works* of 2026-09-24.
 
 ### MT-566 - 2026-09-24 - The locomotive train-length walk is never greyed, and counts
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-533
 
 **Written:** 2026-09-24
@@ -28191,13 +28226,21 @@ Works, but prefill the textbox with the current length, if any.
 
 **Your note is built** (2026-09-27, `0d597c1a`): going through every train, the length box holds the train's length, selected, so a number typed replaces it; OK or Enter keeps it, as Skip does.  In step 2 the first prompt's box shows its length.  `core.testMassAssignLengths.testWithEveryTrainMeasuredTheWalkShowsEachAndSkipKeepsIt`.
 
+**Adam, 2026-09-29 (triage).** Works.
+
+*Run against commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-29.**
+
+Validated on your *Works* of 2026-09-29.
+
 ---
 
 <a id="mt-567"></a>
 
 ### MT-567 - 2026-09-24 - Train lengths and station maximum lengths are named apart
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-533
 
 **Written:** 2026-09-24
@@ -28223,6 +28266,14 @@ Change "Locomotive Train Lengths" to just "Train Lengths", andkeep "Station Max 
 **Claude, 2026-09-27.**
 
 **Your note is built** (2026-09-27, `0d597c1a`): the item reads **Mass Assign Train Lengths (N missing)...** - and, with nothing to count, **Mass Assign Train Lengths...** - in all eight languages; the two station items are as they were.  The Expected line above still gives the old name: this is the one to check.  `core.testMassAssignLengths.testTrainLengthsAndStationMaximaAreNamedApart` now pins the English words.
+
+**Adam, 2026-09-29 (triage).** Works.
+
+*Run against commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-29.**
+
+Validated on your *Works* of 2026-09-29.
 
 ---
 
@@ -28268,7 +28319,7 @@ Change "Locomotive Train Lengths" to just "Train Lengths", andkeep "Station Max 
 
 ### MT-569 - 2026-09-24 - The guard items say what each guard does
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-293
 
 **Written:** 2026-09-24
@@ -28295,6 +28346,14 @@ Change "Locomotive Train Lengths" to just "Train Lengths", andkeep "Station Max 
 **Claude, 2026-09-27.**
 
 **Your note is built** (2026-09-27, `0d597c1a`): Exit Guard reads *"Signals held at red while this station is occupied - ..."*, in English and French; the other six languages already said occupied.  `regression.testTheEditorSaysWhatItsToolsDo.testTheGuardItemsSayWhatTheGuardsDo`.
+
+**Adam, 2026-09-29 (triage).** Works.
+
+*Run against commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-29.**
+
+Validated on your *Works* of 2026-09-29.
 
 ---
 
@@ -28339,7 +28398,7 @@ Change "Locomotive Train Lengths" to just "Train Lengths", andkeep "Station Max 
 
 ### MT-571 - 2026-09-24 - A train is not sent round a loop into its own tail
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-294
 
 **Written:** 2026-09-24
@@ -28385,6 +28444,10 @@ Change "Locomotive Train Lengths" to just "Train Lengths", andkeep "Station Max 
 **Adam, 2026-09-26 (triage).** Works.
 
 *Run against commit 5e3aeffa, in English - build\classes, compiled 26 Sep 08:40 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-29.**
+
+Validated on your *Works* of 2026-09-26.  It should have left your list then: the disposition was not moved when your verdict came in, and the sweep that looks for passed entries still in the queue read only "needs test", not "fixed unvalidated" - it reads both now.
 
 ---
 
@@ -28904,7 +28967,7 @@ The test above is `regression.testTheImportDoorReadsAnOldFile.testAnOldFileFromT
 
 ### MT-587 - 2026-09-27 - A station autonomy will not choose is marked grey, not orange
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-103
 
 **Written:** 2026-09-27
@@ -28925,5 +28988,13 @@ make them a medium dark gray that's just slightly darker than labels."*
 
 *What this is:* `core.testAutonomyDiagramMonitor.testASquareAutonomyWillNotChooseIsGrey`, red under the orange.  The
 shade is what only you can judge: say if you want it lighter or darker.
+
+**Adam, 2026-09-29 (triage).** Works.
+
+*Run against commit b6cd1568, in English - build\classes, compiled 29 Sep 08:19 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-29.**
+
+Validated on your *Works* of 2026-09-29.
 
 ---

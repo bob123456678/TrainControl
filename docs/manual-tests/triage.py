@@ -1138,10 +1138,12 @@ def project_jars():
     return jars
 
 
-def launch_plan(language=None):
+def launch_plan(language=None, regular=False):
     """What would be run, and how fresh it is.
 
     :param language: one of LANGUAGES to run it in, or None for whatever this computer's is
+    :param regular: True to start it as it starts on its own - no simulation, no debug, connecting to the Central
+        Station (Adam, 2026-09-29: "launch TC in regular mode (without debug+simulate) via the tools menu")
 
     Prefers build/classes, which NetBeans refreshes on every Run, over dist/TrainControl.jar, which
     only moves on a Clean and Build.  Which one is in use is reported rather than assumed: a result
@@ -1162,16 +1164,19 @@ def launch_plan(language=None):
     classes = os.path.join(ROOT, "build", "classes")
     jar = os.path.join(ROOT, "dist", "TrainControl.jar")
 
-    args = ["0", "1", "1"]          # IP, debug, simulate - the Simulate run configuration
+    # IP, debug, simulate - the Simulate run configuration; none at all in regular mode, as TrainControl is started on its
+    # own: TrainControl.main reads simulate from a third argument and debug from a second
+    args = [] if regular else ["0", "1", "1"]
 
     # IN THE LANGUAGE ASKED FOR, first in the note: the note is the running label, which a narrow window cuts off at the
     # end, and it is stamped on every result submitted, so a result says which language it was seen in.
     props = []
-    said = ""
+    # REGULAR MODE SAID FIRST, where it is also stamped on every result submitted from the run
+    said = "regular mode (no simulate, no debug) - " if regular else ""
 
     if language:
         props = ["-Duser.language=%s" % language[0], "-Duser.country=%s" % language[1]]
-        said = "in %s - " % language[2]
+        said += "in %s - " % language[2]
 
     if os.path.isdir(classes):
         stamp = newest_mtime(classes)
@@ -1474,6 +1479,7 @@ class Triage(tk.Tk):
         names = [name for _, _, name in LANGUAGES]
 
         self.language_var = tk.StringVar(value=self.state_.data.get("language", names[0]))
+        self.regular_var = tk.BooleanVar(value=bool(self.state_.data.get("regular", False)))
 
         if self.language_var.get() not in names:
             self.language_var.set(names[0])
@@ -1526,7 +1532,13 @@ class Triage(tk.Tk):
         bar.add_cascade(label="Show", menu=s)
 
         t = tk.Menu(bar, tearoff=0)
-        t.add_command(label="Launch TrainControl (simulate + debug)\tCtrl+L", command=self.launch)
+        t.add_command(label=self._launch_label(), command=self.launch)
+
+        # A TOGGLE between the usual launch and a regular one (Adam, 2026-09-29): "make it be a toggle that switches
+        # between current and regular."  Remembered with the language, and the Launch item above says which it is.
+        t.add_checkbutton(label="Launch in regular mode (no simulate, no debug)", variable=self.regular_var,
+                          command=self._on_mode_changed)
+        self.tools_menu = t
 
         # One click to a language: choosing one here launches in it, and it stays the choice beside the Launch button.
         languages = tk.Menu(t, tearoff=0)
@@ -2876,6 +2888,19 @@ class Triage(tk.Tk):
         self.state_.data["language"] = self.language_var.get()
         self.state_.save()
 
+    def _launch_label(self):
+        """The Tools menu's Launch item, saying which way it starts TrainControl."""
+        return ("Launch TrainControl (regular)\tCtrl+L" if self.regular_var.get()
+                else "Launch TrainControl (simulate + debug)\tCtrl+L")
+
+    def _on_mode_changed(self):
+        self.state_.data["regular"] = bool(self.regular_var.get())
+        self.state_.save()
+        self.tools_menu.entryconfig(0, label=self._launch_label())
+        self._say("Launch will start TrainControl %s."
+                  % ("in regular mode - no simulation, no debug, connected to the Central Station"
+                     if self.regular_var.get() else "in simulation, with debug"))
+
     def _launch_in_chosen_language(self):
         self._remember_language()
         self.launch()
@@ -2895,7 +2920,7 @@ class Triage(tk.Tk):
                 "NetBeans, stop it there rather than killing it." % CS2_PORT, parent=self)
             return
 
-        command, note = launch_plan(self._language())
+        command, note = launch_plan(self._language(), bool(self.regular_var.get()))
 
         if not command:
             messagebox.showerror("Cannot launch", note, parent=self)
@@ -2935,8 +2960,8 @@ class Triage(tk.Tk):
 
         self.run_label.config(text="running - %s" % note)
 
-        self._say("TrainControl started, simulate + debug.  Output: %s"
-                  % os.path.basename(self.log_path))
+        self._say("TrainControl started, %s.  Output: %s"
+                  % ("regular mode" if self.regular_var.get() else "simulate + debug", os.path.basename(self.log_path)))
 
         threading.Thread(target=self._watch, args=(handle,), daemon=True).start()
 
