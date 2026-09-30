@@ -225,7 +225,7 @@ public class testAutonomyDiagramSession
 
     /**
      * A copy of a square nothing arrives at is no arrival, so a side barred while trains did arrive does not shut it
-     * (RSA3-C6a).
+     * (RSA3-C6, its first half).
      *
      * Round 18 gave such a square one copy per way out, each standing for a train that faces it - and so named after the
      * side that train would have come in by.  The build then asked the store's barred sides about it: a side barred while
@@ -275,7 +275,7 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A square nothing arrives at offers no home facing: no train can be brought home to either copy (RSA3-C6b).
+     * A square nothing arrives at offers no home facing: no train can be brought home to either copy (RSA3-C6, its second half).
      *
      * *"we shouldn't allow an impossible facing to be saved"* (OB-282).  Its facings were offered, and a train homed
      * facing one way and standing there the other was one Return Home called IMPOSSIBLE - where before round 18 the home
