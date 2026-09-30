@@ -224,6 +224,103 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * The same on a feedback double curve whose two arcs each lead out one way (RSA2-C7): each copy stands for a train
+     * facing its way out, and so came in by the OTHER end of that arc - which here is no way out at all.
+     *
+     * On the straight of `testASquareNothingArrivesAtFacesItsPlacedTrain` the far end of each way out is the other way
+     * out, so a copy given the side it leaves by instead of the side behind it builds the same two copies.  Here it
+     * builds two copies with no way out, and the placed train is stranded.
+     *
+     * MUTATION: give each copy the side it leaves by, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testADoubleCurveNothingArrivesAtFacesItsPlacedTrain() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 6, 5, null, null);
+
+        // North (2,0) - up the N-W arc; east (4,2) - along the E-S arc.  Nothing on the W or S sides.
+        page.addComponent(componentType.FEEDBACK, 2, 0, 1, 0, 70, 70, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK_DOUBLE_CURVE, 2, 2, 0, 0, 71, 71, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 3, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 4, 2, 0, 0, 72, 72, accessoryDecoderType.MM2, null);
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("C7 curve");
+
+        final TileKey curve = new TileKey("main", 2, 2);
+
+        for (TileKey station : Arrays.asList(new TileKey("main", 2, 0), curve, new TileKey("main", 4, 2)))
+        {
+            session.setStation(station, true);
+        }
+
+        // ONE-WAY AWAY FROM THE CURVE on both, whichever end each straight's route calls A
+        awayOnly(new TileKey("main", 2, 1), org.traincontrol.automationui.TilePorts.Side.N);
+        awayOnly(new TileKey("main", 3, 2), org.traincontrol.automationui.TilePorts.Side.E);
+
+        session.placeLocomotive(curve, "C7 curve train");
+        session.rebuild();
+
+        assertTrue(session.facingChoices(curve).containsAll(Arrays.asList(org.traincontrol.automationui.TilePorts.Side.N,
+            org.traincontrol.automationui.TilePorts.Side.E)), "a double curve nothing arrives at, with one way out on each"
+            + " arc, offers no choice of which way its train faces (RSA2-C7): " + session.facingChoices(curve));
+
+        for (org.traincontrol.automationui.TilePorts.Side facing : new org.traincontrol.automationui.TilePorts.Side[] {
+            org.traincontrol.automationui.TilePorts.Side.N, org.traincontrol.automationui.TilePorts.Side.E})
+        {
+            session.setFacing(curve, facing);
+
+            org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+            java.util.Map<String, Integer> sensorOf = new java.util.HashMap<>();
+
+            String standing = null;
+
+            for (Object o : built.getJSONArray("points"))
+            {
+                org.json.JSONObject point = (org.json.JSONObject) o;
+
+                sensorOf.put(point.getString("name"), point.optInt("s88"));
+
+                org.json.JSONObject held = point.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
+
+                if (held != null && "C7 curve train".equals(held.optString("name", null))) standing = point.getString("name");
+            }
+
+            assertNotNull(standing, "precondition: the train placed on the curve is on no Point");
+
+            int ahead = facing == org.traincontrol.automationui.TilePorts.Side.N ? 70 : 72;
+
+            List<Integer> reached = new ArrayList<>();
+
+            for (Object o : built.getJSONArray("edges"))
+            {
+                org.json.JSONObject edge = (org.json.JSONObject) o;
+
+                if (standing.equals(edge.getString("start"))) reached.add(sensorOf.get(edge.getString("end")));
+            }
+
+            assertEquals(reached, Arrays.asList(ahead), "the train placed on the curve facing " + facing + " is not"
+                + " offered exactly the station that way (RSA2-C7): " + reached);
+        }
+    }
+
+    /** Makes a straight's one route run only towards the given side. */
+    private void awayOnly(TileKey straight, org.traincontrol.automationui.TilePorts.Side towards)
+    {
+        for (java.util.Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> route
+            : session.getGraph().getRoutes(straight).entrySet())
+        {
+            session.setDirection(straight, route.getKey(), route.getValue().getA() == towards ? Direction.TOWARD_A
+                : Direction.TOWARD_B);
+        }
+    }
+
+    /**
      * A station no track arrives at records which way the train placed on it faces, and offers it only the way out it
      * faces (RSA2-C7; Adam, 2026-09-29: *"Go with a."*).
      *
