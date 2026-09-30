@@ -39,7 +39,7 @@ is not one.
 
 The railway defects live in the Inbox of `docs/manual-tests/issues.md`. **It is not empty**, and this
 paragraph said it was for twelve days (IND9X-B3, 2026-09-09).
-Today it holds 94 entries - 61 OB and 33 FR, recounted from the file on 2026-09-26.  On 2026-09-24 eighteen entries
+Today it holds 97 entries - 63 OB and 34 FR, recounted from the file on 2026-09-29.  On 2026-09-24 eighteen entries
 left it on Adam's word.  Seven were given their receipts then - OB-240 to OB-243, OB-271, OB-275
 and FR-095, each fixed, answered or withdrawn by its own text - and eleven had been receipted long before
 and were still sitting in the Inbox, which `triage.py` already treated as closed.  OB-272 to OB-277 and
@@ -235,13 +235,24 @@ resume note that has been deleted.
 
 ## Setup and start-up
 
-**Open - your decision** (raised 2026-09-29, RSA-C7, with GST-C7): **closing TrainControl while trains run asks only
-about saving, and Yes exits with the trains still under way.**  The question reads *"Autonomy logic is still running.
-State will not be auto-saved unless all trains are gracefully stopped.  Are you sure you want to quit?"*; the close has
-already pressed Graceful Stop, so every train carries on towards the end of its journey - and once the program has gone,
-nothing sends the stop at its destination, so each runs on until the power is cut.  Options: (a) say so in the
-question; (b) on Yes, stop every train where it is - the reload's stop (RSA-C1) - and then exit.  Recommendation: (b),
-which is what the reload's and Unload's Yes already do.
+**Decided** (Adam, 2026-09-29: *"For closing TC when running: do nothing if no autonomy.  If autonomy, display a
+warning popup to the user allowing them to keep the app open, or to proceed to close.  For simplicity, don't change
+train state here."* - and of the warning shown whenever TrainControl drives a train in any tier: *"Covering all those
+cases is good.  And we no longer need to automatically trigger a graceful stop since the user is now in control."*;
+raised as RSA-C7, with GST-C7): **closing TrainControl while trains run warns, and changes no train.**  The close no
+longer presses Graceful Stop before it asks; the question is a warning, keeping TrainControl open is its default, and
+its words say what closing leaves - the trains keep moving with nothing to stop them, and where they are is not saved.
+Built in `daa52445`, claim `8a6c6f9a`, mutation MX7 red.
+
+**Decided** (Adam, 2026-09-29, RSA2-B1: *"For the sensors, that is OK as long as non-atomic rules are respected (it
+should be allowed once unlocked)."*): **a route may not end at, or pass, a sensor another train's journey is still
+waiting on**, since the first time a sensor is occupied ends every journey waiting on it.  A feedback double curve's
+two arcs stay two pieces of metal and two places (OB-238); once a journey has passed a sensor it waits on it no more,
+and the lock and release rules decide the track as before.  Built in `4824d40c`, claims `02c4d0bc` and `3a8ff7c0`.
+
+**Decided, to be built** (Adam, 2026-09-29, RSA2-C7: *"Go with a."*): **a station no track arrives at records which
+way a train placed on it faces**, as other stations do, so only the routes that way are offered - where today it is
+built as one copy with no facing and a train placed there by hand is offered both ways out.
 
 **Decided** (Adam, 2026-09-28: *"agreed on RLA3-B1"* - option (a), built in `fd31f56f`: both gap-fill questions add the sentence `autosetup.ui.importTakesTheFilesForDefaults`, mutation CRA red; raised 2026-09-25, RLA3-B1 with RLU3-C4, RLA2-C4, RLU2-C11 and RLA4-C8): **a second import of an old file cannot
 tell a setting you returned to its default from one never set.**  Every editor door stores a default as nothing - a
@@ -434,8 +445,8 @@ this document exactly the thing it replaces.
 `docs/manual-tests/triage.db`. **2026-09-21: the same for the 65 documents written since** - 44 of them in
 `docs/reviews/` itself and 21 in three dated folders beside it, on Adam's *"I don't want more
 reviews living in the repo"* - 3,726 rows then.  The round of 2026-09-23 added 336 - five reviews and three rounds of validation - and 13 more came on 2026-09-24 with OB-247 (AR-17 to AR-23 and LR-1 to LR-6, which have no document), and the validation rounds of 2026-09-24 added 258 (TDA, TDU and TDD, then the same three lanes as TDA2 to TDD5), and the validation of the work on Adam's answers of that night added 52 on 2026-09-25 (ADA, ADU and ADD) and 48 in its second round (ADA2, ADU2 and ADD2), and the 3.0.0 release review 51 in its first round (RLA, RLU and RLD)
-and the 2.8.2 backport validation 30 (BPV), and the release review's second round 59 (RLA2, RLU2 and RLD2), its third 45 (RLA3, RLU3 and RLD3), its fourth 48 (RLA4, RLU4 and RLD4), its fifth 50 (RLA5, RLU5 and RLD5), its sixth 12 (RLV6), its seventh 15 (RLV7), its eighth 17 (RLV8), its ninth 20 (RLV9), its tenth 16 (RLV10), its eleventh 17 (RLV11), its twelfth 19 (RLV12), its thirteenth 19 (RLV13) and its fourteenth 18 (RSA, the release validator over everything since v2.7.4), which makes
-4,869 finding rows in the store now, every one of them with a status.
+and the 2.8.2 backport validation 30 (BPV), and the release review's second round 59 (RLA2, RLU2 and RLD2), its third 45 (RLA3, RLU3 and RLD3), its fourth 48 (RLA4, RLU4 and RLD4), its fifth 50 (RLA5, RLU5 and RLD5), its sixth 12 (RLV6), its seventh 15 (RLV7), its eighth 17 (RLV8), its ninth 20 (RLV9), its tenth 16 (RLV10), its eleventh 17 (RLV11), its twelfth 19 (RLV12), its thirteenth 19 (RLV13) and its fourteenth 18 (RSA, the release validator over everything since v2.7.4) and its fifteenth 18 (RSA2), which makes
+4,887 finding rows in the store now, every one of them with a status.
 (This paragraph's figures - 65 documents, 44 of them in `docs/reviews/`, and the finding count - are quoted from the deletion commit and the store.  A correction to 63 and 206 was itself wrong and was reverted; the 208 it was about is in the first paragraph of this file, not here.  `regression.testTheRecordsCountTheStore` now compares the finding and Inbox counts with the store rather than trusting a reader to keep them - VD13-R1, VD14-R2, VD14-R5.) Everything still open above is open in that store too,
 so it can be queried rather than re-read:*
 
