@@ -27,11 +27,11 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-594](#mt-594) | 2026-09-29 | The picture's tools wait for the power off, and a revert stands in for the wrench | fixed unvalidated | MT-591 |
 | [MT-595](#mt-595) | 2026-09-29 | A square nothing can pass is orange again | fixed unvalidated | FR-103 |
+| [MT-596](#mt-596) | 2026-09-29 | The picture's tools wait for the power off, and a revert stands beside the wrench | fixed unvalidated | MT-591, MT-594 |
 
-Everything else - 593 of 595 - needs nothing from you unless the area changes again:
-469 **fixed validated** and 124 **superseded**.
+Everything else - 594 of 596 - needs nothing from you unless the area changes again:
+469 **fixed validated** and 125 **superseded**.
 
 ---
 
@@ -29317,7 +29317,7 @@ Validated on your *Works* of 2026-09-29.
 
 ### MT-594 - 2026-09-29 - The picture's tools wait for the power off, and a revert stands in for the wrench
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-591
 
 **Written:** 2026-09-29
@@ -29345,6 +29345,12 @@ same function as "clear local locomotive icon". Add a tooltip (if power is on) s
 *What this is:* `ui.testLocIconCrop.testTheIconToolsWaitForThePowerOff` and
 `testARevertStandsInTheWrenchsPlaceOverAReplacedStationPicture`.  How the arrow looks is yours to judge.
 
+**Claude, 2026-09-29.**
+
+**Changed before you ran it** (2026-09-29, `179c64bb`), on your words *"don't hide the wrench, since that will save a
+click"* and *"make the arrow at the end of the circle more prominent"*: the circular arrow now stands beside the wrench,
+with a solid head.  This entry's step 3 expects it in the wrench's place, so MT-596 replaces it.
+
 ---
 
 <a id="mt-595"></a>
@@ -29370,5 +29376,46 @@ Your words, 2026-09-29: *"make the nothing can pass (X stations) be orange again
 - Step 2: the parking station keeps its medium grey, and the station autonomy uses its blue.
 
 *What this is:* `core.testAutonomyDiagramMonitor.testASquareNothingCanPassIsOrange`.
+
+---
+
+<a id="mt-596"></a>
+
+### MT-596 - 2026-09-29 - The picture's tools wait for the power off, and a revert stands beside the wrench
+
+**Disposition:** fixed unvalidated
+**From:** MT-591, MT-594
+
+**Written:** 2026-09-29
+
+Your words, 2026-09-29, on MT-591: *"hide hover edit controls when the power is on, and if there is a cs icon and we
+switched to a local icon or cropped it, replace the wrench icon with a revert icon (circular arrow symbol) that has the
+same function as "clear local locomotive icon". Add a tooltip (if power is on) saying turn power off to manage icon."*
+And then: *"make the arrow at the end of the circle more prominent, right now it doesn't really look like an arrow"*,
+and *"don't hide the wrench, since that will save a click."*
+
+**Steps**
+
+1. With the power on, hover over a locomotive's big picture.
+2. Turn the power off, and hover over the picture of a locomotive that shows the Central Station's own picture - no icon
+   of your own.
+3. Give it an icon of your own - crop it with the crop mark, or right-click the picture and choose one - and hover
+   again.
+4. Click the wrench, and press **Cancel** in the window that opens.
+5. Hover again and click the circular arrow.
+
+**Expected**
+
+- Step 1: no wrench, no circular arrow and no crop mark, and the picture's tooltip says to turn the power off to manage
+  the icon.
+- Step 2: the wrench and the crop mark show, and nothing is said about the power.
+- Step 3: the wrench is still there, and beside it a circular arrow with a solid arrowhead; its tooltip is **Clear Local
+  Locomotive Icon**.
+- Step 4: the icon chooser opens - the wrench still chooses a new icon.
+- Step 5: the Central Station's picture is back, and the circular arrow is gone.
+
+*What this is:* `ui.testLocIconCrop.testTheIconToolsWaitForThePowerOff`,
+`testARevertStandsBesideTheWrenchOverAReplacedStationPicture` and `testTheRevertHasASolidArrowhead`.  How the arrow looks
+is yours to judge.
 
 ---
