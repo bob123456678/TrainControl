@@ -29,8 +29,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 |---|---|---|---|---|
 | [MT-597](#mt-597) | 2026-09-30 | Import waits for autonomy to stop, and a station renamed after a run keeps its train | fixed unvalidated | RSA4-C5, RSA4-A1 |
 | [MT-598](#mt-598) | 2026-09-30 | A page ticked out keeps its timetable entries, and a direction is refused under a train facing against it | fixed unvalidated | RSA5-B1, RSA5-C1, RSA5-A2 |
+| [MT-599](#mt-599) | 2026-09-30 | A link switched off, or a dead end made one way, is refused under a train facing against it | fixed unvalidated | RSA6-A3, RSA6-B3, RSA6-A1 |
 
-Everything else - 596 of 598 - needs nothing from you unless the area changes again:
+Everything else - 596 of 599 - needs nothing from you unless the area changes again:
 471 **fixed validated** and 125 **superseded**.
 
 ---
@@ -29503,5 +29504,37 @@ back through whatever else you do to the timetable meanwhile; only Clear clears 
 *What this is:* `core.testAutonomyDiagramSession.testAPageOutKeepsItsEntriesThroughAnEdit`,
 `regression.testTheImportDoorReadsAnOldFile.testClearEmptiesTheTimetableTheConfigurationKeeps` and
 `regression.testAnEditedPlacementSurvivesTheRebuild.testADirectionUnderATrainTheRunLeftIsRefused`.
+
+---
+
+<a id="mt-599"></a>
+
+### MT-599 - 2026-09-30 - A link switched off, or a dead end made one way, is refused under a train facing against it
+
+**Disposition:** fixed unvalidated
+**From:** RSA6-A3, RSA6-B3, RSA6-A1
+
+**Written:** 2026-09-30
+
+From the sixth release validator (RSA6).  The copy of a station a train stands on is the way it faces, and a link
+switched off, or a dead end made one way away, could leave no copy facing the way a train there faces - so the train
+was put back where the setup last had it, or offered the way out behind it.
+
+**Steps**
+
+1. Start TrainControl, run autonomy until a train has come in through a page link and stopped at the station beside
+   it, and stop.  Right-click the link and switch **Autonomy Uses This Link** off.
+2. Stand a train at a dead-end station, facing the buffer.  Right-click the track leading out of it and make it one
+   way, away from the station.
+
+**Expected**
+
+- Step 1: a message says the train came in through this link, so it was not switched off.  The link stays on.
+- Step 2: a message says the train stands there facing the other way, so the direction was not set.  The track stays
+  as it was.  Move the train first and each can be done.
+
+*What this is:* `core.testAutonomyDiagramSession.testALinkSwitchedOffUnderATrainIsRefused`,
+`testADirectionThatLeavesADeadEndFacingAwayIsRefused`, and `regression.testAPendingTurnSurvivesTheRebuild.testTheSessionSeesTheRailwayFromTheStart`
+(no menu needs to be opened first).
 
 ---

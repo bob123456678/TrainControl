@@ -2859,6 +2859,22 @@ RSA5-D6	RSA5.md	Closed	Checked - clean, apart from RSA5-A1 (a name moved to anot
 RSA5-D7	RSA5.md	Closed	Checked - clean, apart from RSA5-A1 (a name moved to another square) and B2 (a page rename	RSA4-B1 and C4: every configuration's timetable and roads carried across a rename
 RSA5-D8	RSA5.md	Closed	Checked - clean.	The other stored Point names: homes, exclusions, `blockedBy`, locks
 RSA5-D9	RSA5.md	Closed	Checked - clean, as far as read.	HomeStaging's `canEnter`, `blockedSensors` and the tail helpers
+RSA6-A1	RSA6.md	Closed	Fixed - every session sees the running railway from the moment the window makes it (TrainC	The direction refusal cannot see the railway until a station's Facing menu or the setup editor has told the session where it is: after start-up, or an
+RSA6-A2	RSA6.md	Closed	Fixed - the fold writes each running Point into the square it says it is a copy of (Point.	The fold reads the running layout by Point name through the setup's naming as the gesture has already changed it: a page ticked out from the Autonomy
+RSA6-A3	RSA6.md	Closed	Fixed - a link switched off where a train came in through it is refused and put back, as a	"Use this link" switched off beside a station where the run left a train that came in through the link: the station is left with one copy, facing the
+RSA6-B1	RSA6.md	Closed	Fixed - which pages are out is asked of the running layout, by its Points' squares (pagesT	Adam's question: no. The Autonomy menu's Pages tick folds after the tick: a page ticked out has each of its timetable entries written twice, and ticke
+RSA6-B2	RSA6.md	Closed	Fixed - no fold follows a move of squares until the setup is opened again (AutonomySession	RSA5-B2's move half is undone at the track editor's Save: `moveTiles` carries the names made from a moved square, and the reset's fold writes the runn
+RSA6-B3	RSA6.md	Closed	Fixed - a copy that records no facing faces its only way out (AutonomyBuilder.onlyWayOutFa	A direction that leaves a dead-end station with one copy and no facing is not refused: a train the run left facing the buffer stays on it, and is offe
+RSA6-C1	RSA6.md	Closed	Fixed - names are settled over every page (AutonomyBuilder.withNamesOutOfPlay): the named 	A station name two pages share: a page ticked out and back in keeps its entries only where its stations sort after the other page's - otherwise the pl
+RSA6-D1	RSA6.md	Closed	Checked - clean, apart from RSA6-A2 (the fold) and C1 (a shared name across a page tick).	RSA5-A1: a train, its road and each stored name carried by the square it named
+RSA6-D2	RSA6.md	Closed	Checked - clean.	RSA5-C2: the turns owed carried by square and facing
+RSA6-D3	RSA6.md	Closed	Checked - clean, apart from RSA6-B1 (which pages are out is asked at the fold).	RSA5-C1: only a page out explains a kept entry, and Clear empties the configuration's timetable
+RSA6-D4	RSA6.md	Closed	Checked - clean.	RSA5-B1 through the editor's own box
+RSA6-D5	RSA6.md	Closed	Checked - clean.	RSA5-B2's page-rename half
+RSA6-D6	RSA6.md	Closed	Checked - clean.	The Point's square in every JSON reader and writer
+RSA6-D7	RSA6.md	Closed	Checked - clean, apart from RSA6-A1 (which trains it sees), A3 and B3 (what it asks).	The five direction doors say a refusal, and a refusal changes nothing
+RSA6-D8	RSA6.md	Closed	Checked - clean.	Captions, link names and unpairing name no Point and carry no train off
+RSA6-D9	RSA6.md	Closed	Checked - clean.	The probes' controls, and the baseline
 RT3-B1	2026-09-02-autonomy-routing-review.md	Closed	open	the reversal-room rule's `continue` is defeated by the route search's own dominance pruning
 RT3-B2	2026-09-02-autonomy-routing-review.md	Closed	open	the staging audit has no exemption for the planner's non-station-origin rule
 RT3-C1	2026-09-02-autonomy-routing-review.md	Closed	open	`connected` carries a pre-stop reversal credit through a terminus stop
