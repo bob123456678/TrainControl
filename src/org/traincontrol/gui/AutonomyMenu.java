@@ -244,11 +244,34 @@ public class AutonomyMenu extends JMenu
             // asking a narrower question than the guard. Twice was apparently not enough for me to
             // check the third one I wrote, a few hours later, in a commit whose message is about that
             // very rule.
-            if (ui.isRemoteLayout() && ui.hasPagesToDownload() && ui.isCentralStationConnected())
+            //
+            // A CHOICE NOW, download or create (Adam, 2026-09-29, on MT-548: *"what is the cs3 has no layout?  give the
+            // user the choice to either download or create a new one, which redirects to the corresponding option under
+            // layouts."*).  On the Central Station's layout, both of the Layouts menu's own ways to a layout on this
+            // computer, under their own names and doing what they do there - the download greyed, saying why, where it
+            // would do nothing; Create New Layout greyed exactly when its Layouts item is.
+            if (ui.isRemoteLayout())
             {
-                JMenuItem offer = new JMenuItem(I18n.t("autosetup.ui.menuNoSetupPossibleDownload"));
+                javax.swing.JMenu offer = new javax.swing.JMenu(I18n.t("autosetup.ui.menuNoSetupPossible"));
 
-                offer.addActionListener(event -> ui.downloadCentralStationLayout());
+                JMenuItem download = new JMenuItem(I18n.t("ui.main.toolbar.downloadCSLayout"));
+
+                boolean canDownload = ui.hasPagesToDownload() && ui.isCentralStationConnected();
+
+                download.setEnabled(canDownload);
+
+                if (!canDownload) download.setToolTipText(I18n.t("autosetup.ui.tooltipNoLayoutToDownload"));
+
+                download.addActionListener(event -> ui.downloadCentralStationLayout());
+
+                JMenuItem create = new JMenuItem(I18n.t("ui.main.toolbar.createLayout"));
+
+                create.setEnabled(ui.canCreateNewLayout());
+
+                create.addActionListener(event -> ui.createNewLayout());
+
+                offer.add(download);
+                offer.add(create);
 
                 add(offer);
 

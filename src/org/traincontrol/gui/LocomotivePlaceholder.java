@@ -50,6 +50,10 @@ public class LocomotivePlaceholder
      *
      * As light as it can be and still be a locomotive: the outline has to separate the wheels from the
      * body, or the shape becomes a smudge.
+     *
+     * **And then a tenth lighter, faded as a whole** (FR-104; Adam, 2026-09-29: *"increase the opacity of the default
+     * locomotive icon by 10%, so it's slightly lighter."*) - see `FADE`.  As a whole is the way the translucency above
+     * was not done: the finished drawing is faded once, so where its own parts overlap nothing shows through them.
      */
     private static final Color BODY = new Color(238, 238, 238);
 
@@ -62,6 +66,12 @@ public class LocomotivePlaceholder
      * same lists - a placeholder in a different shape would make the list jump wherever one appears.
      */
     private static final float ASPECT = 0.4f;
+
+    /**
+     * How much of solid the finished picture is (FR-104): a tenth of what is behind it shows through, which is the
+     * "slightly lighter" Adam asked for.
+     */
+    private static final float FADE = 0.9f;
 
     /**
      * A placeholder locomotive of the given width.
@@ -182,6 +192,29 @@ public class LocomotivePlaceholder
                 pantograph);
 
 
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        return faded(out);
+    }
+
+    /**
+     * The finished drawing, faded AS A WHOLE to `FADE` (FR-104): drawn once onto a clear picture at that strength, so an
+     * overlap is as faint as a single part rather than showing the part behind it.
+     */
+    private static BufferedImage faded(BufferedImage drawn)
+    {
+        BufferedImage out = new BufferedImage(drawn.getWidth(), drawn.getHeight(), BufferedImage.TYPE_INT_ARGB);
+
+        Graphics2D g = out.createGraphics();
+
+        try
+        {
+            g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, FADE));
+            g.drawImage(drawn, 0, 0, null);
         }
         finally
         {

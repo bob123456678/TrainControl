@@ -176,6 +176,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     // Preferences fields
     public static final String IP_PREF = "initIP" + Conversion.getFolderHash(10);
     public static final String LAYOUT_OVERRIDE_PATH_PREF = "LayoutOverridePath" + Conversion.getFolderHash(10);
+
+    /**
+     * This computer's last layout folder, which switching to the Central Station's layout does not forget (OB-308) - see
+     * `layoutFolderChooser`.
+     */
+    public static final String LAST_LOCAL_LAYOUT_PREF = "LastLocalLayoutFolder" + Conversion.getFolderHash(10);
     public static final String SLIDER_SETTING_PREF = "SliderSetting";
 
     /**
@@ -3039,7 +3045,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     void useTheDownloadedLayout(File path)
     {
-        prefs.put(LAYOUT_OVERRIDE_PATH_PREF, path.getAbsolutePath());
+        layoutFolderIs(path.getAbsolutePath());
 
         sourceIsNow(path.getAbsolutePath());
     }
@@ -3267,6 +3273,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (activeDiagramConfiguration != null) forgottenByTheReset = activeDiagramConfiguration;
 
         activeDiagramConfiguration = null;
+
+        // AND THE TRAINS' LINES TAKEN OFF (OB-307): nothing is loaded now
+        refreshCoveredTrack();
 
         autonomyTileMenus = null;
         autonomyTileMenusFor = null;
@@ -4316,6 +4325,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // remembered so that exit knows which configuration the running layout's state belongs to,
         // and so the panel knows to offer the step that follows this one
         this.activeDiagramConfiguration = name;
+
+        // AND THE TRAINS' LINES DRAWN (OB-307): they are drawn only with a setup loaded, and one is now
+        refreshCoveredTrack();
 
         // Always, now.  This used to be resume-only, because somebody who had just pressed the button
         // was standing on the configuration panel in front of the step that follows - and jumping them
@@ -8233,8 +8245,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // and neither belongs on a worker.  `hasAutoLayout` rather than `getAutoLayout` for the same
         // reason `isAutonomyBusy` gives: a question about what is covered must not bring a railway into
         // being to answer it.
-        org.traincontrol.automation.Layout railway =
-            this.model != null && this.model.hasAutoLayout() ? this.model.getAutoLayout() : null;
+        //
+        // AND ONLY WITH A SETUP LOADED (OB-307; Adam, 2026-09-29: *"orange should only be painted with autonomy
+        // loaded"*).  A railway object outlives the setup it was loaded from: switched from the Central Station's diagram
+        // to a folder of his, its trains' lines were drawn on a diagram with nothing loaded.
+        org.traincontrol.automation.Layout railway = this.model != null && this.model.hasAutoLayout()
+            && isAutonomyLoaded() ? this.model.getAutoLayout() : null;
 
         coveredTrackSubject = new CoveredTrackAsk(railway, railway == null ? null : getAutonomySession());
 
@@ -9879,6 +9895,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // The railway's source, for a switch of source to compare with (RLV8-C5)
         this.railwaySource = prefs.get(LAYOUT_OVERRIDE_PATH_PREF, "");
+
+        // AND THE FOLDER IT STARTED ON REMEMBERED (OB-308), as every folder chosen since is
+        if (!this.railwaySource.isEmpty()) prefs.put(LAST_LOCAL_LAYOUT_PREF, this.railwaySource);
                  
         List<Map<Integer, String>> saveStates = this.restoreState();
         boolean locWasLoaded = false;
@@ -11150,7 +11169,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     if (path != null)
                     {
                         this.model.logf("layout.ui.infoLayoutInitializedAt", path);
-                        prefs.put(LAYOUT_OVERRIDE_PATH_PREF, path);
+                        layoutFolderIs(path);
 
                         // The editing controls answer differently now (OB-126): this is what decides whether
                         // there is a layout of his own to edit.
@@ -23247,7 +23266,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     this.KeyboardTab.setSelectedIndex(0);
                 }
                 
-                prefs.put(LAYOUT_OVERRIDE_PATH_PREF, "");
+                layoutFolderIs("");
 
                 // The editing controls answer differently now (OB-126): a CS layout has no folder of
                 // his behind it, so there is nothing for Edit or Manage Pages to open.
@@ -23287,15 +23306,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 I18n.t("layout.ui.infoSelectFolderForNewLayout")
             );
 
-            JFileChooser fc = new JFileChooser(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, new File(".").getAbsolutePath()));
-            fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            // BESIDE THE LAST LAYOUT FOLDER (OB-308), where a new one is likely to go
+            JFileChooser fc = layoutFolderChooser(false);
             int i = fc.showOpenDialog(this);
             if (i == JFileChooser.APPROVE_OPTION)
             {
                 File f = fc.getSelectedFile();
                 String filepath = f.getPath();
 
-                prefs.put(LAYOUT_OVERRIDE_PATH_PREF, filepath);
+                layoutFolderIs(filepath);
 
                 // The editing controls answer differently now (OB-126): this is what decides whether
                 // there is a layout of his own to edit.
@@ -23315,12 +23334,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (refuseWhileEditorOpen()) return;
 
-        JFileChooser fc = new JFileChooser(prefs.get(LAYOUT_OVERRIDE_PATH_PREF, new File(".").getAbsolutePath()));
-        fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        // AT THE LAST LAYOUT FOLDER, selected (OB-308)
+        JFileChooser fc = layoutFolderChooser(true);
 
         if (fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
 
-        prefs.put(LAYOUT_OVERRIDE_PATH_PREF, fc.getSelectedFile().getPath());
+        layoutFolderIs(fc.getSelectedFile().getPath());
 
         // The editing controls answer differently now (OB-126): this is what decides whether
         // there is a layout of his own to edit.
@@ -28158,6 +28177,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JLabel cropOverlay;
 
     /**
+     * The hover wrench drawn over locIcon's upper left (FR-104); null until the window is built.  Declared here, not in
+     * the generated block, for the reason `cropOverlay` gives.
+     */
+    private javax.swing.JLabel iconWrench;
+
+    /**
      * Puts the hover crop mark on the big locomotive picture (FR-032).
      *
      * Adam: "can you add a hover crop icon to the upper-right of the big locomotive image when
@@ -28217,6 +28242,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
 
+        // THE WRENCH, in the upper left (FR-104; Adam, 2026-09-29: *"instead of "right click to change icon", add a wrench
+        // icon to the upper-left of the locomotive icon."*).  It opens the chooser a right-click on the picture opens -
+        // which still does - and shows on hover with the crop mark, over every locomotive: every one can be given an icon.
+        iconWrench = new JLabel(new WrenchMark());
+
+        iconWrench.setToolTipText(I18n.t("loc.ui.menuSetLocalLocomotiveIcon"));
+        iconWrench.setVisible(false);
+        iconWrench.setOpaque(false);
+
+        iconWrench.addMouseListener(new java.awt.event.MouseAdapter()
+        {
+            @Override
+            public void mouseReleased(java.awt.event.MouseEvent evt)
+            {
+                // Either button: the wrench does one thing, and a right-click over it is a right-click over the picture,
+                // which does the same thing.
+                if (activeLoc != null) setLocIcon(activeLoc);
+            }
+        });
+
         // UPPER RIGHT (Adam, 2026-08-27, having seen it centred).
         //
         // It does overlap the picture - a cropped icon is exactly LOC_ICON_WIDTH by LOC_ICON_HEIGHT,
@@ -28226,10 +28271,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         //
         // Hard into the corner, with no gap: the label has a pixel of slack top and bottom and none at
         // the sides, so any inset here spends picture rather than margin.
-        JPanel corner = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 0, 0));
+        //
+        // And the wrench in the other corner (FR-104), on the same strip.
+        JPanel corner = new JPanel(new java.awt.BorderLayout());
 
         corner.setOpaque(false);
-        corner.add(cropOverlay);
+        corner.add(iconWrench, java.awt.BorderLayout.WEST);
+        corner.add(cropOverlay, java.awt.BorderLayout.EAST);
 
         locIcon.setLayout(new java.awt.BorderLayout());
         locIcon.add(corner, java.awt.BorderLayout.NORTH);
@@ -28246,13 +28294,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             public void mouseExited(java.awt.event.MouseEvent evt)
             {
                 // Still inside, counting children: entering the mark itself is an exit from the label.
-                if (locIcon.getMousePosition(true) == null) cropOverlay.setVisible(false);
+                if (locIcon.getMousePosition(true) == null)
+                {
+                    cropOverlay.setVisible(false);
+                    iconWrench.setVisible(false);
+                }
             }
         };
 
         locIcon.addMouseListener(hover);
         cropOverlay.addMouseListener(hover);
+        iconWrench.addMouseListener(hover);
 
+        // THE PLAIN POINTER NOW, over the picture (FR-104; Adam, 2026-09-29: *"change the cover icon for the loc icon
+        // from the hand to regular"*), and no sentence about right-clicking (*"instead of "right click to change icon",
+        // add a wrench icon"*): the wrench and the crop mark are what can be pressed, and they keep the hand.  What
+        // follows is why it was a hand, kept for the record:
+        //
         // A HAND, so the picture looks like something you can act on (Adam, 2026-09-01).
         //
         // "change the mouse pointer on hover to indicate editability / add a tooltip."  The tooltip was
@@ -28263,8 +28321,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         //
         // Set here rather than in the form, because the form's block is regenerated and a line added
         // inside it does not survive.
-        locIcon.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        locIcon.setCursor(java.awt.Cursor.getDefaultCursor());
+        locIcon.setToolTipText(null);
         cropOverlay.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        iconWrench.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
     }
 
     /**
@@ -28277,8 +28337,71 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Only while the pointer is actually over the picture, and only when there is an icon of our
         // own to re-crop.  Called from the repaint path as well as from hover, so it cannot assume it
         // is being called because the pointer just arrived.
-        cropOverlay.setVisible(activeLoc != null && activeLoc.getLocalImageURL() != null
-            && locIcon.getMousePosition(true) != null);
+        boolean over = activeLoc != null && locIcon.getMousePosition(true) != null;
+
+        cropOverlay.setVisible(over && offersACrop(activeLoc));
+
+        // The wrench over every locomotive (FR-104): any one can be given an icon
+        if (iconWrench != null) iconWrench.setVisible(over);
+    }
+
+    /**
+     * Whether the crop mark is offered over this locomotive's picture: one of this computer's, or the Central Station's
+     * (FR-104; Adam, 2026-09-29: *"make central station supplied icons croppable locally."*) - anything but the
+     * placeholder, which is no picture at all.
+     *
+     * @param l the locomotive on show
+     * @return true when it has a picture to crop
+     */
+    private static boolean offersACrop(Locomotive l)
+    {
+        return l != null && l.getImageURL() != null && !l.getImageURL().isEmpty();
+    }
+
+    /**
+     * The wrench itself, drawn rather than loaded, as the crop mark is and for its reasons: a handle, and a jaw open at
+     * the top right - dark over a white underlay, so it reads on a photograph of any colour.
+     */
+    private static final class WrenchMark implements javax.swing.Icon
+    {
+        private static final int SIZE = 15;
+
+        @Override
+        public int getIconWidth()
+        {
+            return SIZE;
+        }
+
+        @Override
+        public int getIconHeight()
+        {
+            return SIZE;
+        }
+
+        @Override
+        public void paintIcon(java.awt.Component host, java.awt.Graphics g, int x, int y)
+        {
+            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+
+            g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
+                java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+
+            for (int pass = 0; pass < 2; pass++)
+            {
+                g2.setColor(pass == 0 ? new java.awt.Color(255, 255, 255, 200)
+                    : new java.awt.Color(51, 51, 51));
+                g2.setStroke(new java.awt.BasicStroke(pass == 0 ? 3.4f : 1.8f,
+                    java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+
+                // The handle, from the bottom left up to the head
+                g2.drawLine(x + 3, y + SIZE - 3, x + 8, y + 7);
+
+                // The head: a ring open towards the top right, which is the jaw
+                g2.drawArc(x + 6, y + 2, 7, 7, 90, 270);
+            }
+
+            g2.dispose();
+        }
     }
 
     /**
@@ -29042,6 +29165,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void recropLocIcon(Locomotive l, java.awt.Component parent)
     {
+        // THE CENTRAL STATION'S PICTURE, where there is none of this computer's (FR-104)
+        if (l != null && l.getLocalImageURL() == null && offersACrop(l))
+        {
+            cropTheCentralStationPicture(l, parent);
+
+            return;
+        }
+
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             if (l == null || l.getLocalImageURL() == null) return;
@@ -29116,6 +29247,107 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.repaintMappings(Collections.singletonList(l), true);
             this.selector.refreshLocSelectorList();
         });
+    }
+
+    /**
+     * The folder inside the icon folder where the Central Station's pictures are kept to crop from (FR-104).
+     */
+    private static final String CENTRAL_STATION_PICTURES = "central-station";
+
+    /**
+     * Crops a locomotive's Central Station picture into an icon of this computer's (FR-104).
+     *
+     * Adam, 2026-09-29: *"also, make central station supplied icons croppable locally."*  The picture is fetched off the
+     * event thread - it is on the station, across the network - and kept, named for the locomotive, in a folder of its
+     * own inside the icon folder.  The crop's note names it, so a second crop pans over the whole picture again rather
+     * than cropping the crop.  Outside the crops proper, which `Util.isLocIconFile` vouches for and replacing a crop
+     * deletes: the kept picture outlives every crop cut from it, one per locomotive, replaced when a crop next starts
+     * from the station's picture.
+     *
+     * @param l the locomotive
+     * @param parent where the crop window centres
+     */
+    private void cropTheCentralStationPicture(Locomotive l, java.awt.Component parent)
+    {
+        final String url = l.getImageURL();
+
+        Thread fetching = new Thread(() ->
+        {
+            final File kept = keepTheCentralStationPicture(l, url);
+
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                if (kept == null)
+                {
+                    this.model.logf("ui.errorFailedToLoadImage", String.valueOf(url));
+
+                    return;
+                }
+
+                // STILL THE STATION'S: an icon of this computer's set while the picture was fetched is not replaced
+                if (l.getLocalImageURL() != null) return;
+
+                // Two slots, as the other call sites
+                boolean[] cancelled = {false, false};
+
+                String cropped = cropLocIcon(parent, l, kept, cancelled, null);
+
+                if (cancelled[0] || cropped == null) return;
+
+                l.setLocalImageURL(cropped);
+
+                this.model.logf("loc.ui.infoCroppedFromCentralStation", l.getName());
+
+                this.repaintLoc(true, null);
+                this.repaintMappings(Collections.singletonList(l), true);
+                this.selector.refreshLocSelectorList();
+            });
+        }, "Central Station picture of " + l.getName());
+
+        fetching.setDaemon(true);
+
+        fetching.start();
+    }
+
+    /**
+     * The Central Station's picture of a locomotive, written into the icon folder's own folder for them (FR-104) - or
+     * null where it could not be read or written, which is logged.
+     *
+     * @param l the locomotive, whose name the file is given
+     * @param url where the station serves the picture
+     * @return the file
+     */
+    private File keepTheCentralStationPicture(Locomotive l, String url)
+    {
+        try
+        {
+            BufferedImage picture = ImageIO.read(new URL(url));
+
+            if (picture == null) return null;
+
+            File folder = new File(Util.LOC_ICON_FOLDER, CENTRAL_STATION_PICTURES);
+
+            if (!folder.isDirectory() && !folder.mkdirs()) return null;
+
+            File target = new File(folder, Util.sanitizeFilename(l.getName()) + ".png");
+
+            // PNG, and the return value asked, for the reasons `cropLocIcon` gives
+            Util.writeAtomically(target, out ->
+            {
+                if (!ImageIO.write(picture, "png", out))
+                {
+                    throw new IOException("no writer claimed PNG for " + target.getAbsolutePath());
+                }
+            });
+
+            return target;
+        }
+        catch (IOException | RuntimeException e)
+        {
+            this.model.log(e);
+
+            return null;
+        }
     }
 
     /**
@@ -31067,6 +31299,78 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void downloadCentralStationLayout()
     {
         downloadCSLayoutMenuItemActionPerformed(null);
+    }
+
+    /**
+     * Says which layout the application is on - a folder of this computer's, or "" for the Central Station's - and
+     * remembers a folder as the last of this computer's, which switching to the Central Station's does not forget
+     * (OB-308).  Every writer of the layout preference comes through here.
+     *
+     * @param path the folder, or "" for the Central Station's layout
+     */
+    private static void layoutFolderIs(String path)
+    {
+        prefs.put(LAYOUT_OVERRIDE_PATH_PREF, path);
+
+        if (path != null && !path.isEmpty()) prefs.put(LAST_LOCAL_LAYOUT_PREF, path);
+    }
+
+    /**
+     * A chooser for a layout folder, opening beside this computer's last one (OB-308).
+     *
+     * Adam, 2026-09-29: *"layouts -> open layout should default to the last used local layout folder.  this seems like a
+     * regression"*.  It opened at the layout preference, which the switch to the Central Station's layout empties - and a
+     * chooser opened at nothing opens in Documents.  BESIDE the folder rather than inside it: inside, the chooser shows
+     * the folder's own subfolders, and the folder itself cannot be chosen without first going up a level.
+     *
+     * @param selectIt whether the last folder is selected - Open Layout's case; Create New Layout wants a new one
+     * @return the chooser, for folders only
+     */
+    private JFileChooser layoutFolderChooser(boolean selectIt)
+    {
+        String last = prefs.get(LAYOUT_OVERRIDE_PATH_PREF, "");
+
+        if (last.isEmpty()) last = prefs.get(LAST_LOCAL_LAYOUT_PREF, "");
+
+        JFileChooser fc = new JFileChooser();
+
+        fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+
+        File folder = last.isEmpty() ? null : new File(last).getAbsoluteFile();
+
+        if (folder != null && folder.getParentFile() != null && folder.getParentFile().isDirectory())
+        {
+            fc.setCurrentDirectory(folder.getParentFile());
+
+            if (selectIt && folder.isDirectory()) fc.setSelectedFile(folder);
+        }
+        else
+        {
+            // Where it always opened with nothing remembered
+            fc.setCurrentDirectory(new File(".").getAbsoluteFile());
+        }
+
+        return fc;
+    }
+
+    /**
+     * Whether Layouts > Create New Layout can be chosen now - asked by the Autonomy menu's offer of it (MT-548), so the
+     * two cannot disagree.
+     *
+     * @return true when the Layouts item is live
+     */
+    public boolean canCreateNewLayout()
+    {
+        return initializeLocalLayoutMenuItem.isEnabled();
+    }
+
+    /**
+     * Layouts > Create New Layout, as the Layouts menu runs it - for the Autonomy menu's offer of it (MT-548; Adam,
+     * 2026-09-29: *"which redirects to the corresponding option under layouts"*).
+     */
+    public void createNewLayout()
+    {
+        initializeLocalLayoutMenuItemActionPerformed(null);
     }
 
     /**

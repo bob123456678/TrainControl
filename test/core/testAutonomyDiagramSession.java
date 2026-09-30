@@ -224,6 +224,109 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A station no track arrives at records which way the train placed on it faces, and offers it only the way out it
+     * faces (RSA2-C7; Adam, 2026-09-29: *"Go with a."*).
+     *
+     * A square nothing arrives at was built whole - one Point with no facing - so a train placed on it by hand was
+     * offered both ways out, and sent the way it does not face it drives off the other way over track nothing locked:
+     * the runtime never commands a direction, and the copy IS the facing.  Split by the ways out, one copy for each, the
+     * facing the train is placed with chooses its copy, as everywhere else.
+     *
+     * Three stations in a row, the track either side of the middle one made one-way away from it, so nothing arrives at
+     * the middle square and track leaves it both ways.
+     *
+     * MUTATION: emit the square whole again, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testASquareNothingArrivesAtFacesItsPlacedTrain() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 7, 3, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 64, 64, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 65, 65, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 66, 66, accessoryDecoderType.MM2, null);
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("C7");
+
+        for (int x : new int[] {1, 3, 5}) session.setStation(new TileKey("main", x, 1), true);
+
+        // ONE-WAY AWAY FROM THE MIDDLE on both sides (a straight's route is E-W: A = E, B = W)
+        session.setDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_B);
+        session.setDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.TOWARD_A);
+
+        final TileKey middle = new TileKey("main", 3, 1);
+
+        session.placeLocomotive(middle, "C7 train");
+        session.rebuild();
+
+        assertTrue(session.facingChoices(middle).containsAll(Arrays.asList(
+            org.traincontrol.automationui.TilePorts.Side.E, org.traincontrol.automationui.TilePorts.Side.W)),
+            "a square nothing arrives at, with track leaving it both ways, offers no choice of which way its train faces"
+            + " (RSA2-C7): " + session.facingChoices(middle));
+
+        for (org.traincontrol.automationui.TilePorts.Side facing : new org.traincontrol.automationui.TilePorts.Side[] {
+            org.traincontrol.automationui.TilePorts.Side.E, org.traincontrol.automationui.TilePorts.Side.W})
+        {
+            session.setFacing(middle, facing);
+
+            org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+            java.util.Map<String, Integer> sensorOf = new java.util.HashMap<>();
+
+            String standing = null;
+            String itsFacing = null;
+
+            for (Object o : built.getJSONArray("points"))
+            {
+                org.json.JSONObject point = (org.json.JSONObject) o;
+
+                sensorOf.put(point.getString("name"), point.optInt("s88"));
+
+                // THE PLACEMENT IS AN OBJECT, named inside
+                org.json.JSONObject held = point.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
+
+                if (held != null && "C7 train".equals(held.optString("name", null)))
+                {
+                    standing = point.getString("name");
+                    itsFacing = point.optString(AutonomyBuilder.COPY_FACING, null);
+                }
+            }
+
+            assertNotNull(standing, "precondition: the train placed on the middle square is on no Point");
+
+            assertEquals(itsFacing, facing.name(), "the train placed facing " + facing + " stands on a copy that records"
+                + " no facing, or another (RSA2-C7)");
+
+            // WHERE IT MAY GO: only the station the way it faces
+            int ahead = facing == org.traincontrol.automationui.TilePorts.Side.E ? 66 : 64;
+
+            List<Integer> reached = new ArrayList<>();
+
+            for (Object o : built.getJSONArray("edges"))
+            {
+                org.json.JSONObject edge = (org.json.JSONObject) o;
+
+                if (standing.equals(edge.getString("start"))) reached.add(sensorOf.get(edge.getString("end")));
+            }
+
+            assertFalse(reached.isEmpty(), "precondition: the train facing " + facing + " has no way out at all");
+
+            for (Integer sensor : reached)
+            {
+                assertEquals(sensor.intValue(), ahead, "the train placed facing " + facing + " is offered the way out"
+                    + " behind it, where it would drive off the other way over track nothing locked (RSA2-C7): "
+                    + reached);
+            }
+        }
+    }
+
+    /**
      * An edit changes the graph immediately, not at some later save.
      *
      * A derivation lagging behind an edit shows a graph that was true a moment ago, which is worse than

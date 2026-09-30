@@ -6657,16 +6657,22 @@ public class AutonomyEditorPanel extends JPanel
             else if (!found.contains(at)) found.add(at);
         }
 
+        // A SIGNAL FOUND AND REFUSED is said with the addresses that found nothing (MT-505): on the grey line alone
+        // it was behind this window.
+        java.util.List<String> refused = new java.util.ArrayList<>();
+
         for (TileKey one : found)
         {
-            addGuardSignal(guard, station, one, false);
+            String why = addGuardSignal(guard, station, one, false);
+
+            if (why != null) refused.add(why);
         }
 
         if (!found.isEmpty()) refresh();
 
         // Said once, however many went wrong, and after the good ones have been taken.  A dialog per
         // bad address would be a row of them to dismiss before seeing whether anything worked.
-        if (!notNumbers.isEmpty() || !notFound.isEmpty())
+        if (!notNumbers.isEmpty() || !notFound.isEmpty() || !refused.isEmpty())
         {
             StringBuilder trouble = new StringBuilder();
 
@@ -6681,6 +6687,13 @@ public class AutonomyEditorPanel extends JPanel
                 if (trouble.length() > 0) trouble.append("\n");
 
                 trouble.append(I18n.f("autosetup.ui.errorNoSignalAtAddress", joined(notFound)));
+            }
+
+            for (String why : refused)
+            {
+                if (trouble.length() > 0) trouble.append("\n");
+
+                trouble.append(why);
             }
 
             JOptionPane.showMessageDialog(owner(), trouble.toString());
@@ -6707,30 +6720,48 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
+     * A guard signal refused, said in a popup as well as on the grey line (MT-505).
+     *
+     * Adam, 2026-09-29: *"There may have been a gray message, but it wouldn't have been clear since the popup was in the
+     * foreground, so any rejection errors should trigger a popup."*  The guard window comes back the moment a click is
+     * answered and stands in front of the line; a popup stands in front of the window.
+     *
+     * @param why the sentence
+     */
+    private void refuseGuard(String why)
+    {
+        say(hint, why);
+
+        JOptionPane.showMessageDialog(owner(), wrapped(why));
+    }
+
+    /**
      * Adds one signal to a station's protection, and says so in words.
+     *
+     * A refusal is RETURNED rather than said, so the caller can say it where it will be seen (MT-505): a click in a
+     * popup of its own, a list of addresses in the one popup that reports them all.
      *
      * @param station the station's square
      * @param signal the signal's square
      * @param redraw whether to repaint now - false while several are being added at once
+     * @return why the signal was refused, or null when it was added
      */
-    private void addGuardSignal(Guard guard, TileKey station, TileKey signal, boolean redraw)
+    private String addGuardSignal(Guard guard, TileKey station, TileKey signal, boolean redraw)
     {
         java.util.List<TileKey> paired
             = new java.util.ArrayList<>(signalsOf(guard, station));
 
         if (paired.contains(signal))
         {
-            say(hint, I18n.f("autosetup.ui.signalAlreadyPaired", addressOf(signal)));
-            return;
+            return I18n.f("autosetup.ui.signalAlreadyPaired", addressOf(signal));
         }
 
         // NOT THE STATION'S OTHER GUARD (AUT-C2, Adam 2026-09-24: *"make sure the entry guard can never be the same as
         // the exit guard"*).  The store refuses it as well; this is where the operator is told why.
         if (signalsOf(guard == Guard.ENTRY ? Guard.EXIT : Guard.ENTRY, station).contains(signal))
         {
-            say(hint, I18n.f(guard == Guard.ENTRY ? "autosetup.ui.signalIsTheExitGuard"
-                : "autosetup.ui.signalIsTheEntryGuard", addressOf(signal), describeTile(station)));
-            return;
+            return I18n.f(guard == Guard.ENTRY ? "autosetup.ui.signalIsTheExitGuard"
+                : "autosetup.ui.signalIsTheEntryGuard", addressOf(signal), describeTile(station));
         }
 
         paired.add(signal);
@@ -6745,6 +6776,8 @@ public class AutonomyEditorPanel extends JPanel
 
         // The running layout is what throws a protecting signal (VD10-B2).
         setupChanged();
+
+        return null;
     }
 
     /**
@@ -7400,9 +7433,11 @@ public class AutonomyEditorPanel extends JPanel
         {
             TileKey station = signalFor;
 
+            // IN A POPUP as well as on the line (MT-505) - see `refuseGuard`.  Still armed: the next click on a
+            // signal pairs it.
             if (!isPairableSignal(component))
             {
-                say(hint, I18n.t("autosetup.ui.errorNotASignal"));
+                refuseGuard(I18n.t("autosetup.ui.errorNotASignal"));
                 return;
             }
 
@@ -7410,7 +7445,10 @@ public class AutonomyEditorPanel extends JPanel
 
             Guard guard = signalForGuard;
 
-            addGuardSignal(guard, station, tile, true);
+            String refused = addGuardSignal(guard, station, tile, true);
+
+            // SAID BEFORE THE LIST COMES BACK (MT-505): the window stands in front of the line that says it.
+            if (refused != null) refuseGuard(refused);
 
             // And straight back to the list, which is where the signal just clicked now appears.  A
             // second one is a button and another click rather than the whole right-click menu again.

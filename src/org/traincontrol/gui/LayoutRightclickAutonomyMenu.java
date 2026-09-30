@@ -64,6 +64,12 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     static void showFor(TrainControlUI ui, org.traincontrol.automationui.TileGraph.TileKey station, org.traincontrol.automationui.TileGraph.TileKey here,
         final java.awt.Component at, final int x, final int y)
     {
+        // A SQUARE'S MENU ONLY WITH A SETUP LOADED (OB-307; Adam, 2026-09-29: *"right click menus on sensors are also
+        // live ... right click menus also only visible if autonomy loaded."*).  Over a square it offered Start and a
+        // train's routes on a railway nobody had loaded.  The diagram's own menu - no square - still opens: with nothing
+        // loaded it offers the setup, which is how a setup gets loaded from the diagram.
+        if ((station != null || here != null) && (ui == null || !ui.isAutonomyLoaded())) return;
+
         // THE RAILWAY IS ASKED FIRST, AND NOT ON THE EVENT THREAD (D3-A1).
         //
         // The path section below used to be built inside the `invokeLater`: `getPossiblePaths` -

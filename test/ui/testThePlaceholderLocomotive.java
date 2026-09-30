@@ -296,4 +296,36 @@ public class testThePlaceholderLocomotive
 
         return ink;
     }
+
+    /**
+     * It is a tenth lighter than solid, faded as a whole (FR-104).
+     *
+     * Adam, 2026-09-29: *"increase the opacity of the default locomotive icon by 10%, so it's slightly lighter."*  Lighter
+     * is what he asked for, so a tenth of what is behind it shows through - the picture faded AS A WHOLE, so that where
+     * its own parts overlap nothing shows through them: the see-through wheels that ended the first translucent version
+     * came of fading each part as it was painted.
+     *
+     * MUTATION: leave it solid, or fade each part as it is painted, and this fails.
+     */
+    @Test
+    public void testItIsATenthLighter()
+    {
+        BufferedImage picture = LocomotivePlaceholder.image(200);
+
+        int most = 0;
+
+        for (int x = 0; x < picture.getWidth(); x++)
+        {
+            for (int y = 0; y < picture.getHeight(); y++)
+            {
+                most = Math.max(most, picture.getRGB(x, y) >>> 24);
+            }
+        }
+
+        int wanted = Math.round(255 * 0.9f);
+
+        assertTrue(Math.abs(most - wanted) <= 1, "the most solid pixel of the placeholder is " + most + " of 255, not"
+            + " nine tenths of solid (" + wanted + ") - Adam, FR-104: \"increase the opacity of the default locomotive"
+            + " icon by 10%, so it's slightly lighter\"");
+    }
 }

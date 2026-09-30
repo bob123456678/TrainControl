@@ -217,10 +217,10 @@ public class testTheOldAutonomyTabIsGone
     }
 
     /**
-     * Opened there, Documentation can be chosen, and nothing can but it and the download.
+     * Opened there, Documentation can be chosen, and nothing can but it and the offer of a layout.
      *
-     * The download is offered only when a Central Station is connected with pages to fetch (DW-C2); in a simulation
-     * it is not, and the greyed sentence stands in its place.
+     * The offer is a submenu since MT-548's note - the download and Create New Layout - and its own claim is
+     * `testWithNothingToDownloadANewLayoutIsOffered`; here it is the one other thing that may be live.
      *
      * @throws Exception from the event thread or reflection
      */
@@ -235,7 +235,7 @@ public class testTheOldAutonomyTabIsGone
         });
 
         String guide = I18n.t("ui.main.documentation");
-        String download = I18n.t("autosetup.ui.menuNoSetupPossibleDownload");
+        String download = I18n.t("autosetup.ui.menuNoSetupPossible");
 
         JMenuItem documentation = null;
         List<String> items = new ArrayList<>();
@@ -263,6 +263,305 @@ public class testTheOldAutonomyTabIsGone
 
         assertTrue(live.isEmpty(), "on a Central Station layout the Autonomy menu offers more than the download and"
             + " the guide - Adam, 2026-09-24: \"everything but those 2 greyed\".  Live: " + live);
+    }
+
+    /**
+     * Where there is no Central Station layout to download, the Autonomy menu offers a new layout - the Layouts menu's
+     * own Create New Layout (MT-548's note).
+     *
+     * Adam, 2026-09-29, on MT-548: *"works, but what is the cs3 has no layout?  give the user the choice to either
+     * download or create a new one, which redirects to the corresponding option under layouts."*  The offer was the
+     * download alone, and where there was nothing to download the menu said only that autonomy needs a layout.  Both are
+     * offered now, under the Layouts menu's own names, each greyed exactly when its Layouts item would do nothing.
+     *
+     * MUTATION: offer the download alone again, or send Create New Layout anywhere but the Layouts menu's own, and this
+     * fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testWithNothingToDownloadANewLayoutIsOffered() throws Exception
+    {
+        final JMenu menu = theAutonomySlot();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (MenuListener listener : menu.getMenuListeners()) listener.menuSelected(null);
+        });
+
+        JMenu offer = null;
+        List<String> items = new ArrayList<>();
+
+        for (int i = 0; i < menu.getItemCount(); i++)
+        {
+            JMenuItem item = menu.getItem(i);
+
+            if (item == null) continue;
+
+            items.add(item.getText());
+
+            if (item instanceof JMenu && I18n.t("autosetup.ui.menuNoSetupPossible").equals(item.getText()))
+            {
+                offer = (JMenu) item;
+            }
+        }
+
+        assertNotNull(offer, "on a Central Station layout with nothing to download, the Autonomy menu offers no choice of"
+            + " a layout - Adam, MT-548: \"give the user the choice to either download or create a new one\".  Items: "
+            + items);
+
+        assertTrue(offer.isEnabled(), "the offer of a layout is greyed");
+
+        JMenuItem download = null;
+        JMenuItem create = null;
+
+        for (int i = 0; i < offer.getItemCount(); i++)
+        {
+            JMenuItem item = offer.getItem(i);
+
+            if (item == null) continue;
+
+            if (I18n.t("ui.main.toolbar.downloadCSLayout").equals(item.getText())) download = item;
+            if (I18n.t("ui.main.toolbar.createLayout").equals(item.getText())) create = item;
+        }
+
+        assertNotNull(download, "the offer has no Download Central Station Layout Files");
+        assertNotNull(create, "the offer has no Create New Layout");
+
+        // NOTHING TO DOWNLOAD in a simulation: greyed, saying why
+        assertFalse(ui.hasPagesToDownload() && ui.isCentralStationConnected(), "precondition: this simulation has a"
+            + " Central Station layout to download, so the claim below is about the other case");
+
+        assertFalse(download.isEnabled(), "the download is offered with nothing to download (DW-C2)");
+
+        assertTrue(download.getToolTipText() != null && !download.getToolTipText().trim().isEmpty(), "the greyed download"
+            + " does not say why");
+
+        assertTrue(create.isEnabled(), "Create New Layout is greyed where there is nothing to download - the one way left"
+            + " to a layout autonomy can use (MT-548)");
+
+        // AND IT IS THE LAYOUTS MENU'S OWN: its first words, then its folder chooser
+        final JMenuItem creating = create;
+
+        SwingUtilities.invokeLater(creating::doClick);
+
+        javax.swing.JOptionPane first = awaitAnOptionPane(10000);
+
+        assertNotNull(first, "Create New Layout from the Autonomy menu did nothing (MT-548)");
+
+        String said = String.valueOf(first.getMessage());
+
+        dismiss(first);
+
+        assertEquals(said, I18n.t("layout.ui.infoSelectFolderForNewLayout"), "Create New Layout from the Autonomy menu"
+            + " is not the Layouts menu's own (MT-548)");
+
+        javax.swing.JFileChooser chooser = awaitAChooser(10000);
+
+        assertNotNull(chooser, "Create New Layout asked for no folder");
+
+        final javax.swing.JFileChooser cancelling = chooser;
+
+        SwingUtilities.invokeAndWait(cancelling::cancelSelection);
+
+        settle();
+    }
+
+    /**
+     * Open Layout starts at this computer's last layout folder, even with the Central Station's layout switched to
+     * (OB-308).
+     *
+     * Adam, 2026-09-29: *"layouts -> open layout should default to the last used local layout folder.  this seems like a
+     * regression"*.  The chooser started at the layout folder preference, which switching to the Central Station's layout
+     * empties - and a chooser started at nothing opens in Documents.  The last folder is remembered on its own now, and
+     * the chooser opens beside it with it selected: opening it again is one click, and another folder is a step away.
+     *
+     * This class's window started on a sandbox folder and was then switched as the Central Station switch switches it.
+     *
+     * MUTATION: forget the folder with the switch, or open the chooser inside it, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testOpenLayoutStartsAtTheLastLayoutFolder() throws Exception
+    {
+        assertTrue(ui.isRemoteLayout(), "precondition: the layout is not read as a Central Station one");
+
+        final File last = sandbox.getFolder().getAbsoluteFile();
+
+        final java.lang.reflect.Method door = TrainControlUI.class.getDeclaredMethod(
+            "chooseLocalDataFolderMenuItemActionPerformed", java.awt.event.ActionEvent.class);
+
+        door.setAccessible(true);
+
+        SwingUtilities.invokeLater(() ->
+        {
+            try
+            {
+                door.invoke(ui, (java.awt.event.ActionEvent) null);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new RuntimeException(e);
+            }
+        });
+
+        javax.swing.JFileChooser chooser = awaitAChooser(10000);
+
+        assertNotNull(chooser, "Open Layout... asked for no folder");
+
+        final javax.swing.JFileChooser open = chooser;
+        final File[] at = new File[2];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            at[0] = open.getCurrentDirectory();
+            at[1] = open.getSelectedFile();
+
+            open.cancelSelection();
+        });
+
+        settle();
+
+        assertEquals(canonical(at[0]), canonical(last.getParentFile()), "Open Layout... does not start beside the last"
+            + " layout folder of this computer's, " + last + ", once the Central Station's layout is switched to - it"
+            + " starts in " + at[0] + " (OB-308)");
+
+        assertEquals(canonical(at[1]), canonical(last), "Open Layout... does not have the last layout folder selected");
+
+        // AND A FOLDER CHOSEN SINCE IS THE ONE REMEMBERED.  Every door that names a layout folder - Open Layout, Create
+        // New Layout, the download, the demo layout - writes it through the one method that remembers it, so that
+        // method is asked here and the doors are counted.
+        String code = new String(Files.readAllBytes(Paths.get("src/org/traincontrol/gui/TrainControlUI.java")),
+            StandardCharsets.UTF_8);
+
+        assertEquals(code.split("prefs\\.put\\(LAYOUT_OVERRIDE_PATH_PREF", -1).length - 1, 1, "a door writes the layout"
+            + " folder without going through `layoutFolderIs`, so the folder it names is not remembered (OB-308)");
+
+        final java.lang.reflect.Method folderIs = TrainControlUI.class.getDeclaredMethod("layoutFolderIs", String.class);
+
+        folderIs.setAccessible(true);
+
+        File other = Files.createTempDirectory("ob308").toFile();
+
+        other.deleteOnExit();
+
+        try
+        {
+            folderIs.invoke(null, other.getAbsolutePath());
+
+            // AND THE SWITCH, as it switches
+            folderIs.invoke(null, "");
+
+            SwingUtilities.invokeLater(() ->
+            {
+                try
+                {
+                    door.invoke(ui, (java.awt.event.ActionEvent) null);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            final javax.swing.JFileChooser again = awaitAChooser(10000);
+
+            assertNotNull(again, "Open Layout... asked for no folder the second time");
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                at[1] = again.getSelectedFile();
+
+                again.cancelSelection();
+            });
+
+            settle();
+
+            assertEquals(canonical(at[1]), canonical(other), "a layout folder named since is not the one Open Layout..."
+                + " starts at after the switch (OB-308)");
+        }
+        finally
+        {
+            // PUT BACK as this class's window has it: the sandbox remembered, and no local layout
+            folderIs.invoke(null, last.getAbsolutePath());
+            folderIs.invoke(null, "");
+
+            other.delete();
+        }
+    }
+
+    private static String canonical(File file) throws java.io.IOException
+    {
+        return file == null ? null : file.getCanonicalPath();
+    }
+
+    /** A showing window's option pane, within the time, or null. */
+    private static javax.swing.JOptionPane awaitAnOptionPane(long millis) throws Exception
+    {
+        long giveUp = System.currentTimeMillis() + millis;
+
+        while (System.currentTimeMillis() < giveUp)
+        {
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
+
+                javax.swing.JOptionPane pane = componentIn(((javax.swing.JDialog) window).getContentPane(),
+                    javax.swing.JOptionPane.class);
+
+                if (pane != null) return pane;
+            }
+
+            Thread.sleep(50);
+        }
+
+        return null;
+    }
+
+    /** A file chooser showing in a window, within the time, or null. */
+    private static javax.swing.JFileChooser awaitAChooser(long millis) throws Exception
+    {
+        long giveUp = System.currentTimeMillis() + millis;
+
+        while (System.currentTimeMillis() < giveUp)
+        {
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
+
+                javax.swing.JFileChooser found = componentIn(((javax.swing.JDialog) window).getContentPane(),
+                    javax.swing.JFileChooser.class);
+
+                if (found != null) return found;
+            }
+
+            Thread.sleep(50);
+        }
+
+        return null;
+    }
+
+    private static <T> T componentIn(java.awt.Container container, Class<T> type)
+    {
+        for (java.awt.Component child : container.getComponents())
+        {
+            if (type.isInstance(child)) return type.cast(child);
+
+            if (child instanceof java.awt.Container)
+            {
+                T found = componentIn((java.awt.Container) child, type);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
+    }
+
+    private static void dismiss(final javax.swing.JOptionPane pane) throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> pane.setValue(javax.swing.JOptionPane.OK_OPTION));
     }
 
     /**

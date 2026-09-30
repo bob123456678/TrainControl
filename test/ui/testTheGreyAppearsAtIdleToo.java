@@ -1129,4 +1129,278 @@ public class testTheGreyAppearsAtIdleToo
     {
         SwingUtilities.invokeAndWait(() -> { });
     }
+
+    // ---------------------------------------------------------------- nothing without a loaded setup (OB-307)
+
+    /**
+     * No train's line is worked out while no setup is loaded (OB-307).
+     *
+     * Adam, 2026-09-29: *"even when autonomy isn't loaded (i.e. when switching diagram types from CS to local), the orange
+     * lines with tran locations are painted ... orange should only be painted with autonomy loaded"*.  The marks were
+     * worked out from whatever railway object there was, and one outlives the setup it was loaded from.
+     *
+     * Last in the class, and the loaded setup put back after: every other claim here reads what was captured in the
+     * set-up, and this one changes nothing they read.
+     *
+     * MUTATION: work the marks out from any railway there is, loaded or not, and this fails.
+     *
+     * @throws Exception from reflection or the event thread
+     */
+    @Test(priority = 1)
+    public void testNoTrainsLineWithoutALoadedSetup() throws Exception
+    {
+        Field active = TrainControlUI.class.getDeclaredField("activeDiagramConfiguration");
+
+        active.setAccessible(true);
+
+        final Object was = active.get(ui);
+
+        assertNotNull(was, "precondition: no setup is loaded, so the claim below cannot tell");
+
+        // THE CONTROL: loaded, the marks are worked out from the railway
+        support.CoveredMarks.refresh(ui);
+
+        assertNotNull(railwayTheMarksAsk(), "precondition: with the setup loaded the marks are worked out from no"
+            + " railway, so the claim below cannot tell");
+
+        try
+        {
+            // UNLOADED, with the railway object still there - which is what outlives the setup
+            active.set(ui, null);
+
+            assertTrue(model.hasAutoLayout(), "precondition: there is no railway object left, so the claim below cannot"
+                + " tell");
+
+            support.CoveredMarks.refresh(ui);
+
+            assertNull(railwayTheMarksAsk(), "the marks are worked out from a railway with no setup loaded - Adam,"
+                + " OB-307: \"orange should only be painted with autonomy loaded\"");
+
+            Field covered = TrainControlUI.class.getDeclaredField("coveredTrack");
+
+            covered.setAccessible(true);
+
+            assertTrue(((java.util.Map<?, ?>) covered.get(ui)).isEmpty(), "a train's line is still marked with no setup"
+                + " loaded (OB-307): " + covered.get(ui));
+        }
+        finally
+        {
+            active.set(ui, was);
+
+            support.CoveredMarks.refresh(ui);
+        }
+    }
+
+    /**
+     * A square's autonomy menu opens only with a setup loaded; the diagram's own menu, the way into the setup, opens
+     * whether or not (OB-307).
+     *
+     * Adam, 2026-09-29: *"right click menus on sensors are also live ... right click menus also only visible if autonomy
+     * loaded."*  The menu over a square offered Start and a train's routes on a railway nobody had loaded.  The menu over
+     * the diagram's background stays: with nothing loaded it offers the setup, which is how a setup gets loaded.
+     *
+     * MUTATION: offer the square's menu with no setup loaded, and this fails.
+     *
+     * @throws Exception from reflection or the event thread
+     */
+    @Test(priority = 1)
+    public void testASquaresMenuOpensOnlyWithASetupLoaded() throws Exception
+    {
+        Field active = TrainControlUI.class.getDeclaredField("activeDiagramConfiguration");
+
+        active.setAccessible(true);
+
+        final Object was = active.get(ui);
+
+        assertNotNull(was, "precondition: no setup is loaded, so the claim below cannot tell");
+
+        final Method showFor = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu").getDeclaredMethod(
+            "showFor", TrainControlUI.class, TileKey.class, TileKey.class, java.awt.Component.class, int.class, int.class);
+
+        showFor.setAccessible(true);
+
+        final javax.swing.JFrame[] host = new javax.swing.JFrame[1];
+        final javax.swing.JLabel[] spot = new javax.swing.JLabel[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            host[0] = new javax.swing.JFrame("OB-307");
+            spot[0] = new javax.swing.JLabel("OB-307");
+            host[0].add(spot[0]);
+            host[0].setSize(400, 300);
+            host[0].setVisible(true);
+        });
+
+        try
+        {
+            // THE CONTROL: loaded, the square's menu opens
+            assertTrue(opens(showFor, coveredSquare), "precondition: with a setup loaded the square's menu does not"
+                + " open, so the claim below cannot tell");
+
+            active.set(ui, null);
+
+            assertFalse(opens(showFor, coveredSquare), "a square's autonomy menu opens with no setup loaded - Adam,"
+                + " OB-307: \"right click menus also only visible if autonomy loaded\"");
+
+            // AND THE DIAGRAM'S OWN MENU STILL OPENS: the way into the setup
+            assertTrue(opens(showFor, null), "the diagram's own menu no longer opens with no setup loaded, and it is the"
+                + " way into the setup from the diagram");
+        }
+        finally
+        {
+            active.set(ui, was);
+
+            SwingUtilities.invokeAndWait(() -> host[0].dispose());
+        }
+    }
+
+    /**
+     * Loading a setup asks for the trains' lines, and unloading asks again, without anyone else asking (OB-307).
+     *
+     * The lines are worked out only with a setup loaded, so the two doors that change whether one is loaded must ask for
+     * them: loaded, they would otherwise stay off until a train moved; unloaded, they would stay drawn over a diagram with
+     * nothing loaded, which is what Adam saw.
+     *
+     * Last of all, because unloading takes this class's setup away.
+     *
+     * MUTATION: leave either door's ask out, and this fails.
+     *
+     * @throws Exception from reflection or the event thread
+     */
+    @Test(priority = 2)
+    public void testLoadingAndUnloadingRedrawTheLines() throws Exception
+    {
+        Field active = TrainControlUI.class.getDeclaredField("activeDiagramConfiguration");
+
+        active.setAccessible(true);
+
+        final String was = (String) active.get(ui);
+
+        assertNotNull(was, "precondition: no setup is loaded, so the claim below cannot tell");
+
+        // NOTHING LOADED, and the lines asked for once
+        active.set(ui, null);
+
+        support.CoveredMarks.refresh(ui);
+
+        assertNull(railwayTheMarksAsk(), "precondition: the lines are worked out with nothing loaded (OB-307's own"
+            + " claim), so the claim below cannot tell");
+
+        // LOADED THROUGH THE DOOR, and nobody asking after it
+        SwingUtilities.invokeAndWait(() -> ui.autonomyLoadedFromDiagram(was, false));
+
+        support.CoveredMarks.settle(ui);
+
+        assertNotNull(railwayTheMarksAsk(), "loading a setup did not ask for the trains' lines, so they stay off until"
+            + " something else asks (OB-307)");
+
+        // AND UNLOADED THROUGH THE DOOR
+        SwingUtilities.invokeAndWait(() -> ui.resetAutonomySession());
+
+        support.CoveredMarks.settle(ui);
+
+        assertNull(railwayTheMarksAsk(), "unloading did not ask for the trains' lines again, so they stay drawn with"
+            + " nothing loaded - Adam, OB-307: \"orange should only be painted with autonomy loaded\"");
+    }
+
+    /** The railway the last covered-track ask was worked out from, or null. */
+    private static Object railwayTheMarksAsk() throws Exception
+    {
+        Field subject = TrainControlUI.class.getDeclaredField("coveredTrackSubject");
+
+        subject.setAccessible(true);
+
+        Object ask = subject.get(ui);
+
+        if (ask == null) return null;
+
+        Field railway = ask.getClass().getDeclaredField("railway");
+
+        railway.setAccessible(true);
+
+        return railway.get(ask);
+    }
+
+    /** Whether the autonomy menu for this square - or, for null, the diagram's own - opens over the test's label. */
+    private static boolean opens(final Method showFor, final TileKey square) throws Exception
+    {
+        final javax.swing.JLabel spot = theSpot();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                showFor.invoke(null, ui, null, square, spot, 10, 10);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new RuntimeException(e);
+            }
+        });
+
+        long giveUp = System.currentTimeMillis() + 4000;
+
+        while (System.currentTimeMillis() < giveUp)
+        {
+            final javax.swing.JPopupMenu[] shown = new javax.swing.JPopupMenu[1];
+
+            SwingUtilities.invokeAndWait(() -> shown[0] = aMenuOver(spot));
+
+            if (shown[0] != null)
+            {
+                SwingUtilities.invokeAndWait(() -> shown[0].setVisible(false));
+
+                return true;
+            }
+
+            Thread.sleep(50);
+        }
+
+        return false;
+    }
+
+    private static javax.swing.JLabel theSpot()
+    {
+        for (java.awt.Window window : java.awt.Window.getWindows())
+        {
+            if (window instanceof javax.swing.JFrame && "OB-307".equals(((javax.swing.JFrame) window).getTitle())
+                && window.isShowing())
+            {
+                return (javax.swing.JLabel) ((javax.swing.JFrame) window).getContentPane().getComponent(0);
+            }
+        }
+
+        throw new IllegalStateException("the test's own window is not showing");
+    }
+
+    /** A showing popup menu invoked over this component, anywhere on screen, or null. */
+    private static javax.swing.JPopupMenu aMenuOver(java.awt.Component invoker)
+    {
+        for (java.awt.Window window : java.awt.Window.getWindows())
+        {
+            javax.swing.JPopupMenu found = popupIn(window, invoker);
+
+            if (found != null) return found;
+        }
+
+        return null;
+    }
+
+    private static javax.swing.JPopupMenu popupIn(java.awt.Container container, java.awt.Component invoker)
+    {
+        for (java.awt.Component child : container.getComponents())
+        {
+            if (child instanceof javax.swing.JPopupMenu && child.isShowing()
+                && ((javax.swing.JPopupMenu) child).getInvoker() == invoker) return (javax.swing.JPopupMenu) child;
+
+            if (child instanceof java.awt.Container)
+            {
+                javax.swing.JPopupMenu found = popupIn((java.awt.Container) child, invoker);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
+    }
 }

@@ -609,4 +609,347 @@ public class testLocIconCrop
         assertTrue(below.getBlue() > below.getRed(),
             "the bottom half of the crop is not the blue half of the photograph.  Found " + below);
     }
+
+    /**
+     * The picture's own tool is a wrench in its upper left that chooses the icon, and the pointer over it is the plain one
+     * (FR-104).
+     *
+     * Adam, 2026-09-29: *"instead of "right click to change icon", add a wrench icon to the upper-left of the locomotive
+     * icon."*  And on the pointer: *"change the cover icon for the loc icon from the hand to regular"*.  The right-click
+     * still opens the same chooser; the sentence telling you to right-click is gone with the need for it.
+     *
+     * MUTATION: leave the hand on the picture, or wire the wrench to nothing, and this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testTheWrenchChoosesTheIconAndThePointerIsPlain() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+        org.traincontrol.marklin.MarklinControlStation model = null;
+        TrainControlUI ui = null;
+
+        try
+        {
+            // OPENED INSIDE THE TRY (TSX-B8, OB-111)
+            sandbox = support.LayoutSandbox.open();
+
+            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+
+            ui = windowOver(model);
+
+            final javax.swing.JLabel picture = field(ui, "locIcon", javax.swing.JLabel.class);
+
+            assertEquals(picture.getCursor().getType(), java.awt.Cursor.DEFAULT_CURSOR, "the pointer over the locomotive"
+                + " picture is still a hand - Adam, FR-104: \"change the cover icon for the loc icon from the hand to"
+                + " regular\"");
+
+            assertNotEquals(picture.getToolTipText(), org.traincontrol.util.I18n.t("ui.main.tooltip.locIcon"),
+                "the picture still says to right-click it, where the wrench now does it (FR-104)");
+
+            final javax.swing.JLabel wrench = field(ui, "iconWrench", javax.swing.JLabel.class);
+            final javax.swing.JLabel crop = field(ui, "cropOverlay", javax.swing.JLabel.class);
+
+            assertTrue(wrench.getToolTipText() != null && !wrench.getToolTipText().trim().isEmpty(), "the wrench says"
+                + " nothing about what it does");
+
+            // THE UPPER LEFT, with the crop mark in the upper right: both shown, as a hover shows them, and laid out
+            final java.awt.Point[] at = new java.awt.Point[2];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                wrench.setVisible(true);
+                crop.setVisible(true);
+                picture.setSize(296, 116);
+                picture.invalidate();
+                picture.validate();
+
+                at[0] = javax.swing.SwingUtilities.convertPoint(wrench, 0, 0, picture);
+                at[1] = javax.swing.SwingUtilities.convertPoint(crop, 0, 0, picture);
+            });
+
+            assertTrue(javax.swing.SwingUtilities.isDescendingFrom(wrench, picture), "the wrench is not on the picture");
+
+            assertTrue(at[0].x < picture.getWidth() / 4 && at[0].y < picture.getHeight() / 4, "the wrench is not in the"
+                + " picture's upper left - it is at " + at[0] + " (FR-104)");
+
+            assertTrue(at[0].x < at[1].x, "the wrench is not left of the crop mark: " + at[0] + " against " + at[1]);
+
+            // A LEFT CLICK ON IT OPENS THE ICON CHOOSER, for the locomotive on show
+            final org.traincontrol.marklin.MarklinLocomotive loc = new org.traincontrol.marklin.MarklinLocomotive(model,
+                84, org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, "FR-104 wrench");
+
+            java.lang.reflect.Field active = TrainControlUI.class.getDeclaredField("activeLoc");
+
+            active.setAccessible(true);
+            active.set(ui, loc);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> wrench.dispatchEvent(new java.awt.event.MouseEvent(wrench,
+                java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON1_MASK,
+                5, 5, 1, false, java.awt.event.MouseEvent.BUTTON1)));
+
+            final javax.swing.JFileChooser chooser = awaitAChooser(10000);
+
+            assertNotNull(chooser, "a left click on the wrench opened no icon chooser (FR-104)");
+
+            javax.swing.SwingUtilities.invokeAndWait(chooser::cancelSelection);
+        }
+        finally
+        {
+            closeTheWindow(ui);
+
+            if (model != null) model.stop();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * A picture from the Central Station can be cropped here (FR-104).
+     *
+     * Adam, 2026-09-29: *"also, make central station supplied icons croppable locally."*  The crop mark was offered only on
+     * a picture of this computer's, and re-cropping refused anything else, so a locomotive showing the Central Station's
+     * own picture had nothing to crop with.  The crop is kept here, as every crop is; the Central Station's picture is
+     * kept beside it to crop again from, and never as one of the crops that replacing a crop deletes.
+     *
+     * MUTATION: crop nothing for a Central Station picture, or offer the mark only on a picture of this computer's, and
+     * this fails.
+     *
+     * @throws Exception from the event thread
+     */
+    @Test
+    public void testACentralStationPictureCanBeCropped() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+        org.traincontrol.marklin.MarklinControlStation model = null;
+        TrainControlUI ui = null;
+
+        String crop = null;
+        File kept = null;
+
+        try
+        {
+            // OPENED INSIDE THE TRY (TSX-B8, OB-111)
+            sandbox = support.LayoutSandbox.open();
+
+            model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, false);
+
+            ui = windowOver(model);
+
+            // THE CENTRAL STATION'S PICTURE, as a URL the way the station's are
+            File folder = java.nio.file.Files.createTempDirectory("fr104").toFile();
+
+            folder.deleteOnExit();
+
+            File station = new File(folder, "BR 101.png");
+
+            java.awt.image.BufferedImage drawn = new java.awt.image.BufferedImage(400, 160,
+                java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+            java.awt.Graphics2D g = drawn.createGraphics();
+
+            g.setColor(java.awt.Color.RED);
+            g.fillRect(0, 0, 400, 80);
+            g.setColor(java.awt.Color.BLUE);
+            g.fillRect(0, 80, 400, 80);
+            g.dispose();
+
+            assertTrue(javax.imageio.ImageIO.write(drawn, "png", station), "precondition: the picture was not written");
+
+            station.deleteOnExit();
+
+            final org.traincontrol.marklin.MarklinLocomotive loc = new org.traincontrol.marklin.MarklinLocomotive(model,
+                85, org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, "FR-104 station picture");
+
+            loc.setImageURL(station.toURI().toString());
+
+            assertNull(loc.getLocalImageURL(), "precondition: the locomotive has a picture of this computer's already");
+
+            // THE CROP MARK'S DOOR
+            ui.recropLocIcon(loc, ui);
+
+            final javax.swing.JDialog window = awaitADialogTitled(org.traincontrol.util.I18n.t("loc.ui.cropTitle"), 15000);
+
+            assertNotNull(window, "no crop window opened for a Central Station picture (FR-104)");
+
+            final javax.swing.AbstractButton ok = buttonIn(window, org.traincontrol.util.I18n.t("ui.ok"));
+
+            assertNotNull(ok, "the crop window has no OK");
+
+            javax.swing.SwingUtilities.invokeAndWait(ok::doClick);
+
+            long giveUp = System.currentTimeMillis() + 10000;
+
+            while (loc.getLocalImageURL() == null && System.currentTimeMillis() < giveUp) Thread.sleep(50);
+
+            crop = loc.getLocalImageURL();
+
+            assertNotNull(crop, "OK on the crop of a Central Station picture set no icon (FR-104)");
+
+            assertTrue(org.traincontrol.util.Util.isLocIconFile(crop), "the crop is not kept among this computer's icons: "
+                + crop);
+
+            // AND THE STATION'S PICTURE KEPT TO CROP AGAIN FROM, outside the crops that are tidied away
+            kept = ui.cropSourceOf(crop);
+
+            assertNotNull(kept, "the crop remembers no picture to crop again from, so a second crop could only go"
+                + " tighter");
+
+            assertFalse(org.traincontrol.util.Util.isLocIconFile(kept.toURI().toString()), "the Central Station's picture"
+                + " is kept among the crops, where replacing the crop would delete it: " + kept);
+
+            assertTrue(kept.getCanonicalPath().startsWith(new File(org.traincontrol.util.Util.LOC_ICON_FOLDER)
+                .getCanonicalPath()), "the Central Station's picture is kept outside the application's icon folder: "
+                + kept);
+
+            java.awt.image.BufferedImage whole = javax.imageio.ImageIO.read(kept);
+
+            assertTrue(whole != null && whole.getWidth() == 400 && whole.getHeight() == 160, "what is kept to crop again"
+                + " from is not the whole of the Central Station's picture");
+
+            // AND THE MARK IS OFFERED OVER SUCH A PICTURE - and over no picture at all, nothing
+            java.lang.reflect.Method offers = TrainControlUI.class.getDeclaredMethod("offersACrop",
+                org.traincontrol.base.Locomotive.class);
+
+            offers.setAccessible(true);
+
+            loc.setLocalImageURL(null);
+
+            assertTrue((Boolean) offers.invoke(null, loc), "the crop mark is not offered over a Central Station picture"
+                + " (FR-104)");
+
+            assertFalse((Boolean) offers.invoke(null, new org.traincontrol.marklin.MarklinLocomotive(model, 86,
+                org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, "FR-104 no picture")), "the crop mark is"
+                + " offered over a locomotive with no picture at all");
+        }
+        finally
+        {
+            if (crop != null && ui != null) ui.deleteLocIcon(crop);
+
+            if (kept != null) kept.delete();
+
+            closeTheWindow(ui);
+
+            if (model != null) model.stop();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** The main window over a model, as the application builds it. */
+    private static TrainControlUI windowOver(final org.traincontrol.marklin.MarklinControlStation model) throws Exception
+    {
+        final TrainControlUI[] made = new TrainControlUI[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                made[0] = new TrainControlUI();
+                made[0].setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        });
+
+        return made[0];
+    }
+
+    private static void closeTheWindow(final TrainControlUI ui) throws Exception
+    {
+        if (ui != null) javax.swing.SwingUtilities.invokeAndWait(ui::dispose);
+    }
+
+    private static <T> T field(Object owner, String name, Class<T> type) throws Exception
+    {
+        java.lang.reflect.Field f = owner.getClass().getDeclaredField(name);
+
+        f.setAccessible(true);
+
+        return type.cast(f.get(owner));
+    }
+
+    /** A file chooser showing in a window, within the time, or null. */
+    private static javax.swing.JFileChooser awaitAChooser(long millis) throws Exception
+    {
+        long giveUp = System.currentTimeMillis() + millis;
+
+        while (System.currentTimeMillis() < giveUp)
+        {
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
+
+                javax.swing.JFileChooser found = chooserIn(((javax.swing.JDialog) window).getContentPane());
+
+                if (found != null) return found;
+            }
+
+            Thread.sleep(50);
+        }
+
+        return null;
+    }
+
+    private static javax.swing.JFileChooser chooserIn(java.awt.Container container)
+    {
+        for (java.awt.Component child : container.getComponents())
+        {
+            if (child instanceof javax.swing.JFileChooser) return (javax.swing.JFileChooser) child;
+
+            if (child instanceof java.awt.Container)
+            {
+                javax.swing.JFileChooser found = chooserIn((java.awt.Container) child);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
+    }
+
+    /** A showing dialog titled so, within the time, or null. */
+    private static javax.swing.JDialog awaitADialogTitled(String title, long millis) throws Exception
+    {
+        long giveUp = System.currentTimeMillis() + millis;
+
+        while (System.currentTimeMillis() < giveUp)
+        {
+            for (java.awt.Window window : java.awt.Window.getWindows())
+            {
+                if (window instanceof javax.swing.JDialog && window.isShowing()
+                    && title.equals(((javax.swing.JDialog) window).getTitle())) return (javax.swing.JDialog) window;
+            }
+
+            Thread.sleep(50);
+        }
+
+        return null;
+    }
+
+    private static javax.swing.AbstractButton buttonIn(java.awt.Container container, String text)
+    {
+        for (java.awt.Component child : container.getComponents())
+        {
+            if (child instanceof javax.swing.AbstractButton && text.equals(((javax.swing.AbstractButton) child).getText()))
+            {
+                return (javax.swing.AbstractButton) child;
+            }
+
+            if (child instanceof java.awt.Container)
+            {
+                javax.swing.AbstractButton found = buttonIn((java.awt.Container) child, text);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
+    }
 }

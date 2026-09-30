@@ -589,8 +589,44 @@ public class AutonomyBuilder
     }
 
     /**
+     * For each side trains leave a square by, the side a train facing that way would have come in by (RSA2-C7): the other
+     * end of the track that side is on, which is what `facingOf` reads back - the opposite side where no track says.  In
+     * the order the ways out are found, without repeats.
+     */
+    private List<TilePorts.Side> sidesBehindTheWaysOut(TileKey tile)
+    {
+        List<TilePorts.Side> out = new ArrayList<>();
+
+        Map<TileGraph.RouteId, TilePorts.Route> routes =
+            reducer.getGraph() == null ? null : reducer.getGraph().getRoutes(tile);
+
+        for (TilePorts.Side ahead : departureSides(tile))
+        {
+            TilePorts.Side behind = null;
+
+            if (routes != null)
+            {
+                for (TilePorts.Route route : routes.values())
+                {
+                    if (route.getA() == ahead) behind = route.getB();
+                    else if (route.getB() == ahead) behind = route.getA();
+
+                    if (behind != null) break;
+                }
+            }
+
+            if (behind == null) behind = ahead.opposite();
+
+            if (!out.contains(behind)) out.add(behind);
+        }
+
+        return out;
+    }
+
+    /**
      * Every Point a tile is emitted as: one per arrival side, and a second per side where trains may turn
-     * round there.  A tile nothing arrives at is emitted whole, since there is no facing to record.
+     * round there.  A tile nothing arrives at is emitted whole where one way or none leads out of it, and as one copy
+     * per way out where more do (RSA2-C7), so the copy a train stands on says which way it faces.
      */
     private List<Node> nodesFor(TileKey tile)
     {
@@ -604,7 +640,24 @@ public class AutonomyBuilder
 
         if (sides.isEmpty())
         {
-            out.add(new Node(tile, null, false));
+            // NOTHING ARRIVES, BUT A TRAIN STANDING HERE STILL FACES A WAY (RSA2-C7; Adam, 2026-09-29: "Go with a.").
+            // Emitted whole, the square recorded no facing, so a train placed on it by hand was offered every way out -
+            // and sent the way it does not face, it drove off the other way over track nothing locked: the runtime never
+            // commands a direction, and the copy IS the facing.  Where track leaves by more than one side, one copy per
+            // way out, each standing for a train facing it: given the side such a train would have come in by, so
+            // `leavesBy` lets it out ahead only, `facingOf` names that way, and the facing it is placed with chooses its
+            // copy as everywhere else.  Nothing arrives, so nothing is sent into either copy.  One way out, or none, is
+            // still one Point: there is no facing to choose.
+            List<TilePorts.Side> behind = sidesBehindTheWaysOut(tile);
+
+            if (behind.size() > 1)
+            {
+                for (TilePorts.Side side : behind) out.add(new Node(tile, side, false));
+            }
+            else
+            {
+                out.add(new Node(tile, null, false));
+            }
         }
         else
         {
