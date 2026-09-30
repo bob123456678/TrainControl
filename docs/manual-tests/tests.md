@@ -27,15 +27,12 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-505](#mt-505) | 2026-09-24 | A guard signal that no way into its station passes is noticed | fixed unvalidated | AUT-C2, MT-493 |
-| [MT-588](#mt-588) | 2026-09-29 | A guard signal refused says why in a popup | fixed unvalidated | MT-505 |
-| [MT-589](#mt-589) | 2026-09-29 | Open Layout starts at your last layout folder | fixed unvalidated | OB-308 |
-| [MT-590](#mt-590) | 2026-09-29 | No trains' lines and no square menus with autonomy not loaded | fixed unvalidated | OB-307 |
 | [MT-591](#mt-591) | 2026-09-29 | The locomotive picture: a wrench, the plain pointer, and Central Station pictures croppable | fixed unvalidated | FR-104 |
 | [MT-592](#mt-592) | 2026-09-29 | On the Central Station's layout, the Autonomy menu offers to download or create a layout | fixed unvalidated | MT-548 |
+| [MT-593](#mt-593) | 2026-09-29 | A square that is not a signal, clicked as a guard, brings the guard window back | fixed unvalidated | MT-505, MT-588 |
 
-Everything else - 586 of 592 - needs nothing from you unless the area changes again:
-463 **fixed validated** and 123 **superseded**.
+Everything else - 590 of 593 - needs nothing from you unless the area changes again:
+466 **fixed validated** and 124 **superseded**.
 
 ---
 
@@ -26081,7 +26078,7 @@ as the exit guard."*
 
 ### MT-505 - 2026-09-24 - A guard signal that no way into its station passes is noticed
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** AUT-C2, MT-493
 
 **Written:** 2026-09-24
@@ -26140,6 +26137,16 @@ ways); choose another signal off the way in, and this entry can be run.
 works, but if a non-signal is clicked during selection mode, the dialog goes away.  it should send the user back to the existing popup so they can click on another square.
 
 *Run against commit d851714c, in English - build\classes, compiled 29 Sep 21:00 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-29.**
+
+**Your note is built** (2026-09-29, `770dccd8`): a click on a square that is not a signal, while a guard is being
+chosen, says so in a popup and then brings the guard window back, its list as it was, so another square is Click It on
+the Diagram away.  It is MT-593.
+
+**Claude, 2026-09-29.**
+
+Validated on your *Works* of 2026-09-29; the note goes on as MT-593.
 
 ---
 
@@ -29030,7 +29037,7 @@ Validated on your *Works* of 2026-09-29.
 
 ### MT-588 - 2026-09-29 - A guard signal refused says why in a popup
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-505
 
 **Written:** 2026-09-29
@@ -29067,13 +29074,19 @@ step 2 fails in exit guard - the dialog closes and we have to reopen everything 
 
 *Run against commit d851714c, in English - build\classes, compiled 29 Sep 21:00 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-29.**
+
+**Your step 2** (2026-09-29): the guard window closing after a square that is not a signal was what this entry
+expected - the choice stayed armed with no window - and you have ruled it the wrong thing.  Built in `770dccd8`: after the
+popup the window comes back.  Your step 1 passed; both are in MT-593, which replaces this entry.
+
 ---
 
 <a id="mt-589"></a>
 
 ### MT-589 - 2026-09-29 - Open Layout starts at your last layout folder
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-308
 
 **Written:** 2026-09-29
@@ -29102,13 +29115,17 @@ folder by hand once first.
 
 *Run against commit d851714c, in English - build\classes, compiled 29 Sep 21:00 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-29.**
+
+Validated on your *Works* of 2026-09-29.
+
 ---
 
 <a id="mt-590"></a>
 
 ### MT-590 - 2026-09-29 - No trains' lines and no square menus with autonomy not loaded
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** OB-307
 
 **Written:** 2026-09-29
@@ -29138,6 +29155,10 @@ painted with autonomy loaded, and right click menus also only visible if autonom
 **Adam, 2026-09-29 (triage).** Works.
 
 *Run against commit d851714c, in English - build\classes, compiled 29 Sep 21:00 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-29.**
+
+Validated on your *Works* of 2026-09-29.
 
 ---
 
@@ -29186,6 +29207,12 @@ CS croppability not yet tested, update this MT that I still need to do that.
 
 *Run against commit d851714c, in English - build\classes, compiled 29 Sep 21:00 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-29.**
+
+**Your note is built** (2026-09-29, `770dccd8`): the wrench is redrawn with an open jaw at each end of its handle, so
+it looks the same turned round (`ui.testLocIconCrop.testTheWrenchHasAJawAtEachEnd`).  **Still yours:** step 2, cropping a
+Central Station picture, which you have not run yet - run steps 1 to 3, and look at the wrench again as you do.
+
 ---
 
 <a id="mt-592"></a>
@@ -29216,5 +29243,36 @@ download or create a new one, which redirects to the corresponding option under 
   Nothing is created.
 
 *What this is:* `regression.testTheOldAutonomyTabIsGone.testWithNothingToDownloadANewLayoutIsOffered`.
+
+---
+
+<a id="mt-593"></a>
+
+### MT-593 - 2026-09-29 - A square that is not a signal, clicked as a guard, brings the guard window back
+
+**Disposition:** fixed unvalidated
+**From:** MT-505, MT-588
+
+**Written:** 2026-09-29
+
+Your words, 2026-09-29, on MT-505: *"works, but if a non-signal is clicked during selection mode, the dialog goes
+away. it should send the user back to the existing popup so they can click on another square."*  And on MT-588: *"step 1
+OK step 2 fails in exit guard - the dialog closes and we have to reopen everything again."*
+
+**Steps**
+
+1. In the autonomy editor, right-click bottomMainB, choose **Exit Guard Signal...**, press **Click It on the Diagram**,
+   and click a square that is not a signal - a piece of track.
+2. In the guard window that comes back, press **Click It on the Diagram** again and click a signal.
+3. Press **Done**.  If a signal was added and you do not want it, open the window again, select it, and press
+   **Remove**.
+
+**Expected**
+
+- Step 1: a popup says the square is not a signal.  After it the guard window is back, its list as it was.
+- Step 2: the signal is added to the list - or, where it cannot guard this way, a popup says why and the window comes
+  back again.
+
+*What this is:* `regression.testTheEditorSaysWhatItsToolsDo.testANonSignalClickedAsAGuardIsAPopup`.
 
 ---
