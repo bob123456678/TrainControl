@@ -943,12 +943,309 @@ public class testAnEditedPlacementSurvivesTheRebuild
         }
     }
 
+    /**
+     * Stations moved together in the track editor keep the timetable's legs through them (RSA8-B2): the carry every
+     * build makes kept a name only on the square the build before gave it, and a move had not moved that memory - so
+     * each leg was carried to the station now on its old square, one entry dropped and another sent on a journey nobody
+     * recorded.  A move moves what the carry remembers with the squares.
+     *
+     * MUTATION: leave the carry's memory where the squares were, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testAMoveKeepsTheTimetableOnItsStations() throws Exception
+    {
+        Object[] fixture = fiveStationsWithATimetable("rsa8-b2-save", 8471);
+
+        org.traincontrol.automationui.AutonomySession session = (org.traincontrol.automationui.AutonomySession) fixture[0];
+        org.traincontrol.base.LayoutDiagram page = (org.traincontrol.base.LayoutDiagram) fixture[1];
+        String before = (String) fixture[2];
+
+        // TWO COLUMNS INSERTED, as the track editor moves the squares and tells the setup
+        session.moveTiles(shiftRow(page, 2));
+
+        assertEquals(legsOf(session), before, "a move of stations together carried the timetable's legs to the stations"
+            + " now on their old squares (RSA8-B2)");
+    }
+
+    /**
+     * The same after the track editor's Cancel (RSA8-B2): Cancel put the setup back and rebuilt over what the move had
+     * made the carry remember, and carried every leg the other way.
+     *
+     * MUTATION: put back the setup and not what the carry remembers, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testACancelledMoveKeepsTheTimetableOnItsStations() throws Exception
+    {
+        Object[] fixture = fiveStationsWithATimetable("rsa8-b2-cancel", 8481);
+
+        org.traincontrol.automationui.AutonomySession session = (org.traincontrol.automationui.AutonomySession) fixture[0];
+        org.traincontrol.base.LayoutDiagram page = (org.traincontrol.base.LayoutDiagram) fixture[1];
+        String before = (String) fixture[2];
+
+        org.json.JSONObject asOpened = session.snapshotSetup();
+
+        session.moveTiles(shiftRow(page, 2));
+
+        // CANCEL: the setup put back as the editor opened it, rebuilt over the page as the editor left it
+        assertTrue(session.restoreSetup(asOpened), "precondition: Cancel could not put the setup back");
+
+        assertEquals(legsOf(session), before, "a move cancelled carried the timetable's legs to other stations (RSA8-B2)");
+    }
+
+    /**
+     * The same after the track editor's Ctrl+Z (RSA8-B2): the undo put the page's setup back and rebuilt against what the
+     * move had made the carry remember.  The undo point holds what the carry remembers and every stored leg, and the undo
+     * puts both back.
+     *
+     * MUTATION: put back the page's setup alone at an undo, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testAnUndoneMoveKeepsTheTimetableOnItsStations() throws Exception
+    {
+        Object[] fixture = fiveStationsWithATimetable("rsa8-b2-undo", 8491);
+
+        org.traincontrol.automationui.AutonomySession session = (org.traincontrol.automationui.AutonomySession) fixture[0];
+        org.traincontrol.base.LayoutDiagram page = (org.traincontrol.base.LayoutDiagram) fixture[1];
+        String before = (String) fixture[2];
+
+        // THE UNDO POINT, the move, and Ctrl+Z: the tiles back, then the page's setup
+        java.util.Map<String, Object> undoPoint = session.snapshotPage("main");
+
+        session.moveTiles(shiftRow(page, 2));
+
+        shiftRow(page, -2);
+        session.restorePage("main", undoPoint);
+
+        assertEquals(legsOf(session), before, "a move undone carried the timetable's legs to other stations (RSA8-B2)");
+    }
+
+    /**
+     * A leg to a station with no name of its own names it as before once a move is undone (RSA8-B2): the move renamed
+     * the names made from its square - "main 5,1" became "main 7,1" - and the undo did not name them back, so the leg
+     * named whatever station then stood on the moved square.
+     *
+     * MUTATION: put back the page's setup alone at an undo, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testAnUndoneMoveNamesAnUnnamedStationAsBefore() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("rsa8-b2-unnamed").toFile();
+
+        folder.deleteOnExit();
+
+        org.traincontrol.base.LayoutDiagram page = aRowPage("main", 0, 8501, 5, 13);
+
+        // ALPHA AND BETA NAMED, the three after them not
+        org.traincontrol.automationui.AutonomySession session = sessionOn(folder, page, "B2 unnamed", "Alpha", "Beta");
+
+        for (int x = 5; x <= 9; x += 2)
+        {
+            session.setStation(new org.traincontrol.automationui.TileGraph.TileKey("main", x, 1), true);
+        }
+
+        session.save();
+
+        String[] leg = edgeFrom(new org.json.JSONObject(session.buildConfiguration()), "Beta", "main 5,1");
+
+        assertNotNull(leg, "precondition: no edge from Beta to the unnamed station after it");
+
+        session.setGlobal("timetable", new org.json.JSONArray().put(new org.json.JSONObject().put("loc", MOVED)
+            .put("executionTime", 1L).put("secondsToNext", 5L)
+            .put("path", new org.json.JSONArray().put(new org.json.JSONObject().put("start", leg[0]).put("end", leg[1])))));
+
+        String before = legsOf(session);
+
+        java.util.Map<String, Object> undoPoint = session.snapshotPage("main");
+
+        session.moveTiles(shiftRow(page, 2));
+
+        assertTrue(legsOf(session).contains("main 7,1"), "precondition: the move did not rename the unnamed station's"
+            + " leg: " + legsOf(session));
+
+        shiftRow(page, -2);
+        session.restorePage("main", undoPoint);
+
+        assertEquals(legsOf(session), before, "a move undone left the leg naming the unnamed station by its moved square"
+            + " (RSA8-B2)");
+    }
+
+    /**
+     * A move undone puts the railway's squares back with the page's setup (RSA8-B3): Cancel did, and Ctrl+Z - the other
+     * way back - did not, so while a declined edit waited the carry put each train on the station its moved square held.
+     *
+     * MUTATION: put back the page's setup alone at an undo, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testAnUndoneMovePutsTheRailwaysSquaresBack() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("rsa8-b3-undo").toFile();
+
+        folder.deleteOnExit();
+
+        org.traincontrol.base.LayoutDiagram page = aRowPage("main", 0, 8511, 4, 11);
+
+        org.traincontrol.automationui.AutonomySession session = sessionOn(folder, page, "B3 undo", "Alpha", "Beta",
+            "Gamma", "Delta");
+
+        try
+        {
+            model.parseAuto(session.buildConfiguration());
+
+            Layout running = model.getAutoLayout();
+
+            session.setRunningLayoutSource(() -> model.getAutoLayout());
+
+            assertTrue(running.moveLocomotive(MOVED, "Gamma (eastbound)", false), "precondition: " + MOVED + " not stood"
+                + " on Gamma: " + namesOf(running));
+
+            // THE UNDO POINT, the move, and Ctrl+Z
+            java.util.Map<String, Object> undoPoint = session.snapshotPage("main");
+
+            session.moveTiles(shiftRow(page, 2));
+
+            assertTrue(stoodOn(running, MOVED, "main:7,1", "Gamma"), "precondition: the move did not move the railway's"
+                + " squares: " + standingOn(running));
+
+            shiftRow(page, -2);
+            session.restorePage("main", undoPoint);
+
+            assertTrue(stoodOn(running, MOVED, "main:5,1", "Gamma"), "a move undone left the railway's squares moved, so"
+                + " the carry puts each train on the station its moved square holds (RSA8-B3): " + standingOn(running));
+        }
+        finally
+        {
+            new Layout(model).makeCurrent();
+        }
+    }
+
+    /**
+     * Alpha to Epsilon, two squares apart on one row of a page wide enough to move them, a timetable of Beta to Gamma
+     * eastward and Delta to Gamma westward: the session, the page, and the legs as `legsOf` writes them.
+     */
+    private static Object[] fiveStationsWithATimetable(String folderName, int firstSensor) throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory(folderName).toFile();
+
+        folder.deleteOnExit();
+
+        org.traincontrol.base.LayoutDiagram page = aRowPage("main", 0, firstSensor, 5, 13);
+
+        org.traincontrol.automationui.AutonomySession session = sessionOn(folder, page, folderName, "Alpha", "Beta",
+            "Gamma", "Delta", "Epsilon");
+
+        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+        String[] x = edgeFrom(built, "Beta (eastbound)", "Gamma (eastbound)");
+        String[] y = edgeFrom(built, "Delta (westbound)", "Gamma (westbound)");
+
+        assertTrue(x != null && y != null, "precondition: the two legs are not built: " + x + ", " + y);
+
+        org.json.JSONArray table = new org.json.JSONArray();
+
+        for (String[] leg : new String[][] {x, y})
+        {
+            table.put(new org.json.JSONObject().put("loc", MOVED).put("executionTime", 1L).put("secondsToNext", 5L)
+                .put("path", new org.json.JSONArray().put(new org.json.JSONObject().put("start", leg[0])
+                .put("end", leg[1]))));
+        }
+
+        session.setGlobal("timetable", table);
+
+        return new Object[] {session, page, legsOf(session)};
+    }
+
+    /** The first built edge from a Point whose name begins so, to one whose name begins so. */
+    private static String[] edgeFrom(org.json.JSONObject built, String from, String to)
+    {
+        for (Object o : built.getJSONArray("edges"))
+        {
+            org.json.JSONObject e = (org.json.JSONObject) o;
+
+            if (e.getString("start").startsWith(from) && e.getString("end").startsWith(to))
+            {
+                return new String[] {e.getString("start"), e.getString("end")};
+            }
+        }
+
+        return null;
+    }
+
+    /** The configuration in use's timetable, each entry's legs as "start -> end". */
+    private static String legsOf(org.traincontrol.automationui.AutonomySession session)
+    {
+        StringBuilder out = new StringBuilder();
+
+        org.json.JSONArray table = new org.json.JSONArray(String.valueOf(session.getGlobal("timetable")));
+
+        for (int i = 0; i < table.length(); i++)
+        {
+            for (Object p : table.getJSONObject(i).getJSONArray("path"))
+            {
+                org.json.JSONObject leg = (org.json.JSONObject) p;
+
+                out.append(out.length() == 0 ? "" : "; ").append(leg.getString("start")).append(" -> ")
+                    .append(leg.getString("end"));
+            }
+        }
+
+        return out.toString();
+    }
+
+    /** Every tile on row 1 moved so many columns, as the track editor's shift moves them in place; the moves. */
+    private static java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
+        org.traincontrol.automationui.TileGraph.TileKey> shiftRow(org.traincontrol.base.LayoutDiagram page, int by)
+        throws Exception
+    {
+        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey, org.traincontrol.automationui.TileGraph.TileKey>
+            moves = new java.util.LinkedHashMap<>();
+
+        java.util.List<org.traincontrol.base.LayoutDiagramComponent> all = new java.util.ArrayList<>();
+
+        for (int x = 0; x < page.getSx(); x++)
+        {
+            org.traincontrol.base.LayoutDiagramComponent c = page.getComponent(x, 1);
+
+            if (c != null) all.add(c);
+        }
+
+        for (org.traincontrol.base.LayoutDiagramComponent c : all) page.addComponent(null, c.getX(), 1);
+
+        for (org.traincontrol.base.LayoutDiagramComponent c : all)
+        {
+            int x = c.getX();
+
+            c.setX(x + by);
+            page.addComponent(c, x + by, 1);
+
+            moves.put(new org.traincontrol.automationui.TileGraph.TileKey(page.getName(), x, 1),
+                new org.traincontrol.automationui.TileGraph.TileKey(page.getName(), x + by, 1));
+        }
+
+        return moves;
+    }
+
     /** One line of stations, one per sensor from the first given, starting that many columns in: its page. */
     private static org.traincontrol.base.LayoutDiagram aRowPage(String name, int offset, int firstSensor, int count)
         throws Exception
     {
-        org.traincontrol.base.LayoutDiagram page = new org.traincontrol.base.LayoutDiagram(name, 2 * count + 1 + offset,
-            3, null, null);
+        return aRowPage(name, offset, firstSensor, count, 2 * count + 1 + offset);
+    }
+
+    /** The same on a page this many columns wide. */
+    private static org.traincontrol.base.LayoutDiagram aRowPage(String name, int offset, int firstSensor, int count,
+        int width) throws Exception
+    {
+        org.traincontrol.base.LayoutDiagram page = new org.traincontrol.base.LayoutDiagram(name, width, 3, null, null);
 
         for (int i = 0; i < count; i++)
         {

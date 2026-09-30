@@ -1772,6 +1772,42 @@ public class AutonomyCompanionStore
      */
     private static void repairLocomotiveInTimetable(JSONObject configuration, String from, String to)
     {
+        // AND THE ENTRIES SET ASIDE for pages out of autonomy, with what each followed (RSA8-B4): an entry aside that
+        // kept the old name came back naming a locomotive that no longer exists, and the load dropped it
+        org.json.JSONArray aside = configuration.optJSONArray(AutonomySession.TIMETABLE_ASIDE);
+
+        if (aside != null)
+        {
+            org.json.JSONArray keptAside = new org.json.JSONArray();
+
+            for (int at = 0; at < aside.length(); at++)
+            {
+                JSONObject item = aside.optJSONObject(at);
+
+                JSONObject entry = item == null ? null : item.optJSONObject("entry");
+                JSONObject after = item == null ? null : item.optJSONObject("after");
+
+                if (entry == null) continue;
+
+                if (from.equals(entry.optString(AutonomyBuilder.LOCOMOTIVE, null)))
+                {
+                    if (to == null) continue;
+
+                    entry.put(AutonomyBuilder.LOCOMOTIVE, to);
+                }
+
+                if (after != null && to != null && from.equals(after.optString(AutonomyBuilder.LOCOMOTIVE, null)))
+                {
+                    after.put(AutonomyBuilder.LOCOMOTIVE, to);
+                }
+
+                keptAside.put(item);
+            }
+
+            if (keptAside.length() == 0) configuration.remove(AutonomySession.TIMETABLE_ASIDE);
+            else configuration.put(AutonomySession.TIMETABLE_ASIDE, keptAside);
+        }
+
         if (!configuration.has("globals")) return;
 
         JSONObject globals = configuration.optJSONObject("globals");

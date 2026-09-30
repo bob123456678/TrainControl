@@ -2490,8 +2490,10 @@ and roads (RSA5-B2); and no fold follows a move until the setup is opened again,
 the squares as they were (RSA6-B2) - opening the editor folded already.  Nor after a square deleted, cut or cleared
 (RSA7-A1): the editor's Cancel puts back what it removed, and the fold after it judged those squares against the page the
 editor had emptied.  A move, or a page renamed, moves the squares the railway's Points say they are copies of with the
-setup's, and a Cancel puts them back (RSA7-B3), so a carry while a declined edit waits reads each train's square as it
-now is.  A station name two pages share is settled over
+setup's, and a Cancel or an undo puts them back (RSA7-B3, RSA8-B3), so a carry while a declined edit waits reads each
+train's square as it now is.  What the carry of names remembers of each build moves with a move too, and a Cancel or an
+undo puts it back with every stored leg, so a timetable through stations moved - saved, cancelled or undone - stays on
+those stations (RSA8-B2).  A station name two pages share is settled over
 every page, those out of autonomy too, so the plain name does not move to the other page while one is out (RSA6-C1).
 
 **A page ticked out of autonomy keeps its timetable entries aside until it is back** (Adam, 2026-09-30: *"Do the
@@ -2500,14 +2502,19 @@ second list beside its timetable.  An entry naming a Point on a page out goes th
 or when a railway still running it is folded - remembering the entry it followed.  When the railway is next built with
 that page in autonomy again, each comes back after that entry: first where it followed none, last where that entry is
 gone.  Nothing else moves them - an edit of the timetable meanwhile, an entry recorded, deleted or moved, leaves them
-where they are - and **Clear clears them with the rest**, at once (RSA5-C1).  An entry aside that no page out explains
-any more, its page deleted, is dropped.  Nothing else the load could not read is kept: an entry naming a station
-removed, or a locomotive the database no longer has, is erased by the next fold, as it was before.  `core.testAutonomyDiagramSession`,
+where they are - and **Clear clears them with the rest**, at once (RSA5-C1).  Only the build the railway is made from
+settles them: a build made to look at the setup - every findings check, which the Autonomy menu's tick runs before its
+reload - changes nothing (RSA8-B1).  A locomotive renamed meanwhile is renamed in them too (RSA8-B4), and a run recorded
+twice is set aside twice (RSA8-B5).  An entry aside that no page out explains any more, its page deleted, is dropped -
+but not while a page's file has not loaded: then an entry the build cannot build waits aside too, until the page is
+back (RSA8-B6).  Nothing else the load could not read is kept: an entry naming a station removed, or a locomotive the
+database no longer has, is erased by the next fold, as it was before.  `core.testAutonomyDiagramSession`,
 `regression.testAnEditedPlacementSurvivesTheRebuild`, `regression.testTheImportDoorReadsAnOldFile`.
 
-**The Autonomy panel's Pages dialog is a door like the Autonomy menu's tick** (RSA7-B2): refused while autonomy runs
-(MT-141), it asks first where a train is moving, and it rebuilds the railway from the pages it now uses - so a page ticked
-out there is not run on, and one ticked in is run.  `regression.testNoSetupEditDuringARun`.
+**The Autonomy panel's Pages dialog is built to behave as the Autonomy menu's tick does** (RSA7-B2): refused while
+autonomy runs (MT-141), it asks first where a train is moving, and it rebuilds the railway from the pages it now uses.
+The panel itself is not shown in the window (RLD3-C4), so no door reaches the dialog: **Autonomy > Pages with Autonomy
+Enabled** is the door (RSA8-C1).  `regression.testNoSetupEditDuringARun`.
 
 **The Yes to "reloading will stop the trains" stops every train where it is** (RSA-C1).  Graceful Stop lets each journey
 finish; the Yes also counts a stop, which every journey carries from where it was chosen and asks before and after each

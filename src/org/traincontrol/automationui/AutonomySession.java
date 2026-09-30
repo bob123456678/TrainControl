@@ -123,6 +123,9 @@ public class AutonomySession
 
         moveTheRailwaysSquares(square -> from.equals(square.getPage()) ? new TileKey(to, square.getX(), square.getY())
             : square);
+
+        // NOT WHAT THE CARRY REMEMBERS: until the next `open` this session's pages still carry the old name, and a build
+        // meanwhile names its squares by it (see `pagesStale`)
     }
 
     /**
@@ -149,19 +152,121 @@ public class AutonomySession
 
             if (now == null || now.equals(square)) continue;
 
-            railwaySquaresAsTheySaid.putIfAbsent(point, point.getSquare());
-
             point.setSquare(now.toString());
         }
     }
 
     /**
-     * Each running Point's square as it said before this session first moved it (RSA7-B3): what `restoreSetup` puts back
-     * with the setup, so the track editor's Cancel undoes a move on the railway as well.  Every move is made in the
-     * editor, after the snapshot its Cancel restores, and the editor's reset makes a new session.
+     * What an edit of the track changes outside the setup of its page (RSA8-B2, RSA8-B3): what the carry remembers of
+     * the builds it has seen, the squares the railway running says its Points are copies of, and the names in every
+     * configuration's stored legs.  A page's undo point holds it, and the session holds it as it was before the first
+     * move, for a Cancel; each is put back with the setup.
+     *
+     * A move remembers its stations on their new squares and moves the railway's squares with them - and an undo or a
+     * Cancel that put back the setup alone rebuilt against what the move had made them: the carry sent every leg through
+     * a moved station to the station now on its old square, and each train to another station.  Every move is made in
+     * the track editor, after the snapshot its Cancel restores, and the editor's reset makes a new session.
      */
-    private final Map<org.traincontrol.automation.Point, String> railwaySquaresAsTheySaid =
-        new java.util.IdentityHashMap<>();
+    private static final class Remembered
+    {
+        private final Map<String, TileKey> squares;
+        private final Map<String, String> bases;
+        private final Map<String, Side> facings;
+        private final Map<org.traincontrol.automation.Point, String> railway;
+        private final Map<String, List<String>> legs;
+
+        Remembered(Map<String, TileKey> squares, Map<String, String> bases, Map<String, Side> facings,
+            Map<org.traincontrol.automation.Point, String> railway, Map<String, List<String>> legs)
+        {
+            this.squares = squares;
+            this.bases = bases;
+            this.facings = facings;
+            this.railway = railway;
+            this.legs = legs;
+        }
+    }
+
+    /** Where a page's undo point holds what the edit changes outside the page - see `Remembered`. */
+    private static final String REMEMBERED = "session";
+
+    /** What the carry remembered, and the railway's squares, before the first move - for a Cancel. */
+    private Remembered beforeTheFirstMove;
+
+    /** What this session remembers now - see `Remembered`. */
+    private Remembered remembered()
+    {
+        Map<org.traincontrol.automation.Point, String> railway = new java.util.IdentityHashMap<>();
+
+        org.traincontrol.automation.Layout running = runningLayout == null ? null : runningLayout.get();
+
+        for (org.traincontrol.automation.Point point : running == null
+            ? Collections.<org.traincontrol.automation.Point>emptyList() : running.getPoints())
+        {
+            if (point.getSquare() != null) railway.put(point, point.getSquare());
+        }
+
+        Map<String, List<String>> legs = new LinkedHashMap<>();
+
+        for (String name : store.getConfigurationNames())
+        {
+            org.json.JSONObject configuration = store.getConfiguration(name);
+
+            if (configuration == null) continue;
+
+            List<String> names = new ArrayList<>();
+
+            for (NamedLeg leg : legsOf(configuration))
+            {
+                names.add(leg.get(0));
+                names.add(leg.get(1));
+            }
+
+            legs.put(name, names);
+        }
+
+        return new Remembered(new java.util.HashMap<>(squareOfNameSeen), new java.util.HashMap<>(baseOfNameSeen),
+            new java.util.HashMap<>(facingOfNameSeen), railway, legs);
+    }
+
+    /**
+     * Puts back what this session remembered - and the stored legs where asked, each configuration's by position where
+     * its legs are the ones it remembered.
+     */
+    private void putBack(Remembered was, boolean legsToo)
+    {
+        squareOfNameSeen.clear();
+        squareOfNameSeen.putAll(was.squares);
+
+        baseOfNameSeen.clear();
+        baseOfNameSeen.putAll(was.bases);
+
+        facingOfNameSeen.clear();
+        facingOfNameSeen.putAll(was.facings);
+
+        for (Map.Entry<org.traincontrol.automation.Point, String> said : was.railway.entrySet())
+        {
+            said.getKey().setSquare(said.getValue());
+        }
+
+        if (!legsToo) return;
+
+        for (Map.Entry<String, List<String>> each : was.legs.entrySet())
+        {
+            org.json.JSONObject configuration = store.getConfiguration(each.getKey());
+
+            List<NamedLeg> now = configuration == null ? Collections.<NamedLeg>emptyList() : legsOf(configuration);
+
+            if (now.size() * 2 != each.getValue().size()) continue;
+
+            for (int i = 0; i < now.size(); i++)
+            {
+                now.get(i).set(0, each.getValue().get(2 * i));
+                now.get(i).set(1, each.getValue().get(2 * i + 1));
+            }
+
+            dirty = true;
+        }
+    }
 
     /**
      * Says that a page has been renamed and these page objects no longer describe the setup.
@@ -3236,13 +3341,11 @@ public class AutonomySession
 
         store.restoreSetup(was);
 
-        // AND THE RAILWAY'S SQUARES, as they said before this session moved them (RSA7-B3)
-        for (Map.Entry<org.traincontrol.automation.Point, String> said : railwaySquaresAsTheySaid.entrySet())
-        {
-            said.getKey().setSquare(said.getValue());
-        }
+        // AND WHAT THE CARRY REMEMBERED, AND THE RAILWAY'S SQUARES, as before the first move (RSA7-B3, RSA8-B2) - the legs
+        // are the snapshot's
+        if (beforeTheFirstMove != null) putBack(beforeTheFirstMove, false);
 
-        railwaySquaresAsTheySaid.clear();
+        beforeTheFirstMove = null;
 
         rebuild();
 
@@ -3257,7 +3360,12 @@ public class AutonomySession
      */
     public java.util.Map<String, Object> snapshotPage(String page)
     {
-        return store.snapshotPage(page);
+        java.util.Map<String, Object> snapshot = store.snapshotPage(page);
+
+        // AND WHAT AN EDIT OF THE PAGE CHANGES OUTSIDE IT (RSA8-B2, RSA8-B3) - see `Remembered`
+        snapshot.put(REMEMBERED, remembered());
+
+        return snapshot;
     }
 
     /**
@@ -3268,6 +3376,11 @@ public class AutonomySession
         if (snapshot == null) return;
 
         store.restorePage(page, snapshot);
+
+        // AND WHAT THE EDIT CHANGED OUTSIDE THE PAGE (RSA8-B2, RSA8-B3) - see `Remembered`
+        Object remembered = snapshot.get(REMEMBERED);
+
+        if (remembered instanceof Remembered) putBack((Remembered) remembered, true);
 
         // Once - see moveTiles above
         touched();
@@ -3354,22 +3467,40 @@ public class AutonomySession
         boolean changed = store.moveTiles(moves, builtOver);
 
         // AND NO FOLD OF THE RAILWAY BUILT BEFORE THE MOVE (RSA6-B2) - see `squaresMoved`
+        boolean moved = false;
+
         for (Map.Entry<TileKey, TileKey> move : moves == null ? Collections.<TileKey, TileKey>emptyMap().entrySet()
             : moves.entrySet())
         {
             if (move.getKey() != null && move.getValue() != null && !move.getKey().equals(move.getValue()))
             {
-                squaresMoved = true;
+                moved = true;
             }
         }
+
+        if (moved) squaresMoved = true;
 
         // NOR AFTER A SQUARE REMOVED OR BUILT OVER (RSA7-A1) - see `squaresMoved`
         if (builtOver != null && !builtOver.isEmpty()) squaresMoved = true;
 
-        // AND THE RAILWAY'S SQUARES MOVED WITH THE SETUP'S (RSA7-B3) - see `moveTheRailwaysSquares`
-        if (moves != null)
+        // AND THE RAILWAY'S SQUARES, AND WHAT THE CARRY REMEMBERS, MOVED WITH THE SETUP'S (RSA7-B3, RSA8-B2) - as they were
+        // before the first move kept for a Cancel: see `Remembered`
+        if (moved)
         {
+            if (beforeTheFirstMove == null) beforeTheFirstMove = remembered();
+
             moveTheRailwaysSquares(square -> moves.get(square) != null ? moves.get(square) : square);
+
+            // A NAME MADE FROM A MOVED SQUARE - "page x,y" - is the store's to rename (RSA5-B2), not the memory's to carry
+            squareOfNameSeen.entrySet().removeIf(seen -> moves.get(seen.getValue()) != null
+                && GraphReducer.generatedName(seen.getValue()).equals(baseOfNameSeen.get(seen.getKey())));
+
+            for (Map.Entry<String, TileKey> seen : squareOfNameSeen.entrySet())
+            {
+                TileKey to = moves.get(seen.getValue());
+
+                if (to != null) seen.setValue(to);
+            }
         }
 
         // The graph is built from the squares, so it is now describing the old ones - and touched()
@@ -5908,9 +6039,56 @@ public class AutonomySession
             if (!store.getExcludedPages().contains(page.getName())) pageOrder.add(page.getName());
         }
 
-        settleTheTimetableAside();
+        // SETTLED FOR THE LOOK ONLY (RSA8-B1): a build for inspection - every findings check is one - changes nothing in
+        // the setup.  The Autonomy menu's tick checks the findings before its reload, and a settle kept here put the
+        // entries of a page ticked back in into the stored timetable, which the reload's fold of the railway built
+        // without them then wrote over.  The build the railway is made from, after its load's fold, settles for good.
+        Object[] asItIs = theTimetableAsItIs();
 
-        return builder(globals()).withCoordinatesFromTiles(pageOrder).build();
+        try
+        {
+            settleTheTimetableAside();
+
+            return builder(globals()).withCoordinatesFromTiles(pageOrder).build();
+        }
+        finally
+        {
+            putTheTimetableBack(asItIs);
+        }
+    }
+
+    /** The configuration in use, its settings, its timetable and entries aside, and whether the setup was unsaved. */
+    private Object[] theTimetableAsItIs()
+    {
+        String active = store.getActiveConfiguration();
+
+        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
+
+        org.json.JSONObject globals = configuration == null ? null : configuration.optJSONObject("globals");
+
+        return new Object[] {configuration, globals, globals == null ? null : globals.opt("timetable"),
+            configuration == null ? null : configuration.opt(TIMETABLE_ASIDE), dirty};
+    }
+
+    /** Puts back what `theTimetableAsItIs` found. */
+    private void putTheTimetableBack(Object[] was)
+    {
+        org.json.JSONObject configuration = (org.json.JSONObject) was[0];
+        org.json.JSONObject globals = (org.json.JSONObject) was[1];
+
+        if (globals != null)
+        {
+            if (was[2] == null) globals.remove("timetable");
+            else globals.put("timetable", was[2]);
+        }
+
+        if (configuration != null)
+        {
+            if (was[3] == null) configuration.remove(TIMETABLE_ASIDE);
+            else configuration.put(TIMETABLE_ASIDE, was[3]);
+        }
+
+        dirty = (Boolean) was[4];
     }
 
     /**
@@ -6416,7 +6594,9 @@ public class AutonomySession
      * entry it followed.  An entry aside whose Points the build has again goes back after that entry - first where it
      * followed none, last where that entry is gone.  An entry aside that no page out explains any more - its page
      * deleted, its station gone - is dropped, as a load would drop it.  Nothing else touches the list: a fold only adds
-     * to it (`setAsideFromTheRailway`), and Clear clears it with the timetable.  Entries are told apart by train and path.
+     * to it (`setAsideFromTheRailway`), and Clear clears it with the timetable.  Each entry is set aside, a run recorded
+     * twice twice (RSA8-B5).  While a page's file has not loaded, nothing is judged gone: an entry the build cannot build
+     * goes aside too, and one aside that nothing explains stays (RSA8-B6).
      *
      * Before this, the fold decided which entries to keep, and had to guess whether the railway it folded was built with
      * the page or without it - which depended on the door that ticked it (RSA4-B2, RSA5-B1, RSA6-B1).
@@ -6440,6 +6620,9 @@ public class AutonomySession
 
         Map<String, TileKey> built = reducer == null ? Collections.<String, TileKey>emptyMap() : builder(null).tilesByName();
 
+        // WHILE A PAGE'S FILE HAS NOT LOADED, nothing is judged gone (RSA8-B6) - see `pagesSafeToJudge`
+        boolean safe = pagesSafeToJudge();
+
         boolean changed = false;
 
         // OUT: each entry of the timetable naming a page out, after the last entry kept before it
@@ -6452,11 +6635,12 @@ public class AutonomySession
         {
             org.json.JSONObject entry = table.optJSONObject(i);
 
-            if (entry != null && namesAPointOnAPageOut(entry, pagesOut))
+            if (entry != null && (namesAPointOnAPageOut(entry, pagesOut)
+                || !safe && reducer != null && !everyPointBuilt(entry, built)))
             {
                 changed = true;
 
-                if (!holdsTheRun(aside, entry) && !holdsTheRun(setAside, entry)) setAside.add(asideItem(entry, previous));
+                setAside.add(asideItem(entry, previous));
 
                 continue;
             }
@@ -6476,6 +6660,14 @@ public class AutonomySession
             org.json.JSONObject entry = item == null ? null : item.optJSONObject("entry");
 
             if (entry != null && namesAPointOnAPageOut(entry, pagesOut))
+            {
+                stillAside.add(item);
+
+                continue;
+            }
+
+            // NOT BUILT WHILE A PAGE'S FILE HAS NOT LOADED: kept aside until it has (RSA8-B6)
+            if (entry != null && !safe && !everyPointBuilt(entry, built))
             {
                 stillAside.add(item);
 
@@ -6517,6 +6709,8 @@ public class AutonomySession
         org.json.JSONArray kept = new org.json.JSONArray();
         List<Object> setAside = new ArrayList<>();
 
+        java.util.Set<Object> matched = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
         org.json.JSONObject previous = null;
 
         for (int i = 0; i < running.length(); i++)
@@ -6525,7 +6719,12 @@ public class AutonomySession
 
             if (entry != null && namesAPointOnAPageOut(entry, pagesOut))
             {
-                if (!holdsTheRun(aside, entry) && !holdsTheRun(setAside, entry)) setAside.add(asideItem(entry, previous));
+                // ONE FOR ONE (RSA8-B5): an entry a build set aside already is not set aside again, each matched once - a
+                // run recorded twice is two entries
+                Object same = anUnmatchedRun(aside, entry, matched);
+
+                if (same != null) matched.add(same);
+                else setAside.add(asideItem(entry, previous));
 
                 continue;
             }
@@ -6574,21 +6773,21 @@ public class AutonomySession
             .put("after", previous == null ? org.json.JSONObject.NULL : new org.json.JSONObject(previous.toString()));
     }
 
-    /** Whether a list of entries set aside - as JSON or as items - holds one sending this train this way. */
-    private static boolean holdsTheRun(Object items, org.json.JSONObject entry)
+    /** An item of the entries set aside sending this train this way, and not matched already - or null. */
+    private static Object anUnmatchedRun(org.json.JSONArray aside, org.json.JSONObject entry, java.util.Set<Object> matched)
     {
-        Iterable<?> each = items instanceof org.json.JSONArray ? (org.json.JSONArray) items
-            : items instanceof List ? (List<?>) items : Collections.emptyList();
-
-        for (Object item : each)
+        for (int i = 0; aside != null && i < aside.length(); i++)
         {
-            if (item instanceof org.json.JSONObject && sameRun(((org.json.JSONObject) item).optJSONObject("entry"), entry))
+            Object item = aside.opt(i);
+
+            if (item instanceof org.json.JSONObject && !matched.contains(item)
+                && sameRun(((org.json.JSONObject) item).optJSONObject("entry"), entry))
             {
-                return true;
+                return item;
             }
         }
 
-        return false;
+        return null;
     }
 
     /** Whether every Point a timetable entry names is one this build has. */

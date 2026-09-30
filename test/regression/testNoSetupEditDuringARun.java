@@ -2534,4 +2534,185 @@ public class testNoSetupEditDuringARun
             if (sandbox != null) sandbox.close();
         }
     }
+
+    /**
+     * A page ticked out and back in from the Autonomy menu keeps its timetable entries (RSA8-B1): the tick checks the
+     * findings before its reload, that check's build put the entries set aside back into the stored timetable, and the
+     * reload's fold of the railway built without the page wrote over them.  Driven through the menu: opened as a click
+     * opens it, and the page's item in "Pages with Autonomy Enabled" clicked.
+     *
+     * MUTATION: let a build for inspection keep what it settled, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAPageTickedBackInFromTheAutonomyMenuKeepsItsEntries() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final AutonomySession session = ui[0].getAutonomySession();
+
+            final String page = "2 - Bottom";
+
+            // ITS LINK SWITCHED OFF FIRST: a pairing left pointing at a page out is blocking, and the reload then keeps
+            // the railway running
+            final String[] refused = new String[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.setPortalDisabled(new TileKey("1 - Main", 15, 5), true);
+
+                refused[0] = session.takeDirectionRefusal();
+            });
+
+            assertEquals(refused[0], null, "precondition: the link to " + page + " could not be switched off");
+
+            // AN ENTRY ON THE PAGE, and the railway built with it
+            org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+            java.util.Map<String, String> squareOf = new java.util.HashMap<>();
+
+            for (Object o : built.getJSONArray("points"))
+            {
+                org.json.JSONObject p = (org.json.JSONObject) o;
+
+                squareOf.put(p.getString("name"), p.optString("square", ""));
+            }
+
+            String[] leg = null;
+
+            for (Object o : built.getJSONArray("edges"))
+            {
+                org.json.JSONObject e = (org.json.JSONObject) o;
+
+                if (leg == null && String.valueOf(squareOf.get(e.getString("start"))).startsWith(page + ":")
+                    && String.valueOf(squareOf.get(e.getString("end"))).startsWith(page + ":"))
+                {
+                    leg = new String[] {e.getString("start"), e.getString("end")};
+                }
+            }
+
+            assertNotNull(leg, "precondition: no edge on " + page);
+
+            org.json.JSONArray stored = new org.json.JSONArray(String.valueOf(session.getGlobal("timetable")));
+
+            assertTrue(stored.length() > 0, "precondition: the frozen railway keeps no timetable");
+
+            final int entries = stored.length() + 1;
+
+            final String entry = leg[0] + " -> " + leg[1];
+
+            stored.put(new org.json.JSONObject().put("loc", stored.getJSONObject(0).optString("loc"))
+                .put("executionTime", 1L).put("secondsToNext", 5L)
+                .put("path", new org.json.JSONArray().put(new org.json.JSONObject().put("start", leg[0])
+                .put("end", leg[1]))));
+
+            session.setGlobal("timetable", stored);
+
+            answeringYes(() -> ui[0].rebuildRunningLayoutFromSetup());
+
+            assertEquals(ui[0].getModel().getAutoLayout().getTimetable().size(), entries, "precondition: the railway was"
+                + " not built with the entry on " + page);
+
+            // OUT AND BACK IN, from the Autonomy menu
+            answeringYes(() -> tickFromTheAutonomyMenu(ui[0], page));
+
+            assertTrue(ui[0].getAutonomySession().getStore().getExcludedPages().contains(page), "precondition: the menu"
+                + " did not tick " + page + " out");
+
+            answeringYes(() -> tickFromTheAutonomyMenu(ui[0], page));
+
+            AutonomySession now = ui[0].getAutonomySession();
+
+            assertFalse(now.getStore().getExcludedPages().contains(page), "precondition: the menu did not tick " + page
+                + " back in");
+
+            String kept = String.valueOf(now.getGlobal("timetable"));
+
+            assertTrue(kept.contains("\"" + leg[0] + "\"") && kept.contains("\"" + leg[1] + "\""), "the entry on " + page
+                + " (" + entry + ") was lost when the page was ticked back in from the Autonomy menu (RSA8-B1): " + kept);
+
+            assertEquals(ui[0].getModel().getAutoLayout().getTimetable().size(), entries, "the railway rebuilt with "
+                + page + " back does not run its entry (RSA8-B1)");
+        }
+        finally
+        {
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * The Autonomy menu's "Pages with Autonomy Enabled" item for this page, clicked: the menu opened as a click opens it -
+     * which builds its items - and the page's tick fired.
+     */
+    private static void tickFromTheAutonomyMenu(TrainControlUI ui, String page)
+    {
+        javax.swing.JMenu autonomy = null;
+
+        for (int i = 0; i < ui.getJMenuBar().getMenuCount(); i++)
+        {
+            javax.swing.JMenu menu = ui.getJMenuBar().getMenu(i);
+
+            if (menu != null && I18n.t("autosetup.ui.menuAutonomy").equals(menu.getText())) autonomy = menu;
+        }
+
+        assertNotNull(autonomy, "no Autonomy menu");
+
+        autonomy.setSelected(true);
+
+        try
+        {
+            javax.swing.JMenu pages = null;
+
+            for (Component part : autonomy.getMenuComponents())
+            {
+                if (part instanceof javax.swing.JMenu
+                    && I18n.t("autosetup.ui.btnExcludePage").equals(((javax.swing.JMenu) part).getText()))
+                {
+                    pages = (javax.swing.JMenu) part;
+                }
+            }
+
+            assertNotNull(pages, "no Pages with Autonomy Enabled in the Autonomy menu");
+
+            javax.swing.JMenuItem tick = null;
+
+            for (Component part : pages.getMenuComponents())
+            {
+                if (part instanceof javax.swing.JMenuItem && page.equals(((javax.swing.JMenuItem) part).getText()))
+                {
+                    tick = (javax.swing.JMenuItem) part;
+                }
+            }
+
+            assertNotNull(tick, "no tick for " + page);
+
+            tick.doClick(0);
+        }
+        finally
+        {
+            autonomy.setSelected(false);
+        }
+    }
 }
