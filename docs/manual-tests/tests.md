@@ -34,14 +34,18 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-605](#mt-605) | 2026-09-30 | A direction is refused under a train facing against it | fixed unvalidated | RSA5-A2 |
 | [MT-606](#mt-606) | 2026-09-30 | A link is not switched off under a train that came in through it | fixed unvalidated | RSA6-A3, RSA6-A1 |
 | [MT-607](#mt-607) | 2026-09-30 | A dead end is not made one way away from a train facing the buffer | fixed unvalidated | RSA6-B3 |
-| [MT-608](#mt-608) | 2026-09-30 | The Pages dialog waits for autonomy to stop | fixed unvalidated | RSA7-B2 |
-| [MT-609](#mt-609) | 2026-09-30 | A page ticked out in the Pages dialog is no longer run | fixed unvalidated | RSA7-B2 |
 | [MT-610](#mt-610) | 2026-09-30 | Cancel after a delete in the track editor keeps the station's train and settings | fixed unvalidated | RSA7-A1 |
 | [MT-611](#mt-611) | 2026-09-30 | A dead end is not made two way under a train facing out of it | fixed unvalidated | RSA7-B1 |
 | [MT-612](#mt-612) | 2026-09-30 | A train at a one-way dead end does not block directions elsewhere | fixed unvalidated | RSA7-B1 |
+| [MT-613](#mt-613) | 2026-09-30 | The Autonomy menu's page ticks wait for autonomy to stop | fixed unvalidated | RSA8-C1, RSA7-B2 |
+| [MT-614](#mt-614) | 2026-09-30 | A page ticked out from the Autonomy menu is no longer run | fixed unvalidated | RSA8-C1, RSA7-B2 |
+| [MT-615](#mt-615) | 2026-09-30 | A page ticked out and back in from the Autonomy menu keeps its timetable entries | fixed unvalidated | RSA8-B1 |
+| [MT-616](#mt-616) | 2026-09-30 | Ctrl+Z after moving stations keeps the timetable on them | fixed unvalidated | RSA8-B2 |
+| [MT-617](#mt-617) | 2026-09-30 | Cancel after moving stations keeps the timetable on them | fixed unvalidated | RSA8-B2 |
+| [MT-618](#mt-618) | 2026-09-30 | Moving stations and saving keeps the timetable on them | fixed unvalidated | RSA8-B2 |
 
-Everything else - 600 of 612 - needs nothing from you unless the area changes again:
-471 **fixed validated** and 129 **superseded**.
+Everything else - 602 of 618 - needs nothing from you unless the area changes again:
+471 **fixed validated** and 131 **superseded**.
 
 ---
 
@@ -29784,7 +29788,7 @@ From the sixth release validator (RSA6), taken out of MT-599.
 
 ### MT-608 - 2026-09-30 - The Pages dialog waits for autonomy to stop
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** RSA7-B2
 
 **Written:** 2026-09-30
@@ -29802,13 +29806,17 @@ during a run.
 
 *What this is:* `regression.testNoSetupEditDuringARun.testThePagesDialogIsRefusedWhileRunningAndReloadsAtRest`.
 
+**Claude, 2026-09-30.**
+
+Superseded by MT-613: the Pages... button these steps name is on the Autonomy panel, which the window does not show (RSA8-C1), so the steps cannot be followed.  MT-613 makes the same check through Autonomy > Pages with Autonomy Enabled.  Nothing here has been run.
+
 ---
 
 <a id="mt-609"></a>
 
 ### MT-609 - 2026-09-30 - A page ticked out in the Pages dialog is no longer run
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** RSA7-B2
 
 **Written:** 2026-09-30
@@ -29830,6 +29838,10 @@ ticked out there went on being run.
   rebuilt with the page again.
 
 *What this is:* `regression.testNoSetupEditDuringARun.testThePagesDialogIsRefusedWhileRunningAndReloadsAtRest`.
+
+**Claude, 2026-09-30.**
+
+Superseded by MT-614: the Pages... button these steps name is on the Autonomy panel, which the window does not show (RSA8-C1), so the steps cannot be followed.  MT-614 makes the same check through Autonomy > Pages with Autonomy Enabled.  Nothing here has been run.
 
 ---
 
@@ -29905,5 +29917,163 @@ refused every direction on the railway.
 
 *What this is:* `core.testAutonomyDiagramSession.testAStaleFacingAtADeadEndRefusesNothingElse` and
 `testATrainFacingNoCopyIsNotAskedAbout`.
+
+---
+
+<a id="mt-613"></a>
+
+### MT-613 - 2026-09-30 - The Autonomy menu's page ticks wait for autonomy to stop
+
+**Disposition:** fixed unvalidated
+**From:** RSA8-C1, RSA7-B2
+
+**Written:** 2026-09-30
+
+From the eighth release validator (RSA8), in place of MT-608: the Pages dialog it named is on a panel the window does
+not show, so the Autonomy menu is the door.
+
+**Steps**
+
+1. Start autonomy.  Open **Autonomy > Pages with Autonomy Enabled** and click a page.
+
+**Expected**
+
+- A message says the layout cannot be edited while running, and the page's tick is as it was.
+
+*What this is:* `AutonomyMenu.pagesMenu`, refused while autonomy is busy since before round 23.
+
+---
+
+<a id="mt-614"></a>
+
+### MT-614 - 2026-09-30 - A page ticked out from the Autonomy menu is no longer run
+
+**Disposition:** fixed unvalidated
+**From:** RSA8-C1, RSA7-B2
+
+**Written:** 2026-09-30
+
+From the eighth release validator (RSA8), in place of MT-609: the Pages dialog it named is on a panel the window does
+not show, so the Autonomy menu is the door.
+
+**Steps**
+
+1. With autonomy stopped, if the page you will tick out is joined to another by a link, right-click the link and switch
+   **Autonomy Uses This Link** off first - a link left pointing at a page that is out stops the setup being used.
+2. Open **Autonomy > Pages with Autonomy Enabled** and untick that page.
+3. Tick it again the same way.
+
+**Expected**
+
+- After step 2 the railway is rebuilt without the page: autonomy sends no train to its stations.  After step 3 it is
+  rebuilt with the page again.
+
+*What this is:* the Autonomy menu's tick (`AutonomyMenu.pagesMenu`, then `reloadActiveDiagramConfiguration`), which
+`regression.testNoSetupEditDuringARun.testAPageTickedBackInFromTheAutonomyMenuKeepsItsEntries` drives both ways.
+
+---
+
+<a id="mt-615"></a>
+
+### MT-615 - 2026-09-30 - A page ticked out and back in from the Autonomy menu keeps its timetable entries
+
+**Disposition:** fixed unvalidated
+**From:** RSA8-B1
+
+**Written:** 2026-09-30
+
+From the eighth release validator (RSA8).  Ticked back in from the Autonomy menu, a page lost every timetable entry
+kept aside for it.
+
+**Steps**
+
+1. Have a timetable with an entry on a page other than your main one.  If that page is joined to another by a link,
+   switch the link's **Autonomy Uses This Link** off first.
+2. Open **Autonomy > Pages with Autonomy Enabled** and untick that page.
+3. Tick it again the same way.
+
+**Expected**
+
+- The page's entries are back in the timetable, where they were, and autonomy runs them.
+
+*What this is:* `regression.testNoSetupEditDuringARun.testAPageTickedBackInFromTheAutonomyMenuKeepsItsEntries` and
+`core.testAutonomyDiagramSession.testAFindingsCheckBringsNoEntryBack`.
+
+---
+
+<a id="mt-616"></a>
+
+### MT-616 - 2026-09-30 - Ctrl+Z after moving stations keeps the timetable on them
+
+**Disposition:** fixed unvalidated
+**From:** RSA8-B2
+
+**Written:** 2026-09-30
+
+From the eighth release validator (RSA8).  An undone move sent timetable entries through the moved stations to other
+stations.
+
+**Steps**
+
+1. Have a timetable entry between two stations.  Open the track editor on their page.
+2. Select those two stations and the track between them and move them together one or two squares; then press
+   **Ctrl+Z**, and close the editor saving.
+
+**Expected**
+
+- The entry still runs between the same two stations.
+
+*What this is:* `regression.testAnEditedPlacementSurvivesTheRebuild.testAnUndoneMoveKeepsTheTimetableOnItsStations`.
+
+---
+
+<a id="mt-617"></a>
+
+### MT-617 - 2026-09-30 - Cancel after moving stations keeps the timetable on them
+
+**Disposition:** fixed unvalidated
+**From:** RSA8-B2
+
+**Written:** 2026-09-30
+
+From the eighth release validator (RSA8).  A cancelled move sent timetable entries through the moved stations to other
+stations.
+
+**Steps**
+
+1. Have a timetable entry between two stations.  Open the track editor on their page.
+2. Select those two stations and the track between them and move them together one or two squares; then press
+   **Cancel** and leave without saving.
+
+**Expected**
+
+- The entry still runs between the same two stations.
+
+*What this is:* `regression.testAnEditedPlacementSurvivesTheRebuild.testACancelledMoveKeepsTheTimetableOnItsStations`.
+
+---
+
+<a id="mt-618"></a>
+
+### MT-618 - 2026-09-30 - Moving stations and saving keeps the timetable on them
+
+**Disposition:** fixed unvalidated
+**From:** RSA8-B2
+
+**Written:** 2026-09-30
+
+From the eighth release validator (RSA8).  Stations moved together, and saved, had their timetable entries sent to the
+stations now on their old squares.
+
+**Steps**
+
+1. Have a timetable entry between two stations.  Open the track editor on their page.
+2. Select those two stations and the track between them, move them together one or two squares, and save.
+
+**Expected**
+
+- The entry still runs between the same two stations.
+
+*What this is:* `regression.testAnEditedPlacementSurvivesTheRebuild.testAMoveKeepsTheTimetableOnItsStations`.
 
 ---
