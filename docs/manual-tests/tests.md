@@ -29377,6 +29377,10 @@ Your words, 2026-09-29: *"make the nothing can pass (X stations) be orange again
 
 *What this is:* `core.testAutonomyDiagramMonitor.testASquareNothingCanPassIsOrange`.
 
+**Adam, 2026-09-29 (triage).** Works.
+
+*Run against commit 345dd13e, regular mode (no simulate, no debug) - in English - build\classes, compiled 29 Sep 23:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-596"></a>
@@ -29417,5 +29421,9 @@ and *"don't hide the wrench, since that will save a click."*
 *What this is:* `ui.testLocIconCrop.testTheIconToolsWaitForThePowerOff`,
 `testARevertStandsBesideTheWrenchOverAReplacedStationPicture` and `testTheRevertHasASolidArrowhead`.  How the arrow looks
 is yours to judge.
+
+**Adam, 2026-09-29 (triage).** Works.
+
+*Run against commit 345dd13e, regular mode (no simulate, no debug) - in English - build\classes, compiled 29 Sep 23:02 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
