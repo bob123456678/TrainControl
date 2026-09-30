@@ -952,4 +952,56 @@ public class testLocIconCrop
 
         return null;
     }
+
+    /**
+     * The wrench looks like a wrench from both ends (MT-591; Adam, 2026-09-29: *"make the wrench icon look like a wrench
+     * on both sides. it looks more like a wine glass right now"*): a handle with an open jaw at each end, so turned half
+     * round it is the same drawing.
+     *
+     * MUTATION: draw a jaw at one end only, and this fails.
+     *
+     * @throws Exception from reflection
+     */
+    @Test
+    public void testTheWrenchHasAJawAtEachEnd() throws Exception
+    {
+        java.lang.reflect.Constructor<?> made = Class.forName("org.traincontrol.gui.TrainControlUI$WrenchMark")
+            .getDeclaredConstructor();
+
+        made.setAccessible(true);
+
+        javax.swing.Icon wrench = (javax.swing.Icon) made.newInstance();
+
+        java.awt.image.BufferedImage drawn = new java.awt.image.BufferedImage(wrench.getIconWidth(),
+            wrench.getIconHeight(), java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = drawn.createGraphics();
+
+        wrench.paintIcon(null, g, 0, 0);
+
+        g.dispose();
+
+        int w = drawn.getWidth();
+        int h = drawn.getHeight();
+
+        int ink = 0;
+        int unmatched = 0;
+
+        for (int x = 0; x < w; x++)
+        {
+            for (int y = 0; y < h; y++)
+            {
+                boolean here = (drawn.getRGB(x, y) >>> 24) > 100;
+                boolean turned = (drawn.getRGB(w - 1 - x, h - 1 - y) >>> 24) > 100;
+
+                if (here) ink++;
+                if (here != turned) unmatched++;
+            }
+        }
+
+        assertTrue(ink > 20, "precondition: the wrench draws almost nothing: " + ink + " pixels");
+
+        assertTrue(unmatched <= ink / 10, "the wrench turned half round is not the same drawing - " + unmatched + " of "
+            + ink + " pixels differ - so it has a jaw at one end only, and reads as a wine glass (MT-591)");
+    }
 }

@@ -28359,8 +28359,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The wrench itself, drawn rather than loaded, as the crop mark is and for its reasons: a handle, and a jaw open at
-     * the top right - dark over a white underlay, so it reads on a photograph of any colour.
+     * The wrench itself, drawn rather than loaded, as the crop mark is and for its reasons: a handle corner to corner
+     * with an open jaw at each end - dark over a white underlay, so it reads on a photograph of any colour.
+     *
+     * A JAW AT EACH END (Adam, 2026-09-29, on MT-591: *"make the wrench icon look like a wrench on both sides. it looks
+     * more like a wine glass right now"*): a ring at one end of a stem was the wine glass.  Each jaw opens away from the
+     * handle, and the drawing is the same turned half round, about the middle of the square - which is why it is laid
+     * out in half-pixel coordinates.
      */
     private static final class WrenchMark implements javax.swing.Icon
     {
@@ -28386,6 +28391,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
                 java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
 
+            // Drawn where the coordinates say, so the two ends come out alike
+            g2.setRenderingHint(java.awt.RenderingHints.KEY_STROKE_CONTROL,
+                java.awt.RenderingHints.VALUE_STROKE_PURE);
+
             for (int pass = 0; pass < 2; pass++)
             {
                 g2.setColor(pass == 0 ? new java.awt.Color(255, 255, 255, 200)
@@ -28393,11 +28402,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 g2.setStroke(new java.awt.BasicStroke(pass == 0 ? 3.4f : 1.8f,
                     java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
 
-                // The handle, from the bottom left up to the head
-                g2.drawLine(x + 3, y + SIZE - 3, x + 8, y + 7);
+                double middle = SIZE / 2.0;
+                double reach = 4.0;
+                double jaw = 2.6;
 
-                // The head: a ring open towards the top right, which is the jaw
-                g2.drawArc(x + 6, y + 2, 7, 7, 90, 270);
+                // The handle, between the two jaws
+                g2.draw(new java.awt.geom.Line2D.Double(x + middle - reach + jaw * 0.7, y + middle + reach - jaw * 0.7,
+                    x + middle + reach - jaw * 0.7, y + middle - reach + jaw * 0.7));
+
+                // The jaws: a ring at each end, open away from the handle - top right, and bottom left
+                g2.draw(new java.awt.geom.Arc2D.Double(x + middle + reach - jaw, y + middle - reach - jaw, jaw * 2,
+                    jaw * 2, 95, 260, java.awt.geom.Arc2D.OPEN));
+
+                g2.draw(new java.awt.geom.Arc2D.Double(x + middle - reach - jaw, y + middle + reach - jaw, jaw * 2,
+                    jaw * 2, 275, 260, java.awt.geom.Arc2D.OPEN));
             }
 
             g2.dispose();

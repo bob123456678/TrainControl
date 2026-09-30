@@ -7433,11 +7433,18 @@ public class AutonomyEditorPanel extends JPanel
         {
             TileKey station = signalFor;
 
-            // IN A POPUP as well as on the line (MT-505) - see `refuseGuard`.  Still armed: the next click on a
-            // signal pairs it.
+            // IN A POPUP as well as on the line (MT-505) - see `refuseGuard` - AND BACK TO THE GUARD WINDOW (Adam,
+            // 2026-09-29, on MT-505: "if a non-signal is clicked during selection mode, the dialog goes away. it should
+            // send the user back to the existing popup so they can click on another square."  And on MT-588: "the
+            // dialog closes and we have to reopen everything again.")  The choice used to stay armed with no window, so
+            // the way on was the right-click menu again; the window has Click It on the Diagram for another square.
             if (!isPairableSignal(component))
             {
                 refuseGuard(I18n.t("autosetup.ui.errorNotASignal"));
+
+                signalFor = null;
+
+                pairGuardSignals(signalForGuard, station);
                 return;
             }
 

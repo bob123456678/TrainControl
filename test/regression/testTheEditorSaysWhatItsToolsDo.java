@@ -427,11 +427,16 @@ public class testTheEditorSaysWhatItsToolsDo
     }
 
     /**
-     * A click on a square that is not a signal, while a guard is being chosen, is refused in a popup (MT-505).
+     * A click on a square that is not a signal, while a guard is being chosen, is refused in a popup, and the guard
+     * window comes back (MT-505, MT-588).
      *
-     * The same words as ever, and the choice stays armed: the next click on a signal still pairs it.
+     * Adam, 2026-09-29, on MT-505: *"if a non-signal is clicked during selection mode, the dialog goes away. it should
+     * send the user back to the existing popup so they can click on another square."*  And on MT-588: *"the dialog
+     * closes and we have to reopen everything again."*  The choice stayed armed with no window, so the way on was the
+     * right-click menu again; now the popup says why and the window is back, its list as it was, with Click It on the
+     * Diagram to try another square.
      *
-     * MUTATION: say it on the grey line alone, and this fails.
+     * MUTATION: say it on the grey line alone, or leave the window closed after it, and this fails.
      *
      * @throws Exception from the event thread
      */
@@ -461,17 +466,24 @@ public class testTheEditorSaysWhatItsToolsDo
             assertEquals(said, plain(I18n.t("autosetup.ui.errorNotASignal")), "a square that is not a signal, clicked as"
                 + " the entry guard, is not refused in a popup (MT-505)");
 
-            // STILL ARMED: the next click on a signal pairs it, and the window comes back
+            // THE WINDOW BACK, its list as it was (MT-588)
+            javax.swing.JDialog back = awaitWindowTitled(title, window);
+
+            assertTrue(his.getEntrySignals(SIGNALLED).isEmpty(), "the refusal paired something");
+
+            // AND FROM IT, ANOTHER SQUARE: a signal, which pairs
+            clickOnTheDiagram(back, title);
+
             final org.traincontrol.base.LayoutDiagramComponent signal = his.getGraph().getTiles().get(SIGNAL_87);
 
             javax.swing.SwingUtilities.invokeLater(() -> panel.tileClicked(SIGNAL_87, signal, false));
 
-            javax.swing.JDialog back = awaitWindowTitled(title, window);
+            javax.swing.JDialog again = awaitWindowTitled(title, back);
 
-            assertEquals(his.getEntrySignals(SIGNALLED), Arrays.asList(SIGNAL_87), "after the refusal, a click on a signal"
-                + " no longer pairs it");
+            assertEquals(his.getEntrySignals(SIGNALLED), Arrays.asList(SIGNAL_87), "from the window that came back, a"
+                + " click on a signal does not pair it");
 
-            javax.swing.SwingUtilities.invokeAndWait(buttonIn(back, I18n.t("autosetup.ui.optionSignalsDone"))::doClick);
+            javax.swing.SwingUtilities.invokeAndWait(buttonIn(again, I18n.t("autosetup.ui.optionSignalsDone"))::doClick);
         }
         finally
         {
