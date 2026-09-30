@@ -1086,19 +1086,20 @@ public class testLocIconCrop
     }
 
     /**
-     * Over a Central Station picture replaced or cropped, a revert stands in the wrench's place, and clears the icon of
-     * this computer's (MT-591).
+     * Over a Central Station picture replaced or cropped, a revert stands beside the wrench and clears the icon of this
+     * computer's; the wrench stays, and still chooses a new one (MT-591).
      *
      * Adam, 2026-09-29, on MT-591: *"if there is a cs icon and we switched to a local icon or cropped it, replace the
      * wrench icon with a revert icon (circular arrow symbol) that has the same function as "clear local locomotive
-     * icon"."*  Over a locomotive with no Central Station picture, the wrench stays: there is nothing to go back to.
+     * icon"."*  And then: *"don't hide the wrench, since that will save a click"* - a new icon is one click away, not a
+     * revert and then the wrench.  Over a locomotive with no Central Station picture there is nothing to go back to.
      *
-     * MUTATION: keep the wrench there, or wire the revert to the chooser, and this fails.
+     * MUTATION: put the revert in the wrench's place again, or wire it to the chooser, and this fails.
      *
      * @throws Exception from the event thread or reflection
      */
     @Test
-    public void testARevertStandsInTheWrenchsPlaceOverAReplacedStationPicture() throws Exception
+    public void testARevertStandsBesideTheWrenchOverAReplacedStationPicture() throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the window needs a display");
 
@@ -1115,7 +1116,10 @@ public class testLocIconCrop
 
             ui = windowOver(model);
 
+            settle();
+
             final javax.swing.JLabel wrench = field(ui, "iconWrench", javax.swing.JLabel.class);
+            final javax.swing.JLabel revert = field(ui, "iconRevert", javax.swing.JLabel.class);
 
             java.lang.reflect.Field active = TrainControlUI.class.getDeclaredField("activeLoc");
 
@@ -1125,41 +1129,68 @@ public class testLocIconCrop
 
             fit.setAccessible(true);
 
+            java.lang.reflect.Method reverts = TrainControlUI.class.getDeclaredMethod("revertsInstead",
+                org.traincontrol.base.Locomotive.class);
+
+            reverts.setAccessible(true);
+
             final TrainControlUI window = ui;
 
-            // A LOCAL ICON AND NO STATION PICTURE: the wrench
+            // A LOCAL ICON AND NO STATION PICTURE: nothing to go back to
             final org.traincontrol.marklin.MarklinLocomotive own = new org.traincontrol.marklin.MarklinLocomotive(model,
                 88, org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, "MT-591 own picture");
 
             own.setLocalImageURL(new File("MT-591-own.png").toURI().toString());
 
-            active.set(ui, own);
+            assertFalse((Boolean) reverts.invoke(null, own), "a revert is offered over a locomotive with no Central"
+                + " Station picture to go back to");
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> invoke(fit, window));
-
-            assertEquals(wrench.getToolTipText(), org.traincontrol.util.I18n.t("loc.ui.menuSetLocalLocomotiveIcon"),
-                "over a locomotive with no Central Station picture to go back to, the wrench is replaced");
-
-            // A STATION PICTURE, REPLACED: the revert
+            // A STATION PICTURE, REPLACED: the revert beside the wrench
             final org.traincontrol.marklin.MarklinLocomotive replaced = new org.traincontrol.marklin.MarklinLocomotive(model,
                 89, org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, "MT-591 station picture");
 
             replaced.setImageURL("http://cs/MT-591.png");
             replaced.setLocalImageURL(new File("MT-591-replaced.png").toURI().toString());
 
+            assertTrue((Boolean) reverts.invoke(null, replaced), "no revert is offered over a Central Station picture"
+                + " replaced by one of this computer's (MT-591)");
+
             active.set(ui, replaced);
 
             javax.swing.SwingUtilities.invokeAndWait(() -> invoke(fit, window));
 
-            assertEquals(wrench.getToolTipText(), org.traincontrol.util.I18n.t("loc.ui.menuClearLocalLocomotiveIcon"),
-                "over a Central Station picture replaced by one of this computer's, no revert stands in the wrench's place"
-                + " (MT-591)");
+            assertEquals(wrench.getToolTipText(), org.traincontrol.util.I18n.t("loc.ui.menuSetLocalLocomotiveIcon"),
+                "the wrench is replaced by the revert - Adam: \"don't hide the wrench, since that will save a click\"");
 
-            assertTrue(wrench.getIcon() != null && wrench.getIcon().getClass().getSimpleName().contains("Revert"),
-                "the revert is not drawn as one: " + wrench.getIcon());
+            assertTrue(wrench.getIcon() != null && wrench.getIcon().getClass().getSimpleName().contains("Wrench"),
+                "the wrench is not drawn as one beside the revert: " + wrench.getIcon());
 
-            // AND A CLICK ON IT CLEARS THE ICON OF THIS COMPUTER'S, as Clear Local Locomotive Icon does
+            assertEquals(revert.getToolTipText(), org.traincontrol.util.I18n.t("loc.ui.menuClearLocalLocomotiveIcon"),
+                "the revert does not say what it does (MT-591)");
+
+            assertTrue(revert.getIcon() != null && revert.getIcon().getClass().getSimpleName().contains("Revert"),
+                "the revert is not drawn as one: " + revert.getIcon());
+
+            // THE WRENCH, beside it, still chooses a new icon - the locomotive on show set again just before, as the
+            // window's own start-up may still be choosing one
+            active.set(ui, replaced);
+
             javax.swing.SwingUtilities.invokeAndWait(() -> wrench.dispatchEvent(new java.awt.event.MouseEvent(wrench,
+                java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON1_MASK,
+                5, 5, 1, false, java.awt.event.MouseEvent.BUTTON1)));
+
+            final javax.swing.JFileChooser chooser = awaitAChooser(10000);
+
+            assertNotNull(chooser, "the wrench beside the revert opened no icon chooser");
+
+            javax.swing.SwingUtilities.invokeAndWait(chooser::cancelSelection);
+
+            assertNotNull(replaced.getLocalImageURL(), "the wrench cleared the icon of this computer's");
+
+            // AND THE REVERT CLEARS THE ICON OF THIS COMPUTER'S, as Clear Local Locomotive Icon does
+            active.set(ui, replaced);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> revert.dispatchEvent(new java.awt.event.MouseEvent(revert,
                 java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), java.awt.event.InputEvent.BUTTON1_MASK,
                 5, 5, 1, false, java.awt.event.MouseEvent.BUTTON1)));
 
@@ -1182,6 +1213,56 @@ public class testLocIconCrop
 
             if (sandbox != null) sandbox.close();
         }
+    }
+
+    /**
+     * The revert's arrowhead is a solid head, not two thin barbs (Adam, 2026-09-29: *"make the arrow at the end of the
+     * circle more prominent, right now it doesn't really look like an arrow"*): the middle of the head is ink.
+     *
+     * MUTATION: draw no head, and this fails.
+     *
+     * @throws Exception from reflection
+     */
+    @Test
+    public void testTheRevertHasASolidArrowhead() throws Exception
+    {
+        Class<?> mark = Class.forName("org.traincontrol.gui.TrainControlUI$RevertMark");
+
+        java.lang.reflect.Constructor<?> made = mark.getDeclaredConstructor();
+
+        made.setAccessible(true);
+
+        javax.swing.Icon revert = (javax.swing.Icon) made.newInstance();
+
+        java.lang.reflect.Method head = mark.getDeclaredMethod("head");
+
+        head.setAccessible(true);
+
+        java.awt.Shape shape = (java.awt.Shape) head.invoke(null);
+
+        java.awt.geom.Rectangle2D bounds = shape.getBounds2D();
+
+        assertTrue(bounds.getWidth() >= 3 && bounds.getHeight() >= 3, "the arrowhead is too small to read as one: "
+            + bounds);
+
+        java.awt.image.BufferedImage drawn = new java.awt.image.BufferedImage(revert.getIconWidth(),
+            revert.getIconHeight(), java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = drawn.createGraphics();
+
+        revert.paintIcon(null, g, 0, 0);
+
+        g.dispose();
+
+        // THE MIDDLE OF THE HEAD, where two barbs leave a gap and a solid head is ink
+        int x = (int) Math.floor(bounds.getCenterX());
+        int y = (int) Math.floor(bounds.getCenterY());
+
+        int argb = drawn.getRGB(x, y);
+
+        assertTrue((argb >>> 24) > 200 && ((argb >> 16) & 0xFF) < 120, "the middle of the revert's arrowhead at " + x
+            + "," + y + " is not dark ink, so the head is not solid - Adam: \"make the arrow at the end of the circle more"
+            + " prominent\": " + Integer.toHexString(argb));
     }
 
     private static void invoke(java.lang.reflect.Method method, Object on)

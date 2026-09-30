@@ -28186,6 +28186,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JLabel iconWrench;
 
     /**
+     * The hover revert beside the wrench (MT-591), over a Central Station picture replaced or cropped; null until the
+     * window is built, and declared here for the same reason.
+     */
+    private javax.swing.JLabel iconRevert;
+
+    /**
      * Puts the hover crop mark on the big locomotive picture (FR-032).
      *
      * Adam: "can you add a hover crop icon to the upper-right of the big locomotive image when
@@ -28261,11 +28267,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 // Either button: the wrench does one thing, and a right-click over it is a right-click over the picture,
                 // which does the same thing.
-                if (activeLoc == null) return;
+                if (activeLoc != null) setLocIcon(activeLoc);
+            }
+        });
 
-                // THE REVERT, where it stands in the wrench's place (MT-591): what Clear Local Locomotive Icon does
-                if (revertsInstead(activeLoc)) clearLocIcon(activeLoc);
-                else setLocIcon(activeLoc);
+        // THE REVERT, BESIDE THE WRENCH (MT-591; Adam, 2026-09-29: "replace the wrench icon with a revert icon (circular
+        // arrow symbol) that has the same function as "clear local locomotive icon"" - and then "don't hide the wrench,
+        // since that will save a click"): over a Central Station picture replaced or cropped, it does what Clear Local
+        // Locomotive Icon does, and the wrench stays for choosing another.
+        iconRevert = new JLabel(REVERT);
+
+        iconRevert.setToolTipText(I18n.t("loc.ui.menuClearLocalLocomotiveIcon"));
+        iconRevert.setVisible(false);
+        iconRevert.setOpaque(false);
+
+        iconRevert.addMouseListener(new java.awt.event.MouseAdapter()
+        {
+            @Override
+            public void mouseReleased(java.awt.event.MouseEvent evt)
+            {
+                if (activeLoc != null && revertsInstead(activeLoc)) clearLocIcon(activeLoc);
             }
         });
 
@@ -28283,7 +28304,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         JPanel corner = new JPanel(new java.awt.BorderLayout());
 
         corner.setOpaque(false);
-        corner.add(iconWrench, java.awt.BorderLayout.WEST);
+
+        // The wrench hard into its corner, and the revert beside it
+        JPanel left = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
+
+        left.setOpaque(false);
+        left.add(iconWrench);
+        left.add(javax.swing.Box.createHorizontalStrut(3));
+        left.add(iconRevert);
+
+        corner.add(left, java.awt.BorderLayout.WEST);
         corner.add(cropOverlay, java.awt.BorderLayout.EAST);
 
         locIcon.setLayout(new java.awt.BorderLayout());
@@ -28305,6 +28335,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     cropOverlay.setVisible(false);
                     iconWrench.setVisible(false);
+                    iconRevert.setVisible(false);
                 }
             }
         };
@@ -28312,6 +28343,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         locIcon.addMouseListener(hover);
         cropOverlay.addMouseListener(hover);
         iconWrench.addMouseListener(hover);
+        iconRevert.addMouseListener(hover);
 
         // THE PLAIN POINTER NOW, over the picture (FR-104; Adam, 2026-09-29: *"change the cover icon for the loc icon
         // from the hand to regular"*), and no sentence about right-clicking (*"instead of "right click to change icon",
@@ -28332,11 +28364,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         locIcon.setToolTipText(null);
         cropOverlay.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
         iconWrench.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        iconRevert.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
 
         fitTheIconTools();
     }
 
-    /** The two things the picture's upper-left corner can offer (FR-104, MT-591). */
+    /** The two things the picture's upper-left corner offers (FR-104, MT-591). */
     private static final javax.swing.Icon WRENCH = new WrenchMark();
     private static final javax.swing.Icon REVERT = new RevertMark();
 
@@ -28358,10 +28391,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Whether a revert stands in the wrench's place (MT-591; Adam: *"if there is a cs icon and we switched to a local icon
-     * or cropped it, replace the wrench icon with a revert icon (circular arrow symbol) that has the same function as
-     * "clear local locomotive icon"."*): a Central Station picture, with one of this computer's shown over it.  With no
-     * Central Station picture there is nothing to go back to, and the wrench stays.
+     * Whether a revert stands beside the wrench (MT-591; Adam: *"if there is a cs icon and we switched to a local icon or
+     * cropped it, replace the wrench icon with a revert icon (circular arrow symbol) that has the same function as "clear
+     * local locomotive icon"."*, and then *"don't hide the wrench, since that will save a click"*): a Central Station
+     * picture, with one of this computer's shown over it.  With no Central Station picture there is nothing to go back
+     * to.
      *
      * @param l the locomotive on show
      * @return true for the revert
@@ -28373,9 +28407,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The picture's tools made to fit the locomotive and the power: the wrench or the revert in the upper left, and
-     * while the power is on, the sentence saying to turn it off (MT-591: *"Add a tooltip (if power is on) saying turn
-     * power off to manage icon."*).  Set on the picture before the pointer arrives, so the tooltip is there to show.
+     * The picture's tools made to fit the power: while it is on, the sentence saying to turn it off (MT-591: *"Add a
+     * tooltip (if power is on) saying turn power off to manage icon."*).  Set on the picture before the pointer arrives,
+     * so the tooltip is there to show.  The wrench and the revert are each their own mark, and always the same one.
      */
     private void fitTheIconTools()
     {
@@ -28383,11 +28417,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         locIcon.setToolTipText(powerIsOn() ? I18n.t("loc.ui.tooltip.powerOffToManageIcon") : null);
 
-        boolean revert = revertsInstead(activeLoc);
+        iconWrench.setIcon(WRENCH);
+        iconWrench.setToolTipText(I18n.t("loc.ui.menuSetLocalLocomotiveIcon"));
 
-        iconWrench.setIcon(revert ? REVERT : WRENCH);
-        iconWrench.setToolTipText(I18n.t(revert ? "loc.ui.menuClearLocalLocomotiveIcon"
-            : "loc.ui.menuSetLocalLocomotiveIcon"));
+        iconRevert.setIcon(REVERT);
+        iconRevert.setToolTipText(I18n.t("loc.ui.menuClearLocalLocomotiveIcon"));
     }
 
     /**
@@ -28407,8 +28441,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         cropOverlay.setVisible(over && offersACrop(activeLoc));
 
-        // The wrench over every locomotive (FR-104): any one can be given an icon
+        // The wrench over every locomotive (FR-104): any one can be given an icon.  And the revert beside it over a
+        // Central Station picture replaced or cropped (MT-591).
         if (iconWrench != null) iconWrench.setVisible(over);
+
+        if (iconRevert != null) iconRevert.setVisible(over && revertsInstead(activeLoc));
     }
 
     /**
@@ -28425,7 +28462,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The revert, drawn as the wrench is: a circular arrow, most of a ring with its head at the top (MT-591).
+     * The revert, drawn as the wrench is: a circular arrow, most of a ring with a solid head where it ends (MT-591).
+     *
+     * SOLID (Adam, 2026-09-29: *"make the arrow at the end of the circle more prominent, right now it doesn't really look
+     * like an arrow"*): two thin barbs off the end of the ring read as a hook.  The head is a filled triangle, wider
+     * than the ring is thick, pointing the way the ring runs.
      */
     private static final class RevertMark implements javax.swing.Icon
     {
@@ -28467,17 +28508,48 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 g2.draw(new java.awt.geom.Arc2D.Double(x + middle - radius, y + middle - radius, radius * 2, radius * 2,
                     60, 270, java.awt.geom.Arc2D.OPEN));
 
-                // The head, where the ring ends at the top right: a barb back along it on each side
-                double endX = x + middle + radius * Math.cos(Math.toRadians(330));
-                double endY = y + middle - radius * Math.sin(Math.toRadians(330));
+                // THE HEAD: its outline in the underlay's pass, so it reads on any picture, and filled in the ink's
+                java.awt.Shape head = java.awt.geom.AffineTransform.getTranslateInstance(x, y).createTransformedShape(head());
 
-                // The ring runs up and to the right where it ends; each barb goes back from the tip, 35 degrees either
-                // side of the way it came
-                g2.draw(new java.awt.geom.Line2D.Double(endX, endY, endX - 2.5, endY + 1.2));
-                g2.draw(new java.awt.geom.Line2D.Double(endX, endY, endX + 0.25, endY + 2.8));
+                if (pass == 0) g2.draw(head);
+                else g2.fill(head);
             }
 
             g2.dispose();
+        }
+
+        /**
+         * The solid head at the end of the ring, in the icon's own coordinates: a triangle whose base straddles the
+         * ring's end and whose tip points the way the ring runs there - up and to the right, the ring turning
+         * anticlockwise to 330 degrees.
+         *
+         * @return the head
+         */
+        static java.awt.Shape head()
+        {
+            double middle = SIZE / 2.0;
+            double radius = 4.5;
+
+            double endX = middle + radius * Math.cos(Math.toRadians(330));
+            double endY = middle - radius * Math.sin(Math.toRadians(330));
+
+            // The way the ring runs at its end, and across it
+            double runX = Math.sin(Math.toRadians(330)) * -1;
+            double runY = Math.cos(Math.toRadians(330)) * -1;
+            double acrossX = -runY;
+            double acrossY = runX;
+
+            double reach = 3.4;
+            double half = 2.6;
+
+            java.awt.geom.Path2D.Double head = new java.awt.geom.Path2D.Double();
+
+            head.moveTo(endX + runX * reach, endY + runY * reach);
+            head.lineTo(endX + acrossX * half, endY + acrossY * half);
+            head.lineTo(endX - acrossX * half, endY - acrossY * half);
+            head.closePath();
+
+            return head;
         }
     }
 
