@@ -30,8 +30,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-597](#mt-597) | 2026-09-30 | Import waits for autonomy to stop, and a station renamed after a run keeps its train | fixed unvalidated | RSA4-C5, RSA4-A1 |
 | [MT-598](#mt-598) | 2026-09-30 | A page ticked out keeps its timetable entries, and a direction is refused under a train facing against it | fixed unvalidated | RSA5-B1, RSA5-C1, RSA5-A2 |
 | [MT-599](#mt-599) | 2026-09-30 | A link switched off, or a dead end made one way, is refused under a train facing against it | fixed unvalidated | RSA6-A3, RSA6-B3, RSA6-A1 |
+| [MT-600](#mt-600) | 2026-09-30 | The Pages dialog waits for the run to stop and rebuilds after it; a Cancel after a delete keeps the station | fixed unvalidated | RSA7-A1, RSA7-B2, RSA7-B1 |
 
-Everything else - 596 of 599 - needs nothing from you unless the area changes again:
+Everything else - 596 of 600 - needs nothing from you unless the area changes again:
 471 **fixed validated** and 125 **superseded**.
 
 ---
@@ -29536,5 +29537,40 @@ was put back where the setup last had it, or offered the way out behind it.
 *What this is:* `core.testAutonomyDiagramSession.testALinkSwitchedOffUnderATrainIsRefused`,
 `testADirectionThatLeavesADeadEndFacingAwayIsRefused`, and `regression.testAPendingTurnSurvivesTheRebuild.testTheSessionSeesTheRailwayFromTheStart`
 (no menu needs to be opened first).
+
+---
+
+<a id="mt-600"></a>
+
+### MT-600 - 2026-09-30 - The Pages dialog waits for the run to stop and rebuilds after it; a Cancel after a delete keeps the station
+
+**Disposition:** fixed unvalidated
+**From:** RSA7-A1, RSA7-B2, RSA7-B1
+
+**Written:** 2026-09-30
+
+From the seventh release validator (RSA7).  The Autonomy panel's Pages dialog changed the setup during a run and never
+rebuilt the railway, and the track editor's Cancel after a delete put a station back without its train or settings.
+
+**Steps**
+
+1. Start TrainControl and start autonomy.  On the Autonomy panel press **Pages...**.
+2. Stop autonomy.  Press **Pages...**, untick a page that has stations, and press OK.  Then tick it back in.
+3. With a train standing at a station that has a home or a maximum length, open the track editor, delete that
+   station's sensor, and press **Cancel** (do not save).
+4. Place a train by hand at a dead-end station whose track out is one way away from it, then make that track two way.
+
+**Expected**
+
+- Step 1: a message says it cannot be edited while running, and the dialog does not open.
+- Step 2: the railway is rebuilt without the page - its stations are not dispatched to - and with it again once ticked
+  back in.
+- Step 3: the station is back with its train, its home and its length.
+- Step 4: a message says the train stands there facing the other way, so the direction was not set.  Other directions
+  elsewhere are not refused because of it.
+
+*What this is:* `regression.testTheImportDoorReadsAnOldFile.testThePagesDialogIsRefusedWhileRunningAndReloadsAtRest`,
+`core.testAutonomyDiagramSession.testACancelledDeleteKeepsTheSquaresSetup`,
+`testADeadEndMadeTwoWayUnderATrainFacingOutIsRefused` and `testAStaleFacingAtADeadEndRefusesNothingElse`.
 
 ---

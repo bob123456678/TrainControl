@@ -2875,6 +2875,19 @@ RSA6-D6	RSA6.md	Closed	Checked - clean.	The Point's square in every JSON reader 
 RSA6-D7	RSA6.md	Closed	Checked - clean, apart from RSA6-A1 (which trains it sees), A3 and B3 (what it asks).	The five direction doors say a refusal, and a refusal changes nothing
 RSA6-D8	RSA6.md	Closed	Checked - clean.	Captions, link names and unpairing name no Point and carry no train off
 RSA6-D9	RSA6.md	Closed	Checked - clean.	The probes' controls, and the baseline
+RSA7-A1	RSA7.md	Closed	Fixed - no fold follows a square removed or built over until the setup is opened again (Au	The track editor's Cancel after a square was deleted, cut or cleared: the Cancel puts the setup back, and the reset's fold then judges "a square whose
+RSA7-B1	RSA7.md	Closed	Fixed - the refusal asks only about a train the change turns: one on a copy facing its way	The direction refusal cannot tell which way a train on a copy that records no facing faces: it skips the railway's train and reads the setup's record,
+RSA7-B2	RSA7.md	Closed	Fixed - the Pages dialog is refused while autonomy runs, before it opens and again when ap	The Autonomy panel's Pages dialog is not refused during a run and never reloads: a page ticked out there goes on being run - its stations dispatched t
+RSA7-B3	RSA7.md	Closed	Fixed - a move, or a page renamed, moves the squares the railway's Points say they are cop	While a declined edit waits, the carry across a load reads each train's square as it was before a track edit's move or a page rename: after a move eve
+RSA7-D1	RSA7.md	Closed	Checked - clean.	RSA6-A1: every session reads the railway from the moment it is made
+RSA7-D2	RSA7.md	Closed	Checked - clean, apart from RSA7-A1 (the prune after a Cancel).	RSA6-A2: the fold writes each running Point into its own square, with its copy's facing
+RSA7-D3	RSA7.md	Closed	Checked - clean, apart from RSA7-B1 (which trains the refusal can read).	RSA6-A3: a link switched off under a train that came in through it is refused and put back
+RSA7-D4	RSA7.md	Closed	Checked - clean. Since then (round 23, Adam 2026-09-30: "Do the simplification of the time	RSA6-B1, and Adam's question: the timetable keep is reliable at every door that ticks a page
+RSA7-D5	RSA7.md	Closed	Checked - clean, apart from RSA7-B3 (the carry that state takes).	RSA6-B2: no fold follows a move of squares
+RSA7-D6	RSA7.md	Closed	Checked - clean, apart from RSA7-B1.	RSA6-B3: a dead end made one way away from a train facing the buffer is refused
+RSA7-D7	RSA7.md	Closed	Checked - clean.	RSA6-C1: names settled over every page
+RSA7-D8	RSA7.md	Closed	Checked - clean.	The other gestures that change a square's copies keep a standing train's
+RSA7-D9	RSA7.md	Closed	Checked - clean.	The probes' controls, and the baseline
 RT3-B1	2026-09-02-autonomy-routing-review.md	Closed	open	the reversal-room rule's `continue` is defeated by the route search's own dominance pruning
 RT3-B2	2026-09-02-autonomy-routing-review.md	Closed	open	the staging audit has no exemption for the planner's non-station-origin rule
 RT3-C1	2026-09-02-autonomy-routing-review.md	Closed	open	`connected` carries a pre-stop reversal credit through a terminus stop
