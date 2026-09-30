@@ -84,11 +84,24 @@ public class AutonomyBuilder
         /** whether this is the copy a train turns round at */
         private final boolean reverse;
 
+        /**
+         * Whether this is a copy of a square nothing arrives at (RSA2-C7), which stands for a train facing one way out:
+         * its arrival side is the side such a train WOULD have come in by, and no train comes in by it (RSA3-C6).  So no
+         * bar on arrivals reaches it, and no home is held to its facing.
+         */
+        private final boolean nothingArrives;
+
         Node(TileKey tile, TilePorts.Side arrival, boolean reverse)
+        {
+            this(tile, arrival, reverse, false);
+        }
+
+        Node(TileKey tile, TilePorts.Side arrival, boolean reverse, boolean nothingArrives)
         {
             this.tile = tile;
             this.arrival = arrival;
             this.reverse = reverse;
+            this.nothingArrives = nothingArrives;
         }
 
         TileKey getTile()
@@ -437,7 +450,9 @@ public class AutonomyBuilder
      */
     private boolean arrivalAllowed(Node node)
     {
-        if (node.getArrival() == null) return true;
+        // NOR A COPY OF A SQUARE NOTHING ARRIVES AT (RSA3-C6): its side is one nothing arrives by, and a bar on it - set
+        // while trains did, and hidden by the editor once they no longer can - shut the copy as no station.
+        if (node.getArrival() == null || node.nothingArrives) return true;
 
         Set<TilePorts.Side> barred = barredArrivals.get(node.getTile());
 
@@ -652,7 +667,7 @@ public class AutonomyBuilder
 
             if (behind.size() > 1)
             {
-                for (TilePorts.Side side : behind) out.add(new Node(tile, side, false));
+                for (TilePorts.Side side : behind) out.add(new Node(tile, side, false, true));
             }
             else
             {
@@ -1261,8 +1276,11 @@ public class AutonomyBuilder
 
                 // AND THAT THE HOME ON THIS COPY WAS SET FACING THIS WAY (OB-282), where the setup says so and this copy
                 // holds it - otherwise the home is the square, as it has been since 2026-08-31.
+                //
+                // Never on a square nothing arrives at (RSA3-C6), where a facing set before round 18 would hold a train
+                // to a way it can never be brought home in.
                 if (copy == homeOn && extras != null && extras.has(HOME) && homeFacingOf(extras) != null
-                    && facingOf(node) == homeFacingOf(extras))
+                    && !node.nothingArrives && facingOf(node) == homeFacingOf(extras))
                 {
                     json.put(HOME_FACING_FIXED, true);
                 }
@@ -1563,7 +1581,9 @@ public class AutonomyBuilder
 
         for (Node node : nodesFor(tile))
         {
-            if (node.arrival != null && arrivalAllowed(node)) out.add(facingOf(node));
+            // NOT ON A SQUARE NOTHING ARRIVES AT (RSA3-C6): no train can be brought home to either copy, so the home is
+            // the square, whichever way the train stands
+            if (node.arrival != null && !node.nothingArrives && arrivalAllowed(node)) out.add(facingOf(node));
         }
 
         return out;

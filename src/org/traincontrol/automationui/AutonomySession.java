@@ -455,6 +455,184 @@ public class AutonomySession
 
         // Now, on this thread, rather than on whichever thread happens to ask first
         deriveStationIndex();
+
+        // AND THE CAPTURED TIMETABLE CARRIED TO THE NAMES THIS BUILD GIVES (RSA3-B1)
+        carryTheTimetableAcross();
+    }
+
+    /**
+     * Every Point name a build of this session has emitted, and the square it stood for (RSA3-B1) - so a timetable leg
+     * naming one the latest build no longer has can be carried to the copy of that square it now is.
+     */
+    private final Map<String, TileKey> squareOfNameSeen = new java.util.HashMap<>();
+
+    /** And the square's own name as that build gave it, which the rest of the Point's name follows. */
+    private final Map<String, String> baseOfNameSeen = new java.util.HashMap<>();
+
+    /**
+     * Carries the active configuration's captured timetable to the names this build gives its Points (RSA3-B1).
+     *
+     * A captured timetable names Points, and a Point is named after its square - the square's name, and a heading where
+     * the square is more than one copy.  A station renamed, or a square given more copies or fewer, left every leg
+     * through it naming a Point no longer built: the load dropped the entry, and the next capture wrote the shorter
+     * timetable over the configuration.  The locomotive half was carried long ago (OB-069); this is the station half.
+     *
+     * Each name the build no longer has is traced to its square - by the builds this session has seen, or, for a name
+     * written before this session, as that square's own name with or without a heading - and then to a copy of it: the
+     * same copy under the square's name now, or where that copy is gone, the one copy every leg through it is an edge
+     * from or to.  A name that cannot be traced is left as it is, and the load drops that entry as before.
+     */
+    private void carryTheTimetableAcross()
+    {
+        if (reducer == null || store == null) return;
+
+        AutonomyBuilder naming = builder(null);
+
+        Map<String, TileKey> tiles = naming.tilesByName();
+
+        try
+        {
+            String active = store.getActiveConfiguration();
+
+            org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
+
+            org.json.JSONObject stored = configuration == null ? null : configuration.optJSONObject("globals");
+
+            org.json.JSONArray table = stored == null ? null : stored.optJSONArray("timetable");
+
+            if (table != null && carry(table, tiles, naming.uniqueNames(), naming.edgesByName().keySet())) dirty = true;
+        }
+        finally
+        {
+            // REMEMBERED for the next build to carry from, whatever became of this one
+            squareOfNameSeen.putAll(tiles);
+            baseOfNameSeen.putAll(naming.baseNames());
+        }
+    }
+
+    /**
+     * The legs of a captured timetable carried to this build's names, in place.
+     *
+     * @param table the stored timetable
+     * @param tiles this build's Point names, to their squares
+     * @param bases this build's squares, to their own names
+     * @param edges this build's edges, as "start -> end"
+     * @return whether any leg was changed
+     */
+    private boolean carry(org.json.JSONArray table, Map<String, TileKey> tiles, Map<TileKey, String> bases,
+        java.util.Set<String> edges)
+    {
+        List<org.json.JSONObject> legs = new ArrayList<>();
+
+        for (int i = 0; i < table.length(); i++)
+        {
+            org.json.JSONObject entry = table.optJSONObject(i);
+
+            org.json.JSONArray path = entry == null ? null : entry.optJSONArray("path");
+
+            for (int j = 0; path != null && j < path.length(); j++)
+            {
+                org.json.JSONObject leg = path.optJSONObject(j);
+
+                if (leg != null && leg.has("start") && leg.has("end")) legs.add(leg);
+            }
+        }
+
+        // EVERY NAME THIS BUILD DOES NOT HAVE, traced to its square
+        Map<String, TileKey> stale = new LinkedHashMap<>();
+        Map<String, String> carried = new LinkedHashMap<>();
+
+        for (org.json.JSONObject leg : legs)
+        {
+            for (String name : new String[] {leg.optString("start"), leg.optString("end")})
+            {
+                if (tiles.containsKey(name) || stale.containsKey(name)) continue;
+
+                TileKey square = squareOfNameSeen.get(name);
+                String base = baseOfNameSeen.get(name);
+
+                // WRITTEN BEFORE THIS SESSION: the square's own name, whole or with a heading - the longest that fits
+                if (square == null)
+                {
+                    for (Map.Entry<TileKey, String> own : bases.entrySet())
+                    {
+                        String called = own.getValue();
+
+                        if ((name.equals(called) || name.startsWith(called + " ("))
+                            && (base == null || called.length() > base.length()))
+                        {
+                            square = own.getKey();
+                            base = called;
+                        }
+                    }
+                }
+
+                if (square == null || base == null || !bases.containsKey(square) || !name.startsWith(base)) continue;
+
+                stale.put(name, square);
+
+                // THE SAME COPY under the square's name now: what follows the name is the copy's heading
+                String same = bases.get(square) + name.substring(base.length());
+
+                if (square.equals(tiles.get(same))) carried.put(name, same);
+            }
+        }
+
+        // WHERE THAT COPY IS GONE - a square split, or one copy fewer - the one copy every leg through it runs along
+        for (Map.Entry<String, TileKey> each : stale.entrySet())
+        {
+            if (carried.containsKey(each.getKey())) continue;
+
+            String fits = null;
+            int fitting = 0;
+
+            for (Map.Entry<String, TileKey> copy : tiles.entrySet())
+            {
+                if (!copy.getValue().equals(each.getValue())) continue;
+
+                boolean every = true;
+
+                for (org.json.JSONObject leg : legs)
+                {
+                    String start = leg.optString("start");
+                    String end = leg.optString("end");
+
+                    if (!start.equals(each.getKey()) && !end.equals(each.getKey())) continue;
+
+                    String from = start.equals(each.getKey()) ? copy.getKey() : carried.getOrDefault(start, start);
+                    String to = end.equals(each.getKey()) ? copy.getKey() : carried.getOrDefault(end, end);
+
+                    if (!edges.contains(from + " -> " + to)) every = false;
+                }
+
+                if (every)
+                {
+                    fits = copy.getKey();
+                    fitting++;
+                }
+            }
+
+            if (fitting == 1) carried.put(each.getKey(), fits);
+        }
+
+        boolean changed = false;
+
+        for (org.json.JSONObject leg : legs)
+        {
+            for (String key : new String[] {"start", "end"})
+            {
+                String now = carried.get(leg.optString(key));
+
+                if (now != null)
+                {
+                    leg.put(key, now);
+
+                    changed = true;
+                }
+            }
+        }
+
+        return changed;
     }
 
     public TileGraph getGraph()

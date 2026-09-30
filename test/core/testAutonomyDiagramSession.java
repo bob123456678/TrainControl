@@ -224,6 +224,254 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A copy of a square nothing arrives at is no arrival, so a side barred while trains did arrive does not shut it
+     * (RSA3-C6a).
+     *
+     * Round 18 gave such a square one copy per way out, each standing for a train that faces it - and so named after the
+     * side that train would have come in by.  The build then asked the store's barred sides about it: a side barred while
+     * trains arrived by it, the track then made one-way away, shut one copy as no station - a bar the editor no longer
+     * shows, and cannot clear.
+     *
+     * MUTATION: let a bar reach such a copy, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAStaleBarDoesNotShutASquareNothingArrivesAt() throws Exception
+    {
+        final TileKey middle = new TileKey("main", 3, 1);
+
+        threeStationsInARow("C6a");
+
+        session.rebuild();
+
+        assertTrue(session.arrivalSides(middle).contains(org.traincontrol.automationui.TilePorts.Side.E), "precondition:"
+            + " trains do not arrive at the middle square from the east");
+
+        // BARRED FROM THE EAST while trains arrived by it; then the track made one-way away
+        session.setBarredArrivals(middle, new java.util.HashSet<>(Arrays.asList(org.traincontrol.automationui.TilePorts.Side.E)));
+
+        oneWayAwayFromTheMiddle();
+
+        assertTrue(session.arrivalSides(middle).isEmpty(), "precondition: something still arrives at the middle square");
+
+        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+        int copies = 0;
+
+        for (Object o : built.getJSONArray("points"))
+        {
+            org.json.JSONObject point = (org.json.JSONObject) o;
+
+            if (!point.getString("name").startsWith("main 3,1")) continue;
+
+            copies++;
+
+            assertTrue(point.optBoolean("station"), point.getString("name") + " is built as no station, shut by a bar on a"
+                + " side nothing arrives by - one the editor does not show (RSA3-C6)");
+        }
+
+        assertEquals(copies, 2, "precondition: the middle square is not built as a copy per way out");
+    }
+
+    /**
+     * A square nothing arrives at offers no home facing: no train can be brought home to either copy (RSA3-C6b).
+     *
+     * *"we shouldn't allow an impossible facing to be saved"* (OB-282).  Its facings were offered, and a train homed
+     * facing one way and standing there the other was one Return Home called IMPOSSIBLE - where before round 18 the home
+     * was the square, whichever way the train stood.
+     *
+     * MUTATION: offer a home facing on such a square, or hold a home there to one, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testASquareNothingArrivesAtOffersNoHomeFacing() throws Exception
+    {
+        final TileKey middle = new TileKey("main", 3, 1);
+
+        threeStationsInARow("C6b");
+
+        oneWayAwayFromTheMiddle();
+
+        assertTrue(session.arrivalSides(middle).isEmpty(), "precondition: something still arrives at the middle square");
+
+        assertTrue(session.homeFacingsFor(middle).isEmpty(), "a home facing is offered on a square no train can arrive at"
+            + " (RSA3-C6): " + session.homeFacingsFor(middle));
+
+        // AND ONE ALREADY SET is not held to
+        session.placeLocomotive(middle, "C6 train");
+        session.setFacing(middle, org.traincontrol.automationui.TilePorts.Side.E);
+        session.setHome(middle, "C6 train");
+
+        // A FACING SET BEFORE THIS BUILD, which the menu offered then
+        session.setPointProperty(middle, AutonomyBuilder.HOME_FACING, "W");
+        session.rebuild();
+
+        for (Object o : new org.json.JSONObject(session.buildConfiguration()).getJSONArray("points"))
+        {
+            org.json.JSONObject point = (org.json.JSONObject) o;
+
+            if (!point.getString("name").startsWith("main 3,1")) continue;
+
+            assertFalse(point.optBoolean(AutonomyBuilder.HOME_FACING_FIXED, false), point.getString("name") + " holds its"
+                + " home to a facing no train can be brought home in (RSA3-C6)");
+        }
+    }
+
+    /**
+     * A station renamed keeps its timetable (RSA3-B1): every leg through it is carried to the new name, so the next load
+     * reads it and the next capture keeps it.
+     *
+     * A captured timetable names Points, and a station's Points are named after it.  Renamed, every leg through it named
+     * a Point the next build no longer had: the load dropped the entry, with one line in the log, and the next capture
+     * wrote the shorter timetable over the configuration.
+     *
+     * MUTATION: carry nothing across a rebuild, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testARenamedStationKeepsItsTimetable() throws Exception
+    {
+        threeStationsInARow("B1 rename");
+
+        session.setPointName(new TileKey("main", 1, 1), "Alpha");
+        session.setPointName(new TileKey("main", 3, 1), "Beta");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+
+        String[] leg = anEdgeBetween(new org.json.JSONObject(session.buildConfiguration()), "Beta", "Gamma");
+
+        assertNotNull(leg, "precondition: no edge from Beta to Gamma");
+
+        session.setGlobal("timetable", aTimetableOf(leg));
+
+        // THE RENAME, as the editor's Name item makes it
+        session.setPointName(new TileKey("main", 3, 1), "Bravo");
+
+        assertTheTimetableIsLoadable("renaming Beta to Bravo");
+
+        String[] kept = firstLeg();
+
+        assertEquals(kept[0], "Bravo" + leg[0].substring("Beta".length()), "the leg did not follow the rename to the same"
+            + " copy of the square (RSA3-B1)");
+    }
+
+    /**
+     * A square round 18 split by its ways out keeps a timetable leg that set out from it under its old, whole name
+     * (RSA3-B1): carried to the copy that leg leaves by.
+     *
+     * MUTATION: carry nothing a build of this session did not name, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testASquareSplitByItsWaysOutKeepsItsTimetable() throws Exception
+    {
+        threeStationsInARow("B1 split");
+
+        oneWayAwayFromTheMiddle();
+
+        // A LEG AS A BUILD BEFORE ROUND 18 WROTE IT: the square's own name, whole
+        session.setGlobal("timetable", aTimetableOf(new String[] {"main 3,1", "main 5,1"}));
+
+        session.rebuild();
+
+        assertTheTimetableIsLoadable("the square being split by its ways out");
+
+        assertEquals(firstLeg()[0], "main 3,1 (eastbound)", "the leg was not carried to the copy it leaves by");
+    }
+
+    /** Stations at 1,1, 3,1 and 5,1 of one line, both ways, in a configuration of this name. */
+    private void threeStationsInARow(String configuration) throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 7, 3, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 64, 64, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 65, 65, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 66, 66, accessoryDecoderType.MM2, null);
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize(configuration);
+
+        for (int x : new int[] {1, 3, 5}) session.setStation(new TileKey("main", x, 1), true);
+    }
+
+    /** The track either side of the middle station made one-way away from it, so nothing arrives there. */
+    private void oneWayAwayFromTheMiddle()
+    {
+        session.setDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_B);
+        session.setDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.TOWARD_A);
+        session.rebuild();
+    }
+
+    /** The first built edge from a Point of this base name to one of that. */
+    private static String[] anEdgeBetween(org.json.JSONObject built, String from, String to)
+    {
+        for (Object o : built.getJSONArray("edges"))
+        {
+            org.json.JSONObject e = (org.json.JSONObject) o;
+
+            if (e.getString("start").startsWith(from) && e.getString("end").startsWith(to))
+            {
+                return new String[] {e.getString("start"), e.getString("end")};
+            }
+        }
+
+        return null;
+    }
+
+    /** A captured timetable of one entry, one leg long, as the capture stores it. */
+    private static org.json.JSONArray aTimetableOf(String[] leg)
+    {
+        return new org.json.JSONArray().put(new org.json.JSONObject().put("loc", "B1 train").put("executionTime", 1L)
+            .put("secondsToNext", 5L).put("path", new org.json.JSONArray()
+                .put(new org.json.JSONObject().put("start", leg[0]).put("end", leg[1]))));
+    }
+
+    /** The first leg of the configuration's stored timetable. */
+    private String[] firstLeg()
+    {
+        org.json.JSONObject leg = new org.json.JSONArray(String.valueOf(session.getGlobal("timetable")))
+            .getJSONObject(0).getJSONArray("path").getJSONObject(0);
+
+        return new String[] {leg.getString("start"), leg.getString("end")};
+    }
+
+    /** Every leg of the stored timetable is an edge the next build has - what the load reads it against. */
+    private void assertTheTimetableIsLoadable(String after)
+    {
+        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+        java.util.Set<String> edges = new java.util.HashSet<>();
+
+        for (Object o : built.getJSONArray("edges"))
+        {
+            org.json.JSONObject e = (org.json.JSONObject) o;
+
+            edges.add(e.getString("start") + " -> " + e.getString("end"));
+        }
+
+        org.json.JSONArray table = built.optJSONArray("timetable");
+
+        assertNotNull(table, "precondition: the build carries no timetable");
+        assertEquals(table.length(), 1, "precondition: the build's timetable is not the one entry stored");
+
+        for (Object p : table.getJSONObject(0).getJSONArray("path"))
+        {
+            org.json.JSONObject leg = (org.json.JSONObject) p;
+
+            String name = leg.getString("start") + " -> " + leg.getString("end");
+
+            assertTrue(edges.contains(name), "after " + after + ", the timetable's leg " + name + " is no edge of the"
+                + " build, so the next load drops the entry and the capture after erases it (RSA3-B1).  Edges: " + edges);
+        }
+    }
+
+    /**
      * The same on a feedback double curve whose two arcs each lead out one way (RSA2-C7): each copy stands for a train
      * facing its way out, and so came in by the OTHER end of that arc - which here is no way out at all.
      *

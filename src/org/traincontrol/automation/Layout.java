@@ -579,6 +579,21 @@ public class Layout
      */
     private final java.util.concurrent.atomic.AtomicInteger locomotiveThreads =
         new java.util.concurrent.atomic.AtomicInteger();
+
+    /**
+     * The timetable entries alive, each counted from before its thread starts until it leaves (RSA3-C5) - including
+     * while it pauses between refusals, when no journey of it is under way.  Uncounted, a run the Yes had stopped read
+     * idle while an entry paused; its call returned, the next run began, and the entry woke into that run and stopped it
+     * at its stuck limit, blaming the track.
+     */
+    private final java.util.concurrent.atomic.AtomicInteger timetableEntries =
+        new java.util.concurrent.atomic.AtomicInteger();
+
+    /**
+     * What a timetable's pauses wait on, so that any stop wakes them to leave (RSA3-C5) - see `pauseUnlessStopped`.
+     * Held only to wait or to notify, never while taking another lock.
+     */
+    private final Object entryPause = new Object();
     
     // Is the layout state valid?
     private boolean isValid = true;
@@ -2108,7 +2123,7 @@ public class Layout
     public boolean isRunning()
     {
         return this.running || !this.getActiveLocomotives().isEmpty()
-            || this.locomotiveThreads.get() > 0;
+            || this.locomotiveThreads.get() > 0 || this.timetableEntries.get() > 0;
     }
     
     /**
@@ -2167,20 +2182,22 @@ public class Layout
      * sensor is not given its speed back, and one set off at the same instant is put back to a stand.  Then every train
      * under way stops.
      *
-     * **`running` cleared first and the stop counted second, under the lock a timetable takes to start** (RSA2-C1,
-     * RSA2-C2): autonomy asks `running` once its choice is made, so a thread that reads the count after it has been
-     * counted reads `running` cleared; and a timetable that sets `running` asks the count under the same lock, so the
-     * two cannot interleave.  Not `synchronized` on the railway: the event thread calls it, and nothing there may wait
-     * on this railway's monitor.
+     * **`running` cleared first and the stop counted second** (RSA2-C1, RSA2-C2): autonomy asks `running` once its
+     * choice is made, so a thread that reads the count after it has been counted reads `running` cleared; and a
+     * timetable sets `running` and then asks the count, so whichever comes first the run is not started.  No lock, and
+     * not `synchronized` on the railway (RSA3-C4): the event thread calls it, and nothing there may wait on a lock a
+     * journey holds while it waits for this railway's monitor.
      */
     public void stopEveryTrainWhereItIs()
     {
-        synchronized (this.activeLocomotives)
-        {
-            stopLocomotives();
+        // NO LOCK (RSA3-C4).  This took the journeys' lock, on the event thread, and an arrival holds that lock while it
+        // waits for the railway's monitor - which a dispatch holds for as long as it throws a route's switches.  So the
+        // window froze and every train ran on until the other route was set.  A timetable starting asks the count AFTER
+        // setting `running` and clears it again where the count has moved, so every order of the two ends with the run
+        // not started - see `executeTimetableInternal`.
+        stopLocomotives();
 
-            this.stopsOrdered.incrementAndGet();
-        }
+        this.stopsOrdered.incrementAndGet();
 
         for (Locomotive active : this.activeLocomotives.keySet()) active.setSpeed(0);
     }
@@ -2199,7 +2216,8 @@ public class Layout
     /**
      * The train whose journey is still waiting on this sensor, other than the one asking, or null (RSA2-B1).  A journey
      * under way waits on every sensor of its route it has not reached, and one still claiming its route on all of them;
-     * the first time the sensor is occupied ends every such wait, whichever train occupies it.
+     * the first time the sensor is occupied ends every such wait, whichever train occupies it.  A sensor its head has
+     * reached stays its own until the rail to it is given back (RSA3-C3).
      *
      * @param s88 the sensor
      * @param asking the train whose route is being asked about
@@ -2209,21 +2227,9 @@ public class Layout
     {
         if (s88 == null) return null;
 
-        for (Map.Entry<Locomotive, List<Edge>> journey : this.activeLocomotives.entrySet())
-        {
-            if (journey.getKey() == asking) continue;
-
-            List<Point> reached = this.locomotiveMilestones.get(journey.getKey());
-
-            for (Edge e : journey.getValue())
-            {
-                if (s88.equals(e.getEnd().getS88()) && (reached == null || !reached.contains(e.getEnd())))
-                {
-                    return journey.getKey();
-                }
-            }
-        }
-
+        // THE CLAIMS FIRST, THE JOURNEYS SECOND (RSA3-C1): the hand-over writes the journey and then takes the claim
+        // away, so a train missing from the claims is among the journeys read after them.  The other order saw a train
+        // handing over between the two reads in neither, and admitted a second train to the other place on its sensor.
         for (Map.Entry<Locomotive, List<Edge>> claim : this.takingPath.entrySet())
         {
             if (claim.getKey() == asking) continue;
@@ -2231,6 +2237,29 @@ public class Layout
             for (Edge e : claim.getValue())
             {
                 if (s88.equals(e.getEnd().getS88())) return claim.getKey();
+            }
+        }
+
+        for (Map.Entry<Locomotive, List<Edge>> journey : this.activeLocomotives.entrySet())
+        {
+            if (journey.getKey() == asking) continue;
+
+            List<Point> reached = this.locomotiveMilestones.get(journey.getKey());
+
+            Set<Edge> givenBack = this.releasedEarly.get(journey.getKey());
+
+            for (Edge e : journey.getValue())
+            {
+                if (!s88.equals(e.getEnd().getS88())) continue;
+
+                // HELD UNTIL THE RAIL TO IT IS GIVEN BACK, not only until the head reaches it (RSA3-C3; Adam, on
+                // RSA2-B1: "it should be allowed once unlocked").  Between the two, only the sensor's own reading kept a
+                // second train off the other place on it, and a gap between two axles reads clear.  Given back early in
+                // non-atomic mode, where the tail has provably passed; in atomic mode not before the journey ends.
+                boolean reachedIt = reached != null && reached.contains(e.getEnd());
+                boolean released = givenBack != null && givenBack.contains(e);
+
+                if (!reachedIt || !released) return journey.getKey();
             }
         }
 
@@ -2294,6 +2323,53 @@ public class Layout
     public void stopLocomotives()
     {
         this.running = false;
+
+        // AND EVERY TIMETABLE ENTRY PAUSING BETWEEN REFUSALS WOKEN, to leave (RSA3-C5).  `running` is cleared before the
+        // monitor is taken, and a pause asks it under the monitor before it waits, so no wake is lost.
+        synchronized (this.entryPause)
+        {
+            this.entryPause.notifyAll();
+        }
+    }
+
+    /**
+     * A timetable's pause between refusals, which any stop cuts short (RSA3-C5).  It paused through the operator's delays
+     * - seconds - with nothing to end it, so an entry the Yes had found refusing woke only after its run was over.
+     *
+     * @param ms how long to pause while the run goes on
+     * @throws InterruptedException if the thread is interrupted
+     */
+    private void pauseUnlessStopped(long ms) throws InterruptedException
+    {
+        final long until = System.currentTimeMillis() + ms;
+
+        synchronized (this.entryPause)
+        {
+            while (this.running)
+            {
+                long left = until - System.currentTimeMillis();
+
+                if (left <= 0) return;
+
+                this.entryPause.wait(left);
+            }
+        }
+    }
+
+    /**
+     * How long `pacedWait` pauses: the operator's delays, between the least and the most, or the poll where both are
+     * zero.
+     *
+     * @return milliseconds
+     */
+    private long pacedWaitMillis()
+    {
+        if (this.getMinDelay() == 0 && this.getMaxDelay() == 0) return COMPLETION_POLL;
+
+        int least = Math.abs(this.getMinDelay());
+        int most = Math.abs(this.getMaxDelay());
+
+        return (least + Math.round(Math.random() * (most - least))) * 1000L;
     }
     
     /**
@@ -2802,7 +2878,10 @@ public class Layout
      */
     public boolean isAlreadyUnderway(Locomotive loc)
     {
-        return this.activeLocomotives.containsKey(loc) || this.takingPath.containsKey(loc);
+        // THE CLAIMS FIRST (RSA3-C1): the hand-over from claim to journey writes the journey and then takes the claim
+        // away, so a train missing from the claims when they are read is among the journeys when they are read after.
+        // The other order missed a train handing over between the two reads.
+        return this.takingPath.containsKey(loc) || this.activeLocomotives.containsKey(loc);
     }
 
     /**
@@ -2818,8 +2897,9 @@ public class Layout
         Set<Locomotive> both = Collections.newSetFromMap(
             new java.util.IdentityHashMap<Locomotive, Boolean>());
 
-        both.addAll(this.activeLocomotives.keySet());
+        // The claims first, for the reason `isAlreadyUnderway` gives (RSA3-C1)
         both.addAll(this.takingPath.keySet());
+        both.addAll(this.activeLocomotives.keySet());
 
         return both.size();
     }
@@ -6721,13 +6801,16 @@ public class Layout
             return true;
         }
 
-        synchronized (this.activeLocomotives)
-        {
-            // NOT AFTER A STOP ORDERED SINCE THE RUN WAS CHOSEN (RSA2-C1), asked under the lock the Yes takes to clear
-            // `running` and count its stop, so the two cannot interleave
-            if (this.stopsOrdered.get() != stopsAtChoice) return true;
+        // NOT AFTER A STOP ORDERED SINCE THE RUN WAS CHOSEN (RSA2-C1): `running` set, THEN the count asked, and cleared
+        // again where it has moved.  The Yes clears `running` and then counts, with no lock (RSA3-C4): a Yes before this
+        // line is seen by the question below, one after it clears what this set, and one between the two does both.
+        this.running = true;
 
-            this.running = true;
+        if (this.stopsOrdered.get() != stopsAtChoice)
+        {
+            this.stopLocomotives();
+
+            return true;
         }
 
         // See runLocomotives: no sweep, on Adam's ruling of 2026-08-31.
@@ -6805,8 +6888,13 @@ public class Layout
                     );
                     startTime = System.currentTimeMillis();
 
+                    // COUNTED BEFORE IT STARTS, until it leaves (RSA3-C5) - see `timetableEntries`
+                    this.timetableEntries.incrementAndGet();
+
                     new Thread(() ->
                     {
+                      try
+                      {
                         try
                         {
                             int attempts = 0;
@@ -6908,23 +6996,18 @@ public class Layout
                                     ttp.toString()
                                 );
 
-                                if (this.timetableSequential)
+                                // A PAUSE ANY STOP CUTS SHORT (RSA3-C5), so an entry the Yes finds refusing leaves
+                                // with its run.  A sequential run is paced independently of the delay settings, which
+                                // may be zero - that would busy-wait here rather than pause.
+                                try
                                 {
-                                    // Paced independently of the delay settings, which may be zero -
-                                    // that would busy-wait here rather than pause
-                                    try
-                                    {
-                                        Thread.sleep(STAGING_RETRY_PAUSE);
-                                    }
-                                    catch (InterruptedException ie)
-                                    {
-                                        Thread.currentThread().interrupt();
-                                        break;
-                                    }
+                                    this.pauseUnlessStopped(this.timetableSequential ? STAGING_RETRY_PAUSE
+                                        : this.pacedWaitMillis());
                                 }
-                                else
+                                catch (InterruptedException ie)
                                 {
-                                    this.pacedWait(ttp.getLoc());
+                                    Thread.currentThread().interrupt();
+                                    break;
                                 }
                             }
 
@@ -6976,7 +7059,11 @@ public class Layout
 
                             this.control.logf("autolayout.infoTimetableExecutionFinished");
                         }
-
+                      }
+                      finally
+                      {
+                        this.timetableEntries.decrementAndGet();
+                      }
                     }).start();
 
                     break;
