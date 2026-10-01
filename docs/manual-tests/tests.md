@@ -30788,6 +30788,10 @@ editing easier for the user.  Make refusals that make sense be errors, and small
 
 *What this is:* `core.testAutonomyDiagramSession.testADirectionUnderAPlacedTrainIsSetAndReportedAsAnError`.
 
+**Claude, 2026-10-01.**
+
+Since round 35 (1134a8e9) the train in step 1 is still drawn on its station after the change, facing the way it stands, while the error is listed.  The steps stand.
+
 ---
 
 <a id="mt-637"></a>
@@ -30947,5 +30951,9 @@ in the track diagram viewer, while maintaining editability? same icon as when a 
 - In step 2 the icon leaves the first station and appears on the second, and the right-click menu opens as usual.
 
 *What this is:* `ui.testAPastedTrainFacesTheWayTheOperatorChose.testAPastedTrainShowsItsLocomotiveOnTheStation`.
+
+**Claude, 2026-10-01.**
+
+Since round 35 (1134a8e9) the icon is not drawn on the sensors of a route while it is being set up - a run showed locomotives where no train stood for a few seconds - and a train standing where no copy faces its way is drawn on its station too.  The steps stand.
 
 ---
