@@ -844,6 +844,8 @@ public class GraphLocAssign extends javax.swing.JPanel
         // ONTO A COPY TRAINS MAY NOT ARRIVE AT, TOO, where that is the heading kept (OB-284).
         parent.getModel().getAutoLayout().moveLocomotive(getLoc(), p.getName(), false, true);
 
+        parent.trainsMovedByHand();
+
         parent.getModel().getLocByName(getLoc()).setReversible(isReversible());
         parent.getModel().getLocByName(getLoc()).setArrivalFunc(getArrivalFunc());
         parent.getModel().getLocByName(getLoc()).setDepartureFunc(getDepartureFunc());

@@ -206,6 +206,98 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
     }
 
     /**
+     * A train pasted onto a station at rest shows the locomotive a run draws there, facing the way it was put, and
+     * taken off by the cut it shows none (Adam, 2026-10-01: "when a train is standing somewhere, can we show its locomotive icon on top of the
+     * station in the track diagram viewer, while maintaining editability? same icon as when a run is started").
+     *
+     * Through the window's own key doors: neither fires anything on the layout, so the diagram follows only because
+     * the door tells it (`trainsMovedByHand`).
+     *
+     * MUTATION: drop that call from the paste and cut door, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAPastedTrainShowsItsLocomotiveOnTheStation() throws Exception
+    {
+        final org.traincontrol.gui.DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
+
+        // THE DIAGRAM WATCHING THIS RAILWAY, whatever the overlay's tick box was left at
+        SwingUtilities.invokeAndWait(() ->
+        {
+            driver.bind(session);
+            driver.setEnabled(true);
+            driver.start();
+        });
+
+        assertEquals(pasteFacing(Side.W), Side.W, "precondition: the paste did not stand the train facing west");
+
+        org.traincontrol.automationui.TileOverlay shown = theMarkOn(true);
+
+        assertTrue(shown != null && shown.isParked(), "a train pasted onto " + SQUARE_NAME + " at rest shows no"
+            + " locomotive there (Adam, 2026-10-01): " + shown);
+
+        assertEquals(shown.getFacing(), Side.W, "the locomotive on " + SQUARE_NAME + " does not face the way the"
+            + " train was put");
+
+        // AND CUT, by the same door's Control+X
+        final Method gesture = TrainControlUI.class.getDeclaredMethod("locomotiveGestureOnDiagram", int.class,
+            boolean.class);
+
+        gesture.setAccessible(true);
+
+        final Object[] handled = new Object[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                ui.setHoveredDiagramTile(square.getPage(), square.getX(), square.getY());
+
+                handled[0] = gesture.invoke(ui, KeyEvent.VK_X, true);
+            }
+            catch (Exception refused)
+            {
+                handled[0] = refused;
+            }
+        });
+
+        assertEquals(handled[0], Boolean.TRUE, "precondition: the cut door did not take Control+X over " + SQUARE_NAME
+            + ": " + handled[0]);
+
+        org.traincontrol.automationui.TileOverlay after = theMarkOn(false);
+
+        assertTrue(after == null || !after.hasTrain(), "the locomotive stayed on " + SQUARE_NAME + " after the train"
+            + " was cut from it: " + after);
+    }
+
+    /**
+     * What the diagram shows on the square, once it shows a train there or not as asked - or what it shows after five
+     * seconds of not.
+     *
+     * @param aTrain whether to wait for a train's mark or for none
+     * @return the square's overlay
+     * @throws Exception from the event thread
+     */
+    private static org.traincontrol.automationui.TileOverlay theMarkOn(boolean aTrain) throws Exception
+    {
+        org.traincontrol.automationui.TileOverlay seen = null;
+
+        for (int tries = 0; tries < 50; tries++)
+        {
+            pump();
+
+            seen = ui.getDiagramTileRegistry().overlayAt(square);
+
+            if ((seen != null && seen.hasTrain()) == aTrain) return seen;
+
+            Thread.sleep(100);
+        }
+
+        return seen;
+    }
+
+    /**
      * Pastes the train onto the square with both questions answered, and says which way it now faces.
      *
      * @param chosen the heading the facing question is answered with

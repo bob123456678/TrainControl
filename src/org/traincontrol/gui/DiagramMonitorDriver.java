@@ -128,7 +128,45 @@ public class DiagramMonitorDriver
             monitor.setEdges(builder.edgesByName(), names);
         }
 
+        monitor.setFacings(facingsOf(builder, names));
+
         attach();
+    }
+
+    /**
+     * Which way a train standing on each Point faces, from the builder that named them: a split copy's own facing, and
+     * a single copy's only way out where it has one (Adam, 2026-10-01 - the icon of a parked train turns to it).
+     *
+     * @param builder the builder the names came from
+     * @param names every Point name and its square
+     * @return Point name to the side a train's front faces there
+     */
+    private static Map<String, org.traincontrol.automationui.TilePorts.Side> facingsOf(AutonomyBuilder builder,
+        Map<String, TileKey> names)
+    {
+        Map<String, org.traincontrol.automationui.TilePorts.Side> out = new java.util.LinkedHashMap<>(builder.facingByName());
+
+        for (Map.Entry<String, TileKey> entry : names.entrySet())
+        {
+            if (out.containsKey(entry.getKey())) continue;
+
+            org.traincontrol.automationui.TilePorts.Side only = builder.onlyWayOutFacing(entry.getValue());
+
+            if (only != null) out.put(entry.getKey(), only);
+        }
+
+        return out;
+    }
+
+    /**
+     * Asks for a fresh look on the next tick.  A train placed, taken off or turned by hand fires nothing on the layout,
+     * and the icon over the station it stands on (Adam, 2026-10-01) has to follow it.
+     */
+    public void trainsMayHaveMoved()
+    {
+        DiagramMonitor current = monitor;
+
+        if (current != null) current.markDirty();
     }
 
     /**

@@ -2534,6 +2534,21 @@ public class AutonomyCompanionStore
      */
     public void createConfiguration(String name, String copyFrom) throws IOException
     {
+        createConfiguration(name, copyFrom, true);
+    }
+
+    /**
+     * The same, choosing whether the copy takes where the trains stand and the timetable (Adam, 2026-10-01: "One door:
+     * do it") - the two things a variant most often starts without.  Everything else comes across: each station's
+     * rules, the settings, the speeds.
+     *
+     * @param name what to call it
+     * @param copyFrom the configuration to copy, or null to start empty
+     * @param withTrains false to leave out every placement, with its facing and arrival, and the timetable
+     * @throws IOException when the name is in use
+     */
+    public void createConfiguration(String name, String copyFrom, boolean withTrains) throws IOException
+    {
         // Same reason as renameConfiguration: duplicating onto an existing name replaced it silently.
         if (configurations.containsKey(name)) throw new IOException(ERROR_NAME_IN_USE);
 
@@ -2547,9 +2562,44 @@ public class AutonomyCompanionStore
 
         created.put("name", name);
 
+        if (source != null && !withTrains) withoutTrains(created);
+
         configurations.put(name, created);
 
         if (activeConfiguration == null) activeConfiguration = name;
+    }
+
+    /**
+     * Takes every train and the timetable out of a configuration: each placement with the facing and the arrival that
+     * described the train standing there (as `AutonomySession.placeLocomotive` clears one), the timetable, and any
+     * entries an older build set aside.
+     *
+     * @param configuration modified in place
+     */
+    private static void withoutTrains(JSONObject configuration)
+    {
+        JSONObject points = configuration.optJSONObject("points");
+
+        if (points != null)
+        {
+            for (String key : points.keySet())
+            {
+                JSONObject point = points.optJSONObject(key);
+
+                if (point == null) continue;
+
+                point.remove(AutonomyBuilder.LOCOMOTIVE);
+                point.remove(AutonomyBuilder.FACING);
+                point.remove("arrivedFrom");
+                point.remove("arrivedAlong");
+            }
+        }
+
+        JSONObject globals = configuration.optJSONObject("globals");
+
+        if (globals != null) globals.remove("timetable");
+
+        configuration.remove(ENTRIES_SET_ASIDE);
     }
 
     /**

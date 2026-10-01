@@ -2007,39 +2007,24 @@ surface that reaches this most often has no editor in it at all - the track diag
 right-click autonomy menu rebuilds after every gesture, and nothing on that path ever captures where
 the trains are.
 
-**A direction that would leave a standing train with no copy facing its way is refused** (RSA5-A2).  The copy a
-train stands on is its direction, and a one-way run set through a station against the way a train there faces leaves
-the square no copy facing it: the rebuild could not put the train back, and a build from the setup turned it round in
-silence.  So every direction door - a click on the track, a switch's arms, the per-route radio, All branches, One-Way
-Run - asks first, of the railway's trains and the setup's, and a refusal names the train and the station and says to
-move the train first.  **So does a link switched off** beside a train that came in through it (RSA6-A3).  A copy that
-records no facing - a dead end nothing arrives at - faces its only way out, so a train facing the buffer there is not
-left facing a way out behind it (RSA6-B3); and a train standing on such a copy faces that way, whatever an earlier train
-left recorded on the square.  Only a train the change turns is asked about - one on a copy facing its way before, with
-none after - so a facing another train left does not refuse every direction on the railway (RSA7-B1).  Every session knows where the railway's trains stand from the moment it is
-made, not only once a station's Facing menu or the editor has told it (RSA6-A1).  **So is a one-way run against a
-standing train** (Adam, 2026-09-30, on MT-605: *"Refuse it too"*): the track ahead of the train, the way it faces, made
-to carry trains only towards it - judged on the railway as built, by whether the train can reach a station the way it
-faces before the change and none after, so however far ahead it is set: past a page link, by the One-Way tool over part
-of the way on (RSA12-B1), past a sensor that is no station (RSA13-B1) - walking the railway as autonomy runs it,
-from the copy the train stands on, so not out of a turn-round station's other copy, into a barred arrival or through a
-square out of service (RSA14-B1).  Track closed past a sensor, or a link switched off there, is refused the same way,
-since it strands the train just as surely (RSA14-C1); the message says the change would leave the train no way on.
-Closing the track right ahead of the train - nothing leaving or arriving by that side after the change - is not refused
-as a one-way run (Adam's ruling; RSA15-B1) - though the turn refusal refuses it where the train's copy would go, saying
-the change would leave the train no way on, and the train does not turn round there unless trains may, or must, change
-direction at the station: it waits until the track is open again (RSA13-C3).  Whether that should be refused too is put
-to Adam (open-questions.md).  The walk counts no copy of the train's own station as a station reached (RSA15-B2).  **What
-the refusal does not cover** (put to Adam, RSA15-B2 and RSA15-C1): a train's length against a shorter station on its way,
-and the doors other than a direction and Use This Link - Pair and Unpair Link, Out of Service, Trains May Arrive, the
-station mark, and turning taken off; the setup check's warning is what those leave.  A track already running against a train asks nothing of a change elsewhere.  A train facing no
-track, or recording no facing, is asked about the square's only way out (RSA12-C3) - which the build gives a dead end only
-where trains may or must change direction there; with no railway loaded, a train faces as the build stands it
-(RSA13-C1).  **A click on the track or a switch passes over a direction refused** to the next one allowed, and says why
-only where none is (Adam, MT-605: *"continue cycling through the valid options"*).
-`core.testAutonomyDiagramSession.testADirectionThatWouldTurnAStandingTrainIsRefused`,
-`core.testAutonomyDiagramSession.testAOneWayRunAgainstAStandingTrainIsRefused`,
-`core.testAutonomyDiagramSession.testAClickPassesOverADirectionRefusedUnderATrain`.
+**A direction is never refused for a standing train: what it does to the train is a finding** (Adam, 2026-10-01:
+*"Generally I prefer warnings or errors over outright refusals, since it makes editing easier for the user.  Make
+refusals that make sense be errors, and smaller issues be warnings."*).  This replaces RSA5-A2's refusal and the walk
+that judged a change by where it left a train able to go, which rounds 29 to 33 kept finding edges of.  The copy a train
+stands on is its direction, so a one-way run set through a station against the way a train there faces leaves the
+square no copy facing it.  The change is made, and the train is written into the setup where it stands, facing the way
+it faces - a train the last run left there included, so the fold that follows keeps it rather than taking it off the
+setup.  The setup check then reports an **error**: the train faces a way its station no longer has, and nothing is sent
+until it is turned from its right-click menu, moved, or the track is put back.  A link switched off beside a train is
+the same.  **A train facing track that now runs only towards it** - judged at the train's own square (Adam: *"Only near
+the train"*) - is a **warning**: it can be started, and goes nowhere that way.  **A station at the end of a line that
+trains may not change direction at is an error** (Adam, 2026-10-01): a train sent there could never leave; marking it
+Trains Must Change Direction Here clears it.  A click on the track or a switch steps to the next direction, as it did
+before there were refusals.
+`core.testAutonomyDiagramSession.testADirectionUnderAPlacedTrainIsSetAndReportedAsAnError`,
+`core.testAutonomyDiagramSession.testATrainFacingTrackRunningTowardsItIsAWarning`,
+`core.testAutonomyDiagramSession.testAStationAtTheEndOfALineIsAnError`,
+`regression.testAnEditedPlacementSurvivesTheRebuild.testATrainTheRunLeftIsRecordedWhereItStandsWhenItsWayGoes`.
 
 **So the Facing menu is about the train the RAILWAY has on the square** (TDY4-C5, 2026-09-24). After a run
 the setup can still name a square's pre-run occupant while another train stands there. The menu named the

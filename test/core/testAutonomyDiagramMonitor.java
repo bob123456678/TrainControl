@@ -762,9 +762,17 @@ public class testAutonomyDiagramMonitor
 
         Point standingAt;
 
+        final List<Point> points = new ArrayList<>();
+
         StubLayout()
         {
             super(null);
+        }
+
+        @Override
+        public java.util.Collection<Point> getPoints()
+        {
+            return points;
         }
 
         @Override
@@ -1711,5 +1719,109 @@ public class testAutonomyDiagramMonitor
         }
 
         return false;
+    }
+
+    /**
+     * A parked train is drawn as the locomotive a run draws, facing the way it stands (Adam, 2026-10-01: "when a train is standing somewhere, can we show its locomotive icon on top of the
+     * station in the track diagram viewer, while maintaining editability? same icon as when a run is started").
+     *
+     * Ink in the ring the dot cannot reach, as `testAMovingTrainIsDrawnAsALocomotive` asks it, and two facings drawn
+     * differently.
+     *
+     * MUTATION: leave a parked train out of the icon in `paintTrain`, and this fails; so does a heading that ignores
+     * a parked train's facing.
+     */
+    @Test
+    public void testAParkedTrainIsDrawnAsALocomotiveFacingTheWayItStands()
+    {
+        int size = 40;
+
+        java.awt.image.BufferedImage east = painted(TileOverlay.parked(Side.E), size);
+        java.awt.image.BufferedImage west = painted(TileOverlay.parked(Side.W), size);
+
+        assertTrue(inkInRing(east, 9, 14) > 0, "a parked train is drawn with nothing bigger than the dot, not as the"
+            + " locomotive a run draws (Adam, 2026-10-01)");
+
+        assertFalse(java.util.Arrays.equals(pixels(east), pixels(west)), "a parked train facing east and one facing"
+            + " west are drawn the same way, so the icon does not face the way the train stands");
+    }
+
+    /**
+     * A train parked with no path is published on the square it stands on, as a parked train facing the way its Point
+     * faces; a train holding a path is left to the run's own mark, the dot while it waits (FR-027).
+     *
+     * MUTATION: drop the parked trains from `compute`, and this fails.
+     *
+     * @throws Exception from building a Point
+     */
+    @Test
+    public void testAParkedTrainIsPublishedWhereItStands() throws Exception
+    {
+        Map<String, TileKey> tiles = new LinkedHashMap<>();
+
+        tiles.put("West", key("main", 1, 1));
+        tiles.put("East", key("main", 5, 1));
+
+        Point west88 = new Point("West", false, null);
+        Point east88 = new Point("East", false, null);
+
+        org.traincontrol.base.Locomotive train = locomotive();
+
+        west88.setLocomotive(train);
+
+        StubLayout layout = new StubLayout();
+
+        layout.points.add(west88);
+        layout.points.add(east88);
+
+        final List<Map<TileKey, TileOverlay>> published = new ArrayList<>();
+
+        DiagramMonitor monitor = new DiagramMonitor(source(layout), new LinkedHashMap<String, ReducedEdge>(), tiles,
+            new DiagramMonitor.Publisher()
+            {
+                @Override
+                public void publish(Map<TileKey, TileOverlay> overlays)
+                {
+                    published.add(new LinkedHashMap<>(overlays));
+                }
+            });
+
+        Map<String, Side> facings = new LinkedHashMap<>();
+
+        facings.put("West", Side.W);
+
+        monitor.setFacings(facings);
+
+        // NOTHING RUNNING: the parked train is still marked
+        monitor.refresh();
+
+        assertEquals(published.size(), 1, "nothing was published about a train parked on the railway, so the diagram"
+            + " shows no locomotive on its station (Adam, 2026-10-01)");
+
+        TileOverlay parked = published.get(0).get(key("main", 1, 1));
+
+        assertTrue(parked != null && parked.hasTrain() && parked.isParked(), "the square a train is parked on is not"
+            + " marked as a parked train: " + published.get(0));
+
+        assertEquals(parked.getFacing(), Side.W, "the parked train's mark does not face the way its Point faces");
+
+        assertNull(published.get(0).get(key("main", 5, 1)), "an empty station was marked");
+
+        // HOLDING A PATH, standing still: the run's own mark, the dot - not parked
+        layout.active.put(train, new ArrayList<Edge>());
+        layout.standingAt = west88;
+
+        monitor.refresh();
+
+        TileOverlay held = published.get(published.size() - 1).get(key("main", 1, 1));
+
+        assertTrue(held != null && held.hasTrain() && !held.isParked(), "a train holding a path was marked as parked,"
+            + " or not at all: " + held);
+    }
+
+    /** Every pixel of an image, to compare two. */
+    private static int[] pixels(java.awt.image.BufferedImage image)
+    {
+        return image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth());
     }
 }

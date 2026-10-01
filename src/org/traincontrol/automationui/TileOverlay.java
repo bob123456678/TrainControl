@@ -222,6 +222,8 @@ public class TileOverlay
     private final State state;
     private final boolean train;
     private final boolean moving;
+    private final boolean parked;
+    private final org.traincontrol.automationui.TilePorts.Side facing;
     private final java.util.List<Segment> segments;
 
     /**
@@ -253,6 +255,28 @@ public class TileOverlay
      */
     public TileOverlay(State state, boolean train, boolean moving, java.util.List<Segment> segments)
     {
+        this(state, train, moving, segments, false, null);
+    }
+
+    /**
+     * A train the railway holds with no path to run, drawn as the locomotive a run draws and facing the way it stands
+     * (Adam, 2026-10-01: "when a train is standing somewhere, can we show its locomotive icon on top of the station in
+     * the track diagram viewer, while maintaining editability? same icon as when a run is started").
+     *
+     * A train waiting on a path it holds keeps the dot (FR-027), so the dot still says "held on its way", and the
+     * locomotive says parked or running - the path line under a running one telling those two apart.
+     *
+     * @param facing the side of the square its front faces, or null where the railway records none
+     * @return the mark
+     */
+    public static TileOverlay parked(org.traincontrol.automationui.TilePorts.Side facing)
+    {
+        return new TileOverlay(State.IDLE, true, false, null, true, facing);
+    }
+
+    private TileOverlay(State state, boolean train, boolean moving, java.util.List<Segment> segments, boolean parked,
+        org.traincontrol.automationui.TilePorts.Side facing)
+    {
         this.state = state == null ? State.IDLE : state;
         this.train = train;
 
@@ -260,6 +284,11 @@ public class TileOverlay
         // told in two halves, and a pair that can contradict is a pair somebody will one day read the
         // wrong half of.
         this.moving = train && moving;
+
+        // Clamped the same way: parked is a train standing with no path, so never without a train or while it runs,
+        // and the facing is only ever a parked train's.
+        this.parked = train && parked && !this.moving;
+        this.facing = this.parked ? facing : null;
 
         this.segments = segments == null || segments.isEmpty()
             ? java.util.Collections.<Segment>emptyList()
@@ -290,6 +319,22 @@ public class TileOverlay
     public boolean isMoving()
     {
         return moving;
+    }
+
+    /**
+     * @return whether the train here is parked: held by the railway with no path to run (Adam, 2026-10-01)
+     */
+    public boolean isParked()
+    {
+        return parked;
+    }
+
+    /**
+     * @return the side a parked train's front faces, or null
+     */
+    public org.traincontrol.automationui.TilePorts.Side getFacing()
+    {
+        return facing;
     }
 
     /**
@@ -331,7 +376,8 @@ public class TileOverlay
 
         return new TileOverlay(
             rank(state) >= rank(other.state) ? state : other.state,
-            train || other.train, moving || other.moving, both);
+            train || other.train, moving || other.moving, both, parked || other.parked,
+            facing != null ? facing : other.facing);
     }
 
     /**
@@ -378,6 +424,9 @@ public class TileOverlay
      */
     private org.traincontrol.automationui.TilePorts.Side headingOf()
     {
+        // A PARKED TRAIN faces the way it stands: a line through its square is another train's path.
+        if (parked) return facing;
+
         for (Segment segment : segments)
         {
             if (segment.getTo() != null) return segment.getTo();
@@ -601,8 +650,9 @@ public class TileOverlay
             // is running (not while stationary)."  The dot said WHERE a train was and nothing more;
             // on a layout with several paths out at once, which of them are moving and which are
             // waiting is the thing a glance at the diagram could not answer.
+            // And where one is parked (Adam, 2026-10-01): the dot is left for a train waiting on a path it holds.
             java.awt.image.BufferedImage picture =
-                moving || !ICON_ONLY_WHILE_MOVING ? trainIcon() : null;
+                moving || parked || !ICON_ONLY_WHILE_MOVING ? trainIcon() : null;
 
             if (picture != null)
             {
@@ -853,20 +903,21 @@ public class TileOverlay
         // picture has not changed, and a train that has just started or just stopped is a changed
         // picture - it is the whole of what this flag draws.
         return state == other.state && train == other.train && moving == other.moving
-            && segments.equals(other.segments);
+            && parked == other.parked && facing == other.facing && segments.equals(other.segments);
     }
 
     @Override
     public int hashCode()
     {
-        return ((state.hashCode() * 31 + (train ? 1 : 0)) * 31 + (moving ? 1 : 0)) * 31
-            + segments.hashCode();
+        return ((((state.hashCode() * 31 + (train ? 1 : 0)) * 31 + (moving ? 1 : 0)) * 31 + (parked ? 1 : 0)) * 31
+            + (facing == null ? 0 : facing.hashCode())) * 31 + segments.hashCode();
     }
 
     @Override
     public String toString()
     {
-        return state + (train ? (moving ? "+moving" : "+train") : "")
+        return state + (train ? (moving ? "+moving" : parked ? "+parked" + (facing == null ? "" : ":" + facing)
+            : "+train") : "")
             + (segments.isEmpty() ? "" : segments.toString());
     }
 }

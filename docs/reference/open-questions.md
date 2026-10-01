@@ -235,19 +235,36 @@ resume note that has been deleted.
 
 ## Setup and start-up
 
-**Open** (put to Adam, 2026-10-01): **closing the track right ahead of a standing train.**  On MT-605 Adam ruled a one-way
-run against a standing train refused (*"Refuse it too"*), closing the track ahead left allowed - on Claude's premise that
-a dead end turns the train round, which holds only where trains may change direction at the station (RSA13-C3):
-elsewhere the train waits until the track is open again.  Closing past a sensor, or switching a link off there, is
-refused like a one-way run (RSA13-B1, RSA14-C1).  Should closing right ahead be refused too, where the station does not
-let trains turn?  **And the refusal's scope** (RSA15-B2, RSA15-C1): it guards a direction and Use This Link, and walks the
-railway's shape; it does not weigh a train's length against a shorter station on its way, and Pair and Unpair Link, Out
-of Service, Trains May Arrive, the station mark and turning taken off are not asked - the setup check's warning is what
-they leave.  Extend it to those, or keep it as it is?
+**Decided** (Adam, 2026-10-01: *"Make the refusals be intuitive for the user.  I am less worried about trains that have
+nowhere to go because the user might be mid edit, and refusals could complicate the build"*, then *"Generally I prefer
+warnings or errors over outright refusals, since it makes editing easier for the user.  Make refusals that make sense be
+errors, and smaller issues be warnings"*; and, asked whether the check should reach along the train's way, *"Only near
+the train"*): **no setup edit is refused for a standing train.**  A change that leaves a placed train facing a way its
+station no longer has is made, the train is recorded where it stands, and the setup check reports an error; track
+running only towards a train, at its own square, is a warning; closing the track is allowed.  This answers both halves of
+the question put to him the same day - closing right ahead, and the refusal's scope - by retiring the refusal.  Built in
+round 34; behaviour.md 6a.
 
-**Decided** (Adam, 2026-09-30, on MT-605: *"Refuse it too"*): **a one-way run against the way a standing train faces is
-refused**, as a direction that turns it is - judged on the railway as built, however far along the train's way it is set.
-Built in rounds 29 to 32; behaviour.md 6a.
+**Decided** (Adam, 2026-10-01: *"Stations at the end of a line: make it an error"*): **a station at the end of a line that
+trains may not change direction at is an error** in the setup check, so autonomy does not start until it is marked
+Trains Must Change Direction Here or the track is put right.  Built in round 34.
+
+**Decided** (Adam, 2026-10-01: *"One door: do it"*): **once a configuration exists, New Configuration is the one door to
+another** - a copy of the one chosen that asks whether where the trains stand and the timetable come too.  Add a
+Configuration is offered only for the very first setup.  Built in round 34; Automation.md, Configurations.
+
+**Decided** (Adam, 2026-10-01: *"Grey layout: grey the relevant options, but we need to keep open CS3 web app
+available"*): **the Layout menu greys what changes the diagram or the folder while autonomy runs**, saying why; opening
+the folder, the pop-outs, the picture and the CS3 web app stay live.  Built in round 34.
+
+**Decided** (Adam, 2026-10-01: *"when a train is standing somewhere, can we show its locomotive icon on top of the
+station in the track diagram viewer, while maintaining editability? same icon as when a run is started"*): **a train
+parked with no path is drawn with the run's locomotive icon** on its station, facing the way it stands; a train waiting
+on a path it holds keeps the dot (FR-027).  Built in round 34.
+
+**Superseded** (Adam, 2026-10-01 - the first entry above): *was* decided 2026-09-30, on MT-605 (*"Refuse it too"*), that
+a one-way run against the way a standing train faces is refused, judged however far along the train's way it is set.
+Built in rounds 29 to 33 and retired in round 34, when every such refusal became a finding.
 
 **Decided** (Adam, 2026-09-30: *"this timetable swapping is too complex.  Just keep the entries, and if a path is run
 that contains a point on a disabled page, reject it with an error as we do with other autonomy paths.  Nice and

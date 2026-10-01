@@ -708,18 +708,22 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A direction that would leave a train the last run left on a station with no copy facing its way is refused (RSA5-A2):
-     * the train stands where the running layout has it, facing west, and the setup still has it where the run began -
-     * so the railway's trains are asked, not only the setup's.
+     * A train the last run left on a station, whose way a direction then takes, is recorded in the setup where it stands
+     * and kept there through the fold (Adam, 2026-10-01, in place of RSA5-A2's refusal): the railway cannot stand it on a
+     * copy facing another way, so a rebuild left it where the setup last had it - a square it had left - and a fold of
+     * that railway took it off the setup altogether.
      *
-     * MUTATION: ask the setup's trains alone, and this fails.
+     * MUTATION: record nothing, and this fails; so does a fold that clears its square.
      *
      * @throws Exception on a failure to build the fixture
      */
     @Test
-    public void testADirectionUnderATrainTheRunLeftIsRefused() throws Exception
+    public void testATrainTheRunLeftIsRecordedWhereItStandsWhenItsWayGoes() throws Exception
     {
-        org.traincontrol.automationui.AutonomySession session = aRow("rsa5-a2", 8431, "Alpha", "Beta", "Gamma");
+        org.traincontrol.automationui.AutonomySession session = aRow("r34-railway", 8471, "Alpha", "Beta", "Gamma");
+
+        org.traincontrol.automationui.TileGraph.TileKey beta =
+            new org.traincontrol.automationui.TileGraph.TileKey("main", 3, 1);
 
         try
         {
@@ -733,7 +737,9 @@ public class testAnEditedPlacementSurvivesTheRebuild
             assertTrue(running.moveLocomotive(MOVED, "Beta (westbound)", false), "precondition: " + MOVED
                 + " not stood on Beta (westbound): " + namesOf(running));
 
-            // ONE WAY, EASTWARD, either side of Beta, from the diagram's menu
+            assertTrue(session.getLocomotiveNameAt(beta) == null, "precondition: the setup already has a train on Beta");
+
+            // ONE WAY EAST EITHER SIDE OF BETA: no copy of it faces west - set, not refused
             java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> either = new java.util.LinkedHashSet<>();
 
             either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 2, 1));
@@ -741,57 +747,22 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             session.setDirection(either, org.traincontrol.automationui.TileGraph.Direction.TOWARD_A);
 
-            String refused = session.takeDirectionRefusal();
+            assertEquals(session.getLocomotiveNameAt(beta), MOVED, "the train the run left on Beta, whose way the change"
+                + " took, is not recorded where it stands");
 
-            assertTrue(refused != null && refused.contains(MOVED), "a direction that leaves " + MOVED + ", standing on"
-                + " Beta facing west, with no copy facing its way was not refused (RSA5-A2): " + refused);
+            assertEquals(session.getFacing(beta), org.traincontrol.automationui.TilePorts.Side.W, "the train recorded on"
+                + " Beta is not recorded facing west, as it stands");
 
-            assertTrue(session.pointNamesFor("Beta").contains("Beta (westbound)"), "a direction refused was set anyway: "
-                + session.pointNamesFor("Beta"));
-        }
-        finally
-        {
-            session.setRunningLayoutSource(null);
-
-            new Layout(model).makeCurrent();
-        }
-    }
-
-    /**
-     * A one-way run against a train the last run left on a station is refused with the railway loaded, as the window
-     * wires it (RSA15-C2): with a railway each train's copy is found by the way the running Point faces, and no claim ran
-     * that wiring - a mutation finding the wrong copy silenced the refusal there and left every claim green.
-     *
-     * MUTATION: find the train's copy without its facing, and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
-     */
-    @Test
-    public void testAOneWayRunAgainstATrainTheRunLeftIsRefused() throws Exception
-    {
-        org.traincontrol.automationui.AutonomySession session = aRow("rsa15-c2", 8461, "Alpha", "Beta", "Gamma", "Delta");
-
-        try
-        {
+            // THE RAILWAY REBUILT FROM THE SETUP - which cannot stand it - AND FOLDED BACK
             model.parseAuto(session.buildConfiguration());
 
-            Layout running = model.getAutoLayout();
+            Layout rebuilt = model.getAutoLayout();
 
-            session.setRunningLayoutSource(() -> model.getAutoLayout());
+            session.captureWhereTheTrainsStand(rebuilt.toJSON(rebuilt.getLastPointsReached()),
+                session.getStore().getActiveConfiguration());
 
-            // THE RUN'S RESULT: on Gamma, facing west - on the running layout alone
-            assertTrue(running.moveLocomotive(MOVED, "Gamma (westbound)", false), "precondition: " + MOVED
-                + " not stood on Gamma (westbound): " + namesOf(running));
-
-            // ONE WAY EAST, RIGHT AHEAD OF IT: trains run only towards it
-            session.setRunDirection(new org.traincontrol.automationui.TileGraph.TileKey("main", 4, 1),
-                new org.traincontrol.automationui.TileGraph.RouteId(0, 0),
-                org.traincontrol.automationui.TileGraph.Direction.TOWARD_A);
-
-            String refused = session.takeDirectionRefusal();
-
-            assertTrue(refused != null && refused.contains(MOVED) && refused.contains("Gamma"), "with the railway loaded, a"
-                + " one-way run against " + MOVED + ", on Gamma facing west, was not refused (RSA15-C2): " + refused);
+            assertEquals(session.getLocomotiveNameAt(beta), MOVED, "the fold of a railway that cannot stand the train"
+                + " took it off the setup");
         }
         finally
         {

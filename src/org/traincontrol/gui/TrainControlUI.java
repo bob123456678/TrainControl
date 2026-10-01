@@ -3462,6 +3462,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model != null && this.model.isCS3());
         }
 
+        // WHILE AUTONOMY RUNS, what changes the diagram or the folder is greyed, saying why (Adam, 2026-10-01: "Grey
+        // layout: grey the relevant options, but we need to keep open CS3 web app available").  Each already refuses on
+        // the click (MT-141); greyed, the menu says so before it.  Opening the folder, the pop-outs, the picture and the
+        // CS3 web app stay: they change nothing.
+        boolean running = isAutonomyBusy() || (this.model != null && this.model.isAutonomyRunning());
+
+        greyForTheRun(chooseLocalDataFolderMenuItem, running, false);
+        greyForTheRun(modifyLocalLayoutMenu, running, false);
+        greyForTheRun(editPageMenu, running, false);
+        greyForTheRun(initializeLocalLayoutMenuItem, running, true);
+
+        // The two Central Station items' owner works them out again once they are given back
+        if (greyForTheRun(switchCSLayoutMenuItem, running, true) | greyForTheRun(downloadCSLayoutMenuItem, running, true))
+        {
+            repaintPathLabel();
+        }
+
         if (goToEditorItem == null)
         {
             goToEditorItem = new javax.swing.JMenuItem(I18n.t("autosetup.ui.menuEditorOpen"));
@@ -3476,6 +3493,49 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /** The "an editor has this diagram" item on the Layout menu - see guardLayoutMenu */
     private javax.swing.JMenuItem goToEditorItem;
+
+    /** What a Layout menu item had before a run greyed it: whether it was live, and its tooltip */
+    private static final String GREYED_FOR_THE_RUN = "greyedForTheRun";
+
+    /**
+     * Greys a Layout menu item while autonomy runs, with the reason as its tooltip, and gives its tooltip back once the run
+     * is over (Adam, 2026-10-01) - and whether it was live, where `guardLayoutMenu` leaves that to the item's owner.
+     *
+     * @param item the item
+     * @param running whether autonomy is running
+     * @param owned whether something else decides when the item is live, so the state it had is given back too
+     * @return true when the item was given back just now
+     */
+    private static boolean greyForTheRun(javax.swing.JMenuItem item, boolean running, boolean owned)
+    {
+        if (item == null) return false;
+
+        Object[] kept = (Object[]) item.getClientProperty(GREYED_FOR_THE_RUN);
+
+        if (running)
+        {
+            if (kept == null)
+            {
+                item.putClientProperty(GREYED_FOR_THE_RUN, new Object[] {item.isEnabled(), item.getToolTipText()});
+            }
+
+            item.setEnabled(false);
+
+            item.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipNotWhileRunning")));
+
+            return false;
+        }
+
+        if (kept == null) return false;
+
+        item.putClientProperty(GREYED_FOR_THE_RUN, null);
+
+        if (owned) item.setEnabled((Boolean) kept[0]);
+
+        item.setToolTipText((String) kept[1]);
+
+        return true;
+    }
 
     /** The two section labels on the Layout menu - see mountLayoutHeadings and guardLayoutMenu */
     private javax.swing.JMenuItem localHeading;
@@ -3787,6 +3847,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /** The one Edit Layout Page menu, rebuilt rather than duplicated - see mountEditPageMenu */
     private javax.swing.JMenu editPageMenu;
+
+    /**
+     * Tells the diagram a train was placed or taken off by hand.  That fires nothing on the layout, and the icon over the
+     * station it stands on (Adam, 2026-10-01) has to follow it.  Called by the hand doors alone: a run's own events, and
+     * the rebuild after a setup edit, already tell it.
+     */
+    public void trainsMovedByHand()
+    {
+        if (diagramMonitorDriver != null) diagramMonitorDriver.trainsMayHaveMoved();
+    }
 
     /**
      * Drops separators that no longer separate anything (OB-021).
@@ -8073,6 +8143,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Against the square that was AIMED at rather than the one hovered: pointing at a station's
         // name means the station, and the setup records trains against sensors.
         rememberPlacement(point, aimed);
+
+        trainsMovedByHand();
 
         this.updateVisiblePoints();
         this.repaintAutoLocList(false);

@@ -666,89 +666,6 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A direction that would leave a standing train on a square with no copy facing its way is refused, and changes
-     * nothing (RSA5-A2): the copy a train stands on is its direction, and no copy of that square would face the way the
-     * train does - the rebuild left it where the setup last had it, and a build turned it round in silence.
-     *
-     * MUTATION: set the direction whatever stands there, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testADirectionThatWouldTurnAStandingTrainIsRefused() throws Exception
-    {
-        threeStationsInARow("A2");
-
-        TileKey beta = new TileKey("main", 3, 1);
-
-        session.setPointName(new TileKey("main", 1, 1), "Alpha");
-        session.setPointName(beta, "Beta");
-        session.setPointName(new TileKey("main", 5, 1), "Gamma");
-
-        // A TRAIN ON BETA, FACING WEST
-        session.placeLocomotive(beta, "A2 train");
-        session.setFacing(beta, org.traincontrol.automationui.TilePorts.Side.W);
-        session.rebuild();
-
-        assertTrue(session.pointNamesFor("Beta").contains("Beta (westbound)"), "precondition: Beta has no copy facing"
-            + " west: " + session.pointNamesFor("Beta"));
-
-        // ONE WAY, EASTWARD, either side of it: Beta would be one copy, facing east
-        session.setDirection(new LinkedHashSet<>(Arrays.asList(new TileKey("main", 2, 1), new TileKey("main", 4, 1))),
-            Direction.TOWARD_A);
-
-        String refused = session.takeDirectionRefusal();
-
-        assertTrue(refused != null && refused.contains("A2 train") && refused.contains("Beta"), "a direction that leaves"
-            + " a train standing on Beta with no copy facing its way was not refused, naming the train and the station"
-            + " (RSA5-A2): " + refused);
-
-        assertTrue(session.pointNamesFor("Beta").contains("Beta (westbound)"), "a direction refused was set anyway: "
-            + session.pointNamesFor("Beta"));
-
-        assertEquals(session.getStore().getTileDirection(new TileKey("main", 2, 1), new RouteId(0, 0)), null, "a"
-            + " direction refused was written to the setup");
-    }
-
-    /**
-     * A click on the track passes over a direction refused under a standing train, to the next the train allows (Adam,
-     * MT-605: "continue cycling through the valid options, rather than just stalling on the error each time"): the click
-     * asked the next direction alone and, where it was refused, said so and stayed - so the next click asked it again.
-     *
-     * MUTATION: stop at the first direction refused, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testAClickPassesOverADirectionRefusedUnderATrain() throws Exception
-    {
-        threeStationsInARow("605 click");
-
-        TileKey beta = new TileKey("main", 3, 1);
-        TileKey east = new TileKey("main", 4, 1);
-
-        session.setPointName(new TileKey("main", 1, 1), "Alpha");
-        session.setPointName(beta, "Beta");
-        session.setPointName(new TileKey("main", 5, 1), "Gamma");
-
-        // A TRAIN ON BETA, FACING WEST
-        session.placeLocomotive(beta, "605 train");
-        session.setFacing(beta, org.traincontrol.automationui.TilePorts.Side.W);
-        session.rebuild();
-
-        // A CLICK EAST OF IT: both ways, then east only - refused, nothing would arrive at Beta heading west - then west
-        // only
-        List<String> said = clickWithEveryMessageClosed(east);
-
-        assertEquals(session.getStore().getTileDirection(east, new RouteId(0, 0)), Direction.TOWARD_B, "a click on the"
-            + " track beside a train did not pass over the direction refused there to the next (Adam, MT-605); said: "
-            + said);
-
-        assertTrue(said.isEmpty(), "a click that found a direction the train allows still stopped to say why another was"
-            + " refused: " + said);
-    }
-
-    /**
      * A page left out greys the path type with the tools that test by it (Adam, FR-105: "when a page is excluded in the
      * autonomy editor, also disable/grey out the auto/manual radio buttons"): Test a Path and Why not Moving? were greyed,
      * and the pair choosing which paths they test stayed live, choosing nothing.
@@ -827,19 +744,56 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A direction that leaves the track ahead of a standing train one way against it is refused, as one that turns the
-     * train is (Adam, 2026-09-30, on MT-605: "Refuse it too"): only a change that left the train no copy facing its way
-     * was refused, so the track it faces could be made to carry trains only towards it, the train left no way on.  Closing
-     * that track is not refused - a dead end, which a train turns round at.
+     * A direction that leaves a placed train facing a way its station no longer has is set, not refused, and the setup
+     * check reports it as an error (Adam, 2026-10-01: "Generally I prefer warnings or errors over outright refusals, since
+     * it makes editing easier for the user.  Make refusals that make sense be errors").
      *
-     * MUTATION: ask only whether the train is turned, and this fails.
+     * MUTATION: report it as a warning, and this fails.
      *
      * @throws Exception from the build
      */
     @Test
-    public void testAOneWayRunAgainstAStandingTrainIsRefused() throws Exception
+    public void testADirectionUnderAPlacedTrainIsSetAndReportedAsAnError() throws Exception
     {
-        threeStationsInARow("605 against");
+        threeStationsInARow("R34 facing");
+
+        TileKey beta = new TileKey("main", 3, 1);
+
+        session.setPointName(new TileKey("main", 1, 1), "Alpha");
+        session.setPointName(beta, "Beta");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+
+        // A TRAIN ON BETA, FACING WEST
+        session.placeLocomotive(beta, "R34 facing train");
+        session.setFacing(beta, org.traincontrol.automationui.TilePorts.Side.W);
+        session.rebuild();
+
+        // ONE WAY EAST EITHER SIDE OF IT: no copy of Beta faces west
+        session.setDirection(new LinkedHashSet<>(Arrays.asList(new TileKey("main", 2, 1), new TileKey("main", 4, 1))),
+            Direction.TOWARD_A);
+
+        assertEquals(session.getStore().getTileDirection(new TileKey("main", 2, 1), new RouteId(0, 0)), Direction.TOWARD_A,
+            "a direction under a placed train was not set (Adam, 2026-10-01: warnings or errors over refusals)");
+
+        assertTrue(findingAt(org.traincontrol.automationui.AutonomyChecks.FACING_IMPOSSIBLE,
+            org.traincontrol.automationui.AutonomyChecks.Severity.ERROR, beta), "a placed train left facing a way its"
+            + " station no longer has is not reported as an error: " + session.check());
+
+        assertEquals(session.getLocomotiveNameAt(beta), "R34 facing train", "the train left its square in the setup");
+    }
+
+    /**
+     * A placed train facing track that runs only towards it is a warning - set, not refused (Adam, 2026-10-01: "smaller
+     * issues be warnings"; judged near the train) - and the track closed instead is not, nothing arriving by it.
+     *
+     * MUTATION: leave the warning out, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testATrainFacingTrackRunningTowardsItIsAWarning() throws Exception
+    {
+        threeStationsInARow("R34 towards");
 
         TileKey beta = new TileKey("main", 3, 1);
         TileKey west = new TileKey("main", 2, 1);
@@ -848,694 +802,60 @@ public class testAutonomyDiagramSession
         session.setPointName(beta, "Beta");
         session.setPointName(new TileKey("main", 5, 1), "Gamma");
 
-        // A TRAIN ON BETA, FACING WEST
-        session.placeLocomotive(beta, "605 against train");
+        session.placeLocomotive(beta, "R34 towards train");
         session.setFacing(beta, org.traincontrol.automationui.TilePorts.Side.W);
         session.rebuild();
 
-        // ONE WAY EAST AHEAD OF IT: trains run only towards it
+        // ONE WAY EAST, RIGHT AHEAD OF IT
         session.setRunDirection(west, new RouteId(0, 0), Direction.TOWARD_A);
 
-        String refused = session.takeDirectionRefusal();
+        assertTrue(findingAt(org.traincontrol.automationui.AutonomyChecks.TRAIN_FACES_TRACK_TOWARDS_IT,
+            org.traincontrol.automationui.AutonomyChecks.Severity.WARNING, beta), "a placed train facing track that runs"
+            + " only towards it is not a warning: " + session.check());
 
-        assertTrue(refused != null && refused.contains("605 against train") && refused.contains("Beta"), "the track ahead"
-            + " of a train was made one way against it (Adam, MT-605: \"Refuse it too\"): " + refused);
-
-        assertEquals(session.getStore().getTileDirection(west, new RouteId(0, 0)), null, "a direction refused was written"
-            + " to the setup");
-
-        // CLOSED AHEAD OF IT: a dead end, which it turns round at
+        // CLOSED INSTEAD: nothing arrives by that side
         session.setRunDirection(west, new RouteId(0, 0), Direction.NONE);
 
-        assertNull(session.takeDirectionRefusal(), "closing the track ahead of a train was refused, though it makes a dead"
-            + " end the train turns round at (MT-605)");
-
-        // ALREADY ONE WAY AGAINST IT, set before it stood there: a change elsewhere is not asked about
-        session.placeLocomotive(beta, null);
-        session.setRunDirection(west, new RouteId(0, 0), Direction.TOWARD_A);
-
-        assertNull(session.takeDirectionRefusal(), "precondition: a direction with nothing standing there was refused");
-
-        session.placeLocomotive(beta, "605 against train");
-        session.setFacing(beta, org.traincontrol.automationui.TilePorts.Side.W);
-        session.rebuild();
-
-        session.setRunDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.TOWARD_B);
-
-        String elsewhere = session.takeDirectionRefusal();
-
-        assertNull(elsewhere, "a change east of a train already facing a one-way run against it was refused, though it"
-            + " changes nothing ahead of the train (MT-605): " + elsewhere);
+        assertFalse(findingAt(org.traincontrol.automationui.AutonomyChecks.TRAIN_FACES_TRACK_TOWARDS_IT,
+            org.traincontrol.automationui.AutonomyChecks.Severity.WARNING, beta), "track closed ahead of a train was"
+            + " reported as running towards it: " + session.check());
     }
 
     /**
-     * A click round a junction beside a standing train passes over a combination refused there, as a plain square's click
-     * does (Adam, MT-605): the junction's click asked the next combination of open arms alone and, where it was refused,
-     * said so and stayed - so the next click asked it again, and the combinations after it could not be reached.
+     * A station at the end of a line that trains may not turn at is an error - a train sent there could never leave
+     * (Adam, 2026-10-01) - and marking that trains must change direction there clears it.
      *
-     * MUTATION: stop the junction's click at the first combination refused, and this fails.
+     * MUTATION: leave the error out, and this fails.
      *
      * @throws Exception from the build
      */
     @Test
-    public void testAClickRoundAJunctionPassesOverACombinationRefusedUnderATrain() throws Exception
+    public void testAStationAtTheEndOfALineIsAnError() throws Exception
     {
-        LayoutDiagram page = new LayoutDiagram("main", 8, 3, null, null);
-
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 64, 64, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 65, 65, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.SWITCH_LEFT, 4, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 6, 1, 0, 0, 66, 66, accessoryDecoderType.MM2, null);
-
-        // The branch off the switch, lying north-south so that it has a port facing the switch at all
-        page.addComponent(componentType.FEEDBACK, 4, 0, 1, 0, 67, 67, accessoryDecoderType.MM2, null);
-
-        page.getComponent(4, 1).setAccessory(new org.traincontrol.marklin.MarklinAccessory(
-            null, 7, org.traincontrol.base.Accessory.accessoryType.SWITCH, accessoryDecoderType.MM2,
-            "Switch 7", false, 0));
-
-        page.setPageId("1");
-
-        session.open(Arrays.asList(page));
-        session.initialize("605 junction");
-
-        String[] names = {"Alpha", "Beta", "Gamma", "Delta"};
-        TileKey[] stations = {new TileKey("main", 1, 1), new TileKey("main", 3, 1), new TileKey("main", 6, 1),
-            new TileKey("main", 4, 0)};
-
-        for (int i = 0; i < stations.length; i++)
-        {
-            session.setStation(stations[i], true);
-            session.setPointName(stations[i], names[i]);
-        }
-
-        TileKey junction = new TileKey("main", 4, 1);
-
-        java.util.Map<RouteId, Direction> shut = new java.util.LinkedHashMap<>();
-        java.util.Map<RouteId, Direction> open = new java.util.LinkedHashMap<>();
-
-        for (RouteId route : session.getRoutes(junction).keySet())
-        {
-            shut.put(route, Direction.NONE);
-            open.put(route, session.getGraph().getDirection(junction, route));
-        }
-
-        assertTrue(shut.size() > 1, "precondition: the switch has one route: " + shut);
-
-        // A TRAIN SOME SETTING OF THE JUNCTION IS REFUSED UNDER: each station and facing, each route one way with the rest
-        // shut, until one is refused - the junction left as it was
-        String standing = null;
-
-        for (int i = 0; i < stations.length && standing == null; i++)
-        {
-            for (org.traincontrol.automationui.TilePorts.Side facing : org.traincontrol.automationui.TilePorts.Side.values())
-            {
-                if (standing != null) break;
-
-                session.placeLocomotive(stations[i], "605 junction train");
-                session.setFacing(stations[i], facing);
-                session.rebuild();
-
-                for (RouteId only : shut.keySet())
-                {
-                    for (Direction way : new Direction[] {Direction.TOWARD_A, Direction.TOWARD_B})
-                    {
-                        if (standing != null) break;
-
-                        java.util.Map<RouteId, Direction> trial = new java.util.LinkedHashMap<>(shut);
-
-                        trial.put(only, way);
-
-                        session.setDirections(junction, trial);
-
-                        if (session.takeDirectionRefusal() != null)
-                        {
-                            standing = names[i] + " facing " + facing;
-                        }
-                        else
-                        {
-                            session.setDirections(junction, open);
-                            session.takeDirectionRefusal();
-                        }
-                    }
-                }
-
-                if (standing == null) session.placeLocomotive(stations[i], null);
-            }
-        }
-
-        assertNotNull(standing, "precondition: no setting of the junction is refused under a train on any station, so no"
-            + " click round it meets a refusal");
-
-        // ROUND THE JUNCTION, a click at a time, once for each combination of its arms and once more
-        List<String> said = new ArrayList<>();
-        Set<String> reached = new LinkedHashSet<>();
-
-        for (int click = 0; click < 9; click++)
-        {
-            said.addAll(clickWithEveryMessageClosed(junction));
-
-            StringBuilder state = new StringBuilder();
-
-            for (RouteId route : session.getRoutes(junction).keySet())
-            {
-                state.append(route).append('=').append(session.getGraph().getDirection(junction, route)).append(' ');
-            }
-
-            reached.add(state.toString().trim());
-        }
-
-        assertTrue(said.isEmpty(), "a click round a junction stopped at a combination refused under a train on "
-            + standing + ", though others were allowed (Adam, MT-605): " + said + "; reached " + reached);
-
-        assertTrue(reached.size() > 2, "the clicks round the junction did not go round it: " + reached);
-    }
-
-    /**
-     * A one-way run against a standing train is refused past a page link (RSA12-B1): the refusal asked only of the square
-     * in front of the train, and a link's route is a stub, so track made one way towards the train beyond the link left
-     * it no way on, unasked.  It is judged on the railway as built: nothing leaving the train's square its way after.
-     *
-     * MUTATION: judge the square in front of the train alone, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testAOneWayRunAgainstATrainBeyondALinkIsRefused() throws Exception
-    {
-        LayoutDiagram page = new LayoutDiagram("main", 9, 3, null, null);
-
-        page.addComponent(componentType.LINK, 0, 1, 2, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 1, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 2, 1, 0, 0, 141, 141, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 142, 142, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 6, 1, 0, 0, 143, 143, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.LINK, 7, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.setPageId("1");
-
-        session.open(Arrays.asList(page));
-        session.initialize("RSA12-B1 link");
-
-        String[] names = {"Alpha", "Beta", "Gamma"};
-
-        for (int i = 0; i < 3; i++)
-        {
-            session.setStation(new TileKey("main", 2 + 2 * i, 1), true);
-            session.setPointName(new TileKey("main", 2 + 2 * i, 1), names[i]);
-        }
-
-        session.pairPortals(new TileKey("main", 0, 1), new TileKey("main", 7, 1));
-
-        // A TRAIN ON GAMMA, FACING EAST: its way on is through the link, round to Alpha
-        TileKey gamma = new TileKey("main", 6, 1);
-
-        session.placeLocomotive(gamma, "B1 link train");
-        session.setFacing(gamma, org.traincontrol.automationui.TilePorts.Side.E);
-        session.rebuild();
-
-        // ONE WAY WEST BEYOND THE LINK: trains run only towards Gamma
-        session.setRunDirection(new TileKey("main", 1, 1), new RouteId(0, 0), Direction.TOWARD_B);
-
-        String refused = session.takeDirectionRefusal();
-
-        assertTrue(refused != null && refused.contains("B1 link train") && refused.contains("Gamma"), "track beyond a"
-            + " link was made one way against the train it leads from (RSA12-B1): " + refused);
-
-        assertEquals(session.getStore().getTileDirection(new TileKey("main", 1, 1), new RouteId(0, 0)), null, "a"
-            + " direction refused was written to the setup");
-    }
-
-    /**
-     * A one-way run against a standing train is refused where the One-Way tool sets only part of the train's way on
-     * (RSA12-B1): the tool sets the squares between the two it is given, so the square in front of the train stayed two
-     * way and the run further on carried trains only towards it.
-     *
-     * MUTATION: judge the square in front of the train alone, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testAOneWayRunOverPartOfATrainsWayOnIsRefused() throws Exception
-    {
-        LayoutDiagram page = new LayoutDiagram("main", 9, 3, null, null);
-
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 151, 151, accessoryDecoderType.MM2, null);
-
-        for (int x : new int[] {2, 3, 4, 6})
-        {
-            page.addComponent(componentType.STRAIGHT, x, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        }
-
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 152, 152, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 153, 153, accessoryDecoderType.MM2, null);
-        page.setPageId("1");
-
-        session.open(Arrays.asList(page));
-        session.initialize("RSA12-B1 part");
-
-        String[] names = {"Alpha", "Beta", "Gamma"};
-        int[] at = {1, 5, 7};
-
-        for (int i = 0; i < 3; i++)
-        {
-            session.setStation(new TileKey("main", at[i], 1), true);
-            session.setPointName(new TileKey("main", at[i], 1), names[i]);
-        }
-
-        // A TRAIN ON BETA, FACING WEST: its way on is three squares to Alpha
-        TileKey beta = new TileKey("main", 5, 1);
-
-        session.placeLocomotive(beta, "B1 part train");
-        session.setFacing(beta, org.traincontrol.automationui.TilePorts.Side.W);
-        session.rebuild();
-
-        // THE ONE-WAY TOOL FROM ALPHA TO 3,1: 2,1 one way east, the squares in front of Beta left two way
-        session.setOneWayRun(new TileKey("main", 1, 1), new TileKey("main", 3, 1));
-
-        String refused = session.takeDirectionRefusal();
-
-        assertTrue(refused != null && refused.contains("B1 part train") && refused.contains("Beta"), "the One-Way tool"
-            + " over part of a train's way on made it one way against the train (RSA12-B1): " + refused);
-
-        assertEquals(session.getStore().getTileDirection(new TileKey("main", 2, 1), new RouteId(0, 0)), null, "a"
-            + " direction refused was written to the setup");
-    }
-
-    /**
-     * A dead end's only way out is not made one way in under a train whose facing nothing records (RSA12-C3): it faces
-     * that way out, as the turn refusal reads such a train (RSA7-B1), and the new refusal skipped a train with no facing.
-     *
-     * MUTATION: skip a train whose facing nothing records, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testADeadEndsWayOutIsNotMadeOneWayInUnderATrainWithNoFacing() throws Exception
-    {
-        threeStationsInARow("RSA12-C3");
+        threeStationsInARow("R34 end");
 
         TileKey alpha = new TileKey("main", 1, 1);
 
         session.setPointName(alpha, "Alpha");
         session.setPointName(new TileKey("main", 3, 1), "Beta");
         session.setPointName(new TileKey("main", 5, 1), "Gamma");
+        session.rebuild();
 
-        // A TERMINUS - trains must change direction at Alpha, the only kind of dead end a train leaves - and a train there,
-        // its facing not recorded
+        assertTrue(findingAt(org.traincontrol.automationui.AutonomyChecks.STATION_AT_THE_END_OF_A_LINE,
+            org.traincontrol.automationui.AutonomyChecks.Severity.ERROR, alpha), "a station at the end of a line, trains"
+            + " not turning there, is not an error: " + session.check());
+
+        assertFalse(findingAt(org.traincontrol.automationui.AutonomyChecks.STATION_AT_THE_END_OF_A_LINE,
+            org.traincontrol.automationui.AutonomyChecks.Severity.ERROR, new TileKey("main", 3, 1)), "a through station"
+            + " was reported at the end of a line");
+
+        // TRAINS MUST CHANGE DIRECTION THERE
         session.setPointProperty(alpha, "mustReverse", Boolean.TRUE);
-        session.placeLocomotive(alpha, "C3 train");
         session.rebuild();
 
-        // ITS ONLY WAY OUT ONE WAY WEST, into the dead end
-        session.setRunDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_B);
-
-        String refused = session.takeDirectionRefusal();
-
-        assertTrue(refused != null && refused.contains("C3 train") && refused.contains("Alpha"), "a dead end's only way"
-            + " out was made one way in under a train whose facing nothing records (RSA12-C3): " + refused);
-    }
-
-    /**
-     * A one-way run against a standing train is refused past a sensor that is no station (RSA13-B1): the refusal asked
-     * whether the train's square was left by its side, and a reduced edge ends at the next Point - station or not - so
-     * track made one way towards the train beyond the sensor left it reaching no station, unasked.  It asks whether the
-     * train reaches a station the way it faces, on past every Point that is none.
-     *
-     * MUTATION: judge by the first Point ahead, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testAOneWayRunPastASensorThatIsNoStationIsRefused() throws Exception
-    {
-        LayoutDiagram page = new LayoutDiagram("main", 9, 3, null, null);
-
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 161, 161, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 162, 162, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 163, 163, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 164, 164, accessoryDecoderType.MM2, null);
-        page.setPageId("1");
-
-        session.open(Arrays.asList(page));
-        session.initialize("RSA13-B1");
-
-        // ALPHA, GAMMA AND DELTA STATIONS, the sensor between Alpha and Gamma none - Gamma a through station, as a train
-        // can leave (a station at a dead end is left only where trains must change direction there)
-        session.setStation(new TileKey("main", 1, 1), true);
-        session.setStation(new TileKey("main", 5, 1), true);
-        session.setStation(new TileKey("main", 7, 1), true);
-        session.setPointName(new TileKey("main", 1, 1), "Alpha");
-        session.setPointName(new TileKey("main", 5, 1), "Gamma");
-        session.setPointName(new TileKey("main", 7, 1), "Delta");
-
-        TileKey gamma = new TileKey("main", 5, 1);
-
-        session.placeLocomotive(gamma, "B1 sensor train");
-        session.setFacing(gamma, org.traincontrol.automationui.TilePorts.Side.W);
-        session.rebuild();
-
-        // ONE WAY EAST BEYOND THE SENSOR: trains run only towards Gamma
-        session.setRunDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_A);
-
-        String refused = session.takeDirectionRefusal();
-
-        assertTrue(refused != null && refused.contains("B1 sensor train") && refused.contains("Gamma"), "track beyond a"
-            + " sensor that is no station was made one way against the train, leaving it reaching no station"
-            + " (RSA13-B1): " + refused);
-
-        assertEquals(session.getStore().getTileDirection(new TileKey("main", 2, 1), new RouteId(0, 0)), null, "a"
-            + " direction refused was written to the setup");
-    }
-
-    /**
-     * With no railway loaded, a train whose facing nothing records faces as the build stands it (RSA13-C1): the refusal
-     * read the setup's facing, none, so a train on a through station was not asked about, and track made one way towards
-     * the copy the build stands it on left it no way on.
-     *
-     * MUTATION: read the setup's facing alone, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testATrainWithNoFacingFacesAsTheBuildStandsIt() throws Exception
-    {
-        threeStationsInARow("RSA13-C1");
-
-        TileKey beta = new TileKey("main", 3, 1);
-
-        session.setPointName(new TileKey("main", 1, 1), "Alpha");
-        session.setPointName(beta, "Beta");
-        session.setPointName(new TileKey("main", 5, 1), "Gamma");
-
-        // A TRAIN ON BETA, ITS FACING NOT RECORDED, NO RAILWAY
-        session.placeLocomotive(beta, "C1 train");
-        session.rebuild();
-
-        // WHICH COPY THE BUILD STANDS IT ON, read from the build
-        String standsOn = null;
-
-        for (Object o : new org.json.JSONObject(session.buildConfiguration()).getJSONArray("points"))
-        {
-            org.json.JSONObject point = (org.json.JSONObject) o;
-
-            if (point.optJSONObject("loc") != null) standsOn = point.getString("name");
-        }
-
-        assertTrue(standsOn != null && standsOn.startsWith("Beta ("), "precondition: the build stands the train on no"
-            + " copy of Beta: " + standsOn);
-
-        // ONE WAY TOWARDS THAT COPY, from the side it faces
-        boolean west = standsOn.contains("westbound");
-
-        session.setRunDirection(new TileKey("main", west ? 2 : 4, 1), new RouteId(0, 0),
-            west ? Direction.TOWARD_A : Direction.TOWARD_B);
-
-        String refused = session.takeDirectionRefusal();
-
-        assertTrue(refused != null && refused.contains("C1 train"), "with no railway, track made one way towards the copy"
-            + " the build stands a train on - " + standsOn + " - was not refused (RSA13-C1): " + refused);
-    }
-
-    /**
-     * A one-way run against a train standing on a station trains may turn round at is refused (RSA14-B1): the walk started
-     * from every side of such a station, but the train stands on one copy and leaves only the way that copy faces - so
-     * track past a sensor made one way towards it left it no way on, unasked.  The walk follows the railway the build
-     * makes, from the copy the train stands on.
-     *
-     * MUTATION: start the walk from every side of a station trains turn round at, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testAOneWayRunAgainstATrainAtATurnRoundStationIsRefused() throws Exception
-    {
-        LayoutDiagram page = new LayoutDiagram("main", 9, 3, null, null);
-
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 171, 171, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 172, 172, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 173, 173, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 174, 174, accessoryDecoderType.MM2, null);
-        page.setPageId("1");
-
-        session.open(Arrays.asList(page));
-        session.initialize("RSA14-B1 turn");
-
-        // ALPHA, GAMMA AND DELTA STATIONS, the sensor between Alpha and Gamma none; trains may turn round at Gamma, and
-        // Delta lies behind a train there facing west - a way its copy does not leave by
-        TileKey gamma = new TileKey("main", 5, 1);
-
-        session.setStation(new TileKey("main", 1, 1), true);
-        session.setStation(gamma, true);
-        session.setStation(new TileKey("main", 7, 1), true);
-        session.setPointName(new TileKey("main", 1, 1), "Alpha");
-        session.setPointName(gamma, "Gamma");
-        session.setPointName(new TileKey("main", 7, 1), "Delta");
-        session.setPointProperty(gamma, AutonomyBuilder.CAN_REVERSE, Boolean.TRUE);
-
-        session.placeLocomotive(gamma, "B1 turn train");
-        session.setFacing(gamma, org.traincontrol.automationui.TilePorts.Side.W);
-        session.rebuild();
-
-        // ONE WAY EAST BEYOND THE SENSOR: trains run only towards Gamma
-        session.setRunDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_A);
-
-        String refused = session.takeDirectionRefusal();
-
-        assertTrue(refused != null && refused.contains("B1 turn train") && refused.contains("Gamma"), "track past a"
-            + " sensor was made one way against a train on a station trains may turn round at, leaving its copy no way on"
-            + " (RSA14-B1): " + refused);
-    }
-
-    /**
-     * A one-way run is refused where the train's way on reaches only a station it may not arrive at from that side
-     * (RSA14-B1): the walk counted a station whose arrival that way is barred, which autonomy never sends a train to.
-     *
-     * MUTATION: count a station whatever its arrivals, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testAOneWayRunLeavingOnlyABarredArrivalIsRefused() throws Exception
-    {
-        LayoutDiagram page = new LayoutDiagram("main", 9, 3, null, null);
-
-        for (int x = 1; x <= 7; x++)
-        {
-            page.addComponent(x % 2 == 1 ? componentType.FEEDBACK : componentType.STRAIGHT, x, 1, 0, 0,
-                x % 2 == 1 ? 190 + x : 0, x % 2 == 1 ? 190 + x : 0, accessoryDecoderType.MM2, null);
-        }
-
-        page.setPageId("1");
-
-        session.open(Arrays.asList(page));
-        session.initialize("RSA14-B1 barred");
-
-        TileKey beta = new TileKey("main", 3, 1);
-        TileKey gamma = new TileKey("main", 5, 1);
-
-        String[] names = {"Alpha", "Beta", "Gamma", "Delta"};
-
-        for (int i = 0; i < 4; i++)
-        {
-            session.setStation(new TileKey("main", 1 + 2 * i, 1), true);
-            session.setPointName(new TileKey("main", 1 + 2 * i, 1), names[i]);
-        }
-
-        // BETA TAKES NO TRAIN ARRIVING FROM THE EAST
-        session.setBarredArrivals(beta, new java.util.HashSet<>(Arrays.asList(org.traincontrol.automationui.TilePorts.Side.E)));
-
-        session.placeLocomotive(gamma, "B1 barred train");
-        session.setFacing(gamma, org.traincontrol.automationui.TilePorts.Side.W);
-        session.rebuild();
-
-        // ONE WAY EAST BETWEEN ALPHA AND BETA: Gamma's way on reaches only Beta, which it may not be sent to from there
-        session.setRunDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_A);
-
-        String refused = session.takeDirectionRefusal();
-
-        assertTrue(refused != null && refused.contains("B1 barred train") && refused.contains("Gamma"), "a one-way run"
-            + " leaving a train's way on reaching only a station barred to it was not refused (RSA14-B1): " + refused);
-    }
-
-    /**
-     * A link switched off past a sensor, where it strands a standing train, is refused as a direction would be (RSA14-C1):
-     * the link's door asked only whether the train was turned, so its way on through the link went, unasked.
-     *
-     * MUTATION: ask the link's door only whether the train is turned, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testALinkSwitchedOffPastASensorUnderATrainIsRefused() throws Exception
-    {
-        LayoutDiagram page = new LayoutDiagram("main", 9, 3, null, null);
-
-        page.addComponent(componentType.LINK, 0, 1, 2, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 1, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 2, 1, 0, 0, 181, 181, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 182, 182, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 6, 1, 0, 0, 183, 183, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.LINK, 7, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.setPageId("1");
-
-        session.open(Arrays.asList(page));
-        session.initialize("RSA14-C1");
-
-        // GAMMA AND ALPHA STATIONS, the sensor at 2,1 none; the two links paired, so Gamma's way west runs round to Alpha
-        TileKey gamma = new TileKey("main", 4, 1);
-        TileKey link = new TileKey("main", 0, 1);
-
-        session.setStation(gamma, true);
-        session.setStation(new TileKey("main", 6, 1), true);
-        session.setPointName(gamma, "Gamma");
-        session.setPointName(new TileKey("main", 6, 1), "Alpha");
-
-        session.pairPortals(link, new TileKey("main", 7, 1));
-
-        session.placeLocomotive(gamma, "C1 link train");
-        session.setFacing(gamma, org.traincontrol.automationui.TilePorts.Side.W);
-        session.rebuild();
-
-        session.setPortalDisabled(link, true);
-
-        String refused = session.takeDirectionRefusal();
-
-        assertTrue(refused != null && refused.contains("C1 link train") && refused.contains("Gamma"), "a link switched"
-            + " off past a sensor, leaving a standing train no way on, was not refused (RSA14-C1): " + refused);
-
-        assertFalse(session.getStore().isPortalDisabled(link), "a link refused was switched off anyway");
-    }
-
-    /**
-     * A one-way run past a sensor is refused where the train's way on is already one way out of its station (RSA15-B1):
-     * the refusal skipped any train nothing arrives at by the side it faces - the clause for the track right ahead
-     * closed - and a way on already one way out is that too.  It skips only where nothing leaves or arrives by the side.
-     *
-     * MUTATION: skip wherever nothing arrives by the side, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testAOneWayRunPastASensorBeyondAOneWayWayOnIsRefused() throws Exception
-    {
-        LayoutDiagram page = sensorBetweenStations("RSA15-B1");
-
-        TileKey gamma = new TileKey("main", 5, 1);
-
-        // THE WAY ON ALREADY ONE WAY, out of Gamma westward - set with nothing standing there
-        session.setRunDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.TOWARD_B);
-
-        assertNull(session.takeDirectionRefusal(), "precondition: a direction with nothing standing there was refused");
-
-        session.placeLocomotive(gamma, "B1 one-way train");
-        session.setFacing(gamma, org.traincontrol.automationui.TilePorts.Side.W);
-        session.rebuild();
-
-        // ONE WAY EAST PAST THE SENSOR: the train's way on reaches no station
-        session.setRunDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_A);
-
-        String refused = session.takeDirectionRefusal();
-
-        assertTrue(refused != null && refused.contains("B1 one-way train"), "a one-way run past a sensor, where the train's"
-            + " way on was already one way out, left it reaching no station unasked (RSA15-B1): " + refused);
-    }
-
-    /**
-     * The train's own station, reached round a turn on the way, is no station its way on reaches (RSA15-B2): the walk
-     * counted the other copy of the square the train stands on, so a change leaving it only the way back to itself was
-     * set.
-     *
-     * MUTATION: count a copy of the train's own square, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testTheTrainsOwnStationReachedRoundATurnIsNoWayOn() throws Exception
-    {
-        LayoutDiagram page = new LayoutDiagram("main", 9, 3, null, null);
-
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 201, 201, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 202, 202, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 203, 203, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-
-        // A SENSOR THAT IS NO STATION beyond Gamma, so Gamma is a through station a train can leave, and nothing that way
-        page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 204, 204, accessoryDecoderType.MM2, null);
-        page.setPageId("1");
-
-        session.open(Arrays.asList(page));
-        session.initialize("RSA15-B2");
-
-        // ALPHA AND GAMMA STATIONS; the sensor between them none, and trains may turn round at it - a headshunt
-        TileKey sensor = new TileKey("main", 3, 1);
-        TileKey gamma = new TileKey("main", 5, 1);
-
-        session.setStation(new TileKey("main", 1, 1), true);
-        session.setStation(gamma, true);
-        session.setPointName(new TileKey("main", 1, 1), "Alpha");
-        session.setPointName(gamma, "Gamma");
-        session.setPointProperty(sensor, AutonomyBuilder.CAN_REVERSE, Boolean.TRUE);
-
-        session.placeLocomotive(gamma, "B2 own train");
-        session.setFacing(gamma, org.traincontrol.automationui.TilePorts.Side.W);
-        session.rebuild();
-
-        // ONE WAY EAST BETWEEN ALPHA AND THE SENSOR: the way on reaches only the turn, and back to Gamma
-        session.setRunDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_A);
-
-        String refused = session.takeDirectionRefusal();
-
-        assertTrue(refused != null && refused.contains("B2 own train"), "a change leaving a train's way on only back to its"
-            + " own station, round a turn, was not refused (RSA15-B2): " + refused);
-    }
-
-    /**
-     * The track right ahead closed, where the turn refusal refuses it, says the change would leave the train no way on -
-     * not that the train faces the other way (RSA14-C2, RSA15-C3): on a square nothing arrives at, the train's copy is its
-     * way out, and closing that way takes the copy.
-     *
-     * MUTATION: say the turn refusal's words for a track closed, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testATrackClosedRightAheadSaysTheTrainHasNoWayOn() throws Exception
-    {
-        sensorBetweenStations("RSA15-C3");
-
-        TileKey gamma = new TileKey("main", 5, 1);
-
-        // NOTHING ARRIVES AT GAMMA: the track either side one way away from it - a copy per way out
-        session.setRunDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.TOWARD_B);
-        session.setRunDirection(new TileKey("main", 6, 1), new RouteId(0, 0), Direction.TOWARD_A);
-
-        assertNull(session.takeDirectionRefusal(), "precondition: a direction with nothing standing there was refused");
-
-        session.placeLocomotive(gamma, "C3 closed train");
-        session.setFacing(gamma, org.traincontrol.automationui.TilePorts.Side.W);
-        session.rebuild();
-
-        // THE TRACK RIGHT AHEAD CLOSED
-        session.setRunDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.NONE);
-
-        String refused = session.takeDirectionRefusal();
-
-        assertEquals(refused, org.traincontrol.util.I18n.f("autosetup.ui.errorDirectionAgainstATrain", "C3 closed train",
-            "Gamma"), "the track right ahead closed was refused in words about the train facing the other way (RSA15-C3)");
+        assertFalse(findingAt(org.traincontrol.automationui.AutonomyChecks.STATION_AT_THE_END_OF_A_LINE,
+            org.traincontrol.automationui.AutonomyChecks.Severity.ERROR, alpha), "a station at the end of a line trains"
+            + " must turn at is still an error: " + session.check());
     }
 
     /**
@@ -1853,101 +1173,6 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A direction that leaves a dead end's only copy facing away from where a train there faces is refused (RSA6-B3):
-     * made one way away, the dead end is a square nothing arrives at with one way out - one copy, recording no facing,
-     * which the refusal took as facing any way; a train facing the buffer was then offered the way out behind it.  A
-     * copy with no facing faces its only way out.
-     *
-     * MUTATION: take a copy with no facing as facing any way, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testADirectionThatLeavesADeadEndFacingAwayIsRefused() throws Exception
-    {
-        threeStationsInARow("B3");
-
-        TileKey alpha = new TileKey("main", 1, 1);
-
-        session.setPointName(alpha, "Alpha");
-        session.setPointName(new TileKey("main", 3, 1), "Beta");
-        session.setPointName(new TileKey("main", 5, 1), "Gamma");
-
-        // A TRAIN AT THE DEAD END, facing the buffer
-        session.placeLocomotive(alpha, "B3 train");
-        session.setFacing(alpha, org.traincontrol.automationui.TilePorts.Side.W);
-        session.rebuild();
-
-        // ONE WAY, EASTWARD, out of it
-        session.setDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_A);
-
-        String refused = session.takeDirectionRefusal();
-
-        assertTrue(refused != null && refused.contains("B3 train"), "a direction that leaves a train facing the buffer at a"
-            + " dead end whose only way out is behind it was not refused (RSA6-B3): " + refused);
-
-        assertEquals(session.getStore().getTileDirection(new TileKey("main", 2, 1), new RouteId(0, 0)), null, "a"
-            + " direction refused was written to the setup");
-    }
-
-    /**
-     * A link switched off where a train came in through it is refused, and changes nothing (RSA6-A3): the station beside
-     * it would be left with one copy, facing the link, and no copy facing the way the train does.
-     *
-     * MUTATION: switch a link off whatever stands beside it, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testALinkSwitchedOffUnderATrainIsRefused() throws Exception
-    {
-        LayoutDiagram page = new LayoutDiagram("main", 7, 3, null, null);
-
-        page.addComponent(componentType.LINK, 0, 1, 2, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 131, 131, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 132, 132, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 133, 133, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.LINK, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.setPageId("1");
-
-        session.open(Arrays.asList(page));
-        session.initialize("A3");
-
-        String[] names = {"Alpha", "Beta", "Gamma"};
-
-        for (int i = 0; i < 3; i++)
-        {
-            session.setStation(new TileKey("main", 1 + 2 * i, 1), true);
-            session.setPointName(new TileKey("main", 1 + 2 * i, 1), names[i]);
-        }
-
-        TileKey east = new TileKey("main", 6, 1);
-
-        session.pairPortals(new TileKey("main", 0, 1), east);
-
-        // A TRAIN AT GAMMA, come in through the link: facing west
-        TileKey gamma = new TileKey("main", 5, 1);
-
-        session.placeLocomotive(gamma, "A3 train");
-        session.setFacing(gamma, org.traincontrol.automationui.TilePorts.Side.W);
-        session.rebuild();
-
-        assertTrue(session.pointNamesFor("Gamma").contains("Gamma (westbound)"), "precondition: Gamma has no copy facing"
-            + " west: " + session.pointNamesFor("Gamma"));
-
-        session.setPortalDisabled(east, true);
-
-        String refused = session.takeDirectionRefusal();
-
-        assertTrue(refused != null && refused.contains("A3 train") && refused.contains("Gamma"), "a link switched off"
-            + " beside a train that came in through it was not refused (RSA6-A3): " + refused);
-
-        assertFalse(session.getStore().isPortalDisabled(east), "a link refused was switched off anyway");
-    }
-
-    /**
      * A station name two pages share keeps its timetable entries through a page ticked out and back in (RSA6-C1): the
      * plain name and its suffix are settled over the squares of every page, those out of autonomy too, so neither moves
      * while one page is out - and the carry has nothing to send across.
@@ -2189,163 +1414,6 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A facing the last train at a dead end left there refuses no direction elsewhere (RSA7-B1): a train on a copy that
-     * records no facing faces its only way out, whatever an earlier train left written on the square, and the refusal
-     * asks only about a train the change itself would turn.  One stale record refused every direction and every link on
-     * the railway, naming a train nothing was changing.
-     *
-     * MUTATION: put the refusal back as it was - the facing from the setup's record, every train asked - and this fails.
-     * Either half of the fix alone keeps it: the two claims after it pin each.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testAStaleFacingAtADeadEndRefusesNothingElse() throws Exception
-    {
-        threeStationsInARow("B1 stale");
-
-        TileKey alpha = new TileKey("main", 1, 1);
-
-        session.setPointName(alpha, "Alpha");
-        session.setPointName(new TileKey("main", 3, 1), "Beta");
-        session.setPointName(new TileKey("main", 5, 1), "Gamma");
-
-        // THE FACING THE LAST TRAIN THERE LEFT, toward the buffer - and the rail out made one way away while it stood empty
-        session.setFacing(alpha, org.traincontrol.automationui.TilePorts.Side.W);
-        session.setDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_A);
-
-        assertNull(session.takeDirectionRefusal(), "precondition: a direction with nothing standing there was refused");
-
-        // A TRAIN PLACED THERE BY HAND, the record left as it was
-        session.placeLocomotive(alpha, "B1 stale train");
-
-        assertEquals(session.getFacing(alpha), org.traincontrol.automationui.TilePorts.Side.W, "precondition: the old"
-            + " facing is not still recorded");
-
-        // A DIRECTION ELSEWHERE
-        session.setDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.TOWARD_A);
-
-        String refused = session.takeDirectionRefusal();
-
-        assertNull(refused, "a direction that turns no train was refused over the facing the last train at a dead end"
-            + " left there (RSA7-B1): " + refused);
-    }
-
-    /**
-     * A dead end whose only rail was made one way away, and a train placed there facing its way out: making the rail two
-     * way again, which would leave the train facing the buffer with no way out, is refused (RSA7-B1).  The copy records
-     * no facing, and the train on it was not asked about at all.
-     *
-     * MUTATION: take a train on a copy with no facing as facing nothing, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testADeadEndMadeTwoWayUnderATrainFacingOutIsRefused() throws Exception
-    {
-        threeStationsInARow("B1 out");
-
-        TileKey alpha = new TileKey("main", 1, 1);
-
-        session.setPointName(alpha, "Alpha");
-        session.setPointName(new TileKey("main", 3, 1), "Beta");
-        session.setPointName(new TileKey("main", 5, 1), "Gamma");
-
-        // THE RAIL OUT MADE ONE WAY AWAY, and a train placed there: it faces its only way out, and nothing is recorded
-        session.setDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_A);
-
-        assertNull(session.takeDirectionRefusal(), "precondition: a direction with nothing standing there was refused");
-
-        session.placeLocomotive(alpha, "B1 out train");
-
-        assertNull(session.getFacing(alpha), "precondition: a facing is recorded at the dead end");
-
-        // TWO WAY AGAIN
-        session.setDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.BOTH);
-
-        String refused = session.takeDirectionRefusal();
-
-        assertTrue(refused != null && refused.contains("B1 out train"), "making a dead end two way again, under a train"
-            + " facing its way out, was not refused - the train is left facing the buffer (RSA7-B1): " + refused);
-    }
-
-    /**
-     * A dead end made two way again under a train placed there by hand is refused whatever facing the last train there
-     * left (RSA7-B1): the train stands on a copy that records no facing, so it faces its only way out - the record said
-     * the buffer, and the refusal, reading it, let the rail be made two way and the train was left facing the buffer.
-     *
-     * MUTATION: read such a train's facing from the setup's record, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testADeadEndMadeTwoWayIsRefusedWhateverTheLastTrainLeft() throws Exception
-    {
-        threeStationsInARow("B1 left");
-
-        TileKey alpha = new TileKey("main", 1, 1);
-
-        session.setPointName(alpha, "Alpha");
-        session.setPointName(new TileKey("main", 3, 1), "Beta");
-        session.setPointName(new TileKey("main", 5, 1), "Gamma");
-
-        // THE FACING THE LAST TRAIN THERE LEFT, toward the buffer; the rail out made one way away; a train placed there
-        session.setFacing(alpha, org.traincontrol.automationui.TilePorts.Side.W);
-        session.setDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_A);
-
-        assertNull(session.takeDirectionRefusal(), "precondition: a direction with nothing standing there was refused");
-
-        session.placeLocomotive(alpha, "B1 left train");
-
-        // TWO WAY AGAIN
-        session.setDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.BOTH);
-
-        String refused = session.takeDirectionRefusal();
-
-        assertTrue(refused != null && refused.contains("B1 left train"), "making a dead end two way again, under a train"
-            + " placed there facing its only way out, was not refused because the last train there faced the buffer"
-            + " (RSA7-B1): " + refused);
-    }
-
-    /**
-     * A train recorded facing a way no copy of its square faces is not asked about by a direction that leaves its square
-     * as it was (RSA7-B1): the change does not turn it.  The refusal asked of every train whether it would face a copy its
-     * way after the change - not whether it did before - so a facing an earlier train left refused every direction.
-     *
-     * MUTATION: ask about every train, not only one the change turns, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testATrainFacingNoCopyIsNotAskedAbout() throws Exception
-    {
-        threeStationsInARow("B1 none");
-
-        TileKey beta = new TileKey("main", 3, 1);
-
-        session.setPointName(new TileKey("main", 1, 1), "Alpha");
-        session.setPointName(beta, "Beta");
-        session.setPointName(new TileKey("main", 5, 1), "Gamma");
-
-        // A FACING LEFT WESTWARD, and the line then made one way east through Beta: Beta's one copy faces east
-        session.setFacing(beta, org.traincontrol.automationui.TilePorts.Side.W);
-        session.setDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_A);
-        session.setDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.TOWARD_A);
-
-        assertNull(session.takeDirectionRefusal(), "precondition: a direction with nothing standing there was refused");
-
-        session.placeLocomotive(beta, "B1 none train");
-
-        // THE RAIL WEST OF BETA TWO WAY: Beta's copies are as they were
-        session.setDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.BOTH);
-
-        String refused = session.takeDirectionRefusal();
-
-        assertNull(refused, "a direction that leaves Beta's copies as they were was refused over a train the change does"
-            + " not turn (RSA7-B1): " + refused);
-    }
-
-    /**
      * An entry deleted from the railway's timetable, its page then ticked out before any fold, stays deleted when the page
      * comes back (RSA8-C2): the Auto tab's delete reaches the railway alone, and the tick's findings check set aside the
      * stored copy the next fold was about to drop.
@@ -2564,88 +1632,6 @@ public class testAutonomyDiagramSession
         return page;
     }
 
-    /**
-     * A click on a square with no tool armed, through the editor panel's own door, with every message it shows closed.
-     *
-     * @param square the square clicked
-     * @return what each message said, in order
-     * @throws Exception from the panel
-     */
-    private List<String> clickWithEveryMessageClosed(final TileKey square) throws Exception
-    {
-        final List<String> said = java.util.Collections.synchronizedList(new ArrayList<String>());
-        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
-
-        Thread closing = new Thread(() ->
-        {
-            Set<Object> handled = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<Object, Boolean>());
-
-            while (going.get())
-            {
-                try
-                {
-                    Thread.sleep(100);
-                }
-                catch (InterruptedException stop)
-                {
-                    return;
-                }
-
-                for (java.awt.Window window : java.awt.Window.getWindows())
-                {
-                    if (!window.isShowing() || !(window instanceof javax.swing.JDialog)) continue;
-
-                    for (java.awt.Component c : ((javax.swing.JDialog) window).getContentPane().getComponents())
-                    {
-                        if (c instanceof javax.swing.JOptionPane && handled.add(c))
-                        {
-                            final javax.swing.JOptionPane pane = (javax.swing.JOptionPane) c;
-
-                            said.add(String.valueOf(pane.getMessage()));
-
-                            javax.swing.SwingUtilities.invokeLater(
-                                () -> pane.setValue(Integer.valueOf(javax.swing.JOptionPane.OK_OPTION)));
-                        }
-                    }
-                }
-            }
-        }, "closing every message");
-
-        closing.setDaemon(true);
-        closing.start();
-
-        try
-        {
-            final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
-
-            javax.swing.SwingUtilities.invokeAndWait(
-                () -> panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { }));
-
-            final java.lang.reflect.Method cycle =
-                org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
-
-            cycle.setAccessible(true);
-
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    cycle.invoke(panel[0], square);
-                }
-                catch (Exception failed)
-                {
-                    throw new RuntimeException(failed);
-                }
-            });
-        }
-        finally
-        {
-            going.set(false);
-        }
-
-        return new ArrayList<>(said);
-    }
-
     /** One of the editor panel's own controls, by its field. */
     private static java.awt.Component panelPart(org.traincontrol.gui.AutonomyEditorPanel panel, String field)
         throws Exception
@@ -2657,36 +1643,19 @@ public class testAutonomyDiagramSession
         return (java.awt.Component) f.get(panel);
     }
 
-    /**
-     * Alpha at 1,1, a sensor that is no station at 3,1, Gamma at 5,1 and Delta at 7,1, plain track between: Gamma a
-     * through station a train can be sent from.
-     */
-    private LayoutDiagram sensorBetweenStations(String configuration) throws Exception
+    /** Whether the setup check has a finding of this kind and severity at this square. */
+    private boolean findingAt(String messageKey, org.traincontrol.automationui.AutonomyChecks.Severity severity, TileKey at)
     {
-        LayoutDiagram page = new LayoutDiagram("main", 9, 3, null, null);
-
-        for (int x = 1; x <= 7; x++)
+        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
         {
-            page.addComponent(x % 2 == 1 ? componentType.FEEDBACK : componentType.STRAIGHT, x, 1, 0, 0,
-                x % 2 == 1 ? 210 + x : 0, x % 2 == 1 ? 210 + x : 0, accessoryDecoderType.MM2, null);
+            if (messageKey.equals(finding.getMessageKey()) && finding.getSeverity() == severity
+                && at.equals(finding.getTile()))
+            {
+                return true;
+            }
         }
 
-        page.setPageId("1");
-
-        session.open(Arrays.asList(page));
-        session.initialize(configuration);
-
-        String[] names = {"Alpha", null, "Gamma", "Delta"};
-
-        for (int i = 0; i < 4; i++)
-        {
-            if (names[i] == null) continue;
-
-            session.setStation(new TileKey("main", 1 + 2 * i, 1), true);
-            session.setPointName(new TileKey("main", 1 + 2 * i, 1), names[i]);
-        }
-
-        return page;
+        return false;
     }
 
     /** The track either side of the middle station made one-way away from it, so nothing arrives there. */

@@ -66,6 +66,9 @@ public class DiagramMonitor
     private volatile Map<String, ReducedEdge> edgesByName = new LinkedHashMap<>();
     private volatile Map<String, TileKey> pointTiles = new LinkedHashMap<>();
 
+    // Which way a train standing on each Point faces, for the icon of a parked one (Adam, 2026-10-01).
+    private volatile Map<String, org.traincontrol.automationui.TilePorts.Side> facings = new LinkedHashMap<>();
+
     private final AtomicBoolean dirty = new AtomicBoolean(false);
 
     private volatile Map<TileKey, TileOverlay> published = Collections.emptyMap();
@@ -106,6 +109,18 @@ public class DiagramMonitor
 
         this.edgesByName = newEdges;
         this.pointTiles = newPoints;
+    }
+
+    /**
+     * Which way a train standing on each Point faces: the icon of a parked train turns to it (Adam, 2026-10-01), as a
+     * running one's turns to its path.
+     *
+     * @param facings Point name to the side of its square a train's front faces there
+     */
+    public void setFacings(Map<String, org.traincontrol.automationui.TilePorts.Side> facings)
+    {
+        this.facings = facings == null ? new LinkedHashMap<String, org.traincontrol.automationui.TilePorts.Side>()
+            : new LinkedHashMap<>(facings);
     }
 
     /**
@@ -237,7 +252,8 @@ public class DiagramMonitor
             return overlays;
         }
 
-        if (active == null) return overlays;
+        // Nothing running is no reason to show nothing: the trains parked on the railway are still marked.
+        if (active == null) active = Collections.emptyMap();
 
         for (Map.Entry<org.traincontrol.base.Locomotive, List<Edge>> entry : active.entrySet())
         {
@@ -320,6 +336,10 @@ public class DiagramMonitor
 
             if (at != null) markTrain(overlays, at, running);
         }
+
+        // AND EVERY TRAIN PARKED WITH NO PATH (Adam, 2026-10-01): "when a train is standing somewhere, can we show its
+        // locomotive icon on top of the station in the track diagram viewer ... same icon as when a run is started."
+        markTheParkedTrains(overlays, layout, active.keySet());
 
         // everything held clear so those paths can run
         for (List<Edge> path : active.values())
@@ -413,6 +433,51 @@ public class DiagramMonitor
      * The running Layout knows a Point only by name, so the tile comes from the index the builder's
      * names produced rather than from the Point itself, which has never heard of tiles.
      */
+    /**
+     * Marks every train the railway holds that has no path: the locomotive a run draws, on the square it stands on,
+     * facing the way it stands (Adam, 2026-10-01).
+     *
+     * A train in `active` is left to the run's own mark, at the point it last reached: the several points a running
+     * train reserves all answer it as their occupant, and marking those would draw it more than once.
+     *
+     * @param into the picture
+     * @param layout the running layout
+     * @param pathed the trains that hold a path
+     */
+    private void markTheParkedTrains(Map<TileKey, TileOverlay> into, Layout layout,
+        Set<org.traincontrol.base.Locomotive> pathed)
+    {
+        List<Point> points;
+
+        try
+        {
+            // A copy: the layout's own collection is live, and this is the timer thread
+            points = new java.util.ArrayList<>(layout.getPoints());
+        }
+        catch (RuntimeException e)
+        {
+            // the layout is being replaced underneath us; the next refresh will catch up
+            return;
+        }
+
+        for (Point point : points)
+        {
+            org.traincontrol.base.Locomotive standing = point == null ? null : point.getCurrentLocomotive();
+
+            if (standing == null || pathed.contains(standing)) continue;
+
+            TileKey tile = pointTiles.get(point.getName());
+
+            if (tile == null) continue;
+
+            TileOverlay mark = TileOverlay.parked(facings.get(point.getName()));
+
+            TileOverlay existing = into.get(tile);
+
+            into.put(tile, existing == null ? mark : existing.merge(mark));
+        }
+    }
+
     private void markTrain(Map<TileKey, TileOverlay> into, Point at, boolean moving)
     {
         if (at == null) return;

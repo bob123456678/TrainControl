@@ -2455,7 +2455,6 @@ public class testNoSetupEditDuringARun
             {
                 session.setPortalDisabled(new TileKey("1 - Main", 15, 5), true);
 
-                refused[0] = session.takeDirectionRefusal();
             });
 
             assertEquals(refused[0], null, "precondition: the link to " + page + " could not be switched off");
@@ -3056,7 +3055,6 @@ public class testNoSetupEditDuringARun
             {
                 session.setPortalDisabled(new TileKey("1 - Main", 15, 5), true);
 
-                refused[0] = session.takeDirectionRefusal();
             });
 
             assertEquals(refused[0], null, "precondition: the link to " + page + " could not be switched off");
@@ -3499,6 +3497,155 @@ public class testNoSetupEditDuringARun
     }
 
     /**
+     * The Layout menu greys what changes the diagram or the folder while autonomy runs, saying why, and gives each back as
+     * it was at rest (Adam, 2026-10-01: "Grey layout: grey the relevant options, but we need to keep open CS3 web app
+     * available").  Opening the folder, the pop-outs, the picture and the CS3 web app are left as they were.
+     *
+     * MUTATION: leave the menu live while autonomy runs, and this fails; so does a greyed item left grey at rest.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheLayoutMenuIsGreyedWhileAutonomyRuns() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
+
+        staging.setAccessible(true);
+
+        String[] greyed = {"chooseLocalDataFolderMenuItem", "modifyLocalLayoutMenu", "editPageMenu",
+            "initializeLocalLayoutMenuItem", "switchCSLayoutMenuItem", "downloadCSLayoutMenuItem"};
+
+        String[] kept = {"showCurrentLayoutFolderMenuItem", "popUpAllMenuItem", "exportDiagramItem", "openCS3AppMenuItem"};
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            String why = I18n.t("autosetup.ui.tooltipNotWhileRunning");
+
+            // AT REST, as the operator finds it
+            java.util.Map<String, Object[]> rest = layoutMenuAsOpened(ui[0], greyed, kept);
+
+            assertTrue((Boolean) rest.get("modifyLocalLayoutMenu")[0] && (Boolean) rest.get("chooseLocalDataFolderMenuItem")[0],
+                "precondition: Manage Pages or the folder's item is grey at rest, so greying them shows nothing");
+
+            // DURING A RUN
+            staging.set(ui[0], true);
+
+            java.util.Map<String, Object[]> running = layoutMenuAsOpened(ui[0], greyed, kept);
+
+            for (String name : greyed)
+            {
+                assertFalse((Boolean) running.get(name)[0], name + " is live on the Layout menu while autonomy runs"
+                    + " (Adam, 2026-10-01)");
+
+                assertTrue(String.valueOf(running.get(name)[1]).contains(why), name + " greyed while autonomy runs does"
+                    + " not say why: " + running.get(name)[1]);
+            }
+
+            for (String name : kept)
+            {
+                assertEquals(running.get(name)[0], rest.get(name)[0], name + " was greyed or lit by a run, though it"
+                    + " changes nothing (Adam, 2026-10-01: \"we need to keep open CS3 web app available\")");
+            }
+
+            // AT REST AGAIN
+            staging.set(ui[0], false);
+
+            java.util.Map<String, Object[]> after = layoutMenuAsOpened(ui[0], greyed, kept);
+
+            for (String name : greyed)
+            {
+                assertEquals(after.get(name)[0], rest.get(name)[0], name + " did not come back as it was once autonomy"
+                    + " stopped");
+
+                assertEquals(after.get(name)[1], rest.get(name)[1], name + " kept the run's tooltip once autonomy"
+                    + " stopped");
+            }
+        }
+        finally
+        {
+            if (ui[0] != null) staging.set(ui[0], false);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * Opens the Layout menu as the operator does, and says of each item named whether it is live and what its tooltip is.
+     *
+     * @param ui the window
+     * @param names the window's fields holding the items
+     * @return field name to {enabled, tooltip}
+     * @throws Exception from the event thread or a field
+     */
+    private static java.util.Map<String, Object[]> layoutMenuAsOpened(final TrainControlUI ui, String[]... names)
+        throws Exception
+    {
+        final java.lang.reflect.Field menu = TrainControlUI.class.getDeclaredField("layoutMenu");
+
+        menu.setAccessible(true);
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                javax.swing.JMenu layout = (javax.swing.JMenu) menu.get(ui);
+
+                // OPENED, so the guard runs as it does for the operator
+                layout.setSelected(true);
+                layout.setSelected(false);
+            }
+            catch (IllegalAccessException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+
+        // The Central Station items' owner answers on the event thread, a beat later
+        for (int turn = 0; turn < 4; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+        java.util.Map<String, Object[]> out = new java.util.LinkedHashMap<>();
+
+        for (String[] group : names)
+        {
+            for (String name : group)
+            {
+                java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField(name);
+
+                field.setAccessible(true);
+
+                javax.swing.JMenuItem item = (javax.swing.JMenuItem) field.get(ui);
+
+                assertNotNull(item, "precondition: the window has no " + name);
+
+                out.put(name, new Object[] {item.isEnabled(), item.getToolTipText()});
+            }
+        }
+
+        return out;
+    }
+
+    /**
      * Export after a run writes where the run left the trains and the settings as they now are (RSA11-B1): it wrote the
      * configuration as its file last had it - each train where it stood before the run, the pace as at the load - and an
      * export after a run is the only kind there is since Export waits for autonomy to stop.  It folds the running railway
@@ -3922,6 +4069,189 @@ public class testNoSetupEditDuringARun
     }
 
     /**
+     * Once a configuration exists, Manage offers one door to a new one - New Configuration, a copy - and no Add (Adam,
+     * 2026-10-01: "One door: do it").
+     *
+     * MUTATION: put Add back on Manage, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testManageOffersOneDoorToANewConfiguration() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            javax.swing.JMenuItem manage = autonomyMenuItems(ui[0]).get(I18n.t("autosetup.ui.btnManage"));
+
+            assertTrue(manage instanceof javax.swing.JMenu, "precondition: the Autonomy menu has no Manage Configurations");
+
+            List<String> offered = new ArrayList<>();
+
+            for (Component part : ((javax.swing.JMenu) manage).getMenuComponents())
+            {
+                if (part instanceof javax.swing.JMenuItem) offered.add(((javax.swing.JMenuItem) part).getText());
+            }
+
+            assertTrue(offered.contains(I18n.t("autosetup.ui.menuNewConfiguration")), "Manage has no New Configuration: "
+                + offered);
+
+            assertFalse(offered.contains(I18n.t("autosetup.ui.menuInitialize")), "Manage still offers Add a Configuration"
+                + " beside New Configuration - two doors to a new configuration (Adam, 2026-10-01: \"One door: do it\"): "
+                + offered);
+        }
+        finally
+        {
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * New Configuration answered No copies the configuration without its trains or its timetable, and everything else as
+     * it is - each station's rules, the settings - and the one copied keeps its trains (Adam, 2026-10-01: "One door: do
+     * it").  Through the real question.
+     *
+     * MUTATION: copy the trains whatever the answer, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testANewConfigurationCanStartWithoutItsTrains() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        String[] trainKeys = {AutonomyBuilder.LOCOMOTIVE, AutonomyBuilder.FACING, "arrivedFrom", "arrivedAlong"};
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final AutonomySession session = ui[0].getAutonomySession();
+
+            final String running = ui[0].getActiveDiagramConfiguration();
+
+            assertNotNull(running, "precondition: no configuration runs");
+
+            org.json.JSONObject original = new org.json.JSONObject(session.getStore().getConfiguration(running).toString());
+
+            assertFalse(placedIn(original).isEmpty(), "precondition: no train is placed in " + running);
+
+            // NEW CONFIGURATION, its question answered No
+            final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
+
+            answeringWith(asked, going, "R34 no trains");
+
+            SwingUtilities.invokeAndWait(() -> ui[0].getAutonomyViewerPanel().duplicate());
+
+            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertTrue(asked.contains(I18n.f("autosetup.ui.promptCopyTrainsAndTimetable", running)), "New Configuration"
+                + " did not ask whether the trains and the timetable come too: " + asked);
+
+            assertTrue(session.getStore().getConfigurationNames().contains("R34 no trains"), "precondition: no copy was"
+                + " made: " + asked);
+
+            org.json.JSONObject copy = session.getStore().getConfiguration("R34 no trains");
+
+            assertTrue(placedIn(copy).isEmpty(), "the copy answered No still has trains placed: " + placedIn(copy));
+
+            org.json.JSONObject globals = copy.optJSONObject("globals");
+
+            assertTrue(globals == null || !globals.has("timetable"), "the copy answered No still has the timetable");
+
+            // EVERYTHING ELSE AS IT WAS
+            org.json.JSONObject points = original.optJSONObject("points");
+
+            org.json.JSONObject copied = copy.optJSONObject("points");
+
+            for (String key : points.keySet())
+            {
+                org.json.JSONObject was = new org.json.JSONObject(points.getJSONObject(key).toString());
+                org.json.JSONObject now = new org.json.JSONObject(copied.getJSONObject(key).toString());
+
+                for (String train : trainKeys)
+                {
+                    was.remove(train);
+                    now.remove(train);
+                }
+
+                assertTrue(was.similar(now), "the copy changed " + key + "'s own rules: " + was + " became " + now);
+            }
+
+            assertEquals(placedIn(session.getStore().getConfiguration(running)), placedIn(original), "copying "
+                + running + " without its trains took them off " + running);
+        }
+        finally
+        {
+            going.set(false);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** Every square of a configuration a train is placed on, and the train's name. */
+    private static java.util.Map<String, String> placedIn(org.json.JSONObject configuration)
+    {
+        java.util.Map<String, String> out = new java.util.TreeMap<>();
+
+        org.json.JSONObject points = configuration.optJSONObject("points");
+
+        if (points == null) return out;
+
+        for (String key : points.keySet())
+        {
+            org.json.JSONObject point = points.optJSONObject(key);
+
+            if (point == null || !point.has(AutonomyBuilder.LOCOMOTIVE)) continue;
+
+            org.json.JSONObject loc = point.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
+
+            out.put(key, loc == null ? point.optString(AutonomyBuilder.LOCOMOTIVE) : loc.optString("name"));
+        }
+
+        return out;
+    }
+
+    /**
      * New Configuration after a run copies where the trains are, and leaves the configuration running the one the next
      * start resumes (RSA10-A1): it copied the file's record - each train where it stood before the run - and made the
      * copy the configuration to resume, while the exit's fold went into the one running.  The next start then placed a
@@ -3991,6 +4321,9 @@ public class testNoSetupEditDuringARun
 
             answeringWith(asked, going, "RSA10 copy");
 
+            // WITH THE TRAINS: this claim is about where they are copied from, not about the question (round 34)
+            org.traincontrol.gui.AutonomyViewerPanel.answerCopyTrainsForTests(javax.swing.JOptionPane.YES_OPTION);
+
             SwingUtilities.invokeAndWait(() -> ui[0].getAutonomyViewerPanel().duplicate());
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
@@ -4013,6 +4346,8 @@ public class testNoSetupEditDuringARun
         finally
         {
             going.set(false);
+
+            org.traincontrol.gui.AutonomyViewerPanel.answerCopyTrainsForTests(null);
 
             putTheFolderBack(folderWas);
 

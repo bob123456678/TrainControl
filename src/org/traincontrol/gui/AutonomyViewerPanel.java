@@ -1596,6 +1596,12 @@ public class AutonomyViewerPanel extends JPanel
 
         if (name == null || name.trim().isEmpty()) return;
 
+        // WHERE THE TRAINS STAND AND THE TIMETABLE, ASKED (Adam, 2026-10-01: "One door: do it"): this is the one door to a
+        // new configuration once one exists, and those two are what a variant most often starts without
+        int copyTrains = from == null ? JOptionPane.YES_OPTION : askCopyTrains(from);
+
+        if (copyTrains != JOptionPane.YES_OPTION && copyTrains != JOptionPane.NO_OPTION) return;
+
         // WHERE THE TRAINS ARE, folded into the configuration running first (RSA10-A1): its file holds where they stood
         // before the last run, and the copy took that
         ui.captureRunningLayout();
@@ -1604,7 +1610,7 @@ public class AutonomyViewerPanel extends JPanel
         {
             // as a copy, so a variant that differs only in where the locomotives start does not mean
             // re-entering every decision that has nothing to do with that
-            session().getStore().createConfiguration(name.trim(), from);
+            session().getStore().createConfiguration(name.trim(), from, copyTrains == JOptionPane.YES_OPTION);
         }
         catch (IOException e)
         {
@@ -1624,6 +1630,43 @@ public class AutonomyViewerPanel extends JPanel
 
         save();
         refresh();
+    }
+
+    /**
+     * The answer the trains-and-timetable question is given without asking, for a test that is not about the question;
+     * null to ask.
+     */
+    private static volatile Integer copyTrainsAnswerForTests;
+
+    /**
+     * @param answer `JOptionPane.YES_OPTION` or `NO_OPTION` to answer New Configuration's question without asking, or
+     *        null to ask it again
+     */
+    public static void answerCopyTrainsForTests(Integer answer)
+    {
+        copyTrainsAnswerForTests = answer;
+    }
+
+    /**
+     * Whether New Configuration copies where the trains stand and the timetable (Adam, 2026-10-01).
+     *
+     * @param from the configuration being copied
+     * @return `JOptionPane.YES_OPTION`, `NO_OPTION`, or anything else to make no copy
+     */
+    private int askCopyTrains(String from)
+    {
+        Integer given = copyTrainsAnswerForTests;
+
+        if (given != null) return given;
+
+        // The buttons in the language chosen, not the system's: an index, which is Yes, No and Cancel in this order
+        Object[] buttons = {I18n.t("ui.yes"), I18n.t("ui.no"), I18n.t("ui.cancel")};
+
+        int chosen = JOptionPane.showOptionDialog(ui, I18n.f("autosetup.ui.promptCopyTrainsAndTimetable", from),
+            I18n.t("autosetup.ui.menuNewConfiguration"), JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE,
+            null, buttons, buttons[0]);
+
+        return chosen == 0 ? JOptionPane.YES_OPTION : chosen == 1 ? JOptionPane.NO_OPTION : JOptionPane.CANCEL_OPTION;
     }
 
     public void rename()

@@ -563,12 +563,9 @@ public class AutonomyMenu extends JMenu
     }
 
     /**
-     * Adding a configuration - the same offer whether or not any exist yet.
-     *
-     * Worded the same in both cases on purpose.  It said "set autonomy up for this layout" when there
-     * was nothing, and "new configuration from this layout" when there was, which read as two different
-     * features; every configuration is built from this layout, so that phrase distinguished nothing.
-     * What it actually differs from is Duplicate, and the tooltip is where that belongs.
+     * Adding a configuration - offered for the very first setup alone (Adam, 2026-10-01: "One door: do it").  Once one
+     * exists, Manage's New Configuration copies it, so a station's rules, the settings and the speeds are never entered
+     * twice.
      */
     private JMenuItem addConfigurationItem(final AutonomyViewerPanel actions)
     {
@@ -631,14 +628,9 @@ public class AutonomyMenu extends JMenu
     {
         JMenu manage = new JMenu(I18n.t("autosetup.ui.btnManage"));
 
-        // Adding one lives here now rather than loose at the bottom of the menu.  On the top level it
-        // sat beside "which configuration is running", where it read as a third choice of the same kind;
-        // in here it sits beside duplicate, rename and delete, which is what it actually is.
-        manage.add(addConfigurationItem(actions));
-
-        manage.addSeparator();
-
-        manage.add(item(I18n.t("autosetup.ui.menuNewConfiguration"), new Runnable()
+        // ONE DOOR TO A NEW CONFIGURATION (Adam, 2026-10-01: "One door: do it"): a copy of the one chosen, asking whether
+        // where the trains stand and the timetable come too.  Add a Configuration is offered only before there is one.
+        JMenuItem copy = item(I18n.t("autosetup.ui.menuNewConfiguration"), new Runnable()
         {
             @Override
             public void run()
@@ -647,7 +639,11 @@ public class AutonomyMenu extends JMenu
 
                 ui.autonomyMenuActed();
             }
-        }));
+        });
+
+        copy.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipNewConfiguration")));
+
+        manage.add(copy);
 
         manage.add(item(I18n.t("autosetup.ui.menuRenameConfiguration"), new Runnable()
         {
@@ -678,11 +674,10 @@ public class AutonomyMenu extends JMenu
         // the Configuration submenu now, under a divider, beside the list of configurations they are
         // about.
 
-        // Everything above except adding acts on the configuration that is RUNNING, so it means nothing
-        // until one is.  Greyed one at a time rather than the whole submenu, so that adding - and
-        // deleting the lot, below - stay reachable when nothing is loaded, which is exactly when
-        // somebody wants them.
-        for (int i = 2; i < manage.getItemCount(); i++)
+        // Everything above acts on the configuration that is RUNNING, so it means nothing until one is.  Greyed one at
+        // a time rather than the whole submenu, so that deleting the lot, below, stays reachable when nothing is
+        // loaded, which is exactly when somebody wants it.
+        for (int i = 0; i < manage.getItemCount(); i++)
         {
             if (manage.getItem(i) == null) continue;
 

@@ -1959,9 +1959,6 @@ public class AutonomyEditorPanel extends JPanel
                 {
                     session.setPortalDisabled(target, !on);
 
-                    // NOT FROM UNDER A STANDING TRAIN (RSA6-A3)
-                    if (refusedUnderATrain()) return;
-
                     // A shut link is a missing edge in the running graph, so the railway has to be
                     // told (VD10-B2).  This wrote straight from the lambda and was the one writer
                     // not inside a door at all - which is also why it pushes no undo point (VD9-B3).
@@ -4328,29 +4325,9 @@ public class AutonomyEditorPanel extends JPanel
         setupChanged();
     }
 
-    /**
-     * Says why the session refused the direction just asked for, or the link just switched off, in a popup, where it did
-     * (RSA5-A2, RSA6-A3): one that would leave a train standing on a square with no copy facing its way.  Every direction
-     * door asks it, and the link's switch.
-     *
-     * @return true when it was refused
-     */
-    private boolean refusedUnderATrain()
-    {
-        String why = session.takeDirectionRefusal();
-
-        if (why == null) return false;
-
-        JOptionPane.showMessageDialog(owner(), why);
-
-        return true;
-    }
-
     private void setAllBranches(TileKey tile, Direction direction)
     {
         session.setDirection(new LinkedHashSet<>(java.util.Arrays.asList(tile)), direction);
-
-        if (refusedUnderATrain()) return;
 
         // THE ARROWS, NOT THE DIAGRAM (MT-334).
         //
@@ -7461,12 +7438,6 @@ public class AutonomyEditorPanel extends JPanel
                 ? session.setOneWayRun(from, tile)
                 : session.setOneWayRun(tile, from);
 
-            if (refusedUnderATrain())
-            {
-                refresh();
-                return;
-            }
-
             say(hint, changed < 0 ? I18n.t("autosetup.ui.oneWayNoPath")
                 : I18n.f("autosetup.ui.oneWayDone", changed));
 
@@ -7672,30 +7643,9 @@ public class AutonomyEditorPanel extends JPanel
 
         org.traincontrol.automationui.TilePorts.Route route = only.getValue();
 
-        // THE NEXT DIRECTION THE TRAINS ALLOW (Adam, MT-605): one refused under a standing train is passed over, so the
-        // click goes on round the choices rather than stopping at the refusal - said only where every other is refused
         Direction next = after(session.getGraph().getDirection(target, only.getKey()));
 
-        int changed = 0;
-
-        String refused = null;
-
-        for (int tries = 0; tries < 3; tries++, next = after(next))
-        {
-            changed = session.setRunDirection(target, only.getKey(), next);
-
-            refused = session.takeDirectionRefusal();
-
-            if (refused == null) break;
-        }
-
-        if (refused != null)
-        {
-            JOptionPane.showMessageDialog(owner(), refused);
-
-            refresh();
-            return;
-        }
+        int changed = session.setRunDirection(target, only.getKey(), next);
 
         // The tile that changed can be some way from the one clicked, at the head of a long run, so it
         // is flashed as well as named - a message about a square nobody can find is half an answer.
@@ -7758,30 +7708,9 @@ public class AutonomyEditorPanel extends JPanel
 
         int at = states.indexOf(current);
 
-        // THE NEXT COMBINATION THE TRAINS ALLOW (Adam, MT-605), as on a plain square: one refused under a standing train
-        // is passed over, and the refusal said only where every other combination is refused
-        int next = current;
+        int next = states.get((at + 1) % states.size());
 
-        String refused = null;
-
-        for (int step = 1; step <= states.size(); step++)
-        {
-            next = states.get((at + step) % states.size());
-
-            if (next == current) continue;
-
-            refused = armMaskRefusal(target, routes, sides, next);
-
-            if (refused == null) break;
-        }
-
-        if (refused != null)
-        {
-            JOptionPane.showMessageDialog(owner(), refused);
-
-            refresh();
-            return;
-        }
+        applyArmMask(target, routes, sides, next);
 
         say(hint, I18n.f("autosetup.ui.cycledSwitch", describeTile(target), armState(next, sides)));
 
@@ -7796,10 +7725,8 @@ public class AutonomyEditorPanel extends JPanel
      * The arms are what the drawing shows and what the user is choosing between; the per-route
      * directions are what the model stores.  One translation, used by the click and by the checkboxes,
      * so the two cannot come to different conclusions about the same square.
-     *
-     * @return why the combination was refused under a standing train, or null where it was set
      */
-    private String armMaskRefusal(TileKey target,
+    private void applyArmMask(TileKey target,
         Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes,
         java.util.List<org.traincontrol.automationui.TilePorts.Side> sides, int mask)
     {
@@ -7821,10 +7748,6 @@ public class AutonomyEditorPanel extends JPanel
         // One re-derivation for the tile, not one per branch
         session.setDirections(target, wanted);
 
-        String refused = session.takeDirectionRefusal();
-
-        if (refused != null) return refused;
-
         // THE ARROWS, NOT THE DIAGRAM (MT-334).
         //
         // Adam, after OB-185's fix: "it still flickers, but less", and the whole diagram still
@@ -7837,26 +7760,6 @@ public class AutonomyEditorPanel extends JPanel
         // setupChanged does, which is what the note this replaces was about.
         // Directions are edges in the running graph (VD11-A1).
         annotationsChanged();
-
-        return null;
-    }
-
-    /**
-     * Applies a combination of open arms as `armMaskRefusal` does, and says a refusal (RSA5-A2).
-     *
-     * @return whether it was set
-     */
-    private boolean applyArmMask(TileKey target,
-        Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes,
-        java.util.List<org.traincontrol.automationui.TilePorts.Side> sides, int mask)
-    {
-        String refused = armMaskRefusal(target, routes, sides, mask);
-
-        if (refused == null) return true;
-
-        JOptionPane.showMessageDialog(owner(), refused);
-
-        return false;
     }
 
     /**
@@ -9341,12 +9244,6 @@ public class AutonomyEditorPanel extends JPanel
             // Set on the run, not the tile: a run of plain track has one direction, and setting it a
             // tile at a time is both busywork and a way to end up with a run that contradicts itself.
             int set = session.setRunDirection(tile, routeId, direction);
-
-            if (refusedUnderATrain())
-            {
-                refresh();
-                return;
-            }
 
             if (set == 0)
             {

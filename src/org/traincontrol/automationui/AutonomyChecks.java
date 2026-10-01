@@ -269,6 +269,8 @@ public class AutonomyChecks
     public static final String COPY_NO_WAY_IN = "autosetup.ui.checkCopyNoWayIn";
     public static final String COPY_REACHES_NOTHING = "autosetup.ui.checkCopyReachesNothing";
     public static final String FACING_IMPOSSIBLE = "autosetup.ui.checkFacingImpossible";
+    public static final String TRAIN_FACES_TRACK_TOWARDS_IT = "autosetup.ui.checkTrainFacesTrackTowardsIt";
+    public static final String STATION_AT_THE_END_OF_A_LINE = "autosetup.ui.checkStationAtTheEndOfALine";
 
     public static final String SIGNAL_GONE = "autosetup.ui.checkProtectingSignalGone";
 
@@ -564,6 +566,18 @@ public class AutonomyChecks
             }
         }
 
+        bySeverity(findings);
+
+        return findings;
+    }
+
+    /**
+     * The findings in order of severity, the worst first.
+     *
+     * @param findings the findings, sorted in place
+     */
+    static void bySeverity(List<Finding> findings)
+    {
         Collections.sort(findings, new java.util.Comparator<Finding>()
         {
             @Override
@@ -572,6 +586,50 @@ public class AutonomyChecks
                 return a.getSeverity().ordinal() - b.getSeverity().ordinal();
             }
         });
+    }
+
+    /**
+     * A WARNING per square where a standing train faces track that runs only towards it (Adam, 2026-10-01): it cannot
+     * leave that way - smaller than a refusal, and judged near the train.
+     *
+     * @param reducer the reduction, for each square's name
+     * @param squares the squares
+     * @return the findings
+     */
+    static List<Finding> checkTrainsFacingTrackTowardsThem(GraphReducer reducer, Set<TileKey> squares)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        for (TileKey tile : squares)
+        {
+            ReducedPoint point = reducer.getPoints().get(tile);
+
+            findings.add(new Finding(Severity.WARNING, TRAIN_FACES_TRACK_TOWARDS_IT,
+                point == null ? String.valueOf(tile) : point.getName(), tile));
+        }
+
+        return findings;
+    }
+
+    /**
+     * An ERROR per station at the end of a line trains may not turn at (Adam, 2026-10-01): a train sent there could never
+     * leave.
+     *
+     * @param reducer the reduction, for each square's name
+     * @param squares the squares
+     * @return the findings
+     */
+    static List<Finding> checkStationsAtTheEndOfALine(GraphReducer reducer, Set<TileKey> squares)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        for (TileKey tile : squares)
+        {
+            ReducedPoint point = reducer.getPoints().get(tile);
+
+            findings.add(new Finding(Severity.ERROR, STATION_AT_THE_END_OF_A_LINE,
+                point == null ? String.valueOf(tile) : point.getName(), tile));
+        }
 
         return findings;
     }
@@ -849,7 +907,9 @@ public class AutonomyChecks
         {
             ReducedPoint point = reducer.getPoints().get(tile);
 
-            findings.add(new Finding(Severity.WARNING, FACING_IMPOSSIBLE,
+            // AN ERROR, where a direction or a link used to be refused (Adam, 2026-10-01: "Make refusals that make sense
+            // be errors"): the train cannot be stood on a copy facing another way, so nothing is sent until it is put right
+            findings.add(new Finding(Severity.ERROR, FACING_IMPOSSIBLE,
                 point == null ? String.valueOf(tile) : point.getName(), tile));
         }
 

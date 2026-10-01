@@ -210,6 +210,17 @@ public class DiagramTileRegistry
             : new java.util.LinkedHashSet<>(here);
     }
 
+    /**
+     * What this square was last told to show, as a label built for it is handed it.
+     *
+     * @param key the square
+     * @return its overlay, or null where it shows none
+     */
+    public TileOverlay overlayAt(TileKey key)
+    {
+        return key == null ? null : lastPublished.get(key);
+    }
+
     public int size()
     {
         return tiles.size();
