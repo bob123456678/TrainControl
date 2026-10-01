@@ -27,7 +27,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-601](#mt-601) | 2026-09-30 | Import waits for autonomy to stop | fixed unvalidated | RSA4-C5 |
 | [MT-602](#mt-602) | 2026-09-30 | A station renamed after a run keeps the train the run left there | fixed unvalidated | RSA4-A1 |
 | [MT-603](#mt-603) | 2026-09-30 | A page ticked out keeps its timetable entries through an edit | fixed unvalidated | RSA5-B1 |
 | [MT-604](#mt-604) | 2026-09-30 | Clear also clears the timetable entries of a page ticked out | fixed unvalidated | RSA5-C1 |
@@ -44,14 +43,11 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-617](#mt-617) | 2026-09-30 | Cancel after moving stations keeps the timetable on them | fixed unvalidated | RSA8-B2 |
 | [MT-618](#mt-618) | 2026-09-30 | Moving stations and saving keeps the timetable on them | fixed unvalidated | RSA8-B2 |
 | [MT-619](#mt-619) | 2026-09-30 | A page's timetable entries stay listed while the page is left out | fixed unvalidated | Adam 2026-09-30, RSA4-B2 |
-| [MT-621](#mt-621) | 2026-09-30 | Start Autonomy in a simulation with Simulate not ticked warns first | fixed unvalidated | Adam 2026-09-30 |
 | [MT-622](#mt-622) | 2026-09-30 | Start Timetable in a simulation with Simulate not ticked warns first | fixed unvalidated | Adam 2026-09-30 |
-| [MT-623](#mt-623) | 2026-09-30 | A simulation starts with Echo Sent Commands on | fixed unvalidated | Adam 2026-09-30 |
 | [MT-624](#mt-624) | 2026-09-30 | A timetable stops at an entry through a page left out, and says why | fixed unvalidated | RSA9-B1, Adam 2026-09-30 |
-| [MT-625](#mt-625) | 2026-09-30 | Export waits for autonomy to stop | fixed unvalidated | Adam 2026-09-30, MT-601 |
 
-Everything else - 603 of 625 - needs nothing from you unless the area changes again:
-471 **fixed validated** and 132 **superseded**.
+Everything else - 607 of 625 - needs nothing from you unless the area changes again:
+475 **fixed validated** and 132 **superseded**.
 
 ---
 
@@ -29613,7 +29609,7 @@ Superseded by MT-608, MT-609, MT-610, MT-611 and MT-612: this entry held several
 
 ### MT-601 - 2026-09-30 - Import waits for autonomy to stop
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA4-C5
 
 **Written:** 2026-09-30
@@ -29637,6 +29633,10 @@ edit possible during a run."*
 Works.  Export should also only be allowed once we are stopped.
 
 *Run against commit 809a03e7, in English - build\classes, compiled 30 Sep 18:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-30.**
+
+Validated on your *Works, with notes* of 2026-09-30: the note - Export only once stopped - was built in round 27, and you passed it as MT-625.
 
 ---
 
@@ -30160,7 +30160,7 @@ Superseded by MT-624: your ruling of 30 September ("stop the timetable run upon 
 
 ### MT-621 - 2026-09-30 - Start Autonomy in a simulation with Simulate not ticked warns first
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-09-30
 
 **Written:** 2026-09-30
@@ -30179,6 +30179,14 @@ simulate isn't checked"*.
   whether to start anyway.  No leaves autonomy stopped.
 
 *What this is:* `regression.testNoSetupEditDuringARun.testStartingUnsimulatedInASimulationWarnsFirst`.
+
+**Adam, 2026-09-30 (triage).** Works.
+
+*Run against commit 809a03e7, in English - build\classes, compiled 30 Sep 20:26 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-30.**
+
+Validated on your *Works* of 2026-09-30.
 
 ---
 
@@ -30210,7 +30218,7 @@ Your request of 30 September, as MT-621, at the timetable's button.
 
 ### MT-623 - 2026-09-30 - A simulation starts with Echo Sent Commands on
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-09-30
 
 **Written:** 2026-09-30
@@ -30228,6 +30236,14 @@ sends - the power, a switch - so autonomy cannot run.
 - A message says Echo Sent Commands is now on, and the menu item is ticked.  The power can be switched on.
 
 *What this is:* `regression.testNoSetupEditDuringARun.testASimulationStartsWithEchoOn`.
+
+**Adam, 2026-09-30 (triage).** Works.
+
+*Run against commit 809a03e7, in English - build\classes, compiled 30 Sep 20:26 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-30.**
+
+Validated on your *Works* of 2026-09-30.
 
 ---
 
@@ -30263,7 +30279,7 @@ place of MT-620, which expected the run to go on.
 
 ### MT-625 - 2026-09-30 - Export waits for autonomy to stop
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-09-30, MT-601
 
 **Written:** 2026-09-30
@@ -30280,5 +30296,13 @@ Your note on MT-601: *"Export should also only be allowed once we are stopped."*
   chooser opens.
 
 *What this is:* `regression.testNoSetupEditDuringARun.testExportWaitsForAutonomyToStop`.
+
+**Adam, 2026-09-30 (triage).** Works.
+
+*Run against commit 809a03e7, in English - build\classes, compiled 30 Sep 20:26 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-30.**
+
+Validated on your *Works* of 2026-09-30.
 
 ---
