@@ -428,12 +428,6 @@ public class DiagramMonitor
     }
 
     /**
-     * Marks the tile a locomotive is standing on.
-     *
-     * The running Layout knows a Point only by name, so the tile comes from the index the builder's
-     * names produced rather than from the Point itself, which has never heard of tiles.
-     */
-    /**
      * Marks every train the railway holds that has no path: the locomotive a run draws, on the square it stands on,
      * facing the way it stands (Adam, 2026-10-01).
      *
@@ -478,6 +472,12 @@ public class DiagramMonitor
         }
     }
 
+    /**
+     * Marks the tile a locomotive is standing on.
+     *
+     * The running Layout knows a Point only by name, so the tile comes from the index the builder's
+     * names produced rather than from the Point itself, which has never heard of tiles.
+     */
     private void markTrain(Map<TileKey, TileOverlay> into, Point at, boolean moving)
     {
         if (at == null) return;
