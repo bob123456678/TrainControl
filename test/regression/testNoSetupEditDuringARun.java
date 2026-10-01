@@ -3829,6 +3829,99 @@ public class testNoSetupEditDuringARun
     }
 
     /**
+     * Layouts > Create New Layout is refused while autonomy runs, before its folder window opens (RSA13-B2), as every
+     * other Layout menu door that changes the diagram is (MT-141): a folder chosen switched the layout, synced with the
+     * Central Station and reset the autonomy session under the moving trains, taking Graceful Stop off the window.
+     *
+     * MUTATION: open the folder window whatever runs, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testCreateNewLayoutWaitsForAutonomyToStop() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        Thread driving = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            // A RUN UNDER WAY
+            final Object[] dispatched = dispatchATrain(ui[0], null);
+
+            driving = (Thread) dispatched[3];
+
+            assertTrue(ui[0].getModel().isAutonomyRunning(), "precondition: no run is under way");
+
+            final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
+            final List<String> choosers = Collections.synchronizedList(new ArrayList<String>());
+
+            closingEveryQuestion(asked, choosers, going);
+
+            final java.lang.reflect.Method press = TrainControlUI.class.getDeclaredMethod(
+                "initializeLocalLayoutMenuItemActionPerformed", java.awt.event.ActionEvent.class);
+
+            press.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    press.invoke(ui[0], new Object[] {null});
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            // WHATEVER IT SHOWS, from a task it posts too: waited for, then flushed
+            long until = System.currentTimeMillis() + 5000;
+
+            while (asked.isEmpty() && choosers.isEmpty() && System.currentTimeMillis() < until) Thread.sleep(100);
+
+            Thread.sleep(1000);
+
+            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertTrue(choosers.isEmpty(), "Create New Layout opened its folder window while autonomy ran (RSA13-B2): "
+                + choosers + "; said: " + asked);
+
+            assertTrue(asked.contains(I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning")), "Create New Layout"
+                + " did not say it waits for autonomy to stop: " + asked);
+        }
+        finally
+        {
+            going.set(false);
+
+            if (driving != null) driving.interrupt();
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
      * New Configuration after a run copies where the trains are, and leaves the configuration running the one the next
      * start resumes (RSA10-A1): it copied the file's record - each train where it stood before the run - and made the
      * copy the configuration to resume, while the exit's fold went into the one running.  The next start then placed a

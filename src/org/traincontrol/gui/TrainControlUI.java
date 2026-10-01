@@ -23546,6 +23546,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_switchCSLayoutMenuItemActionPerformed
 
     private void initializeLocalLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_initializeLocalLayoutMenuItemActionPerformed
+        // NOT WHILE AUTONOMY RUNS, before its folder window (RSA13-B2), as every other Layout menu door that changes the
+        // diagram is not (MT-141): a folder chosen switched the layout, synced with the Central Station and reset the
+        // autonomy session under the moving trains
+        if (refuseWhileAutonomyRunning(this)) return;
+
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
             JOptionPane.showMessageDialog(

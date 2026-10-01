@@ -78,6 +78,8 @@ public class testTheRefusalsAreAskedAtTheDoors
             + "moving, the stop controls go, and runLocomotives keeps driving"},
         {"chooseLocalDataFolderMenuItemActionPerformed", AUTONOMY + "|" + EDITOR,
             "swapping the layout folder replaces the diagram, for the same reason"},
+        {"initializeLocalLayoutMenuItemActionPerformed", AUTONOMY,
+            "Create New Layout switches the layout folder, syncs with the Central Station and resets autonomy (RSA13-B2)"},
 
         // AND THE REST, which were longhand at four doors before the two methods collected them.
         {"startAutonomyActionPerformed", GATE,

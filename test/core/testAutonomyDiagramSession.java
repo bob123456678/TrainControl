@@ -1158,6 +1158,105 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A one-way run against a standing train is refused past a sensor that is no station (RSA13-B1): the refusal asked
+     * whether the train's square was left by its side, and a reduced edge ends at the next Point - station or not - so
+     * track made one way towards the train beyond the sensor left it reaching no station, unasked.  It asks whether the
+     * train reaches a station the way it faces, on past every Point that is none.
+     *
+     * MUTATION: judge by the first Point ahead, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAOneWayRunPastASensorThatIsNoStationIsRefused() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 7, 3, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 161, 161, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 162, 162, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 163, 163, accessoryDecoderType.MM2, null);
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("RSA13-B1");
+
+        // ALPHA AND GAMMA STATIONS, the sensor between them none
+        session.setStation(new TileKey("main", 1, 1), true);
+        session.setStation(new TileKey("main", 5, 1), true);
+        session.setPointName(new TileKey("main", 1, 1), "Alpha");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+
+        TileKey gamma = new TileKey("main", 5, 1);
+
+        session.placeLocomotive(gamma, "B1 sensor train");
+        session.setFacing(gamma, org.traincontrol.automationui.TilePorts.Side.W);
+        session.rebuild();
+
+        // ONE WAY EAST BEYOND THE SENSOR: trains run only towards Gamma
+        session.setRunDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_A);
+
+        String refused = session.takeDirectionRefusal();
+
+        assertTrue(refused != null && refused.contains("B1 sensor train") && refused.contains("Gamma"), "track beyond a"
+            + " sensor that is no station was made one way against the train, leaving it reaching no station"
+            + " (RSA13-B1): " + refused);
+
+        assertEquals(session.getStore().getTileDirection(new TileKey("main", 2, 1), new RouteId(0, 0)), null, "a"
+            + " direction refused was written to the setup");
+    }
+
+    /**
+     * With no railway loaded, a train whose facing nothing records faces as the build stands it (RSA13-C1): the refusal
+     * read the setup's facing, none, so a train on a through station was not asked about, and track made one way towards
+     * the copy the build stands it on left it no way on.
+     *
+     * MUTATION: read the setup's facing alone, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testATrainWithNoFacingFacesAsTheBuildStandsIt() throws Exception
+    {
+        threeStationsInARow("RSA13-C1");
+
+        TileKey beta = new TileKey("main", 3, 1);
+
+        session.setPointName(new TileKey("main", 1, 1), "Alpha");
+        session.setPointName(beta, "Beta");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+
+        // A TRAIN ON BETA, ITS FACING NOT RECORDED, NO RAILWAY
+        session.placeLocomotive(beta, "C1 train");
+        session.rebuild();
+
+        // WHICH COPY THE BUILD STANDS IT ON, read from the build
+        String standsOn = null;
+
+        for (Object o : new org.json.JSONObject(session.buildConfiguration()).getJSONArray("points"))
+        {
+            org.json.JSONObject point = (org.json.JSONObject) o;
+
+            if (point.optJSONObject("loc") != null) standsOn = point.getString("name");
+        }
+
+        assertTrue(standsOn != null && standsOn.startsWith("Beta ("), "precondition: the build stands the train on no"
+            + " copy of Beta: " + standsOn);
+
+        // ONE WAY TOWARDS THAT COPY, from the side it faces
+        boolean west = standsOn.contains("westbound");
+
+        session.setRunDirection(new TileKey("main", west ? 2 : 4, 1), new RouteId(0, 0),
+            west ? Direction.TOWARD_A : Direction.TOWARD_B);
+
+        String refused = session.takeDirectionRefusal();
+
+        assertTrue(refused != null && refused.contains("C1 train"), "with no railway, track made one way towards the copy"
+            + " the build stands a train on - " + standsOn + " - was not refused (RSA13-C1): " + refused);
+    }
+
+    /**
      * A page renamed keeps the timetable legs and the roads through its squares with no name of their own (RSA5-B2):
      * such a square is named after its page, so a rename renamed its Points, and nothing carried the names stored.
      *

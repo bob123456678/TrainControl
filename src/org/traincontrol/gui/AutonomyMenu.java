@@ -489,8 +489,9 @@ public class AutonomyMenu extends JMenu
             // committed to it. A greyed item says the same thing before, and says it where the eye
             // already is - which is the difference between a rule and an obstacle.
             //
-            // While autonomy runs `guardWhileRunning` greys the rest of the menu with it, bar Autonomy Settings and
-            // Documentation (Adam, MT-613 and MT-626); this item asks the editor's own refusals as well, at rest.
+            // While autonomy runs `guardWhileRunning` greys the rest of the menu with it, bar Autonomy Settings,
+            // Documentation and the debug export (Adam, MT-613 and MT-626); this item asks the editor's own refusals as
+            // well, at rest.
             //
             // UXR-C13: this used to re-derive three of openLayoutEditor's four refusals by hand
             // ("chosen && !trainsMoving"), which covers isLocalLayout/session==null (via chosen) and
