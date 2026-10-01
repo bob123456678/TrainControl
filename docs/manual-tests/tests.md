@@ -30615,6 +30615,10 @@ Since round 30 (b609b854) the refusal looks along the whole way on, not only the
 
 Since round 31 (010de9ba) the refusal follows the train's whole way to the next station, past sensors that are no station (RSA13-B1).  The steps stand.
 
+**Claude, 2026-10-01.**
+
+Since round 32 (636c259c) the refusal walks the railway as autonomy runs it, from the copy the train stands on (RSA14-B1); closing the track past a sensor, or switching a link off there, is refused the same way, and the message says the change would leave the train no way on.  The steps stand; whether closing right ahead should be refused too is put to you.
+
 ---
 
 <a id="mt-632"></a>
