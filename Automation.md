@@ -289,7 +289,12 @@ Every one of these has a fuller description in **[the programmatic guide](Automa
 
 ## Configurations: what each one keeps, and what they share
 
-A configuration is one way of running your railway. `Autonomy` -> `Add a Configuration...` makes a new one from the diagram, and `Autonomy` -> `Manage Configurations` -> `Duplicate...` copies the one you have. Pick which one runs from the Autonomy menu.
+A configuration is one way of running your railway. There are two ways to make one:
+
+- `Autonomy` -> `Add a Configuration...` starts from nothing: no trains placed, every station rule and setting at its default, and no timetable. It shares the railway with the others like any configuration, and it becomes the one that runs.
+- `Autonomy` -> `Manage Configurations...` -> `Duplicate...` copies the one you have - where the trains stand now, its station rules, settings and timetable. The one you have stays chosen; pick the copy from the Autonomy menu when you want it.
+
+Neither can be done while autonomy is running.
 
 **Every configuration shares the railway itself:**
 
