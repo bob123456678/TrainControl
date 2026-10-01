@@ -2504,11 +2504,19 @@ written: listed in the timetable like any other and written back by every fold, 
 the page, across a restart, or while a page's file has not loaded.  **When a run reaches such an entry it stops there**
 - trains already under way finish their journeys - **and the window says which entry and why** (Adam, 2026-09-30:
 *"stop the timetable run upon encountering an invalid path, and let the user know"*; RSA9-B1): passed over, a train's
-later entries started where it was not.  Start Timetable asks where each train stands of its first entry the railway
-can run.  Ticked back in, the page's entries run again.  **Clear clears every entry** (RSA5-C1).  Only
+later entries started where it was not.  The dialog is shown whatever stop was pressed in an earlier run (RSA10-B1).
+Start Timetable asks where each train stands of its first entry before the one the run will stop at, and nothing
+past it (RSA10-B2).  Ticked back in, the page's entries run again.  **Clear clears every entry** (RSA5-C1).  Only
 a locomotive the database no longer has drops an entry at the load.  Builds of rounds 23 and 24 kept a page's entries in
 a list of their own; a configuration written then has them folded back into its timetable when it is read.
 `core.testLayoutTimetable`, `regression.testAnEditedPlacementSurvivesTheRebuild`,
+`regression.testNoSetupEditDuringARun`.
+
+**A simulation that is not simulating asks before any train is sent** (Adam, 2026-09-30: *"adding a warning popup when
+you start autonomy when the app is in simulate, and simulate isn't checked"*): every door that sends trains - Start,
+Start Timetable, Return Home, a hand send - asks, once its own refusals have passed, where TrainControl runs in a debug
+simulation and the autonomy setting Simulate is not ticked (RSA10-C1).  And a debug simulation starts with Echo Sent
+Commands on (Adam: *"auto-enable echo in simulate too"*), saying so where it had been turned off.
 `regression.testNoSetupEditDuringARun`.
 
 **Which pages autonomy uses is chosen at Autonomy > Pages with Autonomy Enabled**, refused while autonomy runs (MT-141)
@@ -2539,7 +2547,9 @@ knows goes into the configuration first, the reload after the import does not ca
 on the railway running is the railway's to say (OB-183) - the message names the trains it did not place, and how to put
 one down.  While autonomy runs every import is refused, as Delete is, before it asks for a file (RLU4-C1, RSA4-C5) -
 and every export, before it asks where (Adam, 2026-09-30, MT-601: *"Export should also only be allowed once we are
-stopped"*):
+stopped"*), and New Configuration, Rename and Add Configuration, before they ask a name (RSA10-A1).  At rest, New
+Configuration folds the running railway into the configuration first, so the copy has the trains where they are, and
+the configuration running stays the one the next start resumes (RSA10-A1, as RLD-C3 for an import):
 into the configuration in use the reload's capture took back what the import had just brought, and into another the
 fold after a declined reload read the running railway through names the import had changed.  And no import folds the running layout into the
 setup while a setup edit a run declined waits for its rebuild - neither the capture first nor the reload (RLD4-C3,

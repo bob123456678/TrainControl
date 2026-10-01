@@ -1452,6 +1452,75 @@ public class testAnEditedPlacementSurvivesTheRebuild
         }
     }
 
+    /**
+     * Start Timetable asks nothing of the entries past the one the run will stop at (RSA10-B2): the run stops at the
+     * first entry it cannot run, so a train whose only entry comes after it never sets off - and asked where it stands,
+     * the check refused the timetable, or sent the operator to stand a train where the run would never send it from.
+     *
+     * MUTATION: ask every entry the railway can run, past the stop too, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testStartTimetableAsksNothingPastTheEntryTheRunStopsAt() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("start-past-the-stop").toFile();
+
+        folder.deleteOnExit();
+
+        String other = null;
+
+        for (String name : model.getLocList())
+        {
+            if (!MOVED.equals(name) && other == null) other = name;
+        }
+
+        assertNotNull(other, "precondition: no second locomotive in the database");
+
+        org.traincontrol.automationui.AutonomySession session = twoPagesWithATimetable(folder, "past the stop", 8571, null);
+
+        try
+        {
+            // A THIRD ENTRY, after the one through the page that will be left out: another train, on the page in play
+            org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+            String[] z = edgeFrom(built, "Beta (westbound)", "Alpha");
+
+            assertNotNull(z, "precondition: no edge from Beta westward to Alpha");
+
+            org.json.JSONArray table = new org.json.JSONArray(String.valueOf(session.getGlobal("timetable")));
+
+            table.put(new org.json.JSONObject().put("loc", other).put("executionTime", 0L).put("secondsToNext", 0L)
+                .put("path", new org.json.JSONArray().put(new org.json.JSONObject().put("start", z[0]).put("end", z[1]))));
+
+            session.setGlobal("timetable", table);
+
+            session.setPageExcluded("second", true);
+            session.rebuild();
+
+            model.parseAuto(session.buildConfiguration());
+
+            Layout running = model.getAutoLayout();
+
+            assertEquals(running.getTimetable().size(), 3, "precondition: the railway did not keep the three entries");
+
+            assertFalse(running.getTimetable().get(1).isRunnable(), "precondition: the second entry can run");
+
+            // THE FIRST ENTRY'S TRAIN WHERE IT STARTS; the third's nowhere - the run stops before it
+            assertTrue(running.moveLocomotive(MOVED, running.getTimetable().get(0).getStart().getName(), false),
+                "precondition: " + MOVED + " not stood where its entry starts");
+
+            org.traincontrol.automation.TimetablePath notThere = TrainControlUI.aTrainNotAtItsStart(running);
+
+            assertNull(notThere, "Start Timetable asked where a train stands of an entry past the one the run stops at"
+                + " (RSA10-B2): " + notThere);
+        }
+        finally
+        {
+            new Layout(model).makeCurrent();
+        }
+    }
+
     /** One line of stations, one per sensor from the first given, starting that many columns in: its page. */
     private static org.traincontrol.base.LayoutDiagram aRowPage(String name, int offset, int firstSensor, int count)
         throws Exception

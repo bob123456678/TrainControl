@@ -2601,7 +2601,8 @@ public class testNoSetupEditDuringARun
      * Start Autonomy and Start Timetable, in a session started in simulation with Simulate not ticked in the autonomy
      * settings, warn first (Adam, 2026-09-30: "adding a warning popup when you start autonomy when the app is in simulate,
      * and simulate isn't checked") - the trains are sent and wait for sensors no simulation reports, so they start and
-     * never move.  Declined, nothing starts.
+     * never move.  Declined, nothing starts.  Asked of every door that sends trains, by the one gate - Return Home too
+     * (RSA10-C1).
      *
      * MUTATION: start without asking, and this fails.
      *
@@ -2666,10 +2667,13 @@ public class testNoSetupEditDuringARun
 
             try
             {
-                for (String door : new String[] {"startAutonomyActionPerformed", "executeTimetableActionPerformed"})
+                for (final String door : new String[] {"startAutonomyActionPerformed", "executeTimetableActionPerformed",
+                    "requestReturnToHome"})
                 {
-                    final java.lang.reflect.Method press =
-                        TrainControlUI.class.getDeclaredMethod(door, java.awt.event.ActionEvent.class);
+                    final boolean returnHome = "requestReturnToHome".equals(door);
+
+                    final java.lang.reflect.Method press = returnHome ? TrainControlUI.class.getMethod(door)
+                        : TrainControlUI.class.getDeclaredMethod(door, java.awt.event.ActionEvent.class);
 
                     press.setAccessible(true);
 
@@ -2679,7 +2683,7 @@ public class testNoSetupEditDuringARun
                     {
                         try
                         {
-                            press.invoke(ui[0], new Object[] {null});
+                            press.invoke(ui[0], returnHome ? new Object[0] : new Object[] {null});
                         }
                         catch (Exception e)
                         {
@@ -2826,7 +2830,8 @@ public class testNoSetupEditDuringARun
      * Start Timetable stops at an entry the railway cannot run, and the window says which and why (Adam, 2026-09-30:
      * "stop the timetable run upon encountering an invalid path, and let the user know").  Refused and passed over, the
      * train's later entries started where it was not, and the run stood for minutes before it gave up saying only that
-     * the track never became free (RSA9-B1).
+     * the track never became free (RSA9-B1).  And so after a Graceful Stop pressed earlier in the session, whose flag kept
+     * the dialog from being shown (RSA10-B1).
      *
      * MUTATION: say the run stopped without its reason, and this fails.
      *
@@ -2931,6 +2936,13 @@ public class testNoSetupEditDuringARun
             while (!ui[0].getModel().getPowerState() && System.currentTimeMillis() < until) Thread.sleep(50);
 
             assertTrue(ui[0].getModel().getPowerState(), "precondition: the power is not on");
+
+            // A GRACEFUL STOP PRESSED EARLIER IN THE SESSION (RSA10-B1)
+            java.lang.reflect.Field graceful = TrainControlUI.class.getDeclaredField("gracefulStopRequested");
+
+            graceful.setAccessible(true);
+
+            graceful.set(ui[0], true);
 
             // START TIMETABLE, somebody there to be told
             TrainControlUI.setUnattended(false);
@@ -3105,5 +3117,357 @@ public class testNoSetupEditDuringARun
 
         answering.setDaemon(true);
         answering.start();
+    }
+
+    /**
+     * New Configuration, Rename and Add Configuration wait for autonomy to stop, as Import, Export and Delete do
+     * (RSA10-A1): each wrote the setup during a run - New made its copy of where the trains stood before the run the
+     * configuration the next start resumes.  Refused before anything is asked.
+     *
+     * MUTATION: let New Configuration ask its name while autonomy runs, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheConfigurationDoorsWaitForAutonomyToStop() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
+
+        staging.setAccessible(true);
+
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final AutonomySession session = ui[0].getAutonomySession();
+
+            List<String> namesBefore = new ArrayList<>(session.getStore().getConfigurationNames());
+
+            String activeBefore = session.getStore().getActiveConfiguration();
+
+            // DURING A RUN
+            staging.set(ui[0], true);
+
+            final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
+
+            answeringWith(asked, going, "RSA10 copy");
+
+            String refusal = I18n.t("autolayout.errorCannotEditWhileRunning");
+
+            String prompt = I18n.t("autosetup.ui.promptConfigurationName");
+
+            for (final String door : new String[] {"duplicate", "rename", "initialize"})
+            {
+                int before = asked.size();
+
+                SwingUtilities.invokeAndWait(() ->
+                {
+                    try
+                    {
+                        org.traincontrol.gui.AutonomyViewerPanel.class.getMethod(door)
+                            .invoke(ui[0].getAutonomyViewerPanel());
+                    }
+                    catch (Exception e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
+                });
+
+                for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+                List<String> said = new ArrayList<>(asked.subList(before, asked.size()));
+
+                assertFalse(said.contains(prompt), door + " asked for a name while autonomy ran (RSA10-A1): " + said);
+
+                assertTrue(said.contains(refusal), door + " did not say it waits for autonomy to stop (RSA10-A1): "
+                    + said);
+            }
+
+            assertEquals(new ArrayList<>(session.getStore().getConfigurationNames()), namesBefore, "a configuration door"
+                + " changed the configurations while autonomy ran (RSA10-A1)");
+
+            assertEquals(session.getStore().getActiveConfiguration(), activeBefore, "a configuration door changed the"
+                + " configuration the next start resumes while autonomy ran (RSA10-A1)");
+        }
+        finally
+        {
+            going.set(false);
+
+            if (ui[0] != null) staging.set(ui[0], false);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * New Configuration after a run copies where the trains are, and leaves the configuration running the one the next
+     * start resumes (RSA10-A1): it copied the file's record - each train where it stood before the run - and made the
+     * copy the configuration to resume, while the exit's fold went into the one running.  The next start then placed a
+     * train on a square it had left.
+     *
+     * MUTATION: copy the file as it is, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testANewConfigurationAfterARunCopiesWhereTheTrainsAre() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final AutonomySession session = ui[0].getAutonomySession();
+
+            final String running = ui[0].getActiveDiagramConfiguration();
+
+            assertNotNull(running, "precondition: no configuration runs");
+
+            // A TRAIN THE RUN MOVED, on the railway alone
+            final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
+
+            org.traincontrol.automation.Point from = null;
+            org.traincontrol.automation.Point to = null;
+
+            for (org.traincontrol.automation.Point point : railway.getPoints())
+            {
+                if (from == null && point.getCurrentLocomotive() != null) from = point;
+            }
+
+            assertNotNull(from, "precondition: no train stands on the railway");
+
+            for (org.traincontrol.automation.Point point : railway.getPoints())
+            {
+                if (to == null && point.isDestination() && point.isActive() && point.getCurrentLocomotive() == null
+                    && !point.isSamePlaceAs(from) && point.getSquare() != null)
+                {
+                    to = point;
+                }
+            }
+
+            assertNotNull(to, "precondition: no empty station on the railway");
+
+            final String moved = from.getCurrentLocomotive().getName();
+            final String toName = to.getName();
+            final String toSquare = to.getSquare();
+
+            SwingUtilities.invokeAndWait(() -> railway.moveLocomotive(moved, toName, false));
+
+            // NEW CONFIGURATION, AT REST, named "RSA10 copy"
+            final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
+
+            answeringWith(asked, going, "RSA10 copy");
+
+            SwingUtilities.invokeAndWait(() -> ui[0].getAutonomyViewerPanel().duplicate());
+
+            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertTrue(session.getStore().getConfigurationNames().contains("RSA10 copy"), "precondition: no copy was"
+                + " made: " + asked);
+
+            assertEquals(session.getStore().getActiveConfiguration(), running, "New Configuration made the copy the"
+                + " configuration the next start resumes, while the window runs " + running + " (RSA10-A1)");
+
+            org.json.JSONObject copy = session.getStore().getConfiguration("RSA10 copy").getJSONObject("points");
+
+            org.json.JSONObject there = copy.optJSONObject(toSquare);
+
+            org.json.JSONObject loc = there == null ? null : there.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
+
+            assertTrue(loc != null && moved.equals(loc.optString("name")), "the copy does not have " + moved + " where the"
+                + " run left it, on " + toSquare + " (RSA10-A1)");
+        }
+        finally
+        {
+            going.set(false);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * Answers every question until `going` is lowered: an input with this value, anything else with No - and the words
+     * of each into `asked`.
+     */
+    private static void answeringWith(final List<String> asked, final java.util.concurrent.atomic.AtomicBoolean going,
+        final String input)
+    {
+        Thread answering = new Thread(() ->
+        {
+            java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
+            while (going.get())
+            {
+                try
+                {
+                    Thread.sleep(150);
+                }
+                catch (InterruptedException stop)
+                {
+                    return;
+                }
+
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (!window.isShowing() || !(window instanceof javax.swing.JDialog)) continue;
+
+                    for (Component c : ((javax.swing.JDialog) window).getContentPane().getComponents())
+                    {
+                        if (!(c instanceof javax.swing.JOptionPane) || !handled.add(c)) continue;
+
+                        final javax.swing.JOptionPane pane = (javax.swing.JOptionPane) c;
+
+                        asked.add(String.valueOf(pane.getMessage()));
+
+                        SwingUtilities.invokeLater(() ->
+                        {
+                            if (pane.getWantsInput())
+                            {
+                                pane.setInputValue(input);
+                                pane.setValue(Integer.valueOf(javax.swing.JOptionPane.OK_OPTION));
+                            }
+                            else
+                            {
+                                Object[] options = pane.getOptions();
+
+                                pane.setValue(options != null && options.length > 1 ? options[1]
+                                    : Integer.valueOf(javax.swing.JOptionPane.NO_OPTION));
+                            }
+                        });
+                    }
+                }
+            }
+        }, "answering with " + input);
+
+        answering.setDaemon(true);
+        answering.start();
+    }
+
+    /**
+     * Start Autonomy forgets a Graceful Stop pressed in an earlier run (RSA10-B1): the flag was cleared only by Return
+     * Home's press, so a later run read as one whose stop was still being carried out.
+     *
+     * MUTATION: keep the earlier stop's flag at Start Autonomy's press, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testStartAutonomyForgetsAnEarlierGracefulStop() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        boolean echoWas = org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            // THE POWER ON, which the gate asks
+            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
+
+            ui[0].getModel().go();
+
+            long until = System.currentTimeMillis() + 5000;
+
+            while (!ui[0].getModel().getPowerState() && System.currentTimeMillis() < until) Thread.sleep(50);
+
+            assertTrue(ui[0].getModel().getPowerState(), "precondition: the power is not on");
+
+            // A GRACEFUL STOP PRESSED IN AN EARLIER RUN
+            final java.lang.reflect.Field graceful = TrainControlUI.class.getDeclaredField("gracefulStopRequested");
+
+            graceful.setAccessible(true);
+
+            graceful.set(ui[0], true);
+
+            final java.lang.reflect.Method press =
+                TrainControlUI.class.getDeclaredMethod("startAutonomyActionPerformed", java.awt.event.ActionEvent.class);
+
+            press.setAccessible(true);
+
+            final boolean[] after = new boolean[1];
+
+            answeringYes(() ->
+            {
+                try
+                {
+                    press.invoke(ui[0], new Object[] {null});
+
+                    after[0] = graceful.getBoolean(ui[0]);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            assertFalse(after[0], "Start Autonomy kept the Graceful Stop of an earlier run (RSA10-B1)");
+        }
+        finally
+        {
+            if (ui[0] != null && ui[0].getModel().hasAutoLayout()) ui[0].getModel().getAutoLayout().stopLocomotives();
+
+            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = echoWas;
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
     }
 }

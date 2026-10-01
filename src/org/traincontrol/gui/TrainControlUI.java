@@ -3182,7 +3182,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Written, not reconciled - see the caller in resetAutonomySession for why that matters on the
      * editor path.
      */
-    private void captureRunningLayout()
+    void captureRunningLayout()
     {
         captureRunningLayout(false);
     }
@@ -6555,8 +6555,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Asks before a run that would not move - see `wouldRunUnsimulated` - Start anyway or not, not the default (Adam,
      * 2026-09-30: "adding a warning popup when you start autonomy when the app is in simulate, and simulate isn't
-     * checked").  Asked before the gate, whose refusal of the power in a simulation that does not echo would hide it.  Not
-     * asked of a run nobody attends.
+     * checked").  Asked by the one gate once it has passed (`refusedToSendATrain`, RSA10-C1).  Not asked of a run nobody
+     * attends.
      *
      * @return true where the operator declined
      */
@@ -6581,7 +6581,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         final String why = whyNoTrainMayBeSent(startingAutonomy);
 
-        if (why == null) return false;
+        // AND A SIMULATION THAT IS NOT SIMULATING, once the gate has passed (Adam, 2026-09-30; RSA10-C1): every door that
+        // sends trains asks it - Return Home and the hand sends too - and a press the gate refuses does not.  On the event
+        // thread, where the doors ask.
+        if (why == null) return javax.swing.SwingUtilities.isEventDispatchThread() && declinedToRunUnsimulated();
 
         if (javax.swing.SwingUtilities.isEventDispatchThread())
         {
@@ -27665,11 +27668,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         //
         // Refused BEFORE the button is greyed, so a refusal cannot leave it dead.  THROUGH THE ONE GATE (Adam, 2026-09-29):
         // the editor, the setup - a timetable run drives over the railway the setup built, through the same dispatch as a
-        // hand send (MT-263, TDU-B1) - and the power.  A simulation that is not simulating asked about first (Adam,
-        // 2026-09-30) - see `declinedToRunUnsimulated`.
-        if (declinedToRunUnsimulated()) return;
-
+        // hand send (MT-263, TDU-B1) - and the power; and the Simulate warning, once it has passed (RSA10-C1).
         if (refusedToSendATrain(false)) return;
+
+        // A GRACEFUL STOP OF AN EARLIER RUN EXCUSES NOTHING IN THIS ONE (RSA10-B1): its flag kept the dialog that says
+        // where and why a run stopped from being shown
+        this.gracefulStopRequested = false;
 
         this.executeTimetable.setEnabled(false);
 
@@ -27866,10 +27870,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // it runs trains over a diagram that is still being changed.
         // THROUGH THE ONE GATE (Adam, 2026-09-29): the editor, the setup in Start's own words, and the power - asked here,
         // before the button is greyed and the worker started, rather than by the worker (SPEC-C4).  A simulation that is
-        // not simulating asked about first (Adam, 2026-09-30) - see `declinedToRunUnsimulated`.
-        if (declinedToRunUnsimulated()) return;
-
+        // The Simulate warning is asked by the gate, once it has passed (RSA10-C1) - see `refusedToSendATrain`.
         if (refusedToSendATrain(true)) return;
+
+        // A GRACEFUL STOP OF AN EARLIER RUN EXCUSES NOTHING IN THIS ONE (RSA10-B1), as Return Home's press says of its own
+        this.gracefulStopRequested = false;
 
         // AND NOT NON-ATOMIC OVER A RAILWAY THAT COULD RELEASE TRACK UNDER A TRAIN (VD16-B2).
         //
@@ -30072,9 +30077,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             TimetablePath ttp = layout.getTimetable().get(i);
 
-            // NOT AN ENTRY THE RAILWAY CANNOT RUN: it is refused when the run reaches it, and has no start on the railway
-            // for its train to stand at (Adam, 2026-09-30)
-            if (!ttp.isRunnable() || seen.contains(ttp.getLoc())) continue;
+            // NOTHING FROM THE FIRST ENTRY THE RAILWAY CANNOT RUN: the run stops there and says why (Adam, 2026-09-30), so
+            // no entry after it sets off - asked, a train was sent to stand where the run would never send it from
+            // (RSA10-B2)
+            if (!ttp.isRunnable()) break;
+
+            if (seen.contains(ttp.getLoc())) continue;
 
             Point locLocation = layout.getLocomotiveLocation(ttp.getLoc());
 

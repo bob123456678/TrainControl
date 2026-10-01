@@ -945,6 +945,14 @@ public class AutonomyViewerPanel extends JPanel
      */
     public void initialize()
     {
+        // NOT WHILE AUTONOMY RUNS (RSA10-A1): it writes a configuration, and may tick pages out, under the railway
+        if (ui.isAutonomyBusy())
+        {
+            JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
+
+            return;
+        }
+
         String name = (String) JOptionPane.showInputDialog(ui,
             I18n.t("autosetup.ui.promptConfigurationName"),
             I18n.t("autosetup.ui.menuInitialize"),
@@ -1567,6 +1575,14 @@ public class AutonomyViewerPanel extends JPanel
 
     public void duplicate()
     {
+        // NOT WHILE AUTONOMY RUNS, as Import, Export and Delete are not (RSA10-A1) - before anything is asked
+        if (ui.isAutonomyBusy())
+        {
+            JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
+
+            return;
+        }
+
         String from = selected();
 
         String name = (String) JOptionPane.showInputDialog(ui,
@@ -1575,6 +1591,10 @@ public class AutonomyViewerPanel extends JPanel
             JOptionPane.PLAIN_MESSAGE, null, null, suggestedConfigurationName());
 
         if (name == null || name.trim().isEmpty()) return;
+
+        // WHERE THE TRAINS ARE, folded into the configuration running first (RSA10-A1): its file holds where they stood
+        // before the last run, and the copy took that
+        ui.captureRunningLayout();
 
         try
         {
@@ -1592,7 +1612,11 @@ public class AutonomyViewerPanel extends JPanel
             return;
         }
 
-        session().getStore().setActiveConfiguration(name.trim());
+        // THE CONFIGURATION RUNNING STAYS THE ONE THE NEXT START RESUMES (RSA10-A1), as after an import (RLD-C3): the window
+        // runs it and the exit folds into it.  The copy becomes the one to resume only where none runs.
+        String inUse = ui.getActiveDiagramConfiguration();
+
+        session().getStore().setActiveConfiguration(inUse != null ? inUse : name.trim());
 
         save();
         refresh();
@@ -1600,6 +1624,14 @@ public class AutonomyViewerPanel extends JPanel
 
     public void rename()
     {
+        // NOT WHILE AUTONOMY RUNS (RSA10-A1): it renames the running configuration's file under the railway
+        if (ui.isAutonomyBusy())
+        {
+            JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
+
+            return;
+        }
+
         String from = selected();
 
         if (from == null) return;
