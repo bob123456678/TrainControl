@@ -2627,7 +2627,7 @@ Comments in this codebase cite review findings constantly - `RGD-B2`, `MON-C6`, 
 locomotive but `DY3-C7` is a finding - because that is how a comment says *why* rather than *what*.
 The documents those ids came from are gone. **The findings are not.**
 
-All of them are in `docs/manual-tests/triage.db`, in the `finding` table - **4,992 rows for 4,635
+All of them are in `docs/manual-tests/triage.db`, in the `finding` table - **5,002 rows for 4,645
 findings**, because a finding written up in two documents has a row for each, and reading the row count
 as a finding count is a mistake three documents have made (VD15-T5) - with the document they
 came from, the line in it, the severity, what it was about, the file and line of the evidence, the

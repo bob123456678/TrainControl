@@ -45,8 +45,13 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-619](#mt-619) | 2026-09-30 | A page's timetable entries stay listed while the page is left out | fixed unvalidated | Adam 2026-09-30, RSA4-B2 |
 | [MT-622](#mt-622) | 2026-09-30 | Start Timetable in a simulation with Simulate not ticked warns first | fixed unvalidated | Adam 2026-09-30 |
 | [MT-624](#mt-624) | 2026-09-30 | A timetable stops at an entry through a page left out, and says why | fixed unvalidated | RSA9-B1, Adam 2026-09-30 |
+| [MT-626](#mt-626) | 2026-09-30 | Duplicate, Rename and Add a Configuration wait for autonomy to stop | fixed unvalidated | RSA10-A1 |
+| [MT-627](#mt-627) | 2026-09-30 | Duplicate after a run copies where the trains are, and the next start resumes the one running | fixed unvalidated | RSA10-A1 |
+| [MT-628](#mt-628) | 2026-09-30 | A timetable that stops at an entry through a page left out says why, after an earlier Graceful Stop | fixed unvalidated | RSA10-B1 |
+| [MT-629](#mt-629) | 2026-09-30 | Start Timetable after such a stop says why again, rather than asking a train to be moved | fixed unvalidated | RSA10-B2 |
+| [MT-630](#mt-630) | 2026-09-30 | Return Home in a simulation with Simulate not ticked warns first | fixed unvalidated | RSA10-C1 |
 
-Everything else - 607 of 625 - needs nothing from you unless the area changes again:
+Everything else - 607 of 630 - needs nothing from you unless the area changes again:
 475 **fixed validated** and 132 **superseded**.
 
 ---
@@ -30304,5 +30309,129 @@ Your note on MT-601: *"Export should also only be allowed once we are stopped."*
 **Claude, 2026-09-30.**
 
 Validated on your *Works* of 2026-09-30.
+
+---
+
+<a id="mt-626"></a>
+
+### MT-626 - 2026-09-30 - Duplicate, Rename and Add a Configuration wait for autonomy to stop
+
+**Disposition:** fixed unvalidated
+**From:** RSA10-A1
+
+**Written:** 2026-09-30
+
+From the tenth release validator (RSA10).  New Configuration during a run made a copy of where the trains stood
+before it the configuration the next start resumed.
+
+**Steps**
+
+1. Start autonomy.  While it runs, choose **Autonomy > Manage Configurations > Duplicate...**, then **Autonomy > Manage Configurations > Rename...**,
+   then **Autonomy > Add a Configuration...**.
+
+**Expected**
+
+- Each says at once that it cannot be done while running, and asks for no name.
+
+*What this is:* `regression.testNoSetupEditDuringARun.testTheConfigurationDoorsWaitForAutonomyToStop`.
+
+---
+
+<a id="mt-627"></a>
+
+### MT-627 - 2026-09-30 - Duplicate after a run copies where the trains are, and the next start resumes the one running
+
+**Disposition:** fixed unvalidated
+**From:** RSA10-A1
+
+**Written:** 2026-09-30
+
+From the tenth release validator (RSA10).
+
+**Steps**
+
+1. Run autonomy until a train has moved to another station, and stop.
+2. Choose **Autonomy > Manage Configurations > Duplicate...** and name it.
+3. Close TrainControl and open it again.
+
+**Expected**
+
+- After step 3 the configuration that was running is the one loaded, with the train where it stopped.  Loading the new
+  configuration shows the train there too.
+
+*What this is:* `regression.testNoSetupEditDuringARun.testANewConfigurationAfterARunCopiesWhereTheTrainsAre`.
+
+---
+
+<a id="mt-628"></a>
+
+### MT-628 - 2026-09-30 - A timetable that stops at an entry through a page left out says why, after an earlier Graceful Stop
+
+**Disposition:** fixed unvalidated
+**From:** RSA10-B1
+
+**Written:** 2026-09-30
+
+From the tenth release validator (RSA10).
+
+**Steps**
+
+1. Start a timetable and press **Graceful Stop** while it runs.
+2. Leave a page with timetable entries out of autonomy (as MT-624), and press **Start Timetable** again.
+
+**Expected**
+
+- When the run reaches the entry through the page left out, it stops and a message says which entry and why - as MT-624.
+
+*What this is:* `regression.testNoSetupEditDuringARun.testATimetableStoppedAtAnEntryItCannotRunSaysWhy`.
+
+---
+
+<a id="mt-629"></a>
+
+### MT-629 - 2026-09-30 - Start Timetable after such a stop says why again, rather than asking a train to be moved
+
+**Disposition:** fixed unvalidated
+**From:** RSA10-B2
+
+**Written:** 2026-09-30
+
+From the tenth release validator (RSA10).
+
+**Steps**
+
+1. As MT-624: a timetable that stops at an entry through a page left out.  After it stops, press **Start Timetable**
+   again.
+
+**Expected**
+
+- It stops at the same entry and says why.  It does not ask for a train to be moved to a station the run would only
+  reach after that entry.
+
+*What this is:* `regression.testAnEditedPlacementSurvivesTheRebuild.testStartTimetableAsksNothingPastTheEntryTheRunStopsAt`.
+
+---
+
+<a id="mt-630"></a>
+
+### MT-630 - 2026-09-30 - Return Home in a simulation with Simulate not ticked warns first
+
+**Disposition:** fixed unvalidated
+**From:** RSA10-C1
+
+**Written:** 2026-09-30
+
+From the tenth release validator (RSA10), beside MT-621 and MT-622.
+
+**Steps**
+
+1. Start TrainControl in simulation.  On the Auto tab's autonomy settings, untick **Simulate**.
+2. Press **Return Home**.
+
+**Expected**
+
+- The same warning as MT-621.  No sends no train home.
+
+*What this is:* `regression.testNoSetupEditDuringARun.testStartingUnsimulatedInASimulationWarnsFirst`.
 
 ---
