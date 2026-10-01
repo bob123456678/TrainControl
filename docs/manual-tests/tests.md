@@ -27,20 +27,18 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-604](#mt-604) | 2026-09-30 | Clear also clears the timetable entries of a page ticked out | fixed unvalidated | RSA5-C1 |
-| [MT-605](#mt-605) | 2026-09-30 | A direction is refused under a train facing against it | fixed unvalidated | RSA5-A2 |
 | [MT-606](#mt-606) | 2026-09-30 | A link is not switched off under a train that came in through it | fixed unvalidated | RSA6-A3, RSA6-A1 |
 | [MT-607](#mt-607) | 2026-09-30 | A dead end is not made one way away from a train facing the buffer | fixed unvalidated | RSA6-B3 |
 | [MT-611](#mt-611) | 2026-09-30 | A dead end is not made two way under a train facing out of it | fixed unvalidated | RSA7-B1 |
 | [MT-612](#mt-612) | 2026-09-30 | A train at a one-way dead end does not block directions elsewhere | fixed unvalidated | RSA7-B1 |
-| [MT-613](#mt-613) | 2026-09-30 | The Autonomy menu's page ticks wait for autonomy to stop | fixed unvalidated | RSA8-C1, RSA7-B2 |
-| [MT-624](#mt-624) | 2026-09-30 | A timetable stops at an entry through a page left out, and says why | fixed unvalidated | RSA9-B1, Adam 2026-09-30 |
-| [MT-626](#mt-626) | 2026-09-30 | Duplicate, Rename and Add a Configuration wait for autonomy to stop | fixed unvalidated | RSA10-A1 |
 | [MT-627](#mt-627) | 2026-09-30 | Duplicate after a run copies where the trains are, and the next start resumes the one running | fixed unvalidated | RSA10-A1 |
-| [MT-628](#mt-628) | 2026-09-30 | A timetable that stops at an entry through a page left out says why, after an earlier Graceful Stop | fixed unvalidated | RSA10-B1 |
+| [MT-631](#mt-631) | 2026-09-30 | A one-way run against a train standing at a station is refused | fixed unvalidated | MT-605 |
+| [MT-632](#mt-632) | 2026-09-30 | A click on the track beside a train goes on to the next direction allowed | fixed unvalidated | MT-605 |
+| [MT-633](#mt-633) | 2026-09-30 | The Autonomy menu greys while autonomy runs, saying why | fixed unvalidated | MT-613 |
+| [MT-634](#mt-634) | 2026-09-30 | A page left out greys Auto and Manual with the tools | fixed unvalidated | FR-105 |
 
-Everything else - 619 of 630 - needs nothing from you unless the area changes again:
-487 **fixed validated** and 132 **superseded**.
+Everything else - 625 of 634 - needs nothing from you unless the area changes again:
+492 **fixed validated** and 133 **superseded**.
 
 ---
 
@@ -29709,7 +29707,7 @@ Closed on my end, as you asked on 2026-09-30 (*"perform all the timetable tests 
 
 ### MT-604 - 2026-09-30 - Clear also clears the timetable entries of a page ticked out
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA5-C1
 
 **Written:** 2026-09-30
@@ -29728,13 +29726,17 @@ From the fifth release validator (RSA5), taken out of MT-598.
 
 *What this is:* `regression.testTheImportDoorReadsAnOldFile.testClearEmptiesTheTimetableTheConfigurationKeeps`.
 
+**Claude, 2026-10-01.**
+
+Closed on my end, as you asked on 2026-09-30 (*"perform all the timetable tests that you can on your end, and close out entries accordingly"*): `regression.testTheImportDoorReadsAnOldFile.testClearEmptiesTheTimetableTheConfigurationKeeps` passed in my run of a5675105's code (the battery's run of its class ran out of memory before reaching it).
+
 ---
 
 <a id="mt-605"></a>
 
 ### MT-605 - 2026-09-30 - A direction is refused under a train facing against it
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** RSA5-A2
 
 **Written:** 2026-09-30
@@ -29759,6 +29761,10 @@ From the fifth release validator (RSA5), taken out of MT-598.
 The guard applies when you click, but the "trains may depart" menu does not enforce the same limitation.  Also, when the warning is shown and the tile is clicked, continue cycling through the valid options, rather than just stalling on the error each time.
 
 *Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-01.**
+
+Both halves of your note are built in round 29 (83ba2fca): the menu now refuses a one-way run against the train too, on your answer *"Refuse it too"* - MT-631 - and the click goes on to the next direction allowed - MT-632.  In my tests the click and the menu had refused the same choices; what the menu let through was the track ahead of the train made one way towards it, which is MT-631's step 1.
 
 ---
 
@@ -29961,7 +29967,7 @@ refused every direction on the railway.
 
 ### MT-613 - 2026-09-30 - The Autonomy menu's page ticks wait for autonomy to stop
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA8-C1, RSA7-B2
 
 **Written:** 2026-09-30
@@ -29984,6 +29990,10 @@ not show, so the Autonomy menu is the door.
 works, but why not grey out the entire menu?  also, the "edit autonomy on page" tooltip has a large whitespace on the right side of the mssage
 
 *Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-01.**
+
+Validated on your *Works, with notes* of 2026-09-30; the notes are built in round 29 (83ba2fca) and go on as MT-633.
 
 ---
 
@@ -30344,7 +30354,7 @@ Validated on your *Works* of 2026-09-30.
 
 ### MT-624 - 2026-09-30 - A timetable stops at an entry through a page left out, and says why
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA9-B1, Adam 2026-09-30
 
 **Written:** 2026-09-30
@@ -30365,6 +30375,10 @@ place of MT-620, which expected the run to go on.
 
 *What this is:* `regression.testNoSetupEditDuringARun.testATimetableStoppedAtAnEntryItCannotRunSaysWhy` and
 `core.testLayoutTimetable.testAnEntryTheRailwayCannotRunStopsTheRunAndSaysWhy`.
+
+**Claude, 2026-10-01.**
+
+Closed on my end, as you asked on 2026-09-30 (*"perform all the timetable tests that you can on your end, and close out entries accordingly"*): `regression.testNoSetupEditDuringARun.testATimetableStoppedAtAnEntryItCannotRunSaysWhy` passed in my run of a5675105's code, and `core.testLayoutTimetable.testAnEntryTheRailwayCannotRunStopsTheRunAndSaysWhy` in its battery (the window claim's red there came while your app ran beside it).
 
 ---
 
@@ -30404,7 +30418,7 @@ Validated on your *Works* of 2026-09-30.
 
 ### MT-626 - 2026-09-30 - Duplicate, Rename and Add a Configuration wait for autonomy to stop
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA10-A1
 
 **Written:** 2026-09-30
@@ -30428,6 +30442,14 @@ before it the configuration the next start resumed.
 works, but why not grey out the whole menu while running?
 
 *Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-01.**
+
+Validated on your *Works, with notes* of 2026-09-30; the notes are built in round 29 (83ba2fca) and go on as MT-633.
+
+**Claude, 2026-10-01.**
+
+Step 1's last item (RSA11-C3): while a configuration is loaded, **Add a Configuration...** is under **Autonomy > Manage Configurations**, beside Duplicate and Rename - it stands on the Autonomy menu itself only where there is no configuration.
 
 ---
 
@@ -30461,7 +30483,7 @@ From the tenth release validator (RSA10).
 
 ### MT-628 - 2026-09-30 - A timetable that stops at an entry through a page left out says why, after an earlier Graceful Stop
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA10-B1
 
 **Written:** 2026-09-30
@@ -30478,6 +30500,10 @@ From the tenth release validator (RSA10).
 - When the run reaches the entry through the page left out, it stops and a message says which entry and why - as MT-624.
 
 *What this is:* `regression.testNoSetupEditDuringARun.testATimetableStoppedAtAnEntryItCannotRunSaysWhy`.
+
+**Claude, 2026-10-01.**
+
+Closed on my end, as you asked on 2026-09-30 (*"perform all the timetable tests that you can on your end, and close out entries accordingly"*): `regression.testNoSetupEditDuringARun.testATimetableStoppedAtAnEntryItCannotRunSaysWhy` passed in my run of a5675105's code (its red in the battery came while your app ran beside it).
 
 ---
 
@@ -30539,5 +30565,111 @@ From the tenth release validator (RSA10), beside MT-621 and MT-622.
 **Claude, 2026-09-30.**
 
 Validated on your *Works* of 2026-09-30.
+
+---
+
+<a id="mt-631"></a>
+
+### MT-631 - 2026-09-30 - A one-way run against a train standing at a station is refused
+
+**Disposition:** fixed unvalidated
+**From:** MT-605
+
+**Written:** 2026-09-30
+
+Your answer of 2026-09-30 on MT-605: *"Refuse it too"*.  Only a direction that left the train no place facing its
+way was refused, so the track ahead of a train could be made one way towards it.
+
+**Steps**
+
+1. Stand a train on a two-way station.  In the autonomy editor, right-click the track on the side the train faces and,
+   under **Trains May Depart...**, choose the **One Way, Toward** the station.
+2. Under the same menu, choose **Closed - No Trains** for that track instead.
+
+**Expected**
+
+- Step 1 is refused: a message names the train and the station and says to move the train first; the track stays as
+  it was.
+- Step 2 is allowed - a dead end, which the train turns round at.
+
+*What this is:* `core.testAutonomyDiagramSession.testAOneWayRunAgainstAStandingTrainIsRefused`.
+
+---
+
+<a id="mt-632"></a>
+
+### MT-632 - 2026-09-30 - A click on the track beside a train goes on to the next direction allowed
+
+**Disposition:** fixed unvalidated
+**From:** MT-605
+
+**Written:** 2026-09-30
+
+Your words, 2026-09-30, on MT-605: *"when the warning is shown and the tile is clicked, continue cycling through the
+valid options, rather than just stalling on the error each time."*
+
+**Steps**
+
+1. Stand a train on a two-way station.  In the autonomy editor, click the track beside it several times.
+
+**Expected**
+
+- The track steps through the directions the train allows, skipping any it does not, with no message; a message comes
+  only where no other direction is allowed.
+
+*What this is:* `core.testAutonomyDiagramSession.testAClickPassesOverADirectionRefusedUnderATrain` and
+`testAClickRoundAJunctionPassesOverACombinationRefusedUnderATrain`.
+
+---
+
+<a id="mt-633"></a>
+
+### MT-633 - 2026-09-30 - The Autonomy menu greys while autonomy runs, saying why
+
+**Disposition:** fixed unvalidated
+**From:** MT-613
+
+**Written:** 2026-09-30
+
+Your notes of 2026-09-30, on MT-613 and MT-626: *"why not grey out the whole menu while running?"*, and *"the 'edit
+autonomy on page' tooltip has a large whitespace on the right side of the message"*.
+
+**Steps**
+
+1. Start autonomy and open the **Autonomy** menu.  Hover over a greyed item.
+2. Stop autonomy, wait for the trains to stop, and open the menu again.
+
+**Expected**
+
+- In step 1 the configurations, Manage Configurations, Edit Autonomy on Page and Pages with Autonomy Enabled are greyed,
+  each saying on one line that it waits for autonomy to stop; Autonomy Settings and Documentation stay live.
+- In step 2 they are live again.
+
+*What this is:* `regression.testNoSetupEditDuringARun.testTheAutonomyMenuIsGreyedWhileAutonomyRuns`.
+
+---
+
+<a id="mt-634"></a>
+
+### MT-634 - 2026-09-30 - A page left out greys Auto and Manual with the tools
+
+**Disposition:** fixed unvalidated
+**From:** FR-105
+
+**Written:** 2026-09-30
+
+Your request of 2026-09-30 (FR-105): *"when a page is excluded in the autonomy editor, also disable/grey out the
+auto/manual radio buttons"*.
+
+**Steps**
+
+1. In the autonomy editor, tick **Exclude Page**, then untick it.
+
+**Expected**
+
+- While it is ticked, Auto and Manual are greyed along with **Test a path** and **Why not Moving?**; unticked, all come
+  back.
+
+*What this is:* `core.testAutonomyDiagramSession.testAPageLeftOutGreysThePathType`.
 
 ---
