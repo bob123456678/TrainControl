@@ -43,8 +43,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-616](#mt-616) | 2026-09-30 | Ctrl+Z after moving stations keeps the timetable on them | fixed unvalidated | RSA8-B2 |
 | [MT-617](#mt-617) | 2026-09-30 | Cancel after moving stations keeps the timetable on them | fixed unvalidated | RSA8-B2 |
 | [MT-618](#mt-618) | 2026-09-30 | Moving stations and saving keeps the timetable on them | fixed unvalidated | RSA8-B2 |
+| [MT-619](#mt-619) | 2026-09-30 | A page's timetable entries stay listed while the page is left out | fixed unvalidated | Adam 2026-09-30, RSA4-B2 |
+| [MT-620](#mt-620) | 2026-09-30 | An entry through a page left out is refused when the timetable runs, and the rest run | fixed unvalidated | Adam 2026-09-30 |
 
-Everything else - 602 of 618 - needs nothing from you unless the area changes again:
+Everything else - 602 of 620 - needs nothing from you unless the area changes again:
 471 **fixed validated** and 131 **superseded**.
 
 ---
@@ -29680,6 +29682,10 @@ of a page ticked out: *"is it reliable?"*  Since round 23 they are kept in a lis
 
 *What this is:* `core.testAutonomyDiagramSession.testAPageOutKeepsItsEntriesThroughAnEdit`.
 
+**Claude, 2026-09-30.**
+
+Since round 25 (your ruling of 30 September, "Just keep the entries") a page's entries stay in the timetable while the page is out, rather than in a list of their own; the steps and the expected result still hold.  The claim it names was retired with that list: `regression.testAnEditedPlacementSurvivesTheRebuild.testAPageOutKeepsItsEntriesThroughTheLoadAndTheFold` is the one now.
+
 ---
 
 <a id="mt-604"></a>
@@ -29999,6 +30005,10 @@ kept aside for it.
 *What this is:* `regression.testNoSetupEditDuringARun.testAPageTickedBackInFromTheAutonomyMenuKeepsItsEntries` and
 `core.testAutonomyDiagramSession.testAFindingsCheckBringsNoEntryBack`.
 
+**Claude, 2026-09-30.**
+
+Since round 25 (your ruling of 30 September, "Just keep the entries") a page's entries stay in the timetable while the page is out, rather than in a list of their own; the steps and the expected result still hold.  Of the two claims it names, the window claim still drives this through the Autonomy menu; the other was retired with that list.
+
 ---
 
 <a id="mt-616"></a>
@@ -30075,5 +30085,59 @@ stations now on their old squares.
 - The entry still runs between the same two stations.
 
 *What this is:* `regression.testAnEditedPlacementSurvivesTheRebuild.testAMoveKeepsTheTimetableOnItsStations`.
+
+---
+
+<a id="mt-619"></a>
+
+### MT-619 - 2026-09-30 - A page's timetable entries stay listed while the page is left out
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-09-30, RSA4-B2
+
+**Written:** 2026-09-30
+
+Your ruling of 30 September: *"Just keep the entries, and if a path is run that contains a point on a disabled page,
+reject it with an error."*
+
+**Steps**
+
+1. Have a timetable with entries on two pages.  If the page you will tick out is joined to another by a link, switch the
+   link's **Autonomy Uses This Link** off first.
+2. Open **Autonomy > Pages with Autonomy Enabled** and untick one of the two pages.
+3. Look at the timetable on the Auto tab.
+
+**Expected**
+
+- Every entry is still listed, in the same order, those through the page left out included.
+
+*What this is:* `regression.testAnEditedPlacementSurvivesTheRebuild.testAPageOutKeepsItsEntriesThroughTheLoadAndTheFold`.
+
+---
+
+<a id="mt-620"></a>
+
+### MT-620 - 2026-09-30 - An entry through a page left out is refused when the timetable runs, and the rest run
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-09-30
+
+**Written:** 2026-09-30
+
+Your ruling of 30 September: *"if a path is run that contains a point on a disabled page, reject it with an error as
+we do with other autonomy paths."*
+
+**Steps**
+
+1. As MT-619: a timetable with entries on two pages, and one page left out.
+2. Stand each train where its first entry on the page still in starts, and press **Start Timetable**.
+
+**Expected**
+
+- The timetable starts.  When it reaches an entry through the page left out, the log says the route was not run because
+  it passes through a point that is not part of autonomy, and the next entry goes on.  The other entries run.
+
+*What this is:* `core.testLayoutTimetable.testAnEntryTheRailwayCannotRunIsRefusedAndTheRunGoesOn` and
+`regression.testAnEditedPlacementSurvivesTheRebuild.testStartTimetableAsksOnlyEntriesTheRailwayCanRun`.
 
 ---
