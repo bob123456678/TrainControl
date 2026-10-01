@@ -45,8 +45,11 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-618](#mt-618) | 2026-09-30 | Moving stations and saving keeps the timetable on them | fixed unvalidated | RSA8-B2 |
 | [MT-619](#mt-619) | 2026-09-30 | A page's timetable entries stay listed while the page is left out | fixed unvalidated | Adam 2026-09-30, RSA4-B2 |
 | [MT-620](#mt-620) | 2026-09-30 | An entry through a page left out is refused when the timetable runs, and the rest run | fixed unvalidated | Adam 2026-09-30 |
+| [MT-621](#mt-621) | 2026-09-30 | Start Autonomy in a simulation with Simulate not ticked warns first | fixed unvalidated | Adam 2026-09-30 |
+| [MT-622](#mt-622) | 2026-09-30 | Start Timetable in a simulation with Simulate not ticked warns first | fixed unvalidated | Adam 2026-09-30 |
+| [MT-623](#mt-623) | 2026-09-30 | A simulation starts with Echo Sent Commands on | fixed unvalidated | Adam 2026-09-30 |
 
-Everything else - 602 of 620 - needs nothing from you unless the area changes again:
+Everything else - 602 of 623 - needs nothing from you unless the area changes again:
 471 **fixed validated** and 131 **superseded**.
 
 ---
@@ -29628,6 +29631,12 @@ edit possible during a run."*
 
 *What this is:* `regression.testTheImportDoorReadsAnOldFile.testAnImportIsRefusedWhileAutonomyRuns`.
 
+**Adam, 2026-09-30 (triage).** Works, with notes.
+
+Works.  Export should also only be allowed once we are stopped.
+
+*Run against commit 809a03e7, in English - build\classes, compiled 30 Sep 18:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-602"></a>
@@ -30139,5 +30148,80 @@ we do with other autonomy paths."*
 
 *What this is:* `core.testLayoutTimetable.testAnEntryTheRailwayCannotRunIsRefusedAndTheRunGoesOn` and
 `regression.testAnEditedPlacementSurvivesTheRebuild.testStartTimetableAsksOnlyEntriesTheRailwayCanRun`.
+
+---
+
+<a id="mt-621"></a>
+
+### MT-621 - 2026-09-30 - Start Autonomy in a simulation with Simulate not ticked warns first
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-09-30
+
+**Written:** 2026-09-30
+
+Your request of 30 September: *"adding a warning popup when you start autonomy when the app is in simulate, and
+simulate isn't checked"*.
+
+**Steps**
+
+1. Start TrainControl in simulation.  On the Auto tab's autonomy settings, untick **Simulate**.
+2. Press **Start Autonomy**.
+
+**Expected**
+
+- A warning says TrainControl is in simulation but Simulate is not ticked, so trains will start and never move, and asks
+  whether to start anyway.  No leaves autonomy stopped.
+
+*What this is:* `regression.testNoSetupEditDuringARun.testStartingUnsimulatedInASimulationWarnsFirst`.
+
+---
+
+<a id="mt-622"></a>
+
+### MT-622 - 2026-09-30 - Start Timetable in a simulation with Simulate not ticked warns first
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-09-30
+
+**Written:** 2026-09-30
+
+Your request of 30 September, as MT-621, at the timetable's button.
+
+**Steps**
+
+1. Start TrainControl in simulation, with a timetable.  On the Auto tab's autonomy settings, untick **Simulate**.
+2. Press **Start Timetable**.
+
+**Expected**
+
+- The same warning as MT-621.  No leaves the timetable not started.
+
+*What this is:* `regression.testNoSetupEditDuringARun.testStartingUnsimulatedInASimulationWarnsFirst`.
+
+---
+
+<a id="mt-623"></a>
+
+### MT-623 - 2026-09-30 - A simulation starts with Echo Sent Commands on
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-09-30
+
+**Written:** 2026-09-30
+
+Your request of 30 September: *"auto-enable echo in simulate too"*.  Without echo the simulation answers nothing it
+sends - the power, a switch - so autonomy cannot run.
+
+**Steps**
+
+1. Start TrainControl in simulation.  Untick **Preferences > Debug > Echo Sent Commands**, and close TrainControl.
+2. Start it in simulation again.
+
+**Expected**
+
+- A message says Echo Sent Commands is now on, and the menu item is ticked.  The power can be switched on.
+
+*What this is:* `regression.testNoSetupEditDuringARun.testASimulationStartsWithEchoOn`.
 
 ---
