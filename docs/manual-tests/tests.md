@@ -30594,6 +30594,10 @@ way was refused, so the track ahead of a train could be made one way towards it.
 
 *What this is:* `core.testAutonomyDiagramSession.testAOneWayRunAgainstAStandingTrainIsRefused`.
 
+**Claude, 2026-10-01.**
+
+Since round 30 (b609b854) the refusal looks along the whole way on, not only the square in front of the train: track made one way towards the train beyond a page link, or by the One-Way tool over part of the way, is refused the same way (RSA12-B1).  The steps stand.
+
 ---
 
 <a id="mt-632"></a>
