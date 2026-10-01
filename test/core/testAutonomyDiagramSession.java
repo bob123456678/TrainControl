@@ -493,101 +493,6 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A page ticked out of autonomy and back in keeps its timetable entries (RSA4-B2): the fold made while it is out
-     * keeps the stored entries its build cannot hold, as it keeps that page's placements.
-     *
-     * Ticking a page off is built to be undone; the reload it makes folded the running layout's timetable - without
-     * the entries the build had dropped - over the configuration, and the page came back without them.
-     *
-     * MUTATION: fold the running layout's timetable alone, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testAPageTickedOutKeepsItsTimetable() throws Exception
-    {
-        LayoutDiagram main = new LayoutDiagram("main", 7, 3, null, null);
-        LayoutDiagram second = new LayoutDiagram("second", 7, 3, null, null);
-
-        int address = 70;
-
-        for (LayoutDiagram page : new LayoutDiagram[] {main, second})
-        {
-            page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, address, address, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, address + 1, address + 1, accessoryDecoderType.MM2,
-                null);
-            page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, address + 2, address + 2, accessoryDecoderType.MM2,
-                null);
-
-            address += 10;
-        }
-
-        main.setPageId("1");
-        second.setPageId("2");
-
-        session.open(Arrays.asList(main, second));
-        session.initialize("B2");
-
-        String[] names = {"Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta"};
-
-        for (int i = 0; i < 6; i++)
-        {
-            TileKey square = new TileKey(i < 3 ? "main" : "second", 1 + 2 * (i % 3), 1);
-
-            session.setStation(square, true);
-            session.setPointName(square, names[i]);
-        }
-
-        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
-
-        String[] onMain = anEdgeBetween(built, "Beta", "Gamma");
-        String[] onSecond = anEdgeBetween(built, "Epsilon", "Zeta");
-
-        assertTrue(onMain != null && onSecond != null, "precondition: the two pages' edges are not built");
-
-        session.setGlobal("timetable", aTimetableOf(onMain, onSecond));
-
-        // TICKED OUT, and the reload's fold made from what that load reads: the entry on `second` dropped
-        session.setPageExcluded("second", true);
-        session.rebuild();
-
-        org.json.JSONObject running = new org.json.JSONObject(session.buildConfiguration());
-
-        java.util.Set<String> edges = new java.util.HashSet<>();
-
-        for (Object o : running.getJSONArray("edges"))
-        {
-            edges.add(((org.json.JSONObject) o).getString("start") + " -> " + ((org.json.JSONObject) o).getString("end"));
-        }
-
-        org.json.JSONArray loaded = new org.json.JSONArray();
-
-        for (Object o : running.getJSONArray("timetable"))
-        {
-            org.json.JSONObject leg = ((org.json.JSONObject) o).getJSONArray("path").getJSONObject(0);
-
-            if (edges.contains(leg.getString("start") + " -> " + leg.getString("end"))) loaded.put(o);
-        }
-
-        assertEquals(loaded.length(), 1, "precondition: the load of the page ticked out does not drop its entry");
-
-        running.put("timetable", loaded);
-
-        session.captureFromLayout(running.toString());
-
-        // AND BACK IN
-        session.setPageExcluded("second", false);
-        session.rebuild();
-
-        assertEquals(timetableAfterALoad(session).length(), 2, "the page ticked"
-            + " out and back in lost its timetable entry to the fold made while it was out (RSA4-B2)");
-
-        assertTheTimetableIsLoadable(session, "the page ticked out and back in", 2);
-    }
-
-    /**
      * A station renamed keeps a timetable leg only another configuration's build names (RSA4-B1): a copy that
      * configuration alone has - Beta marked, in it alone, as somewhere trains may turn round - is remembered by the square
      * its name begins with when the session is opened, so a rename made with another configuration in use carries it.
@@ -806,130 +711,6 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A page ticked out keeps its timetable entries beside an entry its load dropped for another reason (RSA5-B1): an
-     * entry for a locomotive the database no longer has is dropped by the load, and the fold kept the page's entries only
-     * while every other stored entry loaded.
-     *
-     * MUTATION: keep a page's entries only where the running timetable is the stored one without them, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testAPageOutKeepsItsEntriesBesideOneItsLoadDropped() throws Exception
-    {
-        String[][] legs = twoPagesWithATimetable("B1 dropped");
-
-        org.json.JSONArray stored = aTimetableOf(legs[0], legs[1]);
-
-        stored.put(new org.json.JSONObject(stored.getJSONObject(0).toString()).put("loc", "B1 no such train"));
-
-        session.setGlobal("timetable", stored);
-
-        // TICKED OUT, and the fold made from what that load reads: the page's entry and the unknown train's dropped
-        session.setPageExcluded("second", true);
-        session.rebuild();
-
-        session.captureFromLayout(runningWith(session, stored.getJSONObject(0)).toString());
-
-        session.setPageExcluded("second", false);
-        session.rebuild();
-
-        assertEquals(timetableAfterALoad(session).length(), 2, "the page's"
-            + " entry was written away by the fold beside an entry its load dropped for an unknown train (RSA5-B1): "
-            + session.getGlobal("timetable"));
-
-        assertTheTimetableIsLoadable(session, "the page ticked out and back in, an entry for an unknown train beside it",
-            2);
-    }
-
-    /**
-     * A page ticked out keeps its timetable entries through an edit of the rest (RSA5-B1): one entry deleted and one
-     * recorded while the page is out, and the page's entry comes back beside what the operator left.
-     *
-     * MUTATION: store the running timetable as it is wherever the operator changed it, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testAPageOutKeepsItsEntriesThroughAnEdit() throws Exception
-    {
-        String[][] legs = twoPagesWithATimetable("B1 edited");
-
-        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
-
-        String[] back = anEdgeBetween(built, "Beta", "Alpha");
-
-        assertNotNull(back, "precondition: no edge from Beta to Alpha");
-
-        org.json.JSONArray stored = aTimetableOf(legs[0], legs[1], back);
-
-        session.setGlobal("timetable", stored);
-
-        session.setPageExcluded("second", true);
-        session.rebuild();
-
-        // WHILE IT IS OUT: the first entry deleted, and one recorded for another train
-        org.json.JSONObject recorded = aTimetableOf(back).getJSONObject(0).put("loc", "B1 recorder");
-
-        session.captureFromLayout(runningWith(session, stored.getJSONObject(2), recorded).toString());
-
-        session.setPageExcluded("second", false);
-        session.rebuild();
-
-        java.util.List<String> kept = new java.util.ArrayList<>();
-
-        org.json.JSONArray now = timetableAfterALoad(session);
-
-        for (int i = 0; i < now.length(); i++)
-        {
-            kept.add(now.getJSONObject(i).getString("loc") + ": " + legOf(session, i)[0] + " -> " + legOf(session, i)[1]);
-        }
-
-        assertTrue(kept.contains("B1 train: " + legs[1][0] + " -> " + legs[1][1]), "the page's entry was written away by"
-            + " an edit of the rest while it was out (RSA5-B1): " + kept);
-
-        assertFalse(kept.contains("B1 train: " + legs[0][0] + " -> " + legs[0][1]), "the entry deleted while the page was"
-            + " out came back: " + kept);
-
-        assertTrue(kept.contains("B1 recorder: " + back[0] + " -> " + back[1]), "the entry recorded while the page was"
-            + " out is gone: " + kept);
-
-        assertTheTimetableIsLoadable(session, "an edit while the page was out", 3);
-    }
-
-    /**
-     * An entry no page out of autonomy explains is erased by the fold, as it was before the page rule (RSA5-C1): kept, it
-     * was in no timetable the operator could see or delete, and would load again over whatever track later took its
-     * names.
-     *
-     * MUTATION: keep every stored entry naming a Point the running layout does not build, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testAnEntryNoPageOutExplainsIsErased() throws Exception
-    {
-        String[][] legs = twoPagesWithATimetable("C1 orphan");
-
-        org.json.JSONArray stored = aTimetableOf(legs[0], legs[1], new String[] {"C1 nowhere A", "C1 nowhere B"});
-
-        session.setGlobal("timetable", stored);
-
-        // A PAGE OUT, so each entry the load could not read is asked which it is
-        session.setPageExcluded("second", true);
-        session.rebuild();
-
-        session.captureFromLayout(runningWith(session, stored.getJSONObject(0)).toString());
-
-        String now = session.getGlobal("timetable") + " - aside: " + legsAside(session);
-
-        assertFalse(now.contains("C1 nowhere A"), "an entry no page out of autonomy explains was kept by the fold, unseen"
-            + " and undeletable (RSA5-C1): " + now);
-
-        assertEquals(entriesKept(session), 2, "precondition: the page's own entry was not kept: " + now);
-    }
-
-    /**
      * A page renamed keeps the timetable legs and the roads through its squares with no name of their own (RSA5-B2):
      * such a square is named after its page, so a rename renamed its Points, and nothing carried the names stored.
      *
@@ -1029,39 +810,12 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * What a load of this session's setup builds: its configuration, the stored timetable's entries whose legs it builds
-     * and no others - as the running layout then writes it.
+     * What a load of this session's setup builds, as the running layout then writes it: its configuration, and every
+     * entry of the stored timetable - one the railway cannot build kept as it was written (Adam, 2026-09-30).
      */
     private static org.json.JSONObject loadedFrom(AutonomySession of)
     {
-        org.json.JSONObject built = new org.json.JSONObject(of.buildConfiguration());
-
-        java.util.Set<String> edges = new java.util.HashSet<>();
-
-        for (Object o : built.getJSONArray("edges"))
-        {
-            edges.add(((org.json.JSONObject) o).getString("start") + " -> " + ((org.json.JSONObject) o).getString("end"));
-        }
-
-        org.json.JSONArray loaded = new org.json.JSONArray();
-
-        org.json.JSONArray table = built.optJSONArray("timetable");
-
-        for (int i = 0; table != null && i < table.length(); i++)
-        {
-            boolean every = true;
-
-            for (Object p : table.getJSONObject(i).getJSONArray("path"))
-            {
-                org.json.JSONObject leg = (org.json.JSONObject) p;
-
-                if (!edges.contains(leg.getString("start") + " -> " + leg.getString("end"))) every = false;
-            }
-
-            if (every) loaded.put(table.get(i));
-        }
-
-        return built.put("timetable", loaded);
+        return new org.json.JSONObject(of.buildConfiguration());
     }
 
     /**
@@ -1485,93 +1239,6 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A page ticked out from the Autonomy menu has its timetable entries set aside, and they come back with the build
-     * that has the page again (Adam, 2026-09-30: *"Do the simplification of the timetables"*).
-     *
-     * The menu ticks, saves, and folds the railway still running - which has the page and its entries.  The fold sets
-     * them aside, out of the timetable, where no other fold touches them; ticked back in, the fold of the railway built
-     * without the page leaves them aside, and the build after it puts each back after the entry it followed.
-     *
-     * MUTATION: keep a page's entries in the timetable while it is out, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testAPageOutsEntriesWaitAsideUntilItIsBack() throws Exception
-    {
-        String[][] legs = twoPagesWithATimetable("aside menu");
-
-        org.json.JSONArray stored = new org.json.JSONArray(String.valueOf(session.getGlobal("timetable")));
-
-        org.json.JSONObject running = runningWith(session, stored.getJSONObject(0), stored.getJSONObject(1));
-
-        // OUT, AS THE MENU DOES IT: the page, the save, the fold of the railway still running
-        session.setPageExcluded("second", true);
-        session.save();
-        session.captureFromLayout(running.toString());
-
-        String entry = legs[1][0] + " -> " + legs[1][1];
-
-        assertFalse(legsOfTheTimetable(session).contains(entry), "the entry of a page out is still in the timetable: "
-            + legsOfTheTimetable(session));
-
-        assertEquals(legsAside(session), Arrays.asList(entry), "the entry of a page out was not set aside, once");
-
-        // BACK IN, AS THE MENU DOES IT: the fold of the railway built without the page leaves it aside
-        org.json.JSONObject without = loadedFrom(session);
-
-        session.setPageExcluded("second", false);
-        session.save();
-        session.captureFromLayout(without.toString());
-
-        assertEquals(legsAside(session), Arrays.asList(entry), "a fold took the entry out of the aside list");
-
-        // AND THE BUILD WITH THE PAGE BACK brings it back, after the entry it followed
-        org.json.JSONArray back = timetableAfterALoad(session);
-
-        assertEquals(back.length(), 2, "the page's entry did not come back with the build: " + back);
-
-        assertEquals(legOf(session, 1)[0], legs[1][0], "the page's entry did not come back after the entry it followed");
-
-        assertTrue(legsAside(session).isEmpty(), "the entry brought back is still aside too: " + legsAside(session));
-    }
-
-    /**
-     * A page ticked out from the editor, whose rebuild of the railway folds nothing first, has its timetable entries set
-     * aside by that build - so the railway is not given an entry it cannot build, and no fold after loses it.
-     *
-     * MUTATION: leave a page's entries in the timetable the build emits, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testAPageOutsEntriesGoAsideAtTheBuild() throws Exception
-    {
-        String[][] legs = twoPagesWithATimetable("aside box");
-
-        // OUT, AS THE EDITOR'S BOX DOES IT: the page, the rebuild - and the railway's build
-        session.setPageExcluded("second", true);
-        session.rebuild();
-
-        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
-
-        assertEquals(built.getJSONArray("timetable").length(), 1, "the build gave the railway the entry of a page out,"
-            + " which it cannot build: " + built.getJSONArray("timetable"));
-
-        String entry = legs[1][0] + " -> " + legs[1][1];
-
-        assertEquals(legsAside(session), Arrays.asList(entry), "the build did not set the page's entry aside");
-
-        // A FOLD OF THAT RAILWAY, and back in
-        session.captureFromLayout(loadedFrom(session).toString());
-
-        session.setPageExcluded("second", false);
-        session.rebuild();
-
-        assertTheTimetableIsLoadable(session, "the page ticked out and back in from the editor", 2);
-    }
-
-    /**
      * An entry set aside comes back after the entry it followed, though that entry's station was renamed while it was
      * aside: what it followed is a stored name like any other, and is carried with it.
      *
@@ -1610,66 +1277,6 @@ public class testAutonomyDiagramSession
             + " followed, renamed meanwhile: " + now);
     }
 
-    /**
-     * An entry set aside follows its page renamed while it is out: a square with no name of its own is named after its
-     * page, and the store carries such names wherever a configuration keeps them - its entries set aside among them.
-     *
-     * MUTATION: rename the timetable's names and not those set aside, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testAnEntryAsideFollowsItsPageRenamed() throws Exception
-    {
-        twoPagesWithATimetable("aside page");
-
-        // SECOND'S MIDDLE STATION with no name of its own, and an entry through it
-        session.setPointName(new TileKey("second", 3, 1), "");
-
-        String[] leg = anEdgeBetween(new org.json.JSONObject(session.buildConfiguration()), "second 3,1", "Zeta");
-
-        assertNotNull(leg, "precondition: no edge from the unnamed station to Zeta");
-
-        session.setGlobal("timetable", aTimetableOf(leg));
-
-        // OUT, and its build
-        session.setPageExcluded("second", true);
-        session.rebuild();
-        session.buildConfiguration();
-
-        assertEquals(legsAside(session), Arrays.asList(leg[0] + " -> " + leg[1]), "precondition: the entry is not aside");
-
-        // THE PAGE RENAMED while it is out, as the track diagram's rename makes it
-        session.getStore().renamePage("second", "yard");
-        session.markPagesStale();
-        session.saveWithoutReconciling();
-
-        LayoutDiagram yard = new LayoutDiagram("yard", 7, 3, null, null);
-
-        yard.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 100, 100, accessoryDecoderType.MM2, null);
-        yard.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        yard.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 101, 101, accessoryDecoderType.MM2, null);
-        yard.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        yard.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 102, 102, accessoryDecoderType.MM2, null);
-        yard.setPageId("2");
-
-        AutonomySession next = new AutonomySession(layout);
-
-        next.open(Arrays.asList(twoPagesMade[0], yard));
-
-        // AND BACK
-        next.setPageExcluded("yard", false);
-        next.rebuild();
-
-        org.json.JSONArray now = timetableAfterALoad(next);
-
-        assertEquals(now.length(), 1, "the entry set aside did not come back with its page renamed: " + now
-            + " - aside: " + legsAside(next));
-
-        assertEquals(legOf(next, 0)[0], "yard" + leg[0].substring("second".length()), "the entry set aside did not follow"
-            + " its page's rename");
-    }
-
     /** What a load of the setup reads as its timetable: the stored one, after the build a load makes. */
     private static org.json.JSONArray timetableAfterALoad(AutonomySession of)
     {
@@ -1695,68 +1302,10 @@ public class testAutonomyDiagramSession
         return out;
     }
 
-    /** The first leg of each entry the configuration in use has set aside for pages out of autonomy. */
-    private static List<String> legsAside(AutonomySession of)
-    {
-        List<String> out = new ArrayList<>();
-
-        org.json.JSONObject configuration = of.getStore().getConfiguration(of.getStore().getActiveConfiguration());
-
-        org.json.JSONArray aside = configuration == null ? null : configuration.optJSONArray("timetableAside");
-
-        for (int i = 0; aside != null && i < aside.length(); i++)
-        {
-            org.json.JSONObject leg = aside.getJSONObject(i).getJSONObject("entry").getJSONArray("path").getJSONObject(0);
-
-            out.add(leg.getString("start") + " -> " + leg.getString("end"));
-        }
-
-        return out;
-    }
-
-    /** How many entries the configuration in use keeps: its timetable's, and those set aside. */
+    /** How many entries the configuration in use keeps in its timetable. */
     private static int entriesKept(AutonomySession of)
     {
-        return legsOfTheTimetable(of).size() + legsAside(of).size();
-    }
-
-    /**
-     * An entry set aside for a page that has since been deleted is dropped at the next build, not kept aside for ever:
-     * no page out explains it any more, and a page of that name made later is another page.
-     *
-     * MUTATION: keep aside every entry that does not come back, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testAnEntryAsideForAPageDeletedIsDropped() throws Exception
-    {
-        String[][] legs = twoPagesWithATimetable("aside deleted");
-
-        // OUT, and its build
-        session.setPageExcluded("second", true);
-        session.rebuild();
-        session.buildConfiguration();
-
-        assertEquals(legsAside(session), Arrays.asList(legs[1][0] + " -> " + legs[1][1]), "precondition: the entry is not"
-            + " aside");
-
-        // THE PAGE DELETED, as the diagram's delete does it - the setup told - and the next start without it.  A page
-        // that is simply not there is a file that did not load, and nothing is judged gone for that (RSA8-B6).
-        session.getStore().deletePage("second");
-        session.saveWithoutReconciling();
-
-        AutonomySession next = new AutonomySession(layout);
-
-        next.open(Arrays.asList(twoPagesMade[0]));
-
-        next.buildConfiguration();
-
-        assertTrue(legsAside(next).isEmpty(), "an entry set aside for a page deleted since is kept aside for ever: "
-            + legsAside(next));
-
-        assertEquals(legsOfTheTimetable(next), Arrays.asList(legs[0][0] + " -> " + legs[0][1]), "the timetable of the pages"
-            + " left changed");
+        return legsOfTheTimetable(of).size();
     }
 
     /**
@@ -1969,52 +1518,6 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A findings check between a page ticked back in and the fold of the railway built without it brings no entry back
-     * into the timetable (RSA8-B1): the Autonomy menu's tick checks the findings before its reload, and that check's
-     * build put the page's entries back into the stored timetable - which the reload's fold of the railway, built without
-     * them, then wrote over.  A build made for a look at the setup changes nothing in it; only the build the railway is
-     * made from, which a load runs after its fold, brings entries back.
-     *
-     * MUTATION: let a build for inspection keep what it settled, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testAFindingsCheckBringsNoEntryBack() throws Exception
-    {
-        String[][] legs = twoPagesWithATimetable("B1 check");
-
-        org.json.JSONArray stored = new org.json.JSONArray(String.valueOf(session.getGlobal("timetable")));
-
-        org.json.JSONObject running = runningWith(session, stored.getJSONObject(0), stored.getJSONObject(1));
-
-        // OUT, AS THE MENU DOES IT: the page, the save, the findings check, the fold of the railway still running
-        session.setPageExcluded("second", true);
-        session.save();
-        session.check();
-        session.captureFromLayout(running.toString());
-
-        String entry = legs[1][0] + " -> " + legs[1][1];
-
-        assertEquals(legsAside(session), Arrays.asList(entry), "precondition: the entry of the page out was not set aside");
-
-        // BACK IN, AS THE MENU DOES IT: the page, the save, the findings check, the fold of the railway built without it
-        org.json.JSONObject without = loadedFrom(session);
-
-        session.setPageExcluded("second", false);
-        session.save();
-        session.check();
-        session.captureFromLayout(without.toString());
-
-        assertEquals(legsAside(session), Arrays.asList(entry), "the findings check brought the entry back into the"
-            + " timetable, and the fold of the railway built without the page wrote over it (RSA8-B1): timetable "
-            + legsOfTheTimetable(session));
-
-        assertEquals(timetableAfterALoad(session).length(), 2, "the page's entry did not come back with the build after"
-            + " the menu's tick (RSA8-B1)");
-    }
-
-    /**
      * An entry deleted from the railway's timetable, its page then ticked out before any fold, stays deleted when the page
      * comes back (RSA8-C2): the Auto tab's delete reaches the railway alone, and the tick's findings check set aside the
      * stored copy the next fold was about to drop.
@@ -2048,157 +1551,6 @@ public class testAutonomyDiagramSession
     }
 
     /**
-     * A locomotive renamed while its timetable entry is set aside comes back under its new name (RSA8-B4): the rename
-     * reached the timetable and not the entries aside, so the entry came back naming a locomotive that no longer exists,
-     * the load dropped it and the next fold erased it.
-     *
-     * MUTATION: repair the timetable alone at a rename, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testALocomotiveRenamedWhileItsEntryIsAsideComesBackRenamed() throws Exception
-    {
-        twoPagesWithATimetable("B4 rename");
-
-        // OUT, and its build: the entry aside
-        session.setPageExcluded("second", true);
-        session.rebuild();
-        session.buildConfiguration();
-
-        assertEquals(legsAside(session).size(), 1, "precondition: the page's entry was not set aside");
-
-        // THE LOCOMOTIVE RENAMED, as the database's rename tells the setup
-        session.getStore().locomotiveRenamed("B1 train", "B4 renamed");
-
-        // BACK IN, and its build
-        session.setPageExcluded("second", false);
-        session.rebuild();
-
-        org.json.JSONArray back = timetableAfterALoad(session);
-
-        assertEquals(back.length(), 2, "precondition: the entry did not come back: " + back);
-
-        for (int i = 0; i < back.length(); i++)
-        {
-            assertEquals(back.getJSONObject(i).optString("loc"), "B4 renamed", "an entry set aside while its locomotive"
-                + " was renamed came back under the old name, which the load drops (RSA8-B4): " + back);
-        }
-    }
-
-    /**
-     * A run recorded twice on a page ticked out comes back twice (RSA8-B5): the build set aside the first and dropped
-     * every later entry of the same run, so a shuttle recorded several times came back once.
-     *
-     * MUTATION: set aside one entry of each run at a build, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testARunRecordedTwiceOnAPageOutComesBackTwice() throws Exception
-    {
-        String[][] legs = twoPagesWithATimetable("B5 build");
-
-        session.setGlobal("timetable", aTimetableOf(legs[0], legs[1], legs[1]));
-
-        // OUT, and its build
-        session.setPageExcluded("second", true);
-        session.rebuild();
-        session.buildConfiguration();
-
-        assertEquals(legsAside(session).size(), 2, "a run recorded twice on a page ticked out was set aside once, and the"
-            + " other entry dropped (RSA8-B5): " + legsAside(session));
-
-        // BACK IN
-        session.setPageExcluded("second", false);
-        session.rebuild();
-
-        assertEquals(timetableAfterALoad(session).length(), 3, "a run recorded twice came back once (RSA8-B5): "
-            + legsOfTheTimetable(session));
-    }
-
-    /**
-     * The same through a fold (RSA8-B5): the fold of a railway still running a page ticked out sets aside each of its
-     * entries, one for one - skipping only one a build has set aside already.
-     *
-     * MUTATION: skip every entry of a run the list already holds once, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testARunRecordedTwiceIsSetAsideTwiceByTheFold() throws Exception
-    {
-        String[][] legs = twoPagesWithATimetable("B5 fold");
-
-        session.setGlobal("timetable", aTimetableOf(legs[0], legs[1], legs[1]));
-
-        org.json.JSONArray stored = new org.json.JSONArray(String.valueOf(session.getGlobal("timetable")));
-
-        org.json.JSONObject running = runningWith(session, stored.getJSONObject(0), stored.getJSONObject(1),
-            stored.getJSONObject(2));
-
-        // OUT, AS THE MENU DOES IT
-        session.setPageExcluded("second", true);
-        session.save();
-        session.captureFromLayout(running.toString());
-
-        assertEquals(legsAside(session).size(), 2, "the fold set aside a run recorded twice once (RSA8-B5): "
-            + legsAside(session));
-
-        // AND A SECOND FOLD OF THE SAME RAILWAY sets nothing aside again
-        session.captureFromLayout(running.toString());
-
-        assertEquals(legsAside(session).size(), 2, "a second fold of the same railway set its entries aside again: "
-            + legsAside(session));
-    }
-
-    /**
-     * An entry set aside for a page whose file does not load at a start is kept until the page is back (RSA8-B6): the
-     * page is then no page out, and the build dropped the entry as one no page out explains - and the next save wrote
-     * that.  Nothing is judged gone while the pages are not all there.
-     *
-     * MUTATION: drop an entry no page out explains while a page is not loaded, and this fails.
-     *
-     * @throws Exception from the build
-     */
-    @Test
-    public void testAnEntryAsideWaitsForAPageThatDidNotLoad() throws Exception
-    {
-        twoPagesWithATimetable("B6 aside");
-
-        session.setPageExcluded("second", true);
-        session.rebuild();
-        session.buildConfiguration();
-        session.save();
-
-        assertEquals(legsAside(session).size(), 1, "precondition: the page's entry was not set aside");
-
-        // THE NEXT START, second's file not read: a stand-in holds its place
-        AutonomySession next = new AutonomySession(layout);
-
-        next.open(Arrays.asList(twoPagesMade[0], aStandInFor("second", "2")));
-
-        assertFalse(next.pagesSafeToJudge(), "precondition: a page not read is taken as read");
-
-        next.check();
-        next.buildConfiguration();
-        next.save();
-
-        assertEquals(legsAside(next).size(), 1, "an entry set aside for a page whose file did not load was dropped"
-            + " (RSA8-B6)");
-
-        // THE START AFTER, both read, and the page ticked back in
-        AutonomySession after = new AutonomySession(layout);
-
-        after.open(Arrays.asList(twoPagesMade));
-        after.setPageExcluded("second", false);
-        after.rebuild();
-
-        assertEquals(timetableAfterALoad(after).length(), 2, "the entry did not come back once its page loaded again"
-            + " (RSA8-B6)");
-    }
-
-    /**
      * An entry of a page in play whose file does not load at a start is kept until the page is back (RSA8-B6): the load
      * dropped what it could not build and the next fold wrote the railway's timetable without it.  While the pages are
      * not all there, the build sets such an entry aside rather than hand it to the railway.
@@ -2228,7 +1580,7 @@ public class testAutonomyDiagramSession
         next.save();
 
         assertEquals(entriesKept(next), 2, "an entry of a page whose file did not load was lost to the load and the fold"
-            + " (RSA8-B6): timetable " + legsOfTheTimetable(next) + ", aside " + legsAside(next));
+            + " (RSA8-B6): timetable " + legsOfTheTimetable(next));
 
         // THE START AFTER, both read
         AutonomySession after = new AutonomySession(layout);
@@ -2249,6 +1601,48 @@ public class testAutonomyDiagramSession
         standIn.setPageId(id);
 
         return standIn;
+    }
+
+    /**
+     * A configuration written by a build that kept a page's timetable entries in a list of their own (rounds 23 and 24)
+     * has them back in its timetable when it is read, each after the entry it followed, and the list gone (Adam,
+     * 2026-09-30: "Just keep the entries") - so an entry set aside is not lost with the list.
+     *
+     * MUTATION: read a configuration as it is, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testEntriesSetAsideByAnEarlierBuildAreBackInTheTimetable() throws Exception
+    {
+        String[][] legs = twoPagesWithATimetable("aside read");
+
+        org.json.JSONArray stored = new org.json.JSONArray(String.valueOf(session.getGlobal("timetable")));
+
+        assertEquals(stored.length(), 2, "precondition: the timetable is not two entries");
+
+        // AS SUCH A BUILD WROTE IT: the second page's entry in a list of its own, after the first
+        org.json.JSONObject configuration =
+            session.getStore().getConfiguration(session.getStore().getActiveConfiguration());
+
+        configuration.getJSONObject("globals").put("timetable", new org.json.JSONArray().put(stored.getJSONObject(0)));
+
+        configuration.put("timetableAside", new org.json.JSONArray().put(new org.json.JSONObject()
+            .put("entry", stored.getJSONObject(1)).put("after", stored.getJSONObject(0))));
+
+        session.saveWithoutReconciling();
+
+        // THE NEXT START
+        AutonomySession next = new AutonomySession(layout);
+
+        next.open(Arrays.asList(twoPagesMade));
+
+        assertEquals(legsOfTheTimetable(next), Arrays.asList(legs[0][0] + " -> " + legs[0][1],
+            legs[1][0] + " -> " + legs[1][1]), "an entry an earlier build set aside is not back in the timetable, after"
+            + " the entry it followed");
+
+        assertFalse(next.getStore().getConfiguration(next.getStore().getActiveConfiguration()).has("timetableAside"),
+            "the list of entries set aside is still there");
     }
 
     /** Stations at 1,1, 3,1 and 5,1 of one line, both ways, in a configuration of this name: its page. */

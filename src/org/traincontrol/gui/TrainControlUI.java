@@ -27697,34 +27697,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                 }
 
-                // Validate starting locations
-                List<Locomotive> seen = new ArrayList<>();
+                // Validate starting locations - see `aTrainNotAtItsStart`
+                TimetablePath notThere = aTrainNotAtItsStart(this.model.getAutoLayout());
 
-                // Clamped: the index is -1 when every entry has finished, which would start this loop
-                // one before the list
-                for (int i = Math.max(0, this.model.getAutoLayout().getUnfinishedTimetablePathIndex()); i < this.model.getAutoLayout().getTimetable().size(); i++)
+                if (notThere != null)
                 {
-                    TimetablePath ttp = this.model.getAutoLayout().getTimetable().get(i);
-
-                    if (!seen.contains(ttp.getLoc()))
-                    {
-                        Point locLocation = this.model.getAutoLayout().getLocomotiveLocation(ttp.getLoc());
-                        if (locLocation == null || !locLocation.equals(ttp.getStart()))
-                        {
-                            JOptionPane.showMessageDialog(
-                                this,
-                                I18n.f(
-                                    "timetable.ui.infoLocomotiveMustBeMovedToStart",
-                                    ttp.getLoc().getName(),
-                                    ttp.getStart()
-                                )
-                            );
-                            this.executeTimetable.setEnabled(true);
-                            return;
-                        }
-
-                        seen.add(ttp.getLoc());
-                    }
+                    JOptionPane.showMessageDialog(
+                        this,
+                        I18n.f(
+                            "timetable.ui.infoLocomotiveMustBeMovedToStart",
+                            notThere.getLoc().getName(),
+                            notThere.getStart()
+                        )
+                    );
+                    this.executeTimetable.setEnabled(true);
+                    return;
                 }
 
                 // AND NOT NON-ATOMIC OVER A RAILWAY THAT COULD RELEASE TRACK UNDER A TRAIN (GS-B1).  This
@@ -30018,6 +30005,53 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * The first timetable entry, from where the run would start, whose train does not stand where it starts - each train
+     * asked of its first entry - or null where every train is at its start.  What Start Timetable refuses a run over.
+     *
+     * @param layout the railway
+     * @return the entry, or null
+     */
+    public static TimetablePath aTrainNotAtItsStart(org.traincontrol.automation.Layout layout)
+    {
+        List<Locomotive> seen = new ArrayList<>();
+
+        // Clamped: the index is -1 when every entry has finished, which would start this loop one before the list
+        for (int i = Math.max(0, layout.getUnfinishedTimetablePathIndex()); i < layout.getTimetable().size(); i++)
+        {
+            TimetablePath ttp = layout.getTimetable().get(i);
+
+            // NOT AN ENTRY THE RAILWAY CANNOT RUN: it is refused when the run reaches it, and has no start on the railway
+            // for its train to stand at (Adam, 2026-09-30)
+            if (!ttp.isRunnable() || seen.contains(ttp.getLoc())) continue;
+
+            Point locLocation = layout.getLocomotiveLocation(ttp.getLoc());
+
+            if (locLocation == null || !locLocation.equals(ttp.getStart())) return ttp;
+
+            seen.add(ttp.getLoc());
+        }
+
+        return null;
+    }
+
+    /**
+     * Where a timetable entry starts or ends, as the timetable shows it: by the name it was written with where the railway
+     * cannot run it (Adam, 2026-09-30), so an entry through a page left out of autonomy is listed like any other.
+     */
+    private String timetableStop(TimetablePath path, boolean start)
+    {
+        if (path.isRunnable()) return stationLabel(start ? path.getStart() : path.getEnd());
+
+        String name = start ? path.getStartName() : path.getEndName();
+
+        org.traincontrol.automationui.AutonomySession session = this.autonomySession;
+
+        String base = session == null || name == null ? null : session.baseNameOf(name);
+
+        return base == null ? String.valueOf(name) : base;
+    }
+
+    /**
      * What the timetable table would SHOW, as one string (MT-149).
      *
      * The redraw is skipped when this has not changed, and it has to be built from the text rather
@@ -30042,8 +30076,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         for (TimetablePath path : timeTable)
         {
             out.append(path.getLoc() == null ? "" : path.getLoc().getName()).append('\u0001')
-                .append(stationLabel(path.getStart())).append('\u0001')
-                .append(stationLabel(path.getEnd())).append('\u0001')
+                .append(timetableStop(path, true)).append('\u0001')
+                .append(timetableStop(path, false)).append('\u0001')
                 .append(path.isExecuted()).append('\u0001')
                 .append(path.getExecutionTime()).append('\u0001')
                 .append(path.getSecondsToNext()).append('\u0002');
@@ -30122,7 +30156,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             for (TimetablePath path : timeTable)
             {
                 Object[] data = {tableModel.getRowCount() + 1, path.getLoc().getName(),
-                stationLabel(path.getStart()), stationLabel(path.getEnd()),
+                timetableStop(path, true), timetableStop(path, false),
                 path.isExecuted() ? Conversion.convertSecondsToDatetime(path.getExecutionTime()) : "Pending Start +" + (path.getSecondsToNext() / 1000) + "s"};
 
                 tableModel.addRow(data);

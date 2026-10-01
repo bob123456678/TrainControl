@@ -1234,6 +1234,175 @@ public class testAnEditedPlacementSurvivesTheRebuild
         return moves;
     }
 
+    /**
+     * A page ticked out keeps its timetable entries through the railway's load and its fold (Adam, 2026-09-30: "Just
+     * keep the entries, and if a path is run that contains a point on a disabled page, reject it with an error"): the
+     * railway built without the page holds its entries as it read them, unrunnable, and the fold writes them back, so
+     * ticked back in the page's entries run again.
+     *
+     * MUTATION: drop an entry the railway cannot build at the load, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testAPageOutKeepsItsEntriesThroughTheLoadAndTheFold() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("keep-the-entries").toFile();
+
+        folder.deleteOnExit();
+
+        org.traincontrol.automationui.AutonomySession session = twoPagesWithATimetable(folder, "keep", 8541, null);
+
+        String before = legsOf(session);
+
+        try
+        {
+            // OUT, and the railway built without the page
+            session.setPageExcluded("second", true);
+            session.rebuild();
+
+            model.parseAuto(session.buildConfiguration());
+
+            Layout running = model.getAutoLayout();
+
+            assertEquals(running.getTimetable().size(), 2, "the railway built without the page dropped its entry, which"
+                + " the next fold erases: " + running.getTimetable());
+
+            assertTrue(running.getTimetable().get(0).isRunnable(), "precondition: the entry on the page in play reads as"
+                + " unrunnable");
+
+            assertFalse(running.getTimetable().get(1).isRunnable(), "the entry through the page left out reads as"
+                + " runnable");
+
+            // THE FOLD of that railway
+            session.captureFromLayout(running.toJSON(running.getLastPointsReached()));
+
+            assertEquals(legsOf(session), before, "the fold of the railway built without the page changed the timetable");
+
+            // BACK IN
+            session.setPageExcluded("second", false);
+            session.rebuild();
+
+            model.parseAuto(session.buildConfiguration());
+
+            java.util.List<org.traincontrol.automation.TimetablePath> back = model.getAutoLayout().getTimetable();
+
+            assertTrue(back.size() == 2 && back.get(0).isRunnable() && back.get(1).isRunnable(), "the page's entry does"
+                + " not run once the page is back: " + back);
+        }
+        finally
+        {
+            new Layout(model).makeCurrent();
+        }
+    }
+
+    /**
+     * Start Timetable asks each locomotive to stand where its first entry the railway can run starts: an entry through a
+     * page left out has no start on the railway, and asked of it the check refused the whole timetable.
+     *
+     * MUTATION: ask each locomotive's first entry whatever it is, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testStartTimetableAsksOnlyEntriesTheRailwayCanRun() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("start-the-timetable").toFile();
+
+        folder.deleteOnExit();
+
+        String other = null;
+
+        for (String name : model.getLocList())
+        {
+            if (!MOVED.equals(name) && other == null) other = name;
+        }
+
+        assertNotNull(other, "precondition: no second locomotive in the database");
+
+        org.traincontrol.automationui.AutonomySession session = twoPagesWithATimetable(folder, "start", 8551, other);
+
+        try
+        {
+            session.setPageExcluded("second", true);
+            session.rebuild();
+
+            model.parseAuto(session.buildConfiguration());
+
+            Layout running = model.getAutoLayout();
+
+            assertEquals(running.getTimetable().size(), 2, "precondition: the railway did not keep the page's entry");
+
+            // THE FIRST ENTRY'S TRAIN WHERE IT STARTS; the second's train, whose entry cannot run, nowhere
+            org.traincontrol.automation.TimetablePath first = running.getTimetable().get(0);
+
+            assertTrue(running.moveLocomotive(MOVED, first.getStart().getName(), false), "precondition: " + MOVED
+                + " not stood where its entry starts");
+
+            org.traincontrol.automation.TimetablePath notThere = TrainControlUI.aTrainNotAtItsStart(running);
+
+            assertNull(notThere, "Start Timetable refused the timetable over an entry the railway cannot run, whose"
+                + " train has nowhere on the railway to stand: " + notThere);
+        }
+        finally
+        {
+            new Layout(model).makeCurrent();
+        }
+    }
+
+    /**
+     * Two pages of three stations each, Alpha to Gamma on "main" and Delta to Zeta on "second", and a timetable of Beta
+     * to Gamma for `MOVED` and Epsilon to Zeta for this locomotive (MOVED where null): the session, saved.
+     */
+    private static org.traincontrol.automationui.AutonomySession twoPagesWithATimetable(java.io.File folder,
+        String configuration, int firstSensor, String secondTrain) throws Exception
+    {
+        org.traincontrol.base.LayoutDiagram main = aRowPage("main", 0, firstSensor, 3);
+        org.traincontrol.base.LayoutDiagram second = aRowPage("second", 0, firstSensor + 5, 3);
+
+        second.setPageId("2");
+
+        org.traincontrol.automationui.AutonomySession session = new org.traincontrol.automationui.AutonomySession(folder);
+
+        session.open(java.util.Arrays.asList(main, second));
+        session.initialize(configuration);
+
+        String[] names = {"Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta"};
+
+        for (int i = 0; i < 6; i++)
+        {
+            org.traincontrol.automationui.TileGraph.TileKey square =
+                new org.traincontrol.automationui.TileGraph.TileKey(i < 3 ? "main" : "second", 1 + 2 * (i % 3), 1);
+
+            session.setStation(square, true);
+            session.setPointName(square, names[i]);
+        }
+
+        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+        String[] x = edgeFrom(built, "Beta (eastbound)", "Gamma");
+        String[] y = edgeFrom(built, "Epsilon (eastbound)", "Zeta");
+
+        assertTrue(x != null && y != null, "precondition: the two legs are not built");
+
+        org.json.JSONArray table = new org.json.JSONArray();
+
+        String[][] legs = {x, y};
+        String[] trains = {MOVED, secondTrain == null ? MOVED : secondTrain};
+
+        for (int i = 0; i < 2; i++)
+        {
+            table.put(new org.json.JSONObject().put("loc", trains[i]).put("executionTime", 0L).put("secondsToNext", 0L)
+                .put("path", new org.json.JSONArray().put(new org.json.JSONObject().put("start", legs[i][0])
+                .put("end", legs[i][1]))));
+        }
+
+        session.setGlobal("timetable", table);
+        session.save();
+
+        return session;
+    }
+
     /** One line of stations, one per sensor from the first given, starting that many columns in: its page. */
     private static org.traincontrol.base.LayoutDiagram aRowPage(String name, int offset, int firstSensor, int count)
         throws Exception

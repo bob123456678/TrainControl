@@ -349,9 +349,6 @@ public class AutonomyViewerPanel extends JPanel
 
         JPanel pageRow = row();
 
-        JButton pages = new JButton(I18n.t("autosetup.ui.btnExcludePage"));
-        pages.addActionListener(e -> choosePages());
-        pageRow.add(sized(pages));
         pageRow.add(styled(pagesSummary, false));
 
         add(panel, gbc, pageRow, 0);
@@ -428,9 +425,6 @@ public class AutonomyViewerPanel extends JPanel
             { public void run() { importConfiguration(); } }));
         menu.add(item(I18n.t("autosetup.ui.btnExportConfiguration"), new Runnable()
             { public void run() { exportConfiguration(); } }));
-        menu.addSeparator();
-        menu.add(item(I18n.t("autosetup.ui.btnExcludePage"), new Runnable()
-            { public void run() { choosePages(); } }));
 
         // Debug builds only, and last on the menu.  What it writes is the DERIVED graph in the old
         // JSON form - a diagnostic for reading when something derives wrongly, not a file anybody
@@ -579,127 +573,6 @@ public class AutonomyViewerPanel extends JPanel
 
             return this;
         }
-    }
-
-    /**
-     * Chooses which pages autonomy uses.
-     *
-     * Here rather than in the editor because it is a property of the whole setup, and because the
-     * commonest reason to reach for it - a page full of findings that is not part of the railway being
-     * automated - is discovered while reading this list.
-     */
-    public void choosePages()
-    {
-        // NOT WHILE AUTONOMY RUNS, as the Autonomy menu's tick is not (RSA7-B2) - see `applyPages`
-        if (ui.isAutonomyBusy())
-        {
-            JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
-
-            return;
-        }
-
-        java.util.List<org.traincontrol.base.LayoutDiagram> pages = session().getPages();
-
-        // BoxLayout, not GridLayout: a grid gives every row the height of its tallest, so the wrapped
-        // prompt made each page checkbox as tall as three lines of text and the dialog filled the
-        // screen.  The prompt is wrapped to a fixed width for the same reason - as one long line it
-        // set the dialog's width all by itself.
-        JPanel panel = new JPanel();
-        panel.setLayout(new javax.swing.BoxLayout(panel, javax.swing.BoxLayout.Y_AXIS));
-
-        JLabel prompt = styled(new JLabel("<html><body style='width:320px'>"
-                + I18n.t("autosetup.ui.promptExcludePage") + "</body></html>"), false);
-        prompt.setAlignmentX(LEFT_ALIGNMENT);
-        prompt.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 6, 0));
-        panel.add(prompt);
-
-        java.util.Map<String, javax.swing.JCheckBox> boxes = new java.util.LinkedHashMap<>();
-
-        for (org.traincontrol.base.LayoutDiagram page : pages)
-        {
-            boolean excluded = session().getStore().getExcludedPages().contains(page.getName());
-
-            javax.swing.JCheckBox box = new javax.swing.JCheckBox(page.getName(), !excluded);
-            box.setAlignmentX(LEFT_ALIGNMENT);
-            styled(box, false);
-            boxes.put(page.getName(), box);
-            panel.add(box);
-        }
-
-        if (JOptionPane.showConfirmDialog(ui, panel,
-            I18n.t("autosetup.ui.btnExcludePage"),
-            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)
-        {
-            return;
-        }
-
-        java.util.Map<String, Boolean> out = new java.util.LinkedHashMap<>();
-
-        for (java.util.Map.Entry<String, javax.swing.JCheckBox> entry : boxes.entrySet())
-        {
-            out.put(entry.getKey(), !entry.getValue().isSelected());
-        }
-
-        applyPages(out);
-    }
-
-    /**
-     * The Pages dialog's choice applied as the Autonomy menu's tick applies one (RSA7-B2): refused while autonomy runs,
-     * asked first where a train is moving, and the railway rebuilt from the pages it now uses.  The dialog asked nothing
-     * and rebuilt nothing, so during a run it edited the setup under the railway, and at rest the railway went on running
-     * a page the setup said was out.
-     *
-     * @param out each page, and whether it is now out of autonomy
-     */
-    public void applyPages(java.util.Map<String, Boolean> out)
-    {
-        if (ui.isAutonomyBusy())
-        {
-            JOptionPane.showMessageDialog(ui, I18n.t("autolayout.errorCannotEditWhileRunning"));
-
-            return;
-        }
-
-        java.util.Map<String, Boolean> changed = new java.util.LinkedHashMap<>();
-
-        for (java.util.Map.Entry<String, Boolean> entry : out.entrySet())
-        {
-            if (session().getStore().getExcludedPages().contains(entry.getKey()) != entry.getValue())
-            {
-                changed.put(entry.getKey(), entry.getValue());
-            }
-        }
-
-        if (changed.isEmpty()) return;
-
-        // THE REBUILD STOPS EVERY TRAIN, so a train driven by hand is asked about first, as the menu asks
-        if (ui.getActiveDiagramConfiguration() != null)
-        {
-            java.util.List<String> moving = ui.locomotivesMoving();
-
-            if (!moving.isEmpty()
-                && JOptionPane.showOptionDialog(ui,
-                    I18n.f("autosetup.ui.confirmExcludeStopsTrains", String.valueOf(moving.size())),
-                    I18n.t("ui.dialogConfirm"), JOptionPane.YES_NO_OPTION,
-                    JOptionPane.WARNING_MESSAGE, null,
-                    TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != 0)
-            {
-                return;
-            }
-        }
-
-        for (java.util.Map.Entry<String, Boolean> entry : changed.entrySet())
-        {
-            session().setPageExcluded(entry.getKey(), entry.getValue());
-        }
-
-        save();
-        refresh();
-
-        ui.autonomyMenuActed();
-
-        // AND THE RAILWAY, so what is drawn and what is driven are built from one list of pages
-        ui.reloadActiveDiagramConfiguration();
     }
 
     // --- configurations ---------------------------------------------------------------------------

@@ -2496,25 +2496,21 @@ undo puts it back with every stored leg, so a timetable through stations moved -
 those stations (RSA8-B2).  A station name two pages share is settled over
 every page, those out of autonomy too, so the plain name does not move to the other page while one is out (RSA6-C1).
 
-**A page ticked out of autonomy keeps its timetable entries aside until it is back** (Adam, 2026-09-30: *"Do the
-simplification of the timetables"*; RSA4-B2, RSA5-B1, RSA6-B1), whichever door ticks it.  The configuration keeps a
-second list beside its timetable.  An entry naming a Point on a page out goes there - when the railway is next built,
-or when a railway still running it is folded - remembering the entry it followed.  When the railway is next built with
-that page in autonomy again, each comes back after that entry: first where it followed none, last where that entry is
-gone.  Nothing else moves them - an edit of the timetable meanwhile, an entry recorded, deleted or moved, leaves them
-where they are - and **Clear clears them with the rest**, at once (RSA5-C1).  Only the build the railway is made from
-settles them: a build made to look at the setup - every findings check, which the Autonomy menu's tick runs before its
-reload - changes nothing (RSA8-B1).  A locomotive renamed meanwhile is renamed in them too (RSA8-B4), and a run recorded
-twice is set aside twice (RSA8-B5).  An entry aside that no page out explains any more, its page deleted, is dropped -
-but not while a page's file has not loaded: then an entry the build cannot build waits aside too, until the page is
-back (RSA8-B6).  Nothing else the load could not read is kept: an entry naming a station removed, or a locomotive the
-database no longer has, is erased by the next fold, as it was before.  `core.testAutonomyDiagramSession`,
-`regression.testAnEditedPlacementSurvivesTheRebuild`, `regression.testTheImportDoorReadsAnOldFile`.
+**A page ticked out of autonomy keeps its timetable entries** (Adam, 2026-09-30: *"Just keep the entries, and if a
+path is run that contains a point on a disabled page, reject it with an error as we do with other autonomy paths.  Nice
+and simple"*; RSA4-B2 to RSA8-B6).  The railway built without the page keeps each entry it cannot build as it was
+written: listed in the timetable like any other and written back by every fold, so none is lost, whichever door ticks
+the page, across a restart, or while a page's file has not loaded.  When a run reaches such an entry it is refused, with
+the point the railway does not have, and the run goes on; Start Timetable asks where each train stands of its first
+entry the railway can run.  Ticked back in, the page's entries run again.  **Clear clears every entry** (RSA5-C1).  Only
+a locomotive the database no longer has drops an entry at the load.  Builds of rounds 23 and 24 kept a page's entries in
+a list of their own; a configuration written then has them folded back into its timetable when it is read.
+`core.testLayoutTimetable`, `regression.testAnEditedPlacementSurvivesTheRebuild`,
+`regression.testNoSetupEditDuringARun`.
 
-**The Autonomy panel's Pages dialog is built to behave as the Autonomy menu's tick does** (RSA7-B2): refused while
-autonomy runs (MT-141), it asks first where a train is moving, and it rebuilds the railway from the pages it now uses.
-The panel itself is not shown in the window (RLD3-C4), so no door reaches the dialog: **Autonomy > Pages with Autonomy
-Enabled** is the door (RSA8-C1).  `regression.testNoSetupEditDuringARun`.
+**Which pages autonomy uses is chosen at Autonomy > Pages with Autonomy Enabled**, refused while autonomy runs (MT-141)
+and rebuilding the railway after each tick.  The Autonomy panel's own Pages dialog, which no door reached - the panel is
+built and not shown (RLD3-C4, RSA8-C1) - was deleted (Adam, 2026-09-30).  `regression.testNoSetupEditDuringARun`.
 
 **The Yes to "reloading will stop the trains" stops every train where it is** (RSA-C1).  Graceful Stop lets each journey
 finish; the Yes also counts a stop, which every journey carries from where it was chosen and asks before and after each

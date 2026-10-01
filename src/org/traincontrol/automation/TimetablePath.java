@@ -32,10 +32,31 @@ public class TimetablePath
     // the field lied to the tenth person to read it.
     private long secondsToNext = 0;
 
+    // AN ENTRY THE RAILWAY CANNOT BUILD, kept as it was written (Adam, 2026-09-30: "Just keep the entries, and if a path
+    // is run that contains a point on a disabled page, reject it with an error as we do with other autonomy paths"): a
+    // Point on a page left out of autonomy is not on the railway, so its path has no edges.  Dropped at the load, the
+    // next fold wrote the shorter timetable over the configuration and the entry was gone for good.
+    private final JSONObject unbuilt;
+    private final String whyNot;
+
     public TimetablePath(Locomotive loc, List<Edge> path, long executionTime)
     {
         this.loc = loc;
         this.path = path;
+        this.unbuilt = null;
+        this.whyNot = null;
+        setExecutionTime(executionTime);
+    }
+
+    /**
+     * An entry as written, whose path the railway cannot build.
+     */
+    private TimetablePath(Locomotive loc, JSONObject written, String whyNot, long executionTime)
+    {
+        this.loc = loc;
+        this.path = new ArrayList<>();
+        this.unbuilt = written;
+        this.whyNot = whyNot;
         setExecutionTime(executionTime);
     }
 
@@ -63,15 +84,67 @@ public class TimetablePath
     {
         return path;
     }
+
+    /**
+     * Whether the railway can run this entry.
+     *
+     * @return whether it can
+     */
+    public boolean isRunnable()
+    {
+        return this.unbuilt == null;
+    }
+
+    /**
+     * Why the railway cannot run this entry, or null.
+     *
+     * @return the reason
+     */
+    public String whyNotRunnable()
+    {
+        return this.whyNot;
+    }
+
+    /**
+     * The name of the Point this entry starts at.
+     *
+     * @return the name
+     */
+    public String getStartName()
+    {
+        if (this.unbuilt == null) return getStart().getName();
+
+        JSONArray legs = this.unbuilt.optJSONArray("path");
+
+        JSONObject first = legs == null ? null : legs.optJSONObject(0);
+
+        return first == null ? null : first.optString("start", null);
+    }
+
+    /**
+     * The name of the Point this entry ends at.
+     *
+     * @return the name
+     */
+    public String getEndName()
+    {
+        if (this.unbuilt == null) return getEnd().getName();
+
+        JSONArray legs = this.unbuilt.optJSONArray("path");
+
+        JSONObject last = legs == null ? null : legs.optJSONObject(legs.length() - 1);
+
+        return last == null ? null : last.optString("end", null);
+    }
     
     public Point getStart()
     {
-        return this.path.get(0).getStart();
+        return this.path.isEmpty() ? null : this.path.get(0).getStart();
     }
     
     public Point getEnd()
     {
-        return this.path.get(this.path.size() - 1).getEnd();
+        return this.path.isEmpty() ? null : this.path.get(this.path.size() - 1).getEnd();
     }
     
     @Override
@@ -79,8 +152,8 @@ public class TimetablePath
     {
         return I18n.f("autolayout.locFromStartToEnd",
             this.loc.getName(),
-            this.getStart().getName(),
-            this.getEnd().getName()
+            this.getStartName(),
+            this.getEndName()
         );
     }
 
@@ -102,6 +175,7 @@ public class TimetablePath
         hash = 29 * hash + Objects.hashCode(this.path);
         hash = 29 * hash + (int) (this.executionTime ^ (this.executionTime >>> 32));
         hash = 29 * hash + (int) (this.secondsToNext ^ (this.secondsToNext >>> 32));
+        hash = 29 * hash + Objects.hashCode(this.unbuilt == null ? null : this.unbuilt.toString());
         return hash;
     }
 
@@ -136,6 +210,11 @@ public class TimetablePath
         {
             return false;
         }
+        if (!Objects.equals(this.unbuilt == null ? null : this.unbuilt.toString(),
+            other.unbuilt == null ? null : other.unbuilt.toString()))
+        {
+            return false;
+        }
         
         return Objects.equals(this.path, other.path);
     }
@@ -149,17 +228,27 @@ public class TimetablePath
      */
     public JSONObject toJSON() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException
     {
+        // AS IT WAS WRITTEN, where the railway cannot build it - for its locomotive as it is called now
+        if (this.unbuilt != null)
+        {
+            JSONObject written = new JSONObject(this.unbuilt.toString());
+            written.put("loc", loc.getName());
+            written.put("executionTime", this.executionTime);
+            written.put("secondsToNext", this.secondsToNext);
+            return written;
+        }
+
         JSONObject json = new JSONObject();
-        
+
         json.put("loc", loc.getName());
-        
+
         JSONArray pathArray = new JSONArray();
-        
+
         for (Edge edge : path)
         {
             pathArray.put(edge.toSimpleJSON());
         }
-        
+
         json.put("path", pathArray);
         
         json.put("executionTime", this.executionTime);
@@ -193,29 +282,35 @@ public class TimetablePath
         // Parse path
         JSONArray pathArray = json.getJSONArray("path");
         List<Edge> path = new ArrayList<>();
-        for (int i = 0; i < pathArray.length(); i++)
+
+        // A PATH THE RAILWAY CANNOT BUILD keeps the entry, as written, to be refused when it is run (Adam, 2026-09-30)
+        String whyNot = null;
+
+        for (int i = 0; i < pathArray.length() && whyNot == null; i++)
         {
             JSONObject edgeJson = pathArray.getJSONObject(i);
-                            
-            Edge newEdge = layout.getEdge(edgeJson.getString("start"), edgeJson.getString("end"));
-            
+
+            String start = edgeJson.getString("start");
+            String end = edgeJson.getString("end");
+
+            Edge newEdge = layout.getEdge(start, end);
+
             if (newEdge == null)
             {
-                throw new Exception(
-                    I18n.f("autolayout.errorEdgeDoesNotExist",
-                        edgeJson.getString("start"),
-                        edgeJson.getString("end")
-                    )
-                );
+                String missing = layout.getPoint(start) == null ? start : layout.getPoint(end) == null ? end : null;
+
+                whyNot = missing != null ? I18n.f("autolayout.errorPointNotOnTheRailway", missing)
+                    : I18n.f("autolayout.errorEdgeDoesNotExist", start, end);
             }
-            
+
             path.add(newEdge);
         }
-        
+
         // Parse executionTime
         long executionTime = json.getLong("executionTime");
 
-        TimetablePath ttp = new TimetablePath(loc, path, executionTime);
+        TimetablePath ttp = whyNot == null ? new TimetablePath(loc, path, executionTime)
+            : new TimetablePath(loc, json, whyNot, executionTime);
         
         if (json.has("secondsToNext"))
         {

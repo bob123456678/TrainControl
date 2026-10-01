@@ -235,6 +235,21 @@ resume note that has been deleted.
 
 ## Setup and start-up
 
+**Decided** (Adam, 2026-09-30: *"this timetable swapping is too complex.  Just keep the entries, and if a path is run
+that contains a point on a disabled page, reject it with an error as we do with other autonomy paths.  Nice and
+simple"*, and *"You can hook it on start timetable, and/or on the path validation function"*): **a page left out of
+autonomy keeps its timetable entries in the timetable.**  The railway keeps an entry it cannot build as it was written,
+refuses it with the reason when the run reaches it, and the run goes on; Start Timetable asks each train only of the
+entries the railway can run.  It replaces the list of entries set aside of rounds 23 and 24, which a configuration
+written then has folded back into its timetable when it is read.  Built in round 25; behaviour.md 8.
+
+**Decided** (Adam, 2026-09-30, of RSA8's note that the letter of grade A covers a lost timetable entry: *"B IS OK."*):
+**a timetable entry lost is graded B** in the release review, as RSA4-B2 to RSA8-B6 were.
+
+**Decided** (Adam, 2026-09-30, RSA8-C1: *"Yes, delete it"*): **the Autonomy panel's Pages dialog is deleted.**  The
+panel is built and not shown, so no door reached the dialog; Autonomy > Pages with Autonomy Enabled is the door.  Built
+in round 25.
+
 **Decided** (Adam, 2026-09-29: *"For closing TC when running: do nothing if no autonomy.  If autonomy, display a
 warning popup to the user allowing them to keep the app open, or to proceed to close.  For simplicity, don't change
 train state here."* - and of the warning shown whenever TrainControl drives a train in any tier: *"Covering all those

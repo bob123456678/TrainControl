@@ -6730,7 +6730,8 @@ public class Layout
         {
             for (TimetablePath ttp : this.timetable)
             {
-                if (l.equals(ttp.getLoc()))
+                // Its first entry the railway can run - one through a page left out of autonomy starts nowhere on it
+                if (l.equals(ttp.getLoc()) && ttp.isRunnable())
                 {
                     return ttp.getStart();
                 }
@@ -6918,6 +6919,30 @@ public class Layout
                     this.control.logf(
                         "autolayout.infoWaitingForPreviousRouteToFinish"
                     );
+                }
+                else if (!ttp.isRunnable())
+                {
+                    // A PATH THROUGH A POINT THE RAILWAY DOES NOT HAVE - one on a page left out of autonomy - refused with
+                    // the reason, as a path the validation refuses is (Adam, 2026-09-30), and the run goes on: stamped, as
+                    // an entry whose train cannot run is, and where it is the last ending the run as an entry's own
+                    // thread would
+                    this.control.logf("autolayout.errorTimetableEntryNotRun", ttp.toString(), ttp.whyNotRunnable());
+
+                    ttp.setExecutionTime(System.currentTimeMillis());
+
+                    startTime = System.currentTimeMillis();
+
+                    if (index == this.timetable.size() - 1)
+                    {
+                        synchronized (this.activeLocomotives)
+                        {
+                            this.stopLocomotives();
+                        }
+
+                        this.control.logf("autolayout.infoTimetableExecutionFinished");
+                    }
+
+                    break;
                 }
                 else
                 {

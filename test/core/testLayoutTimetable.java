@@ -430,4 +430,142 @@ public class testLayoutTimetable
         assertEquals(layout.getUnfinishedTimetablePathIndex(), 0,
             "after a reset the first entry is the one to run next");
     }
+
+    /**
+     * A timetable entry through a point the railway does not have - one on a page left out of autonomy - is kept as it
+     * was written, not dropped at the load (Adam, 2026-09-30: "Just keep the entries, and if a path is run that contains
+     * a point on a disabled page, reject it with an error").  Dropped, the next fold wrote the shorter timetable over the
+     * configuration and the entry was gone for good.
+     *
+     * MUTATION: drop an entry the railway cannot build at the load, and this fails.
+     *
+     * @throws Exception from the layout
+     */
+    @Test
+    public void testAnEntryThroughAPointTheRailwayLacksIsKeptAsWritten() throws Exception
+    {
+        Layout layout = layoutWithOnePath();
+
+        String loc = model.getLocList().get(0);
+
+        org.json.JSONObject written = anEntry(loc, "TT_A", "TT_Z");
+
+        TimetablePath entry = TimetablePath.fromJSON(written.toString(), model, layout);
+
+        assertFalse(entry.isRunnable(), "an entry through a point the railway does not have reads as runnable");
+
+        assertEquals(entry.getStartName(), "TT_A", "the entry does not say where it starts");
+        assertEquals(entry.getEndName(), "TT_Z", "the entry does not say where it ends");
+
+        org.json.JSONObject back = entry.toJSON();
+
+        assertEquals(back.getJSONArray("path").toString(), written.getJSONArray("path").toString(), "the entry was not"
+            + " written back as it was read");
+
+        assertEquals(back.getString("loc"), loc, "the entry was not written back for its locomotive");
+    }
+
+    /**
+     * An entry the railway cannot run is refused when the timetable reaches it, with the reason, and the run goes on and
+     * ends - an entry refused is stamped as one whose train cannot run is, and the last one ends the run as an entry's own
+     * thread would (Adam, 2026-09-30).
+     *
+     * MUTATION: let the run reach an entry it cannot run without refusing it, and this fails.
+     *
+     * @throws Exception from the layout
+     */
+    @Test(timeOut = 60000)
+    public void testAnEntryTheRailwayCannotRunIsRefusedAndTheRunGoesOn() throws Exception
+    {
+        Layout layout = layoutWithOnePath();
+
+        // Max before min: setMinDelay rejects a value above the current maximum
+        layout.setMaxDelay(1);
+        layout.setMinDelay(1);
+
+        String loc = model.getLocList().get(0);
+
+        TimetablePath first = TimetablePath.fromJSON(anEntry(loc, "TT_A", "TT_Z").toString(), model, layout);
+        TimetablePath second = TimetablePath.fromJSON(anEntry(loc, "TT_Y", "TT_B").toString(), model, layout);
+
+        layout.setTimetable(new ArrayList<>(Arrays.asList(first, second)));
+
+        final List<String> logged = java.util.Collections.synchronizedList(new ArrayList<String>());
+
+        java.util.logging.Handler tap = new java.util.logging.Handler()
+        {
+            @Override
+            public void publish(java.util.logging.LogRecord record)
+            {
+                if (record != null && record.getMessage() != null) logged.add(record.getMessage());
+            }
+
+            @Override
+            public void flush() { }
+
+            @Override
+            public void close() { }
+        };
+
+        java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).addHandler(tap);
+
+        try
+        {
+            Thread runner = new Thread(layout::executeTimetable);
+
+            runner.setDaemon(true);
+            runner.start();
+            runner.join(30000);
+
+            assertFalse(runner.isAlive(), "a timetable of entries the railway cannot run did not end");
+
+            assertFalse(layout.isAutoRunning(), "the run still reads as running");
+
+            assertTrue(first.isExecuted() && second.isExecuted(), "an entry refused was not stamped, so the next waits"
+                + " for it for ever");
+
+            String said = org.traincontrol.util.I18n.f("autolayout.errorTimetableEntryNotRun", first.toString(),
+                first.whyNotRunnable());
+
+            assertTrue(logged.contains(said), "the entry was not refused with its reason: " + logged);
+        }
+        finally
+        {
+            java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).removeHandler(tap);
+
+            layout.stopLocomotives();
+        }
+    }
+
+    /**
+     * Where a locomotive's timetable starts is the start of its first entry the railway can run.
+     *
+     * MUTATION: take the first entry whatever it is, and this fails.
+     *
+     * @throws Exception from the layout
+     */
+    @Test
+    public void testATimetableStartsAtTheFirstEntryTheRailwayCanRun() throws Exception
+    {
+        Layout layout = layoutWithOnePath();
+
+        String name = model.getLocList().get(0);
+
+        Locomotive loc = model.getLocByName(name);
+
+        TimetablePath unrunnable = TimetablePath.fromJSON(anEntry(name, "TT_Y", "TT_Z").toString(), model, layout);
+        TimetablePath runnable = TimetablePath.fromJSON(anEntry(name, "TT_A", "TT_B").toString(), model, layout);
+
+        layout.setTimetable(new ArrayList<>(Arrays.asList(unrunnable, runnable)));
+
+        assertEquals(layout.getTimetableStartingPoint(loc), layout.getPoint("TT_A"), "the timetable's start is read"
+            + " from an entry the railway cannot run");
+    }
+
+    /** One timetable entry as a configuration stores it: this locomotive, one leg. */
+    private static org.json.JSONObject anEntry(String loc, String start, String end)
+    {
+        return new org.json.JSONObject().put("loc", loc).put("executionTime", 0L).put("secondsToNext", 0L)
+            .put("path", new org.json.JSONArray().put(new org.json.JSONObject().put("start", start).put("end", end)));
+    }
 }

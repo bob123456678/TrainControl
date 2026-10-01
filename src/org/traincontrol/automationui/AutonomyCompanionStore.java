@@ -70,6 +70,12 @@ public class AutonomyCompanionStore
     private static final String SETUP_FILE = "setup.json";
     private static final String CONFIGURATION_PREFIX = "configuration-";
 
+    /**
+     * Where a build of rounds 23 and 24 kept a configuration's timetable entries of a page out of autonomy - read only to
+     * bring them back (`bringBackTheEntriesSetAside`).
+     */
+    private static final String ENTRIES_SET_ASIDE = "timetableAside";
+
     private final File layoutFolder;
 
     // --- shared: one copy per layout, describing the physical diagram ---------------------------
@@ -929,6 +935,8 @@ public class AutonomyCompanionStore
                             String.valueOf(e.getMessage())), e);
                 }
 
+                bringBackTheEntriesSetAside(configuration);
+
                 loaded.put(
                     configuration.optString("name",
                         name.substring(CONFIGURATION_PREFIX.length(), name.length() - 5)),
@@ -1772,42 +1780,6 @@ public class AutonomyCompanionStore
      */
     private static void repairLocomotiveInTimetable(JSONObject configuration, String from, String to)
     {
-        // AND THE ENTRIES SET ASIDE for pages out of autonomy, with what each followed (RSA8-B4): an entry aside that
-        // kept the old name came back naming a locomotive that no longer exists, and the load dropped it
-        org.json.JSONArray aside = configuration.optJSONArray(AutonomySession.TIMETABLE_ASIDE);
-
-        if (aside != null)
-        {
-            org.json.JSONArray keptAside = new org.json.JSONArray();
-
-            for (int at = 0; at < aside.length(); at++)
-            {
-                JSONObject item = aside.optJSONObject(at);
-
-                JSONObject entry = item == null ? null : item.optJSONObject("entry");
-                JSONObject after = item == null ? null : item.optJSONObject("after");
-
-                if (entry == null) continue;
-
-                if (from.equals(entry.optString(AutonomyBuilder.LOCOMOTIVE, null)))
-                {
-                    if (to == null) continue;
-
-                    entry.put(AutonomyBuilder.LOCOMOTIVE, to);
-                }
-
-                if (after != null && to != null && from.equals(after.optString(AutonomyBuilder.LOCOMOTIVE, null)))
-                {
-                    after.put(AutonomyBuilder.LOCOMOTIVE, to);
-                }
-
-                keptAside.put(item);
-            }
-
-            if (keptAside.length() == 0) configuration.remove(AutonomySession.TIMETABLE_ASIDE);
-            else configuration.put(AutonomySession.TIMETABLE_ASIDE, keptAside);
-        }
-
         if (!configuration.has("globals")) return;
 
         JSONObject globals = configuration.optJSONObject("globals");
@@ -2917,8 +2889,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Every Point name a configuration stores by name - its timetable's legs, those of each entry set aside and of the
-     * entry it followed, and each standing train's road - through a rename, in place (RSA5-B2).  Everything else in it is keyed by square.
+     * Every Point name a configuration stores by name - its timetable's legs, and each standing train's road - through a
+     * rename, in place (RSA5-B2).  Everything else in it is keyed by square.
      *
      * @param configuration the configuration
      * @param rename a Point name to what it is called now, or itself
@@ -2929,20 +2901,9 @@ public class AutonomyCompanionStore
 
         JSONArray table = globals == null ? null : globals.optJSONArray("timetable");
 
-        // AND EACH ENTRY SET ASIDE FOR A PAGE OUT OF AUTONOMY, with the entry it followed (Adam, 2026-09-30)
-        JSONArray aside = configuration.optJSONArray(AutonomySession.TIMETABLE_ASIDE);
-
         List<JSONObject> entries = new ArrayList<>();
 
         for (int i = 0; table != null && i < table.length(); i++) entries.add(table.optJSONObject(i));
-
-        for (int i = 0; aside != null && i < aside.length(); i++)
-        {
-            JSONObject item = aside.optJSONObject(i);
-
-            if (item != null) entries.add(item.optJSONObject("entry"));
-            if (item != null) entries.add(item.optJSONObject("after"));
-        }
 
         for (JSONObject entry : entries)
         {
@@ -6355,5 +6316,98 @@ public class AutonomyCompanionStore
         {
             into.add(array.getString(i));
         }
+    }
+
+    /**
+     * Folds the timetable entries a build of rounds 23 and 24 set aside for pages out of autonomy back into the
+     * configuration's timetable, each after the entry it followed - first where it followed none, last where that entry is
+     * gone, and after any brought back there before it - and forgets the list (Adam, 2026-09-30: "Just keep the
+     * entries").  The railway keeps every entry now, and refuses one it cannot run when the run reaches it.
+     *
+     * @param configuration a configuration as read, changed in place
+     */
+    static void bringBackTheEntriesSetAside(JSONObject configuration)
+    {
+        JSONArray aside = configuration.optJSONArray(ENTRIES_SET_ASIDE);
+
+        configuration.remove(ENTRIES_SET_ASIDE);
+
+        if (aside == null || aside.length() == 0) return;
+
+        JSONObject globals = configuration.optJSONObject("globals");
+
+        if (globals == null)
+        {
+            globals = new JSONObject();
+
+            configuration.put("globals", globals);
+        }
+
+        JSONArray table = globals.optJSONArray("timetable");
+
+        List<Object> kept = new ArrayList<>();
+
+        for (int i = 0; table != null && i < table.length(); i++) kept.add(table.get(i));
+
+        java.util.Set<Object> broughtBack = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
+        for (int i = 0; i < aside.length(); i++)
+        {
+            JSONObject item = aside.optJSONObject(i);
+
+            JSONObject entry = item == null ? null : item.optJSONObject("entry");
+
+            if (entry == null) continue;
+
+            JSONObject after = item.optJSONObject("after");
+
+            int at = after == null ? 0 : kept.size();
+
+            for (int j = 0; after != null && j < kept.size(); j++)
+            {
+                Object candidate = kept.get(j);
+
+                if (candidate instanceof JSONObject && !broughtBack.contains(candidate)
+                    && sameRun(after, (JSONObject) candidate))
+                {
+                    at = j + 1;
+
+                    break;
+                }
+            }
+
+            while (at < kept.size() && broughtBack.contains(kept.get(at))) at++;
+
+            kept.add(at, entry);
+
+            broughtBack.add(entry);
+        }
+
+        globals.put("timetable", new JSONArray(kept));
+    }
+
+    /** Whether two timetable entries send the same train the same way. */
+    private static boolean sameRun(JSONObject a, JSONObject b)
+    {
+        if (a == null || b == null || !a.optString("loc").equals(b.optString("loc"))) return false;
+
+        JSONArray p = a.optJSONArray("path");
+        JSONArray q = b.optJSONArray("path");
+
+        if (p == null || q == null || p.length() != q.length()) return false;
+
+        for (int i = 0; i < p.length(); i++)
+        {
+            JSONObject x = p.optJSONObject(i);
+            JSONObject y = q.optJSONObject(i);
+
+            if (x == null || y == null || !x.optString("start").equals(y.optString("start"))
+                || !x.optString("end").equals(y.optString("end")))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
