@@ -773,9 +773,11 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             session.setRunningLayoutSource(() -> model.getAutoLayout());
 
-            // THE RUN'S RESULT: on Beta, facing west - on the running layout alone
+            // THE RUN'S RESULT: on Beta, facing west - on the running layout alone, come in from the east
             assertTrue(running.moveLocomotive(MOVED, "Beta (westbound)", false), "precondition: " + MOVED
                 + " not stood on Beta (westbound): " + namesOf(running));
+
+            running.getPoint("Beta (westbound)").setArrivedFrom("E");
 
             assertTrue(session.getLocomotiveNameAt(beta) == null, "precondition: the setup already has a train on Beta");
 
@@ -792,6 +794,10 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             assertEquals(session.getFacing(beta), org.traincontrol.automationui.TilePorts.Side.W, "the train recorded on"
                 + " Beta is not recorded facing west, as it stands");
+
+            // AND THE SIDE IT CAME IN BY (RSA18-A2)
+            assertEquals(session.getPointProperty(beta, "arrivedFrom"), "E", "the train recorded on Beta is recorded"
+                + " without the side it came in by");
 
             // THE RAILWAY REBUILT FROM THE SETUP - which has no copy of Beta facing west - AND FOLDED BACK
             model.parseAuto(session.buildConfiguration());
@@ -1769,9 +1775,11 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             assertNotNull(turned, "precondition: Beta has no turning copy: " + namesOf(running));
 
-            // THE RUN'S RESULT: turned round on Beta, on the railway alone
+            // THE RUN'S RESULT: turned round on Beta, on the railway alone - come in from the west
             assertTrue(running.moveLocomotive(MOVED, turned, false, true), "precondition: " + MOVED + " not stood on "
                 + turned);
+
+            running.getPoint(turned).setArrivedFrom("W");
 
             Map<String, String[]> standing = TrainControlUI.whereTheTrainsAre(running);
 
@@ -1796,6 +1804,10 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             assertEquals(String.valueOf(session.getFacing(beta)), facing, MOVED + " is not recorded facing the way it"
                 + " stands");
+
+            // AND THE SIDE IT CAME IN BY (RSA18-A2): without it the track put back stands it with no tail
+            assertEquals(session.getPointProperty(beta, "arrivedFrom"), "W", MOVED + " is recorded without the side it"
+                + " came in by");
 
             boolean reported = false;
 
@@ -1957,6 +1969,106 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             assertEquals(session.getFacing(gamma), org.traincontrol.automationui.TilePorts.Side.W, "the train recorded on Gamma is not recorded facing"
                 + " west, as it stands");
+        }
+        finally
+        {
+            session.setRunningLayoutSource(null);
+
+            new Layout(model).makeCurrent();
+        }
+    }
+
+    /**
+     * A setup record the last run outran raises no error where the railway has the train on the same square facing the
+     * other way (RSA18-B1): a run turned it and brought it back, and the setup's facing is the one it set off with.
+     *
+     * MUTATION: ask the setup's facing for a train the railway has on the same square, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testARecordTheRunTurnedRaisesNoError() throws Exception
+    {
+        org.traincontrol.automationui.AutonomySession session = aRow("r36-turned", 8521, "Alpha", "Beta", "Gamma");
+
+        org.traincontrol.automationui.TileGraph.TileKey beta = new org.traincontrol.automationui.TileGraph.TileKey("main", 3, 1);
+
+        try
+        {
+            // THE SETUP: the train on Beta, facing east
+            session.placeLocomotive(beta, MOVED);
+            session.setFacing(beta, org.traincontrol.automationui.TilePorts.Side.E);
+
+            model.parseAuto(session.buildConfiguration());
+
+            Layout running = model.getAutoLayout();
+
+            session.setRunningLayoutSource(() -> model.getAutoLayout());
+
+            // THE RUN'S RESULT: back on Beta, facing west
+            assertTrue(running.moveLocomotive(MOVED, "Beta (westbound)", false), "precondition: " + MOVED
+                + " not stood on Beta (westbound): " + namesOf(running));
+
+            // ONE WAY WEST EITHER SIDE OF BETA: the record's facing, east, has no copy there now; the railway's has
+            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> either = new java.util.LinkedHashSet<>();
+
+            either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 2, 1));
+            either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 4, 1));
+
+            session.setDirection(either, org.traincontrol.automationui.TileGraph.Direction.TOWARD_B);
+
+            for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+            {
+                assertFalse(org.traincontrol.automationui.AutonomyChecks.FACING_IMPOSSIBLE.equals(finding.getMessageKey())
+                    && beta.equals(finding.getTile()), "an error about the facing the setup recorded for " + MOVED
+                    + " on Beta, while the railway has it there facing west: " + finding);
+            }
+        }
+        finally
+        {
+            session.setRunningLayoutSource(null);
+
+            new Layout(model).makeCurrent();
+        }
+    }
+
+    /**
+     * Home All Trains Where They Stand homes each train where the railway has it, not where the setup last had it
+     * (RSA18-B2): from the track diagram's menu, which folds nothing first, after a run it homed each train where it set
+     * off.
+     *
+     * MUTATION: walk the setup's placements alone, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testHomeAllHomesTheTrainsWhereTheyStand() throws Exception
+    {
+        org.traincontrol.automationui.AutonomySession session = aRow("r36-home", 8531, "Alpha", "Beta", "Gamma", "Delta");
+
+        org.traincontrol.automationui.TileGraph.TileKey beta = new org.traincontrol.automationui.TileGraph.TileKey("main", 3, 1);
+        org.traincontrol.automationui.TileGraph.TileKey gamma = new org.traincontrol.automationui.TileGraph.TileKey("main", 5, 1);
+
+        try
+        {
+            // THE SETUP: the train on Beta
+            session.placeLocomotive(beta, MOVED);
+
+            model.parseAuto(session.buildConfiguration());
+
+            Layout running = model.getAutoLayout();
+
+            session.setRunningLayoutSource(() -> model.getAutoLayout());
+
+            // THE RUN'S RESULT: on Gamma
+            assertTrue(running.moveLocomotive(MOVED, "Gamma (eastbound)", false), "precondition: " + MOVED
+                + " not stood on Gamma (eastbound): " + namesOf(running));
+
+            session.homeEveryPlacedTrain();
+
+            assertEquals(session.getPointProperty(gamma, "home"), MOVED, MOVED + " was not homed on Gamma, where it stands");
+
+            assertNull(session.getPointProperty(beta, "home"), MOVED + " was homed on Beta, where it set off from");
         }
         finally
         {

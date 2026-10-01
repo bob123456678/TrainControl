@@ -6714,7 +6714,9 @@ public class AutonomySession
 
             if (there != null && !placed.getKey().equals(there[0])) continue;
 
-            Side recorded = getFacing(placed.getKey());
+            // AND ON THE SAME SQUARE, THE WAY THE RAILWAY HAS IT FACING (RSA18-B1): a run can turn a train and bring it back,
+            // and the setup's facing is then the one it set off with
+            Side recorded = there != null && there[1] != null ? (Side) there[1] : getFacing(placed.getKey());
 
             if (recorded == null) continue;
 
@@ -7439,6 +7441,14 @@ public class AutonomySession
             if (!train.getKey().equals(getLocomotiveNameAt(square))) placeLocomotive(square, train.getKey());
 
             setFacing(square, facing);
+
+            // AND ITS TAIL (RSA18-A2): the track put back stood it with none, and offered what its tail lies over
+            if (train.getValue().length > 2 && train.getValue()[2] != null) setArrivedFrom(square, (String) train.getValue()[2]);
+
+            if (train.getValue().length > 3 && train.getValue()[3] != null)
+            {
+                setPointProperty(square, "arrivedAlong", new org.json.JSONArray((String) train.getValue()[3]));
+            }
         }
     }
 
@@ -7494,7 +7504,9 @@ public class AutonomySession
 
             if (loc == null || loc.getName() == null || square == null) continue;
 
-            standing.putIfAbsent(loc.getName(), new Object[] {square, facing});
+            // AND THE SIDE IT CAME IN BY AND ITS ROAD, for a record of it (RSA18-A2)
+            standing.putIfAbsent(loc.getName(), new Object[] {square, facing, point.getArrivedFrom(),
+                org.traincontrol.automation.Layout.namesOfRoad(point.getArrivedAlong())});
         }
 
         return standing;
@@ -9681,9 +9693,10 @@ public class AutonomySession
     {
         int assigned = 0;
 
-        // `placedLocomotives` rather than `tilesWithALocomotive`, because it gives the square AND the
-        // train in one pass and is the map every other reader of "who is standing where" uses.
-        for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
+        // WHERE THE TRAINS STAND (RSA18-B2): the railway's, then the setup's where the railway has none of them.  Bulk
+        // Tools is on the track diagram's menu too, which folds nothing first, and after a run the setup alone homed each
+        // train where it had set off.
+        for (Map.Entry<TileKey, String> placed : trainsWhereTheyStand().entrySet())
         {
             if (placed.getKey() == null || placed.getValue() == null) continue;
 
@@ -10860,6 +10873,35 @@ public class AutonomySession
     }
 
     /**
+     * Who stands where: the railway's trains on the squares it has them, then the setup's placements of trains the railway
+     * does not have, on squares the railway leaves free (RSA18-B2).  After a run the setup still names each moved train's
+     * old square - the track diagram's menu folds nothing before a gesture - so a reader of the setup alone acts on
+     * squares the trains have left.
+     *
+     * @return square to train
+     */
+    public Map<TileKey, String> trainsWhereTheyStand()
+    {
+        Map<TileKey, String> out = new LinkedHashMap<>();
+
+        Map<String, Object[]> railway = railwayTrains();
+
+        for (Map.Entry<String, Object[]> train : railway.entrySet())
+        {
+            out.putIfAbsent((TileKey) train.getValue()[0], train.getKey());
+        }
+
+        for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
+        {
+            if (placed.getValue() == null || railway.containsKey(placed.getValue())) continue;
+
+            out.putIfAbsent(placed.getKey(), placed.getValue());
+        }
+
+        return out;
+    }
+
+    /**
      * The squares holding a train whose length nobody has set.
      *
      * Empty when no source has been installed, which is the honest answer: not knowing a length and
@@ -10873,7 +10915,8 @@ public class AutonomySession
 
         if (trainLengths == null) return out;
 
-        for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
+        // WHERE THEY STAND, not where the last run set them off from (RSA18-B2)
+        for (Map.Entry<TileKey, String> placed : trainsWhereTheyStand().entrySet())
         {
             if (placed.getValue() == null || placed.getValue().trim().isEmpty()) continue;
 

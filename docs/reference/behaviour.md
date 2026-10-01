@@ -2026,7 +2026,12 @@ there and says why.  Where no copy of its square faces its way any more - its tu
 wherever the stale setup put it and recorded where it stands, so the error stops every send until it is put right.
 Before, both were left where the setup last had them and the square they stood on read free.  **An error is asked of the
 railway's train first** (RSA17-B1): a setup record whose train the railway has on another square is one the last run
-outran, not a train there, and raises nothing.  `regression.testAnEditedPlacementSurvivesTheRebuild` -
+outran, not a train there, and raises nothing - nor does one on the same square, the railway's facing being the one asked
+(RSA18-B1).  **Only over a railway the load replaced** (RSA18-A1): a load declined for a problem that stops the build -
+a link unpaired - leaves the railway and its trains as they were, and nothing is put back or recorded over it.  **A train
+recorded where it stands keeps the side it came in by and its road** (RSA18-A2), so the track put back stands it with
+its tail.  **Readers of who stands where ask the railway first** (RSA18-B2): Home All Trains Where They Stand, from the
+track diagram's menu after a run, homes each train where the railway has it.  `regression.testAnEditedPlacementSurvivesTheRebuild` -
 `testATrainOnAStationMadePassThroughIsPutBackOnIt`, `testATrainWhoseTurnIsTakenAwayIsRecordedWhereItStands`,
 `testARecordTheRunOutranRaisesNoError`, `testATrainBesideALinkSwitchedOffIsRecordedWhereItStands`.  The setup check then reports an **error**: the train faces a way its station no longer has, and nothing is sent
 until it is turned from its right-click menu, moved, or the track is put back.  A link switched off beside a train is

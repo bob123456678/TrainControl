@@ -4168,6 +4168,10 @@ public class testTheImportDoorReadsAnOldFile
                     return;
                 }
 
+                // ASKED AGAIN AFTER THE SLEEP (RSA18-C3): told to stop during it, one more scan answered the next door's
+                // dialog - a timetable's stop - which the claim waiting for it then never saw
+                if (!going.get()) return;
+
                 for (Window window : Window.getWindows())
                 {
                     if (!window.isShowing() || !(window instanceof JDialog)) continue;
@@ -4256,7 +4260,7 @@ public class testTheImportDoorReadsAnOldFile
         final List<String> asked = Collections.synchronizedList(new ArrayList<>());
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
-        startAnsweringYes(asked, going);
+        Thread answering = startAnsweringYes(asked, going);
 
         final CountDownLatch done = new CountDownLatch(1);
 
@@ -4283,6 +4287,9 @@ public class testTheImportDoorReadsAnOldFile
         finally
         {
             going.set(false);
+
+            // AND GONE BEFORE THE NEXT DOOR (RSA18-C3)
+            answering.join(1000);
         }
     }
 

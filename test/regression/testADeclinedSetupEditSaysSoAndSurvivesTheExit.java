@@ -7,8 +7,10 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -340,5 +342,193 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     private static void settle() throws Exception
     {
         for (int i = 0; i < 3; i++) SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /**
+     * A setup edit whose load is declined - a link unpaired, a problem that stops the build - puts nothing back and
+     * records nothing over the railway it did not replace (RSA18-A1): put back in the edited setup's names, every train
+     * whose copy the edit renamed was taken off that railway and recorded where nothing then kept it, and once the link was
+     * paired again the train was on neither and the square it stands on read free.
+     *
+     * MUTATION: put the trains back whatever the load did, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testALoadDeclinedForAProblemPutsNothingBack() throws Exception
+    {
+        final org.traincontrol.automationui.TileGraph.TileKey link = new org.traincontrol.automationui.TileGraph.TileKey("1 - Main", 12, 1);
+
+        final org.traincontrol.automationui.TileGraph.TileKey partner = session.getStore().getPortalPartner(link);
+
+        assertNotNull(partner, "precondition: the link at 1 - Main:12,1 is not paired on the snapshot");
+
+        final org.traincontrol.automation.Layout railway = model.getAutoLayout();
+
+        final String copy = "BottomMainPost (northbound, reverse)";
+
+        assertNotNull(railway.getPoint(copy), "precondition: the snapshot's railway has no " + copy);
+
+        final String train = model.getLocList().get(0);
+
+        final boolean[] stood = new boolean[1];
+
+        SwingUtilities.invokeAndWait(() -> stood[0] = railway.moveLocomotive(train, copy, false, true));
+
+        assertTrue(stood[0], "precondition: " + train + " was not stood on " + copy);
+
+        try
+        {
+            // UNPAIR THIS LINK, and the rebuild the diagram's menu makes: a link left unpaired stops the build
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.unpairPortal(link);
+
+                ui.rebuildRunningLayoutFromSetup(false, null);
+            });
+
+            settle();
+
+            assertSame(model.getAutoLayout(), railway, "precondition: the load was not declined, so this is not the case");
+
+            boolean onIt = false;
+
+            for (org.traincontrol.automation.Point point : railway.getPoints())
+            {
+                if (point.getCurrentLocomotive() != null && train.equals(point.getCurrentLocomotive().getName())) onIt = true;
+            }
+
+            assertTrue(onIt, train + " was taken off the railway a declined load left as it was (RSA18-A1)");
+
+            // AND THE OTHER DOOR THAT PUTS THE TRAINS BACK AFTER A LOAD (`carryTheTrainsAcross`), its load declined too
+            final java.lang.reflect.Method carry = TrainControlUI.class.getDeclaredMethod("carryTheTrainsAcross",
+                Runnable.class);
+
+            carry.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    carry.invoke(ui, (Runnable) () -> { });
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            settle();
+
+            boolean stillOnIt = false;
+
+            for (org.traincontrol.automation.Point point : railway.getPoints())
+            {
+                if (point.getCurrentLocomotive() != null && train.equals(point.getCurrentLocomotive().getName()))
+                {
+                    stillOnIt = true;
+                }
+            }
+
+            assertTrue(stillOnIt, train + " was taken off the railway by carryTheTrainsAcross, whose load left it as it"
+                + " was (RSA18-A1)");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.pairPortals(link, partner);
+
+                ui.rebuildRunningLayoutFromSetup(false, null);
+            });
+
+            settle();
+        }
+    }
+
+    /**
+     * A train the rebuild records where it stands - its turning taken away, no copy facing its way - is drawn there
+     * (RSA18-C1): the diagram learned which trains stand on no Point inside the load, before the record, and drew it
+     * nowhere.
+     *
+     * MUTATION: leave the diagram untold after the record, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testATrainRecordedByTheRebuildIsDrawnWhereItStands() throws Exception
+    {
+        final org.traincontrol.automationui.TileGraph.TileKey square = new org.traincontrol.automationui.TileGraph.TileKey("1 - Main", 20, 13);
+
+        final org.traincontrol.automation.Layout railway = model.getAutoLayout();
+
+        final String turned = "BottomMainB (eastbound, reverse)";
+
+        assertNotNull(railway.getPoint(turned), "precondition: the snapshot's railway has no " + turned);
+
+        final Object mayTurn = session.getPointProperty(square, org.traincontrol.automationui.AutonomyBuilder.CAN_REVERSE);
+        final Object mustTurn = session.getPointProperty(square, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE);
+
+        final String train = model.getLocList().get(0);
+
+        final org.traincontrol.gui.DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
+
+        final boolean[] stood = new boolean[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            driver.bind(session);
+            driver.setEnabled(true);
+            driver.start();
+
+            stood[0] = railway.moveLocomotive(train, turned, false, true);
+        });
+
+        assertTrue(stood[0], "precondition: " + train + " was not stood on " + turned);
+
+        try
+        {
+            // TRAINS NEVER CHANGE DIRECTION HERE, and the rebuild the diagram's menu makes
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.setPointProperty(square, org.traincontrol.automationui.AutonomyBuilder.CAN_REVERSE, null);
+                session.setPointProperty(square, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, null);
+
+                ui.rebuildRunningLayoutFromSetup(false, null);
+            });
+
+            settle();
+
+            assertEquals(session.getLocomotiveNameAt(square), train, "precondition: " + train + " is not recorded on"
+                + " BottomMainB, where it stands: " + session.trainsOnNoPoint());
+
+            org.traincontrol.automationui.TileOverlay drawn = null;
+
+            for (int tries = 0; tries < 50; tries++)
+            {
+                SwingUtilities.invokeAndWait(() -> { });
+
+                drawn = ui.getDiagramTileRegistry().overlayAt(square);
+
+                if (drawn != null && drawn.isParked()) break;
+
+                Thread.sleep(100);
+            }
+
+            assertTrue(drawn != null && drawn.isParked(), train + ", recorded by the rebuild on BottomMainB where no copy"
+                + " faces its way, is drawn nowhere (RSA18-C1): " + drawn);
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.setPointProperty(square, org.traincontrol.automationui.AutonomyBuilder.CAN_REVERSE, mayTurn);
+                session.setPointProperty(square, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, mustTurn);
+
+                ui.rebuildRunningLayoutFromSetup(false, null);
+            });
+
+            settle();
+        }
     }
 }

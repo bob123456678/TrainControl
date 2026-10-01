@@ -1864,6 +1864,7 @@ public class testAutonomyDiagramMonitor
         layout.points.add(west88);
         layout.points.add(east88);
         layout.claiming.add(train);
+        layout.standingAt = west88;
 
         final List<Map<TileKey, TileOverlay>> published = new ArrayList<>();
 
@@ -1889,6 +1890,17 @@ public class testAutonomyDiagramMonitor
             assertFalse(overlay != null && overlay.isParked(), "a train setting its route up is drawn parked on " + tile
                 + ", a Point of the route it has reserved (RSA17-B2): " + picture);
         }
+
+        // AND DRAWN ONCE, WAITING, WHERE IT STANDS (RSA18-C2): it was drawn nowhere for as long as its accessories took
+        TileOverlay where = picture.get(key("main", 1, 1));
+
+        assertTrue(where != null && where.hasTrain() && !where.isParked(), "a train setting its route up is not drawn"
+            + " where it stands: " + picture);
+
+        TileOverlay far = picture.get(key("main", 5, 1));
+
+        assertFalse(far != null && far.hasTrain(), "a train setting its route up is drawn at the far end of it too: "
+            + picture);
     }
 
     /**

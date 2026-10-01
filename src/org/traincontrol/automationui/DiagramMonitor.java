@@ -469,13 +469,22 @@ public class DiagramMonitor
             return;
         }
 
+        Set<org.traincontrol.base.Locomotive> claiming = new LinkedHashSet<>();
+
         for (Point point : points)
         {
             org.traincontrol.base.Locomotive standing = point == null ? null : point.getCurrentLocomotive();
 
+            if (standing == null || pathed.contains(standing)) continue;
+
             // NOR ONE SETTING ITS ROUTE UP (RSA17-B2): every Point it has reserved answers it, and each was drawn as a train
-            // parked there, for the seconds the accessories take - its own mark comes once it is under way
-            if (standing == null || pathed.contains(standing) || layout.holdsAPath(standing)) continue;
+            // parked there - it is marked once, waiting, where it stands (RSA18-C2), as a run marks a train holding a path
+            if (layout.holdsAPath(standing))
+            {
+                claiming.add(standing);
+
+                continue;
+            }
 
             TileKey tile = pointTiles.get(point.getName());
 
@@ -486,6 +495,22 @@ public class DiagramMonitor
             TileOverlay existing = into.get(tile);
 
             into.put(tile, existing == null ? mark : existing.merge(mark));
+        }
+
+        for (org.traincontrol.base.Locomotive train : claiming)
+        {
+            Point at;
+
+            try
+            {
+                at = layout.whereTheTrainIs(train);
+            }
+            catch (RuntimeException replaced)
+            {
+                at = null;
+            }
+
+            markTrain(into, at, false);
         }
 
         // AND THOSE ON NO POINT, where the setup says they stand (RSA17-C2)

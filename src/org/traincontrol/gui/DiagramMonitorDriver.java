@@ -136,6 +136,23 @@ public class DiagramMonitorDriver
     }
 
     /**
+     * Tells the diagram again which trains the setup records where the railway stands them on no Point (RSA18-C1): a record
+     * written after the load - the put-back's - was drawn nowhere.
+     *
+     * @param session the setup
+     */
+    public void trainsOnNoPointChanged(AutonomySession session)
+    {
+        DiagramMonitor current = monitor;
+
+        if (current == null || session == null) return;
+
+        current.setTrainsOnNoPoint(session.trainsOnNoPoint());
+
+        current.markDirty();
+    }
+
+    /**
      * Which way a train standing on each Point faces, from the builder that named them: a split copy's own facing, and
      * a single copy's only way out where it has one (Adam, 2026-10-01 - the icon of a parked train turns to it).
      *

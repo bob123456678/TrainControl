@@ -3085,7 +3085,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             load.run();
 
-            putTheTrainsBack(standing, null);
+            // ONLY OVER A RAILWAY THE LOAD REPLACED (RSA18-A1), as `rebuildRunningLayoutFromSetup`
+            if (this.model != null && this.model.getAutoLayoutIfLoaded() != runningBefore) putTheTrainsBack(standing, null);
 
             carried = this.model != null && this.model.hasAutoLayout() && this.model.getAutoLayout() != runningBefore
                 && this.model.getAutoLayout().isValid();
@@ -7015,6 +7016,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             placementsJustEdited, naming == null ? null : naming::pointNamedNow);
 
         recordTheTrainsNotPutBack(this.model.getAutoLayout(), standing, notBack, naming, this.model::log);
+
+        // AND THE DIAGRAM TOLD (RSA18-C1): it learned which trains stand on no Point inside the load, before this
+        if (!notBack.isEmpty() && naming != null && diagramMonitorDriver != null)
+        {
+            diagramMonitorDriver.trainsOnNoPointChanged(naming);
+        }
     }
 
     /**
@@ -7064,6 +7071,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
 
             if (facing != null) setup.setFacing(square, facing);
+
+            // AND THE SIDE IT CAME IN BY, AND ITS ROAD (RSA18-A2): without them the track put back stood it with no tail, and
+            // the track its tail lies over was offered to other trains
+            if (was.length > 1 && was[1] != null) setup.setArrivedFrom(square, was[1]);
+
+            if (was.length > 2 && was[2] != null)
+            {
+                try
+                {
+                    setup.setPointProperty(square, "arrivedAlong", new org.json.JSONArray(was[2]));
+                }
+                catch (org.json.JSONException notARoad)
+                {
+                    // a road that does not read is no road: the side alone is kept
+                }
+            }
 
             if (log != null) log.accept(I18n.f("autosetup.errorTrainNotPutBack", train, square.toString()));
         }
@@ -7536,7 +7559,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 getAutonomyViewerPanel().load(activeDiagramConfiguration, false, false);
 
-                putTheTrainsBack(standing, placementsJustEdited);
+                // ONLY OVER A RAILWAY THE LOAD REPLACED (RSA18-A1): a load declined for a problem that stops the build -
+                // a link unpaired, say - leaves the railway as it was, with its trains where they stand, while the setup's
+                // naming is the edited one; put back in those names, every train whose copy the edit renamed was taken off
+                // it and recorded where nothing then kept it
+                if (this.model != null && this.model.getAutoLayoutIfLoaded() != runningBefore)
+                {
+                    putTheTrainsBack(standing, placementsJustEdited);
+                }
 
                 // AND A DECLINED EDIT HAS NOW BEEN CARRIED (AMS-B1).
                 //

@@ -2474,16 +2474,19 @@ public class AutonomyEditorPanel extends JPanel
         // here takes its home away from wherever else it had one, and a square already homed to a
         // different train is reassigned.
         //
-        // Counted off the same question that greys it - `placementsAutonomyWillWrite`, which is the
-        // set the door actually writes - so the affordance and the guard cannot answer differently
+        // Counted off the same question that greys it - `trainsWhereTheyStand`, which is the set the door
+        // actually writes (RSA18-B2: where the railway has the trains, not where the last run set them off
+        // from) - so the affordance and the guard cannot answer differently
         // (`guard-and-affordance-same-question`, and SEV-C3 where they did).
+        int standing = session == null ? 0 : session.trainsWhereTheyStand().size();
+
         javax.swing.JMenuItem homeHere = item(
-            I18n.f("autolayout.ui.menuHomeEveryTrainWhereItStands", placed),
+            I18n.f("autolayout.ui.menuHomeEveryTrainWhereItStands", standing),
             () -> homeEveryPlacedTrain());
 
-        homeHere.setEnabled(placed > 0);
-        homeHere.setToolTipText(wrapped(placed > 0
-            ? I18n.f("autolayout.ui.confirmHomeEveryTrainWhereItStands", placed)
+        homeHere.setEnabled(standing > 0);
+        homeHere.setToolTipText(wrapped(standing > 0
+            ? I18n.f("autolayout.ui.confirmHomeEveryTrainWhereItStands", standing)
             : I18n.t("autosetup.ui.infoNoLocomotivesToHome")));
 
         bulk.add(homeHere);
@@ -2512,8 +2515,9 @@ public class AutonomyEditorPanel extends JPanel
         // page; the bulk door walks `placedLocomotives()`, which skips excluded ones. So on a layout
         // with a page left out of autonomy the operator was told a number the gesture would not
         // deliver - and `guard-and-affordance-same-question` is this file's own recurring defect.
+        // WHERE THEY STAND, as the door writes (RSA18-B2)
         java.util.List<TileKey> placed =
-            new java.util.ArrayList<>(session.placementsAutonomyWillWrite().keySet());
+            new java.util.ArrayList<>(session.trainsWhereTheyStand().keySet());
 
         if (placed.isEmpty())
         {
