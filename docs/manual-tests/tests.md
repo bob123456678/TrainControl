@@ -27,32 +27,20 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-602](#mt-602) | 2026-09-30 | A station renamed after a run keeps the train the run left there | fixed unvalidated | RSA4-A1 |
-| [MT-603](#mt-603) | 2026-09-30 | A page ticked out keeps its timetable entries through an edit | fixed unvalidated | RSA5-B1 |
 | [MT-604](#mt-604) | 2026-09-30 | Clear also clears the timetable entries of a page ticked out | fixed unvalidated | RSA5-C1 |
 | [MT-605](#mt-605) | 2026-09-30 | A direction is refused under a train facing against it | fixed unvalidated | RSA5-A2 |
 | [MT-606](#mt-606) | 2026-09-30 | A link is not switched off under a train that came in through it | fixed unvalidated | RSA6-A3, RSA6-A1 |
 | [MT-607](#mt-607) | 2026-09-30 | A dead end is not made one way away from a train facing the buffer | fixed unvalidated | RSA6-B3 |
-| [MT-610](#mt-610) | 2026-09-30 | Cancel after a delete in the track editor keeps the station's train and settings | fixed unvalidated | RSA7-A1 |
 | [MT-611](#mt-611) | 2026-09-30 | A dead end is not made two way under a train facing out of it | fixed unvalidated | RSA7-B1 |
 | [MT-612](#mt-612) | 2026-09-30 | A train at a one-way dead end does not block directions elsewhere | fixed unvalidated | RSA7-B1 |
 | [MT-613](#mt-613) | 2026-09-30 | The Autonomy menu's page ticks wait for autonomy to stop | fixed unvalidated | RSA8-C1, RSA7-B2 |
-| [MT-614](#mt-614) | 2026-09-30 | A page ticked out from the Autonomy menu is no longer run | fixed unvalidated | RSA8-C1, RSA7-B2 |
-| [MT-615](#mt-615) | 2026-09-30 | A page ticked out and back in from the Autonomy menu keeps its timetable entries | fixed unvalidated | RSA8-B1 |
-| [MT-616](#mt-616) | 2026-09-30 | Ctrl+Z after moving stations keeps the timetable on them | fixed unvalidated | RSA8-B2 |
-| [MT-617](#mt-617) | 2026-09-30 | Cancel after moving stations keeps the timetable on them | fixed unvalidated | RSA8-B2 |
-| [MT-618](#mt-618) | 2026-09-30 | Moving stations and saving keeps the timetable on them | fixed unvalidated | RSA8-B2 |
-| [MT-619](#mt-619) | 2026-09-30 | A page's timetable entries stay listed while the page is left out | fixed unvalidated | Adam 2026-09-30, RSA4-B2 |
-| [MT-622](#mt-622) | 2026-09-30 | Start Timetable in a simulation with Simulate not ticked warns first | fixed unvalidated | Adam 2026-09-30 |
 | [MT-624](#mt-624) | 2026-09-30 | A timetable stops at an entry through a page left out, and says why | fixed unvalidated | RSA9-B1, Adam 2026-09-30 |
 | [MT-626](#mt-626) | 2026-09-30 | Duplicate, Rename and Add a Configuration wait for autonomy to stop | fixed unvalidated | RSA10-A1 |
 | [MT-627](#mt-627) | 2026-09-30 | Duplicate after a run copies where the trains are, and the next start resumes the one running | fixed unvalidated | RSA10-A1 |
 | [MT-628](#mt-628) | 2026-09-30 | A timetable that stops at an entry through a page left out says why, after an earlier Graceful Stop | fixed unvalidated | RSA10-B1 |
-| [MT-629](#mt-629) | 2026-09-30 | Start Timetable after such a stop says why again, rather than asking a train to be moved | fixed unvalidated | RSA10-B2 |
-| [MT-630](#mt-630) | 2026-09-30 | Return Home in a simulation with Simulate not ticked warns first | fixed unvalidated | RSA10-C1 |
 
-Everything else - 607 of 630 - needs nothing from you unless the area changes again:
-475 **fixed validated** and 132 **superseded**.
+Everything else - 619 of 630 - needs nothing from you unless the area changes again:
+487 **fixed validated** and 132 **superseded**.
 
 ---
 
@@ -29649,7 +29637,7 @@ Validated on your *Works, with notes* of 2026-09-30: the note - Export only once
 
 ### MT-602 - 2026-09-30 - A station renamed after a run keeps the train the run left there
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA4-A1
 
 **Written:** 2026-09-30
@@ -29677,13 +29665,17 @@ Filed from this test: FR-105 (feature request - grey out consistency in autonomy
 
 *Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-30.**
+
+Validated on your *Works* of 2026-09-30.
+
 ---
 
 <a id="mt-603"></a>
 
 ### MT-603 - 2026-09-30 - A page ticked out keeps its timetable entries through an edit
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA5-B1
 
 **Written:** 2026-09-30
@@ -29706,6 +29698,10 @@ of a page ticked out: *"is it reliable?"*  Since round 23 they are kept in a lis
 **Claude, 2026-09-30.**
 
 Since round 25 (your ruling of 30 September, "Just keep the entries") a page's entries stay in the timetable while the page is out, rather than in a list of their own; the steps and the expected result still hold.  The claim it names was retired with that list: `regression.testAnEditedPlacementSurvivesTheRebuild.testAPageOutKeepsItsEntriesThroughTheLoadAndTheFold` is the one now.
+
+**Claude, 2026-09-30.**
+
+Closed on my end, as you asked on 2026-09-30 (*"perform all the timetable tests that you can on your end, and close out entries accordingly"*): `regression.testAnEditedPlacementSurvivesTheRebuild.testAPageOutKeepsItsEntriesThroughTheLoadAndTheFold` - a page left out keeps its entries in the timetable through the load and the fold - passed in the battery of a5675105, the commit you ran.
 
 ---
 
@@ -29882,7 +29878,7 @@ Superseded by MT-614: the Pages... button these steps name is on the Autonomy pa
 
 ### MT-610 - 2026-09-30 - Cancel after a delete in the track editor keeps the station's train and settings
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA7-A1
 
 **Written:** 2026-09-30
@@ -29903,6 +29899,10 @@ From the seventh release validator (RSA7), taken out of MT-600.
 **Adam, 2026-09-30 (triage).** Works.
 
 *Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-30.**
+
+Validated on your *Works* of 2026-09-30.
 
 ---
 
@@ -29991,7 +29991,7 @@ works, but why not grey out the entire menu?  also, the "edit autonomy on page" 
 
 ### MT-614 - 2026-09-30 - A page ticked out from the Autonomy menu is no longer run
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA8-C1, RSA7-B2
 
 **Written:** 2026-09-30
@@ -30018,13 +30018,17 @@ not show, so the Autonomy menu is the door.
 
 *Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-30.**
+
+Validated on your *Works* of 2026-09-30.
+
 ---
 
 <a id="mt-615"></a>
 
 ### MT-615 - 2026-09-30 - A page ticked out and back in from the Autonomy menu keeps its timetable entries
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA8-B1
 
 **Written:** 2026-09-30
@@ -30056,13 +30060,17 @@ test this on your end
 
 *Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-30.**
+
+Closed on my end, as you asked on 2026-09-30 (*"perform all the timetable tests that you can on your end, and close out entries accordingly"*): `regression.testNoSetupEditDuringARun.testAPageTickedBackInFromTheAutonomyMenuKeepsItsEntries`, which ticks the page out and back in from the Autonomy menu in the window, passed in the battery of a5675105, the commit you ran.
+
 ---
 
 <a id="mt-616"></a>
 
 ### MT-616 - 2026-09-30 - Ctrl+Z after moving stations keeps the timetable on them
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA8-B2
 
 **Written:** 2026-09-30
@@ -30088,13 +30096,17 @@ test this on your end
 
 *Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-30.**
+
+Closed on my end, as you asked on 2026-09-30 (*"perform all the timetable tests that you can on your end, and close out entries accordingly"*): `regression.testAnEditedPlacementSurvivesTheRebuild.testAnUndoneMoveKeepsTheTimetableOnItsStations` passed in the battery of a5675105, the commit you ran.
+
 ---
 
 <a id="mt-617"></a>
 
 ### MT-617 - 2026-09-30 - Cancel after moving stations keeps the timetable on them
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA8-B2
 
 **Written:** 2026-09-30
@@ -30120,13 +30132,17 @@ test this on your end
 
 *Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-30.**
+
+Closed on my end, as you asked on 2026-09-30 (*"perform all the timetable tests that you can on your end, and close out entries accordingly"*): `regression.testAnEditedPlacementSurvivesTheRebuild.testACancelledMoveKeepsTheTimetableOnItsStations` passed in the battery of a5675105, the commit you ran.
+
 ---
 
 <a id="mt-618"></a>
 
 ### MT-618 - 2026-09-30 - Moving stations and saving keeps the timetable on them
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA8-B2
 
 **Written:** 2026-09-30
@@ -30151,13 +30167,17 @@ test this on your end
 
 *Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-09-30.**
+
+Closed on my end, as you asked on 2026-09-30 (*"perform all the timetable tests that you can on your end, and close out entries accordingly"*): `regression.testAnEditedPlacementSurvivesTheRebuild.testAMoveKeepsTheTimetableOnItsStations` passed in the battery of a5675105, the commit you ran.
+
 ---
 
 <a id="mt-619"></a>
 
 ### MT-619 - 2026-09-30 - A page's timetable entries stay listed while the page is left out
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-09-30, RSA4-B2
 
 **Written:** 2026-09-30
@@ -30183,6 +30203,10 @@ reject it with an error."*
 test this on your end
 
 *Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-30.**
+
+Closed on my end, as you asked on 2026-09-30 (*"perform all the timetable tests that you can on your end, and close out entries accordingly"*): `regression.testAnEditedPlacementSurvivesTheRebuild.testAPageOutKeepsItsEntriesThroughTheLoadAndTheFold` passed in the battery of a5675105, the commit you ran.
 
 ---
 
@@ -30255,7 +30279,7 @@ Validated on your *Works* of 2026-09-30.
 
 ### MT-622 - 2026-09-30 - Start Timetable in a simulation with Simulate not ticked warns first
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-09-30
 
 **Written:** 2026-09-30
@@ -30276,6 +30300,10 @@ Your request of 30 September, as MT-621, at the timetable's button.
 **Adam, 2026-09-30 (triage).** Works.
 
 *Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-30.**
+
+Validated on your *Works* of 2026-09-30.
 
 ---
 
@@ -30457,7 +30485,7 @@ From the tenth release validator (RSA10).
 
 ### MT-629 - 2026-09-30 - Start Timetable after such a stop says why again, rather than asking a train to be moved
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA10-B2
 
 **Written:** 2026-09-30
@@ -30476,13 +30504,17 @@ From the tenth release validator (RSA10).
 
 *What this is:* `regression.testAnEditedPlacementSurvivesTheRebuild.testStartTimetableAsksNothingPastTheEntryTheRunStopsAt`.
 
+**Claude, 2026-09-30.**
+
+Closed on my end, as you asked on 2026-09-30 (*"perform all the timetable tests that you can on your end, and close out entries accordingly"*): `regression.testAnEditedPlacementSurvivesTheRebuild.testStartTimetableAsksNothingPastTheEntryTheRunStopsAt` passed in the battery of a5675105, the commit you ran.
+
 ---
 
 <a id="mt-630"></a>
 
 ### MT-630 - 2026-09-30 - Return Home in a simulation with Simulate not ticked warns first
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA10-C1
 
 **Written:** 2026-09-30
@@ -30503,5 +30535,9 @@ From the tenth release validator (RSA10), beside MT-621 and MT-622.
 **Adam, 2026-09-30 (triage).** Works.
 
 *Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-09-30.**
+
+Validated on your *Works* of 2026-09-30.
 
 ---
