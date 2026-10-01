@@ -6324,6 +6324,20 @@ public class Layout
     }
 
     /**
+     * Whether a train holds a path - under way on it, or still claiming it (RSA17-B2): every Point of a route being set up
+     * answers it as its occupant until it is under way.
+     *
+     * @param loc the train
+     * @return true while it holds one
+     */
+    public boolean holdsAPath(Locomotive loc)
+    {
+        List<Edge> path = loc == null ? null : this.pathHeldBy(loc);
+
+        return path != null && !path.isEmpty();
+    }
+
+    /**
      * The path a train is under way on or still claiming (RC-A10, VD12-B3), the claims read first (RSA4-C3).
      *
      * The hand-over from claim to journey writes the journey and then takes the claim away, outside the railway's
@@ -10284,6 +10298,25 @@ public class Layout
     synchronized public boolean moveLocomotive(String locomotive, String targetPoint, boolean purge,
         boolean evenOntoABarredCopy)
     {
+        return moveLocomotive(locomotive, targetPoint, purge, evenOntoABarredCopy, false);
+    }
+
+    /**
+     * The same, and - for putting the railway's trains back after a rebuild alone - onto a copy that is no station at all
+     * (RSA17-A1).  A train stands where it stands: a station marked one trains only pass through with the train still on
+     * it holds that train, and refused, the model kept it where the setup last had it, the square it stands on read free,
+     * and another train could be sent through it.  Stood there, autonomy refuses to start it, and says why.
+     *
+     * @param locomotive the locomotive
+     * @param targetPoint the Point
+     * @param purge as the three-argument form
+     * @param evenOntoABarredCopy whether a copy of a station square trains may not arrive at is accepted
+     * @param evenOntoANonStation whether any Point is accepted - the train is known to stand there
+     * @return whether it was placed
+     */
+    synchronized public boolean moveLocomotive(String locomotive, String targetPoint, boolean purge,
+        boolean evenOntoABarredCopy, boolean evenOntoANonStation)
+    {
         boolean result = false;
         
         if (this.isRunning())
@@ -10341,7 +10374,7 @@ public class Layout
             }
 
             // Can only place loc on a station - or put one back on a barred copy of one (TDY3-A1)
-            if (!target.isDestination() && !(evenOntoABarredCopy && isABarredCopyOfAStation(target)))
+            if (!target.isDestination() && !(evenOntoABarredCopy && isABarredCopyOfAStation(target)) && !evenOntoANonStation)
             {
                 this.control.logf(
                     "autolayout.errorPointIsNotStation",

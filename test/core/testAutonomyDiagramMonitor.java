@@ -764,9 +764,17 @@ public class testAutonomyDiagramMonitor
 
         final List<Point> points = new ArrayList<>();
 
+        final java.util.Set<org.traincontrol.base.Locomotive> claiming = new java.util.HashSet<>();
+
         StubLayout()
         {
             super(null);
+        }
+
+        @Override
+        public boolean holdsAPath(org.traincontrol.base.Locomotive loc)
+        {
+            return claiming.contains(loc);
         }
 
         @Override
@@ -1823,5 +1831,100 @@ public class testAutonomyDiagramMonitor
     private static int[] pixels(java.awt.image.BufferedImage image)
     {
         return image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth());
+    }
+
+    /**
+     * A train setting its route up - every Point of it reserved, the train not yet under way - is not drawn parked on
+     * each of them (RSA17-B2): during a run the diagram showed locomotives on sensors no train stood on, for the seconds
+     * the accessories take.
+     *
+     * MUTATION: mark a train that holds a path as parked, and this fails.
+     *
+     * @throws Exception from building a Point
+     */
+    @Test
+    public void testATrainSettingItsRouteUpIsNotDrawnParked() throws Exception
+    {
+        Map<String, TileKey> tiles = new LinkedHashMap<>();
+
+        tiles.put("West", key("main", 1, 1));
+        tiles.put("East", key("main", 5, 1));
+
+        Point west88 = new Point("West", false, null);
+        Point east88 = new Point("East", false, null);
+
+        org.traincontrol.base.Locomotive train = locomotive();
+
+        // RESERVED, both: the route being set up
+        west88.setLocomotive(train);
+        east88.setLocomotive(train);
+
+        StubLayout layout = new StubLayout();
+
+        layout.points.add(west88);
+        layout.points.add(east88);
+        layout.claiming.add(train);
+
+        final List<Map<TileKey, TileOverlay>> published = new ArrayList<>();
+
+        DiagramMonitor monitor = new DiagramMonitor(source(layout), new LinkedHashMap<String, ReducedEdge>(), tiles,
+            new DiagramMonitor.Publisher()
+            {
+                @Override
+                public void publish(Map<TileKey, TileOverlay> overlays)
+                {
+                    published.add(new LinkedHashMap<>(overlays));
+                }
+            });
+
+        monitor.refresh();
+
+        Map<TileKey, TileOverlay> picture = published.isEmpty() ? new LinkedHashMap<TileKey, TileOverlay>()
+            : published.get(published.size() - 1);
+
+        for (TileKey tile : Arrays.asList(key("main", 1, 1), key("main", 5, 1)))
+        {
+            TileOverlay overlay = picture.get(tile);
+
+            assertFalse(overlay != null && overlay.isParked(), "a train setting its route up is drawn parked on " + tile
+                + ", a Point of the route it has reserved (RSA17-B2): " + picture);
+        }
+    }
+
+    /**
+     * A train the setup records where the railway stands it on no Point is drawn parked there, facing its way (RSA17-C2):
+     * the error about it says it stands there, and a diagram that drew nothing read the square free.
+     *
+     * MUTATION: leave the trains on no Point out of the picture, and this fails.
+     */
+    @Test
+    public void testATrainOnNoPointIsDrawnWhereItStands()
+    {
+        StubLayout layout = new StubLayout();
+
+        final List<Map<TileKey, TileOverlay>> published = new ArrayList<>();
+
+        DiagramMonitor monitor = new DiagramMonitor(source(layout), new LinkedHashMap<String, ReducedEdge>(),
+            new LinkedHashMap<String, TileKey>(), new DiagramMonitor.Publisher()
+            {
+                @Override
+                public void publish(Map<TileKey, TileOverlay> overlays)
+                {
+                    published.add(new LinkedHashMap<>(overlays));
+                }
+            });
+
+        Map<TileKey, Side> nowhere = new LinkedHashMap<>();
+
+        nowhere.put(key("main", 3, 1), Side.W);
+
+        monitor.setTrainsOnNoPoint(nowhere);
+
+        monitor.refresh();
+
+        TileOverlay drawn = published.isEmpty() ? null : published.get(published.size() - 1).get(key("main", 3, 1));
+
+        assertTrue(drawn != null && drawn.isParked() && drawn.getFacing() == Side.W, "a train on no Point is not drawn"
+            + " parked, facing west, where the setup records it: " + drawn);
     }
 }

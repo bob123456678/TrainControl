@@ -849,6 +849,11 @@ public class testAutonomyDiagramSession
             org.traincontrol.automationui.AutonomyChecks.Severity.ERROR, new TileKey("main", 3, 1)), "a through station"
             + " was reported at the end of a line");
 
+        // ONE FINDING AND ONE PIECE OF ADVICE (RSA17-C1): not the error and the warning that trains cannot turn there
+        assertFalse(findingAt(org.traincontrol.automationui.AutonomyChecks.ARRIVAL_TRAPPED,
+            org.traincontrol.automationui.AutonomyChecks.Severity.WARNING, alpha), "a station at the end of a line is"
+            + " reported twice, an error and a warning, with advice that disagrees: " + session.check());
+
         // TRAINS MUST CHANGE DIRECTION THERE
         session.setPointProperty(alpha, "mustReverse", Boolean.TRUE);
         session.rebuild();

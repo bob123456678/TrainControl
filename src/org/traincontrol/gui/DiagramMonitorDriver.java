@@ -130,6 +130,8 @@ public class DiagramMonitorDriver
 
         monitor.setFacings(facingsOf(builder, names));
 
+        monitor.setTrainsOnNoPoint(session.trainsOnNoPoint());
+
         attach();
     }
 

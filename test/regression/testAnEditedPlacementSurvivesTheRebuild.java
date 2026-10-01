@@ -197,12 +197,15 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
-     * A train the rebuilt railway refuses to put back leaves no tail on the square (AMS-C2).
+     * A train the rebuilt railway refuses to put back leaves no tail on the square (AMS-C2), and is said (RSA17-A1).
      *
      * `putTheTrainsBack` asked `moveLocomotive` and did not read its answer, then wrote the arrival side and the
-     * road onto the square whether or not the train was standing on it.  `moveLocomotive` refuses a square that
-     * is not a destination - a station demoted after a run, with the train still on it - so the square was left
-     * with a tail and no train.  (The refusal itself is logged, by `moveLocomotive`.)
+     * road onto the square whether or not the train was standing on it, so a square was left with a tail and no train.
+     * The case AMS-C2 found it by - a station demoted after a run, with the train still on it - is now put back on its
+     * square, tail and all (RSA17-A1): the train stands there, and refused it was left where the setup last had it and
+     * the square read free.  What still refuses is the railway running.
+     *
+     * MUTATION: refuse a square that is no station in the put-back, and this fails.
      *
      * @throws Exception on a failure to build the fixture
      */
@@ -226,20 +229,53 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
         java.util.List<String> said = new java.util.ArrayList<>();
 
-        TrainControlUI.putTheTrainsBack(built, standing, said::add);
+        java.util.Set<String> notBack = TrainControlUI.putTheTrainsBack(built, standing, said::add);
 
         Point passing = built.getPoint("PASSING");
 
-        assertNull(passing.getCurrentLocomotive(),
-            "precondition: the railway stood a train on a square that is not a destination, so this is not the"
-            + " refused case");
+        // A SQUARE THAT IS NO STATION: the train stands there, so it is put back there, with its tail (RSA17-A1)
+        assertTrue(passing.getCurrentLocomotive() != null && STAYER.equals(passing.getCurrentLocomotive().getName()),
+            STAYER + " was not put back on PASSING, which is no station but where it stands - left off the railway, the"
+            + " square read free (RSA17-A1): " + notBack);
 
-        assertNull(passing.getArrivedFrom(),
-            "the train could not be put back on PASSING and the square was given its arrival side anyway - a tail"
-            + " with no train, which the tail walk and the next capture both read (AMS-C2)");
+        assertEquals(passing.getArrivedFrom(), "north", "the arrival side did not go back with the train");
 
-        // Not asserted: that `said` hears of it.  `moveLocomotive` logs its own refusal to the model's log, which is
-        // the log the running application hands in here, so a second line would say it twice.
+        // AND A PUT-BACK STILL REFUSED - the railway running - leaves no tail, and says which train (AMS-C2, RSA17-A1)
+        Layout running = new Layout(model);
+
+        MarklinFeedback otherSensor = model.newFeedback(8397, null);
+
+        model.setFeedbackState(otherSensor.getName(), false);
+
+        running.createPoint("OTHER", true, otherSensor.getName());
+
+        java.lang.reflect.Field runningFlag = Layout.class.getDeclaredField("running");
+
+        runningFlag.setAccessible(true);
+        runningFlag.setBoolean(running, true);
+
+        try
+        {
+            Map<String, String[]> there = new LinkedHashMap<>();
+
+            there.put(STAYER, new String[]{"OTHER", "north"});
+
+            java.util.Set<String> refused = TrainControlUI.putTheTrainsBack(running, there, said::add);
+
+            Point other = running.getPoint("OTHER");
+
+            assertNull(other.getCurrentLocomotive(), "precondition: the railway put a train back while it ran");
+
+            assertNull(other.getArrivedFrom(), "the train could not be put back on OTHER and the square was given its"
+                + " arrival side anyway - a tail with no train, which the tail walk and the next capture both read"
+                + " (AMS-C2)");
+
+            assertTrue(refused.contains(STAYER), "a train the put-back refused is not said (RSA17-A1): " + refused);
+        }
+        finally
+        {
+            runningFlag.setBoolean(running, false);
+        }
     }
 
     /**
@@ -777,6 +813,10 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             assertEquals(session.getFacing(beta), org.traincontrol.automationui.TilePorts.Side.W, "the fold turned the"
                 + " train on Beta round in the setup");
+
+            // AND LISTED FOR THE DIAGRAM TO DRAW WHERE IT STANDS (RSA17-C2)
+            assertEquals(session.trainsOnNoPoint().get(beta), org.traincontrol.automationui.TilePorts.Side.W, "the train"
+                + " on no Point is not listed, facing west, for the diagram to draw on Beta: " + session.trainsOnNoPoint());
         }
         finally
         {
@@ -1626,5 +1666,303 @@ public class testAnEditedPlacementSurvivesTheRebuild
         }
 
         return false;
+    }
+
+    /**
+     * A train the last run left on a station that is then marked one trains only pass through stands there still after
+     * the rebuild (RSA17-A1): the put-back refused a copy that is no station, so the train was left where the setup last
+     * had it - here, on no Point - and the square it stands on read free.  The train IS there.
+     *
+     * MUTATION: refuse a copy that is no station in the put-back, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testATrainOnAStationMadePassThroughIsPutBackOnIt() throws Exception
+    {
+        org.traincontrol.automationui.AutonomySession session = aRow("r35-passthrough", 8481, "Alpha", "Beta", "Gamma");
+
+        org.traincontrol.automationui.TileGraph.TileKey beta = new org.traincontrol.automationui.TileGraph.TileKey("main", 3, 1);
+
+        try
+        {
+            model.parseAuto(session.buildConfiguration());
+
+            Layout running = model.getAutoLayout();
+
+            session.setRunningLayoutSource(() -> model.getAutoLayout());
+
+            // THE RUN'S RESULT, on the railway alone
+            assertTrue(running.moveLocomotive(MOVED, "Beta (westbound)", false), "precondition: " + MOVED
+                + " not stood on Beta (westbound): " + namesOf(running));
+
+            Map<String, String[]> standing = TrainControlUI.whereTheTrainsAre(running);
+
+            // "NO - TRAINS CAN ONLY PASS THROUGH" on Beta, and the rebuild the diagram's menu makes
+            session.setStation(beta, false);
+
+            model.parseAuto(session.buildConfiguration());
+
+            Layout rebuilt = model.getAutoLayout();
+
+            java.util.Set<String> notBack = TrainControlUI.putTheTrainsBack(rebuilt, standing, line -> { }, null,
+                session::pointNamedNow);
+
+            Point on = null;
+
+            for (Point point : rebuilt.getPoints())
+            {
+                if (point.getCurrentLocomotive() != null && MOVED.equals(point.getCurrentLocomotive().getName())) on = point;
+            }
+
+            assertTrue(on != null && "main:3,1".equals(on.getSquare()), MOVED + " is not on Beta after Beta was made a"
+                + " station trains only pass through, though it stands there - the square reads free: " + standingOn(rebuilt)
+                + "; not put back: " + notBack);
+        }
+        finally
+        {
+            session.setRunningLayoutSource(null);
+
+            new Layout(model).makeCurrent();
+        }
+    }
+
+    /**
+     * A train the last run turned round on a station, whose turning is then taken away, is recorded where it stands and
+     * reported, not left where the setup last had it (RSA17-A1): no copy of the square faces its way any more, so the
+     * put-back could not put it back, and said nothing.
+     *
+     * MUTATION: put nothing on the list of trains not put back for a copy the rebuild has not got, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testATrainWhoseTurnIsTakenAwayIsRecordedWhereItStands() throws Exception
+    {
+        org.traincontrol.automationui.AutonomySession session = aRow("r35-turn", 8491, "Alpha", "Beta", "Gamma");
+
+        org.traincontrol.automationui.TileGraph.TileKey beta = new org.traincontrol.automationui.TileGraph.TileKey("main", 3, 1);
+
+        try
+        {
+            // ONE WAY EAST, AND TRAINS MAY TURN ROUND AT BETA
+            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> either = new java.util.LinkedHashSet<>();
+
+            either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 2, 1));
+            either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 4, 1));
+
+            session.setDirection(either, org.traincontrol.automationui.TileGraph.Direction.TOWARD_A);
+            session.setPointProperty(beta, org.traincontrol.automationui.AutonomyBuilder.CAN_REVERSE, Boolean.TRUE);
+
+            model.parseAuto(session.buildConfiguration());
+
+            Layout running = model.getAutoLayout();
+
+            session.setRunningLayoutSource(() -> model.getAutoLayout());
+
+            String turned = null;
+
+            for (Point point : running.getPoints())
+            {
+                if ("main:3,1".equals(point.getSquare()) && point.getName().contains(", reverse)")) turned = point.getName();
+            }
+
+            assertNotNull(turned, "precondition: Beta has no turning copy: " + namesOf(running));
+
+            // THE RUN'S RESULT: turned round on Beta, on the railway alone
+            assertTrue(running.moveLocomotive(MOVED, turned, false, true), "precondition: " + MOVED + " not stood on "
+                + turned);
+
+            Map<String, String[]> standing = TrainControlUI.whereTheTrainsAre(running);
+
+            // TURNING TAKEN AWAY, and the rebuild
+            session.setPointProperty(beta, org.traincontrol.automationui.AutonomyBuilder.CAN_REVERSE, null);
+
+            model.parseAuto(session.buildConfiguration());
+
+            Layout rebuilt = model.getAutoLayout();
+
+            java.util.Set<String> notBack = TrainControlUI.putTheTrainsBack(rebuilt, standing, line -> { }, null,
+                session::pointNamedNow);
+
+            assertTrue(notBack.contains(MOVED), MOVED + " could not be put back - no copy of Beta faces its way - and the"
+                + " put-back did not say so: " + notBack + ", " + standingOn(rebuilt));
+
+            TrainControlUI.recordTheTrainsNotPutBack(rebuilt, standing, notBack, session, line -> { });
+
+            assertEquals(session.getLocomotiveNameAt(beta), MOVED, MOVED + " is not recorded on Beta, where it stands");
+
+            String facing = standing.get(MOVED)[4];
+
+            assertEquals(String.valueOf(session.getFacing(beta)), facing, MOVED + " is not recorded facing the way it"
+                + " stands");
+
+            boolean reported = false;
+
+            for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+            {
+                if (org.traincontrol.automationui.AutonomyChecks.FACING_IMPOSSIBLE.equals(finding.getMessageKey())
+                    && beta.equals(finding.getTile())
+                    && finding.getSeverity() == org.traincontrol.automationui.AutonomyChecks.Severity.ERROR)
+                {
+                    reported = true;
+                }
+            }
+
+            assertTrue(reported, "the train recorded on Beta, which no copy of it can hold, is not reported as an error: "
+                + session.check());
+        }
+        finally
+        {
+            session.setRunningLayoutSource(null);
+
+            new Layout(model).makeCurrent();
+        }
+    }
+
+    /**
+     * A setup record the last run has outrun raises no error (RSA17-B1): the railway has the train on another square, and
+     * the railway wins - an error about a square no train stands on stopped every send.  And the train the railway has
+     * nowhere, recorded where it cannot stand, is listed for the diagram to draw there (RSA17-C2).
+     *
+     * MUTATION: ask the setup alone for the error, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testARecordTheRunOutranRaisesNoError() throws Exception
+    {
+        org.traincontrol.automationui.AutonomySession session = aRow("r35-stale", 8501, "Alpha", "Beta", "Gamma");
+
+        org.traincontrol.automationui.TileGraph.TileKey beta = new org.traincontrol.automationui.TileGraph.TileKey("main", 3, 1);
+
+        try
+        {
+            // THE SETUP: the train on Beta, facing west
+            session.placeLocomotive(beta, MOVED);
+            session.setFacing(beta, org.traincontrol.automationui.TilePorts.Side.W);
+
+            model.parseAuto(session.buildConfiguration());
+
+            Layout running = model.getAutoLayout();
+
+            session.setRunningLayoutSource(() -> model.getAutoLayout());
+
+            // THE RUN'S RESULT: on Gamma, on the railway alone
+            assertTrue(running.moveLocomotive(MOVED, "Gamma", false), "precondition: " + MOVED
+                + " not stood on Gamma: " + namesOf(running));
+
+            // ONE WAY EAST EITHER SIDE OF BETA: the record's facing has no copy there now
+            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> either = new java.util.LinkedHashSet<>();
+
+            either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 2, 1));
+            either.add(new org.traincontrol.automationui.TileGraph.TileKey("main", 4, 1));
+
+            session.setDirection(either, org.traincontrol.automationui.TileGraph.Direction.TOWARD_A);
+
+            for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+            {
+                assertFalse(org.traincontrol.automationui.AutonomyChecks.FACING_IMPOSSIBLE.equals(finding.getMessageKey())
+                    && beta.equals(finding.getTile()), "an error about Beta, where the setup's record says " + MOVED
+                    + " stands, while the railway has it on Gamma: " + finding);
+            }
+
+            assertFalse(session.trainsOnNoPoint().containsKey(beta), "a record the run outran is listed as a train on no"
+                + " Point");
+        }
+        finally
+        {
+            session.setRunningLayoutSource(null);
+
+            new Layout(model).makeCurrent();
+        }
+    }
+
+    /**
+     * A train of the railway's beside a link that is switched off, where no copy then faces its way, is recorded where it
+     * stands (RSA17-C3): `setPortalDisabled` writes it, as a direction does - and no claim drove that.
+     *
+     * MUTATION: take the record out of `setPortalDisabled`, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testATrainBesideALinkSwitchedOffIsRecordedWhereItStands() throws Exception
+    {
+        java.io.File folder = java.nio.file.Files.createTempDirectory("r35-link").toFile();
+
+        folder.deleteOnExit();
+
+        org.traincontrol.base.LayoutDiagram page = new org.traincontrol.base.LayoutDiagram("main", 7, 3, null, null);
+
+        org.traincontrol.base.LayoutDiagramComponent.componentType[] row = {
+            org.traincontrol.base.LayoutDiagramComponent.componentType.LINK,
+            org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK,
+            org.traincontrol.base.LayoutDiagramComponent.componentType.STRAIGHT,
+            org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK,
+            org.traincontrol.base.LayoutDiagramComponent.componentType.STRAIGHT,
+            org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK,
+            org.traincontrol.base.LayoutDiagramComponent.componentType.LINK};
+
+        int sensor = 8511;
+
+        for (int x = 0; x < row.length; x++)
+        {
+            boolean feedback = row[x] == org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK;
+
+            page.addComponent(row[x], x, 1, x == 0 ? 2 : 0, 0, feedback ? sensor : 0, feedback ? sensor++ : 0,
+                org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+        }
+
+        page.setPageId("1");
+
+        org.traincontrol.automationui.AutonomySession session = new org.traincontrol.automationui.AutonomySession(folder);
+
+        session.open(java.util.Arrays.asList(page));
+        session.initialize("r35-link");
+
+        String[] names = {"Alpha", "Beta", "Gamma"};
+
+        for (int i = 0; i < 3; i++)
+        {
+            session.setStation(new org.traincontrol.automationui.TileGraph.TileKey("main", 1 + 2 * i, 1), true);
+            session.setPointName(new org.traincontrol.automationui.TileGraph.TileKey("main", 1 + 2 * i, 1), names[i]);
+        }
+
+        org.traincontrol.automationui.TileGraph.TileKey east = new org.traincontrol.automationui.TileGraph.TileKey("main", 6, 1);
+        org.traincontrol.automationui.TileGraph.TileKey gamma = new org.traincontrol.automationui.TileGraph.TileKey("main", 5, 1);
+
+        session.pairPortals(new org.traincontrol.automationui.TileGraph.TileKey("main", 0, 1), east);
+
+        try
+        {
+            model.parseAuto(session.buildConfiguration());
+
+            Layout running = model.getAutoLayout();
+
+            session.setRunningLayoutSource(() -> model.getAutoLayout());
+
+            // THE RUN'S RESULT: come in through the link to Gamma, facing west - on the railway alone
+            assertTrue(running.moveLocomotive(MOVED, "Gamma (westbound)", false), "precondition: " + MOVED
+                + " not stood on Gamma (westbound): " + namesOf(running));
+
+            assertTrue(session.getLocomotiveNameAt(gamma) == null, "precondition: the setup already has a train on Gamma");
+
+            session.setPortalDisabled(east, true);
+
+            assertTrue(session.getStore().isPortalDisabled(east), "precondition: the link was not switched off");
+
+            assertEquals(session.getLocomotiveNameAt(gamma), MOVED, "the train beside the link switched off, which no copy"
+                + " of Gamma faces the way of now, is not recorded where it stands");
+
+            assertEquals(session.getFacing(gamma), org.traincontrol.automationui.TilePorts.Side.W, "the train recorded on Gamma is not recorded facing"
+                + " west, as it stands");
+        }
+        finally
+        {
+            session.setRunningLayoutSource(null);
+
+            new Layout(model).makeCurrent();
+        }
     }
 }

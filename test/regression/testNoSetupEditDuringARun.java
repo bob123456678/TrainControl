@@ -9,6 +9,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomyBuilder;
@@ -3159,8 +3160,21 @@ public class testNoSetupEditDuringARun
 
             while (!asked.contains(said) && System.currentTimeMillis() < until) Thread.sleep(200);
 
-            assertTrue(asked.contains(said), "the timetable did not stop at the entry it cannot run and say why (RSA9-B1): "
-                + asked);
+            // SAYING MORE WHEN IT FAILS: red twice in a full battery (rounds 28 and 33) with nothing asked at all, and green
+            // alone six times of six - so the railway's state and the log's end go into the message
+            if (!asked.contains(said))
+            {
+                org.traincontrol.automation.Layout now = ui[0].getModel().getAutoLayoutIfLoaded();
+
+                String log = logged();
+
+                fail("the timetable did not stop at the entry it cannot run and say why (RSA9-B1): " + asked
+                    + "; running " + (now == null ? "no railway" : String.valueOf(now.isRunning()))
+                    + "; the railway the precondition read is the one now: " + (now == running)
+                    + "; its first entry runnable now: " + (now == null || now.getTimetable().isEmpty() ? "-"
+                    : String.valueOf(now.getTimetable().get(0).isRunnable()))
+                    + "; the log's end: " + log.substring(Math.max(0, log.length() - 4000)));
+            }
         }
         finally
         {

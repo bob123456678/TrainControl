@@ -69,6 +69,9 @@ public class DiagramMonitor
     // Which way a train standing on each Point faces, for the icon of a parked one (Adam, 2026-10-01).
     private volatile Map<String, org.traincontrol.automationui.TilePorts.Side> facings = new LinkedHashMap<>();
 
+    // The trains the setup records where the railway stands them on no Point, and their facings (RSA17-C2).
+    private volatile Map<TileKey, org.traincontrol.automationui.TilePorts.Side> onNoPoint = new LinkedHashMap<>();
+
     private final AtomicBoolean dirty = new AtomicBoolean(false);
 
     private volatile Map<TileKey, TileOverlay> published = Collections.emptyMap();
@@ -121,6 +124,18 @@ public class DiagramMonitor
     {
         this.facings = facings == null ? new LinkedHashMap<String, org.traincontrol.automationui.TilePorts.Side>()
             : new LinkedHashMap<>(facings);
+    }
+
+    /**
+     * The trains the setup records on a square the railway stands them on no Point of, drawn parked there (RSA17-C2): the
+     * error about each says it stands there, and a diagram that drew nothing read the square free.
+     *
+     * @param trains square to the way the train faces
+     */
+    public void setTrainsOnNoPoint(Map<TileKey, org.traincontrol.automationui.TilePorts.Side> trains)
+    {
+        this.onNoPoint = trains == null ? new LinkedHashMap<TileKey, org.traincontrol.automationui.TilePorts.Side>()
+            : new LinkedHashMap<>(trains);
     }
 
     /**
@@ -458,7 +473,9 @@ public class DiagramMonitor
         {
             org.traincontrol.base.Locomotive standing = point == null ? null : point.getCurrentLocomotive();
 
-            if (standing == null || pathed.contains(standing)) continue;
+            // NOR ONE SETTING ITS ROUTE UP (RSA17-B2): every Point it has reserved answers it, and each was drawn as a train
+            // parked there, for the seconds the accessories take - its own mark comes once it is under way
+            if (standing == null || pathed.contains(standing) || layout.holdsAPath(standing)) continue;
 
             TileKey tile = pointTiles.get(point.getName());
 
@@ -469,6 +486,16 @@ public class DiagramMonitor
             TileOverlay existing = into.get(tile);
 
             into.put(tile, existing == null ? mark : existing.merge(mark));
+        }
+
+        // AND THOSE ON NO POINT, where the setup says they stand (RSA17-C2)
+        for (Map.Entry<TileKey, org.traincontrol.automationui.TilePorts.Side> train : onNoPoint.entrySet())
+        {
+            TileOverlay mark = TileOverlay.parked(train.getValue());
+
+            TileOverlay existing = into.get(train.getKey());
+
+            into.put(train.getKey(), existing == null ? mark : existing.merge(mark));
         }
     }
 

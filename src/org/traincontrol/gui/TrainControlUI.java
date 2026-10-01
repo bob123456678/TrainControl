@@ -7011,8 +7011,62 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // BY THE NAMES THE REBUILD GIVES THE SAME POINTS (RSA4-A1), which the session traces
         org.traincontrol.automationui.AutonomySession naming = this.autonomySession;
 
-        putTheTrainsBack(this.model.getAutoLayout(), standing, this.model::log, placementsJustEdited,
-            naming == null ? null : naming::pointNamedNow);
+        java.util.Set<String> notBack = putTheTrainsBack(this.model.getAutoLayout(), standing, this.model::log,
+            placementsJustEdited, naming == null ? null : naming::pointNamedNow);
+
+        recordTheTrainsNotPutBack(this.model.getAutoLayout(), standing, notBack, naming, this.model::log);
+    }
+
+    /**
+     * A train the rebuild could not put back where the railway had it, taken off wherever the rebuild put it and recorded
+     * in the setup where it stands, facing the way it faces (RSA17-A1).  The rebuild put it where the setup last had it -
+     * a square a run had moved it off - or nowhere, and the square it stands on read free: another train could be sent
+     * into it, and nothing in the setup check said so.  Recorded, the build stands it on no Point where no copy faces
+     * its way, and the setup check's error stops every send until it is turned, moved, or the track is put back.
+     *
+     * @param built the railway the rebuild produced
+     * @param standing what `whereTheTrainsAre` recorded before it
+     * @param notBack the trains `putTheTrainsBack` could not put back
+     * @param setup the setup to record them in, or null
+     * @param log where to say so
+     */
+    public static void recordTheTrainsNotPutBack(org.traincontrol.automation.Layout built,
+        java.util.Map<String, String[]> standing, java.util.Set<String> notBack,
+        org.traincontrol.automationui.AutonomySession setup, java.util.function.Consumer<String> log)
+    {
+        if (built == null || standing == null || notBack == null || notBack.isEmpty()) return;
+
+        for (String train : notBack)
+        {
+            String[] was = standing.get(train);
+
+            // OFF WHEREVER THE REBUILD PUT IT: not where it stands
+            for (org.traincontrol.automation.Point point : new java.util.ArrayList<>(built.getPoints()))
+            {
+                if (point.getCurrentLocomotive() != null && train.equals(point.getCurrentLocomotive().getName()))
+                {
+                    built.moveLocomotive(null, point.getName(), true);
+                }
+            }
+
+            org.traincontrol.automationui.TileGraph.TileKey square = was == null || was.length < 4 || was[3] == null
+                ? null : org.traincontrol.automationui.AutonomyCompanionStore.parseTileKey(was[3]);
+
+            if (setup == null || square == null) continue;
+
+            setup.placeLocomotive(square, train);
+
+            org.traincontrol.automationui.TilePorts.Side facing = null;
+
+            for (org.traincontrol.automationui.TilePorts.Side side : org.traincontrol.automationui.TilePorts.Side.values())
+            {
+                if (was.length > 4 && side.name().equals(was[4])) facing = side;
+            }
+
+            if (facing != null) setup.setFacing(square, facing);
+
+            if (log != null) log.accept(I18n.f("autosetup.errorTrainNotPutBack", train, square.toString()));
+        }
     }
 
     /**
@@ -7027,10 +7081,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param standing what `whereTheTrainsAre` recorded before it
      * @param log where to say that one train could not be put back
      */
-    public static void putTheTrainsBack(org.traincontrol.automation.Layout built,
+    public static java.util.Set<String> putTheTrainsBack(org.traincontrol.automation.Layout built,
         java.util.Map<String, String[]> standing, java.util.function.Consumer<String> log)
     {
-        putTheTrainsBack(built, standing, log, null);
+        return putTheTrainsBack(built, standing, log, null);
     }
 
     /**
@@ -7058,11 +7112,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param placementsJustEdited locomotives the setup was just given a new placement for, or null
      * @param namedNow where each recorded Point is now, or null to go by the names recorded
      */
-    public static void putTheTrainsBack(org.traincontrol.automation.Layout built,
+    public static java.util.Set<String> putTheTrainsBack(org.traincontrol.automation.Layout built,
         java.util.Map<String, String[]> standing, java.util.function.Consumer<String> log,
         java.util.Set<String> placementsJustEdited, NamedNow namedNow)
     {
-        putTheTrainsBack(built, namedNow == null ? standing : namedNow(standing, namedNow), log, placementsJustEdited);
+        java.util.Set<String> nowhere = new java.util.LinkedHashSet<>();
+
+        java.util.Set<String> notBack = putTheTrainsBack(built,
+            namedNow == null ? standing : namedNow(standing, namedNow, nowhere), log, placementsJustEdited);
+
+        // AND THOSE WHOSE COPY THE REBUILD HAS NOT GOT (RSA17-A1), unless the setup was just given a newer answer for them
+        for (String train : nowhere)
+        {
+            if (placementsJustEdited == null || !placementsJustEdited.contains(train)) notBack.add(train);
+        }
+
+        return notBack;
     }
 
     /**
@@ -7075,7 +7140,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @return the same, renamed
      */
     private static java.util.Map<String, String[]> namedNow(java.util.Map<String, String[]> standing,
-        NamedNow namedNow)
+        NamedNow namedNow, java.util.Set<String> nowhere)
     {
         if (standing == null) return null;
 
@@ -7089,7 +7154,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 now[0] = namedNow.pointNamedNow(now[0], now.length > 3 ? now[3] : null, now.length > 4 ? now[4] : null);
 
-                if (now[0] == null) continue;
+                // NO COPY OF ITS SQUARE FACING ITS WAY NOW: said, not left where the rebuild put it (RSA17-A1)
+                if (now[0] == null)
+                {
+                    nowhere.add(was.getKey());
+
+                    continue;
+                }
             }
 
             org.json.JSONObject roadSquares = null;
@@ -7172,14 +7243,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * @param standing what `whereTheTrainsAre` recorded before it
      * @param log where to say that one train could not be put back
      * @param placementsJustEdited locomotives the setup was just given a new placement for, or null
+     * @return the trains it could not put back where the railway had them (RSA17-A1) - left where the rebuild put them
      */
-    public static void putTheTrainsBack(org.traincontrol.automation.Layout built,
+    public static java.util.Set<String> putTheTrainsBack(org.traincontrol.automation.Layout built,
         java.util.Map<String, String[]> standing, java.util.function.Consumer<String> log,
         java.util.Set<String> placementsJustEdited)
     {
-        if (standing == null || standing.isEmpty()) return;
+        java.util.Set<String> notBack = new java.util.LinkedHashSet<>();
 
-        if (built == null) return;
+        if (standing == null || standing.isEmpty()) return notBack;
+
+        if (built == null) return notBack;
 
         for (java.util.Map.Entry<String, String[]> was : standing.entrySet())
         {
@@ -7187,7 +7261,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 org.traincontrol.automation.Point back = built.getPoint(was.getValue()[0]);
 
-                if (back == null) continue;
+                if (back == null)
+                {
+                    if (placementsJustEdited == null || !placementsJustEdited.contains(was.getKey())) notBack.add(was.getKey());
+
+                    continue;
+                }
 
                 // A STATION COPY FACING THE SAME WAY, where the recorded one is barred and the square has one
                 // (TDY4-B1, AUT4-B1) - a turning copy at a square trains may turn at.  The train faces the same way
@@ -7216,7 +7295,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         // EXCEPT A BARRED COPY OF A STATION (TDY3-A1): a train reversed there on the throttle, or turned by
                         // the Facing menu, stands on that copy because it IS its direction.  Refused, the model kept it where
                         // the setup last had it - somewhere it is not, and free to be dispatched from there.
-                        if (!built.moveLocomotive(was.getKey(), back.getName(), false, true)) continue;
+                        // ONTO ITS OWN COPY EVEN WHERE THAT IS NO STATION NOW (RSA17-A1): it stands there
+                        if (!built.moveLocomotive(was.getKey(), back.getName(), false, true, true))
+                        {
+                            notBack.add(was.getKey());
+
+                            continue;
+                        }
                     }
 
                     // The arrival side goes back with the train: `Point.setLocomotive` clears it
@@ -7284,8 +7369,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // out loud - it is standing somewhere the diagram no longer has - and it is not a
                 // reason to abandon the others.
                 if (log != null) log.accept(cannotPutItBack.getMessage());
+
+                notBack.add(was.getKey());
             }
         }
+
+        return notBack;
     }
 
     /**

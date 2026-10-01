@@ -6019,7 +6019,7 @@ public class AutonomyCompanionStore
     // Package-private rather than private: the session prunes stale point data by tile, and has to be
     // able to read the page out of a stored key to tell "this square is gone" from "this square is on a
     // page autonomy was told to ignore".
-    static TileKey parseTileKey(String key)
+    public static TileKey parseTileKey(String key)
     {
         if (key == null) return null;
 

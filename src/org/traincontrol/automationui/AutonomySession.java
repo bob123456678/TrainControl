@@ -6703,8 +6703,17 @@ public class AutonomySession
     {
         java.util.Set<TileKey> out = new LinkedHashSet<>();
 
+        // WHERE THE RAILWAY HAS THE TRAIN, as the warning and the Facing menu ask it (RSA17-B1)
+        Map<String, Object[]> railway = railwayTrains();
+
         for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
         {
+            // A RECORD THE LAST RUN HAS OUTRUN is no train there (RSA17-B1): the railway has it standing on another square,
+            // and the railway wins (OB-183) - an error about a square no train stands on stopped every send
+            Object[] there = railway.get(placed.getValue());
+
+            if (there != null && !placed.getKey().equals(there[0])) continue;
+
             Side recorded = getFacing(placed.getKey());
 
             if (recorded == null) continue;
@@ -7096,7 +7105,14 @@ public class AutonomySession
         // AND WHAT A REFUSAL USED TO STOP, said instead (Adam, 2026-10-01): a train facing track that runs only towards it,
         // and a station at the end of a line trains may not turn at
         found.addAll(AutonomyChecks.checkTrainsFacingTrackTowardsThem(reducer, trainsFacingTrackTowardsThem()));
-        found.addAll(AutonomyChecks.checkStationsAtTheEndOfALine(reducer, stationsAtTheEndOfALine()));
+        java.util.Set<TileKey> endsOfLines = stationsAtTheEndOfALine();
+
+        found.addAll(AutonomyChecks.checkStationsAtTheEndOfALine(reducer, endsOfLines));
+
+        // ONE FINDING AND ONE PIECE OF ADVICE for a station at the end of a line (RSA17-C1): the warning that trains cannot
+        // turn there said "may" where the error says "must", and "may" then drew a notice saying "must"
+        found.removeIf(finding -> AutonomyChecks.ARRIVAL_TRAPPED.equals(finding.getMessageKey())
+            && endsOfLines.contains(finding.getTile()));
 
         AutonomyChecks.bySeverity(found);
 
@@ -7371,6 +7387,30 @@ public class AutonomySession
         touched();
 
         return true;
+    }
+
+    /**
+     * Every train the setup records on a square the railway stands it on no Point of - no copy faces its way - and the way
+     * it faces (RSA17-C2): the diagram draws it there, where the error about it says it stands.
+     *
+     * @return square to facing
+     */
+    public Map<TileKey, Side> trainsOnNoPoint()
+    {
+        Map<TileKey, Side> out = new LinkedHashMap<>();
+
+        java.util.Set<String> onTheRailway = railwayTrains().keySet();
+
+        Map<TileKey, String> placed = placedLocomotives();
+
+        for (TileKey square : facingsThatCannotBeHeld())
+        {
+            String train = placed.get(square);
+
+            if (train != null && !onTheRailway.contains(train)) out.put(square, getFacing(square));
+        }
+
+        return out;
     }
 
     /**
