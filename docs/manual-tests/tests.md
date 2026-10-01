@@ -28,14 +28,19 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-627](#mt-627) | 2026-09-30 | Duplicate after a run copies where the trains are, and the next start resumes the one running | fixed unvalidated | RSA10-A1 |
-| [MT-631](#mt-631) | 2026-09-30 | A one-way run against a train standing at a station is refused | fixed unvalidated | MT-605 |
-| [MT-632](#mt-632) | 2026-09-30 | A click on the track beside a train goes on to the next direction allowed | fixed unvalidated | MT-605 |
 | [MT-633](#mt-633) | 2026-09-30 | The Autonomy menu greys while autonomy runs, saying why | fixed unvalidated | MT-613 |
 | [MT-634](#mt-634) | 2026-09-30 | A page left out greys Auto and Manual with the tools | fixed unvalidated | FR-105 |
 | [MT-635](#mt-635) | 2026-10-01 | Layouts > Create New Layout waits for autonomy to stop | fixed unvalidated | RSA13-B2 |
+| [MT-636](#mt-636) | 2026-10-01 | A one-way run through a train's station, against it, is made and listed as an error | fixed unvalidated | MT-631 |
+| [MT-637](#mt-637) | 2026-10-01 | Track made one way towards a standing train is a warning | fixed unvalidated | MT-631 |
+| [MT-638](#mt-638) | 2026-10-01 | A station at the end of a line is an error until trains must change direction there | fixed unvalidated | MT-631 |
+| [MT-639](#mt-639) | 2026-10-01 | Manage Configurations offers New Configuration, and no Add | fixed unvalidated | MT-626 |
+| [MT-640](#mt-640) | 2026-10-01 | New Configuration answered No starts the copy with no trains and no timetable | fixed unvalidated | MT-626 |
+| [MT-641](#mt-641) | 2026-10-01 | The Layouts menu greys while autonomy runs, and keeps the CS3 web app | fixed unvalidated | MT-633 |
+| [MT-642](#mt-642) | 2026-10-01 | A train standing on a station shows the locomotive icon there | fixed unvalidated | Adam 2026-10-01 |
 
-Everything else - 629 of 635 - needs nothing from you unless the area changes again:
-496 **fixed validated** and 133 **superseded**.
+Everything else - 631 of 642 - needs nothing from you unless the area changes again:
+492 **fixed validated** and 139 **superseded**.
 
 ---
 
@@ -29769,7 +29774,7 @@ Both halves of your note are built in round 29 (83ba2fca): the menu now refuses 
 
 ### MT-606 - 2026-09-30 - A link is not switched off under a train that came in through it
 
-**Disposition:** fixed validated
+**Disposition:** superseded
 **From:** RSA6-A3, RSA6-A1
 
 **Written:** 2026-09-30
@@ -29793,13 +29798,17 @@ From the sixth release validator (RSA6), taken out of MT-599.
 
 Closed on my end, by your ruling of 2026-09-30 on corner cases (*"my MT's should be focused on more tangible functionality"*) - reopen it if you would rather run it: `core.testAutonomyDiagramSession.testALinkSwitchedOffUnderATrainIsRefused` and `regression.testAPendingTurnSurvivesTheRebuild.testTheSessionSeesTheRailwayFromTheStart` passed in the battery of c29dd5ec.
 
+**Claude, 2026-10-01.**
+
+Superseded in round 34 (36ebaeb8): a link switched off beside a train is no longer refused; where it leaves the train facing a way its station no longer has, the setup check lists an error (MT-636).
+
 ---
 
 <a id="mt-607"></a>
 
 ### MT-607 - 2026-09-30 - A dead end is not made one way away from a train facing the buffer
 
-**Disposition:** fixed validated
+**Disposition:** superseded
 **From:** RSA6-B3
 
 **Written:** 2026-09-30
@@ -29821,6 +29830,10 @@ From the sixth release validator (RSA6), taken out of MT-599.
 **Claude, 2026-10-01.**
 
 Closed on my end, by your ruling of 2026-09-30 on corner cases (*"my MT's should be focused on more tangible functionality"*) - reopen it if you would rather run it: `core.testAutonomyDiagramSession.testADirectionThatLeavesADeadEndFacingAwayIsRefused` passed in the battery of c29dd5ec.
+
+**Claude, 2026-10-01.**
+
+Superseded in round 34 (36ebaeb8): no direction is refused under a train; what it leaves is listed as an error or a warning (MT-636, MT-637).
 
 ---
 
@@ -29921,7 +29934,7 @@ Validated on your *Works* of 2026-09-30.
 
 ### MT-611 - 2026-09-30 - A dead end is not made two way under a train facing out of it
 
-**Disposition:** fixed validated
+**Disposition:** superseded
 **From:** RSA7-B1
 
 **Written:** 2026-09-30
@@ -29944,13 +29957,17 @@ From the seventh release validator (RSA7), taken out of MT-600.
 
 Closed on my end, by your ruling of 2026-09-30 on corner cases (*"my MT's should be focused on more tangible functionality"*) - reopen it if you would rather run it: `core.testAutonomyDiagramSession.testADeadEndMadeTwoWayUnderATrainFacingOutIsRefused` and `testADeadEndMadeTwoWayIsRefusedWhateverTheLastTrainLeft` passed in the battery of c29dd5ec.
 
+**Claude, 2026-10-01.**
+
+Superseded in round 34 (36ebaeb8): no direction is refused under a train; what it leaves is listed as an error or a warning (MT-636, MT-637).
+
 ---
 
 <a id="mt-612"></a>
 
 ### MT-612 - 2026-09-30 - A train at a one-way dead end does not block directions elsewhere
 
-**Disposition:** fixed validated
+**Disposition:** superseded
 **From:** RSA7-B1
 
 **Written:** 2026-09-30
@@ -29973,6 +29990,10 @@ refused every direction on the railway.
 **Claude, 2026-10-01.**
 
 Closed on my end, by your ruling of 2026-09-30 on corner cases (*"my MT's should be focused on more tangible functionality"*) - reopen it if you would rather run it: `core.testAutonomyDiagramSession.testAStaleFacingAtADeadEndRefusesNothingElse` and `testATrainFacingNoCopyIsNotAskedAbout` passed in the battery of c29dd5ec.
+
+**Claude, 2026-10-01.**
+
+Superseded in round 34 (36ebaeb8): with nothing refused under a train, a train at a dead end cannot block a direction anywhere.
 
 ---
 
@@ -30464,6 +30485,10 @@ Validated on your *Works, with notes* of 2026-09-30; the notes are built in roun
 
 Step 1's last item (RSA11-C3): while a configuration is loaded, **Add a Configuration...** is under **Autonomy > Manage Configurations**, beside Duplicate and Rename - it stands on the Autonomy menu itself only where there is no configuration.
 
+**Claude, 2026-10-01.**
+
+Since round 34 (36ebaeb8) Duplicate is called **New Configuration...**, and Add a Configuration is offered only on a layout with no configuration yet (MT-639).  Both still wait for autonomy to stop.
+
 ---
 
 <a id="mt-627"></a>
@@ -30489,6 +30514,10 @@ From the tenth release validator (RSA10).
   configuration shows the train there too.
 
 *What this is:* `regression.testNoSetupEditDuringARun.testANewConfigurationAfterARunCopiesWhereTheTrainsAre`.
+
+**Claude, 2026-10-01.**
+
+Since round 34 (36ebaeb8) Duplicate is called **New Configuration...** and asks whether where the trains stand and the timetable come too: answer **Yes** for this test.  MT-640 is the No.
 
 ---
 
@@ -30585,7 +30614,7 @@ Validated on your *Works* of 2026-09-30.
 
 ### MT-631 - 2026-09-30 - A one-way run against a train standing at a station is refused
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-605
 
 **Written:** 2026-09-30
@@ -30619,13 +30648,17 @@ Since round 31 (010de9ba) the refusal follows the train's whole way to the next 
 
 Since round 32 (636c259c) the refusal walks the railway as autonomy runs it, from the copy the train stands on (RSA14-B1); closing the track past a sensor, or switching a link off there, is refused the same way, and the message says the change would leave the train no way on.  The steps stand; whether closing right ahead should be refused too is put to you.
 
+**Claude, 2026-10-01.**
+
+Superseded in round 34 (36ebaeb8) by MT-636 and MT-637: on your answers of 2026-10-01 no setup edit is refused for a standing train - a one-way run against one is made, and listed as an error or a warning.
+
 ---
 
 <a id="mt-632"></a>
 
 ### MT-632 - 2026-09-30 - A click on the track beside a train goes on to the next direction allowed
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** MT-605
 
 **Written:** 2026-09-30
@@ -30644,6 +30677,10 @@ valid options, rather than just stalling on the error each time."*
 
 *What this is:* `core.testAutonomyDiagramSession.testAClickPassesOverADirectionRefusedUnderATrain` and
 `testAClickRoundAJunctionPassesOverACombinationRefusedUnderATrain`.
+
+**Claude, 2026-10-01.**
+
+Superseded in round 34 (36ebaeb8): with nothing refused under a train, a click on the track steps through every direction, as it did before the refusals.
 
 ---
 
@@ -30720,5 +30757,195 @@ switched the layout and reset autonomy under the moving trains.
 - It says at once that this cannot be done while autonomy runs, and no folder window opens.
 
 *What this is:* `regression.testNoSetupEditDuringARun.testCreateNewLayoutWaitsForAutonomyToStop`.
+
+---
+
+<a id="mt-636"></a>
+
+### MT-636 - 2026-10-01 - A one-way run through a train's station, against it, is made and listed as an error
+
+**Disposition:** fixed unvalidated
+**From:** MT-631
+
+**Written:** 2026-10-01
+
+Your answers of 2026-10-01: *"Generally I prefer warnings or errors over outright refusals, since it makes
+editing easier for the user.  Make refusals that make sense be errors, and smaller issues be warnings."*  The change is no longer refused.
+
+**Steps**
+
+1. Stand a train on a two-way station that trains run through, and note which way it faces.  In the autonomy editor,
+   make the track on both sides of the station one way, running the opposite way to the one the train faces.
+2. Open the setup's errors and warnings, then press **Start Autonomy**.
+3. Turn the train from its right-click menu, or put the track back.
+
+**Expected**
+
+- Step 1 is made, with no message.
+- In step 2 the list has an error naming the station - its locomotive faces a way the square no longer allows - and
+  autonomy does not start.
+- After step 3 the error is gone.
+
+*What this is:* `core.testAutonomyDiagramSession.testADirectionUnderAPlacedTrainIsSetAndReportedAsAnError`.
+
+---
+
+<a id="mt-637"></a>
+
+### MT-637 - 2026-10-01 - Track made one way towards a standing train is a warning
+
+**Disposition:** fixed unvalidated
+**From:** MT-631
+
+**Written:** 2026-10-01
+
+Your answers of 2026-10-01: *"Generally I prefer warnings or errors over outright refusals, since it makes
+editing easier for the user.  Make refusals that make sense be errors, and smaller issues be warnings."*
+
+**Steps**
+
+1. Stand a train on a two-way station.  In the autonomy editor, make the track right in front of it (the side it
+   faces) one way towards the station.
+2. Open the setup's errors and warnings.
+3. Set that track back to two way.
+
+**Expected**
+
+- Step 1 is made, with no message.
+- In step 2 the list has a warning that the train faces track running only towards it.
+- After step 3 the warning is gone.
+
+*What this is:* `core.testAutonomyDiagramSession.testATrainFacingTrackRunningTowardsItIsAWarning`.
+
+---
+
+<a id="mt-638"></a>
+
+### MT-638 - 2026-10-01 - A station at the end of a line is an error until trains must change direction there
+
+**Disposition:** fixed unvalidated
+**From:** MT-631
+
+**Written:** 2026-10-01
+
+Your answer of 2026-10-01: *"Stations at the end of a line: make it an error"*.
+
+**Steps**
+
+1. Use (or make) a station at the end of a line that is not marked **Trains Must Change Direction Here**.  Open the
+   setup's errors and warnings.
+2. Mark it **Trains Must Change Direction Here**.
+
+**Expected**
+
+- In step 1 the list has an error naming the station: a train sent there could never leave.
+- After step 2 the error is gone.
+
+*What this is:* `core.testAutonomyDiagramSession.testAStationAtTheEndOfALineIsAnError`.
+
+---
+
+<a id="mt-639"></a>
+
+### MT-639 - 2026-10-01 - Manage Configurations offers New Configuration, and no Add
+
+**Disposition:** fixed unvalidated
+**From:** MT-626
+
+**Written:** 2026-10-01
+
+Your answer of 2026-10-01: *"One door: do it"*.
+
+**Steps**
+
+1. With a configuration loaded, open **Autonomy > Manage Configurations**.
+
+**Expected**
+
+- It offers **New Configuration...**, Rename and Delete; **Add a Configuration...** is not there.  (Add is offered only
+  on a layout with no configuration yet.)
+
+*What this is:* `regression.testNoSetupEditDuringARun.testManageOffersOneDoorToANewConfiguration`.
+
+---
+
+<a id="mt-640"></a>
+
+### MT-640 - 2026-10-01 - New Configuration answered No starts the copy with no trains and no timetable
+
+**Disposition:** fixed unvalidated
+**From:** MT-626
+
+**Written:** 2026-10-01
+
+Your answer of 2026-10-01: *"One door: do it"*.  New Configuration copies the one you have and asks whether where the
+trains stand and the timetable come too.
+
+**Steps**
+
+1. Choose **Autonomy > Manage Configurations > New Configuration...**, give it a name, and answer **No** to the
+   question about the trains and the timetable.
+2. Load the copy from the Autonomy menu.
+
+**Expected**
+
+- The copy has no trains placed and an empty timetable; each station's settings are as in the configuration copied.
+- The configuration copied still has its trains and its timetable.
+
+*What this is:* `regression.testNoSetupEditDuringARun.testANewConfigurationCanStartWithoutItsTrains`.
+
+---
+
+<a id="mt-641"></a>
+
+### MT-641 - 2026-10-01 - The Layouts menu greys while autonomy runs, and keeps the CS3 web app
+
+**Disposition:** fixed unvalidated
+**From:** MT-633
+
+**Written:** 2026-10-01
+
+Your answer of 2026-10-01: *"Grey layout: grey the relevant options, but we need to keep open CS3 web app
+available"*.
+
+**Steps**
+
+1. Start autonomy and open the **Layouts** menu.  Hover over a greyed item.
+2. Stop autonomy, wait for the trains to stop, and open the menu again.
+
+**Expected**
+
+- In step 1 **Open Layout...**, **Manage Pages**, **Edit Layout Page**, **Create New Layout** and the two Central
+  Station items are greyed, each saying it waits for autonomy to stop; **Show Current Data Source**, the pop-up and
+  picture items, and **Open CS3 Web App** are as they were before the run.
+- In step 2 they are as they were before the run.
+
+*What this is:* `regression.testNoSetupEditDuringARun.testTheLayoutMenuIsGreyedWhileAutonomyRuns`.
+
+---
+
+<a id="mt-642"></a>
+
+### MT-642 - 2026-10-01 - A train standing on a station shows the locomotive icon there
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-01
+
+**Written:** 2026-10-01
+
+Your request of 2026-10-01: *"when a train is standing somewhere, can we show its locomotive icon on top of the station
+in the track diagram viewer, while maintaining editability? same icon as when a run is started"*.
+
+**Steps**
+
+1. With autonomy loaded and not running, look at a station a train stands on in the track diagram.
+2. Paste a train onto another station (Ctrl+X on one, Ctrl+V on the other), and right-click that station.
+
+**Expected**
+
+- The locomotive icon a run shows is drawn on the station, facing the way the train faces.
+- In step 2 the icon leaves the first station and appears on the second, and the right-click menu opens as usual.
+
+*What this is:* `ui.testAPastedTrainFacesTheWayTheOperatorChose.testAPastedTrainShowsItsLocomotiveOnTheStation`.
 
 ---
