@@ -2021,10 +2021,14 @@ made, not only once a station's Facing menu or the editor has told it (RSA6-A1).
 standing train** (Adam, 2026-09-30, on MT-605: *"Refuse it too"*): the track ahead of the train, the way it faces, made
 to carry trains only towards it - judged on the railway as built, by whether the train can reach a station the way it
 faces before the change and none after, so however far ahead it is set: past a page link, by the One-Way tool over part
-of the way on (RSA12-B1), past a sensor that is no station (RSA13-B1).  Closing the track right ahead of the train is
-not refused as a one-way run (Adam's ruling) - though the turn refusal refuses it where the train's copy would go, and
-the train does not turn round there unless trains may change direction at the station: it waits until the track is
-open again (RSA13-C3).  A track already running against a train asks nothing of a change elsewhere.  A train facing no
+of the way on (RSA12-B1), past a sensor that is no station (RSA13-B1) - walking the railway as autonomy runs it,
+from the copy the train stands on, so not out of a turn-round station's other copy, into a barred arrival or through a
+square out of service (RSA14-B1).  Track closed past a sensor, or a link switched off there, is refused the same way,
+since it strands the train just as surely (RSA14-C1); the message says the change would leave the train no way on.
+Closing the track right ahead of the train is not refused as a one-way run (Adam's ruling) - though the turn refusal
+refuses it where the train's copy would go, and the train does not turn round there unless trains may change direction
+at the station: it waits until the track is open again (RSA13-C3).  Whether that should be refused too is put to Adam
+(open-questions.md).  A track already running against a train asks nothing of a change elsewhere.  A train facing no
 track, or recording no facing, leaves by its square's only way out (RSA12-C3); with no railway loaded, a train faces as
 the build stands it (RSA13-C1).  **A click on the track or a switch passes over a direction refused** to the next one allowed, and says why
 only where none is (Adam, MT-605: *"continue cycling through the valid options"*).

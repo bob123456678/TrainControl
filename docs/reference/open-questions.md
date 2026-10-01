@@ -235,6 +235,17 @@ resume note that has been deleted.
 
 ## Setup and start-up
 
+**Open** (put to Adam, 2026-10-01): **closing the track right ahead of a standing train.**  On MT-605 Adam ruled a one-way
+run against a standing train refused (*"Refuse it too"*), closing the track ahead left allowed - on Claude's premise that
+a dead end turns the train round, which holds only where trains may change direction at the station (RSA13-C3):
+elsewhere the train waits until the track is open again.  Closing past a sensor, or switching a link off there, is
+refused like a one-way run (RSA13-B1, RSA14-C1).  Should closing right ahead be refused too, where the station does not
+let trains turn?
+
+**Decided** (Adam, 2026-09-30, on MT-605: *"Refuse it too"*): **a one-way run against the way a standing train faces is
+refused**, as a direction that turns it is - judged on the railway as built, however far along the train's way it is set.
+Built in rounds 29 to 32; behaviour.md 6a.
+
 **Decided** (Adam, 2026-09-30: *"this timetable swapping is too complex.  Just keep the entries, and if a path is run
 that contains a point on a disabled page, reject it with an error as we do with other autonomy paths.  Nice and
 simple"*, and *"You can hook it on start timetable, and/or on the path validation function"*): **a page left out of
