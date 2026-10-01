@@ -1419,6 +1419,126 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A one-way run past a sensor is refused where the train's way on is already one way out of its station (RSA15-B1):
+     * the refusal skipped any train nothing arrives at by the side it faces - the clause for the track right ahead
+     * closed - and a way on already one way out is that too.  It skips only where nothing leaves or arrives by the side.
+     *
+     * MUTATION: skip wherever nothing arrives by the side, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAOneWayRunPastASensorBeyondAOneWayWayOnIsRefused() throws Exception
+    {
+        LayoutDiagram page = sensorBetweenStations("RSA15-B1");
+
+        TileKey gamma = new TileKey("main", 5, 1);
+
+        // THE WAY ON ALREADY ONE WAY, out of Gamma westward - set with nothing standing there
+        session.setRunDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.TOWARD_B);
+
+        assertNull(session.takeDirectionRefusal(), "precondition: a direction with nothing standing there was refused");
+
+        session.placeLocomotive(gamma, "B1 one-way train");
+        session.setFacing(gamma, org.traincontrol.automationui.TilePorts.Side.W);
+        session.rebuild();
+
+        // ONE WAY EAST PAST THE SENSOR: the train's way on reaches no station
+        session.setRunDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_A);
+
+        String refused = session.takeDirectionRefusal();
+
+        assertTrue(refused != null && refused.contains("B1 one-way train"), "a one-way run past a sensor, where the train's"
+            + " way on was already one way out, left it reaching no station unasked (RSA15-B1): " + refused);
+    }
+
+    /**
+     * The train's own station, reached round a turn on the way, is no station its way on reaches (RSA15-B2): the walk
+     * counted the other copy of the square the train stands on, so a change leaving it only the way back to itself was
+     * set.
+     *
+     * MUTATION: count a copy of the train's own square, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testTheTrainsOwnStationReachedRoundATurnIsNoWayOn() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 9, 3, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 201, 201, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 202, 202, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 203, 203, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+
+        // A SENSOR THAT IS NO STATION beyond Gamma, so Gamma is a through station a train can leave, and nothing that way
+        page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 204, 204, accessoryDecoderType.MM2, null);
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("RSA15-B2");
+
+        // ALPHA AND GAMMA STATIONS; the sensor between them none, and trains may turn round at it - a headshunt
+        TileKey sensor = new TileKey("main", 3, 1);
+        TileKey gamma = new TileKey("main", 5, 1);
+
+        session.setStation(new TileKey("main", 1, 1), true);
+        session.setStation(gamma, true);
+        session.setPointName(new TileKey("main", 1, 1), "Alpha");
+        session.setPointName(gamma, "Gamma");
+        session.setPointProperty(sensor, AutonomyBuilder.CAN_REVERSE, Boolean.TRUE);
+
+        session.placeLocomotive(gamma, "B2 own train");
+        session.setFacing(gamma, org.traincontrol.automationui.TilePorts.Side.W);
+        session.rebuild();
+
+        // ONE WAY EAST BETWEEN ALPHA AND THE SENSOR: the way on reaches only the turn, and back to Gamma
+        session.setRunDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_A);
+
+        String refused = session.takeDirectionRefusal();
+
+        assertTrue(refused != null && refused.contains("B2 own train"), "a change leaving a train's way on only back to its"
+            + " own station, round a turn, was not refused (RSA15-B2): " + refused);
+    }
+
+    /**
+     * The track right ahead closed, where the turn refusal refuses it, says the change would leave the train no way on -
+     * not that the train faces the other way (RSA14-C2, RSA15-C3): on a square nothing arrives at, the train's copy is its
+     * way out, and closing that way takes the copy.
+     *
+     * MUTATION: say the turn refusal's words for a track closed, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testATrackClosedRightAheadSaysTheTrainHasNoWayOn() throws Exception
+    {
+        sensorBetweenStations("RSA15-C3");
+
+        TileKey gamma = new TileKey("main", 5, 1);
+
+        // NOTHING ARRIVES AT GAMMA: the track either side one way away from it - a copy per way out
+        session.setRunDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.TOWARD_B);
+        session.setRunDirection(new TileKey("main", 6, 1), new RouteId(0, 0), Direction.TOWARD_A);
+
+        assertNull(session.takeDirectionRefusal(), "precondition: a direction with nothing standing there was refused");
+
+        session.placeLocomotive(gamma, "C3 closed train");
+        session.setFacing(gamma, org.traincontrol.automationui.TilePorts.Side.W);
+        session.rebuild();
+
+        // THE TRACK RIGHT AHEAD CLOSED
+        session.setRunDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.NONE);
+
+        String refused = session.takeDirectionRefusal();
+
+        assertEquals(refused, org.traincontrol.util.I18n.f("autosetup.ui.errorDirectionAgainstATrain", "C3 closed train",
+            "Gamma"), "the track right ahead closed was refused in words about the train facing the other way (RSA15-C3)");
+    }
+
+    /**
      * A page renamed keeps the timetable legs and the roads through its squares with no name of their own (RSA5-B2):
      * such a square is named after its page, so a rename renamed its Points, and nothing carried the names stored.
      *
@@ -2535,6 +2655,38 @@ public class testAutonomyDiagramSession
         f.setAccessible(true);
 
         return (java.awt.Component) f.get(panel);
+    }
+
+    /**
+     * Alpha at 1,1, a sensor that is no station at 3,1, Gamma at 5,1 and Delta at 7,1, plain track between: Gamma a
+     * through station a train can be sent from.
+     */
+    private LayoutDiagram sensorBetweenStations(String configuration) throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 9, 3, null, null);
+
+        for (int x = 1; x <= 7; x++)
+        {
+            page.addComponent(x % 2 == 1 ? componentType.FEEDBACK : componentType.STRAIGHT, x, 1, 0, 0,
+                x % 2 == 1 ? 210 + x : 0, x % 2 == 1 ? 210 + x : 0, accessoryDecoderType.MM2, null);
+        }
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize(configuration);
+
+        String[] names = {"Alpha", null, "Gamma", "Delta"};
+
+        for (int i = 0; i < 4; i++)
+        {
+            if (names[i] == null) continue;
+
+            session.setStation(new TileKey("main", 1 + 2 * i, 1), true);
+            session.setPointName(new TileKey("main", 1 + 2 * i, 1), names[i]);
+        }
+
+        return page;
     }
 
     /** The track either side of the middle station made one-way away from it, so nothing arrives there. */

@@ -7389,7 +7389,10 @@ public class AutonomySession
 
             Map.Entry<String, String> first = (turned.isEmpty() ? against : turned).entrySet().iterator().next();
 
-            directionRefusal = I18n.f(turned.isEmpty() ? "autosetup.ui.errorDirectionAgainstATrain"
+            // A TRACK RIGHT AHEAD CLOSED is no train facing "the other way" (RSA14-C2, RSA15-C3): said as what it is
+            boolean closedAhead = !turned.isEmpty() && closesTheWayAhead(first.getKey(), after);
+
+            directionRefusal = I18n.f(turned.isEmpty() || closedAhead ? "autosetup.ui.errorDirectionAgainstATrain"
                 : "autosetup.ui.errorDirectionTurnsATrain", first.getKey(), first.getValue());
 
             return false;
@@ -7457,7 +7460,11 @@ public class AutonomySession
             // A COPY GONE is the turn refusal's to ask about
             if (from == null || to == null) continue;
 
-            if (was.reachesAStation(from) && !now.reachesAStation(to) && arrivesBy(after, square, facing))
+            // THE TRACK RIGHT AHEAD CLOSED, by Adam's ruling not refused here: nothing leaves or arrives by that side after the
+            // change (RSA15-B1) - not merely nothing arriving, which a way on already one way out of the station also is
+            if (!leavesBy(after, square, facing) && !arrivesBy(after, square, facing)) continue;
+
+            if (was.reachesAStation(from) && !now.reachesAStation(to))
             {
                 against.put(train.getKey(), bases.containsKey(square) ? bases.get(square) : square.toString());
             }
@@ -7550,6 +7557,10 @@ public class AutonomySession
 
             todo.add(copy);
 
+            // NOT ITS OWN SQUARE: the other copy of the station it stands on, reached round a turn, is no station it is sent
+            // to (RSA15-B2)
+            TileKey home = squares.get(copy);
+
             while (!todo.isEmpty())
             {
                 String at = todo.poll();
@@ -7560,7 +7571,7 @@ public class AutonomySession
                 {
                     if (outOfService.contains(onward)) continue;
 
-                    if (!onward.equals(copy) && stations.contains(onward)) return true;
+                    if (stations.contains(onward) && (home == null || !home.equals(squares.get(onward)))) return true;
 
                     todo.add(onward);
                 }
@@ -7579,6 +7590,26 @@ public class AutonomySession
         }
 
         return false;
+    }
+
+    /**
+     * Whether, in this naming, the track right ahead of a standing train - the way it is said to face - carries nothing
+     * either way: closed (RSA15-C3).
+     *
+     * @param train the locomotive's name
+     * @param after the naming after the change, or null
+     * @return true where it is closed
+     */
+    private boolean closesTheWayAhead(String train, AutonomyBuilder after)
+    {
+        Object[] standing = standingTrains().get(train);
+
+        if (after == null || standing == null || standing[0] == null || standing[1] == null) return false;
+
+        TileKey square = (TileKey) standing[0];
+        Side facing = (Side) standing[1];
+
+        return !leavesBy(after, square, facing) && !arrivesBy(after, square, facing);
     }
 
     /** The one side trains leave the square by in this naming, or null where there is none, or more than one. */

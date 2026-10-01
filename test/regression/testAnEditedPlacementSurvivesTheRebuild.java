@@ -758,6 +758,50 @@ public class testAnEditedPlacementSurvivesTheRebuild
     }
 
     /**
+     * A one-way run against a train the last run left on a station is refused with the railway loaded, as the window
+     * wires it (RSA15-C2): with a railway each train's copy is found by the way the running Point faces, and no claim ran
+     * that wiring - a mutation finding the wrong copy silenced the refusal there and left every claim green.
+     *
+     * MUTATION: find the train's copy without its facing, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testAOneWayRunAgainstATrainTheRunLeftIsRefused() throws Exception
+    {
+        org.traincontrol.automationui.AutonomySession session = aRow("rsa15-c2", 8461, "Alpha", "Beta", "Gamma", "Delta");
+
+        try
+        {
+            model.parseAuto(session.buildConfiguration());
+
+            Layout running = model.getAutoLayout();
+
+            session.setRunningLayoutSource(() -> model.getAutoLayout());
+
+            // THE RUN'S RESULT: on Gamma, facing west - on the running layout alone
+            assertTrue(running.moveLocomotive(MOVED, "Gamma (westbound)", false), "precondition: " + MOVED
+                + " not stood on Gamma (westbound): " + namesOf(running));
+
+            // ONE WAY EAST, RIGHT AHEAD OF IT: trains run only towards it
+            session.setRunDirection(new org.traincontrol.automationui.TileGraph.TileKey("main", 4, 1),
+                new org.traincontrol.automationui.TileGraph.RouteId(0, 0),
+                org.traincontrol.automationui.TileGraph.Direction.TOWARD_A);
+
+            String refused = session.takeDirectionRefusal();
+
+            assertTrue(refused != null && refused.contains(MOVED) && refused.contains("Gamma"), "with the railway loaded, a"
+                + " one-way run against " + MOVED + ", on Gamma facing west, was not refused (RSA15-C2): " + refused);
+        }
+        finally
+        {
+            session.setRunningLayoutSource(null);
+
+            new Layout(model).makeCurrent();
+        }
+    }
+
+    /**
      * A carry across a load after squares were moved puts each train back on its own station (RSA7-B3): while a declined
      * edit waits the trains are carried by the square the railway says each stands on, and after a move the railway said
      * the square as it was - so each train went on the station that had taken its old square.  A move moves the squares

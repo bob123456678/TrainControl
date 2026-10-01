@@ -2025,12 +2025,17 @@ of the way on (RSA12-B1), past a sensor that is no station (RSA13-B1) - walking 
 from the copy the train stands on, so not out of a turn-round station's other copy, into a barred arrival or through a
 square out of service (RSA14-B1).  Track closed past a sensor, or a link switched off there, is refused the same way,
 since it strands the train just as surely (RSA14-C1); the message says the change would leave the train no way on.
-Closing the track right ahead of the train is not refused as a one-way run (Adam's ruling) - though the turn refusal
-refuses it where the train's copy would go, and the train does not turn round there unless trains may change direction
-at the station: it waits until the track is open again (RSA13-C3).  Whether that should be refused too is put to Adam
-(open-questions.md).  A track already running against a train asks nothing of a change elsewhere.  A train facing no
-track, or recording no facing, leaves by its square's only way out (RSA12-C3); with no railway loaded, a train faces as
-the build stands it (RSA13-C1).  **A click on the track or a switch passes over a direction refused** to the next one allowed, and says why
+Closing the track right ahead of the train - nothing leaving or arriving by that side after the change - is not refused
+as a one-way run (Adam's ruling; RSA15-B1) - though the turn refusal refuses it where the train's copy would go, saying
+the change would leave the train no way on, and the train does not turn round there unless trains may, or must, change
+direction at the station: it waits until the track is open again (RSA13-C3).  Whether that should be refused too is put
+to Adam (open-questions.md).  The walk counts no copy of the train's own station as a station reached (RSA15-B2).  **What
+the refusal does not cover** (put to Adam, RSA15-B2 and RSA15-C1): a train's length against a shorter station on its way,
+and the doors other than a direction and Use This Link - Pair and Unpair Link, Out of Service, Trains May Arrive, the
+station mark, and turning taken off; the setup check's warning is what those leave.  A track already running against a train asks nothing of a change elsewhere.  A train facing no
+track, or recording no facing, is asked about the square's only way out (RSA12-C3) - which the build gives a dead end only
+where trains may or must change direction there; with no railway loaded, a train faces as the build stands it
+(RSA13-C1).  **A click on the track or a switch passes over a direction refused** to the next one allowed, and says why
 only where none is (Adam, MT-605: *"continue cycling through the valid options"*).
 `core.testAutonomyDiagramSession.testADirectionThatWouldTurnAStandingTrainIsRefused`,
 `core.testAutonomyDiagramSession.testAOneWayRunAgainstAStandingTrainIsRefused`,
