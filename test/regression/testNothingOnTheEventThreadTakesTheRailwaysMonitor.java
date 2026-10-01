@@ -263,6 +263,10 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "ON THE EVENT THREAD: a setup rebuild puts every placement back into the layout it has just"
             + " built, and that layout is not the one anything else holds yet");
 
+        ALLOWED.put("TrainControlUI.java#recordTheTrainsNotPutBack",
+            "ON THE EVENT THREAD: the put-back's own step (RSA17-A1), over the layout the rebuild has just built and"
+            + " nothing else holds yet, as putTheTrainsBack");
+
         ALLOWED.put("TrainControlUI.java#deleteLoc",
             "ON THE EVENT THREAD: a locomotive leaving the database, from a confirmed dialog");
 
