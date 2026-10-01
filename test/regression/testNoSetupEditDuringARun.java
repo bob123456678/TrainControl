@@ -2544,6 +2544,106 @@ public class testNoSetupEditDuringARun
     }
 
     /**
+     * The Autonomy menu's top-level items as an opening builds them, by their text.
+     *
+     * @param ui the window
+     * @return each item by its text
+     * @throws Exception from the event thread
+     */
+    private static java.util.Map<String, javax.swing.JMenuItem> autonomyMenuItems(final TrainControlUI ui) throws Exception
+    {
+        final java.util.Map<String, javax.swing.JMenuItem> items = new java.util.LinkedHashMap<>();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            javax.swing.JMenu autonomy = null;
+
+            for (int i = 0; i < ui.getJMenuBar().getMenuCount(); i++)
+            {
+                javax.swing.JMenu menu = ui.getJMenuBar().getMenu(i);
+
+                if (menu != null && I18n.t("autosetup.ui.menuAutonomy").equals(menu.getText())) autonomy = menu;
+            }
+
+            assertNotNull(autonomy, "no Autonomy menu");
+
+            // OPENED, so it builds itself as it does for the operator
+            autonomy.setSelected(true);
+
+            try
+            {
+                for (Component part : autonomy.getMenuComponents())
+                {
+                    if (part instanceof javax.swing.JMenuItem)
+                    {
+                        items.put(((javax.swing.JMenuItem) part).getText(), (javax.swing.JMenuItem) part);
+                    }
+                }
+            }
+            finally
+            {
+                autonomy.setSelected(false);
+            }
+        });
+
+        return items;
+    }
+
+    /**
+     * Answers a save chooser with this file until `going` is lowered; anything else is closed with No.
+     *
+     * @param file the file to save to
+     * @param going lowered to stop
+     */
+    private static void savingTo(final java.io.File file, final java.util.concurrent.atomic.AtomicBoolean going)
+    {
+        Thread answering = new Thread(() ->
+        {
+            java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
+            while (going.get())
+            {
+                try
+                {
+                    Thread.sleep(150);
+                }
+                catch (InterruptedException stop)
+                {
+                    return;
+                }
+
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (!window.isShowing() || !(window instanceof javax.swing.JDialog)) continue;
+
+                    for (Component c : ((javax.swing.JDialog) window).getContentPane().getComponents())
+                    {
+                        if (c instanceof javax.swing.JFileChooser && handled.add(c))
+                        {
+                            final javax.swing.JFileChooser chooser = (javax.swing.JFileChooser) c;
+
+                            SwingUtilities.invokeLater(() ->
+                            {
+                                chooser.setSelectedFile(file);
+                                chooser.approveSelection();
+                            });
+                        }
+                        else if (c instanceof javax.swing.JOptionPane && handled.add(c))
+                        {
+                            final javax.swing.JOptionPane pane = (javax.swing.JOptionPane) c;
+
+                            SwingUtilities.invokeLater(() -> pane.setValue(Integer.valueOf(javax.swing.JOptionPane.NO_OPTION)));
+                        }
+                    }
+                }
+            }
+        }, "saving to " + file.getName());
+
+        answering.setDaemon(true);
+        answering.start();
+    }
+
+    /**
      * The Autonomy menu's "Pages with Autonomy Enabled" item for this page, clicked: the menu opened as a click opens it -
      * which builds its items - and the page's tick fired.
      */
@@ -2601,10 +2701,11 @@ public class testNoSetupEditDuringARun
      * Start Autonomy and Start Timetable, in a session started in simulation with Simulate not ticked in the autonomy
      * settings, warn first (Adam, 2026-09-30: "adding a warning popup when you start autonomy when the app is in simulate,
      * and simulate isn't checked") - the trains are sent and wait for sensors no simulation reports, so they start and
-     * never move.  Declined, nothing starts.  Asked of every door that sends trains, by the one gate - Return Home too
-     * (RSA10-C1).
+     * never move.  Declined, nothing starts.  Asked of every door that sends trains, by the one gate - Return Home and a
+     * hand send too (RSA10-C1) - once the gate's own refusals have passed: a press the gate refuses, the power off, is
+     * refused and not asked (RSA11-C2).
      *
-     * MUTATION: start without asking, and this fails.
+     * MUTATION: start without asking, and this fails.  So does asking before the gate's refusals, or not at a hand send.
      *
      * @throws Exception from the window
      */
@@ -2701,6 +2802,92 @@ public class testNoSetupEditDuringARun
                     assertFalse(ui[0].getModel().getAutoLayout().isAutoRunning(), door + " started after the warning was"
                         + " declined");
                 }
+
+                // A HAND SEND, through the one door both hand doors go through (RSA11-C2)
+                final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
+
+                Object[] found = null;
+
+                for (org.traincontrol.automation.Point standing : railway.getPoints())
+                {
+                    org.traincontrol.base.Locomotive train = standing.getCurrentLocomotive();
+
+                    if (found != null || train == null) continue;
+
+                    for (List<org.traincontrol.automation.Edge> path : railway.getPossiblePaths(train, false))
+                    {
+                        if (found == null && path != null && !path.isEmpty()) found = new Object[] {path, train};
+                    }
+                }
+
+                assertNotNull(found, "precondition: no train on the railway has a path to be sent along");
+
+                final Object[] hand = found;
+
+                final java.lang.reflect.Method send = TrainControlUI.class.getDeclaredMethod("sendATrainByHand",
+                    org.traincontrol.automation.Layout.class, List.class, org.traincontrol.base.Locomotive.class,
+                    Component.class);
+
+                send.setAccessible(true);
+
+                int before = asked.size();
+
+                SwingUtilities.invokeAndWait(() ->
+                {
+                    try
+                    {
+                        send.invoke(ui[0], railway, hand[0], hand[1], ui[0]);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
+                });
+
+                for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+                List<String> said = new ArrayList<>(asked.subList(before, asked.size()));
+
+                assertTrue(said.contains(warning), "a hand send in a simulation with Simulate not ticked was not asked"
+                    + " about (RSA11-C2): " + said);
+
+                // A PRESS THE GATE REFUSES - the power off - is refused, and not asked about first (RSA11-C2)
+                ui[0].getModel().stop();
+
+                until = System.currentTimeMillis() + 5000;
+
+                while (ui[0].getModel().getPowerState() && System.currentTimeMillis() < until) Thread.sleep(50);
+
+                assertFalse(ui[0].getModel().getPowerState(), "precondition: the power is not off");
+
+                final java.lang.reflect.Method timetable =
+                    TrainControlUI.class.getDeclaredMethod("executeTimetableActionPerformed", java.awt.event.ActionEvent.class);
+
+                timetable.setAccessible(true);
+
+                before = asked.size();
+
+                SwingUtilities.invokeAndWait(() ->
+                {
+                    try
+                    {
+                        timetable.invoke(ui[0], new Object[] {null});
+                    }
+                    catch (Exception e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
+                });
+
+                for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+                said = new ArrayList<>(asked.subList(before, asked.size()));
+
+                assertTrue(said.contains(I18n.t("autolayout.ui.powerOnToStart")), "precondition: Start Timetable with the"
+                    + " power off was not refused for it: " + said);
+
+                assertFalse(said.contains(warning), "a press the gate refuses - the power off - asked the Simulate question"
+                    + " first (RSA11-C2): " + said);
             }
             finally
             {
@@ -3206,6 +3393,329 @@ public class testNoSetupEditDuringARun
             going.set(false);
 
             if (ui[0] != null) staging.set(ui[0], false);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * The Autonomy menu greys what changes the setup while autonomy runs, saying why on one line, and gives it back at rest
+     * (Adam, MT-613 and MT-626: "why not grey out the whole menu while running?"): each door refused on its own, after
+     * the click.  Autonomy Settings and Documentation stay live - they change nothing.
+     *
+     * MUTATION: leave the menu live while autonomy runs, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheAutonomyMenuIsGreyedWhileAutonomyRuns() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
+
+        staging.setAccessible(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            java.util.Set<String> live = new java.util.HashSet<>(java.util.Arrays.asList(
+                I18n.t("autosetup.ui.menuGlobalSettings"), I18n.t("ui.main.documentation"),
+                I18n.t("autosetup.ui.menuExportRawGraph")));
+
+            // DURING A RUN
+            staging.set(ui[0], true);
+
+            java.util.Map<String, javax.swing.JMenuItem> running = autonomyMenuItems(ui[0]);
+
+            assertTrue(running.containsKey(I18n.t("autosetup.ui.btnManage"))
+                && running.containsKey(I18n.t("autosetup.ui.btnExcludePage")), "precondition: the Autonomy menu has no"
+                + " Manage Configurations or Pages with Autonomy Enabled: " + running.keySet());
+
+            for (java.util.Map.Entry<String, javax.swing.JMenuItem> item : running.entrySet())
+            {
+                if (live.contains(item.getKey()))
+                {
+                    assertTrue(item.getValue().isEnabled(), item.getKey() + " was greyed while autonomy ran, though it"
+                        + " changes nothing");
+
+                    continue;
+                }
+
+                assertFalse(item.getValue().isEnabled(), item.getKey() + " is live in the Autonomy menu while autonomy"
+                    + " runs (MT-613, MT-626)");
+
+                String why = I18n.t("autosetup.ui.tooltipNotWhileRunning");
+
+                String tip = String.valueOf(item.getValue().getToolTipText());
+
+                assertTrue(tip.contains(why) && !tip.contains("width"), item.getKey() + " greyed while autonomy runs does"
+                    + " not say why on one line (MT-613): " + tip);
+            }
+
+            // AT REST
+            staging.set(ui[0], false);
+
+            java.util.Map<String, javax.swing.JMenuItem> rest = autonomyMenuItems(ui[0]);
+
+            for (String key : new String[] {"autosetup.ui.btnManage", "autosetup.ui.btnExcludePage"})
+            {
+                assertTrue(rest.get(I18n.t(key)).isEnabled(), I18n.t(key) + " stayed greyed with autonomy stopped");
+            }
+        }
+        finally
+        {
+            if (ui[0] != null) staging.set(ui[0], false);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * Export after a run writes where the run left the trains and the settings as they now are (RSA11-B1): it wrote the
+     * configuration as its file last had it - each train where it stood before the run, the pace as at the load - and an
+     * export after a run is the only kind there is since Export waits for autonomy to stop.  It folds the running railway
+     * in first, as New Configuration does.
+     *
+     * MUTATION: export the file as it is, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testExportAfterARunWritesWhereTheTrainsAre() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        final java.io.File out = java.io.File.createTempFile("rsa11-b1-export", ".json");
+
+        out.deleteOnExit();
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            assertNotNull(ui[0].getActiveDiagramConfiguration(), "precondition: no configuration runs");
+
+            // A TRAIN THE RUN MOVED, and the pace changed on the Auto tab - on the railway alone
+            final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
+
+            org.traincontrol.automation.Point from = null;
+            org.traincontrol.automation.Point to = null;
+
+            for (org.traincontrol.automation.Point point : railway.getPoints())
+            {
+                if (from == null && point.getCurrentLocomotive() != null) from = point;
+            }
+
+            assertNotNull(from, "precondition: no train stands on the railway");
+
+            for (org.traincontrol.automation.Point point : railway.getPoints())
+            {
+                if (to == null && point.isDestination() && point.isActive() && point.getCurrentLocomotive() == null
+                    && !point.isSamePlaceAs(from) && point.getSquare() != null)
+                {
+                    to = point;
+                }
+            }
+
+            assertNotNull(to, "precondition: no empty station on the railway");
+
+            final String moved = from.getCurrentLocomotive().getName();
+            final String toName = to.getName();
+            final String toSquare = to.getSquare();
+            final int delay = railway.getMaxDelay() + 5;
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                railway.moveLocomotive(moved, toName, false);
+
+                try
+                {
+                    railway.setMaxDelay(delay);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            // EXPORT, AT REST, into the file
+            savingTo(out, going);
+
+            SwingUtilities.invokeAndWait(() -> ui[0].getAutonomyViewerPanel().exportConfiguration());
+
+            long until = System.currentTimeMillis() + 10000;
+
+            while (out.length() == 0 && System.currentTimeMillis() < until) Thread.sleep(100);
+
+            assertTrue(out.length() > 0, "precondition: Export wrote nothing");
+
+            org.json.JSONObject written = new org.json.JSONObject(new String(java.nio.file.Files.readAllBytes(out.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8)).getJSONObject("configuration");
+
+            org.json.JSONObject there = written.getJSONObject("points").optJSONObject(toSquare);
+
+            org.json.JSONObject loc = there == null ? null : there.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
+
+            assertTrue(loc != null && moved.equals(loc.optString("name")), "Export after a run wrote " + moved + " where it"
+                + " stood before the run, not on " + toSquare + " where the run left it (RSA11-B1)");
+
+            assertEquals(written.getJSONObject("globals").optInt("maxDelay"), delay, "Export after a run wrote the pace"
+                + " as it was at the load (RSA11-B1)");
+        }
+        finally
+        {
+            going.set(false);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * Start Timetable pressed while autonomy's trains are still finishing after a Graceful Stop is refused, and the stop
+     * being carried out is not forgotten (RSA11-C1): the press lowered the flag before its busy refusal, so the strip's
+     * greyed Graceful Stop went for the rest of the coast-down.  It is lowered once that refusal has passed, as Return
+     * Home lowers its own.
+     *
+     * MUTATION: lower it at the press, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testStartTimetableInAGracefulStopKeepsTheStop() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        boolean echoWas = org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS;
+
+        java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
+
+        staging.setAccessible(true);
+
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            // THE POWER ON, so the gate lets the press through to its own refusal
+            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
+
+            ui[0].getModel().go();
+
+            long until = System.currentTimeMillis() + 5000;
+
+            while (!ui[0].getModel().getPowerState() && System.currentTimeMillis() < until) Thread.sleep(50);
+
+            assertTrue(ui[0].getModel().getPowerState(), "precondition: the power is not on");
+
+            // A GRACEFUL STOP BEING CARRIED OUT: autonomy busy, the stop asked for
+            staging.set(ui[0], true);
+
+            java.lang.reflect.Field graceful = TrainControlUI.class.getDeclaredField("gracefulStopRequested");
+
+            graceful.setAccessible(true);
+
+            graceful.set(ui[0], true);
+
+            final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
+
+            closingEveryQuestion(asked, new ArrayList<String>(), going);
+
+            final java.lang.reflect.Method press =
+                TrainControlUI.class.getDeclaredMethod("executeTimetableActionPerformed", java.awt.event.ActionEvent.class);
+
+            press.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    press.invoke(ui[0], new Object[] {null});
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            // THE REFUSAL, shown by the press's posted task: its dialog pumps the event thread, so a flush behind it
+            // returns while it is still up - waited for, and then the task's end
+            String busy = I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
+
+            until = System.currentTimeMillis() + 10000;
+
+            while (!asked.contains(busy) && System.currentTimeMillis() < until) Thread.sleep(100);
+
+            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertTrue(asked.contains(busy), "precondition: Start Timetable was not refused while autonomy was busy: "
+                + asked);
+
+            assertTrue((Boolean) graceful.get(ui[0]), "Start Timetable, refused while the trains finish a Graceful Stop,"
+                + " forgot the stop (RSA11-C1)");
+        }
+        finally
+        {
+            going.set(false);
+
+            if (ui[0] != null) staging.set(ui[0], false);
+
+            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = echoWas;
 
             putTheFolderBack(folderWas);
 

@@ -2749,9 +2749,44 @@ public class AutonomyEditorPanel extends JPanel
         // Already somebody's own markup: left exactly as it is
         if (text.trim().toLowerCase().startsWith("<html")) return text;
 
-        return "<html><body style='width: 320px'>"
-            + text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-            + "</body></html>";
+        String escaped = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+
+        // ONE LINE WHERE IT FITS ON ONE (Adam, MT-613: "a large whitespace on the right side of the message"): the width
+        // is the body's, so a short reason was set in a box as wide as a long one wraps at.  Still HTML, as every
+        // tooltip from here is (ADU-C4).
+        if (fitsOnOneLine(text)) return "<html>" + escaped + "</html>";
+
+        return "<html><body style='width: " + TOOLTIP_WIDTH + "px'>" + escaped + "</body></html>";
+    }
+
+    /** The width a tooltip wraps at, in pixels. */
+    private static final int TOOLTIP_WIDTH = 320;
+
+    /**
+     * Whether a tooltip's text is one line no wider than the wrapping width, in the font tooltips are drawn in.
+     *
+     * @param text the text
+     * @return true where it fits
+     */
+    private static boolean fitsOnOneLine(String text)
+    {
+        if (text.indexOf('\n') >= 0) return false;
+
+        java.awt.Font font = javax.swing.UIManager.getFont("ToolTip.font");
+
+        if (font == null) font = new java.awt.Font(java.awt.Font.DIALOG, java.awt.Font.PLAIN, 12);
+
+        java.awt.Graphics2D scratch =
+            new java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_ARGB).createGraphics();
+
+        try
+        {
+            return scratch.getFontMetrics(font).stringWidth(text) <= TOOLTIP_WIDTH;
+        }
+        finally
+        {
+            scratch.dispose();
+        }
     }
 
     /**
@@ -7637,12 +7672,27 @@ public class AutonomyEditorPanel extends JPanel
 
         org.traincontrol.automationui.TilePorts.Route route = only.getValue();
 
+        // THE NEXT DIRECTION THE TRAINS ALLOW (Adam, MT-605): one refused under a standing train is passed over, so the
+        // click goes on round the choices rather than stopping at the refusal - said only where every other is refused
         Direction next = after(session.getGraph().getDirection(target, only.getKey()));
 
-        int changed = session.setRunDirection(target, only.getKey(), next);
+        int changed = 0;
 
-        if (refusedUnderATrain())
+        String refused = null;
+
+        for (int tries = 0; tries < 3; tries++, next = after(next))
         {
+            changed = session.setRunDirection(target, only.getKey(), next);
+
+            refused = session.takeDirectionRefusal();
+
+            if (refused == null) break;
+        }
+
+        if (refused != null)
+        {
+            JOptionPane.showMessageDialog(owner(), refused);
+
             refresh();
             return;
         }
@@ -7706,19 +7756,29 @@ public class AutonomyEditorPanel extends JPanel
 
         int current = armMask(target, routes, sides);
 
-        int next = states.get(0);
+        int at = states.indexOf(current);
 
-        for (int i = 0; i < states.size(); i++)
+        // THE NEXT COMBINATION THE TRAINS ALLOW (Adam, MT-605), as on a plain square: one refused under a standing train
+        // is passed over, and the refusal said only where every other combination is refused
+        int next = current;
+
+        String refused = null;
+
+        for (int step = 1; step <= states.size(); step++)
         {
-            if (states.get(i) == current)
-            {
-                next = states.get((i + 1) % states.size());
-                break;
-            }
+            next = states.get((at + step) % states.size());
+
+            if (next == current) continue;
+
+            refused = armMaskRefusal(target, routes, sides, next);
+
+            if (refused == null) break;
         }
 
-        if (!applyArmMask(target, routes, sides, next))
+        if (refused != null)
         {
+            JOptionPane.showMessageDialog(owner(), refused);
+
             refresh();
             return;
         }
@@ -7736,8 +7796,10 @@ public class AutonomyEditorPanel extends JPanel
      * The arms are what the drawing shows and what the user is choosing between; the per-route
      * directions are what the model stores.  One translation, used by the click and by the checkboxes,
      * so the two cannot come to different conclusions about the same square.
+     *
+     * @return why the combination was refused under a standing train, or null where it was set
      */
-    private boolean applyArmMask(TileKey target,
+    private String armMaskRefusal(TileKey target,
         Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes,
         java.util.List<org.traincontrol.automationui.TilePorts.Side> sides, int mask)
     {
@@ -7759,7 +7821,9 @@ public class AutonomyEditorPanel extends JPanel
         // One re-derivation for the tile, not one per branch
         session.setDirections(target, wanted);
 
-        if (refusedUnderATrain()) return false;
+        String refused = session.takeDirectionRefusal();
+
+        if (refused != null) return refused;
 
         // THE ARROWS, NOT THE DIAGRAM (MT-334).
         //
@@ -7774,7 +7838,25 @@ public class AutonomyEditorPanel extends JPanel
         // Directions are edges in the running graph (VD11-A1).
         annotationsChanged();
 
-        return true;
+        return null;
+    }
+
+    /**
+     * Applies a combination of open arms as `armMaskRefusal` does, and says a refusal (RSA5-A2).
+     *
+     * @return whether it was set
+     */
+    private boolean applyArmMask(TileKey target,
+        Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes,
+        java.util.List<org.traincontrol.automationui.TilePorts.Side> sides, int mask)
+    {
+        String refused = armMaskRefusal(target, routes, sides, mask);
+
+        if (refused == null) return true;
+
+        JOptionPane.showMessageDialog(owner(), refused);
+
+        return false;
     }
 
     /**
@@ -9683,6 +9765,11 @@ public class AutonomyEditorPanel extends JPanel
         // shape and it is clear they come back when the box is unticked.
         if (testButton != null) testButton.setEnabled(!ignored);
         if (whyButton != null) whyButton.setEnabled(!ignored);
+
+        // AND THE PATH TYPE THEY TEST BY (Adam, FR-105: "also disable/grey out the auto/manual radio buttons")
+        if (pathTypeLabel != null) pathTypeLabel.setEnabled(!ignored);
+        if (pathTypeAuto != null) pathTypeAuto.setEnabled(!ignored);
+        if (pathTypeManual != null) pathTypeManual.setEnabled(!ignored);
 
         // AND ONE-WAY RUN, the third of them (OB-235; Adam, 2026-09-24, on MT-528: *"works, but one-way run isn't"*): a
         // run closed one way on a page nothing is built from closes nothing.  Put down if it was armed when the page

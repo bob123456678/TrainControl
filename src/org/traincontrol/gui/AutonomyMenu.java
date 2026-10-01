@@ -99,6 +99,10 @@ public class AutonomyMenu extends JMenu
      */
     private JMenu lastPagesMenu;
 
+    /** Autonomy Settings and the debug export as last built, or null: the two items a run leaves live with the guide. */
+    private JMenuItem settingsItem;
+    private JMenuItem inspectItem;
+
     /**
      * Opens this menu with the pages submenu already showing.
      *
@@ -200,14 +204,48 @@ public class AutonomyMenu extends JMenu
 
         add(documentation);
 
+        guardWhileRunning(documentation);
+
         guardWhileEditing();
 
         documentation.setEnabled(true);
     }
 
+    /**
+     * Greys what changes the setup while autonomy runs, with the reason on each (Adam, MT-613 and MT-626: *"why not grey
+     * out the whole menu while running?"*).  Each door still refuses on its own; this says so before the click, as the
+     * editor's item has since OB-045.  Autonomy Settings, Documentation and the debug export stay live: they change
+     * nothing.
+     *
+     * @param documentation the guide's item
+     */
+    private void guardWhileRunning(JMenuItem documentation)
+    {
+        if (!ui.isAutonomyBusy()) return;
+
+        String why = AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipNotWhileRunning"));
+
+        for (int i = 0; i < getMenuComponentCount(); i++)
+        {
+            java.awt.Component part = getMenuComponent(i);
+
+            if (!(part instanceof JMenuItem) || part == documentation || part == settingsItem || part == inspectItem)
+            {
+                continue;
+            }
+
+            part.setEnabled(false);
+
+            ((JMenuItem) part).setToolTipText(why);
+        }
+    }
+
     private void buildItems()
     {
         removeAll();
+
+        settingsItem = null;
+        inspectItem = null;
 
         // Dropped, not kept.  It is only reassigned on the branch that builds the submenu, so after a
         // rebuild that takes another branch it pointed at a JMenu no longer in this popup - and
@@ -414,7 +452,7 @@ public class AutonomyMenu extends JMenu
             //
             // Loaded, not merely chosen: that tab is built when a configuration loads and is not there
             // before, so offering it earlier would be an item that goes nowhere.
-            JMenuItem settings = item(I18n.t("autosetup.ui.menuGlobalSettings"), new Runnable()
+            JMenuItem settings = settingsItem = item(I18n.t("autosetup.ui.menuGlobalSettings"), new Runnable()
             {
                 @Override
                 public void run()
@@ -499,7 +537,7 @@ public class AutonomyMenu extends JMenu
         {
             addSeparator();
 
-            add(item(I18n.t("autosetup.ui.menuExportRawGraph"), new Runnable()
+            add(inspectItem = item(I18n.t("autosetup.ui.menuExportRawGraph"), new Runnable()
             {
                 @Override
                 public void run()

@@ -1551,6 +1551,10 @@ public class AutonomyViewerPanel extends JPanel
 
         if (name == null) return;
 
+        // WHERE THE TRAINS ARE, folded into the configuration running first (RSA11-B1), as New Configuration does: its file
+        // holds where they stood before the last run, and the pace and the timetable as at the load
+        ui.captureRunningLayout();
+
         org.json.JSONObject configuration = session().getStore().exportBundle(name);
 
         if (configuration == null) return;

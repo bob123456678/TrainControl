@@ -27671,10 +27671,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // hand send (MT-263, TDU-B1) - and the power; and the Simulate warning, once it has passed (RSA10-C1).
         if (refusedToSendATrain(false)) return;
 
-        // A GRACEFUL STOP OF AN EARLIER RUN EXCUSES NOTHING IN THIS ONE (RSA10-B1): its flag kept the dialog that says
-        // where and why a run stopped from being shown
-        this.gracefulStopRequested = false;
-
         this.executeTimetable.setEnabled(false);
 
         javax.swing.SwingUtilities.invokeLater(() ->
@@ -27685,6 +27681,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     this.executeTimetable.setEnabled(true);
                     return;
                 }
+
+                // A GRACEFUL STOP OF AN EARLIER RUN EXCUSES NOTHING IN THIS ONE (RSA10-B1): its flag kept the dialog that
+                // says where and why a run stopped from being shown.  Lowered once the busy refusal has passed, as Return
+                // Home lowers its own (RSA11-C1): a press while the trains finish a Graceful Stop forgot the stop
+                this.gracefulStopRequested = false;
 
                 if (this.model.getAutoLayout().getTimetable().isEmpty())
                 {

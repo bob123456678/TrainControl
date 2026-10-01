@@ -2017,8 +2017,15 @@ records no facing - a dead end nothing arrives at - faces its only way out, so a
 left facing a way out behind it (RSA6-B3); and a train standing on such a copy faces that way, whatever an earlier train
 left recorded on the square.  Only a train the change turns is asked about - one on a copy facing its way before, with
 none after - so a facing another train left does not refuse every direction on the railway (RSA7-B1).  Every session knows where the railway's trains stand from the moment it is
-made, not only once a station's Facing menu or the editor has told it (RSA6-A1).
-`core.testAutonomyDiagramSession.testADirectionThatWouldTurnAStandingTrainIsRefused`.
+made, not only once a station's Facing menu or the editor has told it (RSA6-A1).  **So is a one-way run against a
+standing train** (Adam, 2026-09-30, on MT-605: *"Refuse it too"*): the track ahead of the train, the way it faces, made
+to carry trains only towards it, where it carried the train away before.  Closing that track is not refused - it makes
+a dead end, which the train turns round at - and a track already running against a train asks nothing of a change
+elsewhere.  **A click on the track or a switch passes over a direction refused** to the next one allowed, and says why
+only where none is (Adam, MT-605: *"continue cycling through the valid options"*).
+`core.testAutonomyDiagramSession.testADirectionThatWouldTurnAStandingTrainIsRefused`,
+`core.testAutonomyDiagramSession.testAOneWayRunAgainstAStandingTrainIsRefused`,
+`core.testAutonomyDiagramSession.testAClickPassesOverADirectionRefusedUnderATrain`.
 
 **So the Facing menu is about the train the RAILWAY has on the square** (TDY4-C5, 2026-09-24). After a run
 the setup can still name a square's pre-run occupant while another train stands there. The menu named the
@@ -2504,7 +2511,8 @@ written: listed in the timetable like any other and written back by every fold, 
 the page, across a restart, or while a page's file has not loaded.  **When a run reaches such an entry it stops there**
 - trains already under way finish their journeys - **and the window says which entry and why** (Adam, 2026-09-30:
 *"stop the timetable run upon encountering an invalid path, and let the user know"*; RSA9-B1): passed over, a train's
-later entries started where it was not.  The dialog is shown whatever stop was pressed in an earlier run (RSA10-B1).
+later entries started where it was not.  The dialog is shown whatever stop was pressed in an earlier run (RSA10-B1);
+a Start Timetable refused while a Graceful Stop is still being carried out leaves that stop pending (RSA11-C1).
 Start Timetable asks where each train stands of its first entry before the one the run will stop at, and nothing
 past it (RSA10-B2).  Ticked back in, the page's entries run again.  **Clear clears every entry** (RSA5-C1).  Only
 a locomotive the database no longer has drops an entry at the load.  Builds of rounds 23 and 24 kept a page's entries in
@@ -2514,10 +2522,17 @@ a list of their own; a configuration written then has them folded back into its 
 
 **A simulation that is not simulating asks before any train is sent** (Adam, 2026-09-30: *"adding a warning popup when
 you start autonomy when the app is in simulate, and simulate isn't checked"*): every door that sends trains - Start,
-Start Timetable, Return Home, a hand send - asks, once its own refusals have passed, where TrainControl runs in a debug
-simulation and the autonomy setting Simulate is not ticked (RSA10-C1).  And a debug simulation starts with Echo Sent
+Start Timetable, Return Home, a hand send - asks where TrainControl runs in a debug simulation and the autonomy setting
+Simulate is not ticked (RSA10-C1).  The send gate asks it once its own refusals - an open editor, a broken setup, the
+power off - have passed, and before each door's own (RSA11-C2): a press the door then refuses for its own reason, an
+empty timetable or a railway still busy, has been asked first.  And a debug simulation starts with Echo Sent
 Commands on (Adam: *"auto-enable echo in simulate too"*), saying so where it had been turned off.
 `regression.testNoSetupEditDuringARun`.
+
+**While autonomy runs the Autonomy menu greys what changes the setup** - the configurations, Manage Configurations, the
+editor and the pages - each saying why; Autonomy Settings and Documentation stay live, as they change nothing (Adam,
+MT-613 and MT-626: *"why not grey out the whole menu while running?"*).  Each door still refuses on its own.
+`regression.testNoSetupEditDuringARun.testTheAutonomyMenuIsGreyedWhileAutonomyRuns`.
 
 **Which pages autonomy uses is chosen at Autonomy > Pages with Autonomy Enabled**, refused while autonomy runs (MT-141)
 and rebuilding the railway after each tick.  The Autonomy panel's own Pages dialog, which no door reached - the panel is
@@ -2545,13 +2560,14 @@ after it captured the running railway straight back over its settings and timeta
 fills gaps as MT-298 has it, and places none of its trains, which its question says (RLU4-C3): what the running layout
 knows goes into the configuration first, the reload after the import does not capture again, and where a train stands
 on the railway running is the railway's to say (OB-183) - the message names the trains it did not place, and how to put
-one down.  While autonomy runs every import is refused, as Delete is, before it asks for a file (RLU4-C1, RSA4-C5) -
-and every export, before it asks where (Adam, 2026-09-30, MT-601: *"Export should also only be allowed once we are
-stopped"*), and New Configuration, Rename and Add Configuration, before they ask a name (RSA10-A1).  At rest, New
-Configuration folds the running railway into the configuration first, so the copy has the trains where they are, and
-the configuration running stays the one the next start resumes (RSA10-A1, as RLD-C3 for an import):
+one down.  While autonomy runs every import is refused, as Delete is, before it asks for a file (RLU4-C1, RSA4-C5):
 into the configuration in use the reload's capture took back what the import had just brought, and into another the
-fold after a declined reload read the running railway through names the import had changed.  And no import folds the running layout into the
+fold after a declined reload read the running railway through names the import had changed.  So is every export, before
+it asks where (Adam, 2026-09-30, MT-601: *"Export should also only be allowed once we are stopped"*), and New
+Configuration, Rename and Add Configuration, before they ask a name (RSA10-A1).  At rest, New Configuration and Export
+fold the running railway into the configuration first, so the copy and the file have the trains where they are and the
+settings and timetable as they now run, and the configuration running stays the one the next start resumes (RSA10-A1,
+RSA11-B1, as RLD-C3 for an import).  And no import folds the running layout into the
 setup while a setup edit a run declined waits for its rebuild - neither the capture first nor the reload (RLD4-C3,
 WKW-B2); every load then carries each train across from the running layout and lowers the flag once a layout carries
 the edit, and choosing another configuration first carries the one running, which is then folded as any configuration

@@ -507,7 +507,9 @@ JAVA_FLAGS="$JAVA_FLAGS -Dtraincontrol.batteryRun=$RUN_ID"
 # near that.
 #
 # Overridable, because the number is a guess about this machine rather than a property of the tests.
-JAVA_FLAGS="$JAVA_FLAGS ${TC_JAVA_HEAP:--Xmx512m}"
+# 768m SINCE 2026-09-30: regression.testTheImportDoorReadsAnOldFile - 41 window tests on the live snapshot, each keeping its
+# thread pools - ran out of 512m in battery r28, having fitted the round before.  A window class grows by a claim a round.
+JAVA_FLAGS="$JAVA_FLAGS ${TC_JAVA_HEAP:--Xmx768m}"
 
 # AND OUT, NOT STUCK, WHEN IT RUNS OUT (2026-09-29).  A class that filled its heap - every window a test opens keeps its
 # threads - lost TestNG's main thread in the report, with the error on the stderr the application swallows and no summary

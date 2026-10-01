@@ -7369,7 +7369,10 @@ public class AutonomySession
 
         namingBefore = null;
 
-        if (!turned.isEmpty())
+        // AND NOT ONE WAY AGAINST A STANDING TRAIN (Adam, 2026-09-30, on MT-605: "Refuse it too")
+        Map<String, String> against = turned.isEmpty() ? trainsADirectionRunsAgainst() : Collections.<String, String>emptyMap();
+
+        if (!turned.isEmpty() || !against.isEmpty())
         {
             for (Map.Entry<List<Object>, Direction> was : directionsBefore.entrySet())
             {
@@ -7378,9 +7381,10 @@ public class AutonomySession
 
             directionsBefore.clear();
 
-            Map.Entry<String, String> first = turned.entrySet().iterator().next();
+            Map.Entry<String, String> first = (turned.isEmpty() ? against : turned).entrySet().iterator().next();
 
-            directionRefusal = I18n.f("autosetup.ui.errorDirectionTurnsATrain", first.getKey(), first.getValue());
+            directionRefusal = I18n.f(turned.isEmpty() ? "autosetup.ui.errorDirectionAgainstATrain"
+                : "autosetup.ui.errorDirectionTurnsATrain", first.getKey(), first.getValue());
 
             return false;
         }
@@ -7390,6 +7394,80 @@ public class AutonomySession
         touched();
 
         return true;
+    }
+
+    /**
+     * The trains the directions just recorded leave facing a one-way run against them, each to the station it stands on
+     * (Adam, 2026-09-30, on MT-605: "Refuse it too"): the track ahead of the train, the way it faces, carrying trains only
+     * towards it now, and carrying the train away before.  Track closed ahead is not against - it makes a dead end, which
+     * a train turns round at - and a train whose facing nothing records is not asked about.
+     *
+     * @return each train's name to its station's, in the order they stand
+     */
+    private Map<String, String> trainsADirectionRunsAgainst()
+    {
+        if (directionsBefore.isEmpty()) return Collections.emptyMap();
+
+        Map<String, String> against = new LinkedHashMap<>();
+
+        for (Map.Entry<String, Object[]> train : standingTrains().entrySet())
+        {
+            TileKey square = (TileKey) train.getValue()[0];
+            Side facing = (Side) train.getValue()[1];
+
+            if (square == null || facing == null) continue;
+
+            Landing ahead = graph.landing(square, facing);
+
+            if (ahead == null || ahead.getEntrySide() == null) continue;
+
+            if (runsAgainst(ahead, false) && !runsAgainst(ahead, true))
+            {
+                String name = store.getPointName(square);
+
+                against.put(train.getKey(), name == null ? square.toString() : name);
+            }
+        }
+
+        return against;
+    }
+
+    /**
+     * Whether the track a train enters at this landing carries trains only back towards where it came from - none on
+     * through it, some towards it - as the directions are now, or as they were before the ones just recorded.
+     *
+     * @param ahead where the train would enter the track
+     * @param before whether to read the directions as they were before those recorded
+     * @return true where it runs only against the train
+     */
+    private boolean runsAgainst(Landing ahead, boolean before)
+    {
+        boolean away = false;
+        boolean towards = false;
+
+        Side in = ahead.getEntrySide();
+
+        for (Map.Entry<RouteId, Route> entry : graph.getRoutes(ahead.getTile()).entrySet())
+        {
+            Route route = entry.getValue();
+
+            if (!route.touches(in) || route.getA() == route.getB()) continue;
+
+            Side out = route.getA() == in ? route.getB() : route.getA();
+
+            Direction direction = graph.getDirection(ahead.getTile(), entry.getKey());
+
+            Direction was = before ? directionsBefore.get(Arrays.<Object>asList(ahead.getTile(), entry.getKey())) : null;
+
+            if (was != null) direction = was;
+
+            Side toward = direction == Direction.TOWARD_A ? route.getA() : direction == Direction.TOWARD_B ? route.getB() : null;
+
+            if (direction == Direction.BOTH || toward == out) away = true;
+            if (direction == Direction.BOTH || toward == in) towards = true;
+        }
+
+        return towards && !away;
     }
 
     /**

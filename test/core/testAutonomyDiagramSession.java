@@ -711,6 +711,309 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A click on the track passes over a direction refused under a standing train, to the next the train allows (Adam,
+     * MT-605: "continue cycling through the valid options, rather than just stalling on the error each time"): the click
+     * asked the next direction alone and, where it was refused, said so and stayed - so the next click asked it again.
+     *
+     * MUTATION: stop at the first direction refused, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAClickPassesOverADirectionRefusedUnderATrain() throws Exception
+    {
+        threeStationsInARow("605 click");
+
+        TileKey beta = new TileKey("main", 3, 1);
+        TileKey east = new TileKey("main", 4, 1);
+
+        session.setPointName(new TileKey("main", 1, 1), "Alpha");
+        session.setPointName(beta, "Beta");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+
+        // A TRAIN ON BETA, FACING WEST
+        session.placeLocomotive(beta, "605 train");
+        session.setFacing(beta, org.traincontrol.automationui.TilePorts.Side.W);
+        session.rebuild();
+
+        // A CLICK EAST OF IT: both ways, then east only - refused, nothing would arrive at Beta heading west - then west
+        // only
+        List<String> said = clickWithEveryMessageClosed(east);
+
+        assertEquals(session.getStore().getTileDirection(east, new RouteId(0, 0)), Direction.TOWARD_B, "a click on the"
+            + " track beside a train did not pass over the direction refused there to the next (Adam, MT-605); said: "
+            + said);
+
+        assertTrue(said.isEmpty(), "a click that found a direction the train allows still stopped to say why another was"
+            + " refused: " + said);
+    }
+
+    /**
+     * A page left out greys the path type with the tools that test by it (Adam, FR-105: "when a page is excluded in the
+     * autonomy editor, also disable/grey out the auto/manual radio buttons"): Test a Path and Why not Moving? were greyed,
+     * and the pair choosing which paths they test stayed live, choosing nothing.
+     *
+     * MUTATION: leave the path type live on a page left out, and this fails.
+     *
+     * @throws Exception from the panel
+     */
+    @Test
+    public void testAPageLeftOutGreysThePathType() throws Exception
+    {
+        threeStationsInARow("FR-105");
+
+        session.setPageExcluded("main", true);
+
+        final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { });
+
+            panel[0].refresh();
+        });
+
+        assertFalse(panelPart(panel[0], "whyButton").isEnabled(), "precondition: Why not Moving? is live on a page left"
+            + " out");
+
+        for (String part : new String[] {"pathTypeLabel", "pathTypeAuto", "pathTypeManual"})
+        {
+            assertFalse(panelPart(panel[0], part).isEnabled(), part + " is live on a page left out of autonomy, beside"
+                + " the tools it chooses for, greyed (FR-105)");
+        }
+
+        // AND LIVE AGAIN WITH THE PAGE BACK IN
+        session.setPageExcluded("main", false);
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> panel[0].refresh());
+
+        for (String part : new String[] {"pathTypeLabel", "pathTypeAuto", "pathTypeManual"})
+        {
+            assertTrue(panelPart(panel[0], part).isEnabled(), part + " stayed greyed with the page back in (FR-105)");
+        }
+    }
+
+    /**
+     * A tooltip short enough for one line is not padded to the width a long one wraps at (Adam, MT-613: "the 'edit
+     * autonomy on page' tooltip has a large whitespace on the right side of the message"): every tooltip was set 320
+     * pixels wide, so a short reason sat at the left of a box twice its length.  A long one still wraps.
+     *
+     * MUTATION: set every tooltip at the wrapping width, and this fails.
+     *
+     * @throws Exception from the reflection
+     */
+    @Test
+    public void testAShortTooltipIsNotPaddedToTheWrappingWidth() throws Exception
+    {
+        java.lang.reflect.Method wrapped =
+            org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("wrapped", String.class);
+
+        wrapped.setAccessible(true);
+
+        String reason = org.traincontrol.util.I18n.t("autolayout.errorCannotEditWhileRunning");
+
+        String shown = String.valueOf(wrapped.invoke(null, reason));
+
+        assertFalse(shown.contains("width"), "a tooltip of one short line was padded to the wrapping width (MT-613): "
+            + shown);
+
+        assertTrue(shown.contains(reason), "a short tooltip lost its text: " + shown);
+
+        String sentence = org.traincontrol.util.I18n.t("autosetup.ui.tooltipEditAutonomy");
+
+        String longer = String.valueOf(wrapped.invoke(null, sentence + "  " + sentence + "  " + sentence));
+
+        assertTrue(longer.contains("width: 320px"), "a tooltip three sentences long no longer wraps: " + longer);
+    }
+
+    /**
+     * A direction that leaves the track ahead of a standing train one way against it is refused, as one that turns the
+     * train is (Adam, 2026-09-30, on MT-605: "Refuse it too"): only a change that left the train no copy facing its way
+     * was refused, so the track it faces could be made to carry trains only towards it, the train left no way on.  Closing
+     * that track is not refused - a dead end, which a train turns round at.
+     *
+     * MUTATION: ask only whether the train is turned, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAOneWayRunAgainstAStandingTrainIsRefused() throws Exception
+    {
+        threeStationsInARow("605 against");
+
+        TileKey beta = new TileKey("main", 3, 1);
+        TileKey west = new TileKey("main", 2, 1);
+
+        session.setPointName(new TileKey("main", 1, 1), "Alpha");
+        session.setPointName(beta, "Beta");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+
+        // A TRAIN ON BETA, FACING WEST
+        session.placeLocomotive(beta, "605 against train");
+        session.setFacing(beta, org.traincontrol.automationui.TilePorts.Side.W);
+        session.rebuild();
+
+        // ONE WAY EAST AHEAD OF IT: trains run only towards it
+        session.setRunDirection(west, new RouteId(0, 0), Direction.TOWARD_A);
+
+        String refused = session.takeDirectionRefusal();
+
+        assertTrue(refused != null && refused.contains("605 against train") && refused.contains("Beta"), "the track ahead"
+            + " of a train was made one way against it (Adam, MT-605: \"Refuse it too\"): " + refused);
+
+        assertEquals(session.getStore().getTileDirection(west, new RouteId(0, 0)), null, "a direction refused was written"
+            + " to the setup");
+
+        // CLOSED AHEAD OF IT: a dead end, which it turns round at
+        session.setRunDirection(west, new RouteId(0, 0), Direction.NONE);
+
+        assertNull(session.takeDirectionRefusal(), "closing the track ahead of a train was refused, though it makes a dead"
+            + " end the train turns round at (MT-605)");
+
+        // ALREADY ONE WAY AGAINST IT, set before it stood there: a change elsewhere is not asked about
+        session.placeLocomotive(beta, null);
+        session.setRunDirection(west, new RouteId(0, 0), Direction.TOWARD_A);
+
+        assertNull(session.takeDirectionRefusal(), "precondition: a direction with nothing standing there was refused");
+
+        session.placeLocomotive(beta, "605 against train");
+        session.setFacing(beta, org.traincontrol.automationui.TilePorts.Side.W);
+        session.rebuild();
+
+        session.setRunDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.TOWARD_B);
+
+        String elsewhere = session.takeDirectionRefusal();
+
+        assertNull(elsewhere, "a change east of a train already facing a one-way run against it was refused, though it"
+            + " changes nothing ahead of the train (MT-605): " + elsewhere);
+    }
+
+    /**
+     * A click round a junction beside a standing train passes over a combination refused there, as a plain square's click
+     * does (Adam, MT-605): the junction's click asked the next combination of open arms alone and, where it was refused,
+     * said so and stayed - so the next click asked it again, and the combinations after it could not be reached.
+     *
+     * MUTATION: stop the junction's click at the first combination refused, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAClickRoundAJunctionPassesOverACombinationRefusedUnderATrain() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 8, 3, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 64, 64, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 65, 65, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.SWITCH_LEFT, 4, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 6, 1, 0, 0, 66, 66, accessoryDecoderType.MM2, null);
+
+        // The branch off the switch, lying north-south so that it has a port facing the switch at all
+        page.addComponent(componentType.FEEDBACK, 4, 0, 1, 0, 67, 67, accessoryDecoderType.MM2, null);
+
+        page.getComponent(4, 1).setAccessory(new org.traincontrol.marklin.MarklinAccessory(
+            null, 7, org.traincontrol.base.Accessory.accessoryType.SWITCH, accessoryDecoderType.MM2,
+            "Switch 7", false, 0));
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("605 junction");
+
+        String[] names = {"Alpha", "Beta", "Gamma", "Delta"};
+        TileKey[] stations = {new TileKey("main", 1, 1), new TileKey("main", 3, 1), new TileKey("main", 6, 1),
+            new TileKey("main", 4, 0)};
+
+        for (int i = 0; i < stations.length; i++)
+        {
+            session.setStation(stations[i], true);
+            session.setPointName(stations[i], names[i]);
+        }
+
+        TileKey junction = new TileKey("main", 4, 1);
+
+        java.util.Map<RouteId, Direction> shut = new java.util.LinkedHashMap<>();
+        java.util.Map<RouteId, Direction> open = new java.util.LinkedHashMap<>();
+
+        for (RouteId route : session.getRoutes(junction).keySet())
+        {
+            shut.put(route, Direction.NONE);
+            open.put(route, session.getGraph().getDirection(junction, route));
+        }
+
+        assertTrue(shut.size() > 1, "precondition: the switch has one route: " + shut);
+
+        // A TRAIN SOME SETTING OF THE JUNCTION IS REFUSED UNDER: each station and facing, each route one way with the rest
+        // shut, until one is refused - the junction left as it was
+        String standing = null;
+
+        for (int i = 0; i < stations.length && standing == null; i++)
+        {
+            for (org.traincontrol.automationui.TilePorts.Side facing : org.traincontrol.automationui.TilePorts.Side.values())
+            {
+                if (standing != null) break;
+
+                session.placeLocomotive(stations[i], "605 junction train");
+                session.setFacing(stations[i], facing);
+                session.rebuild();
+
+                for (RouteId only : shut.keySet())
+                {
+                    for (Direction way : new Direction[] {Direction.TOWARD_A, Direction.TOWARD_B})
+                    {
+                        if (standing != null) break;
+
+                        java.util.Map<RouteId, Direction> trial = new java.util.LinkedHashMap<>(shut);
+
+                        trial.put(only, way);
+
+                        session.setDirections(junction, trial);
+
+                        if (session.takeDirectionRefusal() != null)
+                        {
+                            standing = names[i] + " facing " + facing;
+                        }
+                        else
+                        {
+                            session.setDirections(junction, open);
+                            session.takeDirectionRefusal();
+                        }
+                    }
+                }
+
+                if (standing == null) session.placeLocomotive(stations[i], null);
+            }
+        }
+
+        assertNotNull(standing, "precondition: no setting of the junction is refused under a train on any station, so no"
+            + " click round it meets a refusal");
+
+        // ROUND THE JUNCTION, a click at a time, once for each combination of its arms and once more
+        List<String> said = new ArrayList<>();
+        Set<String> reached = new LinkedHashSet<>();
+
+        for (int click = 0; click < 9; click++)
+        {
+            said.addAll(clickWithEveryMessageClosed(junction));
+
+            StringBuilder state = new StringBuilder();
+
+            for (RouteId route : session.getRoutes(junction).keySet())
+            {
+                state.append(route).append('=').append(session.getGraph().getDirection(junction, route)).append(' ');
+            }
+
+            reached.add(state.toString().trim());
+        }
+
+        assertTrue(said.isEmpty(), "a click round a junction stopped at a combination refused under a train on "
+            + standing + ", though others were allowed (Adam, MT-605): " + said + "; reached " + reached);
+
+        assertTrue(reached.size() > 2, "the clicks round the junction did not go round it: " + reached);
+    }
+
+    /**
      * A page renamed keeps the timetable legs and the roads through its squares with no name of their own (RSA5-B2):
      * such a square is named after its page, so a rename renamed its Points, and nothing carried the names stored.
      *
@@ -1734,6 +2037,99 @@ public class testAutonomyDiagramSession
         for (int x : new int[] {1, 3, 5}) session.setStation(new TileKey("main", x, 1), true);
 
         return page;
+    }
+
+    /**
+     * A click on a square with no tool armed, through the editor panel's own door, with every message it shows closed.
+     *
+     * @param square the square clicked
+     * @return what each message said, in order
+     * @throws Exception from the panel
+     */
+    private List<String> clickWithEveryMessageClosed(final TileKey square) throws Exception
+    {
+        final List<String> said = java.util.Collections.synchronizedList(new ArrayList<String>());
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        Thread closing = new Thread(() ->
+        {
+            Set<Object> handled = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<Object, Boolean>());
+
+            while (going.get())
+            {
+                try
+                {
+                    Thread.sleep(100);
+                }
+                catch (InterruptedException stop)
+                {
+                    return;
+                }
+
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (!window.isShowing() || !(window instanceof javax.swing.JDialog)) continue;
+
+                    for (java.awt.Component c : ((javax.swing.JDialog) window).getContentPane().getComponents())
+                    {
+                        if (c instanceof javax.swing.JOptionPane && handled.add(c))
+                        {
+                            final javax.swing.JOptionPane pane = (javax.swing.JOptionPane) c;
+
+                            said.add(String.valueOf(pane.getMessage()));
+
+                            javax.swing.SwingUtilities.invokeLater(
+                                () -> pane.setValue(Integer.valueOf(javax.swing.JOptionPane.OK_OPTION)));
+                        }
+                    }
+                }
+            }
+        }, "closing every message");
+
+        closing.setDaemon(true);
+        closing.start();
+
+        try
+        {
+            final org.traincontrol.gui.AutonomyEditorPanel[] panel = new org.traincontrol.gui.AutonomyEditorPanel[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(
+                () -> panel[0] = new org.traincontrol.gui.AutonomyEditorPanel(session, "main", () -> { }));
+
+            final java.lang.reflect.Method cycle =
+                org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredMethod("cycle", TileKey.class);
+
+            cycle.setAccessible(true);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    cycle.invoke(panel[0], square);
+                }
+                catch (Exception failed)
+                {
+                    throw new RuntimeException(failed);
+                }
+            });
+        }
+        finally
+        {
+            going.set(false);
+        }
+
+        return new ArrayList<>(said);
+    }
+
+    /** One of the editor panel's own controls, by its field. */
+    private static java.awt.Component panelPart(org.traincontrol.gui.AutonomyEditorPanel panel, String field)
+        throws Exception
+    {
+        java.lang.reflect.Field f = org.traincontrol.gui.AutonomyEditorPanel.class.getDeclaredField(field);
+
+        f.setAccessible(true);
+
+        return (java.awt.Component) f.get(panel);
     }
 
     /** The track either side of the middle station made one-way away from it, so nothing arrives there. */

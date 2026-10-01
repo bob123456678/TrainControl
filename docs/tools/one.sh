@@ -399,7 +399,9 @@ JAVA="${TC_JAVA:-/c/Program Files/Java/jdk1.8.0_361/bin/java}"
 # than a property of the tests, and a runner you cannot tune is one people stop using.
 JAVA_FLAGS="${TC_JAVA_FLAGS:--Dtraincontrol.anyReceivePort=true}"
 
-JAVA_FLAGS="$JAVA_FLAGS ${TC_JAVA_HEAP:--Xmx512m}"
+# 768m SINCE 2026-09-30: regression.testTheImportDoorReadsAnOldFile - 41 window tests on the live snapshot, each keeping its
+# thread pools - ran out of 512m in battery r28, having fitted the round before.  A window class grows by a claim a round.
+JAVA_FLAGS="$JAVA_FLAGS ${TC_JAVA_HEAP:--Xmx768m}"
 
 # AND OUT, NOT STUCK, WHEN IT RUNS OUT (2026-09-29).  A class that filled its heap - every window a test opens keeps its
 # threads - lost TestNG's main thread in the report, with the error on the stderr the application swallows and no summary
@@ -559,7 +561,7 @@ do
             echo "*** $T DID NOT RUN - no heap (machine busy, rerun)"
         elif grep -q "OutOfMemoryError" "$S/one-run.txt"
         then
-            echo "*** $T RAN OUT OF MEMORY - its heap is ${TC_JAVA_HEAP:--Xmx512m}; split the class, or raise TC_JAVA_HEAP ***"
+            echo "*** $T RAN OUT OF MEMORY - its heap is ${TC_JAVA_HEAP:--Xmx768m}; split the class, or raise TC_JAVA_HEAP ***"
         else
             echo "*** $T PRINTED NO SUMMARY - it did not run.  Last lines:"
             tail -5 "$S/one-run.txt" | sed "s/^/    /"
