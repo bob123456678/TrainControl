@@ -2657,6 +2657,13 @@ public class testNoSetupEditDuringARun
             // SOMEBODY THERE to be asked, answering No
             TrainControlUI.setUnattended(false);
 
+            // ONE ANSWERER FOR BOTH DOORS: one per door could still be about when the next asked, answer it, and leave the
+            // next one nothing to see
+            final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
+            final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+            answeringKeepOpen(asked, going);
+
             try
             {
                 for (String door : new String[] {"startAutonomyActionPerformed", "executeTimetableActionPerformed"})
@@ -2666,35 +2673,26 @@ public class testNoSetupEditDuringARun
 
                     press.setAccessible(true);
 
-                    final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
-                    final java.util.concurrent.atomic.AtomicBoolean going =
-                        new java.util.concurrent.atomic.AtomicBoolean(true);
+                    int before = asked.size();
 
-                    answeringKeepOpen(asked, going);
-
-                    try
+                    SwingUtilities.invokeAndWait(() ->
                     {
-                        SwingUtilities.invokeAndWait(() ->
+                        try
                         {
-                            try
-                            {
-                                press.invoke(ui[0], new Object[] {null});
-                            }
-                            catch (Exception e)
-                            {
-                                throw new IllegalStateException(e);
-                            }
-                        });
+                            press.invoke(ui[0], new Object[] {null});
+                        }
+                        catch (Exception e)
+                        {
+                            throw new IllegalStateException(e);
+                        }
+                    });
 
-                        for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
-                    }
-                    finally
-                    {
-                        going.set(false);
-                    }
+                    for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 
-                    assertTrue(asked.contains(warning), door + " started in a simulation with Simulate not ticked, without"
-                        + " a word: " + asked);
+                    List<String> said = new ArrayList<>(asked.subList(before, asked.size()));
+
+                    assertTrue(said.contains(warning), door + " started in a simulation with Simulate not ticked, without"
+                        + " a word: " + said);
 
                     assertFalse(ui[0].getModel().getAutoLayout().isAutoRunning(), door + " started after the warning was"
                         + " declined");
@@ -2702,12 +2700,114 @@ public class testNoSetupEditDuringARun
             }
             finally
             {
+                going.set(false);
+
                 TrainControlUI.setUnattended(true);
             }
         }
         finally
         {
             org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = echoWas;
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * A session started in simulation has Echo Sent Commands on (Adam, 2026-09-30: "auto-enable echo in simulate too"):
+     * without it the simulation answers nothing it sends - the power, a switch, a route - so autonomy cannot run there.
+     * Where the stored choice was off, it says so.
+     *
+     * MUTATION: take the stored choice as it is, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testASimulationStartsWithEchoOn() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        boolean echoWas = org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS;
+
+        boolean storedWas = TrainControlUI.getPrefs().getBoolean(TrainControlUI.ECHO_COMMANDS_PREF, false);
+
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            assertTrue(ui[0].getModel().isSimulation() && ui[0].getModel().isDebug(), "precondition: the window is not a"
+                + " debug simulation");
+
+            // THE STORED CHOICE OFF, and somebody there to be told
+            TrainControlUI.getPrefs().putBoolean(TrainControlUI.ECHO_COMMANDS_PREF, false);
+
+            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = false;
+
+            TrainControlUI.setUnattended(false);
+
+            final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
+
+            answeringKeepOpen(asked, going);
+
+            // THE START'S DEBUG MENU, which reads the stored choice
+            final java.lang.reflect.Method mount = TrainControlUI.class.getDeclaredMethod("mountDebugMenu");
+
+            mount.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    mount.invoke(ui[0]);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            long until = System.currentTimeMillis() + 5000;
+
+            while (asked.isEmpty() && System.currentTimeMillis() < until)
+            {
+                SwingUtilities.invokeAndWait(() -> { });
+
+                Thread.sleep(100);
+            }
+
+            assertTrue(org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS, "a session started in"
+                + " simulation has Echo Sent Commands off, so the simulation answers nothing it sends");
+
+            assertTrue(asked.contains(I18n.t("ui.main.infoEchoTurnedOn")), "echo was turned on without a word: " + asked);
+        }
+        finally
+        {
+            going.set(false);
+
+            TrainControlUI.setUnattended(true);
+
+            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = echoWas;
+
+            TrainControlUI.getPrefs().putBoolean(TrainControlUI.ECHO_COMMANDS_PREF, storedWas);
 
             putTheFolderBack(folderWas);
 

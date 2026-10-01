@@ -3502,10 +3502,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (interfaceMenu == null) return;
 
+        // ON IN EVERY SIMULATION (Adam, 2026-09-30: "auto-enable echo in simulate too"): without it the simulation answers
+        // nothing it sends - the power, a switch, a route - so autonomy cannot run there.  Turned on at each start, and
+        // said where the stored choice was off; Echo Sent Commands below still turns it off for the session.
         if (!isUnattended())
         {
-            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS =
-                prefs.getBoolean(ECHO_COMMANDS_PREF, false);
+            boolean wasOn = prefs.getBoolean(ECHO_COMMANDS_PREF, false);
+
+            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
+
+            prefs.putBoolean(ECHO_COMMANDS_PREF, true);
+
+            if (!wasOn)
+            {
+                javax.swing.SwingUtilities.invokeLater(() ->
+                    JOptionPane.showMessageDialog(this, I18n.t("ui.main.infoEchoTurnedOn")));
+            }
         }
 
         javax.swing.JMenu debug = new javax.swing.JMenu(I18n.t("ui.main.toolbar.debug"));
