@@ -20691,6 +20691,10 @@ This works
 
 *Run against commit ac960047, build\classes, compiled 13 Sep 09:17 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-10-01.**
+
+Since round 36 (6aea7d6c) Home All Trains Where They Stand homes each train where it stands now, also from the track diagram's own menu after a run - it used to take the squares the trains had set off from.  The steps stand.
+
 ---
 
 <a id="mt-379"></a>
