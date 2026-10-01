@@ -240,7 +240,10 @@ run against a standing train refused (*"Refuse it too"*), closing the track ahea
 a dead end turns the train round, which holds only where trains may change direction at the station (RSA13-C3):
 elsewhere the train waits until the track is open again.  Closing past a sensor, or switching a link off there, is
 refused like a one-way run (RSA13-B1, RSA14-C1).  Should closing right ahead be refused too, where the station does not
-let trains turn?
+let trains turn?  **And the refusal's scope** (RSA15-B2, RSA15-C1): it guards a direction and Use This Link, and walks the
+railway's shape; it does not weigh a train's length against a shorter station on its way, and Pair and Unpair Link, Out
+of Service, Trains May Arrive, the station mark and turning taken off are not asked - the setup check's warning is what
+they leave.  Extend it to those, or keep it as it is?
 
 **Decided** (Adam, 2026-09-30, on MT-605: *"Refuse it too"*): **a one-way run against the way a standing train faces is
 refused**, as a direction that turns it is - judged on the railway as built, however far along the train's way it is set.
@@ -479,8 +482,8 @@ this document exactly the thing it replaces.
 `docs/manual-tests/triage.db`. **2026-09-21: the same for the 65 documents written since** - 44 of them in
 `docs/reviews/` itself and 21 in three dated folders beside it, on Adam's *"I don't want more
 reviews living in the repo"* - 3,726 rows then.  The round of 2026-09-23 added 336 - five reviews and three rounds of validation - and 13 more came on 2026-09-24 with OB-247 (AR-17 to AR-23 and LR-1 to LR-6, which have no document), and the validation rounds of 2026-09-24 added 258 (TDA, TDU and TDD, then the same three lanes as TDA2 to TDD5), and the validation of the work on Adam's answers of that night added 52 on 2026-09-25 (ADA, ADU and ADD) and 48 in its second round (ADA2, ADU2 and ADD2), and the 3.0.0 release review 51 in its first round (RLA, RLU and RLD)
-and the 2.8.2 backport validation 30 (BPV), and the release review's second round 59 (RLA2, RLU2 and RLD2), its third 45 (RLA3, RLU3 and RLD3), its fourth 48 (RLA4, RLU4 and RLD4), its fifth 50 (RLA5, RLU5 and RLD5), its sixth 12 (RLV6), its seventh 15 (RLV7), its eighth 17 (RLV8), its ninth 20 (RLV9), its tenth 16 (RLV10), its eleventh 17 (RLV11), its twelfth 19 (RLV12), its thirteenth 19 (RLV13) and its fourteenth 18 (RSA, the release validator over everything since v2.7.4) and its fifteenth 18 (RSA2), its sixteenth 15 (RSA3), its seventeenth 19 (RSA4), its eighteenth 16 (RSA5), its nineteenth 16 (RSA6), its twentieth 13 (RSA7), its twenty-first 14 (RSA8), its twenty-second 12 (RSA9), its twenty-third 10 (RSA10), its twenty-fourth 11 (RSA11), its twenty-fifth 11 (RSA12), its twenty-sixth 12 (RSA13) and its twenty-seventh 9 (RSA14), which makes
-5,045 finding rows in the store now, every one of them with a status.
+and the 2.8.2 backport validation 30 (BPV), and the release review's second round 59 (RLA2, RLU2 and RLD2), its third 45 (RLA3, RLU3 and RLD3), its fourth 48 (RLA4, RLU4 and RLD4), its fifth 50 (RLA5, RLU5 and RLD5), its sixth 12 (RLV6), its seventh 15 (RLV7), its eighth 17 (RLV8), its ninth 20 (RLV9), its tenth 16 (RLV10), its eleventh 17 (RLV11), its twelfth 19 (RLV12), its thirteenth 19 (RLV13) and its fourteenth 18 (RSA, the release validator over everything since v2.7.4) and its fifteenth 18 (RSA2), its sixteenth 15 (RSA3), its seventeenth 19 (RSA4), its eighteenth 16 (RSA5), its nineteenth 16 (RSA6), its twentieth 13 (RSA7), its twenty-first 14 (RSA8), its twenty-second 12 (RSA9), its twenty-third 10 (RSA10), its twenty-fourth 11 (RSA11), its twenty-fifth 11 (RSA12), its twenty-sixth 12 (RSA13), its twenty-seventh 9 (RSA14) and its twenty-eighth 11 (RSA15), which makes
+5,056 finding rows in the store now, every one of them with a status.
 (This paragraph's figures - 65 documents, 44 of them in `docs/reviews/`, and the finding count - are quoted from the deletion commit and the store.  A correction to 63 and 206 was itself wrong and was reverted; the 208 it was about is in the first paragraph of this file, not here.  `regression.testTheRecordsCountTheStore` now compares the finding and Inbox counts with the store rather than trusting a reader to keep them - VD13-R1, VD14-R2, VD14-R5.) Everything still open above is open in that store too,
 so it can be queried rather than re-read:*
 
