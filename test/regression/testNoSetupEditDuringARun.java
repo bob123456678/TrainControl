@@ -2596,4 +2596,129 @@ public class testNoSetupEditDuringARun
             autonomy.setSelected(false);
         }
     }
+
+    /**
+     * Start Autonomy and Start Timetable, in a session started in simulation with Simulate not ticked in the autonomy
+     * settings, warn first (Adam, 2026-09-30: "adding a warning popup when you start autonomy when the app is in simulate,
+     * and simulate isn't checked") - the trains are sent and wait for sensors no simulation reports, so they start and
+     * never move.  Declined, nothing starts.
+     *
+     * MUTATION: start without asking, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testStartingUnsimulatedInASimulationWarnsFirst() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        boolean echoWas = org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            assertTrue(ui[0].getModel().isSimulation(), "precondition: the window is not a simulation");
+
+            // SIMULATE NOT TICKED
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    ui[0].getModel().getAutoLayout().setSimulate(false);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            // THE POWER ON, which the gate asks after the warning: a simulation answers the Go only where it echoes
+            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
+
+            ui[0].getModel().go();
+
+            long until = System.currentTimeMillis() + 5000;
+
+            while (!ui[0].getModel().getPowerState() && System.currentTimeMillis() < until) Thread.sleep(50);
+
+            assertTrue(ui[0].getModel().getPowerState(), "precondition: the power is not on");
+
+            String warning = I18n.t("autolayout.ui.warnSimulateNotTicked");
+
+            // SOMEBODY THERE to be asked, answering No
+            TrainControlUI.setUnattended(false);
+
+            try
+            {
+                for (String door : new String[] {"startAutonomyActionPerformed", "executeTimetableActionPerformed"})
+                {
+                    final java.lang.reflect.Method press =
+                        TrainControlUI.class.getDeclaredMethod(door, java.awt.event.ActionEvent.class);
+
+                    press.setAccessible(true);
+
+                    final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
+                    final java.util.concurrent.atomic.AtomicBoolean going =
+                        new java.util.concurrent.atomic.AtomicBoolean(true);
+
+                    answeringKeepOpen(asked, going);
+
+                    try
+                    {
+                        SwingUtilities.invokeAndWait(() ->
+                        {
+                            try
+                            {
+                                press.invoke(ui[0], new Object[] {null});
+                            }
+                            catch (Exception e)
+                            {
+                                throw new IllegalStateException(e);
+                            }
+                        });
+
+                        for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+                    }
+                    finally
+                    {
+                        going.set(false);
+                    }
+
+                    assertTrue(asked.contains(warning), door + " started in a simulation with Simulate not ticked, without"
+                        + " a word: " + asked);
+
+                    assertFalse(ui[0].getModel().getAutoLayout().isAutoRunning(), door + " started after the warning was"
+                        + " declined");
+                }
+            }
+            finally
+            {
+                TrainControlUI.setUnattended(true);
+            }
+        }
+        finally
+        {
+            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = echoWas;
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
 }

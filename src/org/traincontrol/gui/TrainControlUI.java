@@ -6529,6 +6529,35 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Whether a run started now would not move (Adam, 2026-09-30): TrainControl started in simulation, and Simulate not
+     * ticked in the autonomy settings, so the trains are sent and wait for sensors no simulation reports.
+     *
+     * @return whether it would not
+     */
+    boolean wouldRunUnsimulated()
+    {
+        return this.model != null && this.model.isSimulation() && this.model.hasAutoLayout()
+            && !this.model.getAutoLayout().isSimulate();
+    }
+
+    /**
+     * Asks before a run that would not move - see `wouldRunUnsimulated` - Start anyway or not, not the default (Adam,
+     * 2026-09-30: "adding a warning popup when you start autonomy when the app is in simulate, and simulate isn't
+     * checked").  Asked before the gate, whose refusal of the power in a simulation that does not echo would hide it.  Not
+     * asked of a run nobody attends.
+     *
+     * @return true where the operator declined
+     */
+    boolean declinedToRunUnsimulated()
+    {
+        if (isUnattended() || !wouldRunUnsimulated()) return false;
+
+        return JOptionPane.showOptionDialog(this, I18n.t("autolayout.ui.warnSimulateNotTicked"),
+            I18n.t("ui.dialogConfirm"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
+            YES_NO_OPTS, YES_NO_OPTS[1]) != 0;
+    }
+
+    /**
      * Refuses a train sent now where `whyNoTrainMayBeSent` says so, saying why over this window - on the event thread, as
      * `refuseWhileEditorOpen` does.  Every door asks it on the event thread today; the posted branch is there so that a
      * caller on a worker can never show a dialog off it (RLV13-C8).
@@ -27624,7 +27653,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         //
         // Refused BEFORE the button is greyed, so a refusal cannot leave it dead.  THROUGH THE ONE GATE (Adam, 2026-09-29):
         // the editor, the setup - a timetable run drives over the railway the setup built, through the same dispatch as a
-        // hand send (MT-263, TDU-B1) - and the power.
+        // hand send (MT-263, TDU-B1) - and the power.  A simulation that is not simulating asked about first (Adam,
+        // 2026-09-30) - see `declinedToRunUnsimulated`.
+        if (declinedToRunUnsimulated()) return;
+
         if (refusedToSendATrain(false)) return;
 
         this.executeTimetable.setEnabled(false);
@@ -27816,7 +27848,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // be possible."  The editor holds the pages the session is built from, so starting underneath
         // it runs trains over a diagram that is still being changed.
         // THROUGH THE ONE GATE (Adam, 2026-09-29): the editor, the setup in Start's own words, and the power - asked here,
-        // before the button is greyed and the worker started, rather than by the worker (SPEC-C4).
+        // before the button is greyed and the worker started, rather than by the worker (SPEC-C4).  A simulation that is
+        // not simulating asked about first (Adam, 2026-09-30) - see `declinedToRunUnsimulated`.
+        if (declinedToRunUnsimulated()) return;
+
         if (refusedToSendATrain(true)) return;
 
         // AND NOT NON-ATOMIC OVER A RAILWAY THAT COULD RELEASE TRACK UNDER A TRAIN (VD16-B2).
