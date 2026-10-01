@@ -1401,6 +1401,15 @@ even when autonomy isn't loaded (i.e. when switching diagram types from CS to lo
 
 layouts -> open layout should default to the last used local layout folder.  this seems like a regression
 
+### FR-105 - 2026-09-30 - grey out consistency in autonomy editor
+
+**Kind:** feature request  
+**Raised from:** MT-602 (A station renamed after a run keeps the train the run left there)  
+**Filed:** 2026-09-30 22:53  
+**Build:** commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when a page is excluded in the autonomy editor, also disable/grey out the auto/manual radio buttons (currently only the why isn't it moving and test path buttons are greyed)
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

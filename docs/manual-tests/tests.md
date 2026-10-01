@@ -29671,6 +29671,12 @@ the train the run had left there back where it started.
 
 *What this is:* `regression.testTheImportDoorReadsAnOldFile.testARenameAfterARunKeepsTheTrainOnTheStation`.
 
+**Adam, 2026-09-30 (triage).** Works.
+
+Filed from this test: FR-105 (feature request - grey out consistency in autonomy editor).  They are in `issues.md` until they are picked up.
+
+*Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-603"></a>
@@ -29751,6 +29757,12 @@ From the fifth release validator (RSA5), taken out of MT-598.
   facing the other way and the direction was not set; the track stays as it was.  Move the train and it can be set.
 
 *What this is:* `regression.testAnEditedPlacementSurvivesTheRebuild.testADirectionUnderATrainTheRunLeftIsRefused`.
+
+**Adam, 2026-09-30 (triage).** Does not work.
+
+The guard applies when you click, but the "trains may depart" menu does not enforce the same limitation.  Also, when the warning is shown and the tile is clicked, continue cycling through the valid options, rather than just stalling on the error each time.
+
+*Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -29888,6 +29900,10 @@ From the seventh release validator (RSA7), taken out of MT-600.
 
 *What this is:* `core.testAutonomyDiagramSession.testACancelledDeleteKeepsTheSquaresSetup`.
 
+**Adam, 2026-09-30 (triage).** Works.
+
+*Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-611"></a>
@@ -29963,6 +29979,12 @@ not show, so the Autonomy menu is the door.
 
 *What this is:* `AutonomyMenu.pagesMenu`, refused while autonomy is busy since before round 23.
 
+**Adam, 2026-09-30 (triage).** Works, with notes.
+
+works, but why not grey out the entire menu?  also, the "edit autonomy on page" tooltip has a large whitespace on the right side of the mssage
+
+*Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-614"></a>
@@ -29991,6 +30013,10 @@ not show, so the Autonomy menu is the door.
 
 *What this is:* the Autonomy menu's tick (`AutonomyMenu.pagesMenu`, then `reloadActiveDiagramConfiguration`), which
 `regression.testNoSetupEditDuringARun.testAPageTickedBackInFromTheAutonomyMenuKeepsItsEntries` drives both ways.
+
+**Adam, 2026-09-30 (triage).** Works.
+
+*Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -30024,6 +30050,12 @@ kept aside for it.
 
 Since round 25 (your ruling of 30 September, "Just keep the entries") a page's entries stay in the timetable while the page is out, rather than in a list of their own; the steps and the expected result still hold.  Of the two claims it names, the window claim still drives this through the Autonomy menu; the other was retired with that list.
 
+**Adam, 2026-09-30 (triage).** Could not run this.
+
+test this on your end
+
+*Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-616"></a>
@@ -30049,6 +30081,12 @@ stations.
 - The entry still runs between the same two stations.
 
 *What this is:* `regression.testAnEditedPlacementSurvivesTheRebuild.testAnUndoneMoveKeepsTheTimetableOnItsStations`.
+
+**Adam, 2026-09-30 (triage).** Could not run this.
+
+test this on your end
+
+*Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -30076,6 +30114,12 @@ stations.
 
 *What this is:* `regression.testAnEditedPlacementSurvivesTheRebuild.testACancelledMoveKeepsTheTimetableOnItsStations`.
 
+**Adam, 2026-09-30 (triage).** Could not run this.
+
+test this on your end
+
+*Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-618"></a>
@@ -30100,6 +30144,12 @@ stations now on their old squares.
 - The entry still runs between the same two stations.
 
 *What this is:* `regression.testAnEditedPlacementSurvivesTheRebuild.testAMoveKeepsTheTimetableOnItsStations`.
+
+**Adam, 2026-09-30 (triage).** Could not run this.
+
+test this on your end
+
+*Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -30127,6 +30177,12 @@ reject it with an error."*
 - Every entry is still listed, in the same order, those through the page left out included.
 
 *What this is:* `regression.testAnEditedPlacementSurvivesTheRebuild.testAPageOutKeepsItsEntriesThroughTheLoadAndTheFold`.
+
+**Adam, 2026-09-30 (triage).** Could not run this.
+
+test this on your end
+
+*Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -30216,6 +30272,10 @@ Your request of 30 September, as MT-621, at the timetable's button.
 - The same warning as MT-621.  No leaves the timetable not started.
 
 *What this is:* `regression.testNoSetupEditDuringARun.testStartingUnsimulatedInASimulationWarnsFirst`.
+
+**Adam, 2026-09-30 (triage).** Works.
+
+*Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -30335,6 +30395,12 @@ before it the configuration the next start resumed.
 
 *What this is:* `regression.testNoSetupEditDuringARun.testTheConfigurationDoorsWaitForAutonomyToStop`.
 
+**Adam, 2026-09-30 (triage).** Works, with notes.
+
+works, but why not grey out the whole menu while running?
+
+*Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-627"></a>
@@ -30433,5 +30499,9 @@ From the tenth release validator (RSA10), beside MT-621 and MT-622.
 - The same warning as MT-621.  No sends no train home.
 
 *What this is:* `regression.testNoSetupEditDuringARun.testStartingUnsimulatedInASimulationWarnsFirst`.
+
+**Adam, 2026-09-30 (triage).** Works.
+
+*Run against commit a5675105, in English - build\classes, compiled 30 Sep 22:35 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
