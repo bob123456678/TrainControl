@@ -2902,6 +2902,18 @@ RSA8-D3	RSA8.md	Closed	Checked - clean, apart from RSA8-B3 (Ctrl+Z) and RSA8-B2 
 RSA8-D4	RSA8.md	Closed	Checked - clean as code, apart from RSA8-C1 (nothing shows it) and RSA8-B1 (the loss it sh	RSA7-B2's fix, as code: `applyPages` is refused while autonomy runs and rebuilds the railway after it
 RSA8-D5	RSA8.md	Closed	Checked - clean, apart from RSA8-B1, B2, B4, B5 and B6.	The timetable aside where it holds: the editor's box, the menu out and the box in, a restart, the store's renames and moves, a page deleted, Clear, th
 RSA8-D6	RSA8.md	Closed	Checked - clean.	The probes' controls, and the baseline
+RSA9-B1	RSA9.md	Closed	Fixed on Adam's ruling (2026-09-30: "stop the timetable run upon encountering an invalid p	A refused timetable entry leaves its train where it stands: where that train's next entry starts where the refused one would have taken it, the run re
+RSA9-B2	RSA9.md	Closed	Fixed - what the carry of names remembers is taken as the editor opens (beginEditSession -	The editor's Cancel after a station's name moved to another station - two names swapped, or a freed name reused - rebinds the timetable's legs to the
+RSA9-C1	RSA9.md	Closed	Fixed - the undo point holds each stored leg by where it is (keyedLegsOf: a road by its sq	Ctrl+Z puts every configuration's stored legs back by position into points maps that `restorePage` has just rebuilt in another order: two trains' road
+RSA9-C2	RSA9.md	Closed	Not a defect - the list rounds 23 and 24 wrote kept no position, so a run recorded twice c	A configuration written by a round 24 build with a page out: its entries set aside come back after the first copy of the run each followed, so a timet
+RSA9-C3	RSA9.md	Closed	Fixed - the refusal's words no longer assume a page left out: "which autonomy does not hav	The refusal names the first point of the path the railway does not have - after a link is switched off, a station of the page in play - and asks wheth
+RSA9-C4	RSA9.md	Closed	Fixed - Clear's comment says what Clear does now. A comment; no claim.	Clear's comment still says it clears the entries set aside for pages out of autonomy
+RSA9-D1	RSA9.md	Closed	Checked - clean.	Round 25's keep: every entry kept, in order, at every door that ticks a page, builds, folds, clears, moves, undoes, cancels or renames, across a resta
+RSA9-D2	RSA9.md	Closed	Checked - clean, apart from RSA9-B1 (a train whose refused entry would have moved it) and 	The run with a page out: refused with the reason and the run goes on where each train's next entry starts where it stands; Start Timetable's check; th
+RSA9-D3	RSA9.md	Closed	Checked - clean, apart from RSA9-C1 (the roads put back by position) and RSA9-B2 (a Cancel	Round 24: a move, Ctrl+Z and Cancel move and put back what the carry remembers and the railway's squares
+RSA9-D4	RSA9.md	Closed	Checked - clean.	The rounds' claims, and two of round 25's mutations re-run
+RSA9-D5	RSA9.md	Closed	Checked - clean.	The Pages dialog deleted
+RSA9-D6	RSA9.md	Closed	Checked - clean, apart from RSA9-C2's note on Import.	What RSA8 did not reach, by reading: the autonomy editor's Cancel (RSA7's note), and the other readers of a round 23-24 configuration
 RT3-B1	2026-09-02-autonomy-routing-review.md	Closed	open	the reversal-room rule's `continue` is defeated by the route search's own dominance pruning
 RT3-B2	2026-09-02-autonomy-routing-review.md	Closed	open	the staging audit has no exemption for the planner's non-station-origin rule
 RT3-C1	2026-09-02-autonomy-routing-review.md	Closed	open	`connected` carries a pre-stop reversal credit through a terminus stop

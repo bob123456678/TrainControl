@@ -44,13 +44,14 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-617](#mt-617) | 2026-09-30 | Cancel after moving stations keeps the timetable on them | fixed unvalidated | RSA8-B2 |
 | [MT-618](#mt-618) | 2026-09-30 | Moving stations and saving keeps the timetable on them | fixed unvalidated | RSA8-B2 |
 | [MT-619](#mt-619) | 2026-09-30 | A page's timetable entries stay listed while the page is left out | fixed unvalidated | Adam 2026-09-30, RSA4-B2 |
-| [MT-620](#mt-620) | 2026-09-30 | An entry through a page left out is refused when the timetable runs, and the rest run | fixed unvalidated | Adam 2026-09-30 |
 | [MT-621](#mt-621) | 2026-09-30 | Start Autonomy in a simulation with Simulate not ticked warns first | fixed unvalidated | Adam 2026-09-30 |
 | [MT-622](#mt-622) | 2026-09-30 | Start Timetable in a simulation with Simulate not ticked warns first | fixed unvalidated | Adam 2026-09-30 |
 | [MT-623](#mt-623) | 2026-09-30 | A simulation starts with Echo Sent Commands on | fixed unvalidated | Adam 2026-09-30 |
+| [MT-624](#mt-624) | 2026-09-30 | A timetable stops at an entry through a page left out, and says why | fixed unvalidated | RSA9-B1, Adam 2026-09-30 |
+| [MT-625](#mt-625) | 2026-09-30 | Export waits for autonomy to stop | fixed unvalidated | Adam 2026-09-30, MT-601 |
 
-Everything else - 602 of 623 - needs nothing from you unless the area changes again:
-471 **fixed validated** and 131 **superseded**.
+Everything else - 603 of 625 - needs nothing from you unless the area changes again:
+471 **fixed validated** and 132 **superseded**.
 
 ---
 
@@ -30128,7 +30129,7 @@ reject it with an error."*
 
 ### MT-620 - 2026-09-30 - An entry through a page left out is refused when the timetable runs, and the rest run
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** Adam 2026-09-30
 
 **Written:** 2026-09-30
@@ -30148,6 +30149,10 @@ we do with other autonomy paths."*
 
 *What this is:* `core.testLayoutTimetable.testAnEntryTheRailwayCannotRunIsRefusedAndTheRunGoesOn` and
 `regression.testAnEditedPlacementSurvivesTheRebuild.testStartTimetableAsksOnlyEntriesTheRailwayCanRun`.
+
+**Claude, 2026-09-30.**
+
+Superseded by MT-624: your ruling of 30 September ("stop the timetable run upon encountering an invalid path, and let the user know") changed what this expects - the run now stops at such an entry and says why, rather than going on.  Nothing here has been run.
 
 ---
 
@@ -30223,5 +30228,57 @@ sends - the power, a switch - so autonomy cannot run.
 - A message says Echo Sent Commands is now on, and the menu item is ticked.  The power can be switched on.
 
 *What this is:* `regression.testNoSetupEditDuringARun.testASimulationStartsWithEchoOn`.
+
+---
+
+<a id="mt-624"></a>
+
+### MT-624 - 2026-09-30 - A timetable stops at an entry through a page left out, and says why
+
+**Disposition:** fixed unvalidated
+**From:** RSA9-B1, Adam 2026-09-30
+
+**Written:** 2026-09-30
+
+Your ruling of 30 September: *"stop the timetable run upon encountering an invalid path, and let the user know"*.  In
+place of MT-620, which expected the run to go on.
+
+**Steps**
+
+1. Have a timetable with entries on two pages.  If the page you will tick out is joined to another by a link, switch the
+   link's **Autonomy Uses This Link** off first.  Tick that page out (**Autonomy > Pages with Autonomy Enabled**).
+2. Stand each train where its first entry on the page still in starts, and press **Start Timetable**.
+
+**Expected**
+
+- When the run reaches the first entry through the page left out, it stops - any train already under way finishes - and
+  a message says the timetable stopped at that entry, and why.
+
+*What this is:* `regression.testNoSetupEditDuringARun.testATimetableStoppedAtAnEntryItCannotRunSaysWhy` and
+`core.testLayoutTimetable.testAnEntryTheRailwayCannotRunStopsTheRunAndSaysWhy`.
+
+---
+
+<a id="mt-625"></a>
+
+### MT-625 - 2026-09-30 - Export waits for autonomy to stop
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-09-30, MT-601
+
+**Written:** 2026-09-30
+
+Your note on MT-601: *"Export should also only be allowed once we are stopped."*
+
+**Steps**
+
+1. Start autonomy.  While it runs, choose **Autonomy > Export...**.
+
+**Expected**
+
+- A message at once says autonomy is running, so nothing was exported, and to stop autonomy and export again.  No file
+  chooser opens.
+
+*What this is:* `regression.testNoSetupEditDuringARun.testExportWaitsForAutonomyToStop`.
 
 ---
