@@ -27,10 +27,6 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-606](#mt-606) | 2026-09-30 | A link is not switched off under a train that came in through it | fixed unvalidated | RSA6-A3, RSA6-A1 |
-| [MT-607](#mt-607) | 2026-09-30 | A dead end is not made one way away from a train facing the buffer | fixed unvalidated | RSA6-B3 |
-| [MT-611](#mt-611) | 2026-09-30 | A dead end is not made two way under a train facing out of it | fixed unvalidated | RSA7-B1 |
-| [MT-612](#mt-612) | 2026-09-30 | A train at a one-way dead end does not block directions elsewhere | fixed unvalidated | RSA7-B1 |
 | [MT-627](#mt-627) | 2026-09-30 | Duplicate after a run copies where the trains are, and the next start resumes the one running | fixed unvalidated | RSA10-A1 |
 | [MT-631](#mt-631) | 2026-09-30 | A one-way run against a train standing at a station is refused | fixed unvalidated | MT-605 |
 | [MT-632](#mt-632) | 2026-09-30 | A click on the track beside a train goes on to the next direction allowed | fixed unvalidated | MT-605 |
@@ -38,8 +34,8 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-634](#mt-634) | 2026-09-30 | A page left out greys Auto and Manual with the tools | fixed unvalidated | FR-105 |
 | [MT-635](#mt-635) | 2026-10-01 | Layouts > Create New Layout waits for autonomy to stop | fixed unvalidated | RSA13-B2 |
 
-Everything else - 625 of 635 - needs nothing from you unless the area changes again:
-492 **fixed validated** and 133 **superseded**.
+Everything else - 629 of 635 - needs nothing from you unless the area changes again:
+496 **fixed validated** and 133 **superseded**.
 
 ---
 
@@ -29773,7 +29769,7 @@ Both halves of your note are built in round 29 (83ba2fca): the menu now refuses 
 
 ### MT-606 - 2026-09-30 - A link is not switched off under a train that came in through it
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA6-A3, RSA6-A1
 
 **Written:** 2026-09-30
@@ -29793,13 +29789,17 @@ From the sixth release validator (RSA6), taken out of MT-599.
 *What this is:* `core.testAutonomyDiagramSession.testALinkSwitchedOffUnderATrainIsRefused` and
 `regression.testAPendingTurnSurvivesTheRebuild.testTheSessionSeesTheRailwayFromTheStart`.
 
+**Claude, 2026-10-01.**
+
+Closed on my end, by your ruling of 2026-09-30 on corner cases (*"my MT's should be focused on more tangible functionality"*) - reopen it if you would rather run it: `core.testAutonomyDiagramSession.testALinkSwitchedOffUnderATrainIsRefused` and `regression.testAPendingTurnSurvivesTheRebuild.testTheSessionSeesTheRailwayFromTheStart` passed in the battery of c29dd5ec.
+
 ---
 
 <a id="mt-607"></a>
 
 ### MT-607 - 2026-09-30 - A dead end is not made one way away from a train facing the buffer
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA6-B3
 
 **Written:** 2026-09-30
@@ -29817,6 +29817,10 @@ From the sixth release validator (RSA6), taken out of MT-599.
   was.
 
 *What this is:* `core.testAutonomyDiagramSession.testADirectionThatLeavesADeadEndFacingAwayIsRefused`.
+
+**Claude, 2026-10-01.**
+
+Closed on my end, by your ruling of 2026-09-30 on corner cases (*"my MT's should be focused on more tangible functionality"*) - reopen it if you would rather run it: `core.testAutonomyDiagramSession.testADirectionThatLeavesADeadEndFacingAwayIsRefused` passed in the battery of c29dd5ec.
 
 ---
 
@@ -29917,7 +29921,7 @@ Validated on your *Works* of 2026-09-30.
 
 ### MT-611 - 2026-09-30 - A dead end is not made two way under a train facing out of it
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA7-B1
 
 **Written:** 2026-09-30
@@ -29936,13 +29940,17 @@ From the seventh release validator (RSA7), taken out of MT-600.
 *What this is:* `core.testAutonomyDiagramSession.testADeadEndMadeTwoWayUnderATrainFacingOutIsRefused` and
 `testADeadEndMadeTwoWayIsRefusedWhateverTheLastTrainLeft`.
 
+**Claude, 2026-10-01.**
+
+Closed on my end, by your ruling of 2026-09-30 on corner cases (*"my MT's should be focused on more tangible functionality"*) - reopen it if you would rather run it: `core.testAutonomyDiagramSession.testADeadEndMadeTwoWayUnderATrainFacingOutIsRefused` and `testADeadEndMadeTwoWayIsRefusedWhateverTheLastTrainLeft` passed in the battery of c29dd5ec.
+
 ---
 
 <a id="mt-612"></a>
 
 ### MT-612 - 2026-09-30 - A train at a one-way dead end does not block directions elsewhere
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA7-B1
 
 **Written:** 2026-09-30
@@ -29961,6 +29969,10 @@ refused every direction on the railway.
 
 *What this is:* `core.testAutonomyDiagramSession.testAStaleFacingAtADeadEndRefusesNothingElse` and
 `testATrainFacingNoCopyIsNotAskedAbout`.
+
+**Claude, 2026-10-01.**
+
+Closed on my end, by your ruling of 2026-09-30 on corner cases (*"my MT's should be focused on more tangible functionality"*) - reopen it if you would rather run it: `core.testAutonomyDiagramSession.testAStaleFacingAtADeadEndRefusesNothingElse` and `testATrainFacingNoCopyIsNotAskedAbout` passed in the battery of c29dd5ec.
 
 ---
 
