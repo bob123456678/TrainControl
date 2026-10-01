@@ -392,8 +392,8 @@ JAVA="${TC_JAVA:-/c/Program Files/Java/jdk1.8.0_361/bin/java}"
 # heap (machine busy, rerun)" branch below - and had never been given the bound that stops it
 # happening.  A default-heap JVM reserves a fraction of physical RAM up front, so with NetBeans open
 # and Adam running his own tests three classes of battery34 died before TestNG loaded, reported in
-# the same words as a class that crashed.  All three pass in 512m and the heaviest class peaks
-# nowhere near it.
+# the same words as a class that crashed.  All three passed in 512m; the bound is 768m since the
+# window classes outgrew it (below).
 #
 # Overridable by the same two variables, because the number is a guess about this machine rather
 # than a property of the tests, and a runner you cannot tune is one people stop using.

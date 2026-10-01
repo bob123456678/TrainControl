@@ -29881,7 +29881,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     private boolean isAutoLayoutRunning()
     {
-        if (this.model.getAutoLayout().isRunning())
+        // WHILE AUTONOMY IS BUSY, not only while the railway runs (RSA12-C1): Return Home plans before any train moves, and
+        // a setting written then ran under the plan - the same question every other setup refusal asks (RLV13-C3)
+        if (this.isAutonomyBusy())
         {
             JOptionPane.showMessageDialog(
                 this,

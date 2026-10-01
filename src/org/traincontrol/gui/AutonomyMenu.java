@@ -214,8 +214,9 @@ public class AutonomyMenu extends JMenu
     /**
      * Greys what changes the setup while autonomy runs, with the reason on each (Adam, MT-613 and MT-626: *"why not grey
      * out the whole menu while running?"*).  Each door still refuses on its own; this says so before the click, as the
-     * editor's item has since OB-045.  Autonomy Settings, Documentation and the debug export stay live: they change
-     * nothing.
+     * editor's item has since OB-045.  Autonomy Settings, Documentation and the debug export stay live: the guide and
+     * the export change nothing, and the settings are shown, their own handlers refusing a change while autonomy is busy
+     * (RSA12-C1).
      *
      * @param documentation the guide's item
      */
@@ -390,11 +391,11 @@ public class AutonomyMenu extends JMenu
             // is the same kind of thought as choosing between them.
             choose.addSeparator();
 
-            // Import is never greyed. While autonomy runs it refuses, and says so (RSA4-C5); into the configuration that
-            // is running it refuses a file that would replace it (RLA2-B1, RLU4-B1), and takes an old file's gaps without
-            // its trains (RLD3-C1); otherwise it brings
-            // one in - and the moment it is most needed is when the current setup will not load, which
-            // is repaired by importing one that will.
+            // Import is greyed only with the rest of the menu while autonomy runs (`guardWhileRunning`), and refuses then
+            // too, saying so (RSA4-C5); into the configuration that is running it refuses a file that would replace it
+            // (RLA2-B1, RLU4-B1), and takes an old file's gaps without its trains (RLD3-C1); otherwise it brings one in -
+            // and the moment it is most needed is when the current setup will not load, which is repaired by importing
+            // one that will.
             choose.add(item(I18n.t("autosetup.ui.btnImportConfiguration"), new Runnable()
             {
                 @Override
@@ -488,9 +489,8 @@ public class AutonomyMenu extends JMenu
             // committed to it. A greyed item says the same thing before, and says it where the eye
             // already is - which is the difference between a rule and an obstacle.
             //
-            // Only this item. Everything else on this menu chooses a setup or does housekeeping on the
-            // file, and the one thing somebody with trains running most needs to reach is the way to
-            // stop them.
+            // While autonomy runs `guardWhileRunning` greys the rest of the menu with it, bar Autonomy Settings and
+            // Documentation (Adam, MT-613 and MT-626); this item asks the editor's own refusals as well, at rest.
             //
             // UXR-C13: this used to re-derive three of openLayoutEditor's four refusals by hand
             // ("chosen && !trainsMoving"), which covers isLocalLayout/session==null (via chosen) and

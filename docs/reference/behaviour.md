@@ -2019,9 +2019,10 @@ left recorded on the square.  Only a train the change turns is asked about - one
 none after - so a facing another train left does not refuse every direction on the railway (RSA7-B1).  Every session knows where the railway's trains stand from the moment it is
 made, not only once a station's Facing menu or the editor has told it (RSA6-A1).  **So is a one-way run against a
 standing train** (Adam, 2026-09-30, on MT-605: *"Refuse it too"*): the track ahead of the train, the way it faces, made
-to carry trains only towards it, where it carried the train away before.  Closing that track is not refused - it makes
-a dead end, which the train turns round at - and a track already running against a train asks nothing of a change
-elsewhere.  **A click on the track or a switch passes over a direction refused** to the next one allowed, and says why
+to carry trains only towards it, where it carried the train away before - judged on the railway as built, so however far
+ahead it is set: past a page link, or by the One-Way tool over part of the way on (RSA12-B1).  Closing that track is not
+refused - nothing arrives by it; a dead end, which the train turns round at - and a track already running against a
+train asks nothing of a change elsewhere.  A train whose facing nothing records faces its only way out (RSA12-C3).  **A click on the track or a switch passes over a direction refused** to the next one allowed, and says why
 only where none is (Adam, MT-605: *"continue cycling through the valid options"*).
 `core.testAutonomyDiagramSession.testADirectionThatWouldTurnAStandingTrainIsRefused`,
 `core.testAutonomyDiagramSession.testAOneWayRunAgainstAStandingTrainIsRefused`,
@@ -2530,8 +2531,9 @@ Commands on (Adam: *"auto-enable echo in simulate too"*), saying so where it had
 `regression.testNoSetupEditDuringARun`.
 
 **While autonomy runs the Autonomy menu greys what changes the setup** - the configurations, Manage Configurations, the
-editor and the pages - each saying why; Autonomy Settings and Documentation stay live, as they change nothing (Adam,
-MT-613 and MT-626: *"why not grey out the whole menu while running?"*).  Each door still refuses on its own.
+editor and the pages - each saying why; Autonomy Settings and Documentation stay live (Adam, MT-613 and MT-626: *"why
+not grey out the whole menu while running?"*).  Each door still refuses on its own, and the Auto tab's settings refuse
+a change while autonomy is busy - Return Home's planning too, before any train moves (RSA12-C1).
 `regression.testNoSetupEditDuringARun.testTheAutonomyMenuIsGreyedWhileAutonomyRuns`.
 
 **Which pages autonomy uses is chosen at Autonomy > Pages with Autonomy Enabled**, refused while autonomy runs (MT-141)

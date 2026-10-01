@@ -1014,6 +1014,150 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A one-way run against a standing train is refused past a page link (RSA12-B1): the refusal asked only of the square
+     * in front of the train, and a link's route is a stub, so track made one way towards the train beyond the link left
+     * it no way on, unasked.  It is judged on the railway as built: nothing leaving the train's square its way after.
+     *
+     * MUTATION: judge the square in front of the train alone, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAOneWayRunAgainstATrainBeyondALinkIsRefused() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 9, 3, null, null);
+
+        page.addComponent(componentType.LINK, 0, 1, 2, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 1, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 2, 1, 0, 0, 141, 141, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 142, 142, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.STRAIGHT, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 6, 1, 0, 0, 143, 143, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.LINK, 7, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("RSA12-B1 link");
+
+        String[] names = {"Alpha", "Beta", "Gamma"};
+
+        for (int i = 0; i < 3; i++)
+        {
+            session.setStation(new TileKey("main", 2 + 2 * i, 1), true);
+            session.setPointName(new TileKey("main", 2 + 2 * i, 1), names[i]);
+        }
+
+        session.pairPortals(new TileKey("main", 0, 1), new TileKey("main", 7, 1));
+
+        // A TRAIN ON GAMMA, FACING EAST: its way on is through the link, round to Alpha
+        TileKey gamma = new TileKey("main", 6, 1);
+
+        session.placeLocomotive(gamma, "B1 link train");
+        session.setFacing(gamma, org.traincontrol.automationui.TilePorts.Side.E);
+        session.rebuild();
+
+        // ONE WAY WEST BEYOND THE LINK: trains run only towards Gamma
+        session.setRunDirection(new TileKey("main", 1, 1), new RouteId(0, 0), Direction.TOWARD_B);
+
+        String refused = session.takeDirectionRefusal();
+
+        assertTrue(refused != null && refused.contains("B1 link train") && refused.contains("Gamma"), "track beyond a"
+            + " link was made one way against the train it leads from (RSA12-B1): " + refused);
+
+        assertEquals(session.getStore().getTileDirection(new TileKey("main", 1, 1), new RouteId(0, 0)), null, "a"
+            + " direction refused was written to the setup");
+    }
+
+    /**
+     * A one-way run against a standing train is refused where the One-Way tool sets only part of the train's way on
+     * (RSA12-B1): the tool sets the squares between the two it is given, so the square in front of the train stayed two
+     * way and the run further on carried trains only towards it.
+     *
+     * MUTATION: judge the square in front of the train alone, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAOneWayRunOverPartOfATrainsWayOnIsRefused() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 9, 3, null, null);
+
+        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 151, 151, accessoryDecoderType.MM2, null);
+
+        for (int x : new int[] {2, 3, 4, 6})
+        {
+            page.addComponent(componentType.STRAIGHT, x, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        }
+
+        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 152, 152, accessoryDecoderType.MM2, null);
+        page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 153, 153, accessoryDecoderType.MM2, null);
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("RSA12-B1 part");
+
+        String[] names = {"Alpha", "Beta", "Gamma"};
+        int[] at = {1, 5, 7};
+
+        for (int i = 0; i < 3; i++)
+        {
+            session.setStation(new TileKey("main", at[i], 1), true);
+            session.setPointName(new TileKey("main", at[i], 1), names[i]);
+        }
+
+        // A TRAIN ON BETA, FACING WEST: its way on is three squares to Alpha
+        TileKey beta = new TileKey("main", 5, 1);
+
+        session.placeLocomotive(beta, "B1 part train");
+        session.setFacing(beta, org.traincontrol.automationui.TilePorts.Side.W);
+        session.rebuild();
+
+        // THE ONE-WAY TOOL FROM ALPHA TO 3,1: 2,1 one way east, the squares in front of Beta left two way
+        session.setOneWayRun(new TileKey("main", 1, 1), new TileKey("main", 3, 1));
+
+        String refused = session.takeDirectionRefusal();
+
+        assertTrue(refused != null && refused.contains("B1 part train") && refused.contains("Beta"), "the One-Way tool"
+            + " over part of a train's way on made it one way against the train (RSA12-B1): " + refused);
+
+        assertEquals(session.getStore().getTileDirection(new TileKey("main", 2, 1), new RouteId(0, 0)), null, "a"
+            + " direction refused was written to the setup");
+    }
+
+    /**
+     * A dead end's only way out is not made one way in under a train whose facing nothing records (RSA12-C3): it faces
+     * that way out, as the turn refusal reads such a train (RSA7-B1), and the new refusal skipped a train with no facing.
+     *
+     * MUTATION: skip a train whose facing nothing records, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testADeadEndsWayOutIsNotMadeOneWayInUnderATrainWithNoFacing() throws Exception
+    {
+        threeStationsInARow("RSA12-C3");
+
+        TileKey alpha = new TileKey("main", 1, 1);
+
+        session.setPointName(alpha, "Alpha");
+        session.setPointName(new TileKey("main", 3, 1), "Beta");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+
+        // A TRAIN AT THE DEAD END, its facing not recorded
+        session.placeLocomotive(alpha, "C3 train");
+        session.rebuild();
+
+        // ITS ONLY WAY OUT ONE WAY WEST, into the dead end
+        session.setRunDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_B);
+
+        String refused = session.takeDirectionRefusal();
+
+        assertTrue(refused != null && refused.contains("C3 train") && refused.contains("Alpha"), "a dead end's only way"
+            + " out was made one way in under a train whose facing nothing records (RSA12-C3): " + refused);
+    }
+
+    /**
      * A page renamed keeps the timetable legs and the roads through its squares with no name of their own (RSA5-B2):
      * such a square is named after its page, so a rename renamed its Points, and nothing carried the names stored.
      *

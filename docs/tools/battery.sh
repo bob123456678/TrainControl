@@ -503,8 +503,8 @@ JAVA_FLAGS="$JAVA_FLAGS -Dtraincontrol.batteryRun=$RUN_ID"
 # A default-heap JVM reserves a fraction of physical RAM up front. With NetBeans open and Adam running
 # his own tests, three classes in battery34 could not get it, died before TestNG loaded, and were
 # reported as DID NOT RUN - the same wording as a class that crashed, so the run looked like it had
-# three faults in it and had none. All three pass in 512m, and the heaviest class here peaks nowhere
-# near that.
+# three faults in it and had none. All three passed in 512m; the bound is 768m since the window
+# classes outgrew it (below).
 #
 # Overridable, because the number is a guess about this machine rather than a property of the tests.
 # 768m SINCE 2026-09-30: regression.testTheImportDoorReadsAnOldFile - 41 window tests on the live snapshot, each keeping its

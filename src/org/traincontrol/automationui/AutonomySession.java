@@ -7365,12 +7365,18 @@ public class AutonomySession
      */
     private boolean directionsTouched()
     {
-        Map<String, String> turned = trainsTheSetupWouldTurn(namingBefore);
+        AutonomyBuilder before = namingBefore;
 
         namingBefore = null;
 
+        // THE RAILWAY AS IT WOULD NOW BE BUILT, once for both refusals - only where a train stands to ask about
+        AutonomyBuilder after = before == null || standingTrains().isEmpty() ? null : trialNaming();
+
+        Map<String, String> turned = trainsTheSetupWouldTurn(before, after);
+
         // AND NOT ONE WAY AGAINST A STANDING TRAIN (Adam, 2026-09-30, on MT-605: "Refuse it too")
-        Map<String, String> against = turned.isEmpty() ? trainsADirectionRunsAgainst() : Collections.<String, String>emptyMap();
+        Map<String, String> against = turned.isEmpty() ? trainsADirectionRunsAgainst(before, after)
+            : Collections.<String, String>emptyMap();
 
         if (!turned.isEmpty() || !against.isEmpty())
         {
@@ -7398,76 +7404,84 @@ public class AutonomySession
 
     /**
      * The trains the directions just recorded leave facing a one-way run against them, each to the station it stands on
-     * (Adam, 2026-09-30, on MT-605: "Refuse it too"): the track ahead of the train, the way it faces, carrying trains only
-     * towards it now, and carrying the train away before.  Track closed ahead is not against - it makes a dead end, which
-     * a train turns round at - and a train whose facing nothing records is not asked about.
+     * (Adam, 2026-09-30, on MT-605: "Refuse it too"): on the railway as built, nothing leaves the train's square the way
+     * it faces after the change, something did before, and trains still arrive by that side - so the track ahead carries
+     * them only towards it, however far ahead it was set: past a page link, or past the squares the One-Way tool leaves
+     * alone (RSA12-B1).  Track closed ahead is not against - nothing arrives by that side; a dead end, which the train
+     * turns round at.  A train facing no track, or recording no facing, leaves by the square's only way out (RSA12-C3).
      *
+     * @param before the naming before the change, or null where no train stood
+     * @param after the naming after it, or null where no train stands
      * @return each train's name to its station's, in the order they stand
      */
-    private Map<String, String> trainsADirectionRunsAgainst()
+    private Map<String, String> trainsADirectionRunsAgainst(AutonomyBuilder before, AutonomyBuilder after)
     {
-        if (directionsBefore.isEmpty()) return Collections.emptyMap();
+        if (before == null || after == null) return Collections.emptyMap();
+
+        Map<TileKey, String> bases = after.uniqueNames();
 
         Map<String, String> against = new LinkedHashMap<>();
 
         for (Map.Entry<String, Object[]> train : standingTrains().entrySet())
         {
             TileKey square = (TileKey) train.getValue()[0];
+
+            if (square == null) continue;
+
             Side facing = (Side) train.getValue()[1];
 
-            if (square == null || facing == null) continue;
-
-            Landing ahead = graph.landing(square, facing);
-
-            if (ahead == null || ahead.getEntrySide() == null) continue;
-
-            if (runsAgainst(ahead, false) && !runsAgainst(ahead, true))
+            // ITS WAY OUT: the way it faces - or, facing no track at all (a buffer) or recording no facing, the square's
+            // only way out, as a train at a dead end leaves by (RSA12-C3).  A track already one way towards it is track:
+            // the train keeps its facing, and a change elsewhere is not asked about.
+            if (facing == null || !leavesBy(before, square, facing) && !arrivesBy(before, square, facing))
             {
-                String name = store.getPointName(square);
+                facing = onlyWayOut(before, square);
+            }
 
-                against.put(train.getKey(), name == null ? square.toString() : name);
+            if (facing == null) continue;
+
+            if (leavesBy(before, square, facing) && !leavesBy(after, square, facing) && arrivesBy(after, square, facing))
+            {
+                against.put(train.getKey(), bases.containsKey(square) ? bases.get(square) : square.toString());
             }
         }
 
         return against;
     }
 
-    /**
-     * Whether the track a train enters at this landing carries trains only back towards where it came from - none on
-     * through it, some towards it - as the directions are now, or as they were before the ones just recorded.
-     *
-     * @param ahead where the train would enter the track
-     * @param before whether to read the directions as they were before those recorded
-     * @return true where it runs only against the train
-     */
-    private boolean runsAgainst(Landing ahead, boolean before)
+    /** Whether, in this naming's reduction, a train leaves the square by this side: an edge the railway is built with. */
+    private static boolean leavesBy(AutonomyBuilder naming, TileKey square, Side side)
     {
-        boolean away = false;
-        boolean towards = false;
-
-        Side in = ahead.getEntrySide();
-
-        for (Map.Entry<RouteId, Route> entry : graph.getRoutes(ahead.getTile()).entrySet())
+        for (GraphReducer.ReducedEdge edge : naming.reduction().getEdges())
         {
-            Route route = entry.getValue();
-
-            if (!route.touches(in) || route.getA() == route.getB()) continue;
-
-            Side out = route.getA() == in ? route.getB() : route.getA();
-
-            Direction direction = graph.getDirection(ahead.getTile(), entry.getKey());
-
-            Direction was = before ? directionsBefore.get(Arrays.<Object>asList(ahead.getTile(), entry.getKey())) : null;
-
-            if (was != null) direction = was;
-
-            Side toward = direction == Direction.TOWARD_A ? route.getA() : direction == Direction.TOWARD_B ? route.getB() : null;
-
-            if (direction == Direction.BOTH || toward == out) away = true;
-            if (direction == Direction.BOTH || toward == in) towards = true;
+            if (square.equals(edge.getStart()) && edge.getExitSide() == side) return true;
         }
 
-        return towards && !away;
+        return false;
+    }
+
+    /** The one side trains leave the square by in this naming, or null where there is none, or more than one. */
+    private static Side onlyWayOut(AutonomyBuilder naming, TileKey square)
+    {
+        Set<Side> sides = java.util.EnumSet.noneOf(Side.class);
+
+        for (GraphReducer.ReducedEdge edge : naming.reduction().getEdges())
+        {
+            if (square.equals(edge.getStart()) && edge.getExitSide() != null) sides.add(edge.getExitSide());
+        }
+
+        return sides.size() == 1 ? sides.iterator().next() : null;
+    }
+
+    /** Whether, in this naming, a train arrives at the square by this side. */
+    private static boolean arrivesBy(AutonomyBuilder naming, TileKey square, Side side)
+    {
+        for (GraphReducer.ReducedEdge edge : naming.reduction().getEdges())
+        {
+            if (square.equals(edge.getEnd()) && edge.getEntrySide() == side) return true;
+        }
+
+        return false;
     }
 
     /**
@@ -7597,13 +7611,22 @@ public class AutonomySession
      */
     private Map<String, String> trainsTheSetupWouldTurn(AutonomyBuilder before)
     {
-        if (before == null) return Collections.emptyMap();
+        return trainsTheSetupWouldTurn(before, before == null || standingTrains().isEmpty() ? null : trialNaming());
+    }
+
+    /**
+     * The same, the railway as it would be built after the change given.
+     *
+     * @param before the naming before the change, or null where no train stood
+     * @param after the naming after it, or null where no train stands
+     */
+    private Map<String, String> trainsTheSetupWouldTurn(AutonomyBuilder before, AutonomyBuilder after)
+    {
+        if (before == null || after == null) return Collections.emptyMap();
 
         Map<String, Object[]> standing = standingTrains();
 
         if (standing.isEmpty()) return Collections.emptyMap();
-
-        AutonomyBuilder after = trialNaming();
 
         Map<String, TileKey> tilesBefore = before.tilesByName();
         Map<String, Side> facingsBefore = before.facingByName();

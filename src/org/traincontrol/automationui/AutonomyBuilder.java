@@ -1656,6 +1656,17 @@ public class AutonomyBuilder
     }
 
     /**
+     * The reduction this naming was made from: the squares' edges, before any is split into copies - which way a train
+     * may leave or reach a square at all, read by the session's one-way refusal (RSA12-B1, RSA12-C3).
+     *
+     * @return the reducer
+     */
+    GraphReducer reduction()
+    {
+        return reducer;
+    }
+
+    /**
      * Every emitted edge name - "start -> end" over Point names - mapped to the reduced edge it came
      * from.  Several names can share one reduced edge once a tile is split.
      *

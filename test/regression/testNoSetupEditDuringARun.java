@@ -3731,6 +3731,104 @@ public class testNoSetupEditDuringARun
     }
 
     /**
+     * The Auto tab refuses a setting while autonomy is busy, not only while a train runs (RSA12-C1): its handlers asked
+     * the railway whether it ran, so during Return Home's planning - autonomy busy, nothing moving yet - a setting was
+     * written under the plan, from the Autonomy Settings item the menu leaves live.
+     *
+     * MUTATION: ask the railway alone, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheAutoTabRefusesASettingWhileAutonomyIsBusy() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
+
+        staging.setAccessible(true);
+
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
+
+            assertFalse(railway.isRunning(), "precondition: the railway runs");
+
+            final int was = railway.getMaxActiveTrains();
+
+            // AUTONOMY BUSY, as Return Home's planning leaves it, nothing moving
+            staging.set(ui[0], true);
+
+            final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
+
+            closingEveryQuestion(asked, new ArrayList<String>(), going);
+
+            // THE TRAINS-AT-ONCE SLIDER MOVED AND LET GO, through its own handler
+            java.lang.reflect.Field slider = TrainControlUI.class.getDeclaredField("maxActiveTrains");
+
+            slider.setAccessible(true);
+
+            final javax.swing.JSlider trains = (javax.swing.JSlider) slider.get(ui[0]);
+
+            final java.lang.reflect.Method released = TrainControlUI.class.getDeclaredMethod("maxActiveTrainsMouseReleased",
+                java.awt.event.MouseEvent.class);
+
+            released.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                trains.setValue(was == trains.getMaximum() ? was - 1 : was + 1);
+
+                try
+                {
+                    released.invoke(ui[0], new Object[] {null});
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertEquals(railway.getMaxActiveTrains(), was, "a setting was written while autonomy was busy, nothing"
+                + " moving (RSA12-C1); said: " + asked);
+
+            assertTrue(asked.contains(I18n.t("autolayout.ui.errorUnableToChangeSettingsWhileTrainsRunning")), "the refusal"
+                + " was not said: " + asked);
+        }
+        finally
+        {
+            going.set(false);
+
+            if (ui[0] != null) staging.set(ui[0], false);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
      * New Configuration after a run copies where the trains are, and leaves the configuration running the one the next
      * start resumes (RSA10-A1): it copied the file's record - each train where it stood before the run - and made the
      * copy the configuration to resume, while the exit's fold went into the one running.  The next start then placed a
