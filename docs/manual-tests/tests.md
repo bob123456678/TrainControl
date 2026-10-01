@@ -36,8 +36,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | [MT-632](#mt-632) | 2026-09-30 | A click on the track beside a train goes on to the next direction allowed | fixed unvalidated | MT-605 |
 | [MT-633](#mt-633) | 2026-09-30 | The Autonomy menu greys while autonomy runs, saying why | fixed unvalidated | MT-613 |
 | [MT-634](#mt-634) | 2026-09-30 | A page left out greys Auto and Manual with the tools | fixed unvalidated | FR-105 |
+| [MT-635](#mt-635) | 2026-10-01 | Layouts > Create New Layout waits for autonomy to stop | fixed unvalidated | RSA13-B2 |
 
-Everything else - 625 of 634 - needs nothing from you unless the area changes again:
+Everything else - 625 of 635 - needs nothing from you unless the area changes again:
 492 **fixed validated** and 133 **superseded**.
 
 ---
@@ -30598,6 +30599,10 @@ way was refused, so the track ahead of a train could be made one way towards it.
 
 Since round 30 (b609b854) the refusal looks along the whole way on, not only the square in front of the train: track made one way towards the train beyond a page link, or by the One-Way tool over part of the way, is refused the same way (RSA12-B1).  The steps stand.
 
+**Claude, 2026-10-01.**
+
+Since round 31 (010de9ba) the refusal follows the train's whole way to the next station, past sensors that are no station (RSA13-B1).  The steps stand.
+
 ---
 
 <a id="mt-632"></a>
@@ -30675,5 +30680,29 @@ auto/manual radio buttons"*.
   back.
 
 *What this is:* `core.testAutonomyDiagramSession.testAPageLeftOutGreysThePathType`.
+
+---
+
+<a id="mt-635"></a>
+
+### MT-635 - 2026-10-01 - Layouts > Create New Layout waits for autonomy to stop
+
+**Disposition:** fixed unvalidated
+**From:** RSA13-B2
+
+**Written:** 2026-10-01
+
+From the thirteenth release validator (RSA13).  It opened its folder window during a run, and a folder chosen
+switched the layout and reset autonomy under the moving trains.
+
+**Steps**
+
+1. Start autonomy.  While a train is moving, choose **Layouts > Create New Layout**.
+
+**Expected**
+
+- It says at once that this cannot be done while autonomy runs, and no folder window opens.
+
+*What this is:* `regression.testNoSetupEditDuringARun.testCreateNewLayoutWaitsForAutonomyToStop`.
 
 ---
