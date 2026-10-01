@@ -722,6 +722,9 @@ public class Layout
     // flag above is.
     private volatile List<TimetablePath> timetableOnLoan = null;
 
+    /** Why the last timetable run stopped short, where it stopped at an entry it cannot run - or null (RSA9-B1). */
+    private volatile String timetableStoppedBecause;
+
     // Set for as long as executeTimetable is driving.  Capture records what the OPERATOR drives; a
     // timetable run recording itself appends to the very list being walked, and the dispatch loop
     // re-reads its own size.  Staging was only one of the two entrances into that.
@@ -2126,6 +2129,16 @@ public class Layout
     public boolean isSimulate()
     {
         return this.simulate;
+    }
+
+    /**
+     * Why the last timetable run stopped where it did, or null.
+     *
+     * @return the reason
+     */
+    public String whyTheTimetableStopped()
+    {
+        return this.timetableStoppedBecause;
     }
     
     /**
@@ -6830,6 +6843,8 @@ public class Layout
             return true;
         }
 
+        this.timetableStoppedBecause = null;
+
         // NOT AFTER A STOP ORDERED SINCE THE RUN WAS CHOSEN (RSA2-C1): `running` set, THEN the count asked, and cleared
         // again where it has moved - the two held as one against the Yes's two, which clear `running` and then count,
         // by `stopLock` (RSA4-C2).  A Yes before is seen by the question, and one after clears what this set.  Unheld, a
@@ -6922,24 +6937,20 @@ public class Layout
                 }
                 else if (!ttp.isRunnable())
                 {
-                    // A PATH THROUGH A POINT THE RAILWAY DOES NOT HAVE - one on a page left out of autonomy - refused with
-                    // the reason, as a path the validation refuses is (Adam, 2026-09-30), and the run goes on: stamped, as
-                    // an entry whose train cannot run is, and where it is the last ending the run as an entry's own
-                    // thread would
+                    // A PATH THROUGH A POINT THE RAILWAY DOES NOT HAVE - one on a page left out of autonomy - STOPS THE RUN,
+                    // and says why (Adam, 2026-09-30: "stop the timetable run upon encountering an invalid path, and let the
+                    // user know").  Left unrun, so the window names it; trains already under way finish their journeys.
+                    // Refused and passed over, a train's later entries started where it was not, and the run stood for
+                    // minutes before giving up, saying only that the track never became free (RSA9-B1).
                     this.control.logf("autolayout.errorTimetableEntryNotRun", ttp.toString(), ttp.whyNotRunnable());
 
-                    ttp.setExecutionTime(System.currentTimeMillis());
+                    this.timetableStoppedBecause = ttp.whyNotRunnable();
 
-                    startTime = System.currentTimeMillis();
+                    abandoned.set(true);
 
-                    if (index == this.timetable.size() - 1)
+                    synchronized (this.activeLocomotives)
                     {
-                        synchronized (this.activeLocomotives)
-                        {
-                            this.stopLocomotives();
-                        }
-
-                        this.control.logf("autolayout.infoTimetableExecutionFinished");
+                        this.stopLocomotives();
                     }
 
                     break;

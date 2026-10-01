@@ -1403,6 +1403,55 @@ public class testAnEditedPlacementSurvivesTheRebuild
         return session;
     }
 
+    /**
+     * The editor's Cancel after two stations' names were swapped keeps the timetable on its stations (RSA9-B2): Cancel
+     * put back the setup and the snapshot's legs, but put back what the carry of names remembers only where a move had
+     * been made - so its rebuild found each name remembered on the other's square and carried every leg there.  What the
+     * carry remembers is taken when the editor opens, as its snapshot is.
+     *
+     * MUTATION: put back what the carry remembers only after a move, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testACancelAfterTwoNamesSwappedKeepsTheTimetable() throws Exception
+    {
+        Object[] fixture = fiveStationsWithATimetable("rsa9-b2-swap", 8561);
+
+        org.traincontrol.automationui.AutonomySession session = (org.traincontrol.automationui.AutonomySession) fixture[0];
+        String before = (String) fixture[2];
+
+        // THE EDITOR OPENED: its snapshot, and its note
+        org.json.JSONObject asOpened = session.snapshotSetup();
+
+        session.beginEditSession();
+
+        try
+        {
+            // THE NAMES OF BETA AND GAMMA SWAPPED, as three renames make it
+            org.traincontrol.automationui.TileGraph.TileKey beta =
+                new org.traincontrol.automationui.TileGraph.TileKey("main", 3, 1);
+            org.traincontrol.automationui.TileGraph.TileKey gamma =
+                new org.traincontrol.automationui.TileGraph.TileKey("main", 5, 1);
+
+            session.setPointName(beta, "Tmp");
+            session.setPointName(gamma, "Beta");
+            session.setPointName(beta, "Gamma");
+
+            assertFalse(legsOf(session).equals(before), "precondition: the legs did not follow the swapped names");
+
+            // CANCEL
+            assertTrue(session.restoreSetup(asOpened), "precondition: Cancel could not put the setup back");
+
+            assertEquals(legsOf(session), before, "a Cancel after two names were swapped carried the timetable's legs to"
+                + " the other stations (RSA9-B2)");
+        }
+        finally
+        {
+            session.endEditSession();
+        }
+    }
+
     /** One line of stations, one per sensor from the first given, starting that many columns in: its page. */
     private static org.traincontrol.base.LayoutDiagram aRowPage(String name, int offset, int firstSensor, int count)
         throws Exception

@@ -466,18 +466,19 @@ public class testLayoutTimetable
     }
 
     /**
-     * An entry the railway cannot run is refused when the timetable reaches it, with the reason, and the run goes on and
-     * ends - an entry refused is stamped as one whose train cannot run is, and the last one ends the run as an entry's own
-     * thread would (Adam, 2026-09-30).
+     * The run stops at an entry the railway cannot run, and says why (Adam, 2026-09-30: "stop the timetable run upon
+     * encountering an invalid path, and let the user know").  Refused and passed over, a train's later entries started
+     * where it was not, and the run stood for minutes before giving up, saying only that the track never became free
+     * (RSA9-B1).  The entry is left unrun, so the window names it, and nothing after it runs.
      *
-     * MUTATION: let the run reach an entry it cannot run without refusing it, and this fails.
+     * MUTATION: pass over an entry the railway cannot run, and this fails.
      *
      * @throws Exception from the layout
      */
     @Test(timeOut = 60000)
-    public void testAnEntryTheRailwayCannotRunIsRefusedAndTheRunGoesOn() throws Exception
+    public void testAnEntryTheRailwayCannotRunStopsTheRunAndSaysWhy() throws Exception
     {
-        Layout layout = layoutWithOnePath();
+        final Layout layout = layoutWithOnePath();
 
         // Max before min: setMinDelay rejects a value above the current maximum
         layout.setMaxDelay(1);
@@ -511,18 +512,27 @@ public class testLayoutTimetable
 
         try
         {
-            Thread runner = new Thread(layout::executeTimetable);
+            final boolean[] completed = {true};
+
+            Thread runner = new Thread(() -> completed[0] = layout.executeTimetable());
 
             runner.setDaemon(true);
             runner.start();
             runner.join(30000);
 
-            assertFalse(runner.isAlive(), "a timetable of entries the railway cannot run did not end");
+            assertFalse(runner.isAlive(), "a timetable stopped at an entry the railway cannot run did not end");
 
             assertFalse(layout.isAutoRunning(), "the run still reads as running");
 
-            assertTrue(first.isExecuted() && second.isExecuted(), "an entry refused was not stamped, so the next waits"
-                + " for it for ever");
+            assertFalse(completed[0], "a run stopped at an entry it cannot run reads as finished");
+
+            assertFalse(second.isExecuted(), "the run went on past an entry it cannot run (RSA9-B1)");
+
+            assertFalse(first.isExecuted(), "the entry the run stopped at reads as run, so the window cannot name it");
+
+            assertEquals(layout.getUnfinishedTimetablePathIndex(), 0, "the run does not say where it stopped");
+
+            assertEquals(layout.whyTheTimetableStopped(), first.whyNotRunnable(), "the run does not say why it stopped");
 
             String said = org.traincontrol.util.I18n.f("autolayout.errorTimetableEntryNotRun", first.toString(),
                 first.whyNotRunnable());

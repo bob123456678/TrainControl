@@ -1645,6 +1645,77 @@ public class testAutonomyDiagramSession
             "the list of entries set aside is still there");
     }
 
+    /**
+     * An undo puts each standing train's road back on its own train (RSA9-C1): the undo point held every stored leg by
+     * position, and the page's points put back first are a new map, whose keys can iterate in another order - two roads
+     * whose squares share a bucket were written into each other.  The legs are held by where each is: its entry and leg,
+     * or its square and step.
+     *
+     * MUTATION: put the legs back by position, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testAnUndoPutsEachRoadBackOnItsOwnTrain() throws Exception
+    {
+        // "second124" puts its 5,1 in the bucket of main's 5,1, after it - as RSA9 measured
+        LayoutDiagram main = new LayoutDiagram("main", 7, 3, null, null);
+        LayoutDiagram second = new LayoutDiagram("second124", 7, 3, null, null);
+
+        int address = 140;
+
+        for (LayoutDiagram page : new LayoutDiagram[] {main, second})
+        {
+            page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, address, address, accessoryDecoderType.MM2, null);
+            page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, address + 1, address + 1, accessoryDecoderType.MM2,
+                null);
+            page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, address + 2, address + 2, accessoryDecoderType.MM2,
+                null);
+
+            address += 10;
+        }
+
+        main.setPageId("1");
+        second.setPageId("2");
+
+        session.open(Arrays.asList(main, second));
+        session.initialize("C1 roads");
+
+        for (LayoutDiagram page : new LayoutDiagram[] {main, second})
+        {
+            for (int x : new int[] {1, 3, 5}) session.setStation(new TileKey(page.getName(), x, 1), true);
+        }
+
+        // TWO STANDING TRAINS' ROADS, one on each page, as a fold writes them
+        org.json.JSONObject configuration =
+            session.getStore().getConfiguration(session.getStore().getActiveConfiguration());
+
+        if (!configuration.has("points")) configuration.put("points", new org.json.JSONObject());
+
+        org.json.JSONObject points = configuration.getJSONObject("points");
+
+        points.put("main:5,1", new org.json.JSONObject().put("arrivedAlong",
+            new org.json.JSONArray().put(new org.json.JSONArray().put("C1 a").put("C1 b"))));
+        points.put("second124:5,1", new org.json.JSONObject().put("arrivedAlong",
+            new org.json.JSONArray().put(new org.json.JSONArray().put("C1 y").put("C1 z"))));
+
+        // THE UNDO POINT, and Ctrl+Z with nothing between
+        java.util.Map<String, Object> undoPoint = session.snapshotPage("main");
+
+        session.restorePage("main", undoPoint);
+
+        org.json.JSONObject now = session.getStore().getConfiguration(session.getStore().getActiveConfiguration())
+            .getJSONObject("points");
+
+        assertEquals(now.getJSONObject("main:5,1").getJSONArray("arrivedAlong").toString(), "[[\"C1 a\",\"C1 b\"]]",
+            "an undo wrote another train's road onto main 5,1 (RSA9-C1)");
+
+        assertEquals(now.getJSONObject("second124:5,1").getJSONArray("arrivedAlong").toString(), "[[\"C1 y\",\"C1 z\"]]",
+            "an undo wrote another train's road onto second124 5,1 (RSA9-C1)");
+    }
+
     /** Stations at 1,1, 3,1 and 5,1 of one line, both ways, in a configuration of this name: its page. */
     private LayoutDiagram threeStationsInARow(String configuration) throws Exception
     {

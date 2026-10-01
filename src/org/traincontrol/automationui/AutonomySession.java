@@ -173,10 +173,10 @@ public class AutonomySession
         private final Map<String, String> bases;
         private final Map<String, Side> facings;
         private final Map<org.traincontrol.automation.Point, String> railway;
-        private final Map<String, List<String>> legs;
+        private final Map<String, Map<String, String[]>> legs;
 
         Remembered(Map<String, TileKey> squares, Map<String, String> bases, Map<String, Side> facings,
-            Map<org.traincontrol.automation.Point, String> railway, Map<String, List<String>> legs)
+            Map<org.traincontrol.automation.Point, String> railway, Map<String, Map<String, String[]>> legs)
         {
             this.squares = squares;
             this.bases = bases;
@@ -189,8 +189,12 @@ public class AutonomySession
     /** Where a page's undo point holds what the edit changes outside the page - see `Remembered`. */
     private static final String REMEMBERED = "session";
 
-    /** What the carry remembered, and the railway's squares, before the first move - for a Cancel. */
-    private Remembered beforeTheFirstMove;
+    /**
+     * What the carry remembered, and the railway's squares, as the editor opened - or before the first move where no
+     * editor said it opened - for a Cancel (RSA8-B2, RSA9-B2).  Taken at the first move alone, a Cancel after two names
+     * were swapped found each remembered on the other's square, and carried every leg there.
+     */
+    private Remembered asTheEditBegan;
 
     /** What this session remembers now - see `Remembered`. */
     private Remembered remembered()
@@ -205,7 +209,7 @@ public class AutonomySession
             if (point.getSquare() != null) railway.put(point, point.getSquare());
         }
 
-        Map<String, List<String>> legs = new LinkedHashMap<>();
+        Map<String, Map<String, String[]>> legs = new LinkedHashMap<>();
 
         for (String name : store.getConfigurationNames())
         {
@@ -213,12 +217,11 @@ public class AutonomySession
 
             if (configuration == null) continue;
 
-            List<String> names = new ArrayList<>();
+            Map<String, String[]> names = new LinkedHashMap<>();
 
-            for (NamedLeg leg : legsOf(configuration))
+            for (Map.Entry<String, NamedLeg> leg : keyedLegsOf(configuration).entrySet())
             {
-                names.add(leg.get(0));
-                names.add(leg.get(1));
+                names.put(leg.getKey(), new String[] {leg.getValue().get(0), leg.getValue().get(1)});
             }
 
             legs.put(name, names);
@@ -229,8 +232,10 @@ public class AutonomySession
     }
 
     /**
-     * Puts back what this session remembered - and the stored legs where asked, each configuration's by position where
-     * its legs are the ones it remembered.
+     * Puts back what this session remembered - and the stored legs where asked, each by where it is (RSA9-C1): a road's
+     * by its square and step, and the timetable's by entry and leg where the timetable has as many legs as it had.  By
+     * position, two roads whose squares share a bucket were written into each other, the page's points being put back
+     * first as a new map.
      */
     private void putBack(Remembered was, boolean legsToo)
     {
@@ -250,21 +255,26 @@ public class AutonomySession
 
         if (!legsToo) return;
 
-        for (Map.Entry<String, List<String>> each : was.legs.entrySet())
+        for (Map.Entry<String, Map<String, String[]>> each : was.legs.entrySet())
         {
             org.json.JSONObject configuration = store.getConfiguration(each.getKey());
 
-            List<NamedLeg> now = configuration == null ? Collections.<NamedLeg>emptyList() : legsOf(configuration);
+            Map<String, NamedLeg> now = configuration == null ? Collections.<String, NamedLeg>emptyMap()
+                : keyedLegsOf(configuration);
 
-            if (now.size() * 2 != each.getValue().size()) continue;
+            boolean sameTimetable = timetableLegs(now.keySet()) == timetableLegs(each.getValue().keySet());
 
-            for (int i = 0; i < now.size(); i++)
+            for (Map.Entry<String, String[]> leg : each.getValue().entrySet())
             {
-                now.get(i).set(0, each.getValue().get(2 * i));
-                now.get(i).set(1, each.getValue().get(2 * i + 1));
-            }
+                NamedLeg there = now.get(leg.getKey());
 
-            dirty = true;
+                if (there == null || leg.getKey().startsWith("t") && !sameTimetable) continue;
+
+                there.set(0, leg.getValue()[0]);
+                there.set(1, leg.getValue()[1]);
+
+                dirty = true;
+            }
         }
     }
 
@@ -878,7 +888,16 @@ public class AutonomySession
      */
     private static List<NamedLeg> legsOf(org.json.JSONObject configuration)
     {
-        List<NamedLeg> legs = new ArrayList<>();
+        return new ArrayList<>(keyedLegsOf(configuration).values());
+    }
+
+    /**
+     * The same, each by where it is (RSA9-C1): "t" and an entry and leg of the timetable, or "r" and a square and step of
+     * a road.
+     */
+    private static Map<String, NamedLeg> keyedLegsOf(org.json.JSONObject configuration)
+    {
+        Map<String, NamedLeg> legs = new LinkedHashMap<>();
 
         org.json.JSONObject globals = configuration.optJSONObject("globals");
 
@@ -894,7 +913,7 @@ public class AutonomySession
             {
                 org.json.JSONObject leg = path.optJSONObject(j);
 
-                if (leg != null && leg.has("start") && leg.has("end")) legs.add(new NamedLeg(leg, null));
+                if (leg != null && leg.has("start") && leg.has("end")) legs.put("t" + i + "." + j, new NamedLeg(leg, null));
             }
         }
 
@@ -912,9 +931,22 @@ public class AutonomySession
 
                 if (step != null && step.length() == 2 && step.opt(0) instanceof String && step.opt(1) instanceof String)
                 {
-                    legs.add(new NamedLeg(null, step));
+                    legs.put("r" + id + "." + j, new NamedLeg(null, step));
                 }
             }
+        }
+
+        return legs;
+    }
+
+    /** How many of these are the timetable's legs. */
+    private static int timetableLegs(java.util.Set<String> keys)
+    {
+        int legs = 0;
+
+        for (String key : keys)
+        {
+            if (key.startsWith("t")) legs++;
         }
 
         return legs;
@@ -3255,6 +3287,9 @@ public class AutonomySession
      */
     public boolean beginEditSession()
     {
+        // AND WHAT THE CARRY REMEMBERS, as the editor's Cancel will want it (RSA9-B2) - see `asTheEditBegan`
+        asTheEditBegan = remembered();
+
         return store.rememberBeforeEdit(store.snapshotSetup());
     }
 
@@ -3321,9 +3356,9 @@ public class AutonomySession
 
         // AND WHAT THE CARRY REMEMBERED, AND THE RAILWAY'S SQUARES, as before the first move (RSA7-B3, RSA8-B2) - the legs
         // are the snapshot's
-        if (beforeTheFirstMove != null) putBack(beforeTheFirstMove, false);
+        if (asTheEditBegan != null) putBack(asTheEditBegan, false);
 
-        beforeTheFirstMove = null;
+        asTheEditBegan = null;
 
         rebuild();
 
@@ -3465,7 +3500,7 @@ public class AutonomySession
         // before the first move kept for a Cancel: see `Remembered`
         if (moved)
         {
-            if (beforeTheFirstMove == null) beforeTheFirstMove = remembered();
+            if (asTheEditBegan == null) asTheEditBegan = remembered();
 
             moveTheRailwaysSquares(square -> moves.get(square) != null ? moves.get(square) : square);
 

@@ -2821,4 +2821,289 @@ public class testNoSetupEditDuringARun
             if (sandbox != null) sandbox.close();
         }
     }
+
+    /**
+     * Start Timetable stops at an entry the railway cannot run, and the window says which and why (Adam, 2026-09-30:
+     * "stop the timetable run upon encountering an invalid path, and let the user know").  Refused and passed over, the
+     * train's later entries started where it was not, and the run stood for minutes before it gave up saying only that
+     * the track never became free (RSA9-B1).
+     *
+     * MUTATION: say the run stopped without its reason, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testATimetableStoppedAtAnEntryItCannotRunSaysWhy() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        boolean echoWas = org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS;
+
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final AutonomySession session = ui[0].getAutonomySession();
+
+            final String page = "2 - Bottom";
+
+            // ITS LINK SWITCHED OFF FIRST, so the page can be ticked out
+            final String[] refused = new String[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.setPortalDisabled(new TileKey("1 - Main", 15, 5), true);
+
+                refused[0] = session.takeDirectionRefusal();
+            });
+
+            assertEquals(refused[0], null, "precondition: the link to " + page + " could not be switched off");
+
+            // AN ENTRY ON THE PAGE, FIRST, for the train of the railway's own entry - which stands where that one starts
+            org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+            java.util.Map<String, String> squareOf = new java.util.HashMap<>();
+
+            for (Object o : built.getJSONArray("points"))
+            {
+                org.json.JSONObject p = (org.json.JSONObject) o;
+
+                squareOf.put(p.getString("name"), p.optString("square", ""));
+            }
+
+            String[] leg = null;
+
+            for (Object o : built.getJSONArray("edges"))
+            {
+                org.json.JSONObject e = (org.json.JSONObject) o;
+
+                if (leg == null && String.valueOf(squareOf.get(e.getString("start"))).startsWith(page + ":")
+                    && String.valueOf(squareOf.get(e.getString("end"))).startsWith(page + ":"))
+                {
+                    leg = new String[] {e.getString("start"), e.getString("end")};
+                }
+            }
+
+            assertNotNull(leg, "precondition: no edge on " + page);
+
+            org.json.JSONArray stored = new org.json.JSONArray(String.valueOf(session.getGlobal("timetable")));
+
+            assertTrue(stored.length() > 0, "precondition: the frozen railway keeps no timetable");
+
+            org.json.JSONArray table = new org.json.JSONArray().put(new org.json.JSONObject()
+                .put("loc", stored.getJSONObject(0).optString("loc")).put("executionTime", 0L).put("secondsToNext", 0L)
+                .put("path", new org.json.JSONArray().put(new org.json.JSONObject().put("start", leg[0])
+                .put("end", leg[1]))));
+
+            for (int i = 0; i < stored.length(); i++) table.put(stored.get(i));
+
+            session.setGlobal("timetable", table);
+
+            answeringYes(() -> ui[0].rebuildRunningLayoutFromSetup());
+
+            // THE PAGE OUT, from the Autonomy menu: the railway's first entry cannot run
+            answeringYes(() -> tickFromTheAutonomyMenu(ui[0], page));
+
+            org.traincontrol.automation.Layout running = ui[0].getModel().getAutoLayout();
+
+            assertFalse(running.getTimetable().get(0).isRunnable(), "precondition: the railway can run the entry on the"
+                + " page left out");
+
+            final String why = running.getTimetable().get(0).whyNotRunnable();
+
+            // THE POWER ON, which a simulation answers where it echoes
+            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
+
+            ui[0].getModel().go();
+
+            long until = System.currentTimeMillis() + 5000;
+
+            while (!ui[0].getModel().getPowerState() && System.currentTimeMillis() < until) Thread.sleep(50);
+
+            assertTrue(ui[0].getModel().getPowerState(), "precondition: the power is not on");
+
+            // START TIMETABLE, somebody there to be told
+            TrainControlUI.setUnattended(false);
+
+            final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
+
+            answeringKeepOpen(asked, going);
+
+            final java.lang.reflect.Method press =
+                TrainControlUI.class.getDeclaredMethod("executeTimetableActionPerformed", java.awt.event.ActionEvent.class);
+
+            press.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    press.invoke(ui[0], new Object[] {null});
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            String said = I18n.f("autolayout.ui.errorTimetableStoppedBecause", 1, why);
+
+            until = System.currentTimeMillis() + 60000;
+
+            while (!asked.contains(said) && System.currentTimeMillis() < until) Thread.sleep(200);
+
+            assertTrue(asked.contains(said), "the timetable did not stop at the entry it cannot run and say why (RSA9-B1): "
+                + asked);
+        }
+        finally
+        {
+            going.set(false);
+
+            TrainControlUI.setUnattended(true);
+
+            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = echoWas;
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * Export waits for autonomy to stop, as Import does (Adam, 2026-09-30, MT-601: "Export should also only be allowed
+     * once we are stopped").  Refused at once, with no file chooser.
+     *
+     * MUTATION: let Export run while autonomy runs, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testExportWaitsForAutonomyToStop() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
+
+        staging.setAccessible(true);
+
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            // DURING A RUN
+            staging.set(ui[0], true);
+
+            final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
+
+            final List<String> choosers = Collections.synchronizedList(new ArrayList<String>());
+
+            closingEveryQuestion(asked, choosers, going);
+
+            SwingUtilities.invokeAndWait(() -> ui[0].getAutonomyViewerPanel().exportConfiguration());
+
+            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertTrue(choosers.isEmpty(), "Export opened its file chooser while autonomy ran (MT-601)");
+
+            assertTrue(asked.contains(I18n.t("autosetup.ui.errorExportWhileRunning")), "Export did not say it waits for"
+                + " autonomy to stop: " + asked);
+        }
+        finally
+        {
+            going.set(false);
+
+            if (ui[0] != null) staging.set(ui[0], false);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * Closes every question and every file chooser until `going` is lowered: a question's words into `asked`, a
+     * chooser cancelled and its title into `choosers`.
+     */
+    private static void closingEveryQuestion(final List<String> asked, final List<String> choosers,
+        final java.util.concurrent.atomic.AtomicBoolean going)
+    {
+        Thread answering = new Thread(() ->
+        {
+            java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
+            while (going.get())
+            {
+                try
+                {
+                    Thread.sleep(150);
+                }
+                catch (InterruptedException stop)
+                {
+                    return;
+                }
+
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (!window.isShowing() || !(window instanceof javax.swing.JDialog)) continue;
+
+                    for (Component c : ((javax.swing.JDialog) window).getContentPane().getComponents())
+                    {
+                        if (c instanceof javax.swing.JOptionPane && handled.add(c))
+                        {
+                            final javax.swing.JOptionPane pane = (javax.swing.JOptionPane) c;
+
+                            asked.add(String.valueOf(pane.getMessage()));
+
+                            SwingUtilities.invokeLater(() -> pane.setValue(Integer.valueOf(javax.swing.JOptionPane.NO_OPTION)));
+                        }
+                        else if (c instanceof javax.swing.JFileChooser && handled.add(c))
+                        {
+                            final javax.swing.JFileChooser chooser = (javax.swing.JFileChooser) c;
+
+                            choosers.add(String.valueOf(((javax.swing.JDialog) window).getTitle()));
+
+                            SwingUtilities.invokeLater(chooser::cancelSelection);
+                        }
+                    }
+                }
+            }
+        }, "closing every question");
+
+        answering.setDaemon(true);
+        answering.start();
+    }
 }

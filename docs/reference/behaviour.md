@@ -2492,17 +2492,20 @@ the squares as they were (RSA6-B2) - opening the editor folded already.  Nor aft
 editor had emptied.  A move, or a page renamed, moves the squares the railway's Points say they are copies of with the
 setup's, and a Cancel or an undo puts them back (RSA7-B3, RSA8-B3), so a carry while a declined edit waits reads each
 train's square as it now is.  What the carry of names remembers of each build moves with a move too, and a Cancel or an
-undo puts it back with every stored leg, so a timetable through stations moved - saved, cancelled or undone - stays on
-those stations (RSA8-B2).  A station name two pages share is settled over
+undo puts it back with every stored leg - each by where it is, a road by its square (RSA9-C1) - so a timetable through
+stations moved - saved, cancelled or undone - stays on those stations (RSA8-B2).  What the carry remembers is taken as
+the editor opens, so a Cancel after two stations' names were swapped puts every leg back on its station too (RSA9-B2).  A station name two pages share is settled over
 every page, those out of autonomy too, so the plain name does not move to the other page while one is out (RSA6-C1).
 
 **A page ticked out of autonomy keeps its timetable entries** (Adam, 2026-09-30: *"Just keep the entries, and if a
 path is run that contains a point on a disabled page, reject it with an error as we do with other autonomy paths.  Nice
 and simple"*; RSA4-B2 to RSA8-B6).  The railway built without the page keeps each entry it cannot build as it was
 written: listed in the timetable like any other and written back by every fold, so none is lost, whichever door ticks
-the page, across a restart, or while a page's file has not loaded.  When a run reaches such an entry it is refused, with
-the point the railway does not have, and the run goes on; Start Timetable asks where each train stands of its first
-entry the railway can run.  Ticked back in, the page's entries run again.  **Clear clears every entry** (RSA5-C1).  Only
+the page, across a restart, or while a page's file has not loaded.  **When a run reaches such an entry it stops there**
+- trains already under way finish their journeys - **and the window says which entry and why** (Adam, 2026-09-30:
+*"stop the timetable run upon encountering an invalid path, and let the user know"*; RSA9-B1): passed over, a train's
+later entries started where it was not.  Start Timetable asks where each train stands of its first entry the railway
+can run.  Ticked back in, the page's entries run again.  **Clear clears every entry** (RSA5-C1).  Only
 a locomotive the database no longer has drops an entry at the load.  Builds of rounds 23 and 24 kept a page's entries in
 a list of their own; a configuration written then has them folded back into its timetable when it is read.
 `core.testLayoutTimetable`, `regression.testAnEditedPlacementSurvivesTheRebuild`,
@@ -2534,7 +2537,9 @@ after it captured the running railway straight back over its settings and timeta
 fills gaps as MT-298 has it, and places none of its trains, which its question says (RLU4-C3): what the running layout
 knows goes into the configuration first, the reload after the import does not capture again, and where a train stands
 on the railway running is the railway's to say (OB-183) - the message names the trains it did not place, and how to put
-one down.  While autonomy runs every import is refused, as Delete is, before it asks for a file (RLU4-C1, RSA4-C5):
+one down.  While autonomy runs every import is refused, as Delete is, before it asks for a file (RLU4-C1, RSA4-C5) -
+and every export, before it asks where (Adam, 2026-09-30, MT-601: *"Export should also only be allowed once we are
+stopped"*):
 into the configuration in use the reload's capture took back what the import had just brought, and into another the
 fold after a declined reload read the running railway through names the import had changed.  And no import folds the running layout into the
 setup while a setup edit a run declined waits for its rebuild - neither the capture first nor the reload (RLD4-C3,

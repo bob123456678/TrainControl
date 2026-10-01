@@ -239,9 +239,13 @@ resume note that has been deleted.
 that contains a point on a disabled page, reject it with an error as we do with other autonomy paths.  Nice and
 simple"*, and *"You can hook it on start timetable, and/or on the path validation function"*): **a page left out of
 autonomy keeps its timetable entries in the timetable.**  The railway keeps an entry it cannot build as it was written,
-refuses it with the reason when the run reaches it, and the run goes on; Start Timetable asks each train only of the
-entries the railway can run.  It replaces the list of entries set aside of rounds 23 and 24, which a configuration
+and Start Timetable asks each train only of the entries the railway can run.  **When a run reaches such an entry it
+stops there and says which and why** (Adam, 2026-09-30, of RSA9-B1, where passing over it stranded the train's later
+entries: *"stop the timetable run upon encountering an invalid path, and let the user know"*).  It replaces the list of entries set aside of rounds 23 and 24, which a configuration
 written then has folded back into its timetable when it is read.  Built in round 25; behaviour.md 8.
+
+**Decided** (Adam, 2026-09-30, MT-601: *"Export should also only be allowed once we are stopped"*): **Export is
+refused while autonomy runs**, as Import is, before it asks where.  Built in round 27.
 
 **Decided** (Adam, 2026-09-30, of RSA8's note that the letter of grade A covers a lost timetable entry: *"B IS OK."*):
 **a timetable entry lost is graded B** in the release review, as RSA4-B2 to RSA8-B6 were.

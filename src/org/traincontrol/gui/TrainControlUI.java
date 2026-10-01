@@ -23028,8 +23028,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             this.model.getAutoLayout().setTimetable(new LinkedList<>());
 
-            // AND THE TIMETABLE THE CONFIGURATION KEEPS, at once, with the entries it has set aside for pages out of autonomy
-            // (RSA5-C1): kept for a page's return, a Clear pressed while it was out came back with the page
+            // AND THE TIMETABLE THE CONFIGURATION KEEPS, at once (RSA5-C1): left to the next fold, a Clear pressed while a
+            // page was out came back with the page
             org.traincontrol.automationui.AutonomySession keeping = this.autonomySession;
 
             if (keeping != null && this.activeDiagramConfiguration != null)
@@ -27822,8 +27822,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                             if (!completed && !this.gracefulStopRequested)
                             {
+                                // WITH ITS REASON where it stopped at an entry it cannot run (RSA9-B1)
+                                final String because = running.whyTheTimetableStopped();
+
                                 javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this,
-                                    I18n.f("autolayout.ui.errorTimetableStopped", stoppedAt + 1)));
+                                    because != null
+                                        ? I18n.f("autolayout.ui.errorTimetableStoppedBecause", stoppedAt + 1, because)
+                                        : I18n.f("autolayout.ui.errorTimetableStopped", stoppedAt + 1)));
                         }
 
                         // Marshalled, like the staging flow next door does.  These lines are new in this

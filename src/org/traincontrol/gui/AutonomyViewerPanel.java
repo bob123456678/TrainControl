@@ -1530,6 +1530,15 @@ public class AutonomyViewerPanel extends JPanel
      */
     public void exportConfiguration()
     {
+        // NOT WHILE AUTONOMY RUNS, as Import is not (Adam, 2026-09-30, MT-601: "Export should also only be allowed once
+        // we are stopped"), and before anything is asked
+        if (ui.isAutonomyBusy())
+        {
+            JOptionPane.showMessageDialog(ui, I18n.t("autosetup.ui.errorExportWhileRunning"));
+
+            return;
+        }
+
         String name = selected();
 
         if (name == null) return;
