@@ -2014,7 +2014,9 @@ that judged a change by where it left a train able to go, which rounds 29 to 33 
 stands on is its direction, so a one-way run set through a station against the way a train there faces leaves the
 square no copy facing it.  The change is made, and the train is written into the setup where it stands, facing the way
 it faces - a train the last run left there included, so the fold that follows keeps it rather than taking it off the
-setup.  The setup check then reports an **error**: the train faces a way its station no longer has, and nothing is sent
+setup.  The build stands such a train on no Point, never on a copy facing another way - the copy is its direction, and
+the capture that followed wrote that copy's facing over the train's, turning it in the setup and clearing the error
+(round 34's mutations found it).  The setup check then reports an **error**: the train faces a way its station no longer has, and nothing is sent
 until it is turned from its right-click menu, moved, or the track is put back.  A link switched off beside a train is
 the same.  **A train facing track that now runs only towards it** - judged at the train's own square (Adam: *"Only near
 the train"*) - is a **warning**: it can be started, and goes nowhere that way.  **A station at the end of a line that

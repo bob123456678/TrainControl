@@ -117,6 +117,8 @@ A terminus is a station where the track stops. A train arriving must leave the w
 
 Name T as before, and then set `Changing Direction` on it so that a train arriving may turn round.
 
+A station at the end of a line has to be marked this way: left unmarked, the setup reports it as an error, because a train sent there could never leave.
+
 This tells TrainControl two things. First, a train that arrives here will need to change direction before it can leave. Autonomy only sends a locomotive that can reverse on its own; you can still send one that cannot, if the route turns it round on the way so that it arrives already facing out. Second, and less obviously: a reversing point is treated as somewhere to **park**, not somewhere to route trains through. Autonomy running on its own will not send trains there and will not drive them through it on the way somewhere else.
 
 That is deliberate, and it is worth understanding because it surprises people. Reversing points are usually parking tracks and shunting necks, and trains being parked at random in the shunting neck — or stopping and changing direction in the middle of a run — is not operation, it is chaos. So autonomy leaves them alone.
@@ -203,6 +205,10 @@ While autonomy is running the diagram shows you what is happening, and it is wor
 **A train's route is drawn along the track.** Red for the track ahead of it, green for the track it has already covered, black arrows for which way it is going. The line follows the track through curves and switches rather than cutting across them, so it reads as a route rather than as an overlay.
 
 **Station names are shown on the diagram.** In the autonomy editor, right-click a square beside a station and choose **Show a Station Name Here...** (or press Control+N over it). The caption dropdown then chooses what every such name shows: the station, the locomotive parked there, or its home locomotive. A text label typed as `Point:StationName` that names a station the setup knows is taken over as a caption whenever the setup opens - one from an older version the first time, one typed today in the track editor the next time the setup is rebuilt - and any other stays plain text.
+
+**Each train standing on the railway is drawn as a small locomotive** on its station, pointing the way it faces - whether or not autonomy is running. A moving train shows the same locomotive on its route; a train waiting for a route it already holds shows a dot.
+
+**While autonomy runs, the Autonomy and Layouts menus grey out** whatever would change the setup or the diagram, and say why when you hover over them. The Layouts menu keeps Open CS3 Web App, the pop-up pages and the picture export.
 
 **A signal paired with a station** goes red while a train is standing there, and green again once it leaves. Pair one by right-clicking the station and picking the signal — either by clicking it on the diagram, or by typing its address.
 
@@ -321,6 +327,8 @@ Change any of these and every configuration sees the change.
 ## When trains will not move
 
 This is the section to read first when nothing happens. In rough order of how often each turns out to be the answer:
+
+**The setup has an error.** Errors stop autonomy starting and stop trains being sent by hand; they are listed under Configuration errors and warnings, and clicking the count opens the editor on the first one. Two you may meet after changing the track: a train facing a way its station no longer allows (turn it from its right-click menu, move it, or put the track back), and a station at the end of a line that is not marked as somewhere trains must change direction (mark it, or make it no station). Warnings stop nothing: a train facing track that runs only towards it is a warning, and it is simply not sent that way.
 
 **Every station is occupied.** A station holds one train at a time, and a train can only go to a station that is free. On a layout with as many trains as stations, nothing can move. Take a train off, or add somewhere for one to go.
 

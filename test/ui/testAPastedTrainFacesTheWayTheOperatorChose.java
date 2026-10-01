@@ -210,10 +210,9 @@ public class testAPastedTrainFacesTheWayTheOperatorChose
      * taken off by the cut it shows none (Adam, 2026-10-01: "when a train is standing somewhere, can we show its locomotive icon on top of the
      * station in the track diagram viewer, while maintaining editability? same icon as when a run is started").
      *
-     * Through the window's own key doors: neither fires anything on the layout, so the diagram follows only because
-     * the door tells it (`trainsMovedByHand`).
+     * Through the window's own key doors.  Each writes the setup, and the rebuild that follows tells the diagram.
      *
-     * MUTATION: drop that call from the paste and cut door, and this fails.
+     * MUTATION: leave the parked trains out of the monitor's picture, and this fails.
      *
      * @throws Exception from the window
      */

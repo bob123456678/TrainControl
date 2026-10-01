@@ -159,17 +159,6 @@ public class DiagramMonitorDriver
     }
 
     /**
-     * Asks for a fresh look on the next tick.  A train placed, taken off or turned by hand fires nothing on the layout,
-     * and the icon over the station it stands on (Adam, 2026-10-01) has to follow it.
-     */
-    public void trainsMayHaveMoved()
-    {
-        DiagramMonitor current = monitor;
-
-        if (current != null) current.markDirty();
-    }
-
-    /**
      * Registers the callback on whatever layout is running now.
      *
      * Separate from bind() because loading a configuration replaces the Layout object wholesale, and a

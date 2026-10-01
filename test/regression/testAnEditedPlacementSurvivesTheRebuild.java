@@ -713,7 +713,11 @@ public class testAnEditedPlacementSurvivesTheRebuild
      * copy facing another way, so a rebuild left it where the setup last had it - a square it had left - and a fold of
      * that railway took it off the setup altogether.
      *
-     * MUTATION: record nothing, and this fails; so does a fold that clears its square.
+     * And the rebuild from that setup stands it on no Point rather than on Beta's copy facing east, and the fold keeps it
+     * facing west: the build's last fallback stood it on that copy, and the capture then wrote east over its facing.
+     *
+     * MUTATION: record nothing, and this fails; so does a fold that clears its square, and a build that stands it on a
+     * copy facing another way.
      *
      * @throws Exception on a failure to build the fixture
      */
@@ -753,16 +757,26 @@ public class testAnEditedPlacementSurvivesTheRebuild
             assertEquals(session.getFacing(beta), org.traincontrol.automationui.TilePorts.Side.W, "the train recorded on"
                 + " Beta is not recorded facing west, as it stands");
 
-            // THE RAILWAY REBUILT FROM THE SETUP - which cannot stand it - AND FOLDED BACK
+            // THE RAILWAY REBUILT FROM THE SETUP - which has no copy of Beta facing west - AND FOLDED BACK
             model.parseAuto(session.buildConfiguration());
 
             Layout rebuilt = model.getAutoLayout();
+
+            for (org.traincontrol.automation.Point point : rebuilt.getPoints())
+            {
+                assertFalse(point.getCurrentLocomotive() != null && MOVED.equals(point.getCurrentLocomotive().getName()),
+                    "the rebuild stood " + MOVED + " on " + point.getName() + ", though no copy of Beta faces west - a"
+                    + " copy facing another way: the copy is the facing");
+            }
 
             session.captureWhereTheTrainsStand(rebuilt.toJSON(rebuilt.getLastPointsReached()),
                 session.getStore().getActiveConfiguration());
 
             assertEquals(session.getLocomotiveNameAt(beta), MOVED, "the fold of a railway that cannot stand the train"
                 + " took it off the setup");
+
+            assertEquals(session.getFacing(beta), org.traincontrol.automationui.TilePorts.Side.W, "the fold turned the"
+                + " train on Beta round in the setup");
         }
         finally
         {

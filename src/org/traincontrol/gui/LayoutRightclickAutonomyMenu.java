@@ -1319,8 +1319,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // heading chose it, and the railway's three-argument form refuses it, which answered the click with a log line.
         if (!ui.getModel().getAutoLayout().moveLocomotive(locName, pointName, false, true)) return;
 
-        ui.trainsMovedByHand();
-
         // Whether the setup this door writes to is still the window's once its tail question is answered (TDU4-C2).
         boolean setupStands = true;
 
@@ -1473,8 +1471,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // Discarded, a refusal left the setup saying the square is empty while the railway still has the
         // train on it - and the next save from any other door commits that.
         if (!ui.getModel().getAutoLayout().moveLocomotive(null, current.getName(), true)) return;
-
-        ui.trainsMovedByHand();
 
         // The setup as well, or the next build puts the train back: the configuration still records it
         // standing here, and the running layout is rebuilt from the configuration.  The facing goes

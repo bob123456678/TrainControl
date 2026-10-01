@@ -809,7 +809,9 @@ public class AutonomyBuilder
      * send the train off the way it came on its first move, which is why the editor offers the choice on
      * any square where there is one to make.
      *
-     * @return the index into nodes, always a valid one
+     * @return the index into nodes, or -1 where the setup records a facing no copy faces - the train then stands on no
+     *         Point (Adam, 2026-10-01: the setup check reports it as an error until it is turned, moved, or the track is
+     *         put back)
      */
     private int placementCopy(List<Node> nodes, JSONObject extras)
     {
@@ -860,7 +862,15 @@ public class AutonomyBuilder
             if (facingOf(nodes.get(copy)) == facing) return copy;
         }
 
-        return startableCopy(nodes);
+        // A SQUARE OF ONE COPY THAT RECORDS NO FACING is one place, and holds a train facing either way - as
+        // `AutonomySession.pointNamedNow` carries one there.
+        if (nodes.size() == 1 && facingOf(nodes.get(0)) == null) return 0;
+
+        // AND WHERE NO COPY FACES IT, NONE (round 34).  This stood the train on a copy autonomy could start from, facing
+        // the other way, and the next capture wrote that copy's facing over the train's: turned in the setup in silence,
+        // and the error that says it cannot stand there gone with it.  Kept on no Point, it stays where the setup records
+        // it (the capture keeps it), and the error stops anything being sent until it is put right.
+        return -1;
     }
 
     /**

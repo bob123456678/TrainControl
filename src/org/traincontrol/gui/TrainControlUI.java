@@ -3849,16 +3849,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JMenu editPageMenu;
 
     /**
-     * Tells the diagram a train was placed or taken off by hand.  That fires nothing on the layout, and the icon over the
-     * station it stands on (Adam, 2026-10-01) has to follow it.  Called by the hand doors alone: a run's own events, and
-     * the rebuild after a setup edit, already tell it.
-     */
-    public void trainsMovedByHand()
-    {
-        if (diagramMonitorDriver != null) diagramMonitorDriver.trainsMayHaveMoved();
-    }
-
-    /**
      * Drops separators that no longer separate anything (OB-021).
      *
      * Taking an item off a menu built by the form leaves the dividers that were around it, and two of
@@ -8143,8 +8133,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Against the square that was AIMED at rather than the one hovered: pointing at a station's
         // name means the station, and the setup records trains against sensors.
         rememberPlacement(point, aimed);
-
-        trainsMovedByHand();
 
         this.updateVisiblePoints();
         this.repaintAutoLocList(false);
