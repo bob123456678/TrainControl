@@ -17,6 +17,7 @@ If you want to drive TrainControl from Java instead, or you need the reference f
 - [Timetables: recording a sequence and playing it back](#timetables-recording-a-sequence-and-playing-it-back)
 - [Sending everything home](#sending-everything-home)
 - [Settings, and what each one is for](#settings-and-what-each-one-is-for)
+- [Configurations: what each one keeps, and what they share](#configurations-what-each-one-keeps-and-what-they-share)
 - [When trains will not move](#when-trains-will-not-move)
 
 ---
@@ -283,6 +284,32 @@ These live under `Autonomy` -> `Autonomy Settings...`. Most layouts need to chan
 | Linked routes | Routes to activate while autonomy runs — for emergency stops, sound effects, or safety signals |
 
 Every one of these has a fuller description in **[the programmatic guide](AutomationAPI.md)**, which is also where to look if you want to set them from Java.
+
+---
+
+## Configurations: what each one keeps, and what they share
+
+A configuration is one way of running your railway. `Autonomy` -> `Add a Configuration...` makes a new one from the diagram, and `Autonomy` -> `Manage Configurations` -> `Duplicate...` copies the one you have. Pick which one runs from the Autonomy menu.
+
+**Every configuration shares the railway itself:**
+
+- which squares are stations, and their names and captions
+- the direction of each piece of track, and its length
+- the links between pages - which are paired, which are switched off, and their names
+- which ways into a station are open, blocking points, and signals
+- which pages are in autonomy (`Pages with Autonomy Enabled`)
+
+Change any of these and every configuration sees the change.
+
+**Each configuration keeps its own:**
+
+- where each train stands, which way it faces, and the track it came in on
+- whether trains may or must change direction at a station (`Changing Direction`)
+- whether a station can be passed at all, whether full autonomy may choose it as a destination, and whether it is somewhere to park
+- each station's home locomotive, longest train, priority, speed and the locomotives kept out of it
+- the settings in the table above - including **Simulate** and how trains pick their route - and the timetable
+
+**So two configurations can run different railways on the same track.** Changing direction is part of how autonomy sees a station: where trains *may* change direction it adds a second copy of the station, with its own links, that trains turn round at; where they *must*, that copy replaces the one trains run through. A station that cannot be passed is not used at all. Two configurations can therefore offer different routes over the same track - but they cannot differ in the track itself, its directions, its links or which pages are in play: those belong to every configuration at once.
 
 ---
 
