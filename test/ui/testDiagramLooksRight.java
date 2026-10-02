@@ -349,22 +349,25 @@ public class testDiagramLooksRight
     }
 
     /**
-     * Whether this pixel is the colour the run is drawn in.
+     * Whether this pixel is a colour the run is drawn in - the path ahead or the track driven, from `DiagramColours`
+     * (FR-106), so a change of palette there is followed here.
      *
-     * Loose on purpose - the edges of a stroke are blended with whatever is under them - but tight
-     * enough to exclude the black chevrons, the white train mark and the blue station badges, none of
-     * which are claims about where the track goes.
+     * Loose on purpose - the edges of a stroke are blended with whatever is under them - but tight enough to exclude the
+     * white chevrons and the black and white train dot, none of which are claims about where the track goes.  The station
+     * badges are the path's blue, and are the same in both renders, so the difference this is asked of leaves them out.
      */
     private boolean isRunInk(int rgb)
     {
-        int r = (rgb >> 16) & 0xFF;
-        int g = (rgb >> 8) & 0xFF;
-        int b = rgb & 0xFF;
+        return near(rgb, org.traincontrol.automationui.DiagramColours.PATH_AHEAD)
+            || near(rgb, org.traincontrol.automationui.DiagramColours.PATH_DRIVEN);
+    }
 
-        boolean red = r > 130 && g < 90 && b < 90;
-        boolean green = g > 120 && r < 100 && b < 120;
-
-        return red || green;
+    /** Whether a pixel is within a blend's reach of a colour. */
+    private static boolean near(int rgb, java.awt.Color colour)
+    {
+        return Math.abs(((rgb >> 16) & 0xFF) - colour.getRed()) < 60
+            && Math.abs(((rgb >> 8) & 0xFF) - colour.getGreen()) < 60
+            && Math.abs((rgb & 0xFF) - colour.getBlue()) < 60;
     }
 
     /**

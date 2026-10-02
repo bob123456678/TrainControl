@@ -202,7 +202,7 @@ So if a short train seems to be blocking a surprising amount of track, the answe
 
 While autonomy is running the diagram shows you what is happening, and it is worth learning to read.
 
-**A train's route is drawn along the track.** Red for the track ahead of it, green for the track it has already covered, black arrows for which way it is going. The line follows the track through curves and switches rather than cutting across them, so it reads as a route rather than as an overlay.
+**A train's route is drawn along the track.** The stations' blue for the track ahead of it, dark grey for the track it has driven and still holds, white arrows for which way it is going - and the train itself in orange along the length of track it covers, drawn over its route so its tail shows while it runs. Under non-atomic routes the dark grey goes as the train gives the track behind it back. The line follows the track through curves and switches rather than cutting across them, so it reads as a route rather than as an overlay.
 
 **Station names are shown on the diagram.** In the autonomy editor, right-click a square beside a station and choose **Show a Station Name Here...** (or press Control+N over it). The caption dropdown then chooses what every such name shows: the station, the locomotive parked there, or its home locomotive. A text label typed as `Point:StationName` that names a station the setup knows is taken over as a caption whenever the setup opens - one from an older version the first time, one typed today in the track editor the next time the setup is rebuilt - and any other stays plain text.
 
@@ -214,7 +214,7 @@ While autonomy is running the diagram shows you what is happening, and it is wor
 
 **The locomotive list** shows each train, where it is, and where it can go. Double-click a destination to send a train there yourself.
 
-> **[Screenshot not yet captured — assets/automation/07-running.png]** a running layout, with a route drawn in red and green and a train's name showing at a station
+> **[Screenshot not yet captured — assets/automation/07-running.png]** a running layout, with a route drawn in blue and dark grey, the train's tail in orange, and a train's name showing at a station
 
 **Gracefully Stop Autonomy** lets every train finish the route it is on and then stops. It is almost always what you want; the emergency stop is for emergencies.
 
@@ -386,7 +386,7 @@ The placeholders above want real pictures. Each is a single screen capture; the 
 | `assets/automation/04-two-trains.png` | A layout with one link greyed out and two trains running at once |
 | `assets/automation/05-terminus.png` | A terminus station showing the reversing marker |
 | `assets/automation/06-arrivals.png` | The Arrivals view with one direction switched off, and the resulting arrow on the diagram |
-| `assets/automation/07-running.png` | A running layout: a route drawn in red and green, arrows, and a train's name showing at a station |
+| `assets/automation/07-running.png` | A running layout: a route drawn in blue and dark grey, the train's tail in orange, arrows, and a train's name showing at a station |
 | `assets/automation/08-timetable.png` | The timetable panel with several captured entries in it |
 
 **The easiest way to produce a clean diagram picture** is `Layout` -> `Save Current Track Diagram as a Picture...`, which writes the page you are looking at to a PNG at whatever size you ask for - the whole page, not just the part scrolled into view, and with none of the window around it. Sixty pixels per square reads well in a document; twenty is about what the screen shows.

@@ -151,7 +151,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static final String DIAGRAM_EDITOR_EXECUTABLE = "TrackDiagramEditor.exe";
     public static final String DIAGRAM_EDITOR_EXECUTABLE_ZIP = "TrackDiagramEditor.zip";
     public static final String DEMO_LAYOUT_ZIP = "sample_layout.zip";
-    public static final String GRAPH_CSS_FILE = "graph.css";
     public static final String AUTONOMY_BLANK = "sample_autonomy_blank.json";
     public static final String AUTONOMY_SAMPLE = "sample_autonomy.json";
     public static final String RESOURCE_PATH = "resources/";

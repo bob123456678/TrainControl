@@ -296,9 +296,14 @@ public class DiagramMonitor
             List<TileKey> run = new java.util.ArrayList<>();
             List<State> states = new java.util.ArrayList<>();
 
+            // WHAT THE RUN HAS GIVEN BACK BEHIND THE TRAIN is drawn as nothing (Adam, FR-106: "In non automic, would the
+            // dark gray fade go away where unlocked?"): the driven line says the track is still held, and under
+            // non-atomic routes the tail hands it back as it clears it - under atomic routes, nothing until the run ends
+            Set<Edge> givenBack = layout.releasedBehind(entry.getKey());
+
             for (Edge edge : path)
             {
-                if (edge == null) continue;
+                if (edge == null || givenBack.contains(edge)) continue;
 
                 ReducedEdge reduced = edgesByName.get(edge.getName());
 

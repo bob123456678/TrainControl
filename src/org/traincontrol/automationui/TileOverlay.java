@@ -14,8 +14,7 @@ import java.awt.RenderingHints;
  * already works by swapping the icon out and back, so a second effect doing the same would fight it for
  * the one slot it restores from.
  *
- * Colours are the graph window's, read from graph.css, so somebody who has learned to read one view has
- * learned the other.
+ * Colours are `DiagramColours`', the one place the diagram's autonomy colours are kept (FR-106).
  *
  * @author Adam
  */
@@ -48,14 +47,11 @@ public class TileOverlay
         IDLE
     }
 
-    // graph.css: edge.active / node.active
-    private static final Color ACTIVE = new Color(196, 0, 0);
+    private static final Color ACTIVE = DiagramColours.PATH_AHEAD;
 
-    // graph.css: edge.reached / node.reached
-    private static final Color REACHED = new Color(0, 196, 33);
+    private static final Color REACHED = DiagramColours.PATH_DRIVEN;
 
-    // graph.css: edge.locked
-    private static final Color LOCKED = new Color(238, 238, 238);
+    private static final Color LOCKED = DiagramColours.PATH_HELD;
 
     /**
      * One pass of a running path through this square: in by one side, out by another.
@@ -981,7 +977,7 @@ public class TileOverlay
             java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
 
         g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1f));
-        g.setColor(Color.BLACK);
+        g.setColor(DiagramColours.PATH_ARROW);
 
         for (Segment segment : segments)
         {

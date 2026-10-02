@@ -7700,6 +7700,24 @@ public class Layout
     }
 
     /**
+     * The edges a running train has already given back behind it - released, whole, as its tail cleared them, under
+     * non-atomic routes (`releasedEarly`); none under atomic routes, which give nothing back until the run ends.  For the
+     * diagram, which draws driven track only while the run holds it (FR-106).
+     *
+     * A copy, and it asks no monitor: the set is a concurrent one, and the diagram asks from a worker that must not wait
+     * on a dispatch holding this railway.
+     *
+     * @param loc the train
+     * @return the edges it has given back, never null
+     */
+    public Set<Edge> releasedBehind(Locomotive loc)
+    {
+        Set<Edge> given = loc == null ? null : this.releasedEarly.get(loc);
+
+        return given == null ? java.util.Collections.<Edge>emptySet() : new java.util.HashSet<>(given);
+    }
+
+    /**
      * The track behind every standing train, which nothing else may run over.
      *
      * Adam, 2026-09-06: **"if a train protrudes far behind where it is standing, those edges it

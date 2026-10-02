@@ -747,7 +747,197 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * A running Layout, stubbed down to the three questions the monitor asks it.
+     * A run is drawn in the diagram's palette (Adam, FR-106, 2026-10-02: the stations' blue for the path ahead, dark grey
+     * for what the train has driven, the tail in orange), from the one place it is kept: `DiagramColours`.  The arrowheads
+     * are white, to read on both.
+     *
+     * MUTATION: draw the path ahead in its old red, driven track in its old green, or the arrowheads black, and this
+     * fails.
+     */
+    @Test
+    public void testTheRunIsDrawnInTheDiagramsColours()
+    {
+        assertEquals(org.traincontrol.automationui.DiagramColours.PATH_AHEAD,
+            org.traincontrol.automationui.DiagramColours.STATION, "the path ahead is not the stations' blue (FR-106)");
+
+        int size = 60;
+
+        for (State state : new State[] {State.ACTIVE, State.REACHED})
+        {
+            TileOverlay overlay = new TileOverlay(state, false,
+                Arrays.asList(new TileOverlay.Segment(Side.W, Side.E, state)));
+
+            java.awt.image.BufferedImage image =
+                new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+            java.awt.Graphics2D g = image.createGraphics();
+
+            overlay.paint(g, size, size, null);
+
+            g.dispose();
+
+            java.awt.Color expected = state == State.ACTIVE ? org.traincontrol.automationui.DiagramColours.PATH_AHEAD
+                : org.traincontrol.automationui.DiagramColours.PATH_DRIVEN;
+
+            // on the line near the tile's west edge, clear of the arrowhead
+            java.awt.Color drawn = new java.awt.Color(image.getRGB(4, size / 2), true);
+
+            assertTrue(drawn.getAlpha() > 200 && Math.abs(drawn.getRed() - expected.getRed()) < 12
+                && Math.abs(drawn.getGreen() - expected.getGreen()) < 12
+                && Math.abs(drawn.getBlue() - expected.getBlue()) < 12, state + " is drawn in " + drawn + ", not "
+                + expected + " (FR-106)");
+
+            int white = 0;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    java.awt.Color p = new java.awt.Color(image.getRGB(x, y), true);
+
+                    if (p.getAlpha() > 200 && p.getRed() > 230 && p.getGreen() > 230 && p.getBlue() > 230) white++;
+                }
+            }
+
+            assertTrue(white > 0, "the arrowhead on a " + state + " run is not white, so it does not read on its line"
+                + " (FR-106)");
+        }
+    }
+
+    /**
+     * The railway answers what a run has given back behind it (FR-106): the edges its tail has released early under
+     * non-atomic routes, as a copy the diagram may keep - which is what the monitor leaves undrawn.
+     *
+     * MUTATION: answer nothing, or the railway's own set, and this fails.
+     *
+     * @throws Exception from the reflection
+     */
+    @Test
+    public void testTheRailwaySaysWhatARunHasGivenBack() throws Exception
+    {
+        org.traincontrol.automation.Layout railway = new org.traincontrol.automation.Layout(null);
+
+        org.traincontrol.base.Locomotive train = locomotive();
+
+        Edge behind = new Edge(new Point("Behind", false, null), new Point("Here", false, null));
+
+        assertTrue(railway.releasedBehind(train).isEmpty(), "precondition: a train with no run has given something back");
+
+        java.lang.reflect.Field released = org.traincontrol.automation.Layout.class.getDeclaredField("releasedEarly");
+
+        released.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        Map<org.traincontrol.base.Locomotive, java.util.Set<Edge>> early =
+            (Map<org.traincontrol.base.Locomotive, java.util.Set<Edge>>) released.get(railway);
+
+        java.util.Set<Edge> given = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+        given.add(behind);
+
+        early.put(train, given);
+
+        java.util.Set<Edge> asked = railway.releasedBehind(train);
+
+        assertEquals(asked, given, "the railway does not say what the run has given back behind the train (FR-106)");
+
+        asked.clear();
+
+        assertEquals(given.size(), 1, "the answer is the railway's own set, which the diagram could then empty");
+    }
+
+    /**
+     * Driven track is drawn only while the run holds it (Adam, FR-106: "In non automic, would the dark gray fade go away
+     * where unlocked?"): under non-atomic routes the track behind a train is given back as its tail clears it, and the
+     * driven line stayed on it until the run ended.  Under atomic routes nothing is given back until then, and the line
+     * stays.
+     *
+     * MUTATION: draw every driven edge, given back or not, and this fails.
+     *
+     * @throws Exception from the fixture
+     */
+    @Test
+    public void testDrivenTrackIsDrawnOnlyWhileItIsHeld() throws Exception
+    {
+        LayoutDiagram page = page("main", 8, 5);
+        feedback(page, 1, 1, 22);
+        straight(page, 2, 1);
+        feedback(page, 3, 1, 23);
+        straight(page, 4, 1);
+        feedback(page, 5, 1, 24);
+
+        GraphReducer reducer = reduce(graph(page));
+
+        ReducedEdge first = edgeBetween(reducer, key("main", 1, 1), key("main", 3, 1));
+        ReducedEdge second = edgeBetween(reducer, key("main", 3, 1), key("main", 5, 1));
+
+        assertNotNull(first, "precondition: no edge from the first sensor to the second");
+        assertNotNull(second, "precondition: no edge from the second sensor to the third");
+
+        Map<String, ReducedEdge> edges = new LinkedHashMap<>();
+        Map<String, TileKey> tiles = new LinkedHashMap<>();
+
+        Point a = new Point("A", false, null);
+        Point b = new Point("B", false, null);
+        Point c = new Point("C", false, null);
+
+        Edge ab = new Edge(a, b);
+        Edge bc = new Edge(b, c);
+
+        edges.put(ab.getName(), first);
+        edges.put(bc.getName(), second);
+        tiles.put("A", key("main", 1, 1));
+        tiles.put("B", key("main", 3, 1));
+        tiles.put("C", key("main", 5, 1));
+
+        StubLayout layout = new StubLayout();
+
+        // THE TRAIN AT B, half way: A to B driven, B to C ahead
+        layout.active.put(locomotive(), Arrays.asList(ab, bc));
+        layout.milestones.add(a);
+        layout.milestones.add(b);
+        layout.standingAt = b;
+
+        final List<Map<TileKey, TileOverlay>> published = new ArrayList<>();
+
+        DiagramMonitor monitor = new DiagramMonitor(source(layout), edges, tiles, new DiagramMonitor.Publisher()
+        {
+            @Override
+            public void publish(Map<TileKey, TileOverlay> overlays)
+            {
+                published.add(new LinkedHashMap<>(overlays));
+            }
+        });
+
+        // ATOMIC: nothing given back
+        monitor.refresh();
+
+        Map<TileKey, TileOverlay> held = published.get(published.size() - 1);
+
+        assertTrue(held.containsKey(key("main", 2, 1)) && held.get(key("main", 2, 1)).getState() == State.REACHED,
+            "precondition: the driven edge is not drawn as driven while the run holds it: " + held.get(key("main", 2, 1)));
+
+        // NON-ATOMIC: A to B given back as the tail cleared it
+        layout.released.add(ab);
+
+        monitor.refresh();
+
+        Map<TileKey, TileOverlay> givenBack = published.get(published.size() - 1);
+
+        TileOverlay behind = givenBack.get(key("main", 2, 1));
+
+        assertTrue(behind == null || behind.isBlank(), "track a non-atomic run has given back behind the train is still"
+            + " drawn as driven (FR-106): " + behind);
+
+        assertEquals(givenBack.get(key("main", 4, 1)).getState(), State.ACTIVE, "the track ahead of the train is not drawn"
+            + " as ahead once the track behind is given back");
+
+        assertTrue(givenBack.get(key("main", 3, 1)).hasTrain(), "the train is not drawn where it stands once the track"
+            + " behind it is given back");
+    }
+
+    /**
+     * A running Layout, stubbed down to the questions the monitor asks it.
      *
      * Not a mock of the monitor's own work: `compute` reads `getActiveLocomotives`,
      * `getReachedMilestones` and `getLocomotiveLocation` and nothing else from the layout, so these
@@ -799,6 +989,14 @@ public class testAutonomyDiagramMonitor
         public Point getLocomotiveLocation(org.traincontrol.base.Locomotive loc)
         {
             return standingAt;
+        }
+
+        final java.util.Set<Edge> released = new java.util.HashSet<>();
+
+        @Override
+        public java.util.Set<Edge> releasedBehind(org.traincontrol.base.Locomotive loc)
+        {
+            return released;
         }
     }
 

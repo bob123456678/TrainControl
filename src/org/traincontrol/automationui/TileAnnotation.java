@@ -135,7 +135,7 @@ public class TileAnnotation
      * labels (Adam, FR-103, from MT-492: *"instead of orange, make them a medium dark gray that's just slightly darker
      * than labels"*).  It was the graph window's orange, which the train mark still is.
      */
-    private static final Color POINT_ACTIVE = new Color(0, 0, 200);
+    private static final Color POINT_ACTIVE = DiagramColours.STATION;
     private static final Color POINT_INACTIVE = new Color(128, 130, 134);
 
     /**
@@ -143,7 +143,7 @@ public class TileAnnotation
      * stations) be orange again"*): the orange it had before FR-103, which is the train line's orange
      * (`LayoutLabel.TRAIN_MARK`).  A square shut to every train reads apart from a berth autonomy merely does not choose.
      */
-    private static final Color POINT_IMPASSABLE = new Color(255, 102, 0);
+    private static final Color POINT_IMPASSABLE = DiagramColours.TRAIN;
 
     /**
      * What a sensor has been designated as, drawn as a badge on its tile.

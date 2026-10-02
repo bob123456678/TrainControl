@@ -1578,6 +1578,7 @@ public final class LayoutLabel extends JLabel
         // It says where a train IS; the arrows say where trains MAY go and the run line says where
         // one is heading.  Both of those are about this instant and are the more urgent, so they go
         // on top - the same order, and the same reasoning, as the annotation and the overlay below.
+        // EXCEPT UNDER A RUN LINE, where it is drawn again over the line (FR-106, below).
         java.awt.Graphics2D mark = (java.awt.Graphics2D) g.create();
 
         try
@@ -1634,6 +1635,23 @@ public final class LayoutLabel extends JLabel
                 overlay.paint(g2, getWidth(), getHeight(),
                     annotation == null ? null : annotation.trackCentre(getWidth(), getHeight()),
                     faded);
+            }
+
+            // AND THE TRAIN'S TAIL OVER THE RUN LINE (Adam, FR-106: "the train tails aren't shown.  make the tail
+            // visible at all times").  A running train's tail lies on the road it has just driven, which the run line
+            // draws as reached - so the tail, drawn first and under everything, was covered for the whole of the run.
+            if (overlay != null && !overlay.isBlank())
+            {
+                java.awt.Graphics2D tail = (java.awt.Graphics2D) g2.create();
+
+                try
+                {
+                    paintCoveredMark(tail);
+                }
+                finally
+                {
+                    tail.dispose();
+                }
             }
 
             // And the badge back on top of the line (MT-076).
@@ -1696,7 +1714,7 @@ public final class LayoutLabel extends JLabel
      * reads as two colours that were each meant to be something.  A parking berth is grey since FR-103
      * (Adam, 2026-09-26); a square nothing can pass - the X - is this orange again (2026-09-29).
      */
-    public static final Color TRAIN_MARK = new Color(255, 102, 0);
+    public static final Color TRAIN_MARK = org.traincontrol.automationui.DiagramColours.TRAIN;
 
 
     /**

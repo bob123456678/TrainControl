@@ -508,4 +508,78 @@ public class testTheTrainIsShownAsALine
     {
         SwingUtilities.invokeAndWait(() -> { });
     }
+
+    /**
+     * The tail shows over a run line too (Adam, FR-106: "when autonomy is moving, we have a green coloring for completed
+     * paths and red for pending.  but the train tails aren't shown.  make the tail visible at all times"): a running
+     * train's tail lies on the road it has just driven, which the run draws as reached, and the tail was drawn under it.
+     *
+     * The covered square painted again with the run's reached line along the very road the tail is drawn on: the orange
+     * is all still there.
+     *
+     * MUTATION: draw the tail under the run line alone, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test(dependsOnMethods = "testTheLineFollowsTheTrack")
+    public void testTheTailShowsOverARunLine() throws Exception
+    {
+        // THE TRAIN BACK, lying across the square
+        train.setTrainLength(4);
+
+        refreshCoveredTrack();
+
+        SwingUtilities.invokeAndWait(() -> tile.refreshCoveredMark());
+
+        pump();
+
+        try
+        {
+            assertTrue(ui.isTrackCovered(covered), "precondition: the train's length back, the square is not covered");
+
+            int alone = orangePixels(paint(tile));
+
+            assertTrue(alone > 0, "precondition: no orange on the covered square");
+
+            // THE ROAD THE TAIL IS DRAWN ON, and a run's reached line along it
+            java.lang.reflect.Method roads = LayoutLabel.class.getDeclaredMethod("coveredRoads");
+
+            roads.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            java.util.List<org.traincontrol.automationui.TilePorts.Route> covering =
+                (java.util.List<org.traincontrol.automationui.TilePorts.Route>) roads.invoke(tile);
+
+            assertFalse(covering.isEmpty(), "precondition: the tile names no road the tail is on");
+
+            org.traincontrol.automationui.TilePorts.Route road = covering.get(0);
+
+            SwingUtilities.invokeAndWait(() -> tile.setAutonomyOverlay(new org.traincontrol.automationui.TileOverlay(
+                org.traincontrol.automationui.TileOverlay.State.REACHED, false, java.util.Arrays.asList(
+                    new org.traincontrol.automationui.TileOverlay.Segment(road.getA(), road.getB(),
+                        org.traincontrol.automationui.TileOverlay.State.REACHED)))));
+
+            pump();
+
+            BufferedImage run = paint(tile);
+
+            int underARun = orangePixels(run);
+
+            assertTrue(underARun * 10 >= alone * 9, "the train's tail on " + covered + " is drawn under the run's line"
+                + " along the road it lies on - " + underARun + " orange pixels of " + alone + " - so a running train's tail"
+                + " is not shown (FR-106)");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> tile.setAutonomyOverlay(null));
+
+            train.setTrainLength(0);
+
+            refreshCoveredTrack();
+
+            SwingUtilities.invokeAndWait(() -> tile.refreshCoveredMark());
+
+            pump();
+        }
+    }
 }
