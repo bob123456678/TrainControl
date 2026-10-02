@@ -162,8 +162,8 @@ public class TileOverlay
      * the tile, so the size it is drawn at does not matter, only its shape and its transparency.
      *
      * The one shipped is a side-view locomotive in near-black with a white halo, because it has to read
-     * on whatever is underneath it: plain track, a red claimed path, a green reached one, a grey locked
-     * one. An icon with no halo disappears into the dark colours.
+     * on whatever is underneath it: plain track, the blue of a claimed path, the dark grey of a driven one,
+     * the light grey of a locked one. An icon with no halo disappears into the dark colours.
      *
      * If the file is missing or unreadable the dot is drawn instead, which is what was here before this
      * existed - a diagram that stops saying where the trains are would be a worse fault than a plain
@@ -857,8 +857,8 @@ public class TileOverlay
      *
      * A border said WHERE a path went and nothing about which way it ran, or which part of it the train
      * had already covered - and on a square two paths crossed, one border had to speak for both.  A
-     * line laid along the track answers all three: red ahead of the train, green behind it, and a black
-     * arrowhead pointing the way it is going.
+     * line laid along the track answers all three: the stations' blue ahead of the train, dark grey behind
+     * it, and a white arrowhead pointing the way it is going (FR-106; `DiagramColours`).
      *
      * The same line the editor draws for a tested path, deliberately.  It is the same question asked at
      * two different times - which way does this route run - so it is worth only learning to read once.
@@ -967,17 +967,17 @@ public class TileOverlay
             g.drawLine(a[0], a[1], b[0], b[1]);
         }
 
-        // Which way, in black, on the half the train is heading INTO - clear of the centre, where two
-        // arrowheads on a square crossed twice would sit on top of each other.
+        // Which way, in white with a dark edge (FR-106, RSA25-C4), on the half the train is heading INTO - clear of the
+        // centre, where two arrowheads on a square crossed twice would sit on top of each other.
         //
         // Only where there is a direction to state.  Locked track is not somewhere a train is going,
         // it is track nobody else may use, and an arrow on it would claim a journey that is not
         // happening.
-        g.setStroke(new java.awt.BasicStroke(Math.max(2f, span / 14f),
-            java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+        float arrowStroke = Math.max(2f, span / 14f);
 
         g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 1f));
-        g.setColor(DiagramColours.PATH_ARROW);
+
+        java.util.List<int[][]> arrows = new java.util.ArrayList<>();
 
         for (Segment segment : segments)
         {
@@ -1002,8 +1002,21 @@ public class TileOverlay
 
             int[] b = TileAnnotation.midpoint(segment.getTo(), width, height);
 
-            if (b != null) TileAnnotation.chevron(g, from == null ? centre : from, b, span);
+            if (b != null) arrows.add(new int[][] {from == null ? centre : from, b});
         }
+
+        // THE EDGE FIRST, a little wider, and the white over it: so it reads on a sensor's white contact as on the line
+        g.setStroke(new java.awt.BasicStroke(arrowStroke + 2f,
+            java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+        g.setColor(DiagramColours.PATH_ARROW_EDGE);
+
+        for (int[][] arrow : arrows) TileAnnotation.chevron(g, arrow[0], arrow[1], span);
+
+        g.setStroke(new java.awt.BasicStroke(arrowStroke,
+            java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+        g.setColor(DiagramColours.PATH_ARROW);
+
+        for (int[][] arrow : arrows) TileAnnotation.chevron(g, arrow[0], arrow[1], span);
     }
 
     private static Color colourOf(State state)

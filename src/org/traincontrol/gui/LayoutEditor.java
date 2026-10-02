@@ -1769,13 +1769,10 @@ public class LayoutEditor extends PositionAwareJFrame
                 {
                     layout.setEdit(false);
 
-                    dispose();
+                    // COUNTED BEFORE THE WINDOW GOES (RSA25-C1)
+                    parent.autonomyEditorClosedFromTheEditor(() -> parent.openAutonomyEditor(tile));
 
-                    javax.swing.SwingUtilities.invokeLater(() ->
-                    {
-                        parent.autonomyEditorClosed();
-                        parent.openAutonomyEditor(tile);
-                    });
+                    dispose();
                 }
             });
 
@@ -1785,13 +1782,10 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 layout.setEdit(false);
 
-                dispose();
+                // COUNTED BEFORE THE WINDOW GOES (RSA25-C1)
+                parent.autonomyEditorClosedFromTheEditor(() -> parent.openAutonomyEditor(at, named));
 
-                javax.swing.SwingUtilities.invokeLater(() ->
-                {
-                    parent.autonomyEditorClosed();
-                    parent.openAutonomyEditor(at, named);
-                });
+                dispose();
             });
 
             // Going to a link's other end.  Same close-and-reopen as a finding on another page, but it
@@ -2059,12 +2053,13 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         layout.setEdit(false);
 
-        dispose();
-
         // The main window shows the same pages, and they have just changed shape.  It also has to put
         // back what opening this window changed - always-on-top and the disabled Edit button - which
         // normally happens at the end of layoutEditingComplete, a path autonomy mode never takes.
-        javax.swing.SwingUtilities.invokeLater(() -> parent.autonomyEditorClosed());
+        // COUNTED BEFORE THE WINDOW GOES (RSA25-C1): no train is sent between here and that.
+        parent.autonomyEditorClosedFromTheEditor(null);
+
+        dispose();
     }
 
     /**
@@ -5784,13 +5779,10 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
 
         layout.setEdit(false);
 
-        dispose();
+        // COUNTED BEFORE THE WINDOW GOES (RSA25-C1)
+        parent.autonomyEditorClosedFromTheEditor(() -> parent.openAutonomyEditor(tile));
 
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            parent.autonomyEditorClosed();
-            parent.openAutonomyEditor(tile);
-        });
+        dispose();
     }
 
     /**

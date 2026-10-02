@@ -361,14 +361,19 @@ public class DiagramMonitor
         // locomotive icon on top of the station in the track diagram viewer ... same icon as when a run is started."
         markTheParkedTrains(overlays, layout, active.keySet());
 
-        // everything held clear so those paths can run
-        for (List<Edge> path : active.values())
+        // everything held clear so those paths can run - and NOT what an edge the run has given back held clear (RSA25-C2):
+        // the railway released those claims with it, and the wash said the track was still spoken for
+        for (Map.Entry<org.traincontrol.base.Locomotive, List<Edge>> run : active.entrySet())
         {
+            List<Edge> path = run.getValue();
+
             if (path == null) continue;
+
+            Set<Edge> givenBack = layout.releasedBehind(run.getKey());
 
             for (Edge edge : path)
             {
-                if (edge == null || edge.getLockEdges() == null) continue;
+                if (edge == null || edge.getLockEdges() == null || givenBack.contains(edge)) continue;
 
                 for (Edge locked : edge.getLockEdges())
                 {

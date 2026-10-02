@@ -751,8 +751,8 @@ public class testAutonomyDiagramMonitor
      * for what the train has driven, the tail in orange), from the one place it is kept: `DiagramColours`.  The arrowheads
      * are white, to read on both.
      *
-     * MUTATION: draw the path ahead in its old red, driven track in its old green, or the arrowheads black, and this
-     * fails.
+     * MUTATION: draw the path ahead in its old red, driven track in its old green, the arrowheads black, or white with
+     * no dark edge (RSA25-C4), and this fails.
      */
     @Test
     public void testTheRunIsDrawnInTheDiagramsColours()
@@ -801,6 +801,21 @@ public class testAutonomyDiagramMonitor
 
             assertTrue(white > 0, "the arrowhead on a " + state + " run is not white, so it does not read on its line"
                 + " (FR-106)");
+
+            int edged = 0;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    java.awt.Color p = new java.awt.Color(image.getRGB(x, y), true);
+
+                    if (p.getAlpha() > 200 && p.getRed() < 70 && p.getGreen() < 70 && p.getBlue() < 70) edged++;
+                }
+            }
+
+            assertTrue(edged > 0, "the white arrowhead on a " + state + " run has no dark edge, so on a sensor's white"
+                + " contact it disappears (RSA25-C4)");
         }
     }
 
@@ -852,7 +867,10 @@ public class testAutonomyDiagramMonitor
      * driven line stayed on it until the run ended.  Under atomic routes nothing is given back until then, and the line
      * stays.
      *
-     * MUTATION: draw every driven edge, given back or not, and this fails.
+     * And the pale wash of what a given-back edge held clear goes with it (RSA25-C2): the railway released those claims
+     * with the edge.
+     *
+     * MUTATION: draw every driven edge, given back or not, or wash what every edge held clear, and this fails.
      *
      * @throws Exception from the fixture
      */
@@ -866,13 +884,20 @@ public class testAutonomyDiagramMonitor
         straight(page, 4, 1);
         feedback(page, 5, 1, 24);
 
+        // AND A TRACK BESIDE IT THAT THE FIRST EDGE HOLDS CLEAR (RSA25-C2)
+        feedback(page, 1, 3, 25);
+        straight(page, 2, 3);
+        feedback(page, 3, 3, 26);
+
         GraphReducer reducer = reduce(graph(page));
 
         ReducedEdge first = edgeBetween(reducer, key("main", 1, 1), key("main", 3, 1));
         ReducedEdge second = edgeBetween(reducer, key("main", 3, 1), key("main", 5, 1));
+        ReducedEdge beside = edgeBetween(reducer, key("main", 1, 3), key("main", 3, 3));
 
         assertNotNull(first, "precondition: no edge from the first sensor to the second");
         assertNotNull(second, "precondition: no edge from the second sensor to the third");
+        assertNotNull(beside, "precondition: no edge along the track beside it");
 
         Map<String, ReducedEdge> edges = new LinkedHashMap<>();
         Map<String, TileKey> tiles = new LinkedHashMap<>();
@@ -884,8 +909,13 @@ public class testAutonomyDiagramMonitor
         Edge ab = new Edge(a, b);
         Edge bc = new Edge(b, c);
 
+        Edge xy = new Edge(new Point("X", false, null), new Point("Y", false, null));
+
+        ab.addLockEdge(xy);
+
         edges.put(ab.getName(), first);
         edges.put(bc.getName(), second);
+        edges.put(xy.getName(), beside);
         tiles.put("A", key("main", 1, 1));
         tiles.put("B", key("main", 3, 1));
         tiles.put("C", key("main", 5, 1));
@@ -917,6 +947,9 @@ public class testAutonomyDiagramMonitor
         assertTrue(held.containsKey(key("main", 2, 1)) && held.get(key("main", 2, 1)).getState() == State.REACHED,
             "precondition: the driven edge is not drawn as driven while the run holds it: " + held.get(key("main", 2, 1)));
 
+        assertTrue(held.containsKey(key("main", 2, 3)) && held.get(key("main", 2, 3)).getState() == State.LOCKED,
+            "precondition: the track the driven edge holds clear is not washed as held: " + held.get(key("main", 2, 3)));
+
         // NON-ATOMIC: A to B given back as the tail cleared it
         layout.released.add(ab);
 
@@ -928,6 +961,11 @@ public class testAutonomyDiagramMonitor
 
         assertTrue(behind == null || behind.isBlank(), "track a non-atomic run has given back behind the train is still"
             + " drawn as driven (FR-106): " + behind);
+
+        TileOverlay clear = givenBack.get(key("main", 2, 3));
+
+        assertTrue(clear == null || clear.isBlank(), "the track a given-back edge held clear is still washed as held, though"
+            + " the railway released it with the edge (RSA25-C2): " + clear);
 
         assertEquals(givenBack.get(key("main", 4, 1)).getState(), State.ACTIVE, "the track ahead of the train is not drawn"
             + " as ahead once the track behind is given back");

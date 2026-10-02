@@ -1274,8 +1274,17 @@ The editor notice about turn-round squares with no length is a different questio
   'track is blocked' - that is the whole point. it's the same as greying out edges, just in a
   different way."*). A square with **orange** on it is where a train IS. A square that is **grey and
   not orange** is track that train's presence has made unusable. A square with neither is free.
+- **A run is drawn in the stations' blue ahead of the train and dark grey for the track it has driven and still
+  holds, with white arrowheads edged in dark grey** (Adam, FR-106: his palette, kept in one place, `DiagramColours`).
+  Track a non-atomic run gives back behind the train, as its tail clears it, is drawn as nothing - its line and the
+  pale wash of what it held clear both go (RSA25-C2); under atomic routes they stay until the run ends.
+- **The strip above the track diagram says "Setup changes not applied yet"** while the setup has changes the railway
+  has not taken - an edit made as a run started, or one that leaves the setup unable to build while the last railway
+  that built stays loaded; its tooltip says they apply at the next load, once the setup has no errors (Adam,
+  2026-10-02: "Add the setup notice, but make it brief").
 - A train is drawn as an **orange line along the track it is standing on**, **on the track diagram
-  viewer only**, until it moves. An editor is where the railway is arranged, and what happens to be
+  viewer only** - and while it runs, along the track its length still covers, drawn over its route so the tail shows
+  the whole way (FR-106). An editor is where the railway is arranged, and what happens to be
   standing on it while you arrange it is a fact about right now rather than about the drawing - the
   same reasoning that makes station names the default caption there.
 - Blocked track is drawn by **fading the square itself to 40%**, **whether or not anything is

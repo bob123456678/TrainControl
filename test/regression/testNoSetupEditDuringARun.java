@@ -4918,4 +4918,128 @@ public class testNoSetupEditDuringARun
             if (sandbox != null) sandbox.close();
         }
     }
+
+    /**
+     * No train is sent between the autonomy editor's Save or Cancel and the hand-over that follows its window closing
+     * (RSA25-C1): it was posted after the window went and counted nowhere, so an event queued while the editor's own
+     * handler ran found neither an editor nor a refresh - and after Cancel's "exit without saving" a train sent there ran
+     * on the discarded setup, which the next fold then wrote back.
+     *
+     * MUTATION: post the hand-over after the window closes, counted nowhere, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testNoTrainIsSentWhileTheAutonomyEditorHandsOver() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final List<String> asked = Collections.synchronizedList(new ArrayList<>());
+        final java.util.concurrent.atomic.AtomicBoolean answering = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        Thread answers = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final java.lang.reflect.Method gate = TrainControlUI.class.getDeclaredMethod("whyNoTrainMayBeSent",
+                boolean.class);
+
+            gate.setAccessible(true);
+
+            final String refreshing = I18n.t("autosetup.ui.errorDiagramRefreshing");
+
+            java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
+
+            open.setAccessible(true);
+
+            for (final String button : new String[] {"saveButtonActionPerformed", "cancelButtonActionPerformed"})
+            {
+                openTheEditorFor(ui[0], new TileKey("1 - Main", 22, 6), null);
+
+                final org.traincontrol.gui.LayoutEditor editor = (org.traincontrol.gui.LayoutEditor) open.get(ui[0]);
+
+                assertTrue(editor != null && editor.isDisplayable() && editor.getAutonomyPanel() != null,
+                    "precondition: the autonomy editor did not open");
+
+                final java.lang.reflect.Method press = org.traincontrol.gui.LayoutEditor.class.getDeclaredMethod(button,
+                    java.awt.event.ActionEvent.class);
+
+                press.setAccessible(true);
+
+                answers = answeringNamesAndYes(asked, answering, "unused");
+
+                final Object[] said = {"not asked"};
+
+                SwingUtilities.invokeAndWait(() ->
+                {
+                    // QUEUED BEFORE THE HANDLER, as a click on the main window is while the editor's own handler runs
+                    SwingUtilities.invokeLater(() ->
+                    {
+                        try
+                        {
+                            said[0] = gate.invoke(ui[0], true);
+                        }
+                        catch (ReflectiveOperationException e)
+                        {
+                            said[0] = e;
+                        }
+                    });
+
+                    try
+                    {
+                        press.invoke(editor, (Object) null);
+                    }
+                    catch (ReflectiveOperationException e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
+                });
+
+                long answered = System.currentTimeMillis() + 10000;
+
+                while ("not asked".equals(said[0]) && System.currentTimeMillis() < answered) Thread.sleep(50);
+
+                answering.set(false);
+
+                answers.join(5000);
+
+                answering.set(true);
+
+                assertFalse(editor.isDisplayable(), "precondition: the autonomy editor's " + button + " did not close it: "
+                    + asked);
+
+                assertEquals(said[0], refreshing, "a train could be sent between the autonomy editor's " + button
+                    + " and the hand-over behind it (RSA25-C1): " + asked);
+
+                waitForTheGateToOpen(ui[0], gate, refreshing, "the autonomy editor's " + button);
+            }
+        }
+        finally
+        {
+            answering.set(false);
+
+            if (answers != null) answers.join(5000);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
 }

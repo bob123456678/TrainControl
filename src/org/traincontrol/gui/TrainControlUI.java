@@ -7789,6 +7789,35 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         openEditor.requestFocus();
     }
 
+    /**
+     * An autonomy editor closing - its Save, its Cancel, a jump to another page, notice or square: the refresh counted
+     * before its window goes (RSA25-C1), and taken over by the `autonomyEditorClosed` posted behind it, and by what
+     * follows.  Posted after the window closed and counted nowhere, an event queued while the editor's own handler ran
+     * found neither an editor nor a refresh - and after Cancel's "exit without saving" a train sent there ran on the
+     * discarded setup, which the next fold then wrote back.  As round 43 counts the track editor's
+     * (`layoutEditingCompleteFromTheEditor`).
+     *
+     * @param then run after `autonomyEditorClosed`, on the event thread - opening the editor elsewhere - or null
+     */
+    public void autonomyEditorClosedFromTheEditor(final Runnable then)
+    {
+        refreshesUnderWay.incrementAndGet();
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            try
+            {
+                autonomyEditorClosed();
+
+                if (then != null) then.run();
+            }
+            finally
+            {
+                refreshesUnderWay.updateAndGet(n -> Math.max(0, n - 1));
+            }
+        });
+    }
+
     public void autonomyEditorClosed()
     {
         // reapplies the stored preference, which is what the diagram path does here too
