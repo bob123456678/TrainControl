@@ -2624,7 +2624,8 @@ setup edit waits for a load it writes what the railway owns - where the trains s
 railway changed - and nothing of the setup's (RLV10-B1, RSA21-C2).  No setup edit is made while trains run (Adam, 2026-09-28): the diagram's setup menu and its Edit
 Locomotive are offered only at rest and refuse, and say so, when clicked after a run has begun; no train is sent - from
 the Auto tab either - while the editor is open, nor while the diagram reloads after a page door - Duplicate, Add Blank
-Page, Rename, Delete, Combine Linked Pages, the editor's Save - until the reset at its end has run (RSA23-B1); a tail question answered once trains run, and a direction change
+Page, Rename, Delete, Combine Linked Pages, the editor's Save and Cancel, counted before the editor closes (RSA24-C1) - until the reset at its end has run
+(RSA23-B1); a tail question answered once trains run, and a direction change
 followed once they run, write nothing - so during a run an edit waits only where the run began in the moment between an
 edit and its rebuild (RLV11-B1, RLV11-B2, RLV12-B1, RLV12-C3, RLV12-C4); at rest one also waits where an edit leaves the
 setup unable to build - a link unpaired - and the last railway that built stays loaded meanwhile (Adam, 2026-09-28 and

@@ -24313,6 +24313,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_RouteListMouseClicked
 
     /**
+     * The track editor's hand-over, from its Save and its Cancel (RSA24-C1): the refresh counted from here, before the
+     * editor closes, and taken over by the `layoutEditingComplete` posted behind it.  Counted only there, an event queued
+     * while the editor's own handler ran found neither an editor nor a refresh - and a train sent from it ran on the
+     * railway the reset then forgot.
+     */
+    public void layoutEditingCompleteFromTheEditor()
+    {
+        refreshesUnderWay.incrementAndGet();
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            try
+            {
+                layoutEditingComplete();
+            }
+            finally
+            {
+                // taken over by the refresh `layoutEditingComplete` has just counted
+                refreshesUnderWay.updateAndGet(n -> Math.max(0, n - 1));
+            }
+        });
+    }
+
+    /**
      * Housekeeping to refresh UI after layout has been edited
      */
     public void layoutEditingComplete()

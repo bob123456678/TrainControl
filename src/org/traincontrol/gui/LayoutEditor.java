@@ -6430,12 +6430,10 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         // which undoes the diagram; this undoes what the same gestures wrote into the autonomy setup.
         undoAutonomyEdits();
 
-        javax.swing.SwingUtilities.invokeLater(() ->
-        {
-            parent.layoutEditingComplete();
-        });
-        
-        this.dispose();    
+        // COUNTED BEFORE THE EDITOR CLOSES (RSA24-C1): no train is sent between here and the reset
+        parent.layoutEditingCompleteFromTheEditor();
+
+        this.dispose();
     }
     
     /**
@@ -7407,11 +7405,9 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             // Kept, so nothing can put them back.  The snapshot exists only for Cancel.
             this.autonomyAsOpened = null;
 
-            javax.swing.SwingUtilities.invokeLater(() ->
-            {
-                parent.layoutEditingComplete();
-            });
-            
+            // COUNTED BEFORE THE EDITOR CLOSES (RSA24-C1): no train is sent between here and the reset
+            parent.layoutEditingCompleteFromTheEditor();
+
             dispose();
         }
         catch (Exception ex)

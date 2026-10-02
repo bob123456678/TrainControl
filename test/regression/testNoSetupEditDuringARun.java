@@ -4787,4 +4787,135 @@ public class testNoSetupEditDuringARun
 
         return answering;
     }
+
+    /**
+     * No train is sent between the track editor's Save or Cancel and the reset its refresh ends in (RSA24-C1): the refresh
+     * was counted only by the hand-over the editor posted as it closed, so an event queued while its handler ran - a train
+     * sent from the diagram, Return Home - found neither an editor nor a refresh, and ran on the railway the reset then
+     * forgot.
+     *
+     * MUTATION: count the refresh from the posted hand-over alone again, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testNoTrainIsSentWhileTheTrackEditorHandsOver() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final List<String> asked = Collections.synchronizedList(new ArrayList<>());
+        final java.util.concurrent.atomic.AtomicBoolean answering = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        Thread answers = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final java.lang.reflect.Method gate = TrainControlUI.class.getDeclaredMethod("whyNoTrainMayBeSent",
+                boolean.class);
+
+            gate.setAccessible(true);
+
+            final String refreshing = I18n.t("autosetup.ui.errorDiagramRefreshing");
+
+            java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
+
+            open.setAccessible(true);
+
+            answers = answeringNamesAndYes(asked, answering, "unused");
+
+            for (final String button : new String[] {"saveButtonActionPerformed", "cancelButtonActionPerformed"})
+            {
+                SwingUtilities.invokeAndWait(() -> ui[0].openLayoutEditor("1 - Main", false, null));
+
+                org.traincontrol.gui.LayoutEditor shown = null;
+
+                long until = System.currentTimeMillis() + 20000;
+
+                while (System.currentTimeMillis() < until)
+                {
+                    SwingUtilities.invokeAndWait(() -> { });
+
+                    shown = (org.traincontrol.gui.LayoutEditor) open.get(ui[0]);
+
+                    if (shown != null && shown.isDisplayable()) break;
+
+                    Thread.sleep(100);
+                }
+
+                assertTrue(shown != null && shown.isDisplayable(), "precondition: the track editor did not open: " + asked);
+
+                final org.traincontrol.gui.LayoutEditor editor = shown;
+
+                final java.lang.reflect.Method press = org.traincontrol.gui.LayoutEditor.class.getDeclaredMethod(button,
+                    java.awt.event.ActionEvent.class);
+
+                press.setAccessible(true);
+
+                final Object[] said = {"not asked"};
+
+                SwingUtilities.invokeAndWait(() ->
+                {
+                    // QUEUED BEFORE THE HANDLER, as a click on the main window is while the editor's own handler runs
+                    SwingUtilities.invokeLater(() ->
+                    {
+                        try
+                        {
+                            said[0] = gate.invoke(ui[0], true);
+                        }
+                        catch (ReflectiveOperationException e)
+                        {
+                            said[0] = e;
+                        }
+                    });
+
+                    try
+                    {
+                        press.invoke(editor, (Object) null);
+                    }
+                    catch (ReflectiveOperationException e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
+                });
+
+                long answered = System.currentTimeMillis() + 10000;
+
+                while ("not asked".equals(said[0]) && System.currentTimeMillis() < answered) Thread.sleep(50);
+
+                assertFalse(editor.isDisplayable(), "precondition: the editor's " + button + " did not close it: " + asked);
+
+                assertEquals(said[0], refreshing, "a train could be sent between the track editor's " + button + " and the"
+                    + " reset its refresh ends in (RSA24-C1): " + asked);
+
+                waitForTheGateToOpen(ui[0], gate, refreshing, "the track editor's " + button);
+            }
+        }
+        finally
+        {
+            answering.set(false);
+
+            if (answers != null) answers.join(5000);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
 }
