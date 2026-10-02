@@ -27,10 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-645](#mt-645) | 2026-10-02 | The track diagram says when the setup is not applied yet | fixed unvalidated | Adam 2026-10-02 |
 
-Everything else - 644 of 645 - needs nothing from you unless the area changes again:
-504 **fixed validated** and 140 **superseded**.
+
+Everything else - 645 of 645 - needs nothing from you unless the area changes again:
+505 **fixed validated** and 140 **superseded**.
 
 ---
 
@@ -31137,7 +31137,7 @@ Validated on your *Works* of 2026-10-02.
 
 ### MT-645 - 2026-10-02 - The track diagram says when the setup is not applied yet
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-02
 
 **Written:** 2026-10-02
@@ -31155,5 +31155,13 @@ Your request of 2026-10-02: *"Add the setup notice, but make it brief"*.
   over it says they apply at the next load once the setup has no errors; paired again, the line goes.
 
 *What this is:* `regression.testADeclinedSetupEditSaysSoAndSurvivesTheExit.testTheDiagramSaysWhenTheSetupIsNotApplied`.
+
+**Adam, 2026-10-02 (triage).** Works.
+
+*Run against commit 5d84aec7, in English - build\classes, compiled 02 Oct 16:15 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Validated on your *Works* of 2026-10-02.
 
 ---
