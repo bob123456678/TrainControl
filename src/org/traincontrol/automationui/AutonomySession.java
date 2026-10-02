@@ -9672,11 +9672,11 @@ public class AutonomySession
      * refuse the other way round with `autolayout.errorCannotEditWhileRunning`. So no run can have
      * moved a train since the capture that opened the editor.
      *
-     * What CAN move one is a hand on the throttle, which no fence in this program covers. There the
-     * setup and the railway disagree, and this deliberately follows the setup: the operator is looking
-     * at the editor's picture, the gesture says *"mark current train locations as their homes"*, and
-     * the locations it means are the ones on the screen. Writing a position they cannot see would be
-     * the surprising half of the two.
+     * **Where the railway has a train, that is where it is homed** (RSA18-B2): Bulk Tools is on the track
+     * diagram's menu too, which folds nothing before a gesture, so after a run the setup still names the
+     * squares the trains set off from - and the picture the operator is looking at there is the railway's.
+     * In the full editor, which folds on opening, the two agree.  A train the railway does not have is homed
+     * where the setup has it (`trainsWhereTheyStand`).
      *
      * **A square already homed to a DIFFERENT train is overwritten**, because that is what the gesture
      * says: the trains are where the operator wants them, and this records that. The count returned is
@@ -10907,11 +10907,11 @@ public class AutonomySession
      * Empty when no source has been installed, which is the honest answer: not knowing a length and
      * knowing it is unset are different things, and only one of them is worth a warning.
      *
-     * @return the squares, in the order the placements are held
+     * @return the squares and the trains standing on them, where the railway has them first (RSA18-B2, RSA19-C1)
      */
-    private java.util.Set<TileKey> placedTrainsWithoutLength()
+    private Map<TileKey, String> placedTrainsWithoutLength()
     {
-        java.util.Set<TileKey> out = new LinkedHashSet<>();
+        Map<TileKey, String> out = new LinkedHashMap<>();
 
         if (trainLengths == null) return out;
 
@@ -10924,7 +10924,8 @@ public class AutonomySession
 
             // Zero and unset mean the same thing here, and both mean the same to the railway: a train
             // of no length is never too long for anywhere.
-            if (length == null || length <= 0) out.add(placed.getKey());
+            // WITH THE TRAIN THAT STANDS THERE (RSA19-C1): the warning named the setup's
+            if (length == null || length <= 0) out.put(placed.getKey(), placed.getValue());
         }
 
         return out;

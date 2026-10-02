@@ -2028,10 +2028,15 @@ Before, both were left where the setup last had them and the square they stood o
 railway's train first** (RSA17-B1): a setup record whose train the railway has on another square is one the last run
 outran, not a train there, and raises nothing - nor does one on the same square, the railway's facing being the one asked
 (RSA18-B1).  **Only over a railway the load replaced** (RSA18-A1): a load declined for a problem that stops the build -
-a link unpaired - leaves the railway and its trains as they were, and nothing is put back or recorded over it.  **A train
+a link unpaired - leaves the railway and its trains as they were, and nothing is put back or recorded over it; the setup is
+then marked newer than the railway, as after a rebuild a run declined, so no fold of the railway built before the edit -
+opening or closing the editor, Export, New Configuration, the exit - writes its settings back over the edit until a load
+carries it (RSA19-B1).  A train placed in the setup meanwhile goes where the railway has it at that load: where a train
+stands is the railway's to say (OB-183).  **A train
 recorded where it stands keeps the side it came in by and its road** (RSA18-A2), so the track put back stands it with
 its tail.  **Readers of who stands where ask the railway first** (RSA18-B2): Home All Trains Where They Stand, from the
-track diagram's menu after a run, homes each train where the railway has it.  `regression.testAnEditedPlacementSurvivesTheRebuild` -
+track diagram's menu after a run, homes each train where the railway has it, and the no-length notice names the train
+that stands on its square (RSA19-C1).  `regression.testAnEditedPlacementSurvivesTheRebuild` -
 `testATrainOnAStationMadePassThroughIsPutBackOnIt`, `testATrainWhoseTurnIsTakenAwayIsRecordedWhereItStands`,
 `testARecordTheRunOutranRaisesNoError`, `testATrainBesideALinkSwitchedOffIsRecordedWhereItStands`.  The setup check then reports an **error**: the train faces a way its station no longer has, and nothing is sent
 until it is turned from its right-click menu, moved, or the track is put back.  A link switched off beside a train is

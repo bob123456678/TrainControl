@@ -3085,8 +3085,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             load.run();
 
-            // ONLY OVER A RAILWAY THE LOAD REPLACED (RSA18-A1), as `rebuildRunningLayoutFromSetup`
-            if (this.model != null && this.model.getAutoLayoutIfLoaded() != runningBefore) putTheTrainsBack(standing, null);
+            // ONLY OVER A RAILWAY THE LOAD REPLACED (RSA18-A1), as `rebuildRunningLayoutFromSetup` - and the setup newer
+            // than the railway where it did not (RSA19-B1)
+            if (this.model != null && this.model.getAutoLayoutIfLoaded() != runningBefore)
+            {
+                putTheTrainsBack(standing, null);
+            }
+            else if (runningBefore != null && activeDiagramConfiguration != null)
+            {
+                setupEditDeclinedDuringRun = true;
+            }
 
             carried = this.model != null && this.model.hasAutoLayout() && this.model.getAutoLayout() != runningBefore
                 && this.model.getAutoLayout().isValid();
@@ -7566,6 +7574,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 if (this.model != null && this.model.getAutoLayoutIfLoaded() != runningBefore)
                 {
                     putTheTrainsBack(standing, placementsJustEdited);
+                }
+                else if (runningBefore != null && activeDiagramConfiguration != null)
+                {
+                    // AND THE SETUP IS THEN NEWER THAN THE RAILWAY (RSA19-B1), as after a rebuild a run declined: every
+                    // fold of the railway built before the edit - opening or closing the editor, Export, New
+                    // Configuration, the exit - wrote its homes, priorities, lengths and placements back over the edit
+                    setupEditDeclinedDuringRun = true;
                 }
 
                 // AND A DECLINED EDIT HAS NOW BEEN CARRIED (AMS-B1).

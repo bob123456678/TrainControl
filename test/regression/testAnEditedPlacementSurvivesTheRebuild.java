@@ -779,6 +779,22 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             running.getPoint("Beta (westbound)").setArrivedFrom("E");
 
+            // AND A ROAD (RSA19-C2) - nothing arrives at Beta on this row, whose ends turn nothing, so one of its two edges:
+            // what is asked is that the record carries the road the railway has, whatever it is
+            java.util.List<org.traincontrol.automation.Edge> road = new java.util.ArrayList<>();
+
+            for (org.traincontrol.automation.Edge edge : running.getEdges())
+            {
+                if (road.isEmpty() && edge.getEnd() != null) road.add(edge);
+            }
+
+            assertFalse(road.isEmpty(), "precondition: no edge ends on a copy of Beta: " + running.getEdges().size()
+                + " edges, " + namesOf(running));
+
+            running.getPoint("Beta (westbound)").setArrivedAlong(road);
+
+            String roadNames = Layout.namesOfRoad(road);
+
             assertTrue(session.getLocomotiveNameAt(beta) == null, "precondition: the setup already has a train on Beta");
 
             // ONE WAY EAST EITHER SIDE OF BETA: no copy of it faces west - set, not refused
@@ -795,9 +811,13 @@ public class testAnEditedPlacementSurvivesTheRebuild
             assertEquals(session.getFacing(beta), org.traincontrol.automationui.TilePorts.Side.W, "the train recorded on"
                 + " Beta is not recorded facing west, as it stands");
 
-            // AND THE SIDE IT CAME IN BY (RSA18-A2)
+            // AND THE SIDE IT CAME IN BY (RSA18-A2), AND ITS ROAD (RSA19-C2)
             assertEquals(session.getPointProperty(beta, "arrivedFrom"), "E", "the train recorded on Beta is recorded"
                 + " without the side it came in by");
+
+            assertTrue(sameRoad(session.getPointProperty(beta, "arrivedAlong"), roadNames), "the train recorded on Beta is"
+                + " recorded without the road it came in along: " + session.getPointProperty(beta, "arrivedAlong")
+                + ", came along " + roadNames);
 
             // THE RAILWAY REBUILT FROM THE SETUP - which has no copy of Beta facing west - AND FOLDED BACK
             model.parseAuto(session.buildConfiguration());
@@ -1781,6 +1801,20 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             running.getPoint(turned).setArrivedFrom("W");
 
+            // AND THE ROAD IT CAME IN ALONG (RSA19-C2)
+            java.util.List<org.traincontrol.automation.Edge> road = new java.util.ArrayList<>();
+
+            for (org.traincontrol.automation.Edge edge : running.getEdges())
+            {
+                if (road.isEmpty() && edge.getEnd() != null && turned.equals(edge.getEnd().getName())) road.add(edge);
+            }
+
+            assertFalse(road.isEmpty(), "precondition: no edge ends on " + turned);
+
+            running.getPoint(turned).setArrivedAlong(road);
+
+            String roadNames = Layout.namesOfRoad(road);
+
             Map<String, String[]> standing = TrainControlUI.whereTheTrainsAre(running);
 
             // TURNING TAKEN AWAY, and the rebuild
@@ -1808,6 +1842,11 @@ public class testAnEditedPlacementSurvivesTheRebuild
             // AND THE SIDE IT CAME IN BY (RSA18-A2): without it the track put back stands it with no tail
             assertEquals(session.getPointProperty(beta, "arrivedFrom"), "W", MOVED + " is recorded without the side it"
                 + " came in by");
+
+            // AND ITS ROAD (RSA19-C2) - in today's names: the turning copy it came in to is plain Beta now
+            assertTrue(sameRoad(session.getPointProperty(beta, "arrivedAlong"), roadNames), MOVED + " is recorded without"
+                + " the road it came in along: " + session.getPointProperty(beta, "arrivedAlong") + ", came along "
+                + roadNames);
 
             boolean reported = false;
 
@@ -2076,5 +2115,91 @@ public class testAnEditedPlacementSurvivesTheRebuild
 
             new Layout(model).makeCurrent();
         }
+    }
+
+    /**
+     * The no-length notice, on the square a train stands on after a run, names that train (RSA19-C1): it named the train
+     * the setup recorded there - nobody, or the wrong one.
+     *
+     * MUTATION: name the setup's train, and this fails.
+     *
+     * @throws Exception on a failure to build the fixture
+     */
+    @Test
+    public void testTheNoLengthNoticeNamesTheTrainThatStandsThere() throws Exception
+    {
+        org.traincontrol.automationui.AutonomySession session = aRow("r37-length", 8541, "Alpha", "Beta", "Gamma", "Delta");
+
+        org.traincontrol.automationui.TileGraph.TileKey beta = new org.traincontrol.automationui.TileGraph.TileKey("main", 3, 1);
+        org.traincontrol.automationui.TileGraph.TileKey gamma = new org.traincontrol.automationui.TileGraph.TileKey("main", 5, 1);
+
+        try
+        {
+            // THE SETUP: the train on Beta; and nobody has measured it
+            session.placeLocomotive(beta, MOVED);
+            session.setTrainLengthSource(name -> 0);
+
+            model.parseAuto(session.buildConfiguration());
+
+            Layout running = model.getAutoLayout();
+
+            session.setRunningLayoutSource(() -> model.getAutoLayout());
+
+            // THE RUN'S RESULT: on Gamma
+            assertTrue(running.moveLocomotive(MOVED, "Gamma (eastbound)", false), "precondition: " + MOVED
+                + " not stood on Gamma (eastbound): " + namesOf(running));
+
+            String named = null;
+
+            for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+            {
+                if (org.traincontrol.automationui.AutonomyChecks.NO_TRAIN_LENGTH.equals(finding.getMessageKey())
+                    && gamma.equals(finding.getTile()))
+                {
+                    named = finding.getSubject();
+                }
+            }
+
+            assertEquals(named, MOVED, "the no-length notice on Gamma, where " + MOVED + " stands, does not name it");
+        }
+        finally
+        {
+            session.setRunningLayoutSource(null);
+            session.setTrainLengthSource(null);
+
+            new Layout(model).makeCurrent();
+        }
+    }
+
+    /**
+     * Whether a recorded road is the road a train came in along: the same steps between the same squares' Points, by
+     * their names before any heading - a rebuild can give a copy another one.
+     */
+    private static boolean sameRoad(Object recorded, String came)
+    {
+        if (recorded == null || came == null) return false;
+
+        org.json.JSONArray was = new org.json.JSONArray(came);
+        org.json.JSONArray now = new org.json.JSONArray(recorded.toString());
+
+        if (was.length() != now.length() || now.length() == 0) return false;
+
+        for (int i = 0; i < now.length(); i++)
+        {
+            for (int end = 0; end < 2; end++)
+            {
+                if (!base(was.getJSONArray(i).getString(end)).equals(base(now.getJSONArray(i).getString(end)))) return false;
+            }
+        }
+
+        return true;
+    }
+
+    /** A Point's name before its heading. */
+    private static String base(String name)
+    {
+        int heading = name.indexOf(" (");
+
+        return heading < 0 ? name : name.substring(0, heading);
     }
 }

@@ -406,6 +406,13 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
             carry.setAccessible(true);
 
+            // ITS OWN ANSWER TOO (RSA19-B1): the setup newer than the railway its load left - lowered first, so this asks
+            // the carry alone
+            final Field newer = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
+
+            newer.setAccessible(true);
+            newer.setBoolean(ui, false);
+
             SwingUtilities.invokeAndWait(() ->
             {
                 try
@@ -432,6 +439,9 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
             assertTrue(stillOnIt, train + " was taken off the railway by carryTheTrainsAcross, whose load left it as it"
                 + " was (RSA18-A1)");
+
+            assertTrue(newer.getBoolean(ui), "carryTheTrainsAcross, its load declined, left the setup unmarked as newer"
+                + " than the railway, so the next fold takes the edit away (RSA19-B1)");
         }
         finally
         {
@@ -524,6 +534,88 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
             {
                 session.setPointProperty(square, org.traincontrol.automationui.AutonomyBuilder.CAN_REVERSE, mayTurn);
                 session.setPointProperty(square, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, mustTurn);
+
+                ui.rebuildRunningLayoutFromSetup(false, null);
+            });
+
+            settle();
+        }
+    }
+
+    /**
+     * An edit made while the setup cannot be built - a link unpaired, its load declined - survives the next fold of the
+     * railway built before it (RSA19-B1): the railway was not replaced and nothing marked the setup newer, so opening or
+     * closing the editor, Export, New Configuration and the exit wrote that railway's settings back over the edit.
+     *
+     * MUTATION: leave the setup unmarked when the load is declined, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAnEditWhileTheLoadIsDeclinedSurvivesTheFold() throws Exception
+    {
+        final org.traincontrol.automationui.TileGraph.TileKey link = new org.traincontrol.automationui.TileGraph.TileKey("1 - Main", 12, 1);
+        final org.traincontrol.automationui.TileGraph.TileKey station = new org.traincontrol.automationui.TileGraph.TileKey("1 - Main", 22, 6);
+
+        final org.traincontrol.automationui.TileGraph.TileKey partner = session.getStore().getPortalPartner(link);
+
+        assertNotNull(partner, "precondition: the link at 1 - Main:12,1 is not paired on the snapshot");
+
+        final org.traincontrol.automation.Layout railway = model.getAutoLayout();
+
+        final Object lengthWas = session.getPointProperty(station, "maxTrainLength");
+
+        final java.lang.reflect.Method capture = TrainControlUI.class.getDeclaredMethod("captureRunningLayout");
+
+        capture.setAccessible(true);
+
+        try
+        {
+            // UNPAIR THIS LINK, and the rebuild the diagram's menu makes: declined, a link left unpaired
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.unpairPortal(link);
+
+                ui.rebuildRunningLayoutFromSetup(false, null);
+            });
+
+            settle();
+
+            assertSame(model.getAutoLayout(), railway, "precondition: the load was not declined, so this is not the case");
+
+            // AN EDIT WHILE IT WAITS, and the fold every door makes (the editor's opening and closing, Export, the exit)
+            final Object[] set = new Object[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.setPointProperty(station, "maxTrainLength", 9);
+
+                set[0] = session.getPointProperty(station, "maxTrainLength");
+
+                try
+                {
+                    capture.invoke(ui);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            settle();
+
+            assertEquals(String.valueOf(set[0]), "9", "precondition: the edit was not made");
+
+            assertEquals(String.valueOf(session.getPointProperty(station, "maxTrainLength")), "9", "the fold of the"
+                + " railway built before the edit took the edit away (RSA19-B1)");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.pairPortals(link, partner);
+
+                session.setPointProperty(station, "maxTrainLength", lengthWas);
 
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });

@@ -477,7 +477,7 @@ public class AutonomyChecks
     // looks load-bearing is worse than none".
 
     /**
-     * @param withoutTrainLength squares whose locomotive has no length recorded (FR-046)
+     * @param withoutTrainLength squares whose locomotive has no length recorded, to that locomotive (FR-046, RSA19-C1)
      * @param repeatedSensorPages included pages repeating another included page's s88 (OB-150)
      * @param withoutMaxLength station squares with no maximum train length
      * @param shortRunIns stations whose measured run in is shorter than their stated maximum, each
@@ -497,7 +497,7 @@ public class AutonomyChecks
         Set<TileKey> homes, Set<TileKey> signalsGone, Set<TileKey> stationsWithoutSignal,
         Set<TileKey> facingsImpossible, Map<TileKey, Set<TilePorts.Side>> barred,
         Set<TileKey> closed,
-        Set<TileKey> withoutTrainLength, Set<TileKey> withoutMaxLength,
+        Map<TileKey, String> withoutTrainLength, Set<TileKey> withoutMaxLength,
         Map<TileKey, int[]> shortRunIns, Set<TileKey> berthsGivenNoRoom, Map<TileKey, Integer> halfMeasured,
         Map<TileKey, Integer> terminiWithTwoWaysIn,
         Map<TileKey, String> repeatedSensorPages, Map<TileKey, Integer> reversalsWithoutLength,
@@ -1216,12 +1216,12 @@ public class AutonomyChecks
      * class can reach. Both arrive as sets of squares for the same reason every other check here takes
      * one - the caller knows things about the configuration that the graph does not.
      *
-     * @param withoutTrainLength squares holding a locomotive whose length is not set
+     * @param withoutTrainLength squares holding a locomotive whose length is not set, to that locomotive
      * @param withoutMaxLength station squares with no maximum train length
      * @param placed which locomotive stands where, for naming the train in the message
      * @return one warning per square
      */
-    private static List<Finding> checkLengths(GraphReducer reducer, Set<TileKey> withoutTrainLength,
+    private static List<Finding> checkLengths(GraphReducer reducer, Map<TileKey, String> withoutTrainLength,
         Set<TileKey> withoutMaxLength, Map<TileKey, int[]> shortRunIns, Set<TileKey> berthsGivenNoRoom,
         Map<TileKey, Integer> halfMeasured, Map<TileKey, String> placed, Set<TileKey> notAutoDestinations)
     {
@@ -1254,11 +1254,14 @@ public class AutonomyChecks
             }
         }
 
-        for (TileKey square : withoutTrainLength)
+        for (Map.Entry<TileKey, String> train : withoutTrainLength.entrySet())
         {
             // Named, because "a train has no length" sends the reader looking at seven of them. The
-            // square is what the editor jumps to; the name is what says which train to go and measure.
-            String standing = placed == null ? null : placed.get(square);
+            // square is what the editor jumps to; the name is what says which train to go and measure -
+            // the train that stands there, which after a run is not always the one the setup records (RSA19-C1).
+            TileKey square = train.getKey();
+
+            String standing = train.getValue();
 
             findings.add(new Finding(Severity.WARNING, NO_TRAIN_LENGTH,
                 standing == null ? "" : standing, square));
