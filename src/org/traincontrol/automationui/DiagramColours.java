@@ -43,15 +43,32 @@ public final class DiagramColours
     public static final Color PATH_ARROW_EDGE = new Color(40, 40, 40);
 
     /**
-     * Track held clear so another path can run: a light grey, receding from the running path.
+     * Track held clear so another path can run: a light grey line along it, faint, over the wash below.
      */
     public static final Color PATH_HELD = new Color(238, 238, 238);
+
+    /**
+     * And the wash over the whole of a held square, which is most of what says "held" (RSA26-C2): white at 45%, paling
+     * the tile so it recedes from the running path rather than adding a colour.
+     */
+    public static final Color PATH_HELD_WASH = Color.WHITE;
+
+    /** How heavily `PATH_HELD_WASH` is laid over a held square, from 0 (not at all) to 1 (hiding it). */
+    public static final float PATH_HELD_WASH_ALPHA = 0.45f;
 
     /**
      * A train: its line along the track it lies on, the whole length of its tail, standing or running (MT-309, FR-106),
      * and the cross of a square nothing can pass: an orange, rgb(255,102,0).
      */
     public static final Color TRAIN = new Color(255, 102, 0);
+
+    /**
+     * A running train whose icon cannot be read is drawn as a dot (RSA26-C2): this fill, ringed in `TRAIN_DOT_RING`.
+     */
+    public static final Color TRAIN_DOT = Color.BLACK;
+
+    /** The ring round `TRAIN_DOT`, so it reads on the dark line under it. */
+    public static final Color TRAIN_DOT_RING = Color.WHITE;
 
     private DiagramColours()
     {

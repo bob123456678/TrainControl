@@ -1176,4 +1176,101 @@ public class testCancelUndoesAutonomyEdits
             return null;
         }
     }
+
+    /**
+     * A fold between Cancel's discard and the hand-over behind it keeps the setup as it was (RSA26-C1).
+     *
+     * "Exit without saving" puts the setup back, and the railway - rebuilt after every gesture, so still carrying the
+     * edit - was put back only by the hand-over posted after the window closed.  A door that folds the railway into the
+     * configuration, clicked while Cancel's handler ran - Export, which folds before its chooser opens, or the exit -
+     * found the window gone and wrote the discarded edit back into the setup and the file.  The fold is queued as such a
+     * click is, before Cancel's tail runs, and called directly, as `testDiscardOnTheWayOutPutsTheHomeBack` calls it.
+     *
+     * MUTATION: leave the railway to the hand-over after a discard, and this fails.
+     *
+     * @throws Exception from the editor
+     */
+    @Test
+    public void testAFoldBehindCancelKeepsTheHomeBack() throws Exception
+    {
+        org.json.JSONObject asFound = session.snapshotSetup();
+        final LayoutEditor editor = opened();
+        try
+        {
+            TileKey square = null;
+            String locomotive = null;
+            for (TileKey tile : session.getReducer().getPoints().keySet())
+            {
+                String name = session.getLocomotiveNameAt(tile);
+                if (name != null && session.getPointProperty(tile, "home") == null)
+                {
+                    square = tile;
+                    locomotive = name;
+                    break;
+                }
+            }
+            if (square == null) fail("precondition: no square with a locomotive and no home to give it one");
+            Map<String, String> before = homes(session);
+            final TileKey at = square;
+            final String name = locomotive;
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.setHome(at, name);
+                ui.rebuildRunningLayoutFromSetup();
+            });
+            settle();
+            assertNotEquals(homes(session), before, "precondition: making " + at + " home to " + name + " changed nothing");
+            boolean carried = false;
+            for (org.traincontrol.automation.Point point : model.getAutoLayout().getPoints())
+            {
+                if (point.getHomeLoc() != null && name.equals(point.getHomeLoc().getName())) carried = true;
+            }
+            assertTrue(carried, "precondition: the running layout does not carry the home given to " + name
+                + ", so a fold has nothing to write back and this claim cannot fail");
+            final java.lang.reflect.Method discard = LayoutEditor.class.getDeclaredMethod("discardAutonomyWork");
+            final java.lang.reflect.Method close = LayoutEditor.class.getDeclaredMethod("closeAutonomyMode");
+            final java.lang.reflect.Method fold = TrainControlUI.class.getDeclaredMethod("captureRunningLayout");
+            discard.setAccessible(true);
+            close.setAccessible(true);
+            fold.setAccessible(true);
+            final Object[] said = {"not run", "not run"};
+            SwingUtilities.invokeAndWait(() ->
+            {
+                // QUEUED BEFORE CANCEL'S TAIL, as a click on the main window is while its handler runs
+                SwingUtilities.invokeLater(() ->
+                {
+                    try
+                    {
+                        fold.invoke(ui);
+                        said[1] = editor.isDisplayable() ? "folded with the editor open" : "folded";
+                    }
+                    catch (ReflectiveOperationException failed)
+                    {
+                        said[1] = failed;
+                    }
+                });
+                try
+                {
+                    // CANCEL'S TAIL once "exit without saving" is answered: mayLeave's discard, then the close
+                    said[0] = discard.invoke(editor);
+                    close.invoke(editor);
+                }
+                catch (ReflectiveOperationException failed)
+                {
+                    throw new RuntimeException(failed);
+                }
+            });
+            settle();
+            assertNull(said[0], "precondition: the discard failed: " + said[0]);
+            assertEquals(said[1], "folded", "precondition: the fold did not run between the close and the hand-over");
+            assertEquals(homes(session), before, "a fold between Cancel's discard and the hand-over behind it wrote the"
+                + " home given to " + name + " back into the setup (RSA26-C1)");
+            assertEquals(homes(fromDisk()), before, "the file keeps the home Cancel threw away (RSA26-C1)");
+        }
+        finally
+        {
+            dispose(editor);
+            session.restoreSetup(asFound);
+        }
+    }
 }

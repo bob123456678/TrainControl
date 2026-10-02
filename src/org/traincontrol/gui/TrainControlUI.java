@@ -6827,10 +6827,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void rebuildRunningLayoutFromSetup()
     {
         // NO PLACEMENT EDIT IS PENDING HERE, and that is a fact about this door rather than a default
-        // (D2-A1).  The only caller is `autonomyEditorClosed()`.  Every placement made in the editor
-        // reached the running layout when it was made - the panel's own gesture rebuilt then, naming
-        // the train - so by the time the editor closes the record and the setup agree about it, and
-        // the trains that must be carried across this rebuild are the ones a run moved.
+        // (D2-A1).  The callers are `autonomyEditorClosed()` and a discard in the autonomy editor
+        // (`LayoutEditor.discardAutonomyWork`, RSA26-C1), both as an editor finishes.  Every placement
+        // made in the editor reached the running layout when it was made - the panel's own gesture
+        // rebuilt then, naming the train - so no gesture's placement waits for this rebuild, and the
+        // trains that must be carried across it are the ones a run moved.
         rebuildRunningLayoutFromSetup(false, null);
     }
 
@@ -7709,9 +7710,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Refreshes of the diagram under way - from a page door's hand-over to `layoutEditingComplete` until its event-thread
-     * half has reset the session and loaded the configuration again (RSA23-B1).  Read by the one gate: a run started in
-     * between ran the railway built before the door, the reset then forgot it mid-run, and where the run left the trains
-     * was never written.  A count, because Combine Linked Pages holds one of its own across the worker it writes on.
+     * half has reset the session and loaded the configuration again (RSA23-B1); from the track editor's Save or Cancel,
+     * counted before it closes (RSA24-C1); and from the autonomy editor's Save, Cancel or a jump to another page, notice
+     * or square until the `autonomyEditorClosed` posted behind it has run (RSA25-C1).  Read by the one gate: a run started
+     * in between ran the railway built before the door, the reset then forgot it mid-run, and where the run left the
+     * trains was never written.  A count, because Combine Linked Pages holds one of its own across the worker it writes on.
      */
     private final java.util.concurrent.atomic.AtomicInteger refreshesUnderWay = new java.util.concurrent.atomic.AtomicInteger();
 

@@ -605,7 +605,7 @@ public class LayoutEditor extends PositionAwareJFrame
      *
      * Not a re-read from disk, which is what `AutonomySession.discardEdits` does and all this used to be -
      * the per-gesture save has already written the edit there (MT-406).  Placements come back with it: the
-     * rebuild when the editor closes regenerates them from the restored setup, and `putTheTrainsBack` moves
+     * rebuild at the end of this regenerates them from the restored setup, and `putTheTrainsBack` moves
      * only trains that were standing - so a train a bulk clear lifted is put back, and the clear's warning
      * says Cancel does that (WK7-C2).  A train that was MOVED, rather than lifted, stays where it was moved.
      *
@@ -615,11 +615,20 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
 
-        if (this.autonomyAsOpened == null || autonomy == null) return autonomyPanel.discardEdits();
+        String failed;
 
-        if (!autonomy.restoreSetup(this.autonomyAsOpened)) return I18n.t("autosetup.log.restoreFailedAfterCancel");
+        if (this.autonomyAsOpened == null || autonomy == null) failed = autonomyPanel.discardEdits();
+        else if (!autonomy.restoreSetup(this.autonomyAsOpened)) failed = I18n.t("autosetup.log.restoreFailedAfterCancel");
+        else failed = null;
 
-        return null;
+        // THE RAILWAY FOLLOWS AT ONCE, before the window goes (RSA26-C1, WKV-B2).  It was rebuilt after every gesture,
+        // so it still carries the edit, and every door that folds it into the configuration - Export, New
+        // Configuration, the exit - writes what it carries.  Left to the hand-over posted after the window closes, a
+        // fold clicked in between wrote the discarded edit back into the setup and the file.  At every discard: Cancel,
+        // Discard at a page switch or a jump, and on the way out.  Declines while autonomy runs, as every rebuild does.
+        if (failed == null && autonomy != null) parent.rebuildRunningLayoutFromSetup();
+
+        return failed;
     }
 
     /**
@@ -5868,21 +5877,11 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     {
         if (!settleUnsavedWork()) return false;
 
-        // THE RUNNING LAYOUT FOLLOWS A DISCARD ON THE WAY OUT (WKV-B2).
-        //
-        // Discard in autonomy mode restores the setup as the editor opened it, inside settleUnsavedWork.  The
-        // running layout does not follow: it was rebuilt after each edit, so it still has the edit - a bulk
-        // clear's empty squares, a changed arrow - and the save on the way out folds the running layout back
-        // over the setup (`captureFromLayout`), writing the discarded edit to the file.  Cancel never had this,
-        // because the editor closing rebuilds from the restored setup before it captures
-        // (`TrainControlUI.autonomyEditorClosed`).  So the exit asks for the same rebuild.
-        //
-        // Here and not in completeExitDiscard, because the exit's save runs before that.  Not early in the sense
-        // the track-mode undo would be: the setup is already put back at this point, and if the exit is then
-        // refused the setup and the railway agree, as after a Cancel.  The rebuild declines while autonomy is
-        // running, and so does the capture.
-        if (this.settledByDiscarding && isAutonomyMode()) parent.rebuildRunningLayoutFromSetup();
-
+        // THE RUNNING LAYOUT HAS FOLLOWED A DISCARD BY NOW (WKV-B2): Discard in autonomy mode restores the setup as the
+        // editor opened it, and `discardAutonomyWork`, inside settleUnsavedWork, rebuilds the railway from it before it
+        // returns (RSA26-C1).  So the save on the way out folds a railway that no longer carries the discarded edit - a
+        // bulk clear's empty squares, a changed arrow, a home - and if the exit is then refused, the setup and the
+        // railway agree, as after a Cancel.
         return true;
     }
 

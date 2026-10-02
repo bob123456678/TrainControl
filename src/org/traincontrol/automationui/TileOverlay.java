@@ -147,9 +147,9 @@ public class TileOverlay
      * nobody else may go - so it should recede from the running path rather than compete with it, and
      * paling the tile says "held" without adding another colour to a diagram that already has four.
      */
-    private static final Color LOCKED_WASH = Color.WHITE;
+    private static final Color LOCKED_WASH = DiagramColours.PATH_HELD_WASH;
 
-    private static final float LOCKED_WASH_ALPHA = 0.45f;
+    private static final float LOCKED_WASH_ALPHA = DiagramColours.PATH_HELD_WASH_ALPHA;
 
     private static final float DOT_ALPHA = 0.9f;
 
@@ -820,10 +820,10 @@ public class TileOverlay
 
                 g.setComposite(java.awt.AlphaComposite.getInstance(
                     java.awt.AlphaComposite.SRC_OVER, DOT_ALPHA));
-                g.setColor(Color.BLACK);
+                g.setColor(DiagramColours.TRAIN_DOT);
                 g.fillOval(on[0] - diameter / 2, on[1] - diameter / 2, diameter, diameter);
 
-                g.setColor(Color.WHITE);
+                g.setColor(DiagramColours.TRAIN_DOT_RING);
                 g.drawOval(on[0] - diameter / 2, on[1] - diameter / 2, diameter, diameter);
             }
         }

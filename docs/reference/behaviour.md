@@ -2634,7 +2634,10 @@ railway changed - and nothing of the setup's (RLV10-B1, RSA21-C2).  No setup edi
 Locomotive are offered only at rest and refuse, and say so, when clicked after a run has begun; no train is sent - from
 the Auto tab either - while the editor is open, nor while the diagram reloads after a page door - Duplicate, Add Blank
 Page, Rename, Delete, Combine Linked Pages, the editor's Save and Cancel, counted before the editor closes (RSA24-C1) - until the reset at its end has run
-(RSA23-B1); a tail question answered once trains run, and a direction change
+(RSA23-B1), nor after the autonomy editor's Save, Cancel or a jump to another page, notice or square until the hand-over
+behind it has run (RSA25-C1); a discard in the autonomy editor - Cancel's "exit without saving", Discard at a page
+switch or a jump, or on the way out - rebuilds the railway from the restored setup before the window goes, so a door
+that folds the railway into the configuration meanwhile writes the setup as it was (WKV-B2, RSA26-C1); a tail question answered once trains run, and a direction change
 followed once they run, write nothing - so during a run an edit waits only where the run began in the moment between an
 edit and its rebuild (RLV11-B1, RLV11-B2, RLV12-B1, RLV12-C3, RLV12-C4); at rest one also waits where an edit leaves the
 setup unable to build - a link unpaired - and the last railway that built stays loaded meanwhile (Adam, 2026-09-28 and
