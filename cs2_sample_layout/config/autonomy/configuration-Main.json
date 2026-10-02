@@ -22,8 +22,32 @@
     "3 - Top Parking:18,11": {},
     "3 - Top Parking:10,10": {},
     "1 - Main:0,11": {
+      "loc": {"name": "02 0314-1 DDR"},
       "maxTrainLength": 4,
+      "arrivedAlong": [
+        [
+          "BottomMainA (eastbound)",
+          "BottomMainPost (northbound)"
+        ],
+        [
+          "BottomMainPost (northbound)",
+          "1 - Main 7,1 (westbound)"
+        ],
+        [
+          "1 - Main 7,1 (westbound)",
+          "RampUp"
+        ],
+        [
+          "RampUp",
+          "1 - Main 0,3 (southbound)"
+        ],
+        [
+          "1 - Main 0,3 (southbound)",
+          "TopMainR2Inter (southbound)"
+        ]
+      ],
       "facing": "E",
+      "arrivedFrom": "N",
       "priority": -1
     },
     "1 - Main:20,14": {
@@ -37,28 +61,8 @@
       "facing": "E"
     },
     "1 - Main:20,13": {
-      "loc": {"name": "BR 628 2"},
       "maxTrainLength": 4,
-      "arrivedAlong": [
-        [
-          "BottomInner (northbound)",
-          "1 - Main 12,7"
-        ],
-        [
-          "1 - Main 12,7",
-          "Tunnel (southbound)"
-        ],
-        [
-          "Tunnel (southbound)",
-          "BottomMainBCPre (eastbound)"
-        ],
-        [
-          "BottomMainBCPre (eastbound)",
-          "BottomMainB (eastbound)"
-        ]
-      ],
       "facing": "E",
-      "arrivedFrom": "W",
       "canReverse": true
     },
     "1 - Main:21,6": {
@@ -136,21 +140,9 @@
       "autoDestination": false
     },
     "1 - Main:6,4": {
-      "loc": {"name": "02 0314-1 DDR"},
       "maxTrainLength": 4,
-      "arrivedAlong": [
-        [
-          "TopMainR2Inter (southbound)",
-          "TopMainR2Pre (northbound)"
-        ],
-        [
-          "TopMainR2Pre (northbound)",
-          "TopMainR2"
-        ]
-      ],
       "homeFacing": "N",
       "facing": "N",
-      "arrivedFrom": "S",
       "priority": 1,
       "home": "2-8-4 3505 SP"
     },
@@ -229,24 +221,8 @@
     "2 - Bottom:17,10": {},
     "2 - Bottom:13,13": {},
     "2 - Bottom:13,14": {
-      "loc": {"name": "EN57-203"},
       "maxTrainLength": 5,
-      "arrivedAlong": [
-        [
-          "LowerBack",
-          "LowerParkingOuter"
-        ],
-        [
-          "LowerParkingOuter",
-          "LowerFrontPre (eastbound)"
-        ],
-        [
-          "LowerFrontPre (eastbound)",
-          "LowerFront (eastbound)"
-        ]
-      ],
       "facing": "E",
-      "arrivedFrom": "W",
       "canReverse": true
     },
     "2 - Bottom:8,14": {},
@@ -315,9 +291,21 @@
       "autoDestination": false
     },
     "2 - Bottom:19,0": {
+      "loc": {"name": "EN57-203"},
       "maxTrainLength": 20,
+      "arrivedAlong": [
+        [
+          "LowerFront (eastbound)",
+          "LowerBackPre"
+        ],
+        [
+          "LowerBackPre",
+          "LowerBack"
+        ]
+      ],
       "facing": "W",
       "homeFacing": "W",
+      "arrivedFrom": "E",
       "home": "EN57-203"
     },
     "1 - Main:1,3": {},
@@ -354,7 +342,26 @@
     "1 - Main:19,7": {},
     "2 - Bottom:11,13": {},
     "1 - Main:13,9": {
+      "loc": {"name": "BR 628 2"},
       "maxTrainLength": 3,
+      "arrivedAlong": [
+        [
+          "TopMainR2",
+          "TopMainPost (eastbound)"
+        ],
+        [
+          "TopMainPost (eastbound)",
+          "RampDown (southbound)"
+        ],
+        [
+          "RampDown (southbound)",
+          "1 - Main 17,10 (westbound)"
+        ],
+        [
+          "1 - Main 17,10 (westbound)",
+          "BottomInner (northbound)"
+        ]
+      ],
       "facing": "W",
       "homeFacing": "W",
       "excludedLocs": [
@@ -365,6 +372,7 @@
         "MZ 1425 DSB",
         "SP45-204"
       ],
+      "arrivedFrom": "S",
       "priority": -3,
       "home": "02 0314-1 DDR"
     },
