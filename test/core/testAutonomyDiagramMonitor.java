@@ -1018,11 +1018,14 @@ public class testAutonomyDiagramMonitor
 
                         for (Map.Entry<String, TileOverlay> train : everyMovement(from, heading).entrySet())
                         {
-                            cases++;
+                            for (String arrows : ARROWS)
+                            {
+                                cases++;
 
-                            String why = compareTheIcon(size, icon, roads, train.getValue(), road, heading);
+                                String why = compareTheIcon(size, icon, roads, train.getValue(), road, heading, arrows);
 
-                            if (why != null) wrong.add(name + ", " + train.getKey() + ": " + why);
+                                if (why != null) wrong.add(name + ", " + train.getKey() + ", " + arrows + ": " + why);
+                            }
                         }
                     }
                 }
@@ -1039,25 +1042,74 @@ public class testAutonomyDiagramMonitor
 
                 for (Map.Entry<String, TileOverlay> train : everyMovement(from, heading).entrySet())
                 {
-                    cases++;
-
-                    String why = compareTheIcon(size, icon, java.util.Collections.singletonList(road), train.getValue(),
-                        road, heading);
-
-                    if (why != null)
+                    for (String arrows : ARROWS)
                     {
-                        wrong.add("straight " + road[0] + "-" + road[1] + " heading " + heading + ", " + train.getKey()
-                            + ": " + why);
+                        cases++;
+
+                        String why = compareTheIcon(size, icon, java.util.Collections.singletonList(road),
+                            train.getValue(), road, heading, arrows);
+
+                        if (why != null)
+                        {
+                            wrong.add("straight " + road[0] + "-" + road[1] + " heading " + heading + ", "
+                                + train.getKey() + ", " + arrows + ": " + why);
+                        }
                     }
                 }
             }
         }
 
-        // 4 orientations x (curve: 1 road + double curve: 2 roads) x 2 ways x 4 movements, and 2 straights x 2 x 4
-        assertEquals(cases, 4 * 3 * 2 * 4 + 2 * 2 * 4, "precondition: not every case was drawn");
+        // 4 orientations x (curve: 1 road + double curve: 2 roads) x 2 ways x 4 movements, and 2 straights x 2 x 4 - each
+        // with the restriction arrows on, off, and off on a station
+        assertEquals(cases, (4 * 3 * 2 * 4 + 2 * 2 * 4) * ARROWS.length, "precondition: not every case was drawn");
 
         assertTrue(wrong.isEmpty(), "the locomotive icon is not where and how it should be on a " + size + "-pixel tile"
             + " (MT-642):\n  " + String.join("\n  ", wrong));
+    }
+
+    /**
+     * What the square's annotation says (RSA23-C1): with the restriction arrows shown, every road and the station's
+     * badge; with them off, nothing at all on a sensor that is no station, and a station's badge on its first road alone.
+     * The road the icon sits on is the square's own either way.
+     */
+    private static final String[] ARROWS = {"arrows on", "arrows off", "arrows off, a station"};
+
+    /**
+     * A sensor square of the shape these roads make - a straight, a curve or a double curve - in the orientation that
+     * gives exactly these roads.
+     */
+    private static org.traincontrol.base.LayoutDiagramComponent squareOf(List<Side[]> roads) throws Exception
+    {
+        java.util.Set<java.util.Set<Side>> wanted = new java.util.HashSet<>();
+
+        for (Side[] road : roads) wanted.add(java.util.EnumSet.of(road[0], road[1]));
+
+        boolean curve = Math.abs(roads.get(0)[0].ordinal() - roads.get(0)[1].ordinal()) != 2;
+
+        componentType type = roads.size() == 2 ? componentType.FEEDBACK_DOUBLE_CURVE
+            : curve ? componentType.FEEDBACK_CURVE : componentType.FEEDBACK;
+
+        for (int orientation = 0; orientation < 4; orientation++)
+        {
+            java.util.Set<java.util.Set<Side>> made = new java.util.HashSet<>();
+
+            for (org.traincontrol.automationui.TilePorts.Route route
+                : org.traincontrol.automationui.TilePorts.ports(type, orientation, 0))
+            {
+                made.add(java.util.EnumSet.of(route.getA(), route.getB()));
+            }
+
+            if (!made.equals(wanted)) continue;
+
+            LayoutDiagram page = new LayoutDiagram("arrows", 3, 3, null, null);
+
+            page.addComponent(type, 1, 1, orientation, 0, 64, 64,
+                org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+
+            return page.getComponent(1, 1);
+        }
+
+        throw new IllegalStateException("no orientation of " + type + " has the roads " + wanted);
     }
 
     /**
@@ -1088,17 +1140,31 @@ public class testAutonomyDiagramMonitor
      * @return why they differ, or null where they agree
      */
     private static String compareTheIcon(int size, java.awt.image.BufferedImage icon, List<Side[]> roads,
-        TileOverlay train, Side[] road, Side heading)
+        TileOverlay train, Side[] road, Side heading, String arrows) throws Exception
     {
         List<TileAnnotation.Mark> marks = new ArrayList<>();
 
         for (Side[] each : roads) marks.add(new TileAnnotation.Mark(each[0], each[1], null));
 
         // the station, and so the badge, on the first road
-        TileAnnotation annotation = new TileAnnotation(marks, 0, false,
-            new TileAnnotation.Badge(true, false, false, false, true, roads.get(0)[0], roads.get(0)[1]), false);
+        TileAnnotation.Badge badge =
+            new TileAnnotation.Badge(true, false, false, false, true, roads.get(0)[0], roads.get(0)[1]);
+
+        TileAnnotation annotation = "arrows on".equals(arrows) ? new TileAnnotation(marks, 0, false, badge, false)
+            : "arrows off".equals(arrows) ? null
+            : new TileAnnotation(new ArrayList<TileAnnotation.Mark>(), 0, false, badge, false);
 
         org.traincontrol.gui.LayoutLabel tile = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+        // WITH THE ARROWS OFF, A SQUARE OF ITS OWN: the road from its ports, as the diagram's tiles have.  Set after the
+        // build, which would otherwise decode its picture through the window this test does not open
+        if (!"arrows on".equals(arrows))
+        {
+            java.lang.reflect.Field component = org.traincontrol.gui.LayoutLabel.class.getDeclaredField("component");
+
+            component.setAccessible(true);
+            component.set(tile, squareOf(roads));
+        }
 
         tile.setBounds(size, size, size, size);
         tile.setAutonomyAnnotation(annotation);
@@ -1257,6 +1323,26 @@ public class testAutonomyDiagramMonitor
 
                 assertTrue(covered, "a train " + (comesOrGoes == null ? "leaving" : "coming to") + " a curve repainted"
                     + " only " + dirty + ", not the neighbours its icon reaches onto (MT-642)");
+            }
+
+            // AND THE ANNOTATION CHANGED UNDER A TRAIN STANDING THERE (RSA23-C1): the restriction arrows turned off, then on
+            tile.setAutonomyOverlay(TileOverlay.parked(Side.E));
+
+            for (TileAnnotation changed : new TileAnnotation[] {null, new TileAnnotation(Arrays.asList(
+                new TileAnnotation.Mark(Side.N, Side.E, null)), 0, false, null, false)})
+            {
+                dirty.clear();
+
+                tile.setAutonomyAnnotation(changed);
+
+                java.awt.Rectangle reach = new java.awt.Rectangle(size / 2, size / 2, 2 * size, 2 * size);
+
+                boolean covered = false;
+
+                for (java.awt.Rectangle r : dirty) covered |= r.contains(reach);
+
+                assertTrue(covered, "the annotation of a curve with a train on it changed and repainted only " + dirty
+                    + ", not the neighbours the train's icon reaches onto (RSA23-C1)");
             }
         }
         finally

@@ -5235,11 +5235,75 @@ public class testTheImportDoorReadsAnOldFile
 
             final String inUse = session.getStore().getActiveConfiguration();
 
-            // THE PAGE WITH THE MOST OF THE SETUP ON IT
-            final String going = "1 - Main";
+            // A PAGE WITH A SETUP OF ITS OWN, and no train: the trains stand on 1 - Main
+            final String going = "2 - Bottom";
 
             assertTrue(onThePage(session.getStore().getConfiguration(inUse), going) > 0, "precondition: " + inUse
                 + " holds nothing on " + going);
+
+            // AND WHAT THE RUN DID ELSEWHERE, on the railway alone (RSA23-C3): a train moved on another page and an entry
+            // captured - which the delete's own fold, before it, is now the one thing to write
+            final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
+
+            org.traincontrol.automation.Point from = null;
+            org.traincontrol.automation.Point to = null;
+
+            for (org.traincontrol.automation.Point p : railway.getPoints())
+            {
+                if (p.getSquare() == null || p.getSquare().startsWith(going + ":")) continue;
+
+                if (from == null && p.getCurrentLocomotive() != null) from = p;
+            }
+
+            assertNotNull(from, "precondition: no train stands off " + going);
+
+            for (org.traincontrol.automation.Point p : railway.getPoints())
+            {
+                if (p.getSquare() == null || p.getSquare().startsWith(going + ":")) continue;
+
+                if (to == null && p.isDestination() && p.isActive() && p.getCurrentLocomotive() == null
+                    && !p.isSamePlaceAs(from) && session.getStationIndex().squareOf(p.getName()) != null)
+                {
+                    to = p;
+                }
+            }
+
+            assertNotNull(to, "precondition: no empty station off " + going);
+
+            final String moved = from.getCurrentLocomotive().getName();
+            final String toName = to.getName();
+            final TileKey toSquare = session.getStationIndex().squareOf(toName);
+            final boolean[] done = new boolean[1];
+
+            SwingUtilities.invokeAndWait(() -> done[0] = railway.moveLocomotive(moved, toName, false));
+
+            assertTrue(done[0], "precondition: " + moved + " was not moved to " + toName);
+
+            java.util.List<org.traincontrol.automation.Edge> path = null;
+            org.traincontrol.base.Locomotive driving = null;
+
+            for (org.traincontrol.automation.Point p : railway.getPoints())
+            {
+                if (path != null || p.getCurrentLocomotive() == null) continue;
+
+                java.util.List<java.util.List<org.traincontrol.automation.Edge>> paths =
+                    railway.getPossiblePaths(p.getCurrentLocomotive(), false);
+
+                if (paths != null && !paths.isEmpty())
+                {
+                    path = paths.get(0);
+                    driving = p.getCurrentLocomotive();
+                }
+            }
+
+            assertNotNull(path, "precondition: no train on the railway has a path to capture");
+
+            final org.traincontrol.automation.TimetablePath entry =
+                new org.traincontrol.automation.TimetablePath(driving, path, 0L);
+
+            SwingUtilities.invokeAndWait(() -> railway.getTimetable().add(entry));
+
+            final int entries = railway.getTimetable().size();
 
             java.lang.reflect.Field list = TrainControlUI.class.getDeclaredField("LayoutList");
 
@@ -5292,6 +5356,21 @@ public class testTheImportDoorReadsAnOldFile
             assertEquals(onThePage(onDisk.getConfiguration(inUse), going), 0, "the file the next start reads still holds "
                 + going + "'s trains and settings after the page was deleted - the fold behind the reset wrote them back"
                 + " (RSA22-C2, MT-176)");
+
+            // AND KEEPS WHAT THE RUN DID ELSEWHERE (RSA23-C3)
+            org.json.JSONObject there = onDisk.getConfiguration(inUse).getJSONObject("points")
+                .optJSONObject(toSquare.toString());
+
+            assertTrue(there != null && there.has(AutonomyBuilder.LOCOMOTIVE)
+                && moved.equals(there.getJSONObject(AutonomyBuilder.LOCOMOTIVE).optString("name")), "the file the next"
+                + " start reads does not have " + moved + " where the run left it, " + toSquare + ", after a page was"
+                + " deleted (RSA23-C3)");
+
+            org.json.JSONObject globals = onDisk.getConfiguration(inUse).optJSONObject("globals");
+
+            assertEquals(globals == null || !globals.has("timetable") ? 0 : globals.getJSONArray("timetable").length(),
+                entries, "the file the next start reads lost the timetable the run captured after a page was deleted"
+                + " (RSA23-C3)");
         }
         finally
         {

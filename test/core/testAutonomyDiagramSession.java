@@ -970,6 +970,54 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * Squares moved while an edit waits keep the setup's moved timetable (RSA23-C3, RSA22-C1's sibling): the fold behind
+     * the editor's Save, what the railway owns, wrote the railway's timetable - in the Point names the move had just
+     * replaced - over it.
+     *
+     * MUTATION: fold the timetable after squares moved, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testASquareMovedWhileAnEditWaitsKeepsTheMovedTimetable() throws Exception
+    {
+        threeStationsInARow("C3 move");
+
+        session.setPointName(new TileKey("main", 1, 1), "Alpha");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+
+        String[] leg = anEdgeBetween(new org.json.JSONObject(session.buildConfiguration()), "main 3,1", "Gamma");
+
+        assertNotNull(leg, "precondition: no edge from the unnamed station to Gamma");
+
+        session.setGlobal("timetable", aTimetableOf(leg));
+
+        // THE RAILWAY AS BUILT, and as the run left it: an entry more, captured
+        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+        org.json.JSONObject asBuilt = AutonomySession.globalsOf(built);
+
+        built.put("timetable", aTimetableOf(leg, leg));
+
+        // MOVED, as the track editor moves a tile, and the fold behind its Save while an edit waits
+        java.util.Map<TileKey, TileKey> moves = new java.util.LinkedHashMap<>();
+
+        moves.put(new TileKey("main", 3, 1), new TileKey("main", 3, 2));
+
+        assertTrue(session.moveTiles(moves), "precondition: the square did not move");
+
+        session.captureWhatTheRailwayOwns(built.toString(), "C3 move", asBuilt);
+
+        org.json.JSONArray table = new org.json.JSONArray(String.valueOf(session.getGlobal("timetable")));
+
+        assertEquals(table.length(), 1, "the fold after squares moved wrote the railway's timetable over the setup's moved"
+            + " one (RSA23-C3): " + table);
+
+        assertFalse(legOf(session, 0)[0].startsWith("main 3,1"), "the fold after squares moved put the Point names the"
+            + " move replaced back into the timetable (RSA23-C3): " + table);
+    }
+
+    /**
      * A page deleted is not folded back (RSA22-C2): the fold behind the reset worked its keys out from the session's
      * pages, the deleted one among them, and wrote its trains and its stations' settings straight back under its name -
      * with an edit waiting or not.

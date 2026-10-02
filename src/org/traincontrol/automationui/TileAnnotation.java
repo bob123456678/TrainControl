@@ -2078,33 +2078,70 @@ public class TileAnnotation
             if (mark.getA() != null && mark.getB() != null) roads.add(roadOf(mark.getA(), mark.getB()));
         }
 
+        int[] centre = centreOf(roads, sides, width, height);
+
+        return centre != null ? centre : trackCentre(width, height);
+    }
+
+    /**
+     * The same, from a square's own ports - its track type and orientation - rather than from what autonomy says about it
+     * (RSA23-C1): every square has those, where an annotation knows the roads only while the restriction arrows are
+     * shown, and a station's first road otherwise.
+     *
+     * @param routes the square's roads, from `TilePorts.ports`
+     * @param sides the sides of the train's road, from `TileOverlay.trainSides`
+     * @param width the tile width
+     * @param height the tile height
+     * @return the middle of the train's road on a curve or a double curve; null anywhere else, and where the sides name
+     *     no road of the square or more than one
+     */
+    public static int[] trackCentreOf(List<TilePorts.Route> routes, List<Side> sides, int width, int height)
+    {
+        if (routes == null || sides == null || sides.isEmpty()) return null;
+
+        java.util.Set<java.util.Set<Side>> roads = new java.util.LinkedHashSet<>();
+
+        for (TilePorts.Route route : routes)
+        {
+            if (route.getA() != null && route.getB() != null) roads.add(roadOf(route.getA(), route.getB()));
+        }
+
+        return centreOf(roads, sides, width, height);
+    }
+
+    /**
+     * The middle of the one road among these that ends at every one of the sides, where every road is a curve - two
+     * neighbouring sides - or null.
+     */
+    private static int[] centreOf(java.util.Set<java.util.Set<Side>> roads, List<Side> sides, int width, int height)
+    {
         java.util.Set<Side> found = null;
 
         for (java.util.Set<Side> road : roads)
         {
             // CURVES ONLY: two neighbouring sides, on every road of the tile
-            if (road.size() != 2) return trackCentre(width, height);
+            if (road.size() != 2) return null;
 
             java.util.Iterator<Side> ends = road.iterator();
 
-            if (Math.abs(ends.next().ordinal() - ends.next().ordinal()) == 2) return trackCentre(width, height);
+            if (Math.abs(ends.next().ordinal() - ends.next().ordinal()) == 2) return null;
 
             if (!road.containsAll(sides)) continue;
 
             // more than one road through these sides: not this method's to choose
-            if (found != null) return trackCentre(width, height);
+            if (found != null) return null;
 
             found = road;
         }
 
-        if (found == null) return trackCentre(width, height);
+        if (found == null) return null;
 
         java.util.Iterator<Side> ends = found.iterator();
 
         int[] a = midpoint(ends.next(), width, height);
         int[] b = midpoint(ends.next(), width, height);
 
-        if (a == null || b == null) return trackCentre(width, height);
+        if (a == null || b == null) return null;
 
         return new int[] {(a[0] + b[0]) / 2, (a[1] + b[1]) / 2};
     }

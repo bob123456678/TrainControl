@@ -7,6 +7,7 @@ import java.util.List;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -4538,5 +4539,252 @@ public class testNoSetupEditDuringARun
 
             if (sandbox != null) sandbox.close();
         }
+    }
+
+    /**
+     * No train is sent while the diagram reloads after a page door (RSA23-B1): Duplicate Current Page, Add Blank Page and
+     * Combine Linked Pages hand the reset over to a worker, and a press of Start in between ran the railway built before
+     * the door - the reset at the end then forgot it mid-run, and where the run left the trains was never written.  The
+     * one gate refuses from the door's change until the reset has run, and opens again after.
+     *
+     * MUTATION: leave the refresh out of the gate, count none at the hand-over or none across Combine's worker, and this
+     * fails; never count one down, and its last part fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testNoTrainIsSentWhileAPageDoorReloadsTheDiagram() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final List<String> asked = Collections.synchronizedList(new ArrayList<>());
+        final java.util.concurrent.atomic.AtomicBoolean answering = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        Thread answers = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final java.lang.reflect.Method gate = TrainControlUI.class.getDeclaredMethod("whyNoTrainMayBeSent",
+                boolean.class);
+
+            gate.setAccessible(true);
+
+            final String refreshing = I18n.t("autosetup.ui.errorDiagramRefreshing");
+
+            assertNotEquals(gate.invoke(ui[0], true), refreshing, "precondition: the gate reads a refresh under way at"
+                + " rest");
+
+            // DUPLICATE CURRENT PAGE: the gate asked straight after the door's own work, before its reset
+            final java.lang.reflect.Method duplicate = TrainControlUI.class.getDeclaredMethod(
+                "duplicateOrRenameCurrentLayout", String.class, boolean.class, boolean.class, boolean.class);
+
+            duplicate.setAccessible(true);
+
+            answers = answeringNamesAndYes(asked, answering, "RSA23 combined");
+
+            final Object[] said = new Object[2];
+
+            // AND THE RUN DOORS' LAST EVENT-THREAD QUESTION, which a door clicked after Start's own gate meets
+            final java.lang.reflect.Method atTheLastMoment = TrainControlUI.class.getDeclaredMethod(
+                "refusedForAnEditorOnItsWay");
+
+            atTheLastMoment.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    duplicate.invoke(ui[0], "RSA23 copy", false, true, false);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+
+                // posted behind the door's own work, which hands over to the refresh
+                SwingUtilities.invokeLater(() ->
+                {
+                    try
+                    {
+                        said[0] = gate.invoke(ui[0], true);
+                        said[1] = atTheLastMoment.invoke(ui[0]);
+                    }
+                    catch (ReflectiveOperationException e)
+                    {
+                        said[0] = e;
+                    }
+                });
+            });
+
+            // THE ANSWER POLLED, NOT FLUSHED: the last question's refusal is a modal message, which pumps the flushes behind
+            // it while it waits for its OK
+            long answered = System.currentTimeMillis() + 10000;
+
+            while (said[1] == null && !(said[0] instanceof Exception) && System.currentTimeMillis() < answered)
+            {
+                Thread.sleep(50);
+            }
+
+            assertEquals(said[0], refreshing, "a train could be sent between Duplicate Current Page and the reset its"
+                + " refresh ends in (RSA23-B1)");
+
+            assertEquals(said[1], Boolean.TRUE, "a run door's last question before its dispatch let a train go while the"
+                + " diagram reloaded after Duplicate Current Page (RSA23-B1)");
+
+            assertEquals(asked, java.util.Arrays.asList(refreshing), "precondition: Duplicate Current Page asked something,"
+                + " or the last question did not say why it refused: " + asked);
+
+            asked.clear();
+
+            waitForTheGateToOpen(ui[0], gate, refreshing, "Duplicate Current Page");
+
+            assertTrue(ui[0].getModel().getLayoutList().contains("RSA23 copy"), "precondition: the page was not"
+                + " duplicated");
+
+            // COMBINE LINKED PAGES: its worker writes before it hands over, and the gate refuses from before it starts
+            java.lang.reflect.Field list = TrainControlUI.class.getDeclaredField("LayoutList");
+
+            list.setAccessible(true);
+
+            final javax.swing.JComboBox<?> pages = (javax.swing.JComboBox<?>) list.get(ui[0]);
+
+            SwingUtilities.invokeAndWait(() -> pages.setSelectedItem("1 - Main"));
+
+            final java.lang.reflect.Method combine = TrainControlUI.class.getDeclaredMethod("combineLinkedPages");
+
+            combine.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    combine.invoke(ui[0]);
+
+                    said[0] = gate.invoke(ui[0], true);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            assertEquals(said[0], refreshing, "a train could be sent while Combine Linked Pages wrote the combined page,"
+                + " before the reset its refresh ends in (RSA23-B1): " + asked);
+
+            waitForTheGateToOpen(ui[0], gate, refreshing, "Combine Linked Pages");
+
+            assertTrue(ui[0].getModel().getLayoutList().contains("RSA23 combined"), "precondition: the pages were not"
+                + " combined: " + asked);
+        }
+        finally
+        {
+            answering.set(false);
+
+            if (answers != null) answers.join(5000);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** Waits up to twenty seconds for the gate to stop saying a refresh is under way, and fails where it does not. */
+    private static void waitForTheGateToOpen(TrainControlUI ui, java.lang.reflect.Method gate, String refreshing,
+        String door) throws Exception
+    {
+        final Object[] said = new Object[1];
+
+        long until = System.currentTimeMillis() + 20000;
+
+        do
+        {
+            Thread.sleep(100);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    said[0] = gate.invoke(ui, true);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    said[0] = e;
+                }
+            });
+        }
+        while (refreshing.equals(said[0]) && System.currentTimeMillis() < until);
+
+        assertNotEquals(said[0], refreshing, "the gate still refuses for a refresh long after " + door + "'s had ended -"
+            + " a refresh counted and never counted down (RSA23-B1)");
+    }
+
+    /**
+     * Answers every dialog that comes up: a name asked for with the one given, anything else with its first choice.
+     * What each one said is recorded.
+     */
+    private static Thread answeringNamesAndYes(final List<String> asked,
+        final java.util.concurrent.atomic.AtomicBoolean going, final String name)
+    {
+        Thread answering = new Thread(() ->
+        {
+            java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
+            while (going.get())
+            {
+                try
+                {
+                    Thread.sleep(100);
+                }
+                catch (InterruptedException stop)
+                {
+                    return;
+                }
+
+                for (java.awt.Window w : java.awt.Window.getWindows())
+                {
+                    if (!w.isShowing() || !(w instanceof javax.swing.JDialog)) continue;
+
+                    final javax.swing.JOptionPane pane = findPane(((javax.swing.JDialog) w).getContentPane());
+
+                    if (pane == null || !handled.add(pane)) continue;
+
+                    final boolean wantsName = pane.getWantsInput();
+
+                    if (!wantsName) asked.add(String.valueOf(pane.getMessage()));
+
+                    final Object[] options = pane.getOptions();
+
+                    SwingUtilities.invokeLater(() ->
+                    {
+                        if (wantsName) pane.setInputValue(name);
+
+                        pane.setValue(options != null && options.length > 0 ? options[0]
+                            : Integer.valueOf(javax.swing.JOptionPane.OK_OPTION));
+                    });
+                }
+            }
+        }, "answering names and yes");
+
+        answering.setDaemon(true);
+        answering.start();
+
+        return answering;
     }
 }

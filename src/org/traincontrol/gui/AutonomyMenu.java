@@ -215,7 +215,8 @@ public class AutonomyMenu extends JMenu
      * out the whole menu while running?"*).  Each door still refuses on its own; this says so before the click, as the
      * editor's item has since OB-045.  Autonomy Settings and Documentation stay live: the guide changes nothing, and the
      * settings are shown, their own handlers refusing a change while autonomy is busy (RSA12-C1).  The debug export is
-     * greyed with the rest (Adam, MT-633: "export raw graph as json should also be disabled while running").
+     * greyed with the rest (Adam, MT-633: "export raw graph as json should also be disabled while running") - greyed only: it
+     * writes nothing of the setup, and has no refusal of its own (RSA23-C2).
      *
      * @param documentation the guide's item
      */
@@ -487,9 +488,9 @@ public class AutonomyMenu extends JMenu
             // committed to it. A greyed item says the same thing before, and says it where the eye
             // already is - which is the difference between a rule and an obstacle.
             //
-            // While autonomy runs `guardWhileRunning` greys the rest of the menu with it, bar Autonomy Settings,
-            // Documentation and the debug export (Adam, MT-613 and MT-626); this item asks the editor's own refusals as
-            // well, at rest.
+            // While autonomy runs `guardWhileRunning` greys the rest of the menu with it, bar Autonomy Settings and
+            // Documentation (Adam, MT-613 and MT-626; the debug export too, MT-633); this item asks the editor's own
+            // refusals as well, at rest.
             //
             // UXR-C13: this used to re-derive three of openLayoutEditor's four refusals by hand
             // ("chosen && !trainsMoving"), which covers isLocalLayout/session==null (via chosen) and

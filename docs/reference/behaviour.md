@@ -2565,8 +2565,9 @@ Commands on (Adam: *"auto-enable echo in simulate too"*), saying so where it had
 `regression.testNoSetupEditDuringARun`.
 
 **While autonomy runs the Autonomy menu greys what changes the setup** - the configurations, Manage Configurations, the
-editor and the pages - each saying why; Autonomy Settings, Documentation and the debug export stay live (Adam, MT-613
-and MT-626: *"why not grey out the whole menu while running?"*).  Each door still refuses on its own, and the Auto tab's settings refuse
+editor and the pages - each saying why; Autonomy Settings and Documentation stay live (Adam, MT-613
+and MT-626: *"why not grey out the whole menu while running?"*), and the debug export is greyed with the rest - only
+greyed, as it writes nothing of the setup (MT-633, RSA23-C2).  Each door that changes the setup still refuses on its own, and the Auto tab's settings refuse
 a change while autonomy is busy - Return Home's planning too, before any train moves (RSA12-C1).
 `regression.testNoSetupEditDuringARun.testTheAutonomyMenuIsGreyedWhileAutonomyRuns`.
 
@@ -2622,7 +2623,8 @@ configuration first, as a reload does, so a load after it has the trains where t
 setup edit waits for a load it writes what the railway owns - where the trains stand, and the settings and timetable the
 railway changed - and nothing of the setup's (RLV10-B1, RSA21-C2).  No setup edit is made while trains run (Adam, 2026-09-28): the diagram's setup menu and its Edit
 Locomotive are offered only at rest and refuse, and say so, when clicked after a run has begun; no train is sent - from
-the Auto tab either - while the editor is open; a tail question answered once trains run, and a direction change
+the Auto tab either - while the editor is open, nor while the diagram reloads after a page door - Duplicate, Add Blank
+Page, Rename, Delete, Combine Linked Pages, the editor's Save - until the reset at its end has run (RSA23-B1); a tail question answered once trains run, and a direction change
 followed once they run, write nothing - so during a run an edit waits only where the run began in the moment between an
 edit and its rebuild (RLV11-B1, RLV11-B2, RLV12-B1, RLV12-C3, RLV12-C4); at rest one also waits where an edit leaves the
 setup unable to build - a link unpaired - and the last railway that built stays loaded meanwhile (Adam, 2026-09-28 and

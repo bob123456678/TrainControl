@@ -6608,6 +6608,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // OR ON ITS WAY (RLV13-C2): the editor is built in a posted task, and a send that ran in between passed this
         if (anEditorIsOpenOrOnItsWay()) return I18n.t("autosetup.ui.menuEditorOpen");
 
+        // NOR WHILE THE DIAGRAM RELOADS AFTER A PAGE DOOR (RSA23-B1): the reset at its end forgot a run started meanwhile
+        if (refreshesUnderWay.get() > 0) return I18n.t("autosetup.ui.errorDiagramRefreshing");
+
         String broken = startingAutonomy ? whyAutonomyStartIsRefused() : whyAHandSendIsRefused();
 
         if (broken != null) return broken;
@@ -6688,14 +6691,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Refuses to dispatch where an editor has come since the door's click, and says so - asked by the run doors at their
-     * last event-thread moment before the dispatch, which runs after anything the event thread took in between
-     * (RLV13-C2).  On the event thread.
+     * Refuses to dispatch where an editor has come since the door's click, or a refresh of the diagram (RSA23-B1), and says
+     * so - asked by the run doors at their last event-thread moment before the dispatch, which runs after anything the
+     * event thread took in between (RLV13-C2).  On the event thread.
      *
      * @return true when the door must not dispatch
      */
     boolean refusedForAnEditorOnItsWay()
     {
+        if (refreshesUnderWay.get() > 0)
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorDiagramRefreshing"));
+
+            return true;
+        }
+
         if (!anEditorIsOpenOrOnItsWay()) return false;
 
         JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.menuEditorOpen"));
@@ -7678,6 +7688,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * it - which is the same reason the editor has to be handed this window rather than looking it up.
      */
     private LayoutEditor openEditor;
+
+    /**
+     * Refreshes of the diagram under way - from a page door's hand-over to `layoutEditingComplete` until its event-thread
+     * half has reset the session and loaded the configuration again (RSA23-B1).  Read by the one gate: a run started in
+     * between ran the railway built before the door, the reset then forgot it mid-run, and where the run left the trains
+     * was never written.  A count, because Combine Linked Pages holds one of its own across the worker it writes on.
+     */
+    private final java.util.concurrent.atomic.AtomicInteger refreshesUnderWay = new java.util.concurrent.atomic.AtomicInteger();
 
     /**
      * An editor asked for and not yet shown - from the request until its posted build has shown the window, or refused, or
@@ -24336,7 +24354,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // something legitimate, and none of them is entitled to decide what the user is looking at.
         final int wasOn = this.KeyboardTab.getSelectedIndex();
 
-        new Thread(() ->
+        Thread refresh = new Thread(() ->
         {
             // POSTED WHATEVER HAPPENS (SVN-A3).
             //
@@ -24368,7 +24386,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                 });
             }
-        }).start();
+        });
+
+        // UNDER WAY UNTIL ITS EVENT-THREAD HALF HAS RUN (RSA23-B1): no train is sent meanwhile - see `refreshesUnderWay`
+        refreshesUnderWay.incrementAndGet();
+
+        try
+        {
+            refresh.start();
+        }
+        catch (RuntimeException | Error notStarted)
+        {
+            refreshesUnderWay.decrementAndGet();
+
+            throw notStarted;
+        }
     }
 
     /**
@@ -24390,7 +24422,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // the continuation at once: the editor's `arriveAt` was queued on the EDT before this
             // method was queued at all, so the refresh became the LAST writer and its
             // `setEditLayoutEnabled(true)` lit the Edit Layout button with the editor still open.
-            if (after != null) after.run();
+            try
+            {
+                if (after != null) after.run();
+            }
+            finally
+            {
+                // AND THE REFRESH NO LONGER UNDER WAY (RSA23-B1), whatever happened before it
+                refreshesUnderWay.updateAndGet(n -> Math.max(0, n - 1));
+            }
         }
     }
 
@@ -26651,7 +26691,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
-        // On a worker, because it parses every page of the layout twice over.
+        // On a worker, because it parses every page of the layout twice over.  AND A REFRESH UNDER WAY FROM HERE (RSA23-B1):
+        // the worker writes the page, the index and the setup before it hands over to `layoutEditingComplete`, and a run
+        // started meanwhile ran the railway from before and was forgotten by the reset at the end
+        refreshesUnderWay.incrementAndGet();
+
         new Thread(() ->
         {
             try
@@ -26729,6 +26773,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 javax.swing.SwingUtilities.invokeLater(() ->
                     JOptionPane.showMessageDialog(this,
                         I18n.f("layout.ui.errorSavingLayoutWithMessage", ex.getMessage())));
+            }
+            finally
+            {
+                // Posted after the hand-over above, so `layoutEditingComplete` has counted its own before this one goes
+                javax.swing.SwingUtilities.invokeLater(() -> refreshesUnderWay.updateAndGet(n -> Math.max(0, n - 1)));
             }
         }).start();
     }

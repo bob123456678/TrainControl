@@ -1462,7 +1462,20 @@ public final class LayoutLabel extends JLabel
 
         autonomyAnnotation = effective;
 
-        this.repaint();
+        // AND THE TILES AROUND IT WHERE A TRAIN STANDS (RSA23-C1): the annotation can say where the icon goes, and the
+        // icon reaches past this tile - repainting it alone left the old icon's reach on the neighbours
+        java.awt.Container around = getParent();
+
+        TileOverlay train = autonomyOverlay;
+
+        if (around != null && train != null && train.hasTrain())
+        {
+            around.repaint(getX() - getWidth(), getY() - getHeight(), 3 * getWidth(), 3 * getHeight());
+        }
+        else
+        {
+            this.repaint();
+        }
     }
 
     /**
@@ -1943,13 +1956,43 @@ public final class LayoutLabel extends JLabel
         {
             g2.translate(getX(), getY());
 
-            overlay.paintTrain(g2, getWidth(), getHeight(),
-                annotation == null ? null : annotation.trackCentreOf(overlay.trainSides(), getWidth(), getHeight()));
+            overlay.paintTrain(g2, getWidth(), getHeight(), theTrainsRoadCentre(overlay, annotation));
         }
         finally
         {
             g2.dispose();
         }
+    }
+
+    /**
+     * The middle of the train's own road on this square, for its icon (MT-642): from the square's own ports - its track
+     * type and orientation - on a curve or a double curve (RSA23-C1), since the autonomy annotation knows the roads only
+     * while the restriction arrows are shown, and a station's first road otherwise; from the annotation anywhere else,
+     * and where the square has no track of its own to ask.
+     *
+     * @param overlay the overlay with the train
+     * @param annotation the square's annotation, or null
+     * @return x and y within the square, or null where nothing says
+     */
+    private int[] theTrainsRoadCentre(TileOverlay overlay, org.traincontrol.automationui.TileAnnotation annotation)
+    {
+        if (component != null)
+        {
+            try
+            {
+                int[] own = org.traincontrol.automationui.TileAnnotation.trackCentreOf(
+                    org.traincontrol.automationui.TilePorts.ports(component.getType(), component.getOrientation(), 0),
+                    overlay.trainSides(), getWidth(), getHeight());
+
+                if (own != null) return own;
+            }
+            catch (RuntimeException noPorts)
+            {
+                // a square with no track of its own: the annotation says
+            }
+        }
+
+        return annotation == null ? null : annotation.trackCentreOf(overlay.trainSides(), getWidth(), getHeight());
     }
 
 
