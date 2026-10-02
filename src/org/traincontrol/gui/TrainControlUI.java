@@ -4644,6 +4644,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.refreshReturnHomeButton();
         this.executeTimetable.setEnabled(true);
         this.gracefulStop.setEnabled(false);
+
+        // greyed again if the trains still run
+        refreshWhatWaitsForTheTrains();
     }
 
     /**
@@ -12807,14 +12810,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (at < 0 || at >= ROUTING_ORDER.length)
         {
-            algorithmType.setToolTipText(general);
+            setToolTipAtRest(algorithmType, general);
 
             return;
         }
 
         // HTML so the two paragraphs wrap rather than running off the screen.  Both come from the
         // bundle and neither carries markup, so nothing here can be broken by a translation.
-        algorithmType.setToolTipText("<html><p width=\"420\">" + general + "<br><br>"
+        setToolTipAtRest(algorithmType, "<html><p width=\"420\">" + general + "<br><br>"
             + I18n.t("autolayout.ui.tooltip.pathPreference" + ROUTING_ORDER[at].name())
             + "</p></html>");
     }
@@ -24971,6 +24974,103 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Greys what waits for the trains to stop, saying why on each (Adam, 2026-10-02: "Implement the two grey usability
+     * fixes"): the Auto tab's settings, Execute Timetable and the capture toggle beside it, with "Activate Routes" and its
+     * list (UXR-B3).  Each handler already refused while autonomy was busy - a slider moved and a dialog snapped it back,
+     * Execute Timetable answered "Please wait for all active locomotives to stop" - but refusing is not the same as not
+     * offering (OB-101).  The tooltip of a greyed control says why, and its own comes back with it.
+     *
+     * Busy is the railway's `isAutonomyBusy`, or Graceful Stop offered: Start and Execute Timetable hand their run to a
+     * thread of its own, and the button says a run is on before the railway counts it.  Called where that changes - every
+     * departure and arrival (`repaintAutoLocListLite`), a placement (`repaintAutoLocListFull`), a configuration loading, and
+     * the start and end of a run, a timetable run, a Graceful Stop and Return Home.
+     */
+    private void refreshWhatWaitsForTheTrains()
+    {
+        // the window can still be being built
+        if (this.executeTimetable == null) return;
+
+        refreshActivateRoutesControls();
+
+        boolean busy = this.isAutonomyBusy() || (this.gracefulStop != null && this.gracefulStop.isEnabled());
+
+        String why = I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
+
+        for (javax.swing.JComponent waits : new javax.swing.JComponent[] {
+            this.minDelay, this.maxDelay, this.maxLocInactiveSeconds, this.defaultLocSpeed, this.preArrivalSpeedReduction,
+            this.maxActiveTrains, this.maximumLatency, this.atomicRoutes, this.turnOffFunctionsOnArrival,
+            this.turnOnFunctionsOnDeparture, this.simulate, this.algorithmType, this.executeTimetable, this.timetableCapture})
+        {
+            greyWhileTheTrainsRun(waits, busy, why);
+        }
+    }
+
+    /**
+     * The client property a control greyed by `refreshWhatWaitsForTheTrains` keeps its own tooltip in, wrapped in a
+     * one-element array so a control with none can be told from one not greyed.
+     */
+    private static final String TOOLTIP_AT_REST = "TrainControl.tooltipAtRest";
+
+    /**
+     * Greys one control while the trains run, or gives it back.  TAKES BACK ONLY WHAT IT GREYED: Execute Timetable and the
+     * capture toggle are also greyed by their own run and by Return Home, which give them back themselves - a refresh
+     * landing between Execute Timetable's press and its run being counted must not offer it a second time.
+     *
+     * @param control the control
+     * @param busy whether the trains run
+     * @param why what its tooltip says while it is greyed
+     */
+    private static void greyWhileTheTrainsRun(javax.swing.JComponent control, boolean busy, String why)
+    {
+        if (control == null) return;
+
+        Object atRest = control.getClientProperty(TOOLTIP_AT_REST);
+
+        if (busy)
+        {
+            // greyed already - by this, or by its owner, who gives it back
+            if (!control.isEnabled()) return;
+
+            if (atRest == null) control.putClientProperty(TOOLTIP_AT_REST, new String[] {control.getToolTipText()});
+
+            control.setToolTipText(why);
+            control.setEnabled(false);
+        }
+        else if (atRest != null)
+        {
+            control.putClientProperty(TOOLTIP_AT_REST, null);
+            control.setToolTipText(((String[]) atRest)[0]);
+            control.setEnabled(true);
+        }
+    }
+
+    /**
+     * Sets a control's own tooltip: straight onto it, or, while `refreshWhatWaitsForTheTrains` has it greyed and saying
+     * why, into the one it gets back - the routing rule's tooltip follows its selection, which a load can set mid-run.
+     *
+     * @param control the control
+     * @param text its tooltip
+     */
+    private static void setToolTipAtRest(javax.swing.JComponent control, String text)
+    {
+        if (control.getClientProperty(TOOLTIP_AT_REST) != null) control.putClientProperty(TOOLTIP_AT_REST, new String[] {text});
+        else control.setToolTipText(text);
+    }
+
+    /**
+     * Whether a click landed on a control greyed while the trains run.  A greyed Swing control still tells its mouse
+     * listeners, and the Auto tab's settings listen for the mouse rather than for an action - so without this a click on
+     * a greyed slider still put up the refusal its grey already says.
+     *
+     * @param evt the click, or null when a handler is called directly
+     * @return true when the control it landed on is greyed
+     */
+    private static boolean onAGreyedControl(java.awt.event.MouseEvent evt)
+    {
+        return evt != null && evt.getComponent() != null && !evt.getComponent().isEnabled();
+    }
+
+    /**
      * Called externally
      * @throws Exception 
      */
@@ -25302,6 +25402,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // the fix was to make the affordance agree with the guard rather than to add a guard.
         this.timetableCapture.setEnabled(false);
 
+        // and the settings, which wait for the trains as these do
+        refreshWhatWaitsForTheTrains();
+
         // THE STOPS COUNTED AT THE PRESS (RSA2-C1): the plan runs with them, so the reload's Yes while it is worked out
         // - nothing yet moving - is answered by starting nothing, whether the load that asked it succeeds or not
         final int stopsAtPress = layout.stopsOrdered();
@@ -25445,6 +25548,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     // In the finally with its siblings: a toggle that never comes back needs a
                     // restart to recover, which is worse than the state it was guarding against.
                     this.timetableCapture.setEnabled(true);
+
+                    refreshWhatWaitsForTheTrains();
                 });
 
                 // Off the EDT for the same reason as the pre-run repaint above: a path abandoned or
@@ -27756,6 +27861,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_editAutonomyFromSettingsActionPerformed
 
     private void autoRouteListMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_autoRouteListMouseReleased
+        if (onAGreyedControl(evt)) return;
+
 
         javax.swing.SwingUtilities.invokeLater(() ->
             {
@@ -27786,6 +27893,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_autoRouteListMouseReleased
 
     private void toggleSpecifiedRoutesMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_toggleSpecifiedRoutesMouseReleased
+        if (onAGreyedControl(evt)) return;
+
         javax.swing.SwingUtilities.invokeLater(() ->
             {
                 if (this.isAutonomyBusy())
@@ -27805,6 +27914,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_toggleSpecifiedRoutesMouseReleased
 
     private void maxActiveTrainsMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxActiveTrainsMouseReleased
+        if (onAGreyedControl(evt)) return;
+
         if (!this.isAutoLayoutRunning())
         {
             try
@@ -27820,6 +27931,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_maxActiveTrainsMouseReleased
 
     private void maximumLatencyMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maximumLatencyMouseReleased
+        if (onAGreyedControl(evt)) return;
+
 
         if (!this.isAutoLayoutRunning())
         {
@@ -27837,6 +27950,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_maximumLatencyMouseReleased
 
     private void turnOnFunctionsOnDepartureMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_turnOnFunctionsOnDepartureMouseReleased
+        if (onAGreyedControl(evt)) return;
+
         if (!this.isAutoLayoutRunning())
         {
             try
@@ -27852,6 +27967,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_turnOnFunctionsOnDepartureMouseReleased
 
     private void simulateMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_simulateMouseReleased
+        if (onAGreyedControl(evt)) return;
+
         if (!this.isAutoLayoutRunning())
         {
             try
@@ -27867,6 +27984,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_simulateMouseReleased
 
     private void turnOffFunctionsOnArrivalMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_turnOffFunctionsOnArrivalMouseReleased
+        if (onAGreyedControl(evt)) return;
+
         if (!this.isAutoLayoutRunning())
         {
             try
@@ -27882,6 +28001,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_turnOffFunctionsOnArrivalMouseReleased
 
     private void atomicRoutesMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_atomicRoutesMouseReleased
+        if (onAGreyedControl(evt)) return;
+
         if (!this.isAutoLayoutRunning())
         {
             try
@@ -27915,6 +28036,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_atomicRoutesMouseReleased
 
     private void preArrivalSpeedReductionMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_preArrivalSpeedReductionMouseReleased
+        if (onAGreyedControl(evt)) return;
+
         if (!this.isAutoLayoutRunning())
         {
             try
@@ -27930,6 +28053,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_preArrivalSpeedReductionMouseReleased
 
     private void defaultLocSpeedMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_defaultLocSpeedMouseReleased
+        if (onAGreyedControl(evt)) return;
+
         if (!this.isAutoLayoutRunning())
         {
             try
@@ -27945,6 +28070,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_defaultLocSpeedMouseReleased
 
     private void maxDelayMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxDelayMouseReleased
+        if (onAGreyedControl(evt)) return;
+
         if (!this.isAutoLayoutRunning())
         {
             try
@@ -27960,6 +28087,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_maxDelayMouseReleased
 
     private void maxLocInactiveSecondsMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxLocInactiveSecondsMouseReleased
+        if (onAGreyedControl(evt)) return;
+
         if (!this.isAutoLayoutRunning())
         {
             try
@@ -27975,6 +28104,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_maxLocInactiveSecondsMouseReleased
 
     private void minDelayMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_minDelayMouseReleased
+        if (onAGreyedControl(evt)) return;
+
         if (!this.isAutoLayoutRunning())
         {
             try
@@ -28196,10 +28327,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                                 // Same gap as the staging run had: nothing turned this off once the trains stopped
                                 this.gracefulStop.setEnabled(false);
+
+                                refreshWhatWaitsForTheTrains();
                             });
                         }).start();
 
                         this.gracefulStop.setEnabled(true);
+
+                        // greyed with Graceful Stop offered, before the timetable's thread is counted
+                        refreshWhatWaitsForTheTrains();
                     });
     }//GEN-LAST:event_executeTimetableActionPerformed
 
@@ -28358,6 +28494,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 {
                                     this.startAutonomy.setEnabled(false);
                                     this.gracefulStop.setEnabled(true);
+
+                                    // greyed with Graceful Stop offered, before the run's thread is counted
+                                    refreshWhatWaitsForTheTrains();
                                 });
 
                                 // Not refreshReturnHomeButton(): runLocomotives was just dispatched to its own
@@ -28421,7 +28560,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (stopping == null)
                 {
-                    javax.swing.SwingUtilities.invokeLater(() -> this.startAutonomy.setEnabled(true));
+                    javax.swing.SwingUtilities.invokeLater(() ->
+                    {
+                        this.startAutonomy.setEnabled(true);
+
+                        refreshWhatWaitsForTheTrains();
+                    });
 
                     return;
                 }
@@ -28457,7 +28601,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                 }
 
-                javax.swing.SwingUtilities.invokeLater(() -> this.startAutonomy.setEnabled(true));
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    this.startAutonomy.setEnabled(true);
+
+                    // the trains have stopped: what waited for them is offered again
+                    refreshWhatWaitsForTheTrains();
+                });
             }).start();
     }//GEN-LAST:event_gracefulStopActionPerformed
 
@@ -30656,10 +30806,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // staleness from arrivals onto placements instead of removing it.
             this.refreshReturnHomeButton();
 
-            // Same reasoning, for "Activate Routes" (UXR-B3): isAutonomyBusy can turn false on its
-            // own the moment the last active locomotive arrives, with neither the checkbox nor the
-            // list having been touched, and this is the refresh that already runs at that moment.
-            refreshActivateRoutesControls();
+            // Same reasoning, for "Activate Routes" (UXR-B3) and the rest of what waits for the trains: isAutonomyBusy
+            // can turn false on its own the moment the last active locomotive arrives, with none of them having been
+            // touched, and this is the refresh that already runs at that moment.
+            refreshWhatWaitsForTheTrains();
 
             // Which panels there are is read HERE, on the EDT, because the component list belongs to
             // Swing.  What goes in them is worked out somewhere else.
@@ -30728,6 +30878,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // The other terminal path.  Every placement and removal call site reaches the button
             // through here, not through Lite.
             this.refreshReturnHomeButton();
+
+            // and what waits for the trains, which Lite refreshes beside it
+            refreshWhatWaitsForTheTrains();
 
             // ASKED ONCE, NOT BUILT (RLV11-C5): posted by callers that asked first, and it can land after Unload
             final Layout shown = this.model.getAutoLayoutIfLoaded();

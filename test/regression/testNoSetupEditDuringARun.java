@@ -5042,4 +5042,359 @@ public class testNoSetupEditDuringARun
             if (sandbox != null) sandbox.close();
         }
     }
+
+    /**
+     * The Auto tab's settings, Execute Timetable and the capture toggle are greyed while autonomy is busy, each saying why,
+     * and given back with their own tooltips once it is not (Adam, 2026-10-02: "Implement the two grey usability fixes").
+     * Each handler refused while busy - a slider moved and a dialog snapped it back - but offered first.  A click on a
+     * greyed setting says nothing: its handler listens for the mouse, which a greyed control still hears.  Graceful Stop
+     * offered counts as busy, as Start leaves it before its run is counted; and what Execute Timetable's own press greyed
+     * is not given back by the refresh.
+     *
+     * MUTATION: grey nothing, leave the tooltips, put the refusal up on a greyed click, ask the railway alone, or give back
+     * what another owner greyed, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheAutoTabIsGreyedWhileAutonomyIsBusy() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        java.lang.reflect.Field staging = TrainControlUI.class.getDeclaredField("stagingFlowActive");
+
+        staging.setAccessible(true);
+
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
+
+            assertFalse(railway.isRunning(), "precondition: the railway runs");
+
+            final String why = I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
+
+            final java.util.Map<String, String> atRest = new java.util.LinkedHashMap<>();
+
+            for (String name : WAITING_FOR_THE_TRAINS)
+            {
+                javax.swing.JComponent c = control(ui[0], name);
+
+                assertTrue(c.isEnabled(), "precondition: " + name + " is greyed at rest");
+
+                atRest.put(name, c.getToolTipText());
+            }
+
+            // AUTONOMY BUSY, as Return Home's planning leaves it, nothing moving
+            staging.set(ui[0], true);
+
+            refreshWhatWaits(ui[0]);
+
+            for (String name : WAITING_FOR_THE_TRAINS)
+            {
+                javax.swing.JComponent c = control(ui[0], name);
+
+                assertFalse(c.isEnabled(), name + " is offered while autonomy is busy");
+
+                assertEquals(c.getToolTipText(), why, name + " does not say why it is greyed");
+            }
+
+            // THE ROUTING RULE'S TOOLTIP, set again while greyed, as a load sets it: still says why
+            final java.lang.reflect.Method rule = TrainControlUI.class.getDeclaredMethod("refreshRoutingLogicTooltip");
+
+            rule.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    rule.invoke(ui[0]);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            assertEquals(control(ui[0], "algorithmType").getToolTipText(), why, "the routing rule's tooltip, set again"
+                + " while it is greyed, stopped saying why");
+
+            // A CLICK ON A GREYED SETTING, through its own listeners: nothing said, nothing written
+            final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
+
+            closingEveryQuestion(asked, new ArrayList<String>(), going);
+
+            final javax.swing.JSlider trains = (javax.swing.JSlider) control(ui[0], "maxActiveTrains");
+
+            final int was = railway.getMaxActiveTrains();
+
+            SwingUtilities.invokeAndWait(() -> trains.dispatchEvent(new java.awt.event.MouseEvent(trains,
+                java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), 0, 5, 5, 1, false,
+                java.awt.event.MouseEvent.BUTTON1)));
+
+            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            // the watcher looks every 150 ms
+            Thread.sleep(500);
+
+            assertTrue(asked.isEmpty(), "a click on a greyed setting put up a dialog: " + asked);
+
+            assertEquals(railway.getMaxActiveTrains(), was, "a click on a greyed setting wrote it");
+
+            // AT REST AGAIN: each given back, with its own tooltip
+            staging.set(ui[0], false);
+
+            refreshWhatWaits(ui[0]);
+
+            for (String name : WAITING_FOR_THE_TRAINS)
+            {
+                javax.swing.JComponent c = control(ui[0], name);
+
+                assertTrue(c.isEnabled(), name + " is still greyed once autonomy is not busy");
+
+                assertEquals(c.getToolTipText(), atRest.get(name), name + " did not get its own tooltip back");
+            }
+
+            // GRACEFUL STOP OFFERED, as Start leaves it before the railway counts the run
+            final javax.swing.JComponent stop = control(ui[0], "gracefulStop");
+
+            SwingUtilities.invokeAndWait(() -> stop.setEnabled(true));
+
+            refreshWhatWaits(ui[0]);
+
+            assertFalse(control(ui[0], "minDelay").isEnabled(), "the settings are offered while Graceful Stop is, before"
+                + " the railway counts the run");
+
+            SwingUtilities.invokeAndWait(() -> stop.setEnabled(false));
+
+            refreshWhatWaits(ui[0]);
+
+            assertTrue(control(ui[0], "minDelay").isEnabled(), "precondition: the settings are not given back once Graceful"
+                + " Stop is not offered");
+
+            // WHAT EXECUTE TIMETABLE'S OWN PRESS GREYED, before its run is counted: not given back
+            final javax.swing.JComponent timetable = control(ui[0], "executeTimetable");
+
+            SwingUtilities.invokeAndWait(() -> timetable.setEnabled(false));
+
+            refreshWhatWaits(ui[0]);
+
+            assertFalse(timetable.isEnabled(), "the refresh offered Execute Timetable again between its press and its run"
+                + " being counted");
+
+            SwingUtilities.invokeAndWait(() -> timetable.setEnabled(true));
+        }
+        finally
+        {
+            going.set(false);
+
+            if (ui[0] != null) staging.set(ui[0], false);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * A run started with Start Autonomy greys what waits for the trains, and its Graceful Stop gives it back once the
+     * trains have stopped (Adam, 2026-10-02: "Implement the two grey usability fixes") - the refreshes at each end of a
+     * real run, not only the rule.
+     *
+     * MUTATION: grey nothing, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testARunGreysTheAutoTabAndItsStopGivesItBack() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        boolean echoWas = org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            // THE POWER ON, which the gate asks
+            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
+
+            ui[0].getModel().go();
+
+            long until = System.currentTimeMillis() + 5000;
+
+            while (!ui[0].getModel().getPowerState() && System.currentTimeMillis() < until) Thread.sleep(50);
+
+            assertTrue(ui[0].getModel().getPowerState(), "precondition: the power is not on");
+
+            final String why = I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
+
+            final java.util.Map<String, String> atRest = new java.util.LinkedHashMap<>();
+
+            for (String name : WAITING_FOR_THE_TRAINS) atRest.put(name, control(ui[0], name).getToolTipText());
+
+            // START AUTONOMY, through its own handler
+            final java.lang.reflect.Method start =
+                TrainControlUI.class.getDeclaredMethod("startAutonomyActionPerformed", java.awt.event.ActionEvent.class);
+
+            start.setAccessible(true);
+
+            answeringYes(() ->
+            {
+                try
+                {
+                    start.invoke(ui[0], new Object[] {null});
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            final javax.swing.JComponent stop = control(ui[0], "gracefulStop");
+
+            until = System.currentTimeMillis() + 10000;
+
+            while (!stop.isEnabled() && System.currentTimeMillis() < until) Thread.sleep(50);
+
+            assertTrue(stop.isEnabled(), "precondition: the run did not start - Graceful Stop is not offered");
+
+            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            for (String name : WAITING_FOR_THE_TRAINS)
+            {
+                javax.swing.JComponent c = control(ui[0], name);
+
+                assertFalse(c.isEnabled(), name + " is offered while autonomy runs");
+
+                assertEquals(c.getToolTipText(), why, name + " does not say why it is greyed while autonomy runs");
+            }
+
+            // GRACEFUL STOP, through its own handler, and the trains left to stop
+            final java.lang.reflect.Method graceful =
+                TrainControlUI.class.getDeclaredMethod("gracefulStopActionPerformed", java.awt.event.ActionEvent.class);
+
+            graceful.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    graceful.invoke(ui[0], new Object[] {null});
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            final javax.swing.JComponent startButton = control(ui[0], "startAutonomy");
+
+            until = System.currentTimeMillis() + 180000;
+
+            while (!startButton.isEnabled() && System.currentTimeMillis() < until) Thread.sleep(100);
+
+            assertTrue(startButton.isEnabled(), "precondition: the trains did not stop within three minutes of Graceful Stop");
+
+            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            for (String name : WAITING_FOR_THE_TRAINS)
+            {
+                javax.swing.JComponent c = control(ui[0], name);
+
+                assertTrue(c.isEnabled(), name + " is still greyed after Graceful Stop stopped the trains");
+
+                assertEquals(c.getToolTipText(), atRest.get(name), name + " did not get its own tooltip back after the run");
+            }
+        }
+        finally
+        {
+            if (ui[0] != null && ui[0].getModel().hasAutoLayout()) ui[0].getModel().getAutoLayout().stopLocomotives();
+
+            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = echoWas;
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** What waits for the trains on the Auto tab: its settings, Execute Timetable and the capture toggle. */
+    private static final String[] WAITING_FOR_THE_TRAINS = {"minDelay", "maxDelay", "maxLocInactiveSeconds",
+        "defaultLocSpeed", "preArrivalSpeedReduction", "maxActiveTrains", "maximumLatency", "atomicRoutes",
+        "turnOffFunctionsOnArrival", "turnOnFunctionsOnDeparture", "simulate", "algorithmType", "executeTimetable",
+        "timetableCapture"};
+
+    /**
+     * @param ui the window
+     * @param name one of its controls
+     * @return that control
+     * @throws ReflectiveOperationException if it has none of that name
+     */
+    private static javax.swing.JComponent control(TrainControlUI ui, String name) throws ReflectiveOperationException
+    {
+        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField(name);
+
+        field.setAccessible(true);
+
+        return (javax.swing.JComponent) field.get(ui);
+    }
+
+    /**
+     * Runs the window's `refreshWhatWaitsForTheTrains` on the event thread.
+     *
+     * @param ui the window
+     * @throws Exception from the refresh
+     */
+    private static void refreshWhatWaits(final TrainControlUI ui) throws Exception
+    {
+        final java.lang.reflect.Method refresh = TrainControlUI.class.getDeclaredMethod("refreshWhatWaitsForTheTrains");
+
+        refresh.setAccessible(true);
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                refresh.invoke(ui);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+    }
 }
