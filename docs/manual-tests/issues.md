@@ -1410,6 +1410,15 @@ layouts -> open layout should default to the last used local layout folder.  thi
 
 when a page is excluded in the autonomy editor, also disable/grey out the auto/manual radio buttons (currently only the why isn't it moving and test path buttons are greyed)
 
+### FR-106 - 2026-10-02 - show train tail when moving
+
+**Kind:** feature request  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-02 07:22  
+**Build:** commit 5d84aec7, in English - build\classes, compiled 02 Oct 07:18 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+right now, when autonomy is moving, we have a green coloring for completed paths and red for pending.  but the train tails aren't shown.  make the tail visible at all times.  advise if there are clearer colors than green and red for the paths that would make the layout look more professional.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

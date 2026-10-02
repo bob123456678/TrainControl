@@ -27,11 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-633](#mt-633) | 2026-09-30 | The Autonomy menu greys while autonomy runs, saying why | fixed unvalidated | MT-613 |
-| [MT-642](#mt-642) | 2026-10-01 | A train standing on a station shows the locomotive icon there | fixed unvalidated | Adam 2026-10-01 |
 
-Everything else - 640 of 642 - needs nothing from you unless the area changes again:
-500 **fixed validated** and 140 **superseded**.
+
+Everything else - 642 of 642 - needs nothing from you unless the area changes again:
+502 **fixed validated** and 140 **superseded**.
 
 ---
 
@@ -30693,7 +30692,7 @@ Superseded in round 34 (36ebaeb8): with nothing refused under a train, a click o
 
 ### MT-633 - 2026-09-30 - The Autonomy menu greys while autonomy runs, saying why
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-613
 
 **Written:** 2026-09-30
@@ -30723,6 +30722,14 @@ More or less, but "export raw graph as json" should also be disabled while runni
 **Claude, 2026-10-02.**
 
 Your note is built in 2bf00830: Export Raw Graph as JSON (it shows when Debug is on) is greyed with the rest of the Autonomy menu while autonomy runs.  Please check the menu again during a run.
+
+**Adam, 2026-10-02 (triage).** Works.
+
+*Run against commit 5d84aec7, in English - build\classes, compiled 02 Oct 07:18 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Validated on your *Works* of 2026-10-02.
 
 ---
 
@@ -31013,7 +31020,7 @@ Validated on your *Works* of 2026-10-01.
 
 ### MT-642 - 2026-10-01 - A train standing on a station shows the locomotive icon there
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-01
 
 **Written:** 2026-10-01
@@ -31046,5 +31053,13 @@ Works on straight tiles, but the front of the locomotive is cut off on curved ti
 **Claude, 2026-10-02.**
 
 Fixed in 2bf00830 as you chose (option C of the three drawn for you): on a curve the icon runs along the rail at the size a straight gives it, its front the way the train goes and its roof never pointing down, and reaches onto the next tiles - no icon is clipped to its tile any more.  On a double curve it sits on the train's own road.  A test checks every orientation of curve and double curve, both roads and both ways, parked, running through, arriving and departing, on 30 and 60 pixel tiles.  Please run this again on a straight and on a curve, and on a double curve if your railway has one.
+
+**Adam, 2026-10-02 (triage).** Works.
+
+*Run against commit 5d84aec7, in English - build\classes, compiled 02 Oct 07:18 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Validated on your *Works* of 2026-10-02.
 
 ---
