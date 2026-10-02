@@ -30720,6 +30720,10 @@ More or less, but "export raw graph as json" should also be disabled while runni
 
 *Run against commit 5d84aec7, in English - build\classes, compiled 01 Oct 23:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-10-02.**
+
+Your note is built in 2bf00830: Export Raw Graph as JSON (it shows when Debug is on) is greyed with the rest of the Autonomy menu while autonomy runs.  Please check the menu again during a run.
+
 ---
 
 <a id="mt-634"></a>
@@ -31038,5 +31042,9 @@ Since round 35 (1134a8e9) the icon is not drawn on the sensors of a route while 
 Works on straight tiles, but the front of the locomotive is cut off on curved tiles.  Rotate the icon to match the angle of the tile so it fits.
 
 *Run against commit 5d84aec7, in English - build\classes, compiled 01 Oct 23:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Fixed in 2bf00830 as you chose (option C of the three drawn for you): on a curve the icon runs along the rail at the size a straight gives it, its front the way the train goes and its roof never pointing down, and reaches onto the next tiles - no icon is clipped to its tile any more.  On a double curve it sits on the train's own road.  A test checks every orientation of curve and double curve, both roads and both ways, parked, running through, arriving and departing, on 30 and 60 pixel tiles.  Please run this again on a straight and on a curve, and on a double curve if your railway has one.
 
 ---
