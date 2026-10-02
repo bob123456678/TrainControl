@@ -263,6 +263,14 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "ON THE EVENT THREAD: a setup rebuild puts every placement back into the layout it has just"
             + " built, and that layout is not the one anything else holds yet");
 
+        ALLOWED.put("TrainControlUI.java#noteTheRailwaysSettingsAsBuilt",
+            "ON THE EVENT THREAD: reading the railway just built, at the end of its load, before anything runs on it"
+            + " (RSA20-B1)");
+
+        ALLOWED.put("TrainControlUI.java#rebuildRunningLayoutFromSetup",
+            "ON THE EVENT THREAD: reading the railway's settings at rest, before the rebuild a setup gesture asked for -"
+            + " refused while autonomy is busy, as the rebuild is (RSA20-B1)");
+
         ALLOWED.put("TrainControlUI.java#recordTheTrainsNotPutBack",
             "ON THE EVENT THREAD: the put-back's own step (RSA17-A1), over the layout the rebuild has just built and"
             + " nothing else holds yet, as putTheTrainsBack");

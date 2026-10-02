@@ -406,13 +406,6 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
             carry.setAccessible(true);
 
-            // ITS OWN ANSWER TOO (RSA19-B1): the setup newer than the railway its load left - lowered first, so this asks
-            // the carry alone
-            final Field newer = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-            newer.setAccessible(true);
-            newer.setBoolean(ui, false);
-
             SwingUtilities.invokeAndWait(() ->
             {
                 try
@@ -439,9 +432,6 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
             assertTrue(stillOnIt, train + " was taken off the railway by carryTheTrainsAcross, whose load left it as it"
                 + " was (RSA18-A1)");
-
-            assertTrue(newer.getBoolean(ui), "carryTheTrainsAcross, its load declined, left the setup unmarked as newer"
-                + " than the railway, so the next fold takes the edit away (RSA19-B1)");
         }
         finally
         {
@@ -583,6 +573,43 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
             assertSame(model.getAutoLayout(), railway, "precondition: the load was not declined, so this is not the case");
 
+            // THE RUN'S RESULT, on the railway alone: a train moved, and a setting the Auto tab writes to the railway
+            final String train = model.getLocList().get(0);
+
+            String to = null;
+
+            for (org.traincontrol.automation.Point point : railway.getPoints())
+            {
+                if (to == null && point.isDestination() && point.getCurrentLocomotive() == null && point.getSquare() != null
+                    && !"1 - Main:22,6".equals(point.getSquare()))
+                {
+                    to = point.getName();
+                }
+            }
+
+            assertNotNull(to, "precondition: no free station on the railway");
+
+            final String toName = to;
+            final String toSquare = railway.getPoint(to).getSquare();
+            final int delayWas = railway.getMaxDelay();
+            final boolean[] moved = new boolean[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                moved[0] = railway.moveLocomotive(train, toName, false, true);
+
+                try
+                {
+                    railway.setMaxDelay(delayWas + 3);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            assertTrue(moved[0], "precondition: " + train + " was not moved to " + toName);
+
             // AN EDIT WHILE IT WAITS, and the fold every door makes (the editor's opening and closing, Export, the exit)
             final Object[] set = new Object[1];
 
@@ -608,6 +635,37 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
             assertEquals(String.valueOf(session.getPointProperty(station, "maxTrainLength")), "9", "the fold of the"
                 + " railway built before the edit took the edit away (RSA19-B1)");
+
+            // AND KEPT WHAT THE RAILWAY OWNS (RSA20-A1): where the run left the train, and the settings it holds
+            assertEquals(session.getLocomotiveNameAt(org.traincontrol.automationui.AutonomyCompanionStore.parseTileKey(
+                toSquare)), train, "the fold while the setup is newer wrote nothing of where the run left " + train
+                + " (RSA20-A1)");
+
+            assertEquals(session.getGlobal("maxDelay"), String.valueOf(delayWas + 3), "the fold while the setup is newer"
+                + " wrote nothing of the railway's settings (RSA20-A1)");
+
+            // AND THE EXIT'S OWN FOLD, the setup still newer: another setting moved on the railway
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    railway.setMaxDelay(delayWas + 4);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+
+                ui.saveState(false, true);
+            });
+
+            settle();
+
+            assertEquals(session.getGlobal("maxDelay"), String.valueOf(delayWas + 4), "the exit's fold while the setup is"
+                + " newer wrote nothing of the railway's settings (RSA20-A1)");
+
+            assertEquals(String.valueOf(session.getPointProperty(station, "maxTrainLength")), "9", "the exit's fold took"
+                + " the edit away (RSA19-B1)");
         }
         finally
         {
@@ -616,6 +674,65 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 session.pairPortals(link, partner);
 
                 session.setPointProperty(station, "maxTrainLength", lengthWas);
+
+                ui.rebuildRunningLayoutFromSetup(false, null);
+            });
+
+            settle();
+        }
+    }
+
+    /**
+     * A rebuild from the track diagram's menu keeps the railway's settings and timetable (RSA20-B1): the Auto tab and a
+     * run write them to the railway, and the rebuild from the setup threw away whatever had not been folded.
+     *
+     * MUTATION: rebuild without folding the railway's settings first, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testARebuildKeepsTheRailwaysSettings() throws Exception
+    {
+        final org.traincontrol.automation.Layout railway = model.getAutoLayout();
+
+        final int delayWas = railway.getMaxDelay();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                // AS THE AUTO TAB DOES: on the railway
+                railway.setMaxDelay(delayWas + 2);
+            }
+            catch (Exception e)
+            {
+                throw new IllegalStateException(e);
+            }
+
+            ui.rebuildRunningLayoutFromSetup(false, null);
+        });
+
+        settle();
+
+        try
+        {
+            assertTrue(model.getAutoLayout() != railway, "precondition: the railway was not rebuilt");
+
+            assertEquals(model.getAutoLayout().getMaxDelay(), delayWas + 2, "the rebuild from the setup threw away the"
+                + " maximum delay set on the railway (RSA20-B1)");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    model.getAutoLayout().setMaxDelay(delayWas);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
 
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });

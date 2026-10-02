@@ -896,6 +896,9 @@ public class AutonomyViewerPanel extends JPanel
         {
             ui.getModel().parseAuto(session().buildConfiguration());
 
+            // ITS SETTINGS AS BUILT, for the folds to tell what the railway changed since (RSA20-B1)
+            ui.noteTheRailwaysSettingsAsBuilt();
+
             // THE RULE FOR EVERY PARSE (Adam, 2026-09-21): a setup that turns atomic routes off
             // while track autonomy runs over has no length comes up atomic, with the reason in the
             // log.  This is the only door into `parseAuto` since the old JSON tab's Validate button

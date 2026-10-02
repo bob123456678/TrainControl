@@ -2561,11 +2561,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             && !this.model.getAutoLayout().isRunning()
             && getAutonomySession() != null;
 
-        if (wouldCapture && setupEditDeclinedDuringRun)
-        {
-            this.model.logf("autosetup.log.placementsNotSaved");
-        }
-        else if (wouldCapture)
+        if (wouldCapture)
         {
             try
             {
@@ -2574,7 +2570,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // `wouldCapture` has already asked this.  Kept because `getAutonomySession()` is not
                 // guaranteed to answer the same way twice, and a null here would be an NPE inside a
                 // try whose catch is about save failures.
-                if (session != null)
+                if (session != null && setupEditDeclinedDuringRun)
+                {
+                    // WHAT THE RAILWAY OWNS ALONE while the setup is newer (RSA20-A1): the exit wrote no train's place and
+                    // none of the timetable the run captured
+                    session.captureWhatTheRailwayOwns(this.model.getAutoLayout().toJSON(),
+                        this.activeDiagramConfiguration, settingsAsBuiltFor(this.model.getAutoLayout()));
+                    session.saveWithoutReconciling();
+                }
+                else if (session != null)
                 {
                     // by name: store-active can point elsewhere after a refused load
                     session.captureFromLayout(this.model.getAutoLayout().toJSON(),
@@ -3085,16 +3089,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             load.run();
 
-            // ONLY OVER A RAILWAY THE LOAD REPLACED (RSA18-A1), as `rebuildRunningLayoutFromSetup` - and the setup newer
-            // than the railway where it did not (RSA19-B1)
-            if (this.model != null && this.model.getAutoLayoutIfLoaded() != runningBefore)
-            {
-                putTheTrainsBack(standing, null);
-            }
-            else if (runningBefore != null && activeDiagramConfiguration != null)
-            {
-                setupEditDeclinedDuringRun = true;
-            }
+            // ONLY OVER A RAILWAY THE LOAD REPLACED (RSA18-A1), as `rebuildRunningLayoutFromSetup`.  Both callers come here with
+            // the setup already marked newer than the railway, so a load that declines leaves it marked (RSA20-C1).
+            if (this.model != null && this.model.getAutoLayoutIfLoaded() != runningBefore) putTheTrainsBack(standing, null);
 
             carried = this.model != null && this.model.hasAutoLayout() && this.model.getAutoLayout() != runningBefore
                 && this.model.getAutoLayout().isValid();
@@ -3128,8 +3125,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             org.traincontrol.automation.Layout standing = this.model.getAutoLayout();
 
-            autonomySession.captureWhereTheTrainsStand(standing.toJSON(standing.getLastPointsReached()),
-                activeDiagramConfiguration);
+            // AND THE SETTINGS AND TIMETABLE (RSA20-A1): the railway's too
+            autonomySession.captureWhatTheRailwayOwns(standing.toJSON(standing.getLastPointsReached()),
+                activeDiagramConfiguration, settingsAsBuiltFor(standing));
 
             autonomySession.saveWithoutReconciling();
         }
@@ -3228,15 +3226,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // up (`carryTheTrainsAcross`, RLV6-B1) - by `putTheTrainsBack` rather than written, against authored
         // data nothing else would bring back.  The rebuild or load that replaces the running layout clears the
         // flag, because from then on it carries the edit too (AMS-B1).
-        if (setupEditDeclinedDuringRun) return;
-
         try
         {
             // Each train under way on the one point it is kept at (RLV8-B1, RLV9-A1); a railway at rest keeps none
             org.traincontrol.automation.Layout folding = this.model.getAutoLayout();
 
-            autonomySession.captureFromLayout(folding.toJSON(folding.getLastPointsReached()),
-                activeDiagramConfiguration);
+            String railway = folding.toJSON(folding.getLastPointsReached());
+
+            // WHILE THE SETUP IS NEWER THAN THE RAILWAY, WHAT THE RAILWAY OWNS ALONE (RSA20-A1): where the trains stand, the
+            // settings and the timetable - not the older railway's homes, lengths and priorities over the edit, and not
+            // nothing, which lost where the run left the trains and the timetable it captured
+            if (setupEditDeclinedDuringRun)
+            {
+                autonomySession.captureWhatTheRailwayOwns(railway, activeDiagramConfiguration, settingsAsBuiltFor(folding));
+            }
+            else autonomySession.captureFromLayout(railway, activeDiagramConfiguration);
 
             // Written, not reconciled.  This runs because the diagram is being REPLACED - a
             // re-download, or an editor closing - and on the editor path the pages this session holds
@@ -4298,6 +4302,47 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // out on a worker - see `refreshCoveredTrack` - and not because of `getPoints()`.
             this.updateVisiblePoints();
         });
+    }
+
+    /**
+     * The railway the settings below were read off, and its settings and timetable as it was built (RSA20-B1): what a fold
+     * compares the railway against, to take only what the railway itself changed since.
+     */
+    private Object settingsBuiltFor;
+
+    private org.json.JSONObject settingsAsBuilt;
+
+    /**
+     * Reads the railway just built's settings and timetable, for the folds to compare against (RSA20-B1).  Called by the
+     * one door that builds a railway, straight after it.
+     */
+    void noteTheRailwaysSettingsAsBuilt()
+    {
+        org.traincontrol.automation.Layout built = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
+
+        settingsBuiltFor = built;
+        settingsAsBuilt = null;
+
+        if (built == null) return;
+
+        try
+        {
+            settingsAsBuilt = org.traincontrol.automationui.AutonomySession.globalsOf(
+                new org.json.JSONObject(built.toJSON()));
+        }
+        catch (Exception cannotRead)
+        {
+            settingsAsBuilt = null;
+        }
+    }
+
+    /**
+     * @param railway a railway
+     * @return its settings as it was built, or null where this window does not know them
+     */
+    private org.json.JSONObject settingsAsBuiltFor(Object railway)
+    {
+        return railway != null && railway == settingsBuiltFor ? settingsAsBuilt : null;
     }
 
     /**
@@ -7565,6 +7610,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             try
             {
+                // THE RAILWAY'S SETTINGS AND TIMETABLE FIRST (RSA20-B1): the Auto tab and a run write them to the railway, and
+                // this rebuilds from the setup - the timetable entries captured since the last fold, and the settings moved
+                // since, were thrown away.  Not where the trains stand: the put-back below carries those, and the gesture may
+                // just have placed one
+                // ONLY WHAT THE RAILWAY CHANGED SINCE IT WAS BUILT, and only where this window knows how it was built: a door
+                // can have edited the setup's own settings before asking for this rebuild
+                if (runningBefore instanceof org.traincontrol.automation.Layout && autonomySession != null
+                    && settingsAsBuiltFor(runningBefore) != null
+                    && ((org.traincontrol.automation.Layout) runningBefore).isValid()
+                    && !((org.traincontrol.automation.Layout) runningBefore).isRunning())
+                {
+                    try
+                    {
+                        autonomySession.captureTheRailwaysSettings(
+                            ((org.traincontrol.automation.Layout) runningBefore).toJSON(), activeDiagramConfiguration,
+                            settingsAsBuiltFor(runningBefore));
+                    }
+                    catch (Exception cannotFold)
+                    {
+                        // the rebuild goes ahead on the setup's settings, as it did before this fold existed
+                        this.model.log(cannotFold);
+                    }
+                }
+
                 getAutonomyViewerPanel().load(activeDiagramConfiguration, false, false);
 
                 // ONLY OVER A RAILWAY THE LOAD REPLACED (RSA18-A1): a load declined for a problem that stops the build -

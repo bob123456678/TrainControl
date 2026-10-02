@@ -6433,6 +6433,16 @@ public class AutonomySession
         }
 
         // and the top of the file: pace, speeds, and the rest of the settings panel
+        configuration.put("globals", globalsOf(root));
+
+        dirty = true;
+    }
+
+    /**
+     * The top of a running layout's file: pace, speeds, the rest of the settings panel, and the timetable.
+     */
+    public static org.json.JSONObject globalsOf(org.json.JSONObject root)
+    {
         org.json.JSONObject globals = new org.json.JSONObject();
 
         for (String key : root.keySet())
@@ -6440,9 +6450,84 @@ public class AutonomySession
             if (!"points".equals(key) && !"edges".equals(key)) globals.put(key, root.get(key));
         }
 
-        configuration.put("globals", globals);
+        return globals;
+    }
+
+    /**
+     * Folds what the railway owns, and nothing the setup was given since the railway was built (RSA20-A1): where each
+     * train stands - the train, its facing, the side it came in by and its road - and the settings and timetable the
+     * Auto tab and a run write to the railway.  The fold made while the setup is newer than the railway: folding all of
+     * it wrote the older railway's homes, lengths and priorities over the edit, and folding none of it lost where the run
+     * left the trains and every timetable entry it captured.
+     *
+     * @param layoutJson what the running Layout serialized to
+     * @param configurationName which configuration this layout's state belongs to
+     * @param asBuilt the railway's settings as it was built, or null to take every one of them
+     */
+    public void captureWhatTheRailwayOwns(String layoutJson, String configurationName, org.json.JSONObject asBuilt)
+    {
+        capture(layoutJson, configurationName, true);
+
+        captureTheRailwaysSettings(layoutJson, configurationName, asBuilt);
+    }
+
+    /**
+     * Folds the railway's settings and timetable alone (RSA20-B1): the Auto tab and a run write them to the railway, and a
+     * rebuild from the setup threw away whatever had not been folded - the timetable entries captured since, and the
+     * settings moved since.
+     *
+     * **Only those the railway changed since it was built**, where it is told how it was built: a door can edit the
+     * setup's own - a timetable put in place, a routing choice - and fold-everything wrote the railway's older value over
+     * it.  A setting the railway has not touched is the setup's to say.
+     *
+     * @param layoutJson what the running Layout serialized to
+     * @param configurationName which configuration this layout's state belongs to
+     * @param asBuilt the railway's settings as it was built, or null to take every one of them
+     */
+    public void captureTheRailwaysSettings(String layoutJson, String configurationName, org.json.JSONObject asBuilt)
+    {
+        if (layoutJson == null || configurationName == null) return;
+
+        org.json.JSONObject configuration = store.getConfiguration(configurationName);
+
+        if (configuration == null) return;
+
+        org.json.JSONObject now = globalsOf(new org.json.JSONObject(layoutJson));
+
+        org.json.JSONObject globals = configuration.optJSONObject("globals");
+
+        if (globals == null)
+        {
+            globals = new org.json.JSONObject();
+
+            configuration.put("globals", globals);
+        }
+
+        for (String key : now.keySet())
+        {
+            // UNCHANGED ON THE RAILWAY: the setup's stands, edited or not
+            if (asBuilt != null && asBuilt.has(key) && sameSetting(asBuilt.get(key), now.get(key))) continue;
+
+            globals.put(key, now.get(key));
+        }
 
         dirty = true;
+    }
+
+    /** Whether two values of a setting are the same, as the railway writes them. */
+    private static boolean sameSetting(Object a, Object b)
+    {
+        if (a instanceof org.json.JSONObject && b instanceof org.json.JSONObject)
+        {
+            return ((org.json.JSONObject) a).similar(b);
+        }
+
+        if (a instanceof org.json.JSONArray && b instanceof org.json.JSONArray)
+        {
+            return ((org.json.JSONArray) a).similar(b);
+        }
+
+        return String.valueOf(a).equals(String.valueOf(b));
     }
 
     /**
