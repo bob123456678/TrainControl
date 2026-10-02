@@ -27,20 +27,11 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-627](#mt-627) | 2026-09-30 | Duplicate after a run copies where the trains are, and the next start resumes the one running | fixed unvalidated | RSA10-A1 |
 | [MT-633](#mt-633) | 2026-09-30 | The Autonomy menu greys while autonomy runs, saying why | fixed unvalidated | MT-613 |
-| [MT-634](#mt-634) | 2026-09-30 | A page left out greys Auto and Manual with the tools | fixed unvalidated | FR-105 |
-| [MT-635](#mt-635) | 2026-10-01 | Layouts > Create New Layout waits for autonomy to stop | fixed unvalidated | RSA13-B2 |
-| [MT-636](#mt-636) | 2026-10-01 | A one-way run through a train's station, against it, is made and listed as an error | fixed unvalidated | MT-631 |
-| [MT-637](#mt-637) | 2026-10-01 | Track made one way towards a standing train is a warning | fixed unvalidated | MT-631 |
-| [MT-638](#mt-638) | 2026-10-01 | A station at the end of a line is an error until trains must change direction there | fixed unvalidated | MT-631 |
-| [MT-639](#mt-639) | 2026-10-01 | Manage Configurations offers New Configuration, and no Add | fixed unvalidated | MT-626 |
-| [MT-640](#mt-640) | 2026-10-01 | New Configuration answered No starts the copy with no trains and no timetable | fixed unvalidated | MT-626 |
-| [MT-641](#mt-641) | 2026-10-01 | The Layouts menu greys while autonomy runs, and keeps the CS3 web app | fixed unvalidated | MT-633 |
 | [MT-642](#mt-642) | 2026-10-01 | A train standing on a station shows the locomotive icon there | fixed unvalidated | Adam 2026-10-01 |
 
-Everything else - 631 of 642 - needs nothing from you unless the area changes again:
-492 **fixed validated** and 139 **superseded**.
+Everything else - 640 of 642 - needs nothing from you unless the area changes again:
+500 **fixed validated** and 140 **superseded**.
 
 ---
 
@@ -30499,7 +30490,7 @@ Since round 34 (36ebaeb8) Duplicate is called **New Configuration...**, and Add 
 
 ### MT-627 - 2026-09-30 - Duplicate after a run copies where the trains are, and the next start resumes the one running
 
-**Disposition:** fixed unvalidated
+**Disposition:** superseded
 **From:** RSA10-A1
 
 **Written:** 2026-09-30
@@ -30522,6 +30513,16 @@ From the tenth release validator (RSA10).
 **Claude, 2026-10-01.**
 
 Since round 34 (36ebaeb8) Duplicate is called **New Configuration...** and asks whether where the trains stand and the timetable come too: answer **Yes** for this test.  MT-640 is the No.
+
+**Adam, 2026-10-02 (triage).** Could not run this.
+
+superseded
+
+*Run against commit 5d84aec7, in English - build\classes, compiled 01 Oct 23:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Superseded, as you said: Duplicate is now New Configuration (MT-639, MT-640, both validated), and a copy made after a run having the trains where the run left them is held by its tests (RSA11-B1).
 
 ---
 
@@ -30713,13 +30714,19 @@ autonomy on page' tooltip has a large whitespace on the right side of the messag
 
 *What this is:* `regression.testNoSetupEditDuringARun.testTheAutonomyMenuIsGreyedWhileAutonomyRuns`.
 
+**Adam, 2026-10-02 (triage).** Works, with notes.
+
+More or less, but "export raw graph as json" should also be disabled while running.
+
+*Run against commit 5d84aec7, in English - build\classes, compiled 01 Oct 23:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-634"></a>
 
 ### MT-634 - 2026-09-30 - A page left out greys Auto and Manual with the tools
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-105
 
 **Written:** 2026-09-30
@@ -30738,13 +30745,21 @@ auto/manual radio buttons"*.
 
 *What this is:* `core.testAutonomyDiagramSession.testAPageLeftOutGreysThePathType`.
 
+**Adam, 2026-10-02 (triage).** Works.
+
+*Run against commit 5d84aec7, in English - build\classes, compiled 01 Oct 23:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Validated on your *Works* of 2026-10-02.
+
 ---
 
 <a id="mt-635"></a>
 
 ### MT-635 - 2026-10-01 - Layouts > Create New Layout waits for autonomy to stop
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** RSA13-B2
 
 **Written:** 2026-10-01
@@ -30762,13 +30777,23 @@ switched the layout and reset autonomy under the moving trains.
 
 *What this is:* `regression.testNoSetupEditDuringARun.testCreateNewLayoutWaitsForAutonomyToStop`.
 
+**Adam, 2026-10-01 (triage).** Works, with notes.
+
+yes, but because it is greyed out.  can't test the rest of the premise, which is fine for now.
+
+*Run against commit 5d84aec7, in English - build\classes, compiled 01 Oct 23:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Validated on your *Works* of 2026-10-01: the item is greyed while autonomy runs, which is what this checks; the refusal behind it is held by its test (`regression.testNoSetupEditDuringARun`), as you said is fine.
+
 ---
 
 <a id="mt-636"></a>
 
 ### MT-636 - 2026-10-01 - A one-way run through a train's station, against it, is made and listed as an error
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-631
 
 **Written:** 2026-10-01
@@ -30796,13 +30821,21 @@ editing easier for the user.  Make refusals that make sense be errors, and small
 
 Since round 35 (1134a8e9) the train in step 1 is still drawn on its station after the change, facing the way it stands, while the error is listed.  The steps stand.
 
+**Adam, 2026-10-02 (triage).** Works.
+
+*Run against commit 5d84aec7, in English - build\classes, compiled 01 Oct 23:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Validated on your *Works* of 2026-10-02.
+
 ---
 
 <a id="mt-637"></a>
 
 ### MT-637 - 2026-10-01 - Track made one way towards a standing train is a warning
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-631
 
 **Written:** 2026-10-01
@@ -30825,13 +30858,21 @@ editing easier for the user.  Make refusals that make sense be errors, and small
 
 *What this is:* `core.testAutonomyDiagramSession.testATrainFacingTrackRunningTowardsItIsAWarning`.
 
+**Adam, 2026-10-02 (triage).** Works.
+
+*Run against commit 5d84aec7, in English - build\classes, compiled 01 Oct 23:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Validated on your *Works* of 2026-10-02.
+
 ---
 
 <a id="mt-638"></a>
 
 ### MT-638 - 2026-10-01 - A station at the end of a line is an error until trains must change direction there
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-631
 
 **Written:** 2026-10-01
@@ -30851,13 +30892,21 @@ Your answer of 2026-10-01: *"Stations at the end of a line: make it an error"*.
 
 *What this is:* `core.testAutonomyDiagramSession.testAStationAtTheEndOfALineIsAnError`.
 
+**Adam, 2026-10-02 (triage).** Works.
+
+*Run against commit 5d84aec7, in English - build\classes, compiled 01 Oct 23:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Validated on your *Works* of 2026-10-02.
+
 ---
 
 <a id="mt-639"></a>
 
 ### MT-639 - 2026-10-01 - Manage Configurations offers New Configuration, and no Add
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-626
 
 **Written:** 2026-10-01
@@ -30875,13 +30924,21 @@ Your answer of 2026-10-01: *"One door: do it"*.
 
 *What this is:* `regression.testNoSetupEditDuringARun.testManageOffersOneDoorToANewConfiguration`.
 
+**Adam, 2026-10-01 (triage).** Works.
+
+*Run against commit 5d84aec7, in English - build\classes, compiled 01 Oct 23:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Validated on your *Works* of 2026-10-01.
+
 ---
 
 <a id="mt-640"></a>
 
 ### MT-640 - 2026-10-01 - New Configuration answered No starts the copy with no trains and no timetable
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-626
 
 **Written:** 2026-10-01
@@ -30902,13 +30959,21 @@ trains stand and the timetable come too.
 
 *What this is:* `regression.testNoSetupEditDuringARun.testANewConfigurationCanStartWithoutItsTrains`.
 
+**Adam, 2026-10-01 (triage).** Works.
+
+*Run against commit 5d84aec7, in English - build\classes, compiled 01 Oct 23:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Validated on your *Works* of 2026-10-01.
+
 ---
 
 <a id="mt-641"></a>
 
 ### MT-641 - 2026-10-01 - The Layouts menu greys while autonomy runs, and keeps the CS3 web app
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** MT-633
 
 **Written:** 2026-10-01
@@ -30929,6 +30994,14 @@ available"*.
 - In step 2 they are as they were before the run.
 
 *What this is:* `regression.testNoSetupEditDuringARun.testTheLayoutMenuIsGreyedWhileAutonomyRuns`.
+
+**Adam, 2026-10-01 (triage).** Works.
+
+*Run against commit 5d84aec7, in English - build\classes, compiled 01 Oct 23:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Validated on your *Works* of 2026-10-01.
 
 ---
 
@@ -30959,5 +31032,11 @@ in the track diagram viewer, while maintaining editability? same icon as when a 
 **Claude, 2026-10-01.**
 
 Since round 35 (1134a8e9) the icon is not drawn on the sensors of a route while it is being set up - a run showed locomotives where no train stood for a few seconds - and a train standing where no copy faces its way is drawn on its station too.  The steps stand.
+
+**Adam, 2026-10-01 (triage).** Does not work.
+
+Works on straight tiles, but the front of the locomotive is cut off on curved tiles.  Rotate the icon to match the angle of the tile so it fits.
+
+*Run against commit 5d84aec7, in English - build\classes, compiled 01 Oct 23:47 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
