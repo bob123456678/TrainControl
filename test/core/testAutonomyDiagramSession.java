@@ -926,6 +926,97 @@ public class testAutonomyDiagramSession
     }
 
     /**
+     * A page renamed while an edit waits keeps the setup's renamed timetable (RSA22-C1): the fold behind the reset, what
+     * the railway owns, wrote the railway's timetable - in the Point names the rename had just replaced - over it, so
+     * after the link was paired again most entries named Points that no longer exist.
+     *
+     * MUTATION: fold the timetable while the pages are stale, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testARenameWhileAnEditWaitsKeepsTheRenamedTimetable() throws Exception
+    {
+        threeStationsInARow("C1 rename");
+
+        session.setPointName(new TileKey("main", 1, 1), "Alpha");
+        session.setPointName(new TileKey("main", 5, 1), "Gamma");
+
+        String[] leg = anEdgeBetween(new org.json.JSONObject(session.buildConfiguration()), "main 3,1", "Gamma");
+
+        assertNotNull(leg, "precondition: no edge from the unnamed station to Gamma");
+
+        session.setGlobal("timetable", aTimetableOf(leg));
+
+        // THE RAILWAY AS BUILT, and as the run left it: an entry more, captured
+        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+        org.json.JSONObject asBuilt = AutonomySession.globalsOf(built);
+
+        built.put("timetable", aTimetableOf(leg, leg));
+
+        // THE PAGE RENAMED, as the track diagram's rename makes it, and the reset's fold while an edit waits
+        session.renamePage("main", "yard");
+
+        session.captureWhatTheRailwayOwns(built.toString(), "C1 rename", asBuilt);
+
+        org.json.JSONArray table = new org.json.JSONArray(String.valueOf(session.getGlobal("timetable")));
+
+        assertEquals(table.length(), 1, "the fold after a rename wrote the railway's timetable over the setup's renamed one"
+            + " (RSA22-C1): " + table);
+
+        assertEquals(legOf(session, 0)[0], "yard" + leg[0].substring("main".length()), "the fold after a rename put the"
+            + " Point names the rename replaced back into the timetable (RSA22-C1)");
+    }
+
+    /**
+     * A page deleted is not folded back (RSA22-C2): the fold behind the reset worked its keys out from the session's
+     * pages, the deleted one among them, and wrote its trains and its stations' settings straight back under its name -
+     * with an edit waiting or not.
+     *
+     * MUTATION: forget the page without marking the pages stale, and this fails.
+     *
+     * @throws Exception from the build
+     */
+    @Test
+    public void testADeletedPageIsNotFoldedBack() throws Exception
+    {
+        threeStationsInARow("C2 delete");
+
+        TileKey alpha = new TileKey("main", 1, 1);
+
+        session.setPointName(alpha, "Alpha");
+        session.placeLocomotive(alpha, "C2 train");
+        session.setPointProperty(new TileKey("main", 3, 1), "maxTrainLength", 4);
+
+        // THE RAILWAY, built before the delete
+        String railway = session.buildConfiguration();
+
+        assertTrue(railway.contains("C2 train"), "precondition: the railway has no train standing on the page");
+
+        session.deletePage("main");
+
+        // THE FOLDS BEHIND THE RESET: the whole one, and the one while an edit waits
+        session.captureFromLayout(railway, "C2 delete");
+        session.captureWhatTheRailwayOwns(railway, "C2 delete", null);
+
+        org.json.JSONObject points = session.getStore().getConfiguration("C2 delete").optJSONObject("points");
+
+        java.util.List<String> back = new ArrayList<>();
+
+        if (points != null)
+        {
+            for (String key : points.keySet())
+            {
+                if (key.startsWith("main:") || key.startsWith("1:")) back.add(key + "=" + points.get(key));
+            }
+        }
+
+        assertTrue(back.isEmpty(), "the fold after a page was deleted wrote the page back into the setup (RSA22-C2): "
+            + back);
+    }
+
+    /**
      * A square with no name of its own moved on its page takes its stored names with it (RSA5-B2): it is named after
      * where it is, so a move renamed its Points, and the timetable went on naming where it had been.
      *

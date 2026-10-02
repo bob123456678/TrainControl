@@ -2036,7 +2036,10 @@ door that folds: opening or closing the editor, Export, New Configuration, the e
 Layout, Combine Linked Pages, a page renamed or a switch of railway: where each train stands, and the settings and
 timetable the Auto tab and a run write to the railway (the ones it changed since it was built); folding nothing lost
 where the run left the trains and the timetable it captured.  A switch of railway writes them into the railway's own
-file, which it leaves, and carries nothing onto the next (RLV7-C2).  **And a rebuild from the setup keeps the railway's
+file, which it leaves, and carries nothing onto the next (RLV7-C2).  After a page renamed or squares moved the reset's
+fold leaves the timetable alone, as it leaves the placements: the railway still has the old Point names, and the rename's
+own fold before it has taken the run's timetable already (RSA22-C1).  A page deleted is not folded back: the delete marks
+the session's pages stale, as a rename does (RSA22-C2).  **And a rebuild from the setup keeps the railway's
 settings and timetable** (RSA20-B1): the ones the railway changed since it was built are folded first - only those,
 compared with the railway as it was built, so a setting a door edited in the setup is not written over; a setting the
 railway turned off (Simulate, the sequential flag, written only while on) is turned off in the setup, and atomic routes

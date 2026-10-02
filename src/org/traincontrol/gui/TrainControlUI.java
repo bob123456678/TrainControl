@@ -27114,7 +27114,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             // which makes deleting a page look as though it half worked.
                             captureRunningLayout();
 
-                            int forgotten = session.getStore().deletePage(going);
+                            // AND THE SESSION'S PAGES STALE (RSA22-C2): the fold behind the reset below would write the page back
+                            int forgotten = session.deletePage(going);
 
                             if (forgotten > 0)
                             {

@@ -279,9 +279,27 @@ public class AutonomySession
     }
 
     /**
-     * Says that a page has been renamed and these page objects no longer describe the setup.
+     * A page deleted: its squares forgotten in every configuration, and these pages marked stale (RSA22-C2), as a rename
+     * marks them - the fold that follows the delete, behind the reset, worked its keys out from these pages, the deleted
+     * one among them, and wrote its trains and its stations' settings straight back under its name.  The delete door
+     * folds first (DW-C1), so nothing the refusal keeps out is new.
      *
-     * Called by the rename itself. Cleared by the next `open`, which is what makes it true again.
+     * @param page the page's name
+     * @return how many entries were forgotten
+     */
+    public int deletePage(String page)
+    {
+        int forgotten = store.deletePage(page);
+
+        markPagesStale();
+
+        return forgotten;
+    }
+
+    /**
+     * Says that a page has been renamed or deleted and these page objects no longer describe the setup.
+     *
+     * Called by the rename and the delete themselves. Cleared by the next `open`, which is what makes it true again.
      */
     public void markPagesStale()
     {
@@ -6494,6 +6512,12 @@ public class AutonomySession
         {
             // UNCHANGED ON THE RAILWAY: the setup's stands, edited or not
             if (asBuilt != null && asBuilt.has(key) && sameSetting(asBuilt.get(key), now.get(key))) continue;
+
+            // NOT THE TIMETABLE WHILE THE PAGES ARE STALE (RSA22-C1), as the placements are not (`capture`): a page renamed
+            // or squares moved renamed the Points the timetable names, in the setup, and the railway still has the old
+            // names - its timetable written over the setup's named Points that no longer exist.  The rename's own fold
+            // before it, and the editor's on opening, have taken the run's timetable already.
+            if ((pagesStale || squaresMoved) && "timetable".equals(key)) continue;
 
             globals.put(key, now.get(key));
         }

@@ -1695,6 +1695,18 @@ public class testNoSetupEditDuringARun
             final TileKey square = session.getStationIndex().squareOf(at.getName());
             final String standing = at.getCurrentLocomotive().getName();
 
+            // AT REST BEFORE THE MENU IS BUILT (RSA22-C3): it greys what it offers by the window's state as it is built,
+            // and a red with nothing asked said only that the click met no dialog
+            java.lang.reflect.Method busy = TrainControlUI.class.getDeclaredMethod("isAutonomyBusy");
+
+            busy.setAccessible(true);
+
+            long until = System.currentTimeMillis() + 10000;
+
+            while ((Boolean) busy.invoke(ui[0]) && System.currentTimeMillis() < until) Thread.sleep(100);
+
+            assertFalse((Boolean) busy.invoke(ui[0]), "precondition: the window reads busy before the menu is built");
+
             java.lang.reflect.Constructor<?> make = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu")
                 .getDeclaredConstructors()[0];
 
@@ -1760,7 +1772,7 @@ public class testNoSetupEditDuringARun
                             {
                                 driving[0] = (Thread) dispatchATrainFrom(window, standing)[3];
                             }
-                            catch (Exception e)
+                            catch (Exception | AssertionError e)
                             {
                                 asked.add("could not begin a run: " + e);
                             }
@@ -1780,6 +1792,9 @@ public class testNoSetupEditDuringARun
 
             answering.setDaemon(true);
             answering.start();
+
+            // WHAT THE CLICK MEETS (RSA22-C3)
+            assertTrue(edit.isEnabled(), "precondition: the diagram's Edit Locomotive is greyed: " + edit.getToolTipText());
 
             SwingUtilities.invokeAndWait(() -> edit.doClick());
 

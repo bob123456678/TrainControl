@@ -5199,4 +5199,134 @@ public class testTheImportDoorReadsAnOldFile
             // a temporary folder left behind is the system's to clear
         }
     }
+
+    /**
+     * Layouts > Delete Current Page leaves nothing of the page in the file the next start reads (RSA22-C2, MT-176: "The
+     * deleted page's settings must stay gone"): the fold behind the reset after it wrote the page's trains and its
+     * stations' lengths, priorities and homes back under its name.
+     *
+     * MUTATION: delete the page in the store without marking the session's pages stale, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testADeletedPageLeavesNothingBehindInTheFile() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        final List<String> asked = Collections.synchronizedList(new ArrayList<>());
+        final java.util.concurrent.atomic.AtomicBoolean answering = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        Thread answers = null;
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            AutonomySession session = ui[0].getAutonomySession();
+
+            final String inUse = session.getStore().getActiveConfiguration();
+
+            // THE PAGE WITH THE MOST OF THE SETUP ON IT
+            final String going = "1 - Main";
+
+            assertTrue(onThePage(session.getStore().getConfiguration(inUse), going) > 0, "precondition: " + inUse
+                + " holds nothing on " + going);
+
+            java.lang.reflect.Field list = TrainControlUI.class.getDeclaredField("LayoutList");
+
+            list.setAccessible(true);
+
+            final javax.swing.JComboBox<?> pages = (javax.swing.JComboBox<?>) list.get(ui[0]);
+
+            SwingUtilities.invokeAndWait(() -> pages.setSelectedItem(going));
+
+            assertEquals(String.valueOf(pages.getSelectedItem()), going, "precondition: " + going + " is not the page"
+                + " shown");
+
+            java.lang.reflect.Method delete = TrainControlUI.class.getDeclaredMethod("deleteLayoutMenuItemActionPerformed",
+                java.awt.event.ActionEvent.class);
+
+            delete.setAccessible(true);
+
+            answers = startAnsweringYes(asked, answering);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    delete.invoke(ui[0], (Object) null);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            long until = System.currentTimeMillis() + 30000;
+
+            while (ui[0].getModel().getLayoutList().contains(going) && System.currentTimeMillis() < until)
+            {
+                Thread.sleep(200);
+            }
+
+            for (int turn = 0; turn < 10; turn++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertFalse(ui[0].getModel().getLayoutList().contains(going), "precondition: " + going + " was not deleted: "
+                + asked);
+
+            // THE FILE THE NEXT START READS
+            org.traincontrol.automationui.AutonomyCompanionStore onDisk =
+                new org.traincontrol.automationui.AutonomyCompanionStore(sandbox.getFolder());
+
+            onDisk.load();
+
+            assertEquals(onThePage(onDisk.getConfiguration(inUse), going), 0, "the file the next start reads still holds "
+                + going + "'s trains and settings after the page was deleted - the fold behind the reset wrote them back"
+                + " (RSA22-C2, MT-176)");
+        }
+        finally
+        {
+            answering.set(false);
+
+            if (answers != null) answers.join(5000);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** How many squares of a configuration are on the page by that name. */
+    private static int onThePage(org.json.JSONObject configuration, String page)
+    {
+        org.json.JSONObject points = configuration == null ? null : configuration.optJSONObject("points");
+
+        int count = 0;
+
+        if (points != null)
+        {
+            for (String key : points.keySet())
+            {
+                if (key.startsWith(page + ":")) count++;
+            }
+        }
+
+        return count;
+    }
 }
