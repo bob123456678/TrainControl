@@ -27,11 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-643](#mt-643) | 2026-10-02 | A running train's tail shows in orange over its route | fixed unvalidated | FR-106 |
-| [MT-644](#mt-644) | 2026-10-02 | Under non-atomic routes the driven grey goes as the track behind is given back | fixed unvalidated | FR-106 |
 
-Everything else - 642 of 644 - needs nothing from you unless the area changes again:
-502 **fixed validated** and 140 **superseded**.
+
+Everything else - 644 of 644 - needs nothing from you unless the area changes again:
+504 **fixed validated** and 140 **superseded**.
 
 ---
 
@@ -31069,7 +31068,7 @@ Validated on your *Works* of 2026-10-02.
 
 ### MT-643 - 2026-10-02 - A running train's tail shows in orange over its route
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-106
 
 **Written:** 2026-10-02
@@ -31090,13 +31089,21 @@ blue for the route ahead, dark grey for the track the train has driven.
 *What this is:* `ui.testTheTrainIsShownAsALine.testTheTailShowsOverARunLine` and
 `core.testAutonomyDiagramMonitor.testTheRunIsDrawnInTheDiagramsColours`.
 
+**Adam, 2026-10-02 (triage).** Works.
+
+*Run against commit 5d84aec7, in English - build\classes, compiled 02 Oct 08:04 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Validated on your *Works* of 2026-10-02.
+
 ---
 
 <a id="mt-644"></a>
 
 ### MT-644 - 2026-10-02 - Under non-atomic routes the driven grey goes as the track behind is given back
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** FR-106
 
 **Written:** 2026-10-02
@@ -31115,5 +31122,13 @@ now.
   ticked it stays until the train arrives.
 
 *What this is:* `core.testAutonomyDiagramMonitor.testDrivenTrackIsDrawnOnlyWhileItIsHeld`.
+
+**Adam, 2026-10-02 (triage).** Works.
+
+*Run against commit 5d84aec7, in English - build\classes, compiled 02 Oct 08:04 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Validated on your *Works* of 2026-10-02.
 
 ---
