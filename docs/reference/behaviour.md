@@ -2580,6 +2580,14 @@ greyed, as it writes nothing of the setup (MT-633, RSA23-C2).  Each door that ch
 a change while autonomy is busy - Return Home's planning too, before any train moves (RSA12-C1).
 `regression.testNoSetupEditDuringARun.testTheAutonomyMenuIsGreyedWhileAutonomyRuns`.
 
+**While autonomy is busy the Auto tab greys what waits for the trains** - its settings, Execute Timetable and the
+capture toggle, with Activate Routes and its list (UXR-B3) - each tooltip saying *"Please wait for all active
+locomotives to stop."*, and gives them back with their own tooltips once the trains have stopped (Adam, 2026-10-02:
+*"Implement the two grey usability fixes"*).  Busy is a run, a timetable run, Return Home, a hand dispatch or a Graceful
+Stop's coast-down, and Graceful Stop offered - Start's run counts before the railway does.  A click on a greyed setting
+says nothing and leaves it as the railway has it.  `regression.testNoSetupEditDuringARun.testTheAutoTabIsGreyedWhileAutonomyIsBusy`,
+`testARunGreysTheAutoTabAndItsStopGivesItBack`.
+
 **Layouts > Create New Layout waits for autonomy to stop**, as every Layout menu door that changes the diagram does
 (MT-141, RSA13-B2).  `regression.testNoSetupEditDuringARun.testCreateNewLayoutWaitsForAutonomyToStop`.
 

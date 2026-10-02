@@ -5051,8 +5051,8 @@ public class testNoSetupEditDuringARun
      * offered counts as busy, as Start leaves it before its run is counted; and what Execute Timetable's own press greyed
      * is not given back by the refresh.
      *
-     * MUTATION: grey nothing, leave the tooltips, put the refusal up on a greyed click, ask the railway alone, or give back
-     * what another owner greyed, and this fails.
+     * MUTATION: grey nothing, leave the tooltips, put the refusal up on a greyed click or leave a slider where it was let
+     * go, ask the railway alone, or give back what another owner greyed, and this fails.
      *
      * @throws Exception from the window
      */
@@ -5139,9 +5139,17 @@ public class testNoSetupEditDuringARun
 
             final int was = railway.getMaxActiveTrains();
 
-            SwingUtilities.invokeAndWait(() -> trains.dispatchEvent(new java.awt.event.MouseEvent(trains,
-                java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), 0, 5, 5, 1, false,
-                java.awt.event.MouseEvent.BUTTON1)));
+            assertEquals(trains.getValue(), was, "precondition: the slider does not show the railway's setting");
+
+            // MOVED AS THE GREY CAME DOWN, as a drag under way leaves it, and let go
+            SwingUtilities.invokeAndWait(() ->
+            {
+                trains.setValue(was == trains.getMaximum() ? was - 1 : was + 1);
+
+                trains.dispatchEvent(new java.awt.event.MouseEvent(trains,
+                    java.awt.event.MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), 0, 5, 5, 1, false,
+                    java.awt.event.MouseEvent.BUTTON1));
+            });
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 
@@ -5151,6 +5159,9 @@ public class testNoSetupEditDuringARun
             assertTrue(asked.isEmpty(), "a click on a greyed setting put up a dialog: " + asked);
 
             assertEquals(railway.getMaxActiveTrains(), was, "a click on a greyed setting wrote it");
+
+            assertEquals(trains.getValue(), was, "a slider moved as the grey came down kept a value the railway does not"
+                + " have");
 
             // AT REST AGAIN: each given back, with its own tooltip
             staging.set(ui[0], false);

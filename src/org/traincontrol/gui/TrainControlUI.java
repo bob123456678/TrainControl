@@ -25060,7 +25060,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Whether a click landed on a control greyed while the trains run.  A greyed Swing control still tells its mouse
      * listeners, and the Auto tab's settings listen for the mouse rather than for an action - so without this a click on
-     * a greyed slider still put up the refusal its grey already says.
+     * a greyed slider still put up the refusal its grey already says.  The settings' handlers then put every setting back
+     * from the railway, as the refusal did: a slider dragged as the grey came down keeps no value the railway does not
+     * have.
      *
      * @param evt the click, or null when a handler is called directly
      * @return true when the control it landed on is greyed
@@ -27914,7 +27916,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_toggleSpecifiedRoutesMouseReleased
 
     private void maxActiveTrainsMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxActiveTrainsMouseReleased
-        if (onAGreyedControl(evt)) return;
+        if (onAGreyedControl(evt))
+        {
+            loadAutoLayoutSettings();
+            return;
+        }
 
         if (!this.isAutoLayoutRunning())
         {
@@ -27931,7 +27937,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_maxActiveTrainsMouseReleased
 
     private void maximumLatencyMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maximumLatencyMouseReleased
-        if (onAGreyedControl(evt)) return;
+        if (onAGreyedControl(evt))
+        {
+            loadAutoLayoutSettings();
+            return;
+        }
 
 
         if (!this.isAutoLayoutRunning())
@@ -27950,7 +27960,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_maximumLatencyMouseReleased
 
     private void turnOnFunctionsOnDepartureMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_turnOnFunctionsOnDepartureMouseReleased
-        if (onAGreyedControl(evt)) return;
+        if (onAGreyedControl(evt))
+        {
+            loadAutoLayoutSettings();
+            return;
+        }
 
         if (!this.isAutoLayoutRunning())
         {
@@ -27967,7 +27981,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_turnOnFunctionsOnDepartureMouseReleased
 
     private void simulateMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_simulateMouseReleased
-        if (onAGreyedControl(evt)) return;
+        if (onAGreyedControl(evt))
+        {
+            loadAutoLayoutSettings();
+            return;
+        }
 
         if (!this.isAutoLayoutRunning())
         {
@@ -27984,7 +28002,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_simulateMouseReleased
 
     private void turnOffFunctionsOnArrivalMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_turnOffFunctionsOnArrivalMouseReleased
-        if (onAGreyedControl(evt)) return;
+        if (onAGreyedControl(evt))
+        {
+            loadAutoLayoutSettings();
+            return;
+        }
 
         if (!this.isAutoLayoutRunning())
         {
@@ -28001,7 +28023,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_turnOffFunctionsOnArrivalMouseReleased
 
     private void atomicRoutesMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_atomicRoutesMouseReleased
-        if (onAGreyedControl(evt)) return;
+        if (onAGreyedControl(evt))
+        {
+            loadAutoLayoutSettings();
+            return;
+        }
 
         if (!this.isAutoLayoutRunning())
         {
@@ -28036,7 +28062,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_atomicRoutesMouseReleased
 
     private void preArrivalSpeedReductionMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_preArrivalSpeedReductionMouseReleased
-        if (onAGreyedControl(evt)) return;
+        if (onAGreyedControl(evt))
+        {
+            loadAutoLayoutSettings();
+            return;
+        }
 
         if (!this.isAutoLayoutRunning())
         {
@@ -28053,7 +28083,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_preArrivalSpeedReductionMouseReleased
 
     private void defaultLocSpeedMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_defaultLocSpeedMouseReleased
-        if (onAGreyedControl(evt)) return;
+        if (onAGreyedControl(evt))
+        {
+            loadAutoLayoutSettings();
+            return;
+        }
 
         if (!this.isAutoLayoutRunning())
         {
@@ -28070,7 +28104,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_defaultLocSpeedMouseReleased
 
     private void maxDelayMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxDelayMouseReleased
-        if (onAGreyedControl(evt)) return;
+        if (onAGreyedControl(evt))
+        {
+            loadAutoLayoutSettings();
+            return;
+        }
 
         if (!this.isAutoLayoutRunning())
         {
@@ -28087,7 +28125,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_maxDelayMouseReleased
 
     private void maxLocInactiveSecondsMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_maxLocInactiveSecondsMouseReleased
-        if (onAGreyedControl(evt)) return;
+        if (onAGreyedControl(evt))
+        {
+            loadAutoLayoutSettings();
+            return;
+        }
 
         if (!this.isAutoLayoutRunning())
         {
@@ -28104,7 +28146,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_maxLocInactiveSecondsMouseReleased
 
     private void minDelayMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_minDelayMouseReleased
-        if (onAGreyedControl(evt)) return;
+        if (onAGreyedControl(evt))
+        {
+            loadAutoLayoutSettings();
+            return;
+        }
 
         if (!this.isAutoLayoutRunning())
         {

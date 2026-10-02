@@ -214,7 +214,8 @@ public class AutonomyMenu extends JMenu
      * Greys what changes the setup while autonomy runs, with the reason on each (Adam, MT-613 and MT-626: *"why not grey
      * out the whole menu while running?"*).  Each door still refuses on its own; this says so before the click, as the
      * editor's item has since OB-045.  Autonomy Settings and Documentation stay live: the guide changes nothing, and the
-     * settings are shown, their own handlers refusing a change while autonomy is busy (RSA12-C1).  The debug export is
+     * settings are shown greyed while autonomy is busy, each saying why (Adam, 2026-10-02), their own handlers refusing a
+     * change besides (RSA12-C1).  The debug export is
      * greyed with the rest (Adam, MT-633: "export raw graph as json should also be disabled while running") - greyed only: it
      * writes nothing of the setup, and has no refusal of its own (RSA23-C2).
      *
