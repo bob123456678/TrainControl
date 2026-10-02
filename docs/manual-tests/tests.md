@@ -27,9 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
+| [MT-643](#mt-643) | 2026-10-02 | A running train's tail shows in orange over its route | fixed unvalidated | FR-106 |
+| [MT-644](#mt-644) | 2026-10-02 | Under non-atomic routes the driven grey goes as the track behind is given back | fixed unvalidated | FR-106 |
 
-
-Everything else - 642 of 642 - needs nothing from you unless the area changes again:
+Everything else - 642 of 644 - needs nothing from you unless the area changes again:
 502 **fixed validated** and 140 **superseded**.
 
 ---
@@ -31061,5 +31062,58 @@ Fixed in 2bf00830 as you chose (option C of the three drawn for you): on a curve
 **Claude, 2026-10-02.**
 
 Validated on your *Works* of 2026-10-02.
+
+---
+
+<a id="mt-643"></a>
+
+### MT-643 - 2026-10-02 - A running train's tail shows in orange over its route
+
+**Disposition:** fixed unvalidated
+**From:** FR-106
+
+**Written:** 2026-10-02
+
+Your request of 2026-10-02 (FR-106): *"make the tail visible at all times"*, in the colours you chose - the stations'
+blue for the route ahead, dark grey for the track the train has driven.
+
+**Steps**
+
+1. With autonomy loaded and a train that has a train length set, send it somewhere a few stations away (Start, or a
+   destination from the diagram) and watch it on the track diagram.
+
+**Expected**
+
+- While it runs, the route ahead is drawn in the stations' blue with white arrows, the track it has driven in dark grey,
+  and the train itself in orange along the length of track it covers - over the route, so its tail shows the whole way.
+
+*What this is:* `ui.testTheTrainIsShownAsALine.testTheTailShowsOverARunLine` and
+`core.testAutonomyDiagramMonitor.testTheRunIsDrawnInTheDiagramsColours`.
+
+---
+
+<a id="mt-644"></a>
+
+### MT-644 - 2026-10-02 - Under non-atomic routes the driven grey goes as the track behind is given back
+
+**Disposition:** fixed unvalidated
+**From:** FR-106
+
+**Written:** 2026-10-02
+
+Your question of 2026-10-02 on FR-106: *"In non automic, would the dark gray fade go away where unlocked?"* - it does
+now.
+
+**Steps**
+
+1. In the Auto tab's settings, untick **Atomic Routes** (every train and the track it runs over need a length, or it
+   comes back on by itself), then send a train somewhere a few stations away and watch the track behind it.
+
+**Expected**
+
+- The dark grey behind the train disappears stretch by stretch as its tail clears each one; with **Atomic Routes**
+  ticked it stays until the train arrives.
+
+*What this is:* `core.testAutonomyDiagramMonitor.testDrivenTrackIsDrawnOnlyWhileItIsHeld`.
 
 ---

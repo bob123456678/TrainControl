@@ -1435,6 +1435,7 @@ not, never both.
 
 | Filed | Ref | Kind | What | State | Became |
 |---|---|---|---|---|---|
+| 2026-10-02 | FR-106 | feature request | A running train's tail shows in orange over its route; the route ahead in the stations' blue, driven track in dark grey, which goes where non-atomic routes give the track back.  The colours are kept in one place, `DiagramColours`. | - | `MT-643`, `MT-644` |
 | 2026-09-30 | FR-105 | feature request | A page left out of autonomy greys Auto and Manual with Test a Path and Why not Moving?. | - | `MT-634` |
 | 2026-09-29 | OB-308 | bug | Layouts > Open Layout... opens beside your last layout folder with it selected, also after switching to the Central Station's layout. | - | `MT-589` |
 | 2026-09-29 | OB-307 | bug | A train's orange line is drawn, and a square's autonomy menu opens, only with autonomy loaded; the diagram's own menu still opens. | - | `MT-590` |
