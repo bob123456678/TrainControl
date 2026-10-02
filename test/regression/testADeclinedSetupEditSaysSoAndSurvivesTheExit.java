@@ -250,10 +250,22 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
      */
     private static void forget() throws Exception
     {
-        Field flag = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
+        // THROUGH THE ONE DOOR THE FLAG IS SET BY, so the track diagram's notice is cleared with it
+        java.lang.reflect.Method newer = TrainControlUI.class.getDeclaredMethod("setupNewerThanTheRailway", boolean.class);
 
-        flag.setAccessible(true);
-        flag.setBoolean(ui, false);
+        newer.setAccessible(true);
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                newer.invoke(ui, false);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
     }
 
     /**
@@ -1021,5 +1033,70 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         });
 
         settle();
+    }
+
+    /**
+     * The track diagram says when the setup has changes the railway has not taken (Adam, 2026-10-02: "Add the setup
+     * notice, but make it brief"): a link unpaired leaves the setup unable to build, the last railway that built stays
+     * loaded, and only the log said so.  The line goes again once a load takes the change.
+     *
+     * MUTATION: set the flag without telling the strip, or leave the strip's line hidden, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheDiagramSaysWhenTheSetupIsNotApplied() throws Exception
+    {
+        final org.traincontrol.automationui.TileGraph.TileKey link =
+            new org.traincontrol.automationui.TileGraph.TileKey("1 - Main", 12, 1);
+
+        final org.traincontrol.automationui.TileGraph.TileKey partner = session.getStore().getPortalPartner(link);
+
+        assertNotNull(partner, "precondition: the link at 1 - Main:12,1 is not paired on the snapshot");
+
+        Field field = TrainControlUI.class.getDeclaredField("autonomyOverlayToggle");
+
+        field.setAccessible(true);
+
+        final org.traincontrol.gui.AutonomyOverlayToggle strip = (org.traincontrol.gui.AutonomyOverlayToggle) field.get(ui);
+
+        assertNotNull(strip, "precondition: the window has no strip above the track diagram");
+
+        forget();
+
+        assertFalse(strip.isSetupWaitingShown(), "precondition: the strip says the setup is not applied before anything"
+            + " was changed");
+
+        try
+        {
+            // UNPAIR THIS LINK, and the rebuild the diagram's menu makes: declined, the last railway kept
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.unpairPortal(link);
+
+                ui.rebuildRunningLayoutFromSetup(false, null);
+            });
+
+            settle();
+
+            assertTrue(declined(), "precondition: the rebuild was not declined");
+
+            assertTrue(strip.isSetupWaitingShown(), "the track diagram does not say the setup has changes the railway has"
+                + " not taken, while the last railway that built stays loaded");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.pairPortals(link, partner);
+
+                ui.rebuildRunningLayoutFromSetup(false, null);
+            });
+
+            settle();
+        }
+
+        assertFalse(strip.isSetupWaitingShown(), "the track diagram still says the setup is not applied after a load took"
+            + " the change");
     }
 }

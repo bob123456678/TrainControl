@@ -2984,6 +2984,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
+     * Sets whether the setup is newer than the railway (see `isSetupNewerThanTheRunningLayout`), and says so on the track
+     * diagram's strip (Adam, 2026-10-02: "Add the setup notice, but make it brief"): the railway there is the last that
+     * built, and only the log said so.  The one door the flag is set by.
+     *
+     * @param newer whether an edit the railway could not take yet waits
+     */
+    private void setupNewerThanTheRailway(boolean newer)
+    {
+        setupEditDeclinedDuringRun = newer;
+
+        final AutonomyOverlayToggle strip = autonomyOverlayToggle;
+
+        if (strip == null) return;
+
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) strip.setSetupWaiting(newer);
+        else javax.swing.SwingUtilities.invokeLater(() -> strip.setSetupWaiting(newer));
+    }
+
+    /**
      * Whether the setup on disk is newer than the running layout: a setup edit made as a run started was written to the
      * file and not to the running layout, and no rebuild has carried it since (ACC-B3, WKW-B2, AMS-B1).  Every fold of the
      * running layout back into the setup asks this first, since folding would take that edit away (RLD4-C3).
@@ -3013,7 +3032,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void forgetTheRailway()
     {
-        setupEditDeclinedDuringRun = false;
+        setupNewerThanTheRailway(false);
 
         forgottenByTheReset = null;
     }
@@ -3084,7 +3103,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             carried = this.model != null && this.model.hasAutoLayout() && this.model.getAutoLayout() != runningBefore
                 && this.model.getAutoLayout().isValid();
 
-            if (carried) setupEditDeclinedDuringRun = false;
+            if (carried) setupNewerThanTheRailway(false);
         }
         finally
         {
@@ -7494,7 +7513,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (sayIfDeclined && activeDiagramConfiguration != null && isAutonomyBusy()
             && getAutonomyViewerPanel() != null)
         {
-            setupEditDeclinedDuringRun = true;
+            setupNewerThanTheRailway(true);
         }
 
         if (activeDiagramConfiguration != null && !isAutonomyBusy()
@@ -7621,7 +7640,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     // AND THE SETUP IS THEN NEWER THAN THE RAILWAY (RSA19-B1), as after a rebuild a run declined: every
                     // fold of the railway built before the edit - opening or closing the editor, Export, New
                     // Configuration, the exit - wrote its homes, priorities, lengths and placements back over the edit
-                    setupEditDeclinedDuringRun = true;
+                    setupNewerThanTheRailway(true);
                 }
 
                 // AND A DECLINED EDIT HAS NOW BEEN CARRIED (AMS-B1).
@@ -7637,7 +7656,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 if (setupEditDeclinedDuringRun && this.model != null && this.model.hasAutoLayout()
                     && this.model.getAutoLayout() != runningBefore && this.model.getAutoLayout().isValid())
                 {
-                    setupEditDeclinedDuringRun = false;
+                    setupNewerThanTheRailway(false);
                 }
             }
             finally

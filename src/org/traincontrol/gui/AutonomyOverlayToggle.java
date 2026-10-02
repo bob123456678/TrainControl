@@ -43,6 +43,16 @@ public class AutonomyOverlayToggle extends JPanel
         new javax.swing.JLabel(I18n.t("autosetup.ui.labelPageLeftOut"));
 
     /**
+     * Said while the setup has changes the railway has not taken yet (Adam, 2026-10-02: "Add the setup notice, but make it
+     * brief"): an edit made as a run started, or one that leaves the setup unable to build - a link unpaired - while the
+     * last railway that built stays loaded.  Only the log said so.  The tooltip says when they apply.
+     */
+    private final javax.swing.JLabel waiting = new javax.swing.JLabel(I18n.t("autosetup.ui.labelSetupNotApplied"));
+
+    // whether the setup has changes the railway has not taken
+    private boolean setupWaiting;
+
+    /**
      * Starting and stopping autonomy, where the trains are rather than on a tab.
      *
      * A copy in the strictest sense: it carries no opinion about when autonomy may run.  That question
@@ -150,6 +160,15 @@ public class AutonomyOverlayToggle extends JPanel
         });
 
         left.add(findings);
+
+        // THE SETUP NOT YET APPLIED, in the warnings' amber: worth knowing, and not a fault
+        waiting.setFont(AutonomyBanner.MESSAGE_FONT);
+        waiting.setForeground(new java.awt.Color(150, 95, 0));
+        waiting.setToolTipText(I18n.t("autosetup.ui.tooltipSetupNotApplied"));
+        waiting.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 10, 0, 0));
+        waiting.setVisible(false);
+
+        left.add(waiting);
 
         add(left, java.awt.BorderLayout.WEST);
 
@@ -604,6 +623,9 @@ public class AutonomyOverlayToggle extends JPanel
 
         if (excluded) findings.setVisible(false);
 
+        // and the setup notice with it: the strip on a page left out says that, and only that
+        waiting.setVisible(setupWaiting && !excluded);
+
         paintState();
 
         // No Start button on a page autonomy takes no notice of.  Starting is not a statement about the
@@ -611,6 +633,31 @@ public class AutonomyOverlayToggle extends JPanel
         // strip that has just said this page is left out, it reads as an offer to run THIS page, and the
         // one thing that will certainly not happen is a train moving on it.
         syncRun();
+    }
+
+    /**
+     * Says, or stops saying, that the setup has changes the railway has not taken yet - see `waiting`.
+     *
+     * @param newer whether it has
+     */
+    public void setSetupWaiting(boolean newer)
+    {
+        setupWaiting = newer;
+
+        waiting.setVisible(newer && !excluded);
+
+        paintState();
+
+        revalidate();
+        repaint();
+    }
+
+    /**
+     * @return whether the strip is saying the setup has changes the railway has not taken yet
+     */
+    public boolean isSetupWaitingShown()
+    {
+        return waiting.isVisible();
     }
 
     /**
@@ -634,7 +681,7 @@ public class AutonomyOverlayToggle extends JPanel
     private void hideIfEmpty()
     {
         boolean anything = show.isVisible() || left_out.isVisible()
-            || findings.isVisible() || run.isVisible();
+            || findings.isVisible() || run.isVisible() || waiting.isVisible();
 
         if (isVisible() == anything) return;
 
