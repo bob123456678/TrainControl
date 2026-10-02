@@ -2530,25 +2530,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Not on backup: backups run this method from their own thread, and the session is an event
         // thread object - and "Backup data" silently rewriting the active configuration would surprise
         // anybody who pressed it to get a copy, not to commit their session.
-        // NOT AFTER A DECLINED SETUP EDIT (ACC-B3).
+        // NOT ALL OF IT AFTER A DECLINED SETUP EDIT (ACC-B3, RSA20-A1).
         //
         // `captureFromLayout` writes what the running layout knows over the configuration and removes
         // what it does not carry.  That is right when the layout is the newer of the two, and it is
         // exactly wrong once an edit has reached the file without reaching the layout - which is what
-        // a declined rebuild is.  The message shown at that moment promises the edit will be picked up
-        // next load; this is what makes that true.
-        //
-        // The whole capture is skipped rather than the one key, because nothing here knows WHICH
-        // point the edit touched.  The cost is this session's train positions, which the next run
-        // re-establishes, against authored data which nothing else would bring back - and that is the
-        // same trade `OB-144` settled: an explicit edit beats an inferred one.
-        // AND ONLY WHEN THE DECLINE IS ACTUALLY WHY (OPV-C5).
-        //
-        // This branch used to precede the capture's own four conditions, so an exit with autonomy
-        // still running, or with no active configuration, or with an invalid layout - each of which
-        // already skipped the capture silently - blamed the declined edit for it.  The LOSS was true
-        // in every one of those; the CAUSE was not, and a message that names the wrong cause sends
-        // somebody to look in the wrong place.
+        // a declined rebuild is.  So while the setup is newer the exit writes what the railway owns and
+        // nothing else: where the trains stand, and the settings and timetable it changed since it was
+        // built - the edit is kept, and so is what the run did.
         // ASKED ONCE (OV2-C5).
         //
         // The first version of this wrote the capture's conditions out a second time above it, and the
@@ -3063,9 +3052,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Runs a load while a setup edit a run declined waits for its rebuild, carrying where every train stands across it
      * (RLA5-B1, RLV6-B1).
      *
-     * The running layout is then the older of the two, so nothing folds it into the setup - but where its trains stand
-     * is still the railway's to say (OB-183).  So they are recorded before the load replaces it and put back after, with
-     * the turns they were due, as `rebuildRunningLayoutFromSetup` does for the editor doors; and once a valid layout
+     * The running layout is then the older of the two, so no door folds all of it into the setup - the folds made
+     * meanwhile take what the railway owns alone (RSA20-A1) - and where its trains stand is still the railway's to say
+     * (OB-183).  So they are recorded before the load replaces it and put back after, with the turns they were due, as `rebuildRunningLayoutFromSetup` does for the editor doors; and once a valid layout
      * carries the edit the flag comes down (AMS-B1).  Unlike that rebuild this runs whatever `isAutonomyBusy` says: it is
      * reached after `prepareAutonomyReload` has stopped the run, and a train stopped between sensors keeps the old layout
      * reading busy until something replaces it.
@@ -3104,36 +3093,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         return carried;
-    }
-
-    /**
-     * Writes where each train stands - the train, the copy it stands on and the side it came in by - and nothing else
-     * into the configuration running, while a setup edit a run declined waits (RLV10-B1).  Unload's fold is not made
-     * then, since it would take the edit away, and every load in that state carries the trains across instead
-     * (`carryTheTrainsAcross`); Unload has no load to carry them into, so it writes what the carry would put back.  The
-     * carry's trade: where a train stands is the railway's to say (OB-183), and the edit is kept.
-     */
-    private void keepWhereTheTrainsStand()
-    {
-        if (!setupEditDeclinedDuringRun || autonomySession == null || activeDiagramConfiguration == null
-            || this.model == null || !this.model.hasAutoLayout() || !this.model.getAutoLayout().isValid())
-        {
-            return;
-        }
-
-        try
-        {
-            org.traincontrol.automation.Layout standing = this.model.getAutoLayout();
-
-            autonomySession.captureWhereTheTrainsStand(standing.toJSON(standing.getLastPointsReached()),
-                activeDiagramConfiguration);
-
-            autonomySession.saveWithoutReconciling();
-        }
-        catch (Exception e)
-        {
-            this.model.log(e);
-        }
     }
 
     /**
@@ -3211,20 +3170,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
-        // UNLOAD'S FOLD, WHILE AN EDIT WAITS: none (RLV11-C6) - `keepWhereTheTrainsStand` writes where the trains stand and
-        // nothing else, not the railway's settings the railway-owned fold below would write
-        if (underWayToo && setupEditDeclinedDuringRun) return;
-
-        // WHILE A DECLINED SETUP EDIT IS WAITING, WHAT THE RAILWAY OWNS AND NOTHING OF THE SETUP'S (WKW-B2, RSA20-A1).
+        // WHILE A SETUP EDIT WAITS FOR A LOAD, WHAT THE RAILWAY OWNS AND NOTHING OF THE SETUP'S (WKW-B2, RSA20-A1,
+        // RSA21-A1).
         //
-        // A setup edit made as a run starts is written to the file and not to the running layout, and the
-        // message shown then promises it will be picked up at the next load.  Folding the whole running layout
-        // at these doors - opening an editor, closing one, Export, New Configuration - wrote the layout built
-        // before the edit over the configuration and removed the edit (WKW-B2); folding nothing lost where the
-        // run left the trains and the timetable it captured (RSA20-A1).  So until a load has carried the edit
-        // they fold where the trains stand and the settings the railway changed since it was built, and nothing
-        // else.  The rebuild or load that replaces the running layout clears the flag, because from then on it
-        // carries the edit too (AMS-B1).
+        // An edit the railway could not take yet - made as a run started, or while a link is unpaired - is in
+        // the configuration and not in the running layout.  Folding the whole running layout wrote the layout
+        // built before the edit over it (WKW-B2); folding nothing lost where the run left the trains and the
+        // timetable it captured (RSA20-A1).  So every door that folds makes this one then - the editor's
+        // opening and closing, Export, New Configuration, the exit, Unload, and the reset behind a page renamed,
+        // a refresh of the layout or a switch of railway: where the trains stand, and the settings the railway
+        // changed since it was built.  The rebuild or load that replaces the running layout clears the flag,
+        // because from then on it carries the edit too (AMS-B1).
         try
         {
             // Each train under way on the one point it is kept at (RLV8-B1, RLV9-A1); a railway at rest keeps none
@@ -3266,11 +3222,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // meant the exit-path capture - which is gated on it - skipped everything, so re-downloading
         // the diagram silently threw away every placement, home and setting made since the last save.
         //
-        // NOT WHILE AN EDIT WAITS (round 38): every door here leaves the railway or the setup - Unload, which writes
-        // where the trains stand and nothing else first (RLV11-C6); a switch of railway, which forgets the one it leaves
-        // with the edit (RLV7-C2); a deleted setup; a refresh of the layout - so the railway-owned fold the other doors
-        // make while the setup is newer (RSA20-A1) is not made here, as no fold was before it.
-        if (!setupEditDeclinedDuringRun) captureRunningLayout();
+        // AND WHILE AN EDIT WAITS, what the railway owns (RSA21-A1): Open Layout on the folder in use and Combine Linked
+        // Pages keep the railway and leave no configuration running, so nothing folded it after; a switch of railway
+        // writes it into the railway's own file, which it leaves - not onto the next one (RLV7-C2).
+        captureRunningLayout();
 
         autonomySession = null;
 
@@ -6525,6 +6480,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         layout.setAtomicRoutes(true);
 
+        // THE RAILWAY'S OWN RULE, NOT A CHANGE TO FOLD (RSA21-C1): as built, as far as the folds are concerned, so the
+        // operator's "off" stays in the setup for the day the lengths are given (MT-470)
+        if (layout == settingsBuiltFor && settingsAsBuilt != null) settingsAsBuilt.put("atomicRoutes", true);
+
         // BOTH, WHERE BOTH HOLD (VD15-C3): two lines in the log rather than one reason at a time.
         if (!track.isEmpty())
         {
@@ -9735,12 +9694,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // reading free (DW-A1's shape), and the Auto tab's settings went back with them.  A train under way - Yes above
         // stops it and releases nothing - is written on the one point it is kept at, as a reload writes it (RLV8-B1).
         captureRunningLayout(true);
-
-        // AND WHILE AN EDIT A RUN DECLINED WAITS, WHERE THE TRAINS STAND (RLV10-B1).  The fold above is not made then -
-        // it would take the edit away - and nothing else was, so the next load built every train the run moved back
-        // where the file had it.  Every load in that state carries the trains across; Unload has no load to carry them
-        // into, so it writes them.
-        keepWhereTheTrainsStand();
 
         this.model.clearAutoLayout();
 

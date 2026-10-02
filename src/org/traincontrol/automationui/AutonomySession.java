@@ -6112,21 +6112,8 @@ public class AutonomySession
     }
 
     /**
-     * Where the trains stand, and nothing else, into a named configuration (RLV10-B1): each square's train, the side and
-     * road of its tail, and the facing of the copy it stands on - the setup's own settings, and the run's, left as they
-     * are.  For a railway older than its setup - an edit a run declined waits - where a whole fold would take the edit
-     * away, and where the trains stand is still the railway's to say (OB-183).
-     *
-     * @param layoutJson what the running Layout serialized to
-     * @param configurationName which configuration this layout's trains belong to
-     */
-    public void captureWhereTheTrainsStand(String layoutJson, String configurationName)
-    {
-        capture(layoutJson, configurationName, true);
-    }
-
-    /**
-     * The two above.
+     * `captureFromLayout` above, and the placements half of `captureWhatTheRailwayOwns`: each square's train, the side
+     * and road of its tail, and the facing of the copy it stands on.
      *
      * @param layoutJson what the running Layout serialized to
      * @param configurationName which configuration this layout's state belongs to
@@ -6509,6 +6496,16 @@ public class AutonomySession
             if (asBuilt != null && asBuilt.has(key) && sameSetting(asBuilt.get(key), now.get(key))) continue;
 
             globals.put(key, now.get(key));
+        }
+
+        // AND ONE THE RAILWAY STOPPED WRITING (RSA21-C1): Simulate and the sequential flag are written only while on, so
+        // turning one off left no key to compare - and the setup kept it on
+        if (asBuilt != null)
+        {
+            for (String key : asBuilt.keySet())
+            {
+                if (!now.has(key)) globals.remove(key);
+            }
         }
 
         dirty = true;

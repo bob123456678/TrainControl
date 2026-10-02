@@ -2031,14 +2031,16 @@ outran, not a train there, and raises nothing - nor does one on the same square,
 a link unpaired - leaves the railway and its trains as they were, and nothing is put back or recorded over it; the setup is
 then marked newer than the railway, as after a rebuild a run declined, so no fold of the railway built before the edit -
 opening or closing the editor, Export, New Configuration, the exit - writes its homes, lengths and priorities back over
-the edit until a load carries it (RSA19-B1).  **Those folds still write what the railway owns** (RSA20-A1) - opening or
-closing the editor, Export, New Configuration and the exit: where each train stands, and the settings and timetable the
-Auto tab and a run write to the railway (the ones it changed since it was built); folding nothing lost where the run left
-the trains and the timetable it captured.  The doors that leave the railway keep their own rules: Unload writes where
-the trains stand and nothing else (RLV11-C6), and a switch of railway, a deleted setup or a refresh of the layout folds
-nothing while an edit waits (RLV7-C2).  **And a rebuild from the setup keeps the railway's settings and
-timetable** (RSA20-B1): the ones the railway changed since it was built are folded first - only those, compared with the
-railway as it was built, so a setting a door edited in the setup is not written over.  A train placed in the setup meanwhile goes where the railway has it at that load: where a train
+the edit until a load carries it (RSA19-B1).  **Those folds still write what the railway owns** (RSA20-A1, RSA21-A1) - every
+door that folds: opening or closing the editor, Export, New Configuration, the exit, Unload, and the reset behind Open
+Layout, Combine Linked Pages, a page renamed or a switch of railway: where each train stands, and the settings and
+timetable the Auto tab and a run write to the railway (the ones it changed since it was built); folding nothing lost
+where the run left the trains and the timetable it captured.  A switch of railway writes them into the railway's own
+file, which it leaves, and carries nothing onto the next (RLV7-C2).  **And a rebuild from the setup keeps the railway's
+settings and timetable** (RSA20-B1): the ones the railway changed since it was built are folded first - only those,
+compared with the railway as it was built, so a setting a door edited in the setup is not written over; a setting the
+railway turned off (Simulate, the sequential flag, written only while on) is turned off in the setup, and atomic routes
+the load turned on itself for want of a length are not written as the operator's (RSA21-C1, MT-470).  A train placed in the setup meanwhile goes where the railway has it at that load: where a train
 stands is the railway's to say (OB-183).  **A train
 recorded where it stands keeps the side it came in by and its road** (RSA18-A2), so the track put back stands it with
 its tail.  **Readers of who stands where ask the railway first** (RSA18-B2): Home All Trains Where They Stand, from the
@@ -2614,12 +2616,14 @@ way whose last station another has since stopped on is written on the first stat
 holds and no other train under way is kept at - or one another is kept at that can itself be moved on, along the
 chain - and no two trains are kept on one square, its copies counting as one (RLV9-C4, RLV10-C2, RLV12-C1, RLV12-C2).  Unload folds the running layout into the
 configuration first, as a reload does, so a load after it has the trains where the run left them (RLV9-A1); while a
-setup edit a run declined waits it writes where the trains stand and nothing else, as a load then carries them
-(RLV10-B1).  No setup edit is made while trains run (Adam, 2026-09-28): the diagram's setup menu and its Edit
+setup edit waits for a load it writes what the railway owns - where the trains stand, and the settings and timetable the
+railway changed - and nothing of the setup's (RLV10-B1, RSA21-C2).  No setup edit is made while trains run (Adam, 2026-09-28): the diagram's setup menu and its Edit
 Locomotive are offered only at rest and refuse, and say so, when clicked after a run has begun; no train is sent - from
 the Auto tab either - while the editor is open; a tail question answered once trains run, and a direction change
-followed once they run, write nothing - so an edit waits only where a run begins in the moment between an edit and its
-rebuild (RLV11-B1, RLV11-B2, RLV12-B1, RLV12-C3, RLV12-C4).  Unload, and choosing another configuration, write the turns the railway owes into the configuration they
+followed once they run, write nothing - so during a run an edit waits only where the run began in the moment between an
+edit and its rebuild (RLV11-B1, RLV11-B2, RLV12-B1, RLV12-C3, RLV12-C4); at rest one also waits where an edit leaves the
+setup unable to build - a link unpaired - and the last railway that built stays loaded meanwhile (Adam, 2026-09-28 and
+2026-10-01; 6a).  Unload, and choosing another configuration, write the turns the railway owes into the configuration they
 leave (RLV10-C1).  Unload, a deleted setup and a switch of railway forget the
 railway loaded, so a load after them carries nothing across (RLV7-C2) - a switch only to another source, not to the one
 in use chosen again (RLV8-C5), the folder the Central Station's layout was downloaded into counting as the one in use

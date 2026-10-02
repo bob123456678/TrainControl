@@ -559,6 +559,10 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
         capture.setAccessible(true);
 
+        final String tableWas = session.getGlobal("timetable");
+
+        final int railwayEntriesWas = railway.getTimetable().size();
+
         try
         {
             // UNPAIR THIS LINK, and the rebuild the diagram's menu makes: declined, a link left unpaired
@@ -610,6 +614,9 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
             assertTrue(moved[0], "precondition: " + train + " was not moved to " + toName);
 
+            // AND AN ENTRY THE RUN CAPTURED, on the railway alone (RSA21-C3)
+            final int entries = captureAnEntry(railway);
+
             // AN EDIT WHILE IT WAITS, and the fold every door makes (the editor's opening and closing, Export, the exit)
             final Object[] set = new Object[1];
 
@@ -644,6 +651,9 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
             assertEquals(session.getGlobal("maxDelay"), String.valueOf(delayWas + 3), "the fold while the setup is newer"
                 + " wrote nothing of the railway's settings (RSA20-A1)");
 
+            assertEquals(entriesInTheSetup(), entries, "the fold while the setup is newer wrote nothing of the timetable"
+                + " the run captured (RSA20-A1, RSA21-C3)");
+
             // AND THE EXIT'S OWN FOLD, the setup still newer: another setting moved on the railway
             SwingUtilities.invokeAndWait(() ->
             {
@@ -671,6 +681,13 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         {
             SwingUtilities.invokeAndWait(() ->
             {
+                while (railway.getTimetable().size() > railwayEntriesWas)
+                {
+                    railway.getTimetable().remove(railway.getTimetable().size() - 1);
+                }
+
+                putTheTimetableBack(tableWas);
+
                 session.pairPortals(link, partner);
 
                 session.setPointProperty(station, "maxTrainLength", lengthWas);
@@ -683,10 +700,12 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * A rebuild from the track diagram's menu keeps the railway's settings and timetable (RSA20-B1): the Auto tab and a
-     * run write them to the railway, and the rebuild from the setup threw away whatever had not been folded.
+     * A rebuild from the setup - the one every gesture on the track diagram's menu makes - keeps the railway's settings
+     * and timetable (RSA20-B1): the Auto tab and a run write them to the railway, and the rebuild from the setup threw
+     * away whatever had not been folded.
      *
-     * MUTATION: rebuild without folding the railway's settings first, and this fails.
+     * MUTATION: rebuild without folding the railway's settings first, or fold them without the timetable, and this
+     * fails.
      *
      * @throws Exception from the window
      */
@@ -696,6 +715,11 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         final org.traincontrol.automation.Layout railway = model.getAutoLayout();
 
         final int delayWas = railway.getMaxDelay();
+
+        final String tableWas = session.getGlobal("timetable");
+
+        // AN ENTRY A RUN CAPTURED, on the railway alone (RSA21-C3)
+        final int entries = captureAnEntry(railway);
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -720,6 +744,12 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
             assertEquals(model.getAutoLayout().getMaxDelay(), delayWas + 2, "the rebuild from the setup threw away the"
                 + " maximum delay set on the railway (RSA20-B1)");
+
+            assertEquals(model.getAutoLayout().getTimetable().size(), entries, "the rebuild from the setup threw away the"
+                + " timetable entry the run captured (RSA20-B1, RSA21-C3)");
+
+            assertEquals(entriesInTheSetup(), entries, "the rebuild did not fold the timetable entry the run captured into"
+                + " the setup (RSA20-B1, RSA21-C3)");
         }
         finally
         {
@@ -728,6 +758,10 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 try
                 {
                     model.getAutoLayout().setMaxDelay(delayWas);
+
+                    model.getAutoLayout().getTimetable().clear();
+
+                    putTheTimetableBack(tableWas);
                 }
                 catch (Exception e)
                 {
@@ -739,5 +773,253 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
             settle();
         }
+    }
+
+    /**
+     * A setting the railway turned off is off after a rebuild from the setup (RSA21-C1): Simulate and the sequential
+     * flag are written only while on, so the compare with the railway as it was built found no key, and the setup kept
+     * the setting on.
+     *
+     * MUTATION: fold only the keys the railway writes now, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testARebuildKeepsASettingTheRailwayTurnedOff() throws Exception
+    {
+        final String active = session.getStore().getActiveConfiguration();
+
+        final String simulateWas = session.getGlobal("simulate");
+
+        try
+        {
+            // BUILT WITH IT ON
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    session.setGlobal("simulate", true);
+                }
+                catch (java.io.IOException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+
+                ui.rebuildRunningLayoutFromSetup(false, null);
+            });
+
+            settle();
+
+            final org.traincontrol.automation.Layout railway = model.getAutoLayout();
+
+            assertTrue(railway.isSimulate(), "precondition: the railway was not built simulating");
+
+            // TURNED OFF ON THE RAILWAY, as the Auto tab's checkbox does, and a gesture on the diagram's menu rebuilds
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    railway.setSimulate(false);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+
+                ui.rebuildRunningLayoutFromSetup(false, null);
+            });
+
+            settle();
+
+            assertTrue(model.getAutoLayout() != railway, "precondition: the railway was not rebuilt");
+
+            assertFalse(model.getAutoLayout().isSimulate(), "Simulate, turned off on the railway, is back on after a"
+                + " rebuild from the setup (RSA21-C1)");
+
+            assertEquals(session.getGlobal("simulate"), null, "the setup still has Simulate on after a rebuild that"
+                + " folded the railway's settings (RSA21-C1)");
+        }
+        finally
+        {
+            putTheGlobalBack(active, "simulate", simulateWas);
+        }
+    }
+
+    /**
+     * Atomic routes the load turned on itself - a train with no length - are not folded into the setup as though the
+     * operator had chosen them (RSA21-C1): the next gesture on the diagram's menu wrote them, and the operator's "off" no
+     * longer came back the day the lengths were given (MT-470).
+     *
+     * MUTATION: leave the railway's settings as built without the value the load forced, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheLoadsOwnAtomicRoutesAreNotFolded() throws Exception
+    {
+        final String active = session.getStore().getActiveConfiguration();
+
+        final String atomicWas = session.getGlobal("atomicRoutes");
+
+        // A TRAIN WITH NO LENGTH, which is what makes the load turn them on
+        String standing = null;
+
+        for (org.traincontrol.automation.Point point : model.getAutoLayout().getPoints())
+        {
+            if (standing == null && point.getCurrentLocomotive() != null) standing = point.getCurrentLocomotive().getName();
+        }
+
+        assertNotNull(standing, "precondition: no train stands on the railway");
+
+        final org.traincontrol.base.Locomotive shortened = model.getLocByName(standing);
+
+        final Integer lengthWas = shortened.getTrainLength();
+
+        try
+        {
+            shortened.setTrainLength(0);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    session.setGlobal("atomicRoutes", false);
+                }
+                catch (java.io.IOException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+
+                ui.rebuildRunningLayoutFromSetup(false, null);
+            });
+
+            settle();
+
+            final org.traincontrol.automation.Layout railway = model.getAutoLayout();
+
+            assertTrue(railway.isAtomicRoutes(), "precondition: the load did not turn atomic routes on for "
+                + shortened.getName() + ", which has no length");
+
+            // A GESTURE ON THE DIAGRAM'S MENU, nobody touching atomic routes
+            SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(false, null));
+
+            settle();
+
+            assertTrue(model.getAutoLayout() != railway, "precondition: the railway was not rebuilt");
+
+            assertEquals(session.getGlobal("atomicRoutes"), "false", "the rebuild folded the atomic routes the load turned"
+                + " on itself into the setup, as though the operator had chosen them (RSA21-C1, MT-470)");
+        }
+        finally
+        {
+            shortened.setTrainLength(lengthWas);
+
+            putTheGlobalBack(active, "atomicRoutes", atomicWas);
+        }
+    }
+
+    /**
+     * A timetable entry on the railway alone, as a run's capture adds one (RSA21-C3).
+     *
+     * @param railway the railway
+     * @return how many entries it then has
+     * @throws Exception from the event thread
+     */
+    private static int captureAnEntry(final org.traincontrol.automation.Layout railway) throws Exception
+    {
+        org.traincontrol.base.Locomotive loc = null;
+
+        java.util.List<org.traincontrol.automation.Edge> path = null;
+
+        for (org.traincontrol.automation.Point point : railway.getPoints())
+        {
+            if (path != null || point.getCurrentLocomotive() == null) continue;
+
+            java.util.List<java.util.List<org.traincontrol.automation.Edge>> paths =
+                railway.getPossiblePaths(point.getCurrentLocomotive(), false);
+
+            if (paths != null && !paths.isEmpty())
+            {
+                loc = point.getCurrentLocomotive();
+                path = paths.get(0);
+            }
+        }
+
+        assertNotNull(path, "precondition: no train on the railway has a path to capture");
+
+        final org.traincontrol.automation.TimetablePath entry = new org.traincontrol.automation.TimetablePath(loc, path, 0L);
+
+        SwingUtilities.invokeAndWait(() -> railway.getTimetable().add(entry));
+
+        return railway.getTimetable().size();
+    }
+
+    /** @return how many timetable entries the setup holds */
+    private static int entriesInTheSetup()
+    {
+        String stored = session.getGlobal("timetable");
+
+        return stored == null ? 0 : new org.json.JSONArray(stored).length();
+    }
+
+    /**
+     * Puts the setup's timetable back as it was.
+     *
+     * @param was the timetable as it was stored, or null for none
+     */
+    private static void putTheTimetableBack(String was)
+    {
+        org.json.JSONObject globals = session.getStore().getConfiguration(session.getStore().getActiveConfiguration())
+            .optJSONObject("globals");
+
+        if (globals == null) return;
+
+        if (was == null) globals.remove("timetable");
+        else globals.put("timetable", new org.json.JSONArray(was));
+
+        try
+        {
+            session.saveWithoutReconciling();
+        }
+        catch (java.io.IOException e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /**
+     * Puts one of the setup's settings back as it was, and the railway with it.
+     *
+     * @param active the configuration
+     * @param key the setting
+     * @param was its value as stored, or null for none
+     * @throws Exception from the window
+     */
+    private static void putTheGlobalBack(String active, String key, String was) throws Exception
+    {
+        SwingUtilities.invokeAndWait(() ->
+        {
+            org.json.JSONObject globals = session.getStore().getConfiguration(active).optJSONObject("globals");
+
+            if (globals != null)
+            {
+                if (was == null) globals.remove(key);
+                else if ("true".equals(was) || "false".equals(was)) globals.put(key, Boolean.valueOf(was));
+                else globals.put(key, was);
+            }
+
+            try
+            {
+                session.saveWithoutReconciling();
+            }
+            catch (java.io.IOException e)
+            {
+                throw new IllegalStateException(e);
+            }
+
+            ui.rebuildRunningLayoutFromSetup(false, null);
+        });
+
+        settle();
     }
 }

@@ -262,6 +262,14 @@ station in the track diagram viewer, while maintaining editability? same icon as
 parked with no path is drawn with the run's locomotive icon** on its station, facing the way it stands; a train waiting
 on a path it holds keeps the dot (FR-027).  Built in round 34.
 
+**Decided** (Adam, 2026-10-01, during round 39: *"remember we just need to make sure edits are impossible during a
+run"*; then, asked how a validator should weigh a train's place lost at rest after an edit leaves the setup unable to
+build, he chose "runs first"): **no edit is possible during a run, and nothing a run does is lost, come first**; a corner
+case at rest while the setup is mid-edit - a link left unpaired, then a door of the Layouts menu - is graded C at most,
+listed for him, and not fixed in the round that finds it.  Asked whether the last railway that built should stay loaded
+meanwhile or autonomy unload until the setup builds, he kept **the last valid railway** (his 28 September *"the last valid
+state gets used"*), each door folding what the railway owns (behaviour.md 6a).
+
 **Superseded** (Adam, 2026-10-01 - the first entry above): *was* decided 2026-09-30, on MT-605 (*"Refuse it too"*), that
 a one-way run against the way a standing train faces is refused, judged however far along the train's way it is set.
 Built in rounds 29 to 33 and retired in round 34, when every such refusal became a finding.

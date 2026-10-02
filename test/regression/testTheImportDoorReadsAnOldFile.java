@@ -2317,21 +2317,32 @@ public class testTheImportDoorReadsAnOldFile
             assertEquals(forgotten.get(ui[0]), inUse, "choosing the folder already in use forgot which configuration it"
                 + " ran (RLV8-C5)");
 
+            // AND THE FILE THE NEXT START READS has the train where the run left it (RSA21-A1): no configuration is named
+            // after the reset, so no door after it would fold the railway
+            assertTheFileHasItWhereItWasMoved(sandbox.getFolder(), inUse, session, move, "after the folder in use was"
+                + " chosen again while an edit waited (RSA21-A1)");
+
             answeringYes(() -> ui[0].getAutonomyViewerPanel().load(inUse, true));
 
             assertStandsWhereItWasMoved(ui[0], move, "after the folder in use was chosen again and loaded (RLV8-C5)");
 
-            // ANOTHER SOURCE (RLV7-C2): the same files, named differently, stand for a railway that is not this one.
-            // Another train, so that where its configuration has it and where it was moved to differ
-            final String[] moved = moveAStandingTrain(ui[0], ui[0].getAutonomySession(), move[0]);
+            // ANOTHER SOURCE (RLV7-C2): a copy of this railway's folder, made before the run moved the train, stands for a
+            // railway that is not this one - a folder of its own, so the fold into the railway left (RSA21-A1) is not read
+            // off the next one as a carry.  Another train, so that where its configuration has it and where it was moved
+            // to differ
+            final String source = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
 
-            assertTheConfigurationHasItWhereItSetOff(ui[0].getAutonomySession(), inUse, moved);
+            final File another = aCopyOf(new File(source));
+
+            final AutonomySession leaving = ui[0].getAutonomySession();
+
+            final String[] moved = moveAStandingTrain(ui[0], leaving, move[0]);
+
+            assertTheConfigurationHasItWhereItSetOff(leaving, inUse, moved);
 
             declined.set(ui[0], true);
 
-            final String source = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
-
-            TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, source + java.io.File.separator);
+            TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, another.getAbsolutePath());
 
             try
             {
@@ -2344,6 +2355,10 @@ public class testTheImportDoorReadsAnOldFile
 
                 assertEquals(forgotten.get(ui[0]), null, "a switch of railway remembers the configuration the previous"
                     + " one ran, for a load to carry its trains across (RLV7-C2)");
+
+                // AND THE RAILWAY LEFT'S OWN FILE has the train where the run left it (RSA21-A1)
+                assertTheFileHasItWhereItWasMoved(new File(source), inUse, leaving, moved, "after a switch to another"
+                    + " railway while an edit waited (RSA21-A1)");
 
                 answeringYes(() -> ui[0].getAutonomyViewerPanel().load(inUse, true));
 
@@ -2372,6 +2387,8 @@ public class testTheImportDoorReadsAnOldFile
             finally
             {
                 TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, source);
+
+                deleteTheCopy(another);
             }
         }
         finally
@@ -3817,18 +3834,19 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * Stop Using Autonomy while an edit a run declined waits writes where the trains stand - the train, the side and
-     * road of its tail, and the facing of the copy it stands on - and nothing else (RLV11-C6): not the Auto tab's
-     * settings, not a square whose tile is gone, not a home's facing.  RLV10-B1's claim moved a train with no tail onto
-     * an unsplit square and waited on a priority, so it could see none of these.
+     * Stop Using Autonomy while an edit a run declined waits writes what the railway owns - where the trains stand: the
+     * train, the side and road of its tail, and the facing of the copy it stands on (RLV11-C6); and the settings the
+     * railway changed since it was built, as every other fold then does (RSA21-C2) - and nothing of the setup's: not a
+     * square whose tile is gone, not a home's facing.  RLV10-B1's claim moved a train with no tail onto an unsplit square
+     * and waited on a priority, so it could see none of these.
      *
-     * MUTATION: write no tail or no facing, or write the settings, prune squares gone or clear a home's facing in that
+     * MUTATION: write no tail or no facing, or none of the settings, prune squares gone or clear a home's facing in that
      * write, and this fails.
      *
      * @throws Exception from the window
      */
     @Test
-    public void testAnUnloadWhileAnEditWaitsWritesWhereTheTrainsStandAndNothingElse() throws Exception
+    public void testAnUnloadWhileAnEditWaitsWritesWhatTheRailwayOwnsAndNothingElse() throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
@@ -3964,8 +3982,9 @@ public class testTheImportDoorReadsAnOldFile
                 "Stop Using Autonomy while an edit waited cleared a home's facing (RLV11-C6)");
 
             assertEquals(after.optJSONObject("globals") == null ? -1
-                : after.getJSONObject("globals").optInt("maxDelay", -1), delayWas, "Stop Using Autonomy while an"
-                + " edit waited wrote the Auto tab's settings, which the edit waits against (RLV11-C6)");
+                : after.getJSONObject("globals").optInt("maxDelay", -1), delayWas == 7 ? 8 : 7, "Stop Using Autonomy"
+                + " while an edit waited dropped a setting the railway changed, which every other fold then keeps"
+                + " (RSA21-C2)");
         }
         finally
         {
@@ -5100,6 +5119,84 @@ public class testTheImportDoorReadsAnOldFile
             }
 
             if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * The configuration in the folder's own file - what the next start reads - has the moved train where it was moved.
+     *
+     * @param folder the railway's folder
+     * @param configuration the configuration
+     * @param naming a session of that railway, for the square of the Point it was moved to
+     * @param move the train, where it was, where it is
+     * @param when said when it fails
+     * @throws Exception reading the file
+     */
+    private static void assertTheFileHasItWhereItWasMoved(File folder, String configuration, AutonomySession naming,
+        String[] move, String when) throws Exception
+    {
+        org.traincontrol.automationui.AutonomyCompanionStore onDisk =
+            new org.traincontrol.automationui.AutonomyCompanionStore(folder);
+
+        onDisk.load();
+
+        TileKey to = naming.getStationIndex().squareOf(move[2]);
+
+        assertNotNull(to, "precondition: " + move[2] + " has no square");
+
+        org.json.JSONObject points = onDisk.getConfiguration(configuration) == null ? null
+            : onDisk.getConfiguration(configuration).optJSONObject("points");
+
+        org.json.JSONObject extras = points == null ? null : points.optJSONObject(to.toString());
+
+        assertTrue(extras != null && extras.has(AutonomyBuilder.LOCOMOTIVE)
+            && move[0].equals(extras.getJSONObject(AutonomyBuilder.LOCOMOTIVE).optString("name")), "the file the next"
+            + " start reads does not have " + move[0] + " where the run left it, " + move[2] + ", " + when + " - it"
+            + " stands where it set off there, and the square it stands on reads free");
+    }
+
+    /**
+     * A copy of a railway's folder, for a test that needs another railway.
+     *
+     * @param folder the folder
+     * @return the copy, in a temporary folder of its own
+     * @throws java.io.IOException copying
+     */
+    private static File aCopyOf(File folder) throws java.io.IOException
+    {
+        final java.nio.file.Path from = folder.toPath();
+        final java.nio.file.Path to = java.nio.file.Files.createTempDirectory("tc-another-railway");
+
+        try (java.util.stream.Stream<java.nio.file.Path> walk = java.nio.file.Files.walk(from))
+        {
+            for (java.nio.file.Path each : (Iterable<java.nio.file.Path>) walk::iterator)
+            {
+                java.nio.file.Path target = to.resolve(from.relativize(each).toString());
+
+                if (java.nio.file.Files.isDirectory(each)) java.nio.file.Files.createDirectories(target);
+                else java.nio.file.Files.copy(each, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+
+        return to.toFile();
+    }
+
+    /**
+     * Deletes a copy `aCopyOf` made.
+     *
+     * @param copy the copy
+     */
+    private static void deleteTheCopy(File copy)
+    {
+        if (copy == null || !copy.exists()) return;
+
+        try (java.util.stream.Stream<java.nio.file.Path> walk = java.nio.file.Files.walk(copy.toPath()))
+        {
+            walk.sorted(java.util.Comparator.reverseOrder()).map(java.nio.file.Path::toFile).forEach(File::delete);
+        }
+        catch (java.io.IOException e)
+        {
+            // a temporary folder left behind is the system's to clear
         }
     }
 }

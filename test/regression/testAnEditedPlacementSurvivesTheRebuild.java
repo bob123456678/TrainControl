@@ -788,8 +788,8 @@ public class testAnEditedPlacementSurvivesTheRebuild
                 if (road.isEmpty() && edge.getEnd() != null) road.add(edge);
             }
 
-            assertFalse(road.isEmpty(), "precondition: no edge ends on a copy of Beta: " + running.getEdges().size()
-                + " edges, " + namesOf(running));
+            assertFalse(road.isEmpty(), "precondition: the railway has no edge to give Beta as its road: "
+                + running.getEdges().size() + " edges, " + namesOf(running));
 
             running.getPoint("Beta (westbound)").setArrivedAlong(road);
 
@@ -831,8 +831,8 @@ public class testAnEditedPlacementSurvivesTheRebuild
                     + " copy facing another way: the copy is the facing");
             }
 
-            session.captureWhereTheTrainsStand(rebuilt.toJSON(rebuilt.getLastPointsReached()),
-                session.getStore().getActiveConfiguration());
+            session.captureWhatTheRailwayOwns(rebuilt.toJSON(rebuilt.getLastPointsReached()),
+                session.getStore().getActiveConfiguration(), null);
 
             assertEquals(session.getLocomotiveNameAt(beta), MOVED, "the fold of a railway that cannot stand the train"
                 + " took it off the setup");
