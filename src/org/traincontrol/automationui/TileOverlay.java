@@ -409,6 +409,130 @@ public class TileOverlay
     }
 
     /**
+     * Which way the rail runs under the train on a curve - from the middle of the train's road to the midpoint of the side
+     * it is heading for (MT-642) - or null on a straight, a switch or a crossing, where the icon stays square to the tile.
+     *
+     * A curve on this diagram is the straight line between the midpoints of two neighbouring sides, so its middle is a
+     * quarter of the tile in from each, and the line from there to the heading side's midpoint is the rail.  Anything
+     * else answers null: a heading along a straight leaves one of the two at zero, and a heading out of a curve by a side
+     * it does not have lands anywhere but a quarter across and a quarter down.
+     *
+     * A RUN THAT ENDS HERE has only the side it came in by, and goes on from it through the middle of its road - which on
+     * a curve is towards the curve's other side, not the side opposite its entry that `headingOf` names for a straight.
+     *
+     * @param trackCentre the middle of the train's road, or null if it is not known
+     * @param width the tile width
+     * @param height the tile height
+     * @return which way the rail runs, as {dx, dy}, or null
+     */
+    private int[] alongTheCurve(int[] trackCentre, int width, int height)
+    {
+        if (!ICON_FOLLOWS_TRAVEL || trackCentre == null || trackCentre.length != 2) return null;
+
+        // the side ahead - the way a parked train faces, or the side a run leaves by - or else the side a run that ends
+        // here came in by: the segment `headingOf` reads
+        org.traincontrol.automationui.TilePorts.Side ahead = parked ? facing : null;
+        org.traincontrol.automationui.TilePorts.Side behind = null;
+
+        for (Segment segment : segments)
+        {
+            if (parked || ahead != null || behind != null) break;
+
+            if (segment.getTo() != null) ahead = segment.getTo();
+            else if (segment.getFrom() != null) behind = segment.getFrom();
+        }
+
+        int dx, dy;
+
+        if (ahead != null)
+        {
+            int[] to = TileAnnotation.midpoint(ahead, width, height);
+
+            if (to == null) return null;
+
+            dx = to[0] - trackCentre[0];
+            dy = to[1] - trackCentre[1];
+        }
+        else if (behind != null)
+        {
+            int[] from = TileAnnotation.midpoint(behind, width, height);
+
+            if (from == null) return null;
+
+            dx = trackCentre[0] - from[0];
+            dy = trackCentre[1] - from[1];
+        }
+        else
+        {
+            return null;
+        }
+
+        if (dx == 0 || dy == 0) return null;
+
+        // a quarter of the tile across and a quarter down, give or take the rounding of halves
+        if (Math.abs(4 * Math.abs(dx) - width) > 4 || Math.abs(4 * Math.abs(dy) - height) > 4) return null;
+
+        // THE LINE ITSELF, not the rounded difference: the middle of a curve on a 30-pixel tile is (22,22), not
+        // (22.5,22.5), and the difference from there turned the icon several degrees off the rail
+        return new int[] {Integer.signum(dx) * width, Integer.signum(dy) * height};
+    }
+
+    /**
+     * Turns the graphics so that an icon drawn facing east runs along the rail of a curve (MT-642), never upside down:
+     * heading left, it is mirrored, as westbound is on a straight, and then turned from west to the rail.
+     *
+     * @param g the tile's graphics, translated to where the icon goes
+     * @param along which way the rail runs, from `alongTheCurve`
+     */
+    private static void turnAlong(Graphics2D g, int[] along)
+    {
+        double angle = Math.atan2(along[1], along[0]);
+
+        if (along[0] >= 0)
+        {
+            g.rotate(angle);
+
+            return;
+        }
+
+        g.scale(-1, 1);
+        g.rotate(Math.PI - angle);
+    }
+
+    /**
+     * The sides of this tile the train's own road ends at, as far as this overlay knows them (MT-642): where a running
+     * train came in and is heading - the segment `headingOf` reads - or the side a parked train faces.  A double curve is
+     * two roads in one tile, and the caller asks its annotation which of them these name
+     * (`TileAnnotation.trackCentreOf`), so the icon is drawn on the train's road and not the station's.
+     *
+     * @return the sides, possibly empty, never null
+     */
+    public java.util.List<org.traincontrol.automationui.TilePorts.Side> trainSides()
+    {
+        java.util.List<org.traincontrol.automationui.TilePorts.Side> sides = new java.util.ArrayList<>();
+
+        if (parked)
+        {
+            if (facing != null) sides.add(facing);
+
+            return sides;
+        }
+
+        for (Segment segment : segments)
+        {
+            if (segment.getFrom() == null && segment.getTo() == null) continue;
+
+            if (segment.getFrom() != null) sides.add(segment.getFrom());
+
+            if (segment.getTo() != null) sides.add(segment.getTo());
+
+            return sides;
+        }
+
+        return sides;
+    }
+
+    /**
      * Which way the train on this square is going, or null when this square cannot say.
      *
      * Read off the line already drawn through it, so the locomotive and its path cannot disagree.
@@ -625,10 +749,11 @@ public class TileOverlay
      * Separate from {@link #paint} rather than a flag on it, because the two are drawn at different
      * times onto different Graphics and nothing else about them is shared.
      *
-     * @param g the container's graphics, already translated and clipped to this tile
+     * @param g the container's graphics, translated to this tile and not clipped to it (MT-642): on a curve the icon
+     *     reaches onto the next tiles, along the rail
      * @param width the tile width
      * @param height the tile height
-     * @param trackCentre the midpoint of the tile's own two track sides, or null if it is not known
+     * @param trackCentre the middle of the train's own road on this tile, or null if it is not known
      */
     public void paintTrain(Graphics2D g, int width, int height, int[] trackCentre)
     {
@@ -669,11 +794,18 @@ public class TileOverlay
 
                 java.awt.geom.AffineTransform wasAt = g.getTransform();
 
+                // ON A CURVE, ALONG THE RAIL AT FULL SIZE (MT-642, Adam: "the front of the locomotive is cut off on curved
+                // tiles.  Rotate the icon to match the angle of the tile so it fits"; then, of the choices drawn for him,
+                // "C: full size", and "there should be no clip").  The rail there is the line between two neighbouring
+                // sides' midpoints, so the icon is turned along it and reaches past the tile onto the track beyond.
+                int[] along = alongTheCurve(trackCentre, width, height);
+
                 try
                 {
                     g.translate(on[0], on[1]);
 
-                    turnToTravel(g);
+                    if (along != null) turnAlong(g, along);
+                    else turnToTravel(g);
 
                     g.drawImage(picture, -side / 2, -side / 2, side, side, null);
                 }

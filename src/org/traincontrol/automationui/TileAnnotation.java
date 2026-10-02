@@ -2054,6 +2054,67 @@ public class TileAnnotation
         return new int[] {(a[0] + b[0]) / 2, (a[1] + b[1]) / 2};
     }
 
+    /**
+     * The middle of the road a train stands on, named by the sides it is known to end at (MT-642) - on a curve or a
+     * double curve; `trackCentre` everywhere else, and where the sides name no road of this tile or more than one.  A
+     * double curve is two roads in one tile, and `trackCentre` is the badge's, so a train on the other road was drawn on
+     * the wrong one.  A switch keeps `trackCentre`: its diverging leg is not drawn as the line between two midpoints.
+     *
+     * @param sides the sides of the train's road, from `TileOverlay.trainSides`
+     * @param width the tile width
+     * @param height the tile height
+     * @return x and y within the tile
+     */
+    public int[] trackCentreOf(List<Side> sides, int width, int height)
+    {
+        if (sides == null || sides.isEmpty()) return trackCentre(width, height);
+
+        java.util.Set<java.util.Set<Side>> roads = new java.util.LinkedHashSet<>();
+
+        if (badge != null && badge.getA() != null && badge.getB() != null) roads.add(roadOf(badge.getA(), badge.getB()));
+
+        for (Mark mark : marks)
+        {
+            if (mark.getA() != null && mark.getB() != null) roads.add(roadOf(mark.getA(), mark.getB()));
+        }
+
+        java.util.Set<Side> found = null;
+
+        for (java.util.Set<Side> road : roads)
+        {
+            // CURVES ONLY: two neighbouring sides, on every road of the tile
+            if (road.size() != 2) return trackCentre(width, height);
+
+            java.util.Iterator<Side> ends = road.iterator();
+
+            if (Math.abs(ends.next().ordinal() - ends.next().ordinal()) == 2) return trackCentre(width, height);
+
+            if (!road.containsAll(sides)) continue;
+
+            // more than one road through these sides: not this method's to choose
+            if (found != null) return trackCentre(width, height);
+
+            found = road;
+        }
+
+        if (found == null) return trackCentre(width, height);
+
+        java.util.Iterator<Side> ends = found.iterator();
+
+        int[] a = midpoint(ends.next(), width, height);
+        int[] b = midpoint(ends.next(), width, height);
+
+        if (a == null || b == null) return trackCentre(width, height);
+
+        return new int[] {(a[0] + b[0]) / 2, (a[1] + b[1]) / 2};
+    }
+
+    /** A road as its two ends, whichever way round they were given. */
+    private static java.util.Set<Side> roadOf(Side a, Side b)
+    {
+        return java.util.EnumSet.of(a, b);
+    }
+
     private void diamond(Graphics2D g, int x, int y, int size, Color fill, Color line)
     {
         int half = size / 2;

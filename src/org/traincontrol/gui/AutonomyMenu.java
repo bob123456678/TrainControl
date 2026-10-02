@@ -99,9 +99,8 @@ public class AutonomyMenu extends JMenu
      */
     private JMenu lastPagesMenu;
 
-    /** Autonomy Settings and the debug export as last built, or null: the two items a run leaves live with the guide. */
+    /** Autonomy Settings as last built, or null: the one item a run leaves live with the guide. */
     private JMenuItem settingsItem;
-    private JMenuItem inspectItem;
 
     /**
      * Opens this menu with the pages submenu already showing.
@@ -214,9 +213,9 @@ public class AutonomyMenu extends JMenu
     /**
      * Greys what changes the setup while autonomy runs, with the reason on each (Adam, MT-613 and MT-626: *"why not grey
      * out the whole menu while running?"*).  Each door still refuses on its own; this says so before the click, as the
-     * editor's item has since OB-045.  Autonomy Settings, Documentation and the debug export stay live: the guide and
-     * the export change nothing, and the settings are shown, their own handlers refusing a change while autonomy is busy
-     * (RSA12-C1).
+     * editor's item has since OB-045.  Autonomy Settings and Documentation stay live: the guide changes nothing, and the
+     * settings are shown, their own handlers refusing a change while autonomy is busy (RSA12-C1).  The debug export is
+     * greyed with the rest (Adam, MT-633: "export raw graph as json should also be disabled while running").
      *
      * @param documentation the guide's item
      */
@@ -230,7 +229,7 @@ public class AutonomyMenu extends JMenu
         {
             java.awt.Component part = getMenuComponent(i);
 
-            if (!(part instanceof JMenuItem) || part == documentation || part == settingsItem || part == inspectItem)
+            if (!(part instanceof JMenuItem) || part == documentation || part == settingsItem)
             {
                 continue;
             }
@@ -246,7 +245,6 @@ public class AutonomyMenu extends JMenu
         removeAll();
 
         settingsItem = null;
-        inspectItem = null;
 
         // Dropped, not kept.  It is only reassigned on the branch that builds the submenu, so after a
         // rebuild that takes another branch it pointed at a JMenu no longer in this popup - and
@@ -538,7 +536,7 @@ public class AutonomyMenu extends JMenu
         {
             addSeparator();
 
-            add(inspectItem = item(I18n.t("autosetup.ui.menuExportRawGraph"), new Runnable()
+            add(item(I18n.t("autosetup.ui.menuExportRawGraph"), new Runnable()
             {
                 @Override
                 public void run()

@@ -939,6 +939,331 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
+     * The locomotive icon on every orientation of a curve and a double curve runs along the train's own road, centred on
+     * it, with its front towards the side the train is heading for and its roof never pointing down - and at the size a
+     * straight gives it, not cut off at its tile (Adam, MT-642: "the front of the locomotive is cut off on curved tiles.
+     * Rotate the icon to match the angle of the tile so it fits"; "C: full size"; "there should be no clip"; and "make
+     * sure you make tests to validate that the rotation and placement is correct for each of the 4 possible orientations
+     * of curve and double curve tracks").  A straight, both ways and both orientations, is drawn as before.
+     *
+     * Painted through the tile itself - `LayoutLabel.paintTrainOverCaptions`, the call the diagram's train pass makes -
+     * onto a canvas three tiles wide with the tile in the middle, so what reaches past the tile is seen.  Compared with
+     * the icon drawn from first principles rather than by the product's arithmetic: its front along the vector from the
+     * middle of the train's road to the heading side's midpoint, its roof the perpendicular that points up the screen,
+     * centred on that middle.  Each case is every movement a train makes over a square - parked facing the heading side,
+     * running through, arriving (a run that ends here, with only the side it came in by) and departing (a run that starts
+     * here, with only the side it leaves by) - on the two tile sizes the diagram draws, 30 and 60 pixels.
+     *
+     * MUTATION: draw the icon square to the tile on a curve, clip it to its tile, centre it on the station's road of a
+     * double curve, mirror it the wrong way, or point an arriving train at the side opposite its entry, and this fails.
+     */
+    @Test
+    public void testTheIconRunsAlongEveryCurveAndDoubleCurveOnItsOwnRoad() throws Exception
+    {
+        for (int size : new int[] {30, 60})
+        {
+            iconsOnEveryRoad(size);
+        }
+    }
+
+    /**
+     * The claim above, on one tile size.
+     *
+     * @param size the tile size
+     * @throws Exception reading the icon
+     */
+    private static void iconsOnEveryRoad(final int size) throws Exception
+    {
+
+        java.awt.image.BufferedImage icon = javax.imageio.ImageIO.read(
+            TileOverlay.class.getResource("/org/traincontrol/gui/resources/running_train.png"));
+
+        assertNotNull(icon, "precondition: the locomotive icon cannot be read");
+
+        Side[] round = {Side.N, Side.E, Side.S, Side.W};
+
+        List<String> wrong = new ArrayList<>();
+
+        int cases = 0;
+
+        for (int turn = 0; turn < 4; turn++)
+        {
+            Side a = round[turn];
+            Side b = round[(turn + 1) % 4];
+
+            // THE CURVE: one road, a to b
+            List<Side[]> curve = new ArrayList<>();
+            curve.add(new Side[] {a, b});
+
+            // THE DOUBLE CURVE: that road and the one at the opposite corner, the station on the first
+            Side c = round[(turn + 2) % 4];
+            Side d = round[(turn + 3) % 4];
+
+            List<Side[]> doubleCurve = new ArrayList<>();
+            doubleCurve.add(new Side[] {a, b});
+            doubleCurve.add(new Side[] {c, d});
+
+            for (List<Side[]> roads : Arrays.asList(curve, doubleCurve))
+            {
+                for (Side[] road : roads)
+                {
+                    for (int way = 0; way < 2; way++)
+                    {
+                        Side from = road[way];
+                        Side heading = road[1 - way];
+
+                        String name = (roads.size() == 1 ? "curve " : "double curve ") + roads.get(0)[0]
+                            + "-" + roads.get(0)[1] + (roads.size() == 1 ? "" : " / " + roads.get(1)[0] + "-"
+                            + roads.get(1)[1]) + ", on " + road[0] + "-" + road[1] + " heading " + heading;
+
+                        for (Map.Entry<String, TileOverlay> train : everyMovement(from, heading).entrySet())
+                        {
+                            cases++;
+
+                            String why = compareTheIcon(size, icon, roads, train.getValue(), road, heading);
+
+                            if (why != null) wrong.add(name + ", " + train.getKey() + ": " + why);
+                        }
+                    }
+                }
+            }
+        }
+
+        // AND A STRAIGHT, as before: centred on the tile, square to it
+        for (Side[] road : new Side[][] {{Side.W, Side.E}, {Side.N, Side.S}})
+        {
+            for (int way = 0; way < 2; way++)
+            {
+                Side from = road[way];
+                Side heading = road[1 - way];
+
+                for (Map.Entry<String, TileOverlay> train : everyMovement(from, heading).entrySet())
+                {
+                    cases++;
+
+                    String why = compareTheIcon(size, icon, java.util.Collections.singletonList(road), train.getValue(),
+                        road, heading);
+
+                    if (why != null)
+                    {
+                        wrong.add("straight " + road[0] + "-" + road[1] + " heading " + heading + ", " + train.getKey()
+                            + ": " + why);
+                    }
+                }
+            }
+        }
+
+        // 4 orientations x (curve: 1 road + double curve: 2 roads) x 2 ways x 4 movements, and 2 straights x 2 x 4
+        assertEquals(cases, 4 * 3 * 2 * 4 + 2 * 2 * 4, "precondition: not every case was drawn");
+
+        assertTrue(wrong.isEmpty(), "the locomotive icon is not where and how it should be on a " + size + "-pixel tile"
+            + " (MT-642):\n  " + String.join("\n  ", wrong));
+    }
+
+    /**
+     * Every movement of a train over a square, from one side towards the other: parked facing the way it goes, running
+     * through, arriving - a run that ends here - and departing, a run that starts here.
+     */
+    private static Map<String, TileOverlay> everyMovement(Side from, Side heading)
+    {
+        Map<String, TileOverlay> trains = new LinkedHashMap<>();
+
+        trains.put("parked", TileOverlay.parked(heading));
+
+        trains.put("running through", new TileOverlay(State.ACTIVE, true, true,
+            Arrays.asList(new TileOverlay.Segment(from, heading, State.ACTIVE))));
+
+        trains.put("arriving", new TileOverlay(State.ACTIVE, true, true,
+            Arrays.asList(new TileOverlay.Segment(from, null, State.ACTIVE))));
+
+        trains.put("departing", new TileOverlay(State.ACTIVE, true, true,
+            Arrays.asList(new TileOverlay.Segment(null, heading, State.ACTIVE))));
+
+        return trains;
+    }
+
+    /**
+     * Paints one train through the tile and compares it with the icon drawn from first principles.
+     *
+     * @return why they differ, or null where they agree
+     */
+    private static String compareTheIcon(int size, java.awt.image.BufferedImage icon, List<Side[]> roads,
+        TileOverlay train, Side[] road, Side heading)
+    {
+        List<TileAnnotation.Mark> marks = new ArrayList<>();
+
+        for (Side[] each : roads) marks.add(new TileAnnotation.Mark(each[0], each[1], null));
+
+        // the station, and so the badge, on the first road
+        TileAnnotation annotation = new TileAnnotation(marks, 0, false,
+            new TileAnnotation.Badge(true, false, false, false, true, roads.get(0)[0], roads.get(0)[1]), false);
+
+        org.traincontrol.gui.LayoutLabel tile = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+        tile.setBounds(size, size, size, size);
+        tile.setAutonomyAnnotation(annotation);
+        tile.setAutonomyOverlay(train);
+
+        java.awt.image.BufferedImage drawn =
+            new java.awt.image.BufferedImage(3 * size, 3 * size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D g = drawn.createGraphics();
+
+        tile.paintTrainOverCaptions(g);
+
+        g.dispose();
+
+        // THE EXPECTED ICON, from first principles
+        int[] ma = TileAnnotation.midpoint(road[0], size, size);
+        int[] mb = TileAnnotation.midpoint(road[1], size, size);
+        int[] to = TileAnnotation.midpoint(heading, size, size);
+
+        int cx = (ma[0] + mb[0]) / 2;
+        int cy = (ma[1] + mb[1]) / 2;
+
+        // the direction exactly, the middle unrounded: on a 30-pixel tile the drawn middle is (22,22), the line's (22.5,22.5)
+        double fx = to[0] - (ma[0] + mb[0]) / 2.0;
+        double fy = to[1] - (ma[1] + mb[1]) / 2.0;
+        double length = Math.hypot(fx, fy);
+
+        fx /= length;
+        fy /= length;
+
+        // the roof: the perpendicular pointing up the screen; on a straight running up or down the page, the quarter
+        // turn the diagram has always used - its roof to the west going north, to the east going south
+        double ux, uy;
+
+        if (Math.abs(fx) < 1e-9)
+        {
+            ux = fy < 0 ? -1 : 1;
+            uy = 0;
+        }
+        else
+        {
+            ux = fy;
+            uy = -fx;
+
+            if (uy > 0 || (uy == 0 && ux > 0))
+            {
+                ux = -ux;
+                uy = -uy;
+            }
+        }
+
+        // ON A STRAIGHT HEADING WEST, mirrored: the roof stays up
+        if (Math.abs(fy) < 1e-9 && fx < 0)
+        {
+            ux = 0;
+            uy = -1;
+        }
+
+        int side = Math.max((int) Math.round(Math.min(size, size) * 0.76), Math.max(6, size / 3));
+
+        java.awt.image.BufferedImage expected =
+            new java.awt.image.BufferedImage(3 * size, 3 * size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+        java.awt.Graphics2D e = expected.createGraphics();
+
+        e.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+        e.translate(size + cx, size + cy);
+        e.transform(new java.awt.geom.AffineTransform(fx, fy, -ux, -uy, 0, 0));
+        e.drawImage(icon, -side / 2, -side / 2, side, side, null);
+        e.dispose();
+
+        int both = 0, either = 0, outside = 0, expectedOutside = 0;
+
+        for (int y = 0; y < 3 * size; y++)
+        {
+            for (int x = 0; x < 3 * size; x++)
+            {
+                boolean p = (drawn.getRGB(x, y) >>> 24) >= 128;
+                boolean q = (expected.getRGB(x, y) >>> 24) >= 128;
+
+                if (p && q) both++;
+                if (p || q) either++;
+
+                boolean beyond = x < size || y < size || x >= 2 * size || y >= 2 * size;
+
+                if (p && beyond) outside++;
+                if (q && beyond) expectedOutside++;
+            }
+        }
+
+        if (either == 0) return "nothing was drawn";
+
+        double overlap = both / (double) either;
+
+        if (overlap >= 0.9) return null;
+
+        return String.format("%.0f%% the same as expected (centred on (%d,%d), front towards %s, %d px); %d pixels drawn"
+            + " past the tile where %d belong", overlap * 100, cx, cy, heading, side, outside, expectedOutside);
+    }
+
+    /**
+     * A train coming to or leaving a curve repaints the tiles around it, not only its own (MT-642): its icon is not
+     * clipped to its tile and reaches onto the next ones along the rail, so a repaint of the tile alone left the front
+     * of the old icon behind on its neighbours.
+     *
+     * MUTATION: repaint only the tile itself, and this fails.
+     */
+    @Test
+    public void testATrainLeavingACurveRepaintsWhereItsIconReached()
+    {
+        final int size = 60;
+
+        javax.swing.JPanel grid = new javax.swing.JPanel(null);
+
+        grid.setSize(3 * size, 3 * size);
+
+        org.traincontrol.gui.LayoutLabel tile = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
+
+        tile.setBounds(size, size, size, size);
+        tile.setAutonomyAnnotation(new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(Side.N, Side.E, null)), 0,
+            false, new TileAnnotation.Badge(true, false, false, false, true, Side.N, Side.E), false));
+
+        grid.add(tile);
+
+        final List<java.awt.Rectangle> dirty = new ArrayList<>();
+
+        javax.swing.RepaintManager was = javax.swing.RepaintManager.currentManager(grid);
+
+        javax.swing.RepaintManager.setCurrentManager(new javax.swing.RepaintManager()
+        {
+            @Override
+            public void addDirtyRegion(javax.swing.JComponent c, int x, int y, int w, int h)
+            {
+                dirty.add(javax.swing.SwingUtilities.convertRectangle(c, new java.awt.Rectangle(x, y, w, h), grid));
+
+                super.addDirtyRegion(c, x, y, w, h);
+            }
+        });
+
+        try
+        {
+            for (TileOverlay comesOrGoes : new TileOverlay[] {TileOverlay.parked(Side.E), null})
+            {
+                dirty.clear();
+
+                tile.setAutonomyOverlay(comesOrGoes);
+
+                // the tile and the half of each neighbour an icon on a curve can reach
+                java.awt.Rectangle reach = new java.awt.Rectangle(size / 2, size / 2, 2 * size, 2 * size);
+
+                boolean covered = false;
+
+                for (java.awt.Rectangle r : dirty) covered |= r.contains(reach);
+
+                assertTrue(covered, "a train " + (comesOrGoes == null ? "leaving" : "coming to") + " a curve repainted"
+                    + " only " + dirty + ", not the neighbours its icon reaches onto (MT-642)");
+            }
+        }
+        finally
+        {
+            javax.swing.RepaintManager.setCurrentManager(was);
+        }
+    }
+
+    /**
      * Whether the overlay drew anything at this pixel.
      */
     private boolean painted(java.awt.image.BufferedImage image, int x, int y)

@@ -260,7 +260,11 @@ the folder, the pop-outs, the picture and the CS3 web app stay live.  Built in r
 **Decided** (Adam, 2026-10-01: *"when a train is standing somewhere, can we show its locomotive icon on top of the
 station in the track diagram viewer, while maintaining editability? same icon as when a run is started"*): **a train
 parked with no path is drawn with the run's locomotive icon** on its station, facing the way it stands; a train waiting
-on a path it holds keeps the dot (FR-027).  Built in round 34.
+on a path it holds keeps the dot (FR-027).  Built in round 34.  **On a curve** (Adam, 2026-10-02, MT-642: *"the front of
+the locomotive is cut off on curved tiles.  Rotate the icon to match the angle of the tile so it fits"*; shown three ways,
+he chose full size, and *"there should be no clip"*): the icon runs along the rail at the size a straight gives it,
+centred on the train's own road of a double curve, its front the way the train goes and its roof never pointing down,
+and reaches onto the next tiles; no icon is clipped to its tile.
 
 **Decided** (Adam, 2026-10-01, during round 39: *"remember we just need to make sure edits are impossible during a
 run"*; then, asked how a validator should weigh a train's place lost at rest after an edit leaves the setup unable to

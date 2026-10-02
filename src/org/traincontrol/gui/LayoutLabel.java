@@ -1303,13 +1303,26 @@ public final class LayoutLabel extends JLabel
 
         if (effective == null ? autonomyOverlay == null : effective.equals(autonomyOverlay)) return;
 
+        TileOverlay was = autonomyOverlay;
+
         autonomyOverlay = effective;
 
         // A square with a train running on it comes to the front (FR-027).
         liftAboveLabels(effective != null && effective.isMoving());
 
-        // repaint() is safe from any thread; the monitor publishes from its own worker
-        this.repaint();
+        // repaint() is safe from any thread; the monitor publishes from its own worker.  AND THE TILES AROUND IT when a
+        // train comes or goes (MT-642): its icon is not clipped to this tile, and on a curve it reaches onto the next
+        // ones - repainting this tile alone left the old icon's front there
+        java.awt.Container around = getParent();
+
+        if (around != null && ((was != null && was.hasTrain()) || (effective != null && effective.hasTrain())))
+        {
+            around.repaint(getX() - getWidth(), getY() - getHeight(), 3 * getWidth(), 3 * getHeight());
+        }
+        else
+        {
+            this.repaint();
+        }
     }
 
     /**
@@ -1907,9 +1920,12 @@ public final class LayoutLabel extends JLabel
      * then captions - and then asks each tile for this, so the locomotive lands over both and the name
      * is untouched everywhere the locomotive is not.
      *
-     * TRANSLATED AND CLIPPED to this tile's own bounds, because the Graphics belongs to the container
-     * and the overlay draws in tile coordinates.  Without the clip an icon on a small tile would spill
-     * onto its neighbours, which is the one way this pass could make the diagram worse.
+     * TRANSLATED to this tile, because the Graphics belongs to the container and the overlay draws in
+     * tile coordinates - and NOT CLIPPED to it (Adam, MT-642: "there should be no clip").  On a curve the
+     * icon runs along the rail at its full size and reaches onto the next tiles, and the clip cut its
+     * front off.  `setAutonomyOverlay` repaints the tiles around this one when a train comes or goes, so
+     * nothing is left behind there.  The centre is the train's own road (`trackCentreOf`): a double
+     * curve has two.
      *
      * @param g the container's graphics
      */
@@ -1921,12 +1937,14 @@ public final class LayoutLabel extends JLabel
 
         org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
 
-        java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create(getX(), getY(), getWidth(), getHeight());
+        java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
 
         try
         {
+            g2.translate(getX(), getY());
+
             overlay.paintTrain(g2, getWidth(), getHeight(),
-                annotation == null ? null : annotation.trackCentre(getWidth(), getHeight()));
+                annotation == null ? null : annotation.trackCentreOf(overlay.trainSides(), getWidth(), getHeight()));
         }
         finally
         {

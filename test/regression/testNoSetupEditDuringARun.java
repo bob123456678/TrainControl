@@ -3422,9 +3422,10 @@ public class testNoSetupEditDuringARun
     /**
      * The Autonomy menu greys what changes the setup while autonomy runs, saying why on one line, and gives it back at rest
      * (Adam, MT-613 and MT-626: "why not grey out the whole menu while running?"): each door refused on its own, after
-     * the click.  Autonomy Settings and Documentation stay live - they change nothing.
+     * the click.  Autonomy Settings and Documentation stay live - they change nothing; Export Raw Graph as JSON is greyed
+     * with the rest (Adam, MT-633).
      *
-     * MUTATION: leave the menu live while autonomy runs, and this fails.
+     * MUTATION: leave the menu live while autonomy runs, or the debug export, and this fails.
      *
      * @throws Exception from the window
      */
@@ -3450,8 +3451,7 @@ public class testNoSetupEditDuringARun
             ui[0] = openTheWindow();
 
             java.util.Set<String> live = new java.util.HashSet<>(java.util.Arrays.asList(
-                I18n.t("autosetup.ui.menuGlobalSettings"), I18n.t("ui.main.documentation"),
-                I18n.t("autosetup.ui.menuExportRawGraph")));
+                I18n.t("autosetup.ui.menuGlobalSettings"), I18n.t("ui.main.documentation")));
 
             // DURING A RUN
             staging.set(ui[0], true);
@@ -3461,6 +3461,10 @@ public class testNoSetupEditDuringARun
             assertTrue(running.containsKey(I18n.t("autosetup.ui.btnManage"))
                 && running.containsKey(I18n.t("autosetup.ui.btnExcludePage")), "precondition: the Autonomy menu has no"
                 + " Manage Configurations or Pages with Autonomy Enabled: " + running.keySet());
+
+            // THE DEBUG EXPORT TOO (MT-633), which the window opened in debug offers
+            assertTrue(running.containsKey(I18n.t("autosetup.ui.menuExportRawGraph")), "precondition: the Autonomy menu"
+                + " has no Export Raw Graph as JSON: " + running.keySet());
 
             for (java.util.Map.Entry<String, javax.swing.JMenuItem> item : running.entrySet())
             {
