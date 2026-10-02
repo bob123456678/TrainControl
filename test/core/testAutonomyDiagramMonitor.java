@@ -1193,7 +1193,9 @@ public class testAutonomyDiagramMonitor
 
         double overlap = both / (double) either;
 
-        if (overlap >= 0.9) return null;
+        // THE SAME DRAWING, but for the smoothing at its edges: one turned four degrees off the rail - the rounded middle of
+        // a curve on a 30-pixel tile - is a different one, and a looser bar let it through
+        if (overlap >= 0.98) return null;
 
         return String.format("%.0f%% the same as expected (centred on (%d,%d), front towards %s, %d px); %d pixels drawn"
             + " past the tile where %d belong", overlap * 100, cx, cy, heading, side, outside, expectedOutside);
