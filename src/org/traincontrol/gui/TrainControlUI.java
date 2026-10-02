@@ -3125,9 +3125,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             org.traincontrol.automation.Layout standing = this.model.getAutoLayout();
 
-            // AND THE SETTINGS AND TIMETABLE (RSA20-A1): the railway's too
-            autonomySession.captureWhatTheRailwayOwns(standing.toJSON(standing.getLastPointsReached()),
-                activeDiagramConfiguration, settingsAsBuiltFor(standing));
+            autonomySession.captureWhereTheTrainsStand(standing.toJSON(standing.getLastPointsReached()),
+                activeDiagramConfiguration);
 
             autonomySession.saveWithoutReconciling();
         }
@@ -3212,20 +3211,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
-        // NOT WHILE A DECLINED SETUP EDIT IS WAITING (WKW-B2).
+        // UNLOAD'S FOLD, WHILE AN EDIT WAITS: none (RLV11-C6) - `keepWhereTheTrainsStand` writes where the trains stand and
+        // nothing else, not the railway's settings the railway-owned fold below would write
+        if (underWayToo && setupEditDeclinedDuringRun) return;
+
+        // WHILE A DECLINED SETUP EDIT IS WAITING, WHAT THE RAILWAY OWNS AND NOTHING OF THE SETUP'S (WKW-B2, RSA20-A1).
         //
         // A setup edit made as a run starts is written to the file and not to the running layout, and the
-        // message shown then promises it will be picked up at the next load.  The exit save has kept that
-        // promise since ACC-B3 by skipping its fold.  This is the same fold at the other doors - opening an
-        // editor, closing one, re-downloading the diagram, renaming or deleting a page - and it did not ask,
-        // so opening the autonomy editor after the run folded the layout built before the edit over the
-        // configuration and removed the edit before the exit could protect it.
-        //
-        // The same trade as the exit: until a rebuild has carried the edit no door folds the running layout
-        // back, and where the trains stand is carried across rebuilds - and across every load while the flag is
-        // up (`carryTheTrainsAcross`, RLV6-B1) - by `putTheTrainsBack` rather than written, against authored
-        // data nothing else would bring back.  The rebuild or load that replaces the running layout clears the
-        // flag, because from then on it carries the edit too (AMS-B1).
+        // message shown then promises it will be picked up at the next load.  Folding the whole running layout
+        // at these doors - opening an editor, closing one, Export, New Configuration - wrote the layout built
+        // before the edit over the configuration and removed the edit (WKW-B2); folding nothing lost where the
+        // run left the trains and the timetable it captured (RSA20-A1).  So until a load has carried the edit
+        // they fold where the trains stand and the settings the railway changed since it was built, and nothing
+        // else.  The rebuild or load that replaces the running layout clears the flag, because from then on it
+        // carries the edit too (AMS-B1).
         try
         {
             // Each train under way on the one point it is kept at (RLV8-B1, RLV9-A1); a railway at rest keeps none
@@ -3266,7 +3265,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Save what this session knows BEFORE forgetting it.  Nulling activeDiagramConfiguration first
         // meant the exit-path capture - which is gated on it - skipped everything, so re-downloading
         // the diagram silently threw away every placement, home and setting made since the last save.
-        captureRunningLayout();
+        //
+        // NOT WHILE AN EDIT WAITS (round 38): every door here leaves the railway or the setup - Unload, which writes
+        // where the trains stand and nothing else first (RLV11-C6); a switch of railway, which forgets the one it leaves
+        // with the edit (RLV7-C2); a deleted setup; a refresh of the layout - so the railway-owned fold the other doors
+        // make while the setup is newer (RSA20-A1) is not made here, as no fold was before it.
+        if (!setupEditDeclinedDuringRun) captureRunningLayout();
 
         autonomySession = null;
 

@@ -2031,9 +2031,12 @@ outran, not a train there, and raises nothing - nor does one on the same square,
 a link unpaired - leaves the railway and its trains as they were, and nothing is put back or recorded over it; the setup is
 then marked newer than the railway, as after a rebuild a run declined, so no fold of the railway built before the edit -
 opening or closing the editor, Export, New Configuration, the exit - writes its homes, lengths and priorities back over
-the edit until a load carries it (RSA19-B1).  **Those folds still write what the railway owns** (RSA20-A1): where each
-train stands, and the settings and timetable the Auto tab and a run write to the railway - folding nothing lost where the
-run left the trains and the timetable it captured.  **And a rebuild from the setup keeps the railway's settings and
+the edit until a load carries it (RSA19-B1).  **Those folds still write what the railway owns** (RSA20-A1) - opening or
+closing the editor, Export, New Configuration and the exit: where each train stands, and the settings and timetable the
+Auto tab and a run write to the railway (the ones it changed since it was built); folding nothing lost where the run left
+the trains and the timetable it captured.  The doors that leave the railway keep their own rules: Unload writes where
+the trains stand and nothing else (RLV11-C6), and a switch of railway, a deleted setup or a refresh of the layout folds
+nothing while an edit waits (RLV7-C2).  **And a rebuild from the setup keeps the railway's settings and
 timetable** (RSA20-B1): the ones the railway changed since it was built are folded first - only those, compared with the
 railway as it was built, so a setting a door edited in the setup is not written over.  A train placed in the setup meanwhile goes where the railway has it at that load: where a train
 stands is the railway's to say (OB-183).  **A train
