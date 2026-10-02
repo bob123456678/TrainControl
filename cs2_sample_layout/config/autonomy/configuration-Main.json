@@ -113,8 +113,10 @@
       "arrivedFrom": "W"
     },
     "1 - Main:20,13": {
+      "loc": {"name": "02 0314-1 DDR"},
       "maxTrainLength": 4,
       "facing": "E",
+      "arrivedFrom": "W",
       "canReverse": true
     },
     "1 - Main:21,6": {
@@ -319,41 +321,9 @@
     "1 - Main:1,3": {},
     "1 - Main:10,13": {},
     "1 - Main:5,4": {
-      "loc": {"name": "02 0314-1 DDR"},
       "maxTrainLength": 3,
-      "arrivedAlong": [
-        [
-          "BottomMainB (eastbound)",
-          "BottomMainPost (northbound)"
-        ],
-        [
-          "BottomMainPost (northbound)",
-          "1 - Main 7,1 (westbound)"
-        ],
-        [
-          "1 - Main 7,1 (westbound)",
-          "RampUp"
-        ],
-        [
-          "RampUp",
-          "1 - Main 1,3 (southbound)"
-        ],
-        [
-          "1 - Main 1,3 (southbound)",
-          "TopMainR1Inter (southbound)"
-        ],
-        [
-          "TopMainR1Inter (southbound)",
-          "TopMainR1Pre (northbound)"
-        ],
-        [
-          "TopMainR1Pre (northbound)",
-          "TopMainR1"
-        ]
-      ],
       "facing": "N",
       "homeFacing": "N",
-      "arrivedFrom": "S",
       "priority": 2,
       "home": "BR 628 2"
     },
