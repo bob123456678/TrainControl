@@ -27932,7 +27932,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_locCommandPanelsMouseClicked
 
     private void editAutonomyFromSettingsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editAutonomyFromSettingsActionPerformed
-        editLayoutButtonActionPerformed(evt);
+
+        // THE AUTONOMY EDITOR, whichever editor was used last (Adam, 2026-10-02): this button sits on the autonomy
+        // settings, and it ran the Edit button's code - which opens the editor used last, the track diagram's as often as
+        // not.  Refused, saying why, wherever the autonomy editor would be.
+        String why = whyAutonomyEditorCannotOpen();
+
+        if (why != null)
+        {
+            JOptionPane.showMessageDialog(this, I18n.t(why));
+
+            return;
+        }
+
+        openLayoutEditor(null, Boolean.TRUE, null, true);
     }//GEN-LAST:event_editAutonomyFromSettingsActionPerformed
 
     private void autoRouteListMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_autoRouteListMouseReleased
@@ -28640,6 +28653,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                                             refreshWhatWaitsForTheTrains();
                                         });
+
+                                        // AND SAID, not only logged (Adam, 2026-10-02: "the start says nothing") - once the
+                                        // buttons are back, so nothing waits on the answer; not where the railway gave up on
+                                        // a train it could not run, which says so itself
+                                        if (starting.isValid())
+                                        {
+                                            javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this,
+                                                I18n.t("autolayout.ui.errorNothingStarted")));
+                                        }
                                     }
                                 }
                             }).start();

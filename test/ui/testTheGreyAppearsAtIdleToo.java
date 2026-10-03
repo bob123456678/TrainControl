@@ -1403,4 +1403,130 @@ public class testTheGreyAppearsAtIdleToo
 
         return null;
     }
+
+    /**
+     * The track diagram's right-click menu names no editor keys (Adam, 2026-10-02): its Autonomy Setup submenu is the
+     * autonomy editor's square menu, whose tooltips named Control+H, Control+S, Control+E and Control+B - keys that do that
+     * in the editor only.  On the diagram, Control+S swaps key mappings.
+     *
+     * MUTATION: name the key on any item of the borrowed menu, and this fails.
+     *
+     * @throws Exception from reflection or the event thread
+     */
+    @Test(priority = 1)
+    public void testTheDiagramsMenuNamesNoEditorKeys() throws Exception
+    {
+        final Method showFor = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu").getDeclaredMethod(
+            "showFor", TrainControlUI.class, TileKey.class, TileKey.class, java.awt.Component.class, int.class, int.class);
+
+        showFor.setAccessible(true);
+
+        AutonomySession session = ui.getAutonomySession();
+
+        TileKey station = null;
+
+        for (TileKey tile : session.getReducer().getPoints().keySet())
+        {
+            if (session.getStore().isStation(tile))
+            {
+                station = tile;
+
+                break;
+            }
+        }
+
+        assertNotNull(station, "precondition: the snapshot has no station");
+
+        final javax.swing.JFrame[] host = new javax.swing.JFrame[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            host[0] = new javax.swing.JFrame("OB-307");
+            host[0].add(new javax.swing.JLabel("OB-307"));
+            host[0].setSize(400, 300);
+            host[0].setVisible(true);
+        });
+
+        try
+        {
+            final java.util.List<String> named = new java.util.ArrayList<>();
+            final java.util.List<String> texts = new java.util.ArrayList<>();
+
+            for (final TileKey[] ask : new TileKey[][] {{station, station}, {null, coveredSquare}})
+            {
+                final javax.swing.JLabel spot = theSpot();
+
+                SwingUtilities.invokeAndWait(() ->
+                {
+                    try
+                    {
+                        showFor.invoke(null, ui, ask[0], ask[1], spot, 10, 10);
+                    }
+                    catch (ReflectiveOperationException e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+                javax.swing.JPopupMenu menu = null;
+
+                long giveUp = System.currentTimeMillis() + 4000;
+
+                while (menu == null && System.currentTimeMillis() < giveUp)
+                {
+                    final javax.swing.JPopupMenu[] shown = new javax.swing.JPopupMenu[1];
+
+                    SwingUtilities.invokeAndWait(() -> shown[0] = aMenuOver(spot));
+
+                    menu = shown[0];
+
+                    if (menu == null) Thread.sleep(50);
+                }
+
+                assertNotNull(menu, "precondition: the diagram's menu did not open over " + ask[1]);
+
+                final javax.swing.JPopupMenu open = menu;
+
+                SwingUtilities.invokeAndWait(() ->
+                {
+                    keysNamedIn(open, named, texts);
+
+                    open.setVisible(false);
+                });
+            }
+
+            assertTrue(texts.contains(org.traincontrol.util.I18n.t("autosetup.ui.menuRename"))
+                && texts.contains(org.traincontrol.util.I18n.t("autosetup.ui.menuSetLength")), "precondition: the menus hold"
+                + " no Rename... or Segment Length..., the items that named a key: " + texts);
+
+            assertTrue(named.isEmpty(), "the track diagram's menu names keys that work only in the autonomy editor: " + named);
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> host[0].dispose());
+        }
+    }
+
+    /** Every item of a menu and its submenus: its text, and any tooltip naming a Control key. */
+    private static void keysNamedIn(java.awt.Container in, java.util.List<String> named, java.util.List<String> texts)
+    {
+        java.awt.Component[] parts = in instanceof javax.swing.JMenu
+            ? ((javax.swing.JMenu) in).getMenuComponents() : in.getComponents();
+
+        for (java.awt.Component c : parts)
+        {
+            if (c instanceof javax.swing.JMenuItem)
+            {
+                javax.swing.JMenuItem item = (javax.swing.JMenuItem) c;
+
+                texts.add(item.getText());
+
+                String tip = item.getToolTipText();
+
+                if (tip != null && tip.contains("Control+")) named.add(item.getText() + ": " + tip);
+            }
+
+            if (c instanceof java.awt.Container) keysNamedIn((java.awt.Container) c, named, texts);
+        }
+    }
 }

@@ -71,6 +71,7 @@ The pictures in this guide are of a small demo layout: an oval with stations Ash
 - **The strip above the track diagram.** When the setup has something to fix it shows a count - "2 errors, 1 warnings - 1 on this page" - and a `Fix it` button in place of Start. Either opens the editor on the first thing to deal with.
 - **Right-click a square on the track diagram** → `Autonomy Setup` → `Open the Full Editor...` opens the editor on that square.
 - **Inside the editor**, the sidebar on the left switches between `Track Diagram` and `Autonomy Setup`, and between pages.
+- The Auto tab's Settings has `Edit Autonomy Paths in Track Diagram`, which opens the autonomy editor.
 - The diagram's `Edit` button and `Layouts` → `Edit Layout Page` open whichever editor you used last - the track diagram or the autonomy setup.
 
 ![Step 2: Autonomy, Edit Autonomy on Page, and the page to open](assets/automation/03-edit-on-page.png)
@@ -397,7 +398,7 @@ So if a short train seems to be blocking a surprising amount of track, the answe
 
 ## Running and watching
 
-**Starting and stopping.** `Start Autonomous Operation` is on the strip above the track diagram, on the right-click menu of the diagram, and on the Auto tab. `Graceful Stop` (`Gracefully Stop Autonomy` on the right-click menu) lets every train finish the route it is on and then stops. It is almost always what you want; the emergency stop is for emergencies. The `Autonomy Controls` box on the strip shows or hides everything autonomy draws on the diagram.
+**Starting and stopping.** `Start Autonomous Operation` is on the strip above the track diagram, on the right-click menu of the diagram, and on the Auto tab. `Graceful Stop` (`Gracefully Stop Autonomy` on the right-click menu) lets every train finish the route it is on and then stops. It is almost always what you want; the emergency stop is for emergencies. If no train can be started - each on a station out of service, or with no speed set - Start says so and comes straight back. The `Autonomy Controls` box on the strip shows or hides everything autonomy draws on the diagram.
 
 **A train's route is drawn along the track.** The stations' blue for the track ahead of it, dark grey for the track it has driven and still holds, white arrows for which way it is going - and the train itself in orange along the length of track it covers, drawn over its route so its tail shows while it runs. Where routes are not atomic, the dark grey goes as the train gives the track behind it back. The line follows the track through curves and switches rather than cutting across them.
 

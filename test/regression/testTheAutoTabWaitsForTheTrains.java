@@ -12,6 +12,9 @@ import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import static regression.testNoSetupEditDuringARun.WAITING_FOR_THE_TRAINS;
+import static regression.testNoSetupEditDuringARun.closingEveryQuestion;
+import static regression.testTheImportDoorReadsAnOldFile.closeTheEditor;
+import org.traincontrol.util.I18n;
 import static regression.testNoSetupEditDuringARun.control;
 import static regression.testTheImportDoorReadsAnOldFile.answeringYes;
 import static regression.testTheImportDoorReadsAnOldFile.openTheWindow;
@@ -37,7 +40,9 @@ public class testTheAutoTabWaitsForTheTrains
      * stayed greyed and Graceful Stop offered over nothing, and the Auto tab, which counts Graceful Stop offered as a run,
      * stayed greyed saying to wait for trains that were not moving.
      *
-     * MUTATION: leave Start's buttons as they are when nothing started, and this fails.
+     * And it says so (Adam, 2026-10-02: "the start says nothing"): the log alone said why.
+     *
+     * MUTATION: leave Start's buttons as they are when nothing started, or say nothing, and this fails.
      *
      * @throws Exception from the window
      */
@@ -55,6 +60,8 @@ public class testTheAutoTabWaitsForTheTrains
         boolean echoWas = org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS;
 
         final java.util.Map<org.traincontrol.base.Locomotive, Integer> speeds = new java.util.LinkedHashMap<>();
+
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
         try
         {
@@ -118,6 +125,11 @@ public class testTheAutoTabWaitsForTheTrains
 
             final javax.swing.JComponent startButton = control(ui[0], "startAutonomy");
 
+            // WHAT IT SAYS, read and closed - started once Start's own questions are answered
+            final List<String> said = Collections.synchronizedList(new ArrayList<String>());
+
+            closingEveryQuestion(said, new ArrayList<String>(), going);
+
             until = System.currentTimeMillis() + 10000;
 
             while (!(offered.contains(Boolean.TRUE) && !stop.isEnabled() && startButton.isEnabled())
@@ -147,9 +159,19 @@ public class testTheAutoTabWaitsForTheTrains
             }
 
             SwingUtilities.invokeAndWait(() -> stop.removePropertyChangeListener("enabled", watch));
+
+            final String nothing = I18n.t("autolayout.ui.errorNothingStarted");
+
+            until = System.currentTimeMillis() + 5000;
+
+            while (!said.contains(nothing) && System.currentTimeMillis() < until) Thread.sleep(100);
+
+            assertTrue(said.contains(nothing), "a Start that started nothing said nothing - only the log said why: " + said);
         }
         finally
         {
+            going.set(false);
+
             for (java.util.Map.Entry<org.traincontrol.base.Locomotive, Integer> was : speeds.entrySet())
             {
                 was.getKey().setPreferredSpeed(was.getValue());
@@ -321,5 +343,110 @@ public class testTheAutoTabWaitsForTheTrains
 
             if (sandbox != null) sandbox.close();
         }
+    }
+
+    /**
+     * The Auto tab's Edit Autonomy Paths in Track Diagram opens the autonomy editor, whichever editor was used last (Adam,
+     * 2026-10-02): it ran the Edit button's code, which opens the editor used last - the track diagram's, after it.
+     *
+     * MUTATION: send the button to the Edit button's code, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testTheSettingsTabOpensTheAutonomyEditor() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            // THE TRACK EDITOR, USED LAST
+            answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.FALSE, null, true));
+
+            org.traincontrol.gui.LayoutEditor first = theEditor(ui[0]);
+
+            assertNotNull(first, "precondition: the track editor did not open");
+
+            assertFalse(first.isAutonomyMode(), "precondition: the editor opened was not the track editor");
+
+            closeTheEditor(ui[0]);
+
+            // THE SETTINGS TAB'S BUTTON
+            final java.lang.reflect.Method press = TrainControlUI.class.getDeclaredMethod(
+                "editAutonomyFromSettingsActionPerformed", java.awt.event.ActionEvent.class);
+
+            press.setAccessible(true);
+
+            answeringYes(() ->
+            {
+                try
+                {
+                    press.invoke(ui[0], new Object[] {null});
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            org.traincontrol.gui.LayoutEditor opened = theEditor(ui[0]);
+
+            assertNotNull(opened, "Edit Autonomy Paths in Track Diagram opened no editor");
+
+            assertTrue(opened.isAutonomyMode(), "Edit Autonomy Paths in Track Diagram opened the track editor, the one used"
+                + " last, not the autonomy editor");
+
+            closeTheEditor(ui[0]);
+        }
+        finally
+        {
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * @param ui the window
+     * @return its editor once it is showing, within twenty seconds, or null
+     * @throws Exception from the event thread
+     */
+    private static org.traincontrol.gui.LayoutEditor theEditor(TrainControlUI ui) throws Exception
+    {
+        java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
+
+        open.setAccessible(true);
+
+        long until = System.currentTimeMillis() + 20000;
+
+        while (System.currentTimeMillis() < until)
+        {
+            SwingUtilities.invokeAndWait(() -> { });
+
+            org.traincontrol.gui.LayoutEditor editor = (org.traincontrol.gui.LayoutEditor) open.get(ui);
+
+            if (editor != null && editor.isDisplayable()) return editor;
+
+            Thread.sleep(100);
+        }
+
+        return null;
     }
 }

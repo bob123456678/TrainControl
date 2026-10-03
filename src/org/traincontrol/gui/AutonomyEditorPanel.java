@@ -1482,8 +1482,9 @@ public class AutonomyEditorPanel extends JPanel
                         () -> promptHome(target));
 
                     // THE KEY THAT DOES THIS WITHOUT THE MENU (Adam, OB-214: "change for other missing
-                    // tooltip hints").  See `SHORTCUT_HOME`.
-                    homeItem.setToolTipText(SHORTCUT_HOME);
+                    // tooltip hints").  See `SHORTCUT_HOME`.  Not on the track diagram's menu, which borrows this one:
+                    // the key works only in the editor (Adam, 2026-10-02).
+                    if (!menuOnly) homeItem.setToolTipText(SHORTCUT_HOME);
 
                     menu.add(homeItem);
                 }
@@ -1494,8 +1495,9 @@ public class AutonomyEditorPanel extends JPanel
             javax.swing.JMenuItem renameItem =
                 item(I18n.t("autosetup.ui.menuRename"), () -> promptName(target));
 
-            // And Control+S, the key that names the square under the pointer (OB-214).
-            renameItem.setToolTipText(SHORTCUT_NAME);
+            // And Control+S, the key that names the square under the pointer (OB-214) - in the editor only, where it
+            // does; on the track diagram it swaps key mappings
+            if (!menuOnly) renameItem.setToolTipText(SHORTCUT_NAME);
 
             menu.add(renameItem);
 
@@ -1596,7 +1598,8 @@ public class AutonomyEditorPanel extends JPanel
                 // The label carries the value and the units are the operator's own, so "4" on its own
                 // says nothing about whether it is carriages, centimetres or squares - and the one
                 // thing a reader cannot discover by opening the dialog is that a shortcut exists.
-                maximum.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipMaxTrainLength")));
+                maximum.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipMaxTrainLength")
+                    + (menuOnly ? "" : "  " + I18n.t("autosetup.ui.tooltipMaxTrainLengthKey"))));
 
                 stationMenu.add(maximum);
             }
@@ -2045,8 +2048,8 @@ public class AutonomyEditorPanel extends JPanel
             javax.swing.JMenuItem lengthItem = item(I18n.t("autosetup.ui.menuSetLength"),
                 () -> applyLength(squareTheLengthWouldGoOn(tile)));
 
-            // Adam, OB-214: "Set Segment Length needs a tooltip that says Control+E".
-            lengthItem.setToolTipText(SHORTCUT_LENGTH);
+            // Adam, OB-214: "Set Segment Length needs a tooltip that says Control+E" - where Control+E does it
+            if (!menuOnly) lengthItem.setToolTipText(SHORTCUT_LENGTH);
 
             menu.add(lengthItem);
         }
@@ -4185,6 +4188,17 @@ public class AutonomyEditorPanel extends JPanel
     public void setMenuOnly(boolean menuOnly)
     {
         this.menuOnly = menuOnly;
+    }
+
+    /**
+     * How many things must be fixed, in words that agree with the number (Adam, 2026-10-02): "1 things" read wrong.
+     *
+     * @param errors how many
+     * @return the line under the findings
+     */
+    public static String blockingCountText(int errors)
+    {
+        return errors == 1 ? I18n.t("autosetup.ui.labelBlockingCountOne") : I18n.f("autosetup.ui.labelBlockingCount", errors);
     }
 
     /**
@@ -9806,7 +9820,7 @@ public class AutonomyEditorPanel extends JPanel
 
         if (errors > 0)
         {
-            banner.setText(I18n.f("autosetup.ui.labelBlockingCount", errors));
+            banner.setText(blockingCountText(errors));
             banner.setBackground(new java.awt.Color(255, 210, 210));
         }
         else

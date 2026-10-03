@@ -2586,7 +2586,7 @@ locomotives to stop."*, whoever greyed it (RSA27-C3), and gives them back with t
 stopped (Adam, 2026-10-02: *"Implement the two grey usability fixes"*).  Busy is a run, a timetable run, Return Home, a
 hand dispatch from its click (RSA27-C2) or a Graceful Stop's coast-down, and Graceful Stop offered - Start's run counts
 before the railway does; a Start that starts nothing - every train to run skipped - gives Start back at once and takes
-Graceful Stop away (RSA27-C1).  A click on a greyed setting says nothing and leaves it as the railway has it.  `regression.testNoSetupEditDuringARun.testTheAutoTabIsGreyedWhileAutonomyIsBusy`,
+Graceful Stop away (RSA27-C1), and says why (Adam, 2026-10-02).  A click on a greyed setting says nothing and leaves it as the railway has it.  `regression.testNoSetupEditDuringARun.testTheAutoTabIsGreyedWhileAutonomyIsBusy`,
 `testARunGreysTheAutoTabAndItsStopGivesItBack`.
 
 **Layouts > Create New Layout waits for autonomy to stop**, as every Layout menu door that changes the diagram does

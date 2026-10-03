@@ -554,12 +554,30 @@ public class AutonomyOverlayToggle extends JPanel
         //
         // The page figure survives as the third number rather than the first, because "how many are
         // here" is what you want AFTER knowing whether any of them stop the setup running.
-        findings.setText(totalErrors > 0
-            ? I18n.f("autosetup.ui.labelFindingsCountErrors", totalErrors, totalWarnings,
-                pageErrors + pageWarnings)
-            : I18n.f("autosetup.ui.labelFindingsCount", totalWarnings, pageWarnings));
+        findings.setText(findingsCountText(totalErrors, totalWarnings, totalErrors > 0 ? pageErrors + pageWarnings : pageWarnings));
         findings.setToolTipText(I18n.t("autosetup.ui.tooltipFindings"));
         findings.setVisible(true);
+    }
+
+    /**
+     * The strip's count, in words that agree with each number (Adam, 2026-10-02): "1 warnings" read wrong, as "1 things"
+     * under the editor's findings did.
+     *
+     * @param errors errors in the whole setup
+     * @param warnings warnings in the whole setup
+     * @param onThisPage how many of the ones counted are on the page shown
+     * @return "2 errors, 1 warning - 1 on this page", or without the errors where there are none
+     */
+    public static String findingsCountText(int errors, int warnings, int onThisPage)
+    {
+        String warned = warnings == 1 ? I18n.t("autosetup.ui.countWarningsOne") : I18n.f("autosetup.ui.countWarnings", warnings);
+        String here = I18n.f("autosetup.ui.countOnThisPage", onThisPage);
+
+        if (errors <= 0) return I18n.f("autosetup.ui.labelFindingsCount", warned, here);
+
+        String erred = errors == 1 ? I18n.t("autosetup.ui.countErrorsOne") : I18n.f("autosetup.ui.countErrors", errors);
+
+        return I18n.f("autosetup.ui.labelFindingsCountErrors", erred, warned, here);
     }
 
     /**

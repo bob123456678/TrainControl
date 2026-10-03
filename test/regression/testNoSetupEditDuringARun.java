@@ -3285,7 +3285,7 @@ public class testNoSetupEditDuringARun
      * Closes every question and every file chooser until `going` is lowered: a question's words into `asked`, a
      * chooser cancelled and its title into `choosers`.
      */
-    private static void closingEveryQuestion(final List<String> asked, final List<String> choosers,
+    static void closingEveryQuestion(final List<String> asked, final List<String> choosers,
         final java.util.concurrent.atomic.AtomicBoolean going)
     {
         Thread answering = new Thread(() ->
