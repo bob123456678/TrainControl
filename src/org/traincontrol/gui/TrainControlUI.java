@@ -26156,10 +26156,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
                     java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setStroke(new java.awt.BasicStroke(Math.max(2f, size / 6f),
+
+                // ABOUT ITS OWN CENTRE (MT-650).  Adam: *"the spinner isn't perfectly centered around itself- looks a
+                // little unsmooth (1-2 px off)."*  Whole-pixel `drawArc` under the default stroke normalisation moved the
+                // outline onto the pixel grid differently at each angle, so the ring stepped about as it turned - more on
+                // a scaled display.  Exact coordinates and pure strokes; inset by half the stroke, so no frame is clipped.
+                g2.setRenderingHint(java.awt.RenderingHints.KEY_STROKE_CONTROL,
+                    java.awt.RenderingHints.VALUE_STROKE_PURE);
+
+                float stroke = Math.max(2f, size / 6f);
+
+                g2.setStroke(new java.awt.BasicStroke(stroke,
                     java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
                 g2.setColor(new java.awt.Color(90, 90, 90));
-                g2.drawArc(x + 1, y + 1, size - 2, size - 2, angle, 270);
+
+                double inset = stroke / 2.0 + 0.5;
+
+                g2.draw(new java.awt.geom.Arc2D.Double(x + inset, y + inset, size - 2 * inset, size - 2 * inset,
+                    angle, 270, java.awt.geom.Arc2D.OPEN));
             }
             finally
             {
