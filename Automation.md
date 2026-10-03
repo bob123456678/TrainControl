@@ -56,7 +56,7 @@ Automation rests on three things, and everything else in this guide is a refinem
 
 Press start, and TrainControl picks a train, picks somewhere it can go, sets the switches and signals along the way, sends it, and watches the sensors until it arrives. Then it does it again.
 
-> **[Screenshot not yet captured — assets/automation/01-overview.png]** the autonomy editor on a small layout, with two stations named and the track between them
+The pictures in this guide are of a small demo layout: an oval with stations Ashby and Bramley, a passing loop with Carlton, and a branch to a terminus, Thornbury. The numbers on them are the steps below.
 
 ---
 
@@ -64,7 +64,7 @@ Press start, and TrainControl picks a train, picks somewhere it can go, sets the
 
 **1. Make a configuration.** `Autonomy` → `Add a Configuration...`. TrainControl asks for a name (the first is "Autonomy 1"), reads your track diagram as it stands, and loads the result. Every sensor can now be a station, and the track between them is what trains will use. A configuration is one way of running your railway; you can have several (see [Configurations](#configurations-what-each-one-keeps-and-what-they-share)).
 
-> **[Screenshot not yet captured — assets/automation/02-add-configuration.png]** the Autonomy menu, with "Add a Configuration..." highlighted
+![Step 1: the Autonomy menu, with Add a Configuration... highlighted](assets/automation/02-add-configuration.png)
 
 **2. Open the editor.** `Autonomy` → `Edit Autonomy on Page`, and pick your page. Other ways in:
 
@@ -73,29 +73,30 @@ Press start, and TrainControl picks a train, picks somewhere it can go, sets the
 - **Inside the editor**, the sidebar on the left switches between `Track Diagram` and `Autonomy Setup`, and between pages.
 - The diagram's `Edit` button and `Layouts` → `Edit Layout Page` open whichever editor you used last - the track diagram or the autonomy setup.
 
+![Step 2: Autonomy, Edit Autonomy on Page, and the page to open](assets/automation/03-edit-on-page.png)
+
 Only one editor window is open at a time; any of these while it is open simply brings it forward. The editor cannot be opened while autonomy is running - stop the trains first. While it is open, the Autonomy menu is greyed except for `Documentation` and an `Open the Full Editor...` that brings it forward, and no train can be sent.
 
 ---
 
 ## The editor at a glance
 
-The window is titled "Autonomy Editor: *page*", and has three parts.
+The window is titled "Autonomy Editor: *page*": the sidebar on the left, your diagram in the middle, and tools and settings on the right.
 
-**On the left, the sidebar.** Under `Page`, the pages of your layout (shown when there are two or more) - click one to go to it. Under `Editing`, `Track Diagram` and `Autonomy Setup` switch between drawing track and setting up autonomy, on the same page.
+![The autonomy editor, its parts numbered](assets/automation/01-editor.png)
 
-**In the middle, your diagram.** A light grey **message strip** across the top says what just happened and what to do next. Across the bottom, **Things to look at** lists what the [setup check](#the-setup-check) has found, with a line under it saying whether the setup is ready to run. Hover over a station to see its name.
-
-**On the right, a column of tools and settings**, top to bottom:
-
-| | What it is |
-| --- | --- |
-| `Autonomy Tools` | **Test a path** and **Why not Moving?** - see [the tools](#the-tools-test-a-path-why-not-moving-one-way-run) |
-| `Path Type` | `Auto` or `Manual`: whether Test a path and Why not Moving? answer for autonomy choosing a destination, or for a train you send yourself (and Return Home) |
-| `Page Settings` | `Exclude Page` leaves this whole page out of autonomy: its sensors stop being stations and nothing on it is driven. Put it back from `Autonomy` → `Pages with Autonomy Enabled…` |
-| `Visible Elements` | `Grid` (Control+K), `Addresses` (Control+D), `Track Lengths` - each square's recorded length (Control+G), and `Unmeasured Track` - track with no length yet |
-| `Text Labels` | What the station captions show: `Station Names`, `Parked Locs` (the train standing there), `Home Locs` (the station's home locomotive), `None`, or `Labels Only` (your own diagram text instead). Control+L steps through them |
-| `Track Directions` | Which direction marks are drawn: `Show All`, `Restrictions only` (just the directions you have shut - the usual one), `Hide All`, or `Station Arrivals` (which sides each station takes trains from) |
-| `Save Changes`, `Cancel` | See [Saving, cancelling, and changing page](#saving-cancelling-and-changing-page) |
+1. **`Editing`** - `Track Diagram` and `Autonomy Setup` switch between drawing track and setting up autonomy, on the same page. With two or more pages, a `Page` list above it goes from page to page.
+2. **The message strip** says what just happened and what to do next.
+3. **Your diagram.** Click track to set which way trains may run; right-click any square for everything else. Hover over a station to see its name.
+4. **Things to look at** lists what the [setup check](#the-setup-check) has found. Click a finding to go to its square.
+5. **The line under it** says whether the setup is ready to run.
+6. **`Autonomy Tools`** - `Test a path` and `Why not Moving?`; see [the tools](#the-tools-test-a-path-why-not-moving-one-way-run).
+7. **`Path Type`** - `Auto` or `Manual`: whether those two tools answer for autonomy choosing a destination, or for a train you send yourself (and Return Home).
+8. **`Page Settings`** - `Exclude Page` leaves this whole page out of autonomy: its sensors stop being stations and nothing on it is driven. Put it back from `Autonomy` → `Pages with Autonomy Enabled…`.
+9. **`Visible Elements`** - `Grid` (Control+K), `Addresses` (Control+D), `Track Lengths` - each square's recorded length (Control+G) - and `Unmeasured Track`, the track with no length yet.
+10. **`Text Labels`** - what the station captions show: `Station Names`, `Parked Locs` (the train standing there), `Home Locs` (the station's home locomotive), `None`, or `Labels Only` (your own diagram text instead). Control+L steps through them.
+11. **`Track Directions`** - which direction marks are drawn: `Show All`, `Restrictions only` (just the directions you have shut - the usual one), `Hide All`, or `Station Arrivals` (which sides each station takes trains from).
+12. **`Save Changes`** and **`Cancel`** - see [Saving, cancelling, and changing page](#saving-cancelling-and-changing-page).
 
 The visibility settings are remembered between openings.
 
@@ -197,7 +198,11 @@ A tool stays armed until you press its button again, press Escape, or right-clic
 
 **`Test a path`** answers "could a train get from here to there?" Click the sensor a train would start from, then the sensor it should reach. The route there is drawn in yellow and the route back in amber - a leg ending at a station autonomy will not choose is drawn in magenta - and the message strip says how many routes there are each way, or "no way through". `Path Type` says whether to answer for autonomy (`Auto`) or for a train you send yourself (`Manual`); changing it redraws the last test. It uses the setup as you have it, unsaved changes included.
 
+![Test a path from Ashby to Carlton: the route there drawn in yellow, and the message strip counting the routes](assets/automation/07-test-path.png)
+
 **`Why not Moving?`** answers "why is this train not being sent anywhere?" Click the square a train is standing on: every route it *could* take is drawn on the track, and the stations it cannot go to are listed underneath with the reason for each - occupied and by whom, switched off, excluded, too short, no track at all. A train with somewhere to go draws lines; a train with nowhere draws none. This tool reads the configuration as last **saved**: if you have unsaved changes it says so.
+
+![Why not Moving? on BR 218 at Bramley: nowhere to go, and the reason for each station](assets/automation/08-why-not-moving.png)
 
 **`One-Way Run`** (from `Bulk Tools`) closes a stretch of track to one direction in two clicks: click one end of the run, then the far end, and choose `From A to B` or `From B to A`. It stays armed for the next pair.
 
@@ -249,17 +254,23 @@ The simplest arrangement that runs: two stations, one train, one piece of track 
       s88 1                        s88 2
 ```
 
-**1. Make the configuration and open the editor**, as in [Getting started](#getting-started).
+**Steps 1 and 2** - make the configuration and open the editor - are in [Getting started](#getting-started).
 
-**2. Name the two stations.** Right-click each of the sensor squares at A and B and choose `Rename...`. The name is what you will see in every list and every log line, and what an arrival is announced under.
+**3. Name the two stations.** Right-click each of the sensor squares at A and B and choose `Rename...`. The name is what you will see in every list and every log line, and what an arrival is announced under.
 
-> **[Screenshot not yet captured — assets/automation/03-station-menu.png]** the right-click menu on a station square in the autonomy editor
+**4. Check both may be stopped at.** The same menu has `Station (...)`: `Yes - Trains Can Stop Here` is what a station is. Sensors that are only there to track a train through a junction are `No - Trains Can Only Pass Through`.
 
-**3. Check both may be stopped at.** The same menu has `Station (...)`: `Yes - Trains Can Stop Here` is what a station is. Sensors that are only there to track a train through a junction are `No - Trains Can Only Pass Through`.
+**5. Put the train somewhere.** Right-click Station A and use `Add a Locomotive to Autonomy...`. This is a statement of fact about your railway: the train really does need to be standing at A.
 
-**4. Put the train somewhere.** Right-click Station A and use `Add a Locomotive to Autonomy...`. This is a statement of fact about your railway: the train really does need to be standing at A.
+![Steps 3 to 5 on a station's right-click menu: Rename..., Station (yes) and Yes - Trains Can Stop Here, and Add a Locomotive to Autonomy...](assets/automation/04-station-menu.png)
 
-**5. Save, and press start.** `Save Changes`, then `Start Autonomous Operation` on the strip above the diagram. The train runs to B. When it arrives, TrainControl notices, waits a moment, and runs it back to A. It will keep doing that.
+**6. Save.** `Save Changes`, at the bottom of the editor's right-hand column.
+
+![Step 6: Save Changes](assets/automation/05-save.png)
+
+**7. Start.** `Start Autonomous Operation`, on the strip above the track diagram. The train runs to B. When it arrives, TrainControl notices, waits a moment, and runs it back to A. It will keep doing that.
+
+![Step 7: Start Autonomous Operation, on the strip above the track diagram](assets/automation/06-start.png)
 
 **What just happened.** TrainControl traced your diagram, found that A connects to B, saw a train at A, and found exactly one place it could go. Nothing else was needed.
 
@@ -286,7 +297,7 @@ Press start. A train leaves A. It can reach B two ways — through the loop past
 
 **Try this.** In the editor, click one side of the loop until the message strip says it is closed - or right-click it, `Trains May Depart...` → `Closed - No Trains`. Now every train goes past C. With `Track Directions` on `Restrictions only`, closed track is marked on the diagram, so you can see at a glance what is not being used.
 
-> **[Screenshot not yet captured — assets/automation/04-two-trains.png]** a diagram with one side of the loop closed, and two trains running
+![A run of track closed by clicking it: its square marked, and the message strip saying it is now closed](assets/automation/09-loop-closed.png)
 
 **Try this too.** Right-click C, open `Advanced Parameters...`, and set `Station Priority` higher than the others. Trains will now favour calling there. Priority does not force it — it tips the choice.
 
@@ -311,7 +322,7 @@ That is deliberate, and it is worth understanding because it surprises people. R
 
 **You can still use it.** Send a train there yourself - right-click the train on the track diagram, and look under `More Destinations` - and [Return Home](#sending-everything-home) will still park trains there. What will not happen is a train ending up there because a dice roll put it there.
 
-> **[Screenshot not yet captured — assets/automation/05-terminus.png]** a terminus station on the diagram, showing the reversing marker
+![Thornbury's right-click menu: Changing Direction, Trains Must Change Direction Here](assets/automation/10-terminus.png)
 
 ---
 
@@ -323,7 +334,7 @@ Right-click the station and open **`Trains May Arrive...`**. By default a statio
 
 Set `Track Directions` to `Station Arrivals` to see, for every station at once, which sides it takes trains from.
 
-> **[Screenshot not yet captured — assets/automation/06-arrivals.png]** Trains May Arrive... for a station, with one side switched off, and Track Directions set to Station Arrivals
+![Bramley's right-click menu: Trains May Arrive..., with both sides open](assets/automation/11-arrivals.png)
 
 **Where this matters most** is a station that is really two platforms. On the diagram it is one square, but a train arriving from the east and a train arriving from the west are doing different things — different switches set, different track occupied. Arrival sides are how you say which of those you want.
 
@@ -404,9 +415,11 @@ So if a short train seems to be blocking a surprising amount of track, the answe
 - **Timetable** - see [Timetables](#timetables-recording-a-sequence-and-playing-it-back).
 - **Settings** - see [Settings](#settings-and-what-each-one-is-for).
 
+![The Auto tab while autonomy runs: Graceful Stop, and a card for each train](assets/automation/13-auto-tab.png)
+
 **On the track diagram**, right-click a train to send it to one of the stations autonomy chooses from, or one under `More Destinations` - reversing points, parking berths, and stations you have marked as not automatic. Right-click a station to place the train selected in the main window there (`Place` *train*), or to take one off.
 
-> **[Screenshot not yet captured — assets/automation/07-running.png]** a running layout, with a route drawn in blue and dark grey, the train's tail in orange, and a train's name showing at a station
+![A running layout: ICE 3 on its way from Ashby to Carlton, its route drawn in blue with white arrows; BR 218 parked at Bramley](assets/automation/12-running.png)
 
 ---
 
@@ -447,7 +460,7 @@ Autonomy running on its own is random by design. A timetable is the opposite: a 
 
 It is worth recording a timetable that ends where it began. That way it can be run again and again.
 
-> **[Screenshot not yet captured — assets/automation/08-timetable.png]** the timetable panel with several captured entries
+![The Timetable tab with five captured entries](assets/automation/14-timetable.png)
 
 ---
 
@@ -552,22 +565,3 @@ This is the section to read first when nothing happens. In rough order of how of
 **Two places tell you which it is, rather than making you guess.** On the Auto tab, hover over "No available paths", or click it: it names every station the train might have been sent to and, for each one, the reason it was refused. In the editor, **Why not Moving?** answers the same question on the diagram - see [the tools](#the-tools-test-a-path-why-not-moving-one-way-run).
 
 The log is verbose about all of this too, and worth reading: it names the train, the route, and the reason.
-
----
-
-## Screenshots this guide still needs
-
-The placeholders above want real pictures. Each is a single screen capture; the file names are the paths the guide already points at.
-
-| File | What to capture |
-| --- | --- |
-| `assets/automation/01-overview.png` | The autonomy editor on a small layout, with two stations named and the track between them |
-| `assets/automation/02-add-configuration.png` | The Autonomy menu open, with "Add a Configuration..." highlighted |
-| `assets/automation/03-station-menu.png` | The right-click menu on a station square in the autonomy editor, open, showing Rename and Station |
-| `assets/automation/04-two-trains.png` | A layout with one side of a loop closed and two trains running at once |
-| `assets/automation/05-terminus.png` | A terminus station showing the reversing marker |
-| `assets/automation/06-arrivals.png` | Trains May Arrive... with one side switched off, and Track Directions set to Station Arrivals |
-| `assets/automation/07-running.png` | A running layout: a route drawn in blue and dark grey, the train's tail in orange, arrows, and a train's name showing at a station |
-| `assets/automation/08-timetable.png` | The timetable panel with several captured entries in it |
-
-**The easiest way to produce a clean diagram picture** is `Layout` → `Save Current Track Diagram as a Picture...`, which writes the page you are looking at to a PNG at whatever size you ask for - the whole page, not just the part scrolled into view, and with none of the window around it. Sixty pixels per square reads well in a document; twenty is about what the screen shows.

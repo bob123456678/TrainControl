@@ -115,7 +115,7 @@ Conditional routes can be defined for semi-automatic layout operation, such as s
 
 In addition to all Central Station functionality, complex logical expressions are supported.
 
-![Route editing wizard in TrainControl, showing accessory commands and conditional S88 trigger logic](assets/ui_route2.png?raw=true)
+![TrainControl's route editor: each command a row of dropdowns, and its conditions an indented list joined by "and" and "or"](assets/ui_route3.png?raw=true)
 
 **Keyboard**
 
@@ -127,17 +127,17 @@ Useful for testing, individual accessories can be directly controlled via their 
 
 Set up on the track diagram ([user guide](Automation.md)) - an older [JSON configuration file](AutomationAPI.md) can be imported from the autonomy menu - and enable complete automation of trains using just S88 sensors and an initial list of locomotive locations.  TrainControl will automatically keep track of where each train is located at any given time.  You can pick destinations for specific trains, or let the system continuously execute random routes.  All state is auto-saved on exit.
 
-![Autonomy control panel in TrainControl, used to start fully autonomous train operation](assets/ui_autonomy.png?raw=true)
+![A train running under autonomy on the track diagram, its route drawn ahead of it](assets/autonomy3.png?raw=true)
 
 The track diagram shows each running train's route, the track it is holding, and where every train is standing.  The setup is checked as you build it, and each problem it finds opens the autonomy editor on the square it is about.  While trains are not running, you can right-click a station to place a train there, or right-click a train to send it somewhere.
 
 In addition to the continuous automated operation and point-to-point commands, you can also specify timetables and run your trains according to a predefined list of paths, subject to the same protections as autonomous operation.
 
-<img src="assets/timetable.png?raw=true" alt="Timetable editor in TrainControl, running trains through a predefined sequence of paths" width="500">
+<img src="assets/timetable3.png?raw=true" alt="The timetable in TrainControl: a captured sequence of journeys, played back in order" width="600">
 
 Point-to-point operation can also be controlled directly from the track diagram: right-click a train to send it to a station.
 
-<img src="assets/easyauto.png?raw=true" alt="Sending a train to a station directly from the track diagram" width="500">
+<img src="assets/easyauto3.png?raw=true" alt="Right-clicking a train on the track diagram to send it to a station" width="500">
 
 **Statistics**
 

@@ -1,7 +1,6 @@
-# Screenshots for the automation guide
+# Pictures for the autonomy editor guide
 
-[Automation.md](../../Automation.md) points at eight pictures in this folder. They are not in the
-repository yet; the table at the bottom of that guide says what each one should show.
-
-The quickest way to produce a clean picture of a diagram - the whole page, at any size, with none of
-the window around it - is `Layout` -> `Save Diagram as a Picture...`.
+[Automation.md](../../Automation.md) shows these. They are TrainControl's own windows on a small demo layout - an oval
+with stations Ashby and Bramley, a passing loop with Carlton, and a branch to a terminus, Thornbury - run in
+simulation and painted at twice screen size. The numbered badges and boxes were drawn on afterwards: the numbers in
+02 to 06 are the setup steps in the guide, and those in 01 match its list of the editor's parts.
