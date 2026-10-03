@@ -27,11 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-654](#mt-654) | 2026-10-03 | A pre-release's window title leaves out the Central Station | fixed unvalidated | Adam 2026-10-03 |
-| [MT-655](#mt-655) | 2026-10-03 | Multi-units from the locomotive database's right-click menu | fixed unvalidated | Adam 2026-10-03 |
 
-Everything else - 653 of 655 - needs nothing from you unless the area changes again:
-513 **fixed validated** and 140 **superseded**.
+
+Everything else - 655 of 655 - needs nothing from you unless the area changes again:
+515 **fixed validated** and 140 **superseded**.
 
 ---
 
@@ -31487,7 +31486,7 @@ Validated on your *Works* of 2026-10-03.
 
 ### MT-654 - 2026-10-03 - A pre-release's window title leaves out the Central Station
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-03
 
 **Written:** 2026-10-03
@@ -31510,13 +31509,17 @@ window title, as it doesn't fit anyway"*.
 
 *Run against commit fc2899ca, in English - build\classes, compiled 03 Oct 11:12 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
+**Claude, 2026-10-03.**
+
+Validated on your *Works* of 2026-10-03.
+
 ---
 
 <a id="mt-655"></a>
 
 ### MT-655 - 2026-10-03 - Multi-units from the locomotive database's right-click menu
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-03
 
 **Written:** 2026-10-03
@@ -31551,5 +31554,9 @@ works, we just want a divider above it
 **Claude, 2026-10-03.**
 
 Since your request of 2026-10-03 the locomotive database's menu also has a divider above **Set as Multi-Unit...**, so step 1 shows it on its own between the locomotive's details and **Find Similar Locomotives**.
+
+**Claude, 2026-10-03.**
+
+Validated on your *Works* of 2026-10-03.  The divider you asked for is in since 69c3b8f4, claimed by `regression.testARouteDrivenLocomotiveIsNotEdited.testBothDoorsRefuseWhileTheRouteRuns`.
 
 ---
