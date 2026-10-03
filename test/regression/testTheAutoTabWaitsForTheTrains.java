@@ -427,6 +427,116 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
+     * The turning mark turns about its own centre (MT-650).
+     *
+     * Adam, 2026-10-02: *"the spinner isn't perfectly centered around itself- looks a little unsmooth (1-2 px off)."*
+     * Start's mark is Return Home's (FR-077), and it was drawn on whole pixels with Java's default stroke normalisation,
+     * which moves an outline onto the pixel grid differently at each angle - so the ring's centre stepped about as it
+     * turned, the more so on a scaled display.  Every frame, at the sizes the two buttons use and at 100% to 200%
+     * scaling: where the ink sits, turned back by the frame's angle, must be the same each time.
+     *
+     * MUTATION: draw the arc with `drawArc` on whole pixels again, and this fails.
+     *
+     * @throws Exception from the reflection
+     */
+    @Test
+    public void testTheTurningMarkTurnsAboutItsOwnCentre() throws Exception
+    {
+        Class<?> arcClass = Class.forName("org.traincontrol.gui.TrainControlUI$TurningArc");
+
+        java.lang.reflect.Constructor<?> make = arcClass.getDeclaredConstructor(int.class);
+        make.setAccessible(true);
+
+        java.lang.reflect.Method advance = arcClass.getDeclaredMethod("advance");
+        advance.setAccessible(true);
+
+        java.lang.reflect.Field angle = arcClass.getDeclaredField("angle");
+        angle.setAccessible(true);
+
+        List<String> unsteady = new ArrayList<>();
+
+        double worst = 0;
+
+        for (int size : new int[] {11, 12, 13, 14, 16, 18})
+        {
+            for (double scale : new double[] {1.0, 1.25, 1.5, 2.0})
+            {
+                javax.swing.Icon arc = (javax.swing.Icon) make.newInstance(size);
+
+                int side = (int) Math.ceil((size + 2) * scale) + 2;
+
+                // The icon's own centre, in the picture's pixels: painted at (1, 1), scaled
+                double cx = scale * (1 + size / 2.0), cy = scale * (1 + size / 2.0);
+
+                List<double[]> turnedBack = new ArrayList<>();
+
+                for (int frame = 0; frame < 12; frame++)
+                {
+                    java.awt.image.BufferedImage picture =
+                        new java.awt.image.BufferedImage(side, side, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+                    java.awt.Graphics2D g = picture.createGraphics();
+
+                    g.scale(scale, scale);
+
+                    arc.paintIcon(null, g, 1, 1);
+
+                    g.dispose();
+
+                    double ink = 0, sx = 0, sy = 0;
+
+                    for (int y = 0; y < side; y++)
+                    {
+                        for (int x = 0; x < side; x++)
+                        {
+                            double a = (picture.getRGB(x, y) >>> 24) / 255.0;
+
+                            ink += a;
+                            sx += a * (x + 0.5);
+                            sy += a * (y + 0.5);
+                        }
+                    }
+
+                    assertTrue(ink > 0, "the turning mark drew nothing at size " + size + ", scale " + scale);
+
+                    // Where the ink sits from the centre, turned back by the frame's angle (counterclockwise, y up)
+                    double vx = sx / ink - cx, vy = -(sy / ink - cy);
+
+                    double r = Math.toRadians(angle.getInt(arc));
+
+                    turnedBack.add(new double[] {vx * Math.cos(r) + vy * Math.sin(r), -vx * Math.sin(r) + vy * Math.cos(r)});
+
+                    advance.invoke(arc);
+                }
+
+                double mx = 0, my = 0;
+
+                for (double[] u : turnedBack)
+                {
+                    mx += u[0] / turnedBack.size();
+                    my += u[1] / turnedBack.size();
+                }
+
+                double spread = 0;
+
+                for (double[] u : turnedBack) spread = Math.max(spread, Math.hypot(u[0] - mx, u[1] - my));
+
+                worst = Math.max(worst, spread);
+
+                if (spread > 0.3)
+                {
+                    unsteady.add(String.format(java.util.Locale.ROOT, "size %d at %.0f%%: %.2f px", size, scale * 100,
+                        spread));
+                }
+            }
+        }
+
+        assertEquals(unsteady, new ArrayList<String>(), "the turning mark does not turn about one centre - it steps by"
+            + " up to the pixels named as it turns (MT-650; worst " + String.format(java.util.Locale.ROOT, "%.2f", worst)
+            + " px)");
+    }
+
+    /**
      * Closing the editor while it switches to Track Diagram gives Edit and Edit Autonomy Paths back (MT-649).
      *
      * Adam, 2026-10-02: *"The edit autonomy paths button is greyed out, so this test is moot".*  The switch's own work is
