@@ -402,6 +402,14 @@ public class AutonomyOverlayToggle extends JPanel
 
         run.setFont(source.getFont());
 
+        // THE TURNING MARK, whichever button this stands in for (Adam, 2026-10-03: "Can we show the spinner next to
+        // start/graceful stop on the track diagram viewer page as well?").  Start's own, so the two turn as one; greyed
+        // too, as the coast-down after Graceful Stop shows this greyed (OB-309).
+        javax.swing.Icon mark = start != null ? start.getIcon() : null;
+
+        run.setIcon(mark);
+        run.setDisabledIcon(mark);
+
         // White, with the STRIP behind it carrying the colour instead (MT-173).
         //
         // Adam: "I would like a shaded background in light yellow when fix it is active.  then change
@@ -439,6 +447,33 @@ public class AutonomyOverlayToggle extends JPanel
 
         revalidate();
         repaint();
+    }
+
+    /**
+     * Repaints the strip's button while it carries the turning mark - each step of the mark, from the timer that turns it.
+     */
+    public void repaintRunningMark()
+    {
+        if (run.isVisible() && run.getIcon() != null) run.repaint();
+    }
+
+    /**
+     * @return whether the strip's button is showing that something runs (OB-309)
+     */
+    public boolean isShowingSomethingRuns()
+    {
+        return run.isVisible() && run.getIcon() != null;
+    }
+
+    /**
+     * @return whether the turning mark fits inside the strip's button, which is held to the checkbox's height
+     */
+    public boolean runningMarkFits()
+    {
+        java.awt.Insets in = run.getInsets();
+
+        return run.getIcon() != null
+            && run.getIcon().getIconHeight() <= run.getPreferredSize().height - in.top - in.bottom;
     }
 
     /**

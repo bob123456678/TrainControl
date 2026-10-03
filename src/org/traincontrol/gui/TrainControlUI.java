@@ -4419,6 +4419,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             this.startAutonomy.addPropertyChangeListener("enabled", sync);
             this.startAutonomy.addPropertyChangeListener("text", sync);
+
+            // And the turning mark on Start, which the strip carries too (OB-309)
+            this.startAutonomy.addPropertyChangeListener("icon", sync);
             this.gracefulStop.addPropertyChangeListener("enabled", sync);
             this.gracefulStop.addPropertyChangeListener("text", sync);
         }
@@ -26151,6 +26154,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 arc.advance();
 
                 this.startAutonomy.repaint();
+
+                // And on the track diagram's strip, which carries the same mark (Adam, 2026-10-03)
+                if (this.autonomyOverlayToggle != null) this.autonomyOverlayToggle.repaintRunningMark();
             });
 
             this.runningSpinner.start();

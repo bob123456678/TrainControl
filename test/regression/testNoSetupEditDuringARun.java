@@ -5339,6 +5339,17 @@ public class testNoSetupEditDuringARun
 
             assertTrue(ui[0].isShowingSomethingRuns(), "Start does not show that autonomy runs (OB-309)");
 
+            // AND THE TRACK DIAGRAM'S STRIP, on the Graceful Stop it stands in for (Adam, 2026-10-03: "Can we show the
+            // spinner next to start/graceful stop on the track diagram viewer page as well?")
+            final org.traincontrol.gui.AutonomyOverlayToggle strip =
+                (org.traincontrol.gui.AutonomyOverlayToggle) control(ui[0], "autonomyOverlayToggle");
+
+            assertNotNull(strip, "precondition: the track diagram has no strip");
+
+            assertTrue(strip.isShowingSomethingRuns(), "the track diagram's Graceful Stop does not show that autonomy runs");
+
+            assertTrue(strip.runningMarkFits(), "the turning mark is taller than the track diagram's button");
+
             // GRACEFUL STOP, through its own handler, and the trains left to stop
             final java.lang.reflect.Method graceful =
                 TrainControlUI.class.getDeclaredMethod("gracefulStopActionPerformed", java.awt.event.ActionEvent.class);
@@ -5378,6 +5389,9 @@ public class testNoSetupEditDuringARun
 
             assertFalse(ui[0].isShowingSomethingRuns(), "Start still shows that something runs after Graceful Stop"
                 + " stopped the trains (OB-309)");
+
+            assertFalse(strip.isShowingSomethingRuns(), "the track diagram's Start still shows that something runs after"
+                + " Graceful Stop stopped the trains");
         }
         finally
         {
