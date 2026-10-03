@@ -27,11 +27,11 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-649](#mt-649) | 2026-10-02 | Edit Autonomy Paths in Track Diagram opens the autonomy editor | fixed unvalidated | Adam 2026-10-02 |
-| [MT-653](#mt-653) | 2026-10-03 | The track diagram's Start and Graceful Stop turn while anything runs | fixed unvalidated | Adam 2026-10-03 |
+| [MT-654](#mt-654) | 2026-10-03 | A pre-release's window title leaves out the Central Station | fixed unvalidated | Adam 2026-10-03 |
+| [MT-655](#mt-655) | 2026-10-03 | Multi-units from the locomotive database's right-click menu | fixed unvalidated | Adam 2026-10-03 |
 
-Everything else - 651 of 653 - needs nothing from you unless the area changes again:
-511 **fixed validated** and 140 **superseded**.
+Everything else - 653 of 655 - needs nothing from you unless the area changes again:
+513 **fixed validated** and 140 **superseded**.
 
 ---
 
@@ -31286,7 +31286,7 @@ Validated on your *Works* of 2026-10-02.
 
 ### MT-649 - 2026-10-02 - Edit Autonomy Paths in Track Diagram opens the autonomy editor
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-02
 
 **Written:** 2026-10-02
@@ -31325,6 +31325,14 @@ The edit autonomy paths button remains greyed while the editor is open.  This is
 **Claude, 2026-10-02.**
 
 Agreed - greyed while an editor is open is as it should be.  Step 1 ends by closing the editor; once it is closed the button is offered, and step 2 can be run.
+
+**Adam, 2026-10-03 (triage).** Works.
+
+*Run against commit fc2899ca, in English - build\classes, compiled 03 Oct 10:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-03.**
+
+Validated on your *Works* of 2026-10-03.
 
 ---
 
@@ -31442,7 +31450,7 @@ Validated on your *Works* of 2026-10-03.
 
 ### MT-653 - 2026-10-03 - The track diagram's Start and Graceful Stop turn while anything runs
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-03
 
 **Written:** 2026-10-03
@@ -31464,5 +31472,70 @@ well?"*
 - The strip does not grow taller when the mark appears.
 
 *What this is:* `regression.testNoSetupEditDuringARun.testARunGreysTheAutoTabAndItsStopGivesItBack`.
+
+**Adam, 2026-10-03 (triage).** Works.
+
+*Run against commit fc2899ca, in English - build\classes, compiled 03 Oct 10:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-03.**
+
+Validated on your *Works* of 2026-10-03.
+
+---
+
+<a id="mt-654"></a>
+
+### MT-654 - 2026-10-03 - A pre-release's window title leaves out the Central Station
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-03
+
+**Written:** 2026-10-03
+
+Your request of 2026-10-03: *"when it's a pre release version, don't show "for marklin central station 2 & 3" in the
+window title, as it doesn't fit anyway"*.
+
+**Steps**
+
+1. Start TrainControl and look at the main window's title bar.
+
+**Expected**
+
+- It reads *"TrainControl v3.0.0 (pre-release build ...)"* - the build's date and time - with nothing after it about the
+  Central Station.
+
+*What this is:* `regression.testTheKeyMapReachesTheWholeWindow.testAPreReleaseTitleLeavesOutTheCentralStation`.
+
+---
+
+<a id="mt-655"></a>
+
+### MT-655 - 2026-10-03 - Multi-units from the locomotive database's right-click menu
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-03
+
+**Written:** 2026-10-03
+
+Your request of 2026-10-03: put the multi-unit options in the locomotive database's right-click menu as well, with *"set
+as multi unit" on the same level as "manage locomotive" on the keyboard tab, for convenience*.
+
+**Steps**
+
+1. In the locomotive database, right-click a locomotive that is not a multi-unit.
+2. Choose **Set as Multi-Unit...**, tick one other locomotive, and press OK.
+3. Right-click the same locomotive in the database again; then right-click its key on the keyboard tab (assign it to a
+   key first if it is not on one).
+4. Afterwards, open the multi-unit again and untick the locomotive you added, and press OK.
+
+**Expected**
+
+- Step 1: the menu offers **Set as Multi-Unit...** among the locomotive's own items, and step 2 opens the same window the
+  keyboard tab's menu opens.
+- Step 3: both menus now offer **Edit Multi-Unit Locomotives**; on the keyboard tab's menu it is on the menu's own
+  level, beside **Manage Locomotive...**, not inside it.
+
+*What this is:* `regression.testARouteDrivenLocomotiveIsNotEdited.testBothDoorsRefuseWhileTheRouteRuns` (which also claims
+that both menus refuse while a running route drives the locomotive or a member - asked again at OK).
 
 ---
