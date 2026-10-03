@@ -257,6 +257,11 @@ Configuration is offered only for the very first setup.  Built in round 34; Auto
 available"*): **the Layout menu greys what changes the diagram or the folder while autonomy runs**, saying why; opening
 the folder, the pop-outs, the picture and the CS3 web app stay live.  Built in round 34.
 
+**Decided** (Adam, 2026-10-02: *"Implement the two grey usability fixes.  Marking links is not needed since we get error
+messages"*): **while autonomy is busy the Auto tab greys its settings, Execute Timetable and the capture toggle**, each
+saying why, rather than offering them and refusing; **an unpaired link is not marked on the diagram** - the setup
+check's errors say where it is.  Built 2026-10-02 (MT-646, MT-647).
+
 **Decided** (Adam, 2026-10-01: *"when a train is standing somewhere, can we show its locomotive icon on top of the
 station in the track diagram viewer, while maintaining editability? same icon as when a run is started"*): **a train
 parked with no path is drawn with the run's locomotive icon** on its station, facing the way it stands; a train waiting

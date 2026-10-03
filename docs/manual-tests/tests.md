@@ -27,9 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
+| [MT-646](#mt-646) | 2026-10-02 | The Auto tab's settings are greyed while trains run | fixed unvalidated | Adam 2026-10-02 |
+| [MT-647](#mt-647) | 2026-10-02 | Execute Timetable is greyed while trains run | fixed unvalidated | Adam 2026-10-02 |
 
-
-Everything else - 645 of 645 - needs nothing from you unless the area changes again:
+Everything else - 645 of 647 - needs nothing from you unless the area changes again:
 505 **fixed validated** and 140 **superseded**.
 
 ---
@@ -31163,5 +31164,65 @@ Your request of 2026-10-02: *"Add the setup notice, but make it brief"*.
 **Claude, 2026-10-02.**
 
 Validated on your *Works* of 2026-10-02.
+
+---
+
+<a id="mt-646"></a>
+
+### MT-646 - 2026-10-02 - The Auto tab's settings are greyed while trains run
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-02
+
+**Written:** 2026-10-02
+
+Your request of 2026-10-02: *"Implement the two grey usability fixes"* - the first: grey the Auto tab's settings while
+autonomy is busy, rather than letting a slider move and then refusing it.
+
+**Steps**
+
+1. With autonomy loaded and nothing running, open the Auto tab's **Settings** tab and press **Start Autonomous
+   Operation**.
+2. While the trains run, hover over a slider and try to move it; then press **Graceful Stop** and wait for the trains to
+   stop.
+
+**Expected**
+
+- While the trains run, every slider and checkbox on the Settings tab and the routing choice are greyed; hovering over
+  one says *"Please wait for all active locomotives to stop."*, and trying to move one does nothing - no message.
+- Once the trains have stopped they can be changed again, and each tooltip says what the setting does.
+
+*What this is:* `regression.testNoSetupEditDuringARun.testARunGreysTheAutoTabAndItsStopGivesItBack` and
+`testTheAutoTabIsGreyedWhileAutonomyIsBusy`.
+
+---
+
+<a id="mt-647"></a>
+
+### MT-647 - 2026-10-02 - Execute Timetable is greyed while trains run
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-02
+
+**Written:** 2026-10-02
+
+Your request of 2026-10-02: *"Implement the two grey usability fixes"* - the second: grey Start Timetable while autonomy
+runs, rather than leaving it live to say to wait.
+
+**Steps**
+
+1. With autonomy loaded and nothing running, open the Auto tab's **Timetable** tab and press **Start Autonomous
+   Operation** on the first tab.
+2. While the trains run, look at **Execute Timetable** and **Capture Locomotive Commands** and hover over them; then
+   press **Graceful Stop** and wait for the trains to stop.
+
+**Expected**
+
+- While the trains run, both buttons are greyed and hovering over either says *"Please wait for all active locomotives
+  to stop."*
+- Once the trains have stopped both are offered again, with their usual tooltips.
+
+*What this is:* `regression.testNoSetupEditDuringARun.testARunGreysTheAutoTabAndItsStopGivesItBack` and
+`testTheAutoTabIsGreyedWhileAutonomyIsBusy`.
 
 ---
