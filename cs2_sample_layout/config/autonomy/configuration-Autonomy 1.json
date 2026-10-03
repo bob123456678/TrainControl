@@ -241,8 +241,8 @@
         ]
       ],
       "homeFacing": "N",
-      "active": false,
       "facing": "N",
+      "active": false,
       "arrivedFrom": "S",
       "priority": 2,
       "home": "BR 628 2"
