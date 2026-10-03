@@ -31506,6 +31506,10 @@ window title, as it doesn't fit anyway"*.
 
 *What this is:* `regression.testTheKeyMapReachesTheWholeWindow.testAPreReleaseTitleLeavesOutTheCentralStation`.
 
+**Adam, 2026-10-03 (triage).** Works.
+
+*Run against commit fc2899ca, in English - build\classes, compiled 03 Oct 11:12 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-655"></a>
@@ -31537,5 +31541,15 @@ as multi unit" on the same level as "manage locomotive" on the keyboard tab, for
 
 *What this is:* `regression.testARouteDrivenLocomotiveIsNotEdited.testBothDoorsRefuseWhileTheRouteRuns` (which also claims
 that both menus refuse while a running route drives the locomotive or a member - asked again at OK).
+
+**Adam, 2026-10-03 (triage).** Works, with notes.
+
+works, we just want a divider above it
+
+*Run against commit fc2899ca, in English - build\classes, compiled 03 Oct 11:12 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-03.**
+
+Since your request of 2026-10-03 the locomotive database's menu also has a divider above **Set as Multi-Unit...**, so step 1 shows it on its own between the locomotive's details and **Find Similar Locomotives**.
 
 ---
