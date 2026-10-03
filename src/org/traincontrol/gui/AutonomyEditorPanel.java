@@ -4328,7 +4328,12 @@ public class AutonomyEditorPanel extends JPanel
         // A new station gets its name on the diagram straight away.  A station nobody can see is the
         // commonest thing wrong with a finished setup - it has a warning of its own - and the moment
         // somebody says "this is a station" is the moment they know where its name should go.
-        if (on) placeLabelFor(tile);
+        //
+        // A caption only where the station has none (OB-310, the MT-116 rule).  Every answer under Station comes through
+        // here, and `placeCaption` MOVES a caption the station already has - so each change sent the name to the next
+        // free square beside the platform, and the next change sent it back: Adam, 2026-10-02, *"the label gets rotated
+        // from being vertical (correct) to being horizontal (wrong) and back again."*
+        if (on && !session.getLabelledStationTiles().contains(tile)) placeLabelFor(tile);
 
         // A sensor demoted back to a plain point keeps no designation nobody can see any more.
         //

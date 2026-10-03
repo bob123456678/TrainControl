@@ -286,6 +286,9 @@ public class testTheAutoTabWaitsForTheTrains
                     {
                         if (control(ui[0], name).isEnabled()) offeredAtTheClick.add(name);
                     }
+
+                    // and Start turning, as it does whenever anything runs (OB-309)
+                    if (!ui[0].isShowingSomethingRuns()) offeredAtTheClick.add("no turning mark on Start (OB-309)");
                 }
                 catch (ReflectiveOperationException e)
                 {
@@ -421,6 +424,131 @@ public class testTheAutoTabWaitsForTheTrains
 
             if (sandbox != null) sandbox.close();
         }
+    }
+
+    /**
+     * Closing the editor while it switches to Track Diagram gives Edit and Edit Autonomy Paths back (MT-649).
+     *
+     * Adam, 2026-10-02: *"The edit autonomy paths button is greyed out, so this test is moot".*  The switch's own work is
+     * posted, and arrives after a close that lands in between - at a closed window, which it put back together out of
+     * sight, greying both buttons for the session.  The close wins now: a closed window is not arrived at.
+     *
+     * MUTATION: drop the closed-window return from `LayoutEditor.arriveAt`, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testClosingTheEditorMidSwitchGivesTheButtonsBack() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.TRUE, null, true));
+
+            final org.traincontrol.gui.LayoutEditor editor = theEditor(ui[0]);
+
+            assertNotNull(editor, "precondition: the autonomy editor did not open");
+
+            assertTrue(editor.isAutonomyMode(), "precondition: the editor opened was not the autonomy editor");
+
+            final javax.swing.AbstractButton track = button(editor.getRootPane(), I18n.t("layout.ui.sidebarTrack"));
+
+            assertNotNull(track, "precondition: no Track Diagram in the editor's sidebar");
+
+            final java.lang.reflect.Method close = editor.getClass().getDeclaredMethod("confirmExit");
+
+            close.setAccessible(true);
+
+            // TRACK DIAGRAM, AND THE CLOSE BEFORE THE SWITCH'S POSTED WORK HAS RUN
+            answeringYes(() ->
+            {
+                track.doClick();
+
+                try
+                {
+                    close.invoke(editor);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            // Until the switch has arrived, or not: its latch comes down first thing either way
+            java.lang.reflect.Field latch = editor.getClass().getDeclaredField("changingPage");
+
+            latch.setAccessible(true);
+
+            long until = System.currentTimeMillis() + 30000;
+
+            while (latch.getBoolean(editor) && System.currentTimeMillis() < until) Thread.sleep(100);
+
+            assertFalse(latch.getBoolean(editor), "precondition: the switch never finished");
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            Thread.sleep(1000);
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertFalse(editor.isDisplayable(), "the editor closed mid-switch was put back together after it closed"
+                + " (MT-649)");
+
+            assertTrue(control(ui[0], "editLayoutButton").isEnabled(), "Edit is greyed after the editor was closed while"
+                + " it switched to Track Diagram (MT-649)");
+
+            assertTrue(control(ui[0], "editAutonomyFromSettings").isEnabled(), "Edit Autonomy Paths in Track Diagram is"
+                + " greyed after the editor was closed while it switched to Track Diagram (MT-649)");
+        }
+        finally
+        {
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * @param in where to look
+     * @param text the button's text
+     * @return the first button saying it, or null
+     */
+    private static javax.swing.AbstractButton button(java.awt.Container in, String text)
+    {
+        for (java.awt.Component c : in.getComponents())
+        {
+            if (c instanceof javax.swing.AbstractButton && text.equals(((javax.swing.AbstractButton) c).getText()))
+            {
+                return (javax.swing.AbstractButton) c;
+            }
+
+            if (c instanceof java.awt.Container)
+            {
+                javax.swing.AbstractButton found = button((java.awt.Container) c, text);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
     }
 
     /**

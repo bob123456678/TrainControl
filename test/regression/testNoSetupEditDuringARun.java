@@ -5113,6 +5113,10 @@ public class testNoSetupEditDuringARun
                 assertEquals(c.getToolTipText(), why, name + " does not say why it is greyed");
             }
 
+            // AND START TURNS (OB-309)
+            assertTrue(ui[0].isShowingSomethingRuns(), "Start does not show that something runs while autonomy is busy"
+                + " (OB-309)");
+
             // THE ROUTING RULE'S TOOLTIP, set again while greyed, as a load sets it: still says why
             final java.lang.reflect.Method rule = TrainControlUI.class.getDeclaredMethod("refreshRoutingLogicTooltip");
 
@@ -5179,6 +5183,8 @@ public class testNoSetupEditDuringARun
 
                 assertEquals(c.getToolTipText(), atRest.get(name), name + " did not get its own tooltip back");
             }
+
+            assertFalse(ui[0].isShowingSomethingRuns(), "Start still shows that something runs, at rest (OB-309)");
 
             // GRACEFUL STOP OFFERED, as Start leaves it before the railway counts the run
             final javax.swing.JComponent stop = control(ui[0], "gracefulStop");
@@ -5331,6 +5337,8 @@ public class testNoSetupEditDuringARun
                 assertEquals(c.getToolTipText(), why, name + " does not say why it is greyed while autonomy runs");
             }
 
+            assertTrue(ui[0].isShowingSomethingRuns(), "Start does not show that autonomy runs (OB-309)");
+
             // GRACEFUL STOP, through its own handler, and the trains left to stop
             final java.lang.reflect.Method graceful =
                 TrainControlUI.class.getDeclaredMethod("gracefulStopActionPerformed", java.awt.event.ActionEvent.class);
@@ -5367,6 +5375,9 @@ public class testNoSetupEditDuringARun
 
                 assertEquals(c.getToolTipText(), atRest.get(name), name + " did not get its own tooltip back after the run");
             }
+
+            assertFalse(ui[0].isShowingSomethingRuns(), "Start still shows that something runs after Graceful Stop"
+                + " stopped the trains (OB-309)");
         }
         finally
         {
