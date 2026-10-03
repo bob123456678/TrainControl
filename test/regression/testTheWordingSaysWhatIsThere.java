@@ -52,14 +52,16 @@ public class testTheWordingSaysWhatIsThere
         assertEquals(AutonomyEditorPanel.blockingCountText(3), I18n.f("autosetup.ui.labelBlockingCount", 3),
             "precondition: three things to fix are not counted with the plural");
 
-        assertTrue(AutonomyOverlayToggle.findingsCountText(0, 1, 1).startsWith(I18n.t("autosetup.ui.countWarningsOne")),
-            "one warning is counted with the plural: " + AutonomyOverlayToggle.findingsCountText(0, 1, 1));
-        assertTrue(AutonomyOverlayToggle.findingsCountText(1, 2, 3).startsWith(I18n.t("autosetup.ui.countErrorsOne")
-            + ", " + I18n.f("autosetup.ui.countWarnings", 2)), "one error is counted with the plural: "
-            + AutonomyOverlayToggle.findingsCountText(1, 2, 3));
-        assertTrue(AutonomyOverlayToggle.findingsCountText(2, 1, 0).startsWith(I18n.f("autosetup.ui.countErrors", 2)
-            + ", " + I18n.t("autosetup.ui.countWarningsOne")), "precondition: two errors and one warning: "
-            + AutonomyOverlayToggle.findingsCountText(2, 1, 0));
+        // WHOLE STRINGS: "1 warnings" begins with "1 warning", so a prefix could not tell them apart
+        assertEquals(AutonomyOverlayToggle.findingsCountText(0, 1, 1), I18n.f("autosetup.ui.labelFindingsCount",
+            I18n.t("autosetup.ui.countWarningsOne"), I18n.f("autosetup.ui.countOnThisPage", 1)),
+            "one warning is counted with the plural");
+        assertEquals(AutonomyOverlayToggle.findingsCountText(1, 2, 3), I18n.f("autosetup.ui.labelFindingsCountErrors",
+            I18n.t("autosetup.ui.countErrorsOne"), I18n.f("autosetup.ui.countWarnings", 2),
+            I18n.f("autosetup.ui.countOnThisPage", 3)), "one error is counted with the plural");
+        assertEquals(AutonomyOverlayToggle.findingsCountText(2, 1, 0), I18n.f("autosetup.ui.labelFindingsCountErrors",
+            I18n.f("autosetup.ui.countErrors", 2), I18n.t("autosetup.ui.countWarningsOne"),
+            I18n.f("autosetup.ui.countOnThisPage", 0)), "one warning beside two errors is counted with the plural");
     }
 
     /**
