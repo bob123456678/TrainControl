@@ -28,11 +28,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-649](#mt-649) | 2026-10-02 | Edit Autonomy Paths in Track Diagram opens the autonomy editor | fixed unvalidated | Adam 2026-10-02 |
-| [MT-650](#mt-650) | 2026-10-02 | Start turns while anything runs | fixed unvalidated | Adam 2026-10-02 (OB-309) |
-| [MT-651](#mt-651) | 2026-10-02 | A station's label stays put when what trains may do there changes | fixed unvalidated | Adam 2026-10-02 (OB-310) |
+| [MT-652](#mt-652) | 2026-10-02 | The turning mark turns smoothly in place | fixed unvalidated | Adam 2026-10-02 (MT-650) |
 
-Everything else - 648 of 651 - needs nothing from you unless the area changes again:
-508 **fixed validated** and 140 **superseded**.
+Everything else - 650 of 652 - needs nothing from you unless the area changes again:
+510 **fixed validated** and 140 **superseded**.
 
 ---
 
@@ -31317,13 +31316,23 @@ The edit autonomy paths button is greyed out, so this test is moot
 
 Since cc004236 the button is not greyed any more.  It was greyed for the rest of the session after the editor was closed while it was still switching to Track Diagram: the switch then finished on the closed window and greyed Edit and this button with it.  Fixed, with `regression.testTheAutoTabWaitsForTheTrains.testClosingTheEditorMidSwitchGivesTheButtonsBack`; MT-649 runs as written.
 
+**Adam, 2026-10-02 (triage).** Could not run this.
+
+The edit autonomy paths button remains greyed while the editor is open.  This is OK, IMO.
+
+*Run against commit fc2899ca, in English - build\classes, compiled 02 Oct 23:26 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Agreed - greyed while an editor is open is as it should be.  Step 1 ends by closing the editor; once it is closed the button is offered, and step 2 can be run.
+
 ---
 
 <a id="mt-650"></a>
 
 ### MT-650 - 2026-10-02 - Start turns while anything runs
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-02 (OB-309)
 
 **Written:** 2026-10-02
@@ -31347,13 +31356,23 @@ commands tab that shows whenever anything is running?"*
 *What this is:* `regression.testNoSetupEditDuringARun.testARunGreysTheAutoTabAndItsStopGivesItBack` and
 `testTheAutoTabIsGreyedWhileAutonomyIsBusy`, `regression.testTheAutoTabWaitsForTheTrains.testAHandSendGreysTheAutoTabFromItsClick`.
 
+**Adam, 2026-10-02 (triage).** Works, with notes.
+
+Yes, but the spinner isn't perfectly centered around itself- looks a little unsmooth (1-2 px off).
+
+*Run against commit fc2899ca, in English - build\classes, compiled 02 Oct 23:26 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Validated on your *Works* of 2026-10-02.  Your note - the mark not quite turning about its own centre - is fixed separately and has its own test, MT-652.
+
 ---
 
 <a id="mt-651"></a>
 
 ### MT-651 - 2026-10-02 - A station's label stays put when what trains may do there changes
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-02 (OB-310)
 
 **Written:** 2026-10-02
@@ -31373,5 +31392,40 @@ square beside the station - below it, where it stands on end, or above it, where
 - Both times TopMainR1's label stays on the square it was on, standing on end beside the track.
 
 *What this is:* `ui.testDiagramLooksRight.testChangingWhatTrainsMayDoLeavesTheCaptionWhereItIs`.
+
+**Adam, 2026-10-02 (triage).** Works.
+
+*Run against commit fc2899ca, in English - build\classes, compiled 02 Oct 23:26 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Validated on your *Works* of 2026-10-02.
+
+---
+
+<a id="mt-652"></a>
+
+### MT-652 - 2026-10-02 - The turning mark turns smoothly in place
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-02 (MT-650)
+
+**Written:** 2026-10-02
+
+Your note on MT-650: *"the spinner isn't perfectly centered around itself- looks a little unsmooth (1-2 px off)."*
+Start's mark is the one Return Home shows while it works out its plan, so both are fixed.
+
+**Steps**
+
+1. With autonomy loaded, press **Start Autonomous Operation** and watch the turning mark on it for a few turns; then
+   press **Graceful Stop**.
+2. With a train away from its home station, press **Return Home** and watch the mark on it while the plan is worked
+   out.
+
+**Expected**
+
+- The mark turns in place, about its own centre, without stepping or wobbling.
+
+*What this is:* `regression.testTheAutoTabWaitsForTheTrains.testTheTurningMarkTurnsAboutItsOwnCentre`.
 
 ---
