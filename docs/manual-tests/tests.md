@@ -28,8 +28,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-649](#mt-649) | 2026-10-02 | Edit Autonomy Paths in Track Diagram opens the autonomy editor | fixed unvalidated | Adam 2026-10-02 |
+| [MT-650](#mt-650) | 2026-10-02 | Start turns while anything runs | fixed unvalidated | Adam 2026-10-02 (OB-309) |
+| [MT-651](#mt-651) | 2026-10-02 | A station's label stays put when what trains may do there changes | fixed unvalidated | Adam 2026-10-02 (OB-310) |
 
-Everything else - 648 of 649 - needs nothing from you unless the area changes again:
+Everything else - 648 of 651 - needs nothing from you unless the area changes again:
 508 **fixed validated** and 140 **superseded**.
 
 ---
@@ -31310,5 +31312,66 @@ used last.
 The edit autonomy paths button is greyed out, so this test is moot
 
 *Run against commit 5d84aec7, in English - build\classes, compiled 02 Oct 22:38 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Since cc004236 the button is not greyed any more.  It was greyed for the rest of the session after the editor was closed while it was still switching to Track Diagram: the switch then finished on the closed window and greyed Edit and this button with it.  Fixed, with `regression.testTheAutoTabWaitsForTheTrains.testClosingTheEditorMidSwitchGivesTheButtonsBack`; MT-649 runs as written.
+
+---
+
+<a id="mt-650"></a>
+
+### MT-650 - 2026-10-02 - Start turns while anything runs
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-02 (OB-309)
+
+**Written:** 2026-10-02
+
+Your request of 2026-10-02: *"can we get a spinner next to start autonomous operation on the autonomous locomotive
+commands tab that shows whenever anything is running?"*
+
+**Steps**
+
+1. With autonomy loaded and nothing running, look at **Start Autonomous Operation** on the Auto tab.
+2. Press it, and watch it while the trains run; then press **Graceful Stop** and wait for the trains to stop.
+
+**Expected**
+
+- At rest there is no turning mark on Start.
+- From the press until the last train has stopped, a small turning circle shows beside Start's text - while Start is
+  greyed too.  It goes once nothing runs.
+- It follows the rule that greys the Settings tab (MT-646), so it also turns during Return Home, a timetable, or a train
+  you sent by hand.
+
+*What this is:* `regression.testNoSetupEditDuringARun.testARunGreysTheAutoTabAndItsStopGivesItBack` and
+`testTheAutoTabIsGreyedWhileAutonomyIsBusy`, `regression.testTheAutoTabWaitsForTheTrains.testAHandSendGreysTheAutoTabFromItsClick`.
+
+---
+
+<a id="mt-651"></a>
+
+### MT-651 - 2026-10-02 - A station's label stays put when what trains may do there changes
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-02 (OB-310)
+
+**Written:** 2026-10-02
+
+Your report of 2026-10-02: *"when changing topmainr1 from a station to no trains can pass, the label gets rotated from
+being vertical (correct) to being horizontal (wrong) and back again."*  Each change moved the label to the next free
+square beside the station - below it, where it stands on end, or above it, where it lies flat.
+
+**Steps**
+
+1. On the track diagram, right-click **TopMainR1** and choose **Autonomy Setup -> Station (...) -> No - Nothing Can
+   Pass**.
+2. Then the same menu again, **Yes - Trains Can Stop Here**.
+
+**Expected**
+
+- Both times TopMainR1's label stays on the square it was on, standing on end beside the track.
+
+*What this is:* `ui.testDiagramLooksRight.testChangingWhatTrainsMayDoLeavesTheCaptionWhereItIs`.
 
 ---
