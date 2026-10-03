@@ -1419,6 +1419,24 @@ when a page is excluded in the autonomy editor, also disable/grey out the auto/m
 
 right now, when autonomy is moving, we have a green coloring for completed paths and red for pending.  but the train tails aren't shown.  make the tail visible at all times.  advise if there are clearer colors than green and red for the paths that would make the layout look more professional.
 
+### OB-309 - 2026-10-02 - autonomy running indicator
+
+**Kind:** bug  
+**Raised from:** noticed while testing - not from a particular test  
+**Filed:** 2026-10-02 22:44  
+**Build:** commit 5d84aec7, in English - build\classes, compiled 02 Oct 22:38 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+can we get a spinner next to start autonomous operation on the autonomous locomotive commands tab that shows whenever anything is running?
+
+### OB-310 - 2026-10-02 - station label orientation
+
+**Kind:** bug  
+**Raised from:** MT-648 (Start says why when no train could be started)  
+**Filed:** 2026-10-02 22:47  
+**Build:** commit 5d84aec7, in English - build\classes, compiled 02 Oct 22:38 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe
+
+when changing topmainr1 from a station to no trains can pass, the label gets rotated from being vertical (correct) to being horizontal (wrong) and back again.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its

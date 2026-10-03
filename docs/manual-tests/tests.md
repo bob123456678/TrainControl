@@ -27,13 +27,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
-| [MT-646](#mt-646) | 2026-10-02 | The Auto tab's settings are greyed while trains run | fixed unvalidated | Adam 2026-10-02 |
-| [MT-647](#mt-647) | 2026-10-02 | Execute Timetable is greyed while trains run | fixed unvalidated | Adam 2026-10-02 |
-| [MT-648](#mt-648) | 2026-10-02 | Start says why when no train could be started | fixed unvalidated | Adam 2026-10-02 |
 | [MT-649](#mt-649) | 2026-10-02 | Edit Autonomy Paths in Track Diagram opens the autonomy editor | fixed unvalidated | Adam 2026-10-02 |
 
-Everything else - 645 of 649 - needs nothing from you unless the area changes again:
-505 **fixed validated** and 140 **superseded**.
+Everything else - 648 of 649 - needs nothing from you unless the area changes again:
+508 **fixed validated** and 140 **superseded**.
 
 ---
 
@@ -31173,7 +31170,7 @@ Validated on your *Works* of 2026-10-02.
 
 ### MT-646 - 2026-10-02 - The Auto tab's settings are greyed while trains run
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-02
 
 **Written:** 2026-10-02
@@ -31197,13 +31194,21 @@ autonomy is busy, rather than letting a slider move and then refusing it.
 *What this is:* `regression.testNoSetupEditDuringARun.testARunGreysTheAutoTabAndItsStopGivesItBack` and
 `testTheAutoTabIsGreyedWhileAutonomyIsBusy`.
 
+**Adam, 2026-10-02 (triage).** Works.
+
+*Run against commit 5d84aec7, in English - build\classes, compiled 02 Oct 22:38 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Validated on your *Works* of 2026-10-02.
+
 ---
 
 <a id="mt-647"></a>
 
 ### MT-647 - 2026-10-02 - Execute Timetable is greyed while trains run
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-02
 
 **Written:** 2026-10-02
@@ -31227,13 +31232,21 @@ runs, rather than leaving it live to say to wait.
 *What this is:* `regression.testNoSetupEditDuringARun.testARunGreysTheAutoTabAndItsStopGivesItBack` and
 `testTheAutoTabIsGreyedWhileAutonomyIsBusy`.
 
+**Adam, 2026-10-02 (triage).** Works.
+
+*Run against commit 5d84aec7, in English - build\classes, compiled 02 Oct 22:38 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Validated on your *Works* of 2026-10-02.
+
 ---
 
 <a id="mt-648"></a>
 
 ### MT-648 - 2026-10-02 - Start says why when no train could be started
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-02
 
 **Written:** 2026-10-02
@@ -31255,6 +31268,16 @@ Your request of 2026-10-02: *"the start says nothing"*.
   names them."*, and Start is offered again straight away; Graceful Stop is not.
 
 *What this is:* `regression.testTheAutoTabWaitsForTheTrains.testAStartThatStartsNothingGivesTheAutoTabBack`.
+
+**Adam, 2026-10-02 (triage).** Works.
+
+Filed from this test: OB-310 (bug - station label orientation).  They are in `issues.md` until they are picked up.
+
+*Run against commit 5d84aec7, in English - build\classes, compiled 02 Oct 22:38 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-02.**
+
+Validated on your *Works* of 2026-10-02.
 
 ---
 
@@ -31281,5 +31304,11 @@ used last.
 - The autonomy editor opens (Autonomy Setup), not the track editor.
 
 *What this is:* `regression.testTheAutoTabWaitsForTheTrains.testTheSettingsTabOpensTheAutonomyEditor`.
+
+**Adam, 2026-10-02 (triage).** Could not run this.
+
+The edit autonomy paths button is greyed out, so this test is moot
+
+*Run against commit 5d84aec7, in English - build\classes, compiled 02 Oct 22:38 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
