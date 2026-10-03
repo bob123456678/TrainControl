@@ -5051,8 +5051,11 @@ public class testNoSetupEditDuringARun
      * offered counts as busy, as Start leaves it before its run is counted; and what Execute Timetable's own press greyed
      * is not given back by the refresh.
      *
+     * Activate Routes is greyed the same way, and a control its owner greyed while busy says why too (RSA27-C3).
+     *
      * MUTATION: grey nothing, leave the tooltips, put the refusal up on a greyed click or leave a slider where it was let
-     * go, ask the railway alone, or give back what another owner greyed, and this fails.
+     * go, ask the railway alone, give back what another owner greyed, grey Activate Routes with no reason, or leave an
+     * owner's grey saying nothing, and this fails.
      *
      * @throws Exception from the window
      */
@@ -5184,8 +5187,11 @@ public class testNoSetupEditDuringARun
 
             refreshWhatWaits(ui[0]);
 
-            assertFalse(control(ui[0], "minDelay").isEnabled(), "the settings are offered while Graceful Stop is, before"
-                + " the railway counts the run");
+            for (String name : WAITING_FOR_THE_TRAINS)
+            {
+                assertFalse(control(ui[0], name).isEnabled(), name + " is offered while Graceful Stop is, before the railway"
+                    + " counts the run (RSA27-C1, C3)");
+            }
 
             SwingUtilities.invokeAndWait(() -> stop.setEnabled(false));
 
@@ -5203,6 +5209,24 @@ public class testNoSetupEditDuringARun
 
             assertFalse(timetable.isEnabled(), "the refresh offered Execute Timetable again between its press and its run"
                 + " being counted");
+
+            // AND GREYED BY ITS OWNER WHILE AUTONOMY IS BUSY - its own run, Return Home's press: it says why (RSA27-C3), and
+            // at rest gets its own tooltip back and stays its owner's to give back
+            staging.set(ui[0], true);
+
+            refreshWhatWaits(ui[0]);
+
+            assertEquals(timetable.getToolTipText(), why, "Execute Timetable, greyed by its owner while autonomy is busy, does"
+                + " not say why (RSA27-C3)");
+
+            staging.set(ui[0], false);
+
+            refreshWhatWaits(ui[0]);
+
+            assertFalse(timetable.isEnabled(), "the refresh gave back Execute Timetable, which its owner greyed");
+
+            assertEquals(timetable.getToolTipText(), atRest.get("executeTimetable"), "Execute Timetable, greyed by its owner,"
+                + " did not get its own tooltip back");
 
             SwingUtilities.invokeAndWait(() -> timetable.setEnabled(true));
         }
@@ -5363,11 +5387,11 @@ public class testNoSetupEditDuringARun
         }
     }
 
-    /** What waits for the trains on the Auto tab: its settings, Execute Timetable and the capture toggle. */
-    private static final String[] WAITING_FOR_THE_TRAINS = {"minDelay", "maxDelay", "maxLocInactiveSeconds",
+    /** What waits for the trains on the Auto tab: its settings, Execute Timetable, the capture toggle and Activate Routes. */
+    static final String[] WAITING_FOR_THE_TRAINS = {"minDelay", "maxDelay", "maxLocInactiveSeconds",
         "defaultLocSpeed", "preArrivalSpeedReduction", "maxActiveTrains", "maximumLatency", "atomicRoutes",
         "turnOffFunctionsOnArrival", "turnOnFunctionsOnDeparture", "simulate", "algorithmType", "executeTimetable",
-        "timetableCapture"};
+        "timetableCapture", "toggleSpecifiedRoutes"};
 
     /**
      * @param ui the window
@@ -5375,7 +5399,7 @@ public class testNoSetupEditDuringARun
      * @return that control
      * @throws ReflectiveOperationException if it has none of that name
      */
-    private static javax.swing.JComponent control(TrainControlUI ui, String name) throws ReflectiveOperationException
+    static javax.swing.JComponent control(TrainControlUI ui, String name) throws ReflectiveOperationException
     {
         java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField(name);
 

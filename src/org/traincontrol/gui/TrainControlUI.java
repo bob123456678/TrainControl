@@ -6797,14 +6797,43 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // dispatch's own thread is one it obeys
         final int stopsAtClick = railway.stopsOrdered();
 
-        new Thread(() ->
+        // COUNTED FROM THE CLICK (RSA27-C2), and the Auto tab greyed with it: the dispatch sets the route before the train
+        // sets off, and the railway's first refresh came only then
+        this.handSendsUnderWay.incrementAndGet();
+
+        refreshWhatWaitsForTheTrains();
+
+        Thread send = new Thread(() ->
         {
-            if (!railway.executePath(path, train, train.getPreferredSpeed(), null, answered, stopsAtClick))
+            try
             {
-                javax.swing.SwingUtilities.invokeLater(() ->
-                    JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.autoFailedCheckLog")));
+                if (!railway.executePath(path, train, train.getPreferredSpeed(), null, answered, stopsAtClick))
+                {
+                    javax.swing.SwingUtilities.invokeLater(() ->
+                        JOptionPane.showMessageDialog(this, I18n.t("autolayout.ui.autoFailedCheckLog")));
+                }
             }
-        }, "sent by hand").start();
+            finally
+            {
+                this.handSendsUnderWay.decrementAndGet();
+
+                javax.swing.SwingUtilities.invokeLater(this::refreshWhatWaitsForTheTrains);
+            }
+        }, "sent by hand");
+
+        try
+        {
+            send.start();
+        }
+        catch (RuntimeException | Error failed)
+        {
+            // never started, so never counted down by it
+            this.handSendsUnderWay.decrementAndGet();
+
+            refreshWhatWaitsForTheTrains();
+
+            throw failed;
+        }
     }
 
     /**
@@ -24962,14 +24991,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void refreshActivateRoutesControls()
     {
-        boolean busy = this.isAutonomyBusy();
+        // THE SAME QUESTION AND THE SAME GREY as the rest of what waits for the trains, saying why (RSA27-C3): this asked
+        // `isAutonomyBusy` alone and set no tooltip, so it was offered while only Graceful Stop was, and greyed saying what
+        // it does rather than why it was greyed
+        boolean busy = theAutoTabWaits();
 
-        if (this.toggleSpecifiedRoutes != null) this.toggleSpecifiedRoutes.setEnabled(!busy);
+        String why = I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
+
+        greyWhileTheTrainsRun(this.toggleSpecifiedRoutes, busy, why);
 
         if (this.autoRouteList != null)
         {
-            this.autoRouteList.setEnabled(!busy && this.model != null && this.model.hasAutoLayout()
-                && this.model.getAutoLayout().isActivateRoutes());
+            greyWhileTheTrainsRun(this.autoRouteList, busy, why);
+
+            // and at rest, offered only with Activate Routes on
+            if (!busy)
+            {
+                this.autoRouteList.setEnabled(this.model != null && this.model.hasAutoLayout()
+                    && this.model.getAutoLayout().isActivateRoutes());
+            }
         }
     }
 
@@ -24980,10 +25020,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Execute Timetable answered "Please wait for all active locomotives to stop" - but refusing is not the same as not
      * offering (OB-101).  The tooltip of a greyed control says why, and its own comes back with it.
      *
-     * Busy is the railway's `isAutonomyBusy`, or Graceful Stop offered: Start and Execute Timetable hand their run to a
-     * thread of its own, and the button says a run is on before the railway counts it.  Called where that changes - every
-     * departure and arrival (`repaintAutoLocListLite`), a placement (`repaintAutoLocListFull`), a configuration loading, and
-     * the start and end of a run, a timetable run, a Graceful Stop and Return Home.
+     * Busy is `theAutoTabWaits`.  Called where that changes - every departure and arrival (`repaintAutoLocListLite`), a
+     * placement (`repaintAutoLocListFull`), a configuration loading, a hand send's click and end, and the start and end of
+     * a run, a Start that starts nothing, a timetable run, a Graceful Stop and Return Home.
      */
     private void refreshWhatWaitsForTheTrains()
     {
@@ -24992,7 +25031,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         refreshActivateRoutesControls();
 
-        boolean busy = this.isAutonomyBusy() || (this.gracefulStop != null && this.gracefulStop.isEnabled());
+        boolean busy = theAutoTabWaits();
 
         String why = I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
 
@@ -25006,15 +25045,37 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The client property a control greyed by `refreshWhatWaitsForTheTrains` keeps its own tooltip in, wrapped in a
-     * one-element array so a control with none can be told from one not greyed.
+     * Hand sends under way, from the click until the dispatch's thread has ended (RSA27-C2): that thread sets the route
+     * before the train sets off, and the railway's first word to this window came only then - seconds in which the Auto
+     * tab offered what it then refused.  Event thread up, the dispatch's thread down.
+     */
+    private final java.util.concurrent.atomic.AtomicInteger handSendsUnderWay = new java.util.concurrent.atomic.AtomicInteger();
+
+    /**
+     * Whether what waits for the trains on the Auto tab is greyed: autonomy busy (`isAutonomyBusy`), a hand send under way
+     * from its click (RSA27-C2), or Graceful Stop offered - Start and Execute Timetable hand their run to a thread of its
+     * own, and the button says a run is on before the railway counts it.
+     *
+     * @return true while it waits
+     */
+    private boolean theAutoTabWaits()
+    {
+        return this.isAutonomyBusy() || this.handSendsUnderWay.get() > 0
+            || (this.gracefulStop != null && this.gracefulStop.isEnabled());
+    }
+
+    /**
+     * The client property a control greyed while the trains run keeps what it had at rest in: its own tooltip, and
+     * whether `greyWhileTheTrainsRun` greyed it (Boolean.TRUE) or found it greyed by its owner.
      */
     private static final String TOOLTIP_AT_REST = "TrainControl.tooltipAtRest";
 
     /**
-     * Greys one control while the trains run, or gives it back.  TAKES BACK ONLY WHAT IT GREYED: Execute Timetable and the
-     * capture toggle are also greyed by their own run and by Return Home, which give them back themselves - a refresh
-     * landing between Execute Timetable's press and its run being counted must not offer it a second time.
+     * Greys one control while the trains run, saying why, or gives it back.  SAYS WHY WHOEVER GREYED IT (RSA27-C3): Return
+     * Home's press greys Execute Timetable and the capture toggle, and Execute Timetable's press greys itself, before any
+     * refresh.  TAKES BACK ONLY WHAT IT GREYED: those owners give theirs back themselves, and a refresh landing between
+     * Execute Timetable's press and its run being counted must not offer it a second time - its own tooltip comes back,
+     * its grey stays its owner's.
      *
      * @param control the control
      * @param busy whether the trains run
@@ -25024,23 +25085,33 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (control == null) return;
 
-        Object atRest = control.getClientProperty(TOOLTIP_AT_REST);
+        Object[] atRest = (Object[]) control.getClientProperty(TOOLTIP_AT_REST);
 
         if (busy)
         {
-            // greyed already - by this, or by its owner, who gives it back
-            if (!control.isEnabled()) return;
+            // its own tooltip kept once, for the give-back
+            if (atRest == null)
+            {
+                atRest = new Object[] {control.getToolTipText(), Boolean.FALSE};
 
-            if (atRest == null) control.putClientProperty(TOOLTIP_AT_REST, new String[] {control.getToolTipText()});
+                control.putClientProperty(TOOLTIP_AT_REST, atRest);
+            }
 
             control.setToolTipText(why);
-            control.setEnabled(false);
+
+            if (control.isEnabled())
+            {
+                atRest[1] = Boolean.TRUE;
+
+                control.setEnabled(false);
+            }
         }
         else if (atRest != null)
         {
             control.putClientProperty(TOOLTIP_AT_REST, null);
-            control.setToolTipText(((String[]) atRest)[0]);
-            control.setEnabled(true);
+            control.setToolTipText((String) atRest[0]);
+
+            if (Boolean.TRUE.equals(atRest[1])) control.setEnabled(true);
         }
     }
 
@@ -25053,7 +25124,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private static void setToolTipAtRest(javax.swing.JComponent control, String text)
     {
-        if (control.getClientProperty(TOOLTIP_AT_REST) != null) control.putClientProperty(TOOLTIP_AT_REST, new String[] {text});
+        Object[] atRest = (Object[]) control.getClientProperty(TOOLTIP_AT_REST);
+
+        if (atRest != null) atRest[0] = text;
         else control.setToolTipText(text);
     }
 
@@ -28528,14 +28601,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                         started.set(true);
 
-                        new Thread( () ->
-                            {
-                                this.model.getAutoLayout().runLocomotives();
-                            }).start();
+                        final Layout starting = this.model.getAutoLayout();
 
                             // Swing, so on the EDT.  These two were being set from the worker thread
                             // directly, which the run-button mirror beside them already defends itself
-                            // against by re-marshalling - the buttons themselves did not.
+                            // against by re-marshalling - the buttons themselves did not.  POSTED BEFORE THE
+                            // RUN'S THREAD STARTS, so its word that nothing started lands after them (RSA27-C1).
                             javax.swing.SwingUtilities.invokeLater(() ->
                                 {
                                     this.startAutonomy.setEnabled(false);
@@ -28544,6 +28615,34 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                     // greyed with Graceful Stop offered, before the run's thread is counted
                                     refreshWhatWaitsForTheTrains();
                                 });
+
+                        new Thread( () ->
+                            {
+                                try
+                                {
+                                    starting.runLocomotives();
+                                }
+                                finally
+                                {
+                                    // NOTHING STARTED (RSA27-C1, RC-B5): every train to run was skipped - its station out
+                                    // of service, its speed unset - and the railway cleared its own flag and only logged
+                                    // it, leaving Start greyed and Graceful Stop offered over nothing, and the Auto tab
+                                    // greyed with them.  Start comes back and Graceful Stop goes.  Asked of the whole
+                                    // railway, not its flag alone: a Graceful Stop pressed meanwhile leaves trains to
+                                    // coast, and its own worker gives Start back once they stop.
+                                    if (!starting.isRunning())
+                                    {
+                                        javax.swing.SwingUtilities.invokeLater(() ->
+                                        {
+                                            this.startAutonomy.setEnabled(true);
+                                            this.gracefulStop.setEnabled(false);
+                                            this.refreshReturnHomeButton();
+
+                                            refreshWhatWaitsForTheTrains();
+                                        });
+                                    }
+                                }
+                            }).start();
 
                                 // Not refreshReturnHomeButton(): runLocomotives was just dispatched to its own
                                 // thread, so isRunning() may still be false here and a refresh would re-enable the

@@ -153,4 +153,5 @@ not fix it. Name the square.
 - `regression.testANewStraightJoinsTheTrackBesideIt`
 - `regression.testTheImportDoorReadsAnOldFile`
 - `regression.testNoSetupEditDuringARun`
+- `regression.testTheAutoTabWaitsForTheTrains`
 - `core.testAStopRouteStandsAlone`
