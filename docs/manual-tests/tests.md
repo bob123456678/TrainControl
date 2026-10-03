@@ -28,11 +28,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-649](#mt-649) | 2026-10-02 | Edit Autonomy Paths in Track Diagram opens the autonomy editor | fixed unvalidated | Adam 2026-10-02 |
-| [MT-652](#mt-652) | 2026-10-02 | The turning mark turns smoothly in place | fixed unvalidated | Adam 2026-10-02 (MT-650) |
 | [MT-653](#mt-653) | 2026-10-03 | The track diagram's Start and Graceful Stop turn while anything runs | fixed unvalidated | Adam 2026-10-03 |
 
-Everything else - 650 of 653 - needs nothing from you unless the area changes again:
-510 **fixed validated** and 140 **superseded**.
+Everything else - 651 of 653 - needs nothing from you unless the area changes again:
+511 **fixed validated** and 140 **superseded**.
 
 ---
 
@@ -31408,7 +31407,7 @@ Validated on your *Works* of 2026-10-02.
 
 ### MT-652 - 2026-10-02 - The turning mark turns smoothly in place
 
-**Disposition:** fixed unvalidated
+**Disposition:** fixed validated
 **From:** Adam 2026-10-02 (MT-650)
 
 **Written:** 2026-10-02
@@ -31428,6 +31427,14 @@ Start's mark is the one Return Home shows while it works out its plan, so both a
 - The mark turns in place, about its own centre, without stepping or wobbling.
 
 *What this is:* `regression.testTheAutoTabWaitsForTheTrains.testTheTurningMarkTurnsAboutItsOwnCentre`.
+
+**Adam, 2026-10-03 (triage).** Works.
+
+*Run against commit fc2899ca, in English - build\classes, compiled 03 Oct 10:10 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
+**Claude, 2026-10-03.**
+
+Validated on your *Works* of 2026-10-03.
 
 ---
 
