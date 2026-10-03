@@ -29,8 +29,10 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 |---|---|---|---|---|
 | [MT-646](#mt-646) | 2026-10-02 | The Auto tab's settings are greyed while trains run | fixed unvalidated | Adam 2026-10-02 |
 | [MT-647](#mt-647) | 2026-10-02 | Execute Timetable is greyed while trains run | fixed unvalidated | Adam 2026-10-02 |
+| [MT-648](#mt-648) | 2026-10-02 | Start says why when no train could be started | fixed unvalidated | Adam 2026-10-02 |
+| [MT-649](#mt-649) | 2026-10-02 | Edit Autonomy Paths in Track Diagram opens the autonomy editor | fixed unvalidated | Adam 2026-10-02 |
 
-Everything else - 645 of 647 - needs nothing from you unless the area changes again:
+Everything else - 645 of 649 - needs nothing from you unless the area changes again:
 505 **fixed validated** and 140 **superseded**.
 
 ---
@@ -31224,5 +31226,60 @@ runs, rather than leaving it live to say to wait.
 
 *What this is:* `regression.testNoSetupEditDuringARun.testARunGreysTheAutoTabAndItsStopGivesItBack` and
 `testTheAutoTabIsGreyedWhileAutonomyIsBusy`.
+
+---
+
+<a id="mt-648"></a>
+
+### MT-648 - 2026-10-02 - Start says why when no train could be started
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-02
+
+**Written:** 2026-10-02
+
+Your request of 2026-10-02: *"the start says nothing"*.
+
+**Steps**
+
+1. Autonomy -> Manage Configurations... -> New Configuration..., and answer **No** to copying where the trains stand.
+   Choose the new configuration from the Autonomy menu.
+2. In the autonomy editor, put one locomotive on a station (Add a Locomotive to Autonomy...), then set that station to
+   **Station (...) -> No - Nothing Can Pass**, and Save Changes.
+3. Turn the power on and press **Start Autonomous Operation**.
+4. Afterwards, delete the configuration (Manage Configurations... -> Delete) and choose your usual one again.
+
+**Expected**
+
+- A message says *"No train could be started - each is on a station out of service, or has no speed set.  The log
+  names them."*, and Start is offered again straight away; Graceful Stop is not.
+
+*What this is:* `regression.testTheAutoTabWaitsForTheTrains.testAStartThatStartsNothingGivesTheAutoTabBack`.
+
+---
+
+<a id="mt-649"></a>
+
+### MT-649 - 2026-10-02 - Edit Autonomy Paths in Track Diagram opens the autonomy editor
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-02
+
+**Written:** 2026-10-02
+
+Your request of 2026-10-02 (the wording issues): the button on the Auto tab's Settings opened whichever editor was
+used last.
+
+**Steps**
+
+1. Open the track diagram's **Edit** button, choose **Track Diagram** in the editor's sidebar if it is not already,
+   and close the editor.
+2. On the Auto tab's **Settings**, press **Edit Autonomy Paths in Track Diagram**.
+
+**Expected**
+
+- The autonomy editor opens (Autonomy Setup), not the track editor.
+
+*What this is:* `regression.testTheAutoTabWaitsForTheTrains.testTheSettingsTabOpensTheAutonomyEditor`.
 
 ---
