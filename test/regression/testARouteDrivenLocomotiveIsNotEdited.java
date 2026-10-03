@@ -138,6 +138,12 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
             assertNotNull(fromTheDatabase, "the locomotive database's menu offers no multi-unit item");
 
+            // WITH A DIVIDER ABOVE IT (Adam, 2026-10-03)
+            int at = java.util.Arrays.asList(database[0].getComponents()).indexOf(fromTheDatabase);
+
+            assertTrue(at > 0 && database[0].getComponent(at - 1) instanceof javax.swing.JSeparator, "the locomotive"
+                + " database's multi-unit item has no divider above it");
+
             said = askAndClose(() -> fromTheDatabase.doClick());
 
             assertEquals(said, refusal, "the multi-unit door, from the locomotive database, did not refuse a locomotive a"
