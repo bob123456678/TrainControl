@@ -290,6 +290,8 @@ public class testTheTailCanBeGivenInTheEditor
 
             TailCrossedPrompt.Choice farthest = offered.get(offered.size() - 1);
 
+            f.closeTheEditorForTheDiagram();
+
             // OFF THE RAILWAY AND ON THE CLIPBOARD, which is what Control+X leaves behind.
             SwingUtilities.invokeAndWait(() -> model.getAutoLayout().moveLocomotive(null, before.getName(), true));
 
@@ -669,6 +671,8 @@ public class testTheTailCanBeGivenInTheEditor
          */
         void paste(String answer) throws Exception
         {
+            closeTheEditorForTheDiagram();
+
             final Point before = standing();
 
             assertNotNull(before, "precondition: the train is not standing anywhere");
@@ -730,6 +734,8 @@ public class testTheTailCanBeGivenInTheEditor
          */
         void pasteInPlace(String answer) throws Exception
         {
+            closeTheEditorForTheDiagram();
+
             final Point before = standing();
 
             assertNotNull(before, "precondition: the train is not standing anywhere");
@@ -858,6 +864,20 @@ public class testTheTailCanBeGivenInTheEditor
 
             assertEquals(onTheRailway.getFarthest().getName(), chosen.getFarthest().getName(),
                 chosen.getLabel() + " was " + how + ", and the running railway follows a different road");
+        }
+
+        /**
+         * Closes the editor before the diagram's paste door, which refuses while an editor is open - a placement made there
+         * would be put back by the editor's Cancel - as the main window counts every editor window of its own (RSA28-B1).
+         * A person pastes on the diagram with no editor open.  `close` disposes it again, which does nothing.
+         *
+         * @throws Exception from the event thread
+         */
+        void closeTheEditorForTheDiagram() throws Exception
+        {
+            SwingUtilities.invokeAndWait(() -> editor.dispose());
+
+            settle();
         }
 
         void close() throws Exception

@@ -3383,6 +3383,14 @@ public class testEditorSurfaceRules
 
         assertFalse(open.isEmpty(), "cannot find isLayoutEditorOpen - has it been renamed?");
 
+        // AND INTO anEditorWindow, which asks the editor windows (RSA28-B1)
+        if (open.contains("anEditorWindow()"))
+        {
+            open = withoutComments(bodyOf(ui, "private LayoutEditor anEditorWindow()"));
+
+            assertFalse(open.isEmpty(), "cannot find anEditorWindow - has it been renamed?");
+        }
+
         assertTrue(open.contains("openEditor"),
             "whether an editor is open is decided without looking at the editor, so anything else "
             + "that greys the Edit button - such as there being no local layout - now reads as an "

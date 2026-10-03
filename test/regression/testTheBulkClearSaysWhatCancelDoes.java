@@ -96,6 +96,25 @@ public class testTheBulkClearSaysWhatCancelDoes
 
         if (page == null) throw new SkipException("no page " + PAGE);
 
+        editor = buildTheEditor(page);
+
+        final String[] said = new String[1];
+
+        SwingUtilities.invokeAndWait(
+            () -> said[0] = editor.getAutonomyPanel().clearLocomotivesWarning());
+
+        warning = said[0];
+    }
+
+    /**
+     * The autonomy editor on a page, built as the main window builds it.
+     *
+     * @param page the page
+     * @return the editor
+     * @throws Exception from the event thread
+     */
+    private static LayoutEditor buildTheEditor(final LayoutDiagram page) throws Exception
+    {
         final LayoutEditor[] built = new LayoutEditor[1];
 
         SwingUtilities.invokeAndWait(() ->
@@ -105,14 +124,7 @@ public class testTheBulkClearSaysWhatCancelDoes
             built[0].setAutonomyMode(session);
         });
 
-        editor = built[0];
-
-        final String[] said = new String[1];
-
-        SwingUtilities.invokeAndWait(
-            () -> said[0] = editor.getAutonomyPanel().clearLocomotivesWarning());
-
-        warning = said[0];
+        return built[0];
     }
 
     @AfterClass(alwaysRun = true)
@@ -327,6 +339,10 @@ public class testTheBulkClearSaysWhatCancelDoes
         final String[] said = new String[1];
         final java.lang.reflect.Field panel = TrainControlUI.class.getDeclaredField("autonomyTileMenus");
         panel.setAccessible(true);
+        // WITH NO EDITOR OPEN, as a person meets the diagram's menu: it is not offered while one is, and the main window
+        // counts the editor this class built (RSA28-B1).  Built again straight after, for the claims that use it.
+        final LayoutEditor closing = editor;
+        SwingUtilities.invokeAndWait(() -> closing.dispose());
         SwingUtilities.invokeAndWait(() ->
         {
             menu[0] = ui.buildAutonomyTileMenu(at);
@@ -340,6 +356,7 @@ public class testTheBulkClearSaysWhatCancelDoes
                 throw new RuntimeException(failed);
             }
         });
+        editor = buildTheEditor(model.getLayout(PAGE));
         assertNotNull(menu[0], "precondition: the track diagram offered no menu on " + at);
         assertNotNull(said[0], "precondition: the diagram's menu panel was not built");
         assertFalse(said[0].contains(I18n.t("ui.cancel")),
