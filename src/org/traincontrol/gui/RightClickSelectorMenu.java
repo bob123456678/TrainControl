@@ -68,6 +68,9 @@ public class RightClickSelectorMenu extends JPopupMenu
 
         if (length != null) add(length);
 
+        // And its multi-unit, as the keyboard's menu offers it (Adam, 2026-10-03)
+        add(LocomotiveMenuItems.multiUnit(ui, loc));
+
         addSeparator();
 
         add(LocomotiveMenuItems.findSimilar(ui, loc, e));

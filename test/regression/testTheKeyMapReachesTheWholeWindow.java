@@ -100,6 +100,40 @@ public class testTheKeyMapReachesTheWholeWindow
     }
 
     /**
+     * A pre-release's window title leaves out what TrainControl is for (Adam, 2026-10-03: *"when it's a pre release
+     * version, don't show "for marklin central station 2 & 3" in the window title, as it doesn't fit anyway"*) - the build
+     * it carries takes the room.  A release keeps it.  Asked of the window `display()` has shown, which is where the title
+     * is set.
+     *
+     * MUTATION: build the pre-release title with `app.uititle` again, and this fails.
+     */
+    @Test
+    public void testAPreReleaseTitleLeavesOutTheCentralStation() throws Exception
+    {
+        final String[] title = new String[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> title[0] = ui.getTitle());
+
+        String forTheStation = org.traincontrol.util.I18n.f("app.uititle", "").trim();
+
+        if (MarklinControlStation.IS_PRE_RELEASE)
+        {
+            org.testng.Assert.assertTrue(title[0].startsWith(
+                org.traincontrol.util.I18n.f("app.title", MarklinControlStation.versionForDisplay())),
+                "the pre-release title does not begin with the version and its build: " + title[0]);
+
+            org.testng.Assert.assertFalse(title[0].contains(forTheStation), "the pre-release title still says \""
+                + forTheStation + "\": " + title[0]);
+        }
+        else
+        {
+            org.testng.Assert.assertTrue(title[0].startsWith(org.traincontrol.util.I18n.f("app.uititle",
+                org.traincontrol.util.I18n.f("app.title", MarklinControlStation.RAW_VERSION))),
+                "a release's title lost what TrainControl is for: " + title[0]);
+        }
+    }
+
+    /**
      * A letter pressed on something that is not the keyboard still picks a locomotive.
      *
      * The component is found rather than named - anything in the window that is not a place to type

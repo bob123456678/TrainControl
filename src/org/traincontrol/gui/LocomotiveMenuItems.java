@@ -113,6 +113,27 @@ final class LocomotiveMenuItems
     }
 
     /**
+     * Set as, edit or view a multi-unit - the locomotive's own, so the keyboard's menu and the locomotive database's offer
+     * the same item (Adam, 2026-10-03).  A multi-unit the Central Station defines is shown, not edited.
+     *
+     * @param ui the main window
+     * @param loc the locomotive
+     * @return the item
+     */
+    static JMenuItem multiUnit(TrainControlUI ui, Locomotive loc)
+    {
+        String text = loc.getDecoderType() == Locomotive.decoderType.MULTI_UNIT
+            ? I18n.t("loc.ui.menuViewMultiUnitLocomotives")
+            : loc.hasLinkedLocomotives() ? I18n.t("loc.ui.menuEditMultiUnitLocomotives") : I18n.t("loc.ui.menuSetAsMultiUnit");
+
+        JMenuItem item = new JMenuItem(text);
+
+        item.addActionListener(event -> ui.changeLinkedLocomotives(loc));
+
+        return item;
+    }
+
+    /**
      * How long this train is, or null when there is no reason to ask (FR-047).
      *
      * Adam: "visible only when autonomy is loaded."  The number decides one thing only - whether a

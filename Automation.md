@@ -34,7 +34,11 @@ This guide takes you from a track diagram with nothing set up on it to a layout 
 
 ## What you need
 
-**Feedback sensors.** This is the only hardware requirement, and it is not optional: TrainControl knows where a train is because a sensor told it. One S88 contact per station is the minimum. Three is much better — before the stopping point, at it, and after it — because that is what lets a train slow down as it arrives rather than stopping dead on the contact.
+**S88 feedback sensors - required.** TrainControl knows where a train is because a sensor told it, so autonomy cannot run without them. Every station needs at least one S88 contact. Three is much better — before the stopping point, at it, and after it — because that is what lets a train slow down as it arrives rather than stopping dead on the contact.
+
+**Digital switches where routes divide - required.** Autonomy sets every switch along a train's route before the train sets off, so the switches your trains run through need a decoder and an address TrainControl can set. A switch on the diagram with no address is listed under `Must be fixed` in the [setup check](#the-setup-check), and autonomy will not start until it has one.
+
+**Digital signals - optional.** Autonomy does not need signals: it brings each train to a smooth stop on its own sensors. Where you have them, TrainControl sets them along each route, and can turn a station's guard signals red while a train stands there (`Entry Guard Signal...`) - which looks right, and adds a layer of safety. A station without one is only listed under `Worth tidying`.
 
 **A track diagram stored on this computer.** Either downloaded from your Central Station with **Layouts → Download Central Station Layout Files**, or drawn in TrainControl's own editor. A diagram read from the Central Station each time TrainControl starts cannot carry an autonomy setup, so download it first - the Autonomy menu offers to. Automation is set up on this diagram, so if your diagram does not yet match your railway, start there.
 

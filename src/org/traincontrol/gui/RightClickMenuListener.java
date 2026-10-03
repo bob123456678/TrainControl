@@ -7,7 +7,6 @@ import javax.swing.JButton;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
-import org.traincontrol.base.Locomotive;
 import org.traincontrol.util.I18n;
 
 /**
@@ -165,20 +164,10 @@ public class RightClickMenuListener extends MouseAdapter
 
                 addSeparator();
 
-                menuItem = new JMenuItem(
-                    !(ui.getButtonLocomotive(source)).hasLinkedLocomotives()
-                        ? I18n.t("loc.ui.menuSetAsMultiUnit")
-                        : I18n.t("loc.ui.menuEditMultiUnitLocomotives")
-                );
-                menuItem.addActionListener(event -> ui.changeLinkedLocomotives((Locomotive) ui.getButtonLocomotive(source)));
+                // SHARED WITH THE LOCOMOTIVE DATABASE'S MENU, and on this menu's own level beside Manage Locomotive, for
+                // convenience (Adam, 2026-10-03); the key belongs to this menu
+                menuItem = LocomotiveMenuItems.multiUnit(ui, ui.getButtonLocomotive(source));
                 menuItem.setToolTipText("Control+L");
-
-                if ((ui.getButtonLocomotive(source)).getDecoderType() == Locomotive.decoderType.MULTI_UNIT)
-                {
-                    menuItem.setText(
-                        I18n.t("loc.ui.menuViewMultiUnitLocomotives")
-                    );
-                }
                 add(menuItem);
 
                 addSeparator();
