@@ -29,8 +29,9 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 |---|---|---|---|---|
 | [MT-649](#mt-649) | 2026-10-02 | Edit Autonomy Paths in Track Diagram opens the autonomy editor | fixed unvalidated | Adam 2026-10-02 |
 | [MT-652](#mt-652) | 2026-10-02 | The turning mark turns smoothly in place | fixed unvalidated | Adam 2026-10-02 (MT-650) |
+| [MT-653](#mt-653) | 2026-10-03 | The track diagram's Start and Graceful Stop turn while anything runs | fixed unvalidated | Adam 2026-10-03 |
 
-Everything else - 650 of 652 - needs nothing from you unless the area changes again:
+Everything else - 650 of 653 - needs nothing from you unless the area changes again:
 510 **fixed validated** and 140 **superseded**.
 
 ---
@@ -31427,5 +31428,34 @@ Start's mark is the one Return Home shows while it works out its plan, so both a
 - The mark turns in place, about its own centre, without stepping or wobbling.
 
 *What this is:* `regression.testTheAutoTabWaitsForTheTrains.testTheTurningMarkTurnsAboutItsOwnCentre`.
+
+---
+
+<a id="mt-653"></a>
+
+### MT-653 - 2026-10-03 - The track diagram's Start and Graceful Stop turn while anything runs
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-03
+
+**Written:** 2026-10-03
+
+Your request of 2026-10-03: *"Can we show the spinner next to start/graceful stop on the track diagram viewer page as
+well?"*
+
+**Steps**
+
+1. With autonomy loaded and nothing running, look at the button on the strip above the track diagram.
+2. Press it (Start Autonomous Operation), and watch it while the trains run - it becomes Graceful Stop; then press
+   Graceful Stop and watch it until the trains have stopped.
+
+**Expected**
+
+- At rest there is no turning mark on the strip's button.
+- While the trains run, the turning mark shows beside Graceful Stop's text, turning with the one on the Auto tab's Start;
+  after Graceful Stop it stays, greyed with the button, until the trains have stopped, and then it goes.
+- The strip does not grow taller when the mark appears.
+
+*What this is:* `regression.testNoSetupEditDuringARun.testARunGreysTheAutoTabAndItsStopGivesItBack`.
 
 ---
