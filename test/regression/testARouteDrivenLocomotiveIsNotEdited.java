@@ -37,8 +37,13 @@ public class testARouteDrivenLocomotiveIsNotEdited
     private static final String LOC = "OB-287 loc";
     private static final String ROUTE = "OB-287 route";
 
+    /** A second locomotive, for a multi-unit the route's locomotive is ticked into */
+    private static final String UNIT = "OB-287 unit";
+
     /**
-     * The delete door and the edit door each refuse, naming the route, and leave the locomotive as it was.
+     * The delete door and the edit door each refuse, naming the route, and leave the locomotive as it was; and the
+     * multi-unit door (Adam, 2026-10-03) - from the locomotive database's menu and the keyboard's, and asked again at OK
+     * of a locomotive ticked into another's multi-unit.
      *
      * @throws Exception from the event thread
      */
@@ -123,6 +128,77 @@ public class testARouteDrivenLocomotiveIsNotEdited
                 + " route (OB-287, CS3-B1)");
 
             assertNotNull(model.getLocByName(LOC), "the edit door renamed a locomotive a running route drives");
+
+            // THE MULTI-UNIT DOOR, from the locomotive database's menu (Adam, 2026-10-03) ...
+            final javax.swing.JPopupMenu[] database = new javax.swing.JPopupMenu[1];
+
+            SwingUtilities.invokeAndWait(() -> database[0] = new org.traincontrol.gui.RightClickSelectorMenu(window, null, loc));
+
+            final javax.swing.JMenuItem fromTheDatabase = multiUnitItemIn(database[0]);
+
+            assertNotNull(fromTheDatabase, "the locomotive database's menu offers no multi-unit item");
+
+            said = askAndClose(() -> fromTheDatabase.doClick());
+
+            assertEquals(said, refusal, "the multi-unit door, from the locomotive database, did not refuse a locomotive a"
+                + " running route drives, naming the route (OB-287)");
+
+            // ... and from the keyboard's, on its own level beside Manage Locomotive
+            final java.lang.reflect.Field current = TrainControlUI.class.getDeclaredField("currentButton");
+
+            current.setAccessible(true);
+
+            final javax.swing.JButton button = (javax.swing.JButton) current.get(window);
+
+            assertNotNull(button, "precondition: no key is the current one");
+
+            SwingUtilities.invokeAndWait(() -> window.mapLocToCurrentButton(LOC));
+
+            final Class<?> listenerClass = Class.forName("org.traincontrol.gui.RightClickMenuListener");
+
+            final Object listener = listenerClass.getConstructor(TrainControlUI.class, javax.swing.JButton.class)
+                .newInstance(window, button);
+
+            final java.lang.reflect.Constructor<?> make = Class.forName(
+                "org.traincontrol.gui.RightClickMenuListener$RightClickMenu").getDeclaredConstructor(listenerClass,
+                TrainControlUI.class);
+
+            make.setAccessible(true);
+
+            final javax.swing.JPopupMenu[] keyboard = new javax.swing.JPopupMenu[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    keyboard[0] = (javax.swing.JPopupMenu) make.newInstance(listener, window);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            final javax.swing.JMenuItem fromTheKeyboard = multiUnitItemIn(keyboard[0]);
+
+            assertNotNull(fromTheKeyboard, "the keyboard's menu offers no multi-unit item beside Manage Locomotive");
+
+            said = askAndClose(() -> fromTheKeyboard.doClick());
+
+            assertEquals(said, refusal, "the multi-unit door, from the keyboard, did not refuse a locomotive a running route"
+                + " drives, naming the route (OB-287)");
+
+            // AND ASKED AGAIN AT OK: another locomotive's multi-unit, with the driven one ticked into it
+            model.newMM2Locomotive(UNIT, 64);
+
+            final org.traincontrol.base.Locomotive unit = model.getLocByName(UNIT);
+
+            said = tickAndOk(() -> window.changeLinkedLocomotives(unit), LOC);
+
+            assertEquals(said, refusal, "the multi-unit dialog's OK took in a locomotive a running route drives (OB-287)");
+
+            assertFalse(unit.getLinkedLocomotiveNames().containsKey(LOC), "a locomotive a running route drives was made a"
+                + " member of a multi-unit");
         }
         finally
         {
@@ -139,6 +215,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
                 }
 
                 try { model.deleteRoute(ROUTE); } catch (Exception ignored) { }
+                try { model.deleteLoc(UNIT); } catch (Exception ignored) { }
                 try { model.deleteLoc(LOC); } catch (Exception ignored) { }
             }
 
@@ -228,6 +305,141 @@ public class testARouteDrivenLocomotiveIsNotEdited
         assertTrue(returned.get(), "precondition: the door never returned");
 
         return said;
+    }
+
+    /**
+     * The multi-unit item at a menu's own level - set, edit or view - or null.
+     *
+     * @param menu the menu
+     * @return the item
+     */
+    private static javax.swing.JMenuItem multiUnitItemIn(javax.swing.JPopupMenu menu)
+    {
+        java.util.Set<String> texts = new java.util.HashSet<>(java.util.Arrays.asList(I18n.t("loc.ui.menuSetAsMultiUnit"),
+            I18n.t("loc.ui.menuEditMultiUnitLocomotives"), I18n.t("loc.ui.menuViewMultiUnitLocomotives")));
+
+        for (java.awt.Component part : menu.getComponents())
+        {
+            if (part instanceof javax.swing.JMenuItem && !(part instanceof javax.swing.JMenu)
+                && texts.contains(((javax.swing.JMenuItem) part).getText()))
+            {
+                return (javax.swing.JMenuItem) part;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Opens the multi-unit dialog through a door, ticks one locomotive in it and presses OK; then the first message after
+     * the OK, closed without answering yes.
+     *
+     * @param door the door
+     * @param member the locomotive to tick
+     * @return the message after OK, or null when none was shown
+     * @throws Exception from the wait
+     */
+    private static String tickAndOk(Runnable door, String member) throws Exception
+    {
+        final java.util.concurrent.atomic.AtomicBoolean returned = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+        SwingUtilities.invokeLater(() ->
+        {
+            try
+            {
+                door.run();
+            }
+            finally
+            {
+                returned.set(true);
+            }
+        });
+
+        // THE DIALOG: its message is the panel of locomotives
+        final boolean[] ticked = new boolean[1];
+
+        long giveUp = System.currentTimeMillis() + 10000;
+
+        while (!ticked[0] && !returned.get() && System.currentTimeMillis() < giveUp)
+        {
+            Thread.sleep(100);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (java.awt.Window window : java.awt.Window.getWindows())
+                {
+                    if (!(window instanceof JDialog) || !window.isShowing()) continue;
+
+                    JOptionPane pane = paneIn((java.awt.Container) window);
+
+                    if (pane == null || !(pane.getMessage() instanceof java.awt.Container)) continue;
+
+                    javax.swing.JCheckBox box = boxFor((java.awt.Container) pane.getMessage(), member);
+
+                    if (box == null) continue;
+
+                    box.setSelected(true);
+
+                    pane.setValue(pane.getOptions()[0]);
+
+                    window.dispose();
+
+                    ticked[0] = true;
+
+                    return;
+                }
+            });
+        }
+
+        assertTrue(ticked[0], "precondition: the multi-unit dialog did not offer " + member);
+
+        String said = null;
+
+        giveUp = System.currentTimeMillis() + 10000;
+
+        while (said == null && !returned.get() && System.currentTimeMillis() < giveUp)
+        {
+            Thread.sleep(100);
+
+            final String[] found = new String[1];
+
+            SwingUtilities.invokeAndWait(() -> found[0] = closeTheFirstQuestion());
+
+            said = found[0];
+        }
+
+        giveUp = System.currentTimeMillis() + 10000;
+
+        while (!returned.get() && System.currentTimeMillis() < giveUp)
+        {
+            Thread.sleep(100);
+            SwingUtilities.invokeAndWait(() -> closeTheFirstQuestion());
+        }
+
+        assertTrue(returned.get(), "precondition: the multi-unit door never returned");
+
+        return said;
+    }
+
+    /** The tick box naming this locomotive in the multi-unit dialog's panel, or null. */
+    private static javax.swing.JCheckBox boxFor(java.awt.Container container, String name)
+    {
+        for (java.awt.Component child : container.getComponents())
+        {
+            if (child instanceof javax.swing.JCheckBox && name.equals(((javax.swing.JCheckBox) child).getToolTipText()))
+            {
+                return (javax.swing.JCheckBox) child;
+            }
+
+            if (child instanceof java.awt.Container)
+            {
+                javax.swing.JCheckBox found = boxFor((java.awt.Container) child, name);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
     }
 
     /** Closes the first showing option pane, as its X does, and says what it said; null when none is showing. */

@@ -6550,6 +6550,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return true;
     }
     /**
+     * `refuseWhileARouteDrivesIt`, of each of these locomotives in turn: the first a running route drives is refused and
+     * said (OB-287, for a multi-unit and its members).
+     *
+     * @param source what to hang the dialog off
+     * @param names the locomotives
+     * @return true when the caller must not proceed
+     */
+    private boolean refuseWhileARouteDrivesAny(Component source, java.util.Collection<String> names)
+    {
+        for (String name : names)
+        {
+            if (refuseWhileARouteDrivesIt(source, name)) return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Refuses to change the locomotive database while autonomy is running.
      *
      * Adam, MT-141: "Never allow any modifications to a running layout.  This includes locomotive
@@ -11011,10 +11029,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         //
         // Every release candidate says "3.0.0", so a tester reporting against one had no way to say
         // which - and an MT-273 result nearly closed as tested-too-early over exactly that.
+        //
+        // WITHOUT WHAT IT IS FOR, on a pre-release (Adam, 2026-10-03: "when it's a pre release version, don't show "for
+        // marklin central station 2 & 3" in the window title, as it doesn't fit anyway") - the build takes the room.
         if (org.traincontrol.marklin.MarklinControlStation.IS_PRE_RELEASE)
         {
-            setTitle(I18n.f("app.uititle", I18n.f("app.title",
-                org.traincontrol.marklin.MarklinControlStation.versionForDisplay())));
+            setTitle(I18n.f("app.title", org.traincontrol.marklin.MarklinControlStation.versionForDisplay()));
         }
 
         // Debug mode indicator
@@ -21787,6 +21807,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
+        // NOR WHILE A ROUTE DRIVES IT OR A MEMBER (OB-287's guard, which renaming, re-addressing and deleting ask): what a
+        // multi-unit's commands drive is its members, so changing them under a route part-way along its list changes what
+        // that route is driving.
+        java.util.Set<String> involved = new java.util.LinkedHashSet<>();
+
+        involved.add(l.getName());
+        involved.addAll(isCSMultiUnit ? l.getModelMultiUnitLocomotiveNames().keySet() : l.getLinkedLocomotiveNames().keySet());
+
+        if (refuseWhileARouteDrivesAny(this, involved)) return;
+
         if (this.model.getLocomotives().size() < 2)
         {
             JOptionPane.showMessageDialog(
@@ -22112,6 +22142,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                 }
             }
+
+            // ASKED AGAIN AT OK, of every member before and after: a route starts from its s88 while this is open, and what
+            // is ticked is what the change reaches
+            involved.addAll(newLinkedLocos.keySet());
+
+            if (refuseWhileARouteDrivesAny(this, involved)) return;
 
             // One call (NSV-B2): this runs on the event thread and syncWithCS2 rebuilds consists
             // off it, and the two-call form stages on a field they would share.
