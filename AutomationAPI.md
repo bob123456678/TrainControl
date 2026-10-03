@@ -1,14 +1,19 @@
-# Automating your layout: the programmatic route
+# Automating your layout (TrainControl v2.8.2 and older) and the Java API
 
-> **Looking for the user guide?**  See **[Automation.md](Automation.md)**.  Since v3.0.0 automation is
-> set up on the track diagram itself, and that guide walks through it from an empty layout to a running
-> one.  This page is the other half: driving TrainControl from Java, and the reference for every
-> setting the autonomy configuration holds.
+> **This guide pertains to TrainControl v2.8.2 and older.**  It describes autonomy as it was set up before v3.0.0: a
+> graph of points and edges, written in JSON or built in the Autonomy tab, and watched in a graph window.
 >
-> The JSON graph described below is **deprecated** as an authoring format.  TrainControl still reads
-> it, and the settings below still apply, but the graph window this page describes was removed in
-> v3.0.0: a layout built today is built on the diagram, and the graph is derived from it.  The settings are the same settings either way, so the reference sections at the
-> bottom of this page apply to both.
+> **Using v3.0.0 or newer?**  Autonomy is set up on the track diagram itself, in the autonomy editor - see
+> **[the autonomy editor guide](Automation.md)**.  The Autonomy tab and the graph window described below are gone; an
+> `autonomy.json` written for an older version can still be imported from the Autonomy menu.
+>
+> **What still applies in v3.0.0:** the Java API - `MarklinControlStation`, and the `Layout` class with `createPoint`,
+> `createEdge`, `addConfigCommand`, `addLockEdge`, `setLocomotive`, `runLocomotive`, the callbacks and `fromJSON` /
+> `toJSON` - works as described here, as do the JSON keys and the settings in the reference sections at the bottom.  A
+> layout built in code runs on its own; it is not drawn on the track diagram.  Notes marked *Since v3.0.0* say where
+> the newer version behaves differently.  Changed in the API: a point's home locomotive (`getHomeLoc` / `setHomeLoc`) is
+> a `Locomotive` rather than a name, `importRoutes` returns how many routes it imported, and `Layout.getPossibleEdges`
+> is gone.
 
 
 Beyond its GUI, the TrainControl software can be used to progammatically control your Marklin layout, and even fully automate it.  This means that you can specify exactly how and when you want your trains, switches, signals, and accessories to behave.
@@ -406,7 +411,7 @@ If you want to adjust the graph once created, maximize it, and simply use your m
 TrainControl supports terminus stations.  For any `Point` that represents a terminus station (`station` must be `true` in the JSON),
 also specify `"terminus" : true`.  For the corresponding locomotive, set `"reversible" : true`, and it will automatically change direction after arrival.
 
-**Full autonomy only chooses a terminus for a reversible locomotive**, as of 2026-09-01, on Adam's ruling that "in manual operation, non reversing trains must be able to back into a terminus if the graph makes that possible.  Otherwise we'd need a third kind of station."
+*Since v3.0.0*, **full autonomy only chooses a terminus for a reversible locomotive**, while a train you send by hand may still back into a terminus where the track allows it.
 
 The three tiers differ, and it is worth knowing which is which:
 
@@ -416,7 +421,6 @@ The three tiers differ, and it is worth knowing which is which:
 
 Separately, a train can be refused for being too long to back in, when the approach has recorded lengths whose total is shorter than the train.
 
-**What counts as measured** was settled on 2026-09-06; the rule is written out in [behaviour.md](docs/reference/behaviour.md), section 5b.
 Terminus stations must have a separate set of directed outgoing edges (without cycles) that only reconnect with the main line after the train has passed through a reversing loop.
 
 If using the Java API, `Point.setTerminus` and `Locomotive.setReversible` correspond to the JSON settings above.
@@ -542,7 +546,7 @@ An assigned station is that locomotive's home whether or not it is standing ther
 
 Assignments are saved with the autonomy file.  If one names a locomotive that is no longer in the database, it is reported in the log and dropped, and the rest of the layout loads normally.  Renaming a locomotive keeps its assignment; deleting one removes it.  Assignments cannot be changed while autonomy is doing anything - running, still coming to a stop, or working out a route home - because changing one alters what a run already under way is aiming for.
 
-If you pick a locomotive the station could never hold - one longer than its length limit, or one it excludes - you are told which locomotive and station, and where to look, and asked whether to go ahead.  (Reversibility is no longer one of these reasons: since 2026-09-01 a non-reversible locomotive may be homed at a terminus, provided the route there turns it round on the way.)  The assignment is still yours to make: you may well be setting the station up afterwards.  What it avoids is finding out later from a `Return Home` that says to check the track, when the track is not the problem.
+If you pick a locomotive the station could never hold - one longer than its length limit, or one it excludes - you are told which locomotive and station, and where to look, and asked whether to go ahead.  (*Since v3.0.0* reversibility is not one of these reasons: a non-reversible locomotive may be homed at a terminus, provided the route there turns it round on the way.)  The assignment is still yours to make: you may well be setting the station up afterwards.  What it avoids is finding out later from a `Return Home` that says to check the track, when the track is not the problem.
 
 Trains must be stopped before returning them home, so press `Graceful Stop` first if autonomy is running.  The button greys out whenever the command cannot be run, and its tooltip says why: trains are still moving, every locomotive is already home, or nothing on the layout has a home to go back to.
 
