@@ -6140,6 +6140,11 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
         // the latch exists to stop.
         changingPage = false;
 
+        // CLOSED ON THE WAY (MT-649).  The switch's work is posted, so a close can land before it arrives - and arriving
+        // at a closed window put it back together out of sight and greyed Edit and Edit Autonomy Paths for the session.
+        // The close has already given them back; the switch has nowhere to arrive.
+        if (!isDisplayable()) return;
+
         try
         {
             boolean autonomy = wanted;

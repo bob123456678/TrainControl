@@ -1450,6 +1450,229 @@ public class testDiagramLooksRight
     }
 
     /**
+     * Changing what trains may do at a station leaves its caption where it is (OB-310).
+     *
+     * Adam, 2026-10-02: *"when changing topmainr1 from a station to no trains can pass, the label gets rotated from
+     * being vertical (correct) to being horizontal (wrong) and back again."*  On the track diagram, through its own
+     * right-click menu.
+     *
+     * Each answer under Station went through `setStation(tile, true)`, which placed the station's caption - and
+     * `placeCaption` MOVES a caption the station already has, passing over the square it is on because that square is
+     * taken.  So every change sent the name to the next free square beside the platform, and the next change sent it
+     * back: below TopMainR1 on its north-south rails, drawn on end, then above it on blank space, drawn flat.  The
+     * rename had the same fault (MT-116) and has the same answer: a caption is placed only where the station has none.
+     *
+     * Every named station with a caption, both changes, through `buildAutonomyTileMenu` - the main window's door to
+     * the menu Adam used.  Then a station like his, captioned on north-south rails, drawn after "No - Nothing Can
+     * Pass": that is the state he saw flat, and after both changes the second move can have put it back.
+     *
+     * MUTATION: dropping the "has none" test from `AutonomyEditorPanel.setStation` fails both halves.
+     */
+    @Test
+    public void testChangingWhatTrainsMayDoLeavesTheCaptionWhereItIs() throws Exception
+    {
+        final org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+
+        assertNotNull(session, "no autonomy session over the fixture layout");
+
+        final String neither = org.traincontrol.util.I18n.t("autosetup.ui.menuNeither");
+        final String stop = org.traincontrol.util.I18n.t("autosetup.ui.menuCanStop");
+
+        final org.json.JSONObject asItWas = session.snapshotSetup();
+
+        java.util.List<String> moved = new java.util.ArrayList<>();
+        java.util.List<String> said = new java.util.ArrayList<>();
+
+        int stations = 0;
+
+        // A STATION LIKE HIS: captioned on a square whose rails run north-south, so drawn on end
+        org.traincontrol.automationui.TileGraph.TileKey onEnd = null;
+        org.traincontrol.automationui.TileGraph.TileKey onEndCaption = null;
+
+        for (org.traincontrol.automationui.TileGraph.TileKey station : session.getLabelledStationTiles())
+        {
+            if (onEnd != null || !session.getStore().isStation(station)) continue;
+
+            LayoutDiagram page = model.getLayout(station.getPage());
+
+            for (org.traincontrol.automationui.TileGraph.TileKey where : session.captionsFor(station))
+            {
+                if (page != null && !where.equals(station) && org.traincontrol.gui.LayoutGrid.runsNorthSouth(
+                    page.getComponent(where.getX(), where.getY())))
+                {
+                    onEnd = station;
+                    onEndCaption = where;
+                }
+            }
+        }
+
+        assertNotNull(onEnd, "precondition: no station in the fixture is captioned beside itself on north-south rails,"
+            + " which is the shape of TopMainR1");
+
+        String drawnFirst = drawnOnEnd(onEnd);
+
+        assertEquals(drawnFirst, "on end", "precondition: " + onEnd + "'s caption on " + onEndCaption + " is not drawn"
+            + " on end to begin with");
+
+        String drawnShut = null;
+
+        try
+        {
+            for (org.traincontrol.automationui.TileGraph.TileKey station
+                : new java.util.ArrayList<>(session.getLabelledStationTiles()))
+            {
+                String name = session.getStore().getPointName(station);
+
+                if (!session.getStore().isStation(station) || name == null || name.trim().isEmpty()) continue;
+
+                stations++;
+
+                final java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> was =
+                    new java.util.LinkedHashSet<>(session.captionsFor(station));
+
+                choose(station, neither, said);
+
+                if (!session.captionsFor(station).equals(was))
+                {
+                    moved.add(name + ": " + was + " -> " + session.captionsFor(station) + " at " + neither);
+                }
+
+                if (station.equals(onEnd)) drawnShut = drawnOnEnd(station);
+
+                choose(station, stop, said);
+
+                if (!session.captionsFor(station).equals(was))
+                {
+                    moved.add(name + ": " + was + " -> " + session.captionsFor(station) + " at " + stop);
+                }
+            }
+        }
+        finally
+        {
+            session.restoreSetup(asItWas);
+        }
+
+        assertTrue(stations > 5, "precondition: only " + stations + " named stations with a caption in the fixture");
+
+        assertEquals(said, new java.util.ArrayList<String>(), "choosing under Station put up a dialog");
+
+        assertEquals(drawnShut, "on end", onEnd + "'s caption is not drawn on end once it is set to " + neither
+            + " (OB-310)");
+
+        assertEquals(moved, new java.util.ArrayList<String>(), "changing what trains may do at a station moved its"
+            + " caption to another square - so a name drawn on end beside north-south rails lies flat on the next"
+            + " square, and goes back on the next change (OB-310)");
+    }
+
+    /**
+     * Chooses one answer under Station on a square's right-click menu, as the track diagram builds it.
+     *
+     * @param station the square
+     * @param answer the item's text
+     * @param said the text of any dialog that came up, which is closed
+     */
+    private void choose(final org.traincontrol.automationui.TileGraph.TileKey station, final String answer,
+        final java.util.List<String> said) throws Exception
+    {
+        final String[] missing = new String[1];
+
+        final Runnable click = () ->
+        {
+            javax.swing.JPopupMenu menu = ui.buildAutonomyTileMenu(station);
+
+            if (menu == null)
+            {
+                missing[0] = "no menu for " + station;
+
+                return;
+            }
+
+            for (java.awt.Component part : menu.getComponents())
+            {
+                if (!(part instanceof javax.swing.JMenu)) continue;
+
+                for (java.awt.Component item : ((javax.swing.JMenu) part).getMenuComponents())
+                {
+                    if (item instanceof javax.swing.AbstractButton
+                        && answer.equals(((javax.swing.AbstractButton) item).getText()))
+                    {
+                        ((javax.swing.AbstractButton) item).doClick();
+
+                        return;
+                    }
+                }
+            }
+
+            missing[0] = "no \"" + answer + "\" under Station for " + station;
+        };
+
+        // Closing whatever comes up, so a question cannot hang the click
+        final java.util.concurrent.atomic.AtomicBoolean done = new java.util.concurrent.atomic.AtomicBoolean();
+
+        Thread closer = new Thread(() ->
+        {
+            while (!done.get())
+            {
+                try
+                {
+                    Thread.sleep(200);
+                }
+                catch (InterruptedException e)
+                {
+                    return;
+                }
+
+                for (java.awt.Window w : java.awt.Window.getWindows())
+                {
+                    if (w instanceof javax.swing.JDialog && w.isShowing())
+                    {
+                        said.add(String.valueOf(((javax.swing.JDialog) w).getTitle()));
+
+                        javax.swing.SwingUtilities.invokeLater(w::dispose);
+                    }
+                }
+            }
+        }, "OB-310 dialog closer");
+
+        closer.setDaemon(true);
+        closer.start();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(click);
+        }
+        finally
+        {
+            done.set(true);
+        }
+
+        assertNull(missing[0], missing[0]);
+    }
+
+    /**
+     * How a station's caption is drawn on a freshly built grid of its page.
+     *
+     * @param station the square
+     * @return "on end", "flat", or what was found instead
+     */
+    private String drawnOnEnd(org.traincontrol.automationui.TileGraph.TileKey station) throws Exception
+    {
+        java.awt.Container box = laidOut(model.getLayout(station.getPage()), 30);
+
+        java.util.List<String> found = new java.util.ArrayList<>();
+
+        for (java.awt.Component one : box.getComponents())
+        {
+            if (one instanceof org.traincontrol.gui.StationCaption && ui.getLayoutStations(station).contains(one))
+            {
+                found.add(((org.traincontrol.gui.StationCaption) one).isRotated() ? "on end" : "flat");
+            }
+        }
+
+        return found.size() == 1 ? found.get(0) : String.valueOf(found);
+    }
+
+    /**
      * A grid for one page, built and laid out, with its tile images waited for.
      *
      * The wait is not optional. A tile's preferred size depends on whether its icon has arrived, the

@@ -25033,6 +25033,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         boolean busy = theAutoTabWaits();
 
+        // AND START SAYS SO, turning (OB-309)
+        showSomethingRuns(busy);
+
         String why = I18n.t("autolayout.ui.errorWaitForActiveLocomotivesToStop");
 
         for (javax.swing.JComponent waits : new javax.swing.JComponent[] {
@@ -26063,6 +26066,69 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public boolean isReturnHomeShowingWork()
     {
         return this.returnHomeButton != null && this.returnHomeButton.getIcon() instanceof TurningArc;
+    }
+
+    /**
+     * The turning mark on Start while anything runs (OB-309), or null.
+     */
+    private javax.swing.Timer runningSpinner;
+
+    /**
+     * Shows or clears the turning mark on Start Autonomous Operation (Adam, OB-309: "can we get a spinner next to start
+     * autonomous operation on the autonomous locomotive commands tab that shows whenever anything is running?") - while
+     * the Auto tab waits for the trains (`theAutoTabWaits`): autonomy, a timetable run, Return Home, a hand send, or a
+     * Graceful Stop's coast-down.  Return Home's mark, and set as the disabled icon too, as that one is, because Start is
+     * greyed through most of those.  It stops turning by itself if the window goes.  Event thread only.
+     *
+     * @param running whether anything runs
+     */
+    private void showSomethingRuns(boolean running)
+    {
+        if (this.startAutonomy == null) return;
+
+        if (running)
+        {
+            if (this.runningSpinner != null) return;
+
+            final TurningArc arc = new TurningArc(
+                Math.max(10, this.startAutonomy.getFontMetrics(this.startAutonomy.getFont()).getAscent()));
+
+            this.startAutonomy.setIcon(arc);
+            this.startAutonomy.setDisabledIcon(arc);
+
+            this.runningSpinner = new javax.swing.Timer(60, e ->
+            {
+                if (!isDisplayable())
+                {
+                    ((javax.swing.Timer) e.getSource()).stop();
+
+                    return;
+                }
+
+                arc.advance();
+
+                this.startAutonomy.repaint();
+            });
+
+            this.runningSpinner.start();
+        }
+        else
+        {
+            if (this.runningSpinner != null) this.runningSpinner.stop();
+
+            this.runningSpinner = null;
+
+            this.startAutonomy.setIcon(null);
+            this.startAutonomy.setDisabledIcon(null);
+        }
+    }
+
+    /**
+     * @return whether Start is showing that something runs (OB-309)
+     */
+    public boolean isShowingSomethingRuns()
+    {
+        return this.startAutonomy != null && this.startAutonomy.getIcon() instanceof TurningArc;
     }
 
     /** A three-quarter circle that turns a step each frame (FR-077). */
