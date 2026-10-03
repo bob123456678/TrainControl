@@ -7,7 +7,6 @@
     "preArrivalSpeedReduction": 0.5,
     "defaultLocSpeed": 35,
     "maxLatency": 0,
-    "timetable": [],
     "maxDelay": 2,
     "turnOffFunctionsOnArrival": false,
     "maxLocInactiveSeconds": 0,
@@ -16,61 +15,28 @@
     "turnOnFunctionsOnDeparture": true,
     "simulate": true
   },
-  "name": "Main",
+  "name": "Autonomy 1",
   "points": {
     "3 - Top Parking:18,15": {},
     "3 - Top Parking:18,11": {},
     "3 - Top Parking:10,10": {},
     "1 - Main:0,11": {
       "maxTrainLength": 4,
-      "facing": "E",
       "priority": -1
     },
     "1 - Main:20,14": {
-      "loc": {"name": "EN57-947"},
       "mustReverse": true,
       "maxTrainLength": 2,
-      "arrivedAlong": [
-        [
-          "BottomInner (northbound)",
-          "1 - Main 12,7"
-        ],
-        [
-          "1 - Main 12,7",
-          "Tunnel (southbound)"
-        ],
-        [
-          "Tunnel (southbound)",
-          "BottomMainBCPre (eastbound)"
-        ],
-        [
-          "BottomMainBCPre (eastbound)",
-          "BottomMainC"
-        ]
-      ],
-      "facing": "W",
-      "arrivedFrom": "W",
       "priority": 2
     },
     "1 - Main:20,12": {
       "loc": {"name": "BR 628 2"},
       "maxTrainLength": 5,
-      "arrivedAlong": [
-        [
-          "Tunnel (southbound)",
-          "BottomMainAPre (eastbound)"
-        ],
-        [
-          "BottomMainAPre (eastbound)",
-          "BottomMainA (eastbound)"
-        ]
-      ],
       "facing": "E",
       "arrivedFrom": "W"
     },
     "1 - Main:20,13": {
       "maxTrainLength": 4,
-      "facing": "E",
       "canReverse": true
     },
     "1 - Main:21,6": {
@@ -81,7 +47,6 @@
     "3 - Top Parking:4,9": {},
     "1 - Main:7,7": {
       "maxTrainLength": 5,
-      "facing": "S",
       "priority": -2
     },
     "1 - Main:5,9": {},
@@ -101,7 +66,6 @@
       "parking": true,
       "mustReverse": true,
       "maxTrainLength": 2,
-      "facing": "S",
       "autoDestination": false
     },
     "1 - Main:0,3": {},
@@ -109,7 +73,6 @@
     "3 - Top Parking:17,10": {},
     "1 - Main:1,10": {
       "maxTrainLength": 4,
-      "facing": "E",
       "priority": -2
     },
     "1 - Main:4,5": {
@@ -124,49 +87,8 @@
       "autoDestination": false
     },
     "1 - Main:6,4": {
-      "loc": {"name": "2-8-4 3505 SP"},
       "maxTrainLength": 4,
-      "arrivedAlong": [
-        [
-          "Tunnel (southbound)",
-          "BottomMainBCPre (eastbound)"
-        ],
-        [
-          "BottomMainBCPre (eastbound)",
-          "BottomMainB (eastbound)"
-        ],
-        [
-          "BottomMainB (eastbound)",
-          "BottomMainPost (northbound)"
-        ],
-        [
-          "BottomMainPost (northbound)",
-          "1 - Main 7,1 (westbound)"
-        ],
-        [
-          "1 - Main 7,1 (westbound)",
-          "RampUp"
-        ],
-        [
-          "RampUp",
-          "1 - Main 0,3 (southbound)"
-        ],
-        [
-          "1 - Main 0,3 (southbound)",
-          "TopMainR2Inter (southbound)"
-        ],
-        [
-          "TopMainR2Inter (southbound)",
-          "TopMainR2Pre (northbound)"
-        ],
-        [
-          "TopMainR2Pre (northbound)",
-          "TopMainR2"
-        ]
-      ],
       "homeFacing": "N",
-      "facing": "N",
-      "arrivedFrom": "S",
       "priority": 1,
       "home": "2-8-4 3505 SP"
     },
@@ -201,7 +123,6 @@
     "1 - Main:14,3": {
       "maxTrainLength": 3,
       "homeFacing": "E",
-      "facing": "E",
       "excludedLocs": [
         "EA 3005 DSB",
         "ER 2035 DSB",
@@ -230,7 +151,6 @@
     "2 - Bottom:13,13": {},
     "2 - Bottom:13,14": {
       "maxTrainLength": 5,
-      "facing": "E",
       "canReverse": true
     },
     "2 - Bottom:8,14": {},
@@ -268,25 +188,8 @@
       "autoDestination": false
     },
     "1 - Main:13,11": {
-      "loc": {"name": "02 0314-1 DDR"},
       "maxTrainLength": 4,
-      "arrivedAlong": [
-        [
-          "TopMainR1",
-          "TopMainPost (eastbound)"
-        ],
-        [
-          "TopMainPost (eastbound)",
-          "RampDown (southbound)"
-        ],
-        [
-          "RampDown (southbound)",
-          "BottomSecondary"
-        ]
-      ],
-      "facing": "W",
       "homeFacing": "W",
-      "arrivedFrom": "E",
       "home": "75 407 DB"
     },
     "1 - Main:6,9": {},
@@ -299,77 +202,16 @@
       "autoDestination": false
     },
     "2 - Bottom:19,0": {
-      "loc": {"name": "EN57-203"},
       "maxTrainLength": 20,
-      "arrivedAlong": [
-        [
-          "LowerFront (eastbound)",
-          "LowerBackPre"
-        ],
-        [
-          "LowerBackPre",
-          "LowerBack"
-        ]
-      ],
-      "facing": "W",
       "homeFacing": "W",
-      "arrivedFrom": "E",
       "home": "EN57-203"
     },
     "1 - Main:1,3": {},
     "1 - Main:10,13": {},
     "1 - Main:5,4": {
-      "loc": {"name": "75 407 DB"},
       "maxTrainLength": 3,
-      "arrivedAlong": [
-        [
-          "BottomInner (northbound)",
-          "1 - Main 12,7"
-        ],
-        [
-          "1 - Main 12,7",
-          "Tunnel (southbound)"
-        ],
-        [
-          "Tunnel (southbound)",
-          "BottomMainBCPre (eastbound)"
-        ],
-        [
-          "BottomMainBCPre (eastbound)",
-          "BottomMainB (eastbound)"
-        ],
-        [
-          "BottomMainB (eastbound)",
-          "BottomMainPost (northbound)"
-        ],
-        [
-          "BottomMainPost (northbound)",
-          "1 - Main 7,1 (westbound)"
-        ],
-        [
-          "1 - Main 7,1 (westbound)",
-          "RampUp"
-        ],
-        [
-          "RampUp",
-          "1 - Main 1,3 (southbound)"
-        ],
-        [
-          "1 - Main 1,3 (southbound)",
-          "TopMainR1Inter (southbound)"
-        ],
-        [
-          "TopMainR1Inter (southbound)",
-          "TopMainR1Pre (northbound)"
-        ],
-        [
-          "TopMainR1Pre (northbound)",
-          "TopMainR1"
-        ]
-      ],
-      "facing": "N",
       "homeFacing": "N",
-      "arrivedFrom": "S",
+      "active": false,
       "priority": 2,
       "home": "BR 628 2"
     },
@@ -399,7 +241,6 @@
     "2 - Bottom:11,13": {},
     "1 - Main:13,9": {
       "maxTrainLength": 3,
-      "facing": "W",
       "homeFacing": "W",
       "excludedLocs": [
         "EA 3005 DSB",
