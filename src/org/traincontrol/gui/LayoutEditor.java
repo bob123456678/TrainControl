@@ -573,6 +573,18 @@ public class LayoutEditor extends PositionAwareJFrame
         }
 
         super.dispose();
+
+        // AND EDIT ASKED AGAIN, now that this window is not there to count (RSA28-B1)
+        if (parent != null) parent.editorWindowClosed();
+    }
+
+    /**
+     * @param ui a main window
+     * @return whether this is that window's editor
+     */
+    boolean isEditorOf(TrainControlUI ui)
+    {
+        return this.parent == ui;
     }
 
     /**
@@ -6334,7 +6346,18 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
                 return false;
             }
 
-            if (isAutonomyMode()) return autonomyPanel.save();
+            // AND THE UNDO POINT TAKEN AGAIN (RSA28-C1), as the track editor's below drops it: kept, a close before the
+            // switch arrives asked to "throw away everything changed since you last saved" - straight after a save
+            if (isAutonomyMode())
+            {
+                if (!autonomyPanel.save()) return false;
+
+                org.traincontrol.automationui.AutonomySession saved = parent.getAutonomySession();
+
+                this.autonomyAsOpened = saved == null ? null : saved.snapshotSetup();
+
+                return true;
+            }
 
             layout.saveChanges(null, false);
 

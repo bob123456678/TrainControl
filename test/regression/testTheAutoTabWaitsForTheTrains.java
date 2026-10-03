@@ -427,6 +427,399 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
+     * An editor stays one editor through its own switches, and is counted open until it closes (RSA28-B1).
+     *
+     * Each switch hands over through the main window's own teardown - `autonomyEditorClosed` for the autonomy editor,
+     * the refresh's `layoutRefreshCompleteInternal` for the track editor - which gave Edit and Edit Autonomy Paths back,
+     * and the switch's posted arrival greyed them again.  A press in between opened a second editor; close the newer
+     * and the gate, which asked only the newest, let Start run trains with the other still open.  Open is asked of the
+     * editor windows now, so neither button is offered while one is there.
+     *
+     * Watched through Autonomy Setup to Track Diagram (with both buttons pressed in the hand-over's gap, the order
+     * RSA28's M14 found), back to Autonomy Setup, and a page switch; then the close gives both back.
+     *
+     * MUTATION: ask the window's flag, not its editor windows, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAnEditorStaysOneThroughItsSwitches() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            // EITHER BUTTON OFFERED WHILE AN EDITOR WINDOW IS THERE
+            final List<String> offered = Collections.synchronizedList(new ArrayList<String>());
+
+            final String[] during = {"opening"};
+
+            java.beans.PropertyChangeListener watch = e ->
+            {
+                try
+                {
+                    if (Boolean.TRUE.equals(e.getNewValue()) && editorWindows(ui[0]) > 0)
+                    {
+                        offered.add(((javax.swing.AbstractButton) e.getSource()).getText() + " during " + during[0]);
+                    }
+                }
+                catch (ReflectiveOperationException failed)
+                {
+                    offered.add("the watch failed: " + failed);
+                }
+            };
+
+            final javax.swing.AbstractButton edit = (javax.swing.AbstractButton) control(ui[0], "editLayoutButton");
+            final javax.swing.AbstractButton paths = (javax.swing.AbstractButton) control(ui[0], "editAutonomyFromSettings");
+
+            edit.addPropertyChangeListener("enabled", watch);
+            paths.addPropertyChangeListener("enabled", watch);
+
+            answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.TRUE, null, true));
+
+            final org.traincontrol.gui.LayoutEditor editor = theEditor(ui[0]);
+
+            assertNotNull(editor, "precondition: the autonomy editor did not open");
+
+            assertTrue(editor.isAutonomyMode(), "precondition: the editor opened was not the autonomy editor");
+
+            // AUTONOMY SETUP TO TRACK DIAGRAM, both buttons pressed in the hand-over's gap
+            during[0] = "the switch to Track Diagram";
+
+            final javax.swing.AbstractButton track = button(editor.getRootPane(), I18n.t("layout.ui.sidebarTrack"));
+
+            assertNotNull(track, "precondition: no Track Diagram in the editor's sidebar");
+
+            answeringYes(() ->
+            {
+                track.doClick();
+
+                SwingUtilities.invokeLater(() ->
+                {
+                    edit.doClick();
+                    paths.doClick();
+                });
+            });
+
+            waitForTheSwitch(ui[0], editor);
+
+            assertEquals(editorWindows(ui[0]), 1, "Edit or Edit Autonomy Paths pressed while the autonomy editor handed over to"
+                + " Track Diagram opened a second editor (RSA28-B1)");
+
+            assertFalse(editor.isAutonomyMode(), "precondition: the editor did not arrive at Track Diagram");
+
+            // TRACK DIAGRAM TO AUTONOMY SETUP
+            during[0] = "the switch to Autonomy Setup";
+
+            final javax.swing.AbstractButton setup = button(editor.getRootPane(), I18n.t("layout.ui.sidebarAutonomy"));
+
+            assertNotNull(setup, "precondition: no Autonomy Setup in the editor's sidebar");
+
+            answeringYes(() -> setup.doClick());
+
+            waitForTheSwitch(ui[0], editor);
+
+            assertTrue(editor.isAutonomyMode(), "precondition: the editor did not arrive at Autonomy Setup");
+
+            // A PAGE SWITCH
+            during[0] = "a page switch";
+
+            final java.lang.reflect.Method step = editor.getClass().getDeclaredMethod("stepPage", int.class);
+
+            step.setAccessible(true);
+
+            answeringYes(() ->
+            {
+                try
+                {
+                    step.invoke(editor, 1);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            waitForTheSwitch(ui[0], editor);
+
+            assertEquals(editorWindows(ui[0]), 1, "precondition: the switches left " + editorWindows(ui[0]) + " editors");
+
+            // THE GATE SHUT WHILE IT IS OPEN
+            assertTrue(ui[0].isLayoutEditorOpen(), "the gate does not see the editor that is open (RSA28-B1)");
+
+            assertEquals(offered, new ArrayList<String>(), "Edit or Edit Autonomy Paths was offered while an editor was open"
+                + " (RSA28-B1)");
+
+            // AND THE CLOSE - the window's own - GIVES BOTH BACK
+            during[0] = "the close";
+
+            final java.lang.reflect.Method close = editor.getClass().getDeclaredMethod("confirmExit");
+
+            close.setAccessible(true);
+
+            answeringYes(() ->
+            {
+                try
+                {
+                    close.invoke(editor);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            waitForTheSwitch(ui[0], editor);
+
+            assertEquals(editorWindows(ui[0]), 0, "the editor did not close");
+
+            assertTrue(edit.isEnabled() && paths.isEnabled(), "Edit or Edit Autonomy Paths is still greyed once the editor"
+                + " closed");
+
+            // AND A CLOSE THAT GIVES EDIT BACK BEFORE ITS WINDOW GOES - a switch to a page that has gone, a build that
+            // failed: asked again once the window has gone
+            during[0] = "an editor given up on";
+
+            answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.FALSE, null, true));
+
+            final org.traincontrol.gui.LayoutEditor again = theEditor(ui[0]);
+
+            assertNotNull(again, "precondition: the track editor did not open again");
+
+            final java.lang.reflect.Method abandon = again.getClass().getDeclaredMethod("confirmExitWithoutAsking");
+
+            abandon.setAccessible(true);
+
+            answeringYes(() ->
+            {
+                try
+                {
+                    abandon.invoke(again);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertEquals(editorWindows(ui[0]), 0, "precondition: the editor given up on is still there");
+
+            assertTrue(edit.isEnabled() && paths.isEnabled(), "Edit or Edit Autonomy Paths is still greyed once an editor"
+                + " that gave them back before its window went has gone (RSA28-B1)");
+
+            assertEquals(offered, new ArrayList<String>(), "Edit or Edit Autonomy Paths was offered while an editor was open"
+                + " (RSA28-B1)");
+        }
+        finally
+        {
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * A Save and Continue at a switch leaves nothing to ask at a close in the switch's gap (RSA28-C1).
+     *
+     * The save kept the undo point the window opened with, so until the switch arrived the window still thought it had
+     * unsaved work: a close then asked to *"throw away everything changed since you last saved"* - the opposite of what had
+     * just been done - with the window changing mode beneath the question.  The save takes the undo point again now.
+     *
+     * MUTATION: keep the old undo point at a Save and Continue, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testASaveAtASwitchLeavesNothingToAskAtTheClose() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.TRUE, null, true));
+
+            final org.traincontrol.gui.LayoutEditor editor = theEditor(ui[0]);
+
+            assertNotNull(editor, "precondition: the autonomy editor did not open");
+
+            assertTrue(editor.isAutonomyMode(), "precondition: the editor opened was not the autonomy editor");
+
+            // AN EDIT: a station's longest train
+            final org.traincontrol.automationui.AutonomySession session = ui[0].getAutonomySession();
+
+            org.traincontrol.automationui.TileGraph.TileKey station = null;
+
+            for (org.traincontrol.automationui.TileGraph.TileKey tile : session.getReducer().getPoints().keySet())
+            {
+                if (station == null && session.getStore().isStation(tile)) station = tile;
+            }
+
+            assertNotNull(station, "precondition: no station in the setup");
+
+            final org.traincontrol.automationui.TileGraph.TileKey edited = station;
+
+            final Object was = session.getPointProperty(edited, "maxTrainLength");
+
+            final int length = was instanceof Number && ((Number) was).intValue() == 7 ? 6 : 7;
+
+            SwingUtilities.invokeAndWait(() -> session.setPointProperty(edited, "maxTrainLength", length));
+
+            final java.lang.reflect.Method unsaved = editor.getClass().getDeclaredMethod("hasUnsavedAutonomyWork");
+
+            unsaved.setAccessible(true);
+
+            final boolean[] waiting = new boolean[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    waiting[0] = (Boolean) unsaved.invoke(editor);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            assertTrue(waiting[0], "precondition: the edit is not unsaved work");
+
+            final javax.swing.AbstractButton track = button(editor.getRootPane(), I18n.t("layout.ui.sidebarTrack"));
+
+            final java.lang.reflect.Method close = editor.getClass().getDeclaredMethod("confirmExit");
+
+            close.setAccessible(true);
+
+            // TRACK DIAGRAM, SAVE AND CONTINUE (the question's first answer), AND THE CLOSE IN THE SWITCH'S GAP
+            List<String> asked = answeringYes(() ->
+            {
+                track.doClick();
+
+                try
+                {
+                    close.invoke(editor);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            assertFalse(asked.contains(I18n.t("autosetup.ui.confirmExitWithoutSaving")), "a close straight after Save and"
+                + " Continue asked to throw away everything changed since the last save (RSA28-C1): " + asked);
+
+            assertEquals(asked.size(), 1, "the close asked something after Save and Continue, or the switch asked nothing: "
+                + asked);
+
+            assertEquals(asked.get(0), I18n.t("layout.ui.confirmSwitchWithUnsavedWork"), "precondition: the switch's question"
+                + " was not the first");
+
+            waitForTheSwitch(ui[0], editor);
+
+            Object kept = session.getPointProperty(edited, "maxTrainLength");
+
+            assertTrue(kept instanceof Number && ((Number) kept).intValue() == length, "the saved edit was lost: " + kept);
+
+            assertEquals(editorWindows(ui[0]), 0, "the editor did not close");
+        }
+        finally
+        {
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * @param ui the window
+     * @return its editor windows that are still there
+     * @throws ReflectiveOperationException reading an editor's window
+     */
+    private static int editorWindows(TrainControlUI ui) throws ReflectiveOperationException
+    {
+        java.lang.reflect.Field parent = org.traincontrol.gui.LayoutEditor.class.getDeclaredField("parent");
+
+        parent.setAccessible(true);
+
+        int count = 0;
+
+        for (java.awt.Frame frame : java.awt.Frame.getFrames())
+        {
+            if (frame instanceof org.traincontrol.gui.LayoutEditor && frame.isDisplayable() && parent.get(frame) == ui) count++;
+        }
+
+        return count;
+    }
+
+    /**
+     * Waits until an editor's switch has arrived, or not, and the refresh behind it is done.
+     *
+     * @param ui the window
+     * @param editor the editor
+     * @throws Exception from the event thread
+     */
+    private static void waitForTheSwitch(TrainControlUI ui, org.traincontrol.gui.LayoutEditor editor) throws Exception
+    {
+        java.lang.reflect.Field latch = org.traincontrol.gui.LayoutEditor.class.getDeclaredField("changingPage");
+
+        latch.setAccessible(true);
+
+        java.lang.reflect.Field refreshes = TrainControlUI.class.getDeclaredField("refreshesUnderWay");
+
+        refreshes.setAccessible(true);
+
+        long until = System.currentTimeMillis() + 30000;
+
+        while ((latch.getBoolean(editor) || ((java.util.concurrent.atomic.AtomicInteger) refreshes.get(ui)).get() > 0)
+            && System.currentTimeMillis() < until)
+        {
+            Thread.sleep(100);
+        }
+
+        for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+        Thread.sleep(2000);
+
+        for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /**
      * The turning mark turns about its own centre (MT-650).
      *
      * Adam, 2026-10-02: *"the spinner isn't perfectly centered around itself- looks a little unsmooth (1-2 px off)."*

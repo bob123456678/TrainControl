@@ -54,14 +54,59 @@ public class testTheWordingSaysWhatIsThere
 
         // WHOLE STRINGS: "1 warnings" begins with "1 warning", so a prefix could not tell them apart
         assertEquals(AutonomyOverlayToggle.findingsCountText(0, 1, 1), I18n.f("autosetup.ui.labelFindingsCount",
-            I18n.t("autosetup.ui.countWarningsOne"), I18n.f("autosetup.ui.countOnThisPage", 1)),
+            I18n.f("autosetup.ui.countWarningsOne", 1), I18n.f("autosetup.ui.countOnThisPage", 1)),
             "one warning is counted with the plural");
         assertEquals(AutonomyOverlayToggle.findingsCountText(1, 2, 3), I18n.f("autosetup.ui.labelFindingsCountErrors",
-            I18n.t("autosetup.ui.countErrorsOne"), I18n.f("autosetup.ui.countWarnings", 2),
+            I18n.f("autosetup.ui.countErrorsOne", 1), I18n.f("autosetup.ui.countWarnings", 2),
             I18n.f("autosetup.ui.countOnThisPage", 3)), "one error is counted with the plural");
         assertEquals(AutonomyOverlayToggle.findingsCountText(2, 1, 0), I18n.f("autosetup.ui.labelFindingsCountErrors",
-            I18n.f("autosetup.ui.countErrors", 2), I18n.t("autosetup.ui.countWarningsOne"),
+            I18n.f("autosetup.ui.countErrors", 2), I18n.f("autosetup.ui.countWarningsOne", 1),
             I18n.f("autosetup.ui.countOnThisPage", 0)), "one warning beside two errors is counted with the plural");
+    }
+
+    /**
+     * Each language counts in its own forms (RSA28-C2): Polish takes a form of its own for 2 to 4 - not 12 to 14 - and
+     * French the singular for 0, where the count had one form beside the singular for 1.
+     *
+     * MUTATION: count every language as English does, and this fails.
+     */
+    @Test
+    public void testEachLanguageCountsInItsOwnForms()
+    {
+        java.util.Locale was = I18n.getLocale();
+
+        try
+        {
+            I18n.setLocale(new java.util.Locale("pl"));
+
+            assertEquals(AutonomyOverlayToggle.findingsCountText(2, 3, 5),
+                "2 b\u0142\u0119dy, 3 ostrze\u017cenia - 5 na tej stronie", "Polish counts 2 to 4 with the form for 5 and up");
+            assertEquals(AutonomyOverlayToggle.findingsCountText(22, 1, 1),
+                "22 b\u0142\u0119dy, 1 ostrze\u017cenie - 1 na tej stronie", "Polish counts 22 with the form for 5 and up");
+            assertEquals(AutonomyOverlayToggle.findingsCountText(5, 12, 0),
+                "5 b\u0142\u0119d\u00f3w, 12 ostrze\u017ce\u0144 - 0 na tej stronie", "Polish counts 5 and 12 with the form for"
+                + " 2 to 4");
+            assertEquals(AutonomyOverlayToggle.findingsCountText(1, 14, 0),
+                "1 b\u0142\u0105d, 14 ostrze\u017ce\u0144 - 0 na tej stronie", "Polish counts 1 or 14 wrongly");
+
+            I18n.setLocale(java.util.Locale.FRENCH);
+
+            assertEquals(AutonomyOverlayToggle.findingsCountText(2, 0, 0), "2 erreurs, 0 avertissement - 0 sur cette page",
+                "French counts no warnings with the plural");
+            assertEquals(AutonomyOverlayToggle.findingsCountText(0, 2, 1), "2 avertissements - 1 sur cette page",
+                "French counts two warnings with the singular");
+
+            I18n.setLocale(java.util.Locale.ENGLISH);
+
+            assertEquals(AutonomyOverlayToggle.findingsCountText(1, 0, 0), "1 error, 0 warnings - 0 on this page",
+                "English counts no warnings with the singular");
+            assertEquals(AutonomyOverlayToggle.findingsCountText(3, 1, 1), "3 errors, 1 warning - 1 on this page",
+                "English counts wrongly");
+        }
+        finally
+        {
+            I18n.setLocale(was);
+        }
     }
 
     /**
@@ -88,7 +133,8 @@ public class testTheWordingSaysWhatIsThere
 
             for (String key : new String[] {"autosetup.ui.labelBlockingCountOne", "autosetup.ui.countErrors",
                 "autosetup.ui.countErrorsOne", "autosetup.ui.countWarnings", "autosetup.ui.countWarningsOne",
-                "autosetup.ui.countOnThisPage", "autosetup.ui.tooltipMaxTrainLengthKey", "autolayout.ui.errorNothingStarted"})
+                "autosetup.ui.countOnThisPage", "autosetup.ui.tooltipMaxTrainLengthKey", "autolayout.ui.errorNothingStarted",
+                "autosetup.ui.countErrorsFew", "autosetup.ui.countWarningsFew"})
             {
                 assertNotNull(p.getProperty(key), which + " has no " + key);
             }

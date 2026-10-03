@@ -570,12 +570,13 @@ public class AutonomyOverlayToggle extends JPanel
      */
     public static String findingsCountText(int errors, int warnings, int onThisPage)
     {
-        String warned = warnings == 1 ? I18n.t("autosetup.ui.countWarningsOne") : I18n.f("autosetup.ui.countWarnings", warnings);
+        // In the language's own forms (RSA28-C2): Polish has one for 2 to 4, French counts 0 with the singular
+        String warned = I18n.f("autosetup.ui.countWarnings" + I18n.countForm(warnings), warnings);
         String here = I18n.f("autosetup.ui.countOnThisPage", onThisPage);
 
         if (errors <= 0) return I18n.f("autosetup.ui.labelFindingsCount", warned, here);
 
-        String erred = errors == 1 ? I18n.t("autosetup.ui.countErrorsOne") : I18n.f("autosetup.ui.countErrors", errors);
+        String erred = I18n.f("autosetup.ui.countErrors" + I18n.countForm(errors), errors);
 
         return I18n.f("autosetup.ui.labelFindingsCountErrors", erred, warned, here);
     }

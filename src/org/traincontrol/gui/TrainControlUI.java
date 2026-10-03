@@ -5134,7 +5134,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void applyLayoutEditingAvailability()
     {
-        boolean live = this.noEditorOpen && layoutCanBeEdited();
+        // AND NO EDITOR WINDOW THERE (RSA28-B1): a switch's hand-over says no editor is open while its window still is
+        boolean live = this.noEditorOpen && !isLayoutEditorOpen() && layoutCanBeEdited();
 
         this.editLayoutButton.setEnabled(live);
 
@@ -5334,8 +5335,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (this.isAutonomyBusy()) return "autolayout.errorCannotEditWhileRunning";
 
-        if (!this.editLayoutButton.isEnabled()
-            && !(this.openEditor != null && this.openEditor.isDisplayable()))
+        if (!this.editLayoutButton.isEnabled() && !isLayoutEditorOpen())
         {
             return "autosetup.ui.errorEditorAlreadyOpen";
         }
@@ -5445,7 +5445,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // showOpenEditor already existed for the menus, which had the same problem and solved it
             // properly; this door still had the dialog. The dialog stays for the case where the button
             // is disabled and there is NO editor to show, which is a real refusal.
-            if (openEditor != null && openEditor.isDisplayable())
+            if (isLayoutEditorOpen())
             {
                 showOpenEditor();
                 return;
@@ -7728,8 +7728,49 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Autonomy menu did the same. Both escape hatches were inside the dead menus.
         //
         // This is the question the other places that ask it use, and it was already three lines from
-        // where that change was made.
-        return openEditor != null && openEditor.isDisplayable();
+        // where that change was made.  Asked of the editor windows (RSA28-B1).
+        return anEditorWindow() != null;
+    }
+
+    /**
+     * An editor window of this window's that is still there, or null (RSA28-B1).
+     *
+     * Asked of the windows, not of `openEditor` or the Edit button: an editor's switch hands over through the teardowns
+     * that give Edit back - `autonomyEditorClosed`, `layoutRefreshCompleteInternal` - and only its posted arrival greyed
+     * it again, so a press in between opened a second editor, and the gate, asking the newest, then let Start run with
+     * the other still open.  A window is there from its construction until its dispose, which asks again.
+     *
+     * @return the editor, the newest first
+     */
+    private LayoutEditor anEditorWindow()
+    {
+        if (openEditor != null && openEditor.isDisplayable()) return openEditor;
+
+        for (java.awt.Frame frame : java.awt.Frame.getFrames())
+        {
+            if (frame instanceof LayoutEditor && frame.isDisplayable() && ((LayoutEditor) frame).isEditorOf(this))
+            {
+                return (LayoutEditor) frame;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * An editor window has gone: Edit and the doors beside it asked again (RSA28-B1).  From `LayoutEditor.dispose`, which
+     * every ending passes through.
+     */
+    void editorWindowClosed()
+    {
+        if (javax.swing.SwingUtilities.isEventDispatchThread())
+        {
+            applyLayoutEditingAvailability();
+        }
+        else
+        {
+            javax.swing.SwingUtilities.invokeLater(this::applyLayoutEditingAvailability);
+        }
     }
 
     /**
@@ -7817,11 +7858,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void showOpenEditor()
     {
-        if (openEditor == null || !openEditor.isDisplayable()) return;
+        LayoutEditor shown = anEditorWindow();
 
-        openEditor.setVisible(true);
-        openEditor.toFront();
-        openEditor.requestFocus();
+        if (shown == null) return;
+
+        shown.setVisible(true);
+        shown.toFront();
+        shown.requestFocus();
     }
 
     /**
