@@ -18,7 +18,7 @@ TrainControl connects to a Central Station 2, 3, or 3 Plus over your network.  I
 
 * Control any locomotive instantly from your keyboard — no menu diving
 * Interactive track diagrams, fully editable in the app, across unlimited windows
-* Fully autonomous train operation using only S88 sensors
+* Fully autonomous train operation using S88 sensors and digital switches (signals optional)
 * Multi-units, function presets, conditional routes, and usage statistics
 * Locomotive and layout data downloaded automatically from your Central Station
 * Free, open source, and actively developed
@@ -125,7 +125,7 @@ Useful for testing, individual accessories can be directly controlled via their 
 
 **Full Autonomy**
 
-Set up on the track diagram ([user guide](Automation.md)) - an older [JSON configuration file](AutomationAPI.md) can be imported from the autonomy menu - and enable complete automation of trains using just S88 sensors and an initial list of locomotive locations.  TrainControl will automatically keep track of where each train is located at any given time.  You can pick destinations for specific trains, or let the system continuously execute random routes.  All state is auto-saved on exit.
+Set up on the track diagram ([user guide](Automation.md)) - an older [JSON configuration file](AutomationAPI.md) can be imported from the autonomy menu - and enable complete automation of trains using S88 sensors (at least one per station), digital switches and an initial list of locomotive locations - signals are optional ([what you need](Automation.md#what-you-need)).  TrainControl will automatically keep track of where each train is located at any given time.  You can pick destinations for specific trains, or let the system continuously execute random routes.  All state is auto-saved on exit.
 
 ![A train running under autonomy on the track diagram, its route drawn ahead of it](assets/autonomy3.png?raw=true)
 
