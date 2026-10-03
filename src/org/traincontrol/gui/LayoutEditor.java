@@ -742,38 +742,51 @@ public class LayoutEditor extends PositionAwareJFrame
         this.size = size;
         this.layout = l;
 
-        // The autonomy setup exactly as it stands now, before anything in this window can touch it.
-        //
-        // Every gesture that moves track writes the setup to disk as it goes - it has to, because a
-        // setup that lags the diagram is one reconcile away from being deleted - so Cancel had nothing
-        // to undo those writes with.  The diagram was re-read from disk and the setup was not, and a
-        // cancelled drag left a station recorded on a square the track had been moved away from.
-        //
-        // Taken here rather than at the first edit, because by the time an edit reports itself the
-        // change has already been made to the live session.
-        org.traincontrol.automationui.AutonomySession opened = ui == null
-            ? null : ui.getAutonomySession();
+        // A BUILD THAT FAILS TAKES ITS FRAME WITH IT (RSA29-C1).  `initComponents` has made the frame by now, and the main
+        // window counts every editor frame of its own as an open editor (RSA28-B1) - so a failure below (a page gone in a
+        // reload of the pages, the one route found) left a frame nobody could see greying Edit and shutting the gate for the
+        // session.  Disposed, which also takes back the note `takeTheUndoPoint` writes.
+        try
+        {
+            // The autonomy setup exactly as it stands now, before anything in this window can touch it.
+            //
+            // Every gesture that moves track writes the setup to disk as it goes - it has to, because a
+            // setup that lags the diagram is one reconcile away from being deleted - so Cancel had nothing
+            // to undo those writes with.  The diagram was re-read from disk and the setup was not, and a
+            // cancelled drag left a station recorded on a square the track had been moved away from.
+            //
+            // Taken here rather than at the first edit, because by the time an edit reports itself the
+            // change has already been made to the live session.
+            org.traincontrol.automationui.AutonomySession opened = ui == null
+                ? null : ui.getAutonomySession();
 
-        takeTheUndoPoint(opened);
+            takeTheUndoPoint(opened);
         
-        // Mirror address preference
-        this.showAddressCheckbox.setSelected(l.getShowAddress());
+            // Mirror address preference
+            this.showAddressCheckbox.setSelected(l.getShowAddress());
 
-        mountGridToggle();
+            mountGridToggle();
         
-        this.setFocusable(true);
-        this.requestFocusInWindow();
+            this.setFocusable(true);
+            this.requestFocusInWindow();
         
-        // What the form calls the palette, before autonomy mode can rename it.
-        //
-        // Read rather than restated: the text lives in the generated form, which cannot be edited by
-        // hand, so anything that wants to put it back has to have kept a copy.
-        this.paletteHeading = this.jLabel1.getText();
+            // What the form calls the palette, before autonomy mode can rename it.
+            //
+            // Read rather than restated: the text lives in the generated form, which cannot be edited by
+            // hand, so anything that wants to put it back has to have kept a copy.
+            this.paletteHeading = this.jLabel1.getText();
 
-        buildPalette();
+            buildPalette();
 
-        // So the heading reads correctly before anything has been pressed
-        showDiagramSize();
+            // So the heading reads correctly before anything has been pressed
+            showDiagramSize();
+        }
+        catch (RuntimeException | Error failed)
+        {
+            dispose();
+
+            throw failed;
+        }
     }
 
     /**
@@ -6364,6 +6377,13 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             // Kept, so that undoAutonomyEdits below cannot put back a setup the user has just saved.
             // The snapshot exists for Cancel, and this is not one.
             this.autonomyAsOpened = null;
+
+            // AND THE UNDO HISTORY WITH IT (RSA29-C2), as the arrival clears it: kept, a close before the switch arrives
+            // asked "close the editor without saving changes?" - straight after a save
+            this.previousLayoutComponents.clear();
+            this.previousLayoutComponentsRedo.clear();
+            this.previousCaptions.clear();
+            this.previousCaptionsRedo.clear();
 
             return true;
         }
