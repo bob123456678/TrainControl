@@ -1497,6 +1497,16 @@ Running ET22-245 from BottomMainB to TopMainR2, signal 108 was turned red.  Poss
 
 Adam, 2026-10-03: *"when running et22-245 from bottommainb to topmainr2, signal 108 gets turned red"*
 
+### FR-107 - 2026-10-03 - a key for Select by Dragging a Box in the track diagram editor
+
+**Kind:** feature request  
+**Raised from:** Adam, 2026-10-03 - noticed while testing, not from a particular test  
+**Filed:** 2026-10-03  
+
+Give **Select by Dragging a Box** in the track diagram editor a keyboard shortcut, and name the key in its tooltip, as the editor's other tools do.
+
+Adam, 2026-10-03: *"make a hotkey, with a tool tip for select by dragging a box in the track diagram editor"*
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
