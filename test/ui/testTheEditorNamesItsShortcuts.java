@@ -205,6 +205,12 @@ public class testTheEditorNamesItsShortcuts
                 && oneBox.getToolTipText().contains(LayoutEditor.SHORTCUT_SELECT_BY_DRAGGING),
                 "Select by Dragging a Box does not name its key: " + oneBox.getToolTipText());
 
+            // WITH THE POINTER ON A SQUARE, as it is when the key is pressed: hovering gives a square its own pointer
+            SwingUtilities.invokeAndWait(() -> track[0].receiveMoveEvent(new java.awt.event.MouseEvent(on,
+                java.awt.event.MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), 0, 1, 1, 0, false), on));
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
             // AND THE KEY DOES IT
             final java.lang.reflect.Method pressed = LayoutEditor.class.getDeclaredMethod("formKeyPressed",
                 java.awt.event.KeyEvent.class);
@@ -233,6 +239,22 @@ public class testTheEditorNamesItsShortcuts
 
             assertTrue(once.getBoolean(track[0]), LayoutEditor.SHORTCUT_SELECT_BY_DRAGGING + " did not start Select by"
                 + " Dragging a Box");
+
+            // AND IT SHOWS, as the pointer (MT-661's note; Adam, 2026-10-03: "there is no indicator that we have entered
+            // this mode when control M is pressed", and "I'd rather not have text popping up, why not just change the
+            // cursor?"): a crosshair over the diagram while picking - the square already under the pointer included
+            assertEquals(grid.getContainer().getCursor().getType(), java.awt.Cursor.CROSSHAIR_CURSOR, "the pointer over the"
+                + " diagram is not a crosshair while picking");
+
+            assertEquals(on.getCursor().getType(), java.awt.Cursor.CROSSHAIR_CURSOR, "the square under the pointer when the"
+                + " key was pressed keeps its own pointer, not the crosshair, until the pointer moves off it");
+
+            // AND GOES WHEN PICKING STOPS
+            SwingUtilities.invokeAndWait(() -> track[0].setSelectMode(false));
+
+            assertTrue(grid.getContainer().getCursor().getType() != java.awt.Cursor.CROSSHAIR_CURSOR
+                && on.getCursor().getType() != java.awt.Cursor.CROSSHAIR_CURSOR, "the pointer is still a crosshair after"
+                + " picking stopped");
         }
         finally
         {

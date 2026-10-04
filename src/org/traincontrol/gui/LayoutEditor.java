@@ -1176,13 +1176,15 @@ public class LayoutEditor extends PositionAwareJFrame
                     // The four-way arrow, which is what a grip looks like everywhere else
                     label.setCursor(new Cursor(Cursor.MOVE_CURSOR));
                 }
-                else if (this.hasToolFlag())
+                else if (this.hasToolFlag() && !this.selectMode)
                 {
                     label.setCursor(new Cursor(Cursor.HAND_CURSOR));
                 }
                 else
                 {
-                    label.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                    // The diagram's own pointer: a crosshair while a drag picks, else the usual arrow (see
+                    // setSelectMode).  Inherited, not copied, so the square under the pointer changes with the mode.
+                    label.setCursor(null);
                 }
 
                 javax.swing.SwingUtilities.invokeLater(() ->
@@ -2770,6 +2772,15 @@ public class LayoutEditor extends PositionAwareJFrame
         if (!on) this.selectOnce = false;
 
         this.selectMode = on;
+
+        // AND IT SHOWS, AS THE POINTER: a crosshair over the diagram while a drag picks (MT-661's note; Adam,
+        // 2026-10-03: "there is no indicator that we have entered this mode when control M is pressed", and "I'd
+        // rather not have text popping up, why not just change the cursor?").  Squares inherit it, the one under the
+        // pointer included; only the selection's grip keeps its own.
+        if (this.grid != null && this.grid.getContainer() != null)
+        {
+            this.grid.getContainer().setCursor(on ? Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR) : null);
+        }
     }
 
     /**
