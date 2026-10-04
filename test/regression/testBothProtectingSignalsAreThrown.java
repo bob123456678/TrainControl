@@ -353,6 +353,106 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
+     * A train passing a station leaves that station's guards alone (OB-315, OB-316).
+     *
+     * Adam, 2026-10-03: *"I think the root cause for the last two is that the exit guard signals are applied for more than
+     * just the arrival station."*  They were: an exit guard was red while its platform was claimed, and a locked path
+     * claims every station along it - so each station a train only passed turned its exit guard red until the path let
+     * it go.  And his question, *"check if the same issue applies to the entry guards, not just exit"*: the entry guard is
+     * thrown only where a journey ends, so a passing train leaves it alone - asserted here beside the exit guard.
+     *
+     * Watched through the whole run, because the red a passing train left lasted only while the path held the station.
+     *
+     * MUTATION: let a reservation by a passing train count again, and this fails.
+     *
+     * @throws Exception from the run
+     */
+    @Test
+    public void testAPassingTrainLeavesAStationsGuardsAlone() throws Exception
+    {
+        for (String feedback : new String[] {"47461", "47462", "47463"})
+        {
+            if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
+
+            model.setFeedbackState(feedback, false);
+        }
+
+        Layout layout = new Layout(model);
+
+        layout.setMaxDelay(0);
+        layout.setMinDelay(0);
+        layout.setSimulate(true);
+
+        // A, then M, a station the train only passes, then B where it stops
+        layout.createPoint("PT A", true, "47461");
+        layout.createPoint("PT M", true, "47462");
+        layout.createPoint("PT B", true, "47463");
+
+        layout.getPoint("PT M").setProtectingSignal(near.getName());
+        layout.getPoint("PT M").setEntrySignals(java.util.Collections.singletonList(far.getName()));
+
+        List<Edge> path = new LinkedList<>();
+        path.add(layout.createEdge("PT A", "PT M"));
+        path.add(layout.createEdge("PT M", "PT B"));
+
+        Locomotive driving = model.getLocByName(model.getLocList().get(0));
+
+        assertTrue(layout.moveLocomotive(driving.getName(), "PT A", false),
+            "precondition - the train to dispatch must be placed");
+
+        near.setState(Accessory.accessorySetting.GREEN);
+        far.setState(Accessory.accessorySetting.GREEN);
+
+        // WATCHED THROUGHOUT THE RUN
+        final java.util.concurrent.atomic.AtomicBoolean watching = new java.util.concurrent.atomic.AtomicBoolean(true);
+        final java.util.concurrent.atomic.AtomicBoolean exitRed = new java.util.concurrent.atomic.AtomicBoolean();
+        final java.util.concurrent.atomic.AtomicBoolean entryRed = new java.util.concurrent.atomic.AtomicBoolean();
+
+        Thread watcher = new Thread(() ->
+        {
+            while (watching.get())
+            {
+                if (near.isSwitched()) exitRed.set(true);
+                if (far.isSwitched()) entryRed.set(true);
+
+                try
+                {
+                    Thread.sleep(2);
+                }
+                catch (InterruptedException e)
+                {
+                    return;
+                }
+            }
+        }, "OB-315 watcher");
+
+        watcher.setDaemon(true);
+        watcher.start();
+
+        boolean ran;
+
+        try
+        {
+            ran = layout.executePath(path, driving, 30, null);
+        }
+        finally
+        {
+            watching.set(false);
+            watcher.join(1000);
+        }
+
+        assertTrue(ran, "the hand dispatch did not complete, so nothing above tests anything");
+
+        assertFalse(exitRed.get(), "a train only passing PT M turned its exit guard red (OB-315, OB-316)");
+
+        assertFalse(entryRed.get(), "a train only passing PT M turned its entry guard red");
+
+        layout.getPoint("PT A").setLocomotive(null);
+        layout.getPoint("PT M").setLocomotive(null);
+        layout.getPoint("PT B").setLocomotive(null);
+    }
+
+    /**
      * A hand dispatch does NOT touch the signal of a train standing elsewhere (AU-B7, reversed).
      *
      * The test next door covers the DESTINATION of the dispatched train. This one is about a train

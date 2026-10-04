@@ -569,7 +569,7 @@ public class Point
         //
         // Red while the platform is claimed and green when it is not - and "claimed" covers a train
         // standing there AND a locked path that has reserved it, because reserving sets the locomotive
-        // exactly as arriving does.  One derived rule rather than a hook on arrival and another on
+        // exactly as arriving does; not a path that only passes through it (OB-315, `Layout.onlyPassing`).  One derived rule rather than a hook on arrival and another on
         // departure, so a released or failed path cannot leave a signal stuck red: whatever clears the
         // reservation clears the signal with it.
         if (this.layout != null) this.layout.refreshProtectingSignal(this);

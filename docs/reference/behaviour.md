@@ -2313,7 +2313,9 @@ entry guards and exit guards are"*).
 
 **The exit guard** - *Exit Guard Signal...* on the menu (Adam, 2026-09-23: *"rename it, but add Signal at the end
 (Exit Guard Signal, Entry Guard Signal)"*; it was *Signal Protecting This Station*).  Its signals are RED while the platform is claimed - a train
-standing there, or a locked path that has reserved it - and GREEN when it is free.  An aspect DERIVED from the
+standing there, or a locked path that starts or ends there - and GREEN when it is free.  **A train only passing through
+leaves it alone** (OB-315, OB-316; Adam, 2026-10-03: *"the exit guard signals are applied for more than just the arrival
+station"*): a locked path reserves every station along it, and those it only passes do not count (`Layout.onlyPassing`).  An aspect DERIVED from the
 platform, asked again on every change of occupancy (`Layout.refreshProtectingSignal`), and asked per SIGNAL: one paired
 to two platforms stays red while either is claimed.  Only while trains are being run, so arranging the railway by hand
 moves no hardware.

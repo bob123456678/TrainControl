@@ -10796,6 +10796,33 @@ public class Layout
     }
 
     /**
+     * Whether a locomotive holds a point only because its locked path runs through it - neither where it set off from
+     * nor where it is going (OB-315, OB-316).  Asked of the path being locked as well as the one being run, because the
+     * reservation refreshes the signal before the run is counted.
+     *
+     * @param loc the locomotive holding the point
+     * @param point the point
+     * @return true for a point strictly inside its path
+     */
+    private boolean onlyPassing(Locomotive loc, Point point)
+    {
+        List<Edge> path = this.activeLocomotives.get(loc);
+
+        if (path == null) path = this.takingPath.get(loc);
+
+        if (path == null || path.isEmpty()) return false;
+
+        if (point == path.get(0).getStart() || point == path.get(path.size() - 1).getEnd()) return false;
+
+        for (Edge e : path)
+        {
+            if (e.getEnd() == point) return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Sets a station's protecting signal to match whether its platform is claimed.
      *
      * Red when a train is standing there or a locked path has reserved it, green when it is free.
@@ -10867,7 +10894,12 @@ public class Layout
             {
                 if (!other.getProtectingSignals().contains(accessory)) continue;
 
-                if (other.getCurrentLocomotive() != null)
+                Locomotive holding = other.getCurrentLocomotive();
+
+                // NOT BY A TRAIN ONLY PASSING THROUGH (OB-315, OB-316).  Adam, 2026-10-03: *"the exit guard signals are
+                // applied for more than just the arrival station"* - a locked path reserves every station along it, so
+                // each one a train only passed turned its exit guard red.  Its own start and its destination still count.
+                if (holding != null && !onlyPassing(holding, other))
                 {
                     claimed = true;
                     break;
