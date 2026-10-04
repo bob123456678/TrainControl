@@ -31833,6 +31833,10 @@ added to the starting path / kept where it is standing."*
 *What this is:* `core.testAutonomyDiagramMonitor.testAParkedTrainIsPublishedWhereItStands`,
 `core.testAutonomyDiagramMonitor.testATrainSettingItsRouteUpIsNotDrawnParked`.
 
+**Adam, 2026-10-03 (triage).** Works.
+
+*Run against commit 4aa7b98d, in English - build\classes, compiled 03 Oct 23:15 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
+
 ---
 
 <a id="mt-664"></a>
@@ -31855,6 +31859,10 @@ Your note on MT-657: *"rename parked Locs to Standing Locs"*.
 - It says **Standing Locs** where it said Parked Locs, and labels the stations a train is standing at, as before.
 
 *What this is:* `regression.testTheWordingSaysWhatIsThere.testTheTrainCaptionSaysStanding`.
+
+**Adam, 2026-10-03 (triage).** Works.
+
+*Run against commit 4aa7b98d, in English - build\classes, compiled 03 Oct 23:15 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
 
@@ -31882,5 +31890,9 @@ then *"I'd rather not have text popping up, why not just change the cursor?"*
 - Step 2: the squares in the box are picked, and the pointer is the usual arrow again.
 
 *What this is:* `ui.testTheEditorNamesItsShortcuts.testSelectByDraggingABoxHasAKey`.
+
+**Adam, 2026-10-03 (triage).** Works.
+
+*Run against commit 4aa7b98d, in English - build\classes, compiled 03 Oct 23:15 - java: C:\Program Files\Java\jdk1.8.0_361\bin\java.exe.*
 
 ---
