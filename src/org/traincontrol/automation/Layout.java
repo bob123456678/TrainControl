@@ -1151,6 +1151,9 @@ public class Layout
 
         this.locomotivesToRun.remove(l);
         this.activeLocomotives.remove(l);
+
+        // And the reversal answer its run was dispatched with (OB-314), read only beside its path - gone with it
+        this.runPolicies.remove(l);
         this.locomotiveMilestones.remove(l);
         this.clearedEdges.remove(l);
         this.releasedEarly.remove(l);
