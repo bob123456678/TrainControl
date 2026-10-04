@@ -1987,6 +1987,54 @@ public class testEditorSurfaceRules
     }
 
     /**
+     * The main window's marks ask the one-way arrows option once a pass, not once per square (speed, 2026-10-04).
+     *
+     * Each square's annotation read the option - a read of the Windows settings - for itself, and a pass describes every
+     * square of the railway; a click in the autonomy editor makes several passes.  Measured at a fifth of the click, on a
+     * fast processor and a slow one alike.  The pass reads it before its loop and hands it to each square.
+     *
+     * Pinned as source, as the grid setting is (`testARedrawAsksTheGridSettingOnce`): the preferences are a static final
+     * the JIT may fold, so the reads cannot be counted from a test.
+     *
+     * MUTATION: let the pass ask each square without the option, or the square ask it again, and this fails.
+     *
+     * @throws Exception on a failure to read the source
+     */
+    @Test
+    public void testTheMarksAskTheArrowsOptionOncePerPass() throws Exception
+    {
+        String window = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/gui/TrainControlUI.java")), StandardCharsets.UTF_8));
+
+        String pass = bodyOf(window, "public void showStaticAutonomyLayer(boolean show)");
+
+        assertNotEquals(pass, "", "showStaticAutonomyLayer has gone, so this checked nothing");
+
+        int loop = pass.indexOf("for (org.traincontrol.automationui.TileGraph.TileKey tile : marked)");
+
+        assertTrue(loop > 0, "the marks no longer loop over the railway's squares, so this checked nothing");
+
+        assertTrue(pass.substring(0, loop).contains("diagramShowsRestrictionArrows()"), "the marks do not ask the arrows"
+            + " option before their loop");
+
+        assertFalse(pass.substring(loop).contains("diagramShowsRestrictionArrows()"), "the marks ask the arrows option for"
+            + " every square - a read of the Windows settings, several passes a click");
+
+        assertTrue(pass.substring(loop).contains("session.staticAnnotationFor(tile, arrows)"), "the marks ask each square"
+            + " without handing it the option, so each square asks it for itself");
+
+        String session = codeOnly(new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("src/org/traincontrol/automationui/AutonomySession.java")), StandardCharsets.UTF_8));
+
+        String square = bodyOf(session, "public TileAnnotation staticAnnotationFor(TileKey tile, boolean arrows)");
+
+        assertNotEquals(square, "", "the square's annotation no longer takes the option, so this checked nothing");
+
+        assertFalse(square.contains("diagramShowsRestrictionArrows()"), "a square's annotation asks the arrows option for"
+            + " itself though it was handed it");
+    }
+
+    /**
      * What a caption says is one choice, not three switches (FR-061).
      *
      * Adam: *"add a Text Labels label and dropdown right above Track Directions, with the following

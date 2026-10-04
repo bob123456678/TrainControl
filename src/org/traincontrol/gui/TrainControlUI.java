@@ -5672,9 +5672,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // one, and every marked square was redrawn twice.
         java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> marked = session.getGraph().getTiles().keySet();
 
+        // THE ARROWS OPTION ASKED ONCE A PASS (speed, 2026-10-04): a read of the Windows settings, which every square of the
+        // railway made for itself, several times per click - a fifth of the click.
+        boolean arrows = diagramShowsRestrictionArrows();
+
         for (org.traincontrol.automationui.TileGraph.TileKey tile : marked)
         {
-            getDiagramTileRegistry().annotate(tile, session.staticAnnotationFor(tile));
+            getDiagramTileRegistry().annotate(tile, session.staticAnnotationFor(tile, arrows));
         }
 
         getDiagramTileRegistry().clearAnnotationsExcept(marked);

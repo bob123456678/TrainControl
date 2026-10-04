@@ -10690,6 +10690,21 @@ public class AutonomySession
      */
     public TileAnnotation staticAnnotationFor(TileKey tile)
     {
+        return staticAnnotationFor(tile, org.traincontrol.gui.TrainControlUI.diagramShowsRestrictionArrows());
+    }
+
+    /**
+     * The same, with the one-way arrows option as a caller describing many squares read it once (speed, 2026-10-04).
+     *
+     * The option is a read of the Windows settings, and the main window's marks asked it for every square of the
+     * railway, several times per click in the autonomy editor - a fifth of the click.
+     *
+     * @param tile the square
+     * @param arrows whether the one-way arrows are drawn, as diagramShowsRestrictionArrows() answered for this pass
+     * @return the annotation, or null when this square has nothing to say
+     */
+    public TileAnnotation staticAnnotationFor(TileKey tile, boolean arrows)
+    {
         if (graph == null || reducer == null) return null;
 
         // A link switched off is greyed here as well as in the editor.
@@ -10712,8 +10727,6 @@ public class AutonomySession
         // a square deserves a BADGE, and a restriction is not a fact about sensors. It is a fact about
         // TRACK - straights, curves, the squares either side of a switch - and almost none of those
         // carry a sensor, so the option appeared to do nothing at all.
-        boolean arrows = org.traincontrol.gui.TrainControlUI.diagramShowsRestrictionArrows();
-
         List<TileAnnotation.Mark> marks = arrows ? directionMarks(tile)
             : new ArrayList<TileAnnotation.Mark>();
 
