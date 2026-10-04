@@ -28,8 +28,13 @@ which is where `triage.py verify-ledger` reads the truth from anyway.
 | Tag | Date | What | Disposition | From |
 |---|---|---|---|---|
 | [MT-658](#mt-658) | 2026-10-03 | The strip's button is not skinny at lower display scaling | fixed unvalidated | Adam 2026-10-03 (OB-313) |
+| [MT-666](#mt-666) | 2026-10-04 | A click in the autonomy editor reaches the main window's diagram without a pause | fixed unvalidated | Adam 2026-10-04 (speed) |
+| [MT-667](#mt-667) | 2026-10-04 | Save in the track diagram editor reaches the main window's diagram without a pause | fixed unvalidated | Adam 2026-10-04 (speed) |
+| [MT-668](#mt-668) | 2026-10-04 | Switching pages in the autonomy editor shows no pause | fixed unvalidated | Adam 2026-10-04 (speed) |
+| [MT-669](#mt-669) | 2026-10-04 | The findings list follows a rename at once | fixed unvalidated | Adam 2026-10-04 (speed) |
+| [MT-670](#mt-670) | 2026-10-04 | An arrow click in the autonomy editor shows its warning without a pause | fixed unvalidated | Adam 2026-10-04 (speed) |
 
-Everything else - 664 of 665 - needs nothing from you unless the area changes again:
+Everything else - 664 of 670 - needs nothing from you unless the area changes again:
 524 **fixed validated** and 140 **superseded**.
 
 ---
@@ -31903,5 +31908,138 @@ then *"I'd rather not have text popping up, why not just change the cursor?"*
 **Claude, 2026-10-03.**
 
 Validated on your *Works* of 2026-10-03.
+
+---
+
+<a id="mt-666"></a>
+
+### MT-666 - 2026-10-04 - A click in the autonomy editor reaches the main window's diagram without a pause
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-04 (speed)
+
+**Written:** 2026-10-04
+
+Your requests of 2026-10-04: *"i am especially concerned with draw time of the editor, switching between editor
+pages, and time from save to diagram refresh in the viewer"*, then *"Do 1 and 2, re-measure and advise."*
+
+**Steps**
+
+1. Have the main window's Track Diagram showing beside the editor, and open the autonomy editor on **1 - Main**.
+2. Click a switch, to change which ways trains may take it.
+
+**Expected**
+
+- The main window's diagram shows the change about a fifth of a second after the click, about twice as quick
+  as before.
+
+*What this is:* measured on your PC, 0.47 s before and 0.20 s now; the setup check ran twenty times per click and now runs once
+per event, five times.  `core.testTheFindingsAreWorkedOutOncePerEvent`.
+
+---
+
+<a id="mt-667"></a>
+
+### MT-667 - 2026-10-04 - Save in the track diagram editor reaches the main window's diagram without a pause
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-04 (speed)
+
+**Written:** 2026-10-04
+
+Your requests of 2026-10-04: *"i am especially concerned with draw time of the editor, switching between editor
+pages, and time from save to diagram refresh in the viewer"*, then *"Do 1 and 2, re-measure and advise."*
+
+**Steps**
+
+1. Open the track diagram editor on **1 - Main**, change nothing, and press **Save**.
+
+**Expected**
+
+- The main window's diagram is back, captions and marks included, about a fifth of a second after Save, about
+  twice as quick as before.
+
+*What this is:* measured on your PC, 0.47 s before and 0.20 s now; the setup check ran twenty-four times per Save and now runs
+seven times.  `core.testTheFindingsAreWorkedOutOncePerEvent`.
+
+---
+
+<a id="mt-668"></a>
+
+### MT-668 - 2026-10-04 - Switching pages in the autonomy editor shows no pause
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-04 (speed)
+
+**Written:** 2026-10-04
+
+Your requests of 2026-10-04: *"i am especially concerned with draw time of the editor, switching between editor
+pages, and time from save to diagram refresh in the viewer"*, then *"Do 1 and 2, re-measure and advise."*
+
+**Steps**
+
+1. In the autonomy editor, switch between **1 - Main** and **5 - Test** a few times.
+
+**Expected**
+
+- Each page appears in about a tenth of a second, with no visible pause.
+
+*What this is:* measured on your PC, 0.18 s before and 0.11 s now; the setup check ran seven times per switch and now runs
+twice.  `core.testTheFindingsAreWorkedOutOncePerEvent`.
+
+---
+
+<a id="mt-669"></a>
+
+### MT-669 - 2026-10-04 - The findings list follows a rename at once
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-04 (speed)
+
+**Written:** 2026-10-04
+
+Your requests of 2026-10-04: *"i am especially concerned with draw time of the editor, switching between editor
+pages, and time from save to diagram refresh in the viewer"*, then *"Do 1 and 2, re-measure and advise."*
+
+**Steps**
+
+1. In the autonomy editor, find a sensor in the findings list that *still has its automatic name*.
+2. Right-click that sensor on the diagram, choose **Rename...**, and give it a name.
+
+**Expected**
+
+- Its line leaves the findings list as soon as you press OK.
+
+*What this is:* the findings are now worked out once per event and kept for the rest of it, so this checks that an edit is
+still seen at once; each kind of change has its own claim in `core.testTheFindingsAreWorkedOutOncePerEvent`.
+
+---
+
+<a id="mt-670"></a>
+
+### MT-670 - 2026-10-04 - An arrow click in the autonomy editor shows its warning without a pause
+
+**Disposition:** fixed unvalidated
+**From:** Adam 2026-10-04 (speed)
+
+**Written:** 2026-10-04
+
+Your question of 2026-10-04: *"Does this optimization also apply to changes to arrows and the updates to the warnings
+shown in the autonomy editor as paths are the arrows are clicked?"*
+
+**Steps**
+
+1. In the autonomy editor on **1 - Main**, pick a plain piece of track that runs both ways, and click it three times: one
+   way, the other way, then closed.
+2. Click it once more, to put it back to both ways.
+
+**Expected**
+
+- At the third click, *"The track at ... is closed in both directions"* appears in the findings list about a third of a
+  second after the click.
+
+*What this is:* measured on your PC for an arrow click, 0.51 s before and 0.32 s now until the findings list is drawn;
+the setup check ran twenty times per click and now runs five times, once per event.
+`core.testTheFindingsAreWorkedOutOncePerEvent`.
 
 ---
