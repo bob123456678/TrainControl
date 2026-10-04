@@ -306,6 +306,13 @@ public class TimetablePath
             path.add(newEdge);
         }
 
+        // A ROUTE THAT ENDS WHERE IT STARTS - a lap - is kept, and refused when it is run (RSA30-C2): no door offers one,
+        // a file can carry one, and run, it left its train on no Point
+        if (whyNot == null && !path.isEmpty() && path.get(0).getStart() == path.get(path.size() - 1).getEnd())
+        {
+            whyNot = I18n.f("autolayout.errorPathEndsWhereItStarts", path.get(0).getStart().getName());
+        }
+
         // Parse executionTime
         long executionTime = json.getLong("executionTime");
 

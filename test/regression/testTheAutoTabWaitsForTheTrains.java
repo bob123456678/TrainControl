@@ -865,6 +865,132 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
+     * An editor whose build raises an Error, rather than an exception, gives Edit back and opens the gate (RSA30-C6).
+     *
+     * RSA29-C1's fix disposes the frame and throws on, and `openLayoutEditor`'s catch gives Edit back - but it took only
+     * `Exception`, so an Error went past it: Edit stayed greyed, and every train was refused "Close the editor first" for
+     * the session, with no editor anywhere.
+     *
+     * Driven through the real door with a page the model has, whose first use raises an `AssertionError`, chosen in the
+     * page list with its listeners off.
+     *
+     * MUTATION: catch only exceptions there again, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAnEditorWhoseBuildRaisesAnErrorGivesEditBack() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String> pages = null;
+
+        final String failing = "Fails to build (RSA30-C6)";
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            // A PAGE WHOSE FIRST USE RAISES AN ERROR
+            java.lang.reflect.Field db = org.traincontrol.marklin.MarklinControlStation.class.getDeclaredField("layoutDB");
+
+            db.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String> held =
+                (org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String>) db.get(ui[0].getModel());
+
+            pages = held;
+
+            pages.add(new org.traincontrol.base.LayoutDiagram(failing, 12, 8, null, ui[0].getModel())
+            {
+                @Override
+                public boolean getShowAddress()
+                {
+                    throw new AssertionError("RSA30-C6: an Error in the editor's build");
+                }
+            }, failing, failing);
+
+            final javax.swing.JComboBox list = (javax.swing.JComboBox) control(ui[0], "LayoutList");
+
+            final Object[] was = new Object[1];
+            final java.awt.event.ActionListener[][] actions = new java.awt.event.ActionListener[1][];
+            final java.awt.event.ItemListener[][] items = new java.awt.event.ItemListener[1][];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                was[0] = list.getSelectedItem();
+                actions[0] = list.getActionListeners();
+                items[0] = list.getItemListeners();
+
+                for (java.awt.event.ActionListener l : actions[0]) list.removeActionListener(l);
+                for (java.awt.event.ItemListener l : items[0]) list.removeItemListener(l);
+
+                ((javax.swing.DefaultComboBoxModel) list.getModel()).addElement(failing);
+                list.setSelectedItem(failing);
+            });
+
+            try
+            {
+                answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.FALSE, null, true));
+
+                for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+                Thread.sleep(1000);
+
+                for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+            }
+            finally
+            {
+                SwingUtilities.invokeAndWait(() ->
+                {
+                    ((javax.swing.DefaultComboBoxModel) list.getModel()).removeElement(failing);
+                    list.setSelectedItem(was[0]);
+
+                    for (java.awt.event.ActionListener l : actions[0]) list.addActionListener(l);
+                    for (java.awt.event.ItemListener l : items[0]) list.addItemListener(l);
+                });
+            }
+
+            java.lang.reflect.Field onItsWay = TrainControlUI.class.getDeclaredField("editorOnItsWay");
+
+            onItsWay.setAccessible(true);
+
+            assertEquals(editorWindows(ui[0]), 0, "an editor whose build raised an Error left its frame");
+
+            assertFalse(onItsWay.getBoolean(ui[0]), "an editor whose build raised an Error is still on its way, so every"
+                + " train is refused 'Close the editor first' (RSA30-C6)");
+
+            assertTrue(control(ui[0], "editLayoutButton").isEnabled()
+                && control(ui[0], "editAutonomyFromSettings").isEnabled(), "Edit or Edit Autonomy Paths is greyed after an"
+                + " editor's build raised an Error (RSA30-C6)");
+        }
+        finally
+        {
+            if (pages != null) pages.delete(failing);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
      * A Save and Continue at the track editor's switch leaves nothing to ask at a close in the switch's gap (RSA29-C2).
      *
      * RSA28-C1's other half: the track editor asks a close about its undo history, which a save kept until the switch

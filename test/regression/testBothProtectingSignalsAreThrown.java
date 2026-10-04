@@ -453,6 +453,97 @@ public class testBothProtectingSignalsAreThrown
     }
 
     /**
+     * A station a train only passes reads as passed while the train hands over from its claim to its journey (RSA30-C1).
+     *
+     * The hand-over writes the journey and then takes the claim away.  The guard's rule read the journey first and the
+     * claim second, so a refresh whose two reads straddled the hand-over found the train in neither, read it as standing
+     * at the station it was passing, and turned that station's exit guard red for the whole passage - OB-315's symptom,
+     * through a race.  `pathHeldBy` reads the claims first for exactly this (RSA3-C1, RSA4-C3).
+     *
+     * The straddle made certain: the claim taken, and a journeys' map whose read by this thread performs the hand-over
+     * itself, after the value is read.
+     *
+     * MUTATION: read the journey first again, and this fails.
+     *
+     * @throws Exception from reflection
+     */
+    @Test
+    public void testAPassedStationReadsAsPassedAcrossTheHandOver() throws Exception
+    {
+        for (String feedback : new String[] {"47464", "47465", "47466"})
+        {
+            if (!model.isFeedbackSet(feedback)) model.newFeedback(Integer.parseInt(feedback), null);
+        }
+
+        final Layout layout = new Layout(model);
+
+        layout.createPoint("HO A", true, "47464");
+        layout.createPoint("HO M", true, "47465");
+        layout.createPoint("HO B", true, "47466");
+
+        final List<Edge> path = new LinkedList<>();
+        path.add(layout.createEdge("HO A", "HO M"));
+        path.add(layout.createEdge("HO M", "HO B"));
+
+        final Locomotive train = model.getLocByName(model.getLocList().get(0));
+
+        java.lang.reflect.Field takingField = Layout.class.getDeclaredField("takingPath");
+
+        takingField.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        final java.util.Map<Locomotive, List<Edge>> taking = (java.util.Map<Locomotive, List<Edge>>) takingField.get(layout);
+
+        // THE JOURNEYS, read by this thread: the value read, then the hand-over done - journey written, claim taken away
+        final Thread reader = Thread.currentThread();
+
+        final java.util.concurrent.ConcurrentHashMap<Locomotive, List<Edge>> journeys =
+            new java.util.concurrent.ConcurrentHashMap<Locomotive, List<Edge>>()
+        {
+            @Override
+            public List<Edge> get(Object key)
+            {
+                List<Edge> read = super.get(key);
+
+                if (Thread.currentThread() == reader && train.equals(key) && taking.containsKey(train))
+                {
+                    super.put(train, path);
+
+                    taking.remove(train);
+                }
+
+                return read;
+            }
+        };
+
+        java.lang.reflect.Field journeysField = Layout.class.getDeclaredField("activeLocomotives");
+
+        journeysField.setAccessible(true);
+
+        java.lang.reflect.Field modifiers = java.lang.reflect.Field.class.getDeclaredField("modifiers");
+
+        modifiers.setAccessible(true);
+        modifiers.setInt(journeysField, journeysField.getModifiers() & ~java.lang.reflect.Modifier.FINAL);
+
+        journeysField.set(layout, journeys);
+
+        // THE CLAIM TAKEN
+        taking.put(train, path);
+
+        java.lang.reflect.Method passing = Layout.class.getDeclaredMethod("onlyPassing", Locomotive.class,
+            org.traincontrol.automation.Point.class);
+
+        passing.setAccessible(true);
+
+        boolean passed = (boolean) passing.invoke(layout, train, layout.getPoint("HO M"));
+
+        assertTrue(journeys.containsKey(train) || !taking.containsKey(train) || passed, "precondition: nothing happened");
+
+        assertTrue(passed, "a train passing HO M, read while it handed over from its claim to its journey, was read as"
+            + " standing there - so HO M's exit guard turns red in front of it (RSA30-C1)");
+    }
+
+    /**
      * A hand dispatch does NOT touch the signal of a train standing elsewhere (AU-B7, reversed).
      *
      * The test next door covers the DESTINATION of the dispatched train. This one is about a train

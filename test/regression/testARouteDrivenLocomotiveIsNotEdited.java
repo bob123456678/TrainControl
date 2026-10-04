@@ -40,6 +40,9 @@ public class testARouteDrivenLocomotiveIsNotEdited
     /** A second locomotive, for a multi-unit the route's locomotive is ticked into */
     private static final String UNIT = "OB-287 unit";
 
+    /** A Central Station multi-unit with the route's locomotive among its members (RSA30-C8) */
+    private static final String CS_UNIT = "OB-287 CS unit";
+
     /**
      * The delete door and the edit door each refuse, naming the route, and leave the locomotive as it was; and the
      * multi-unit door (Adam, 2026-10-03) - from the locomotive database's menu and the keyboard's, and asked again at OK
@@ -205,6 +208,46 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
             assertFalse(unit.getLinkedLocomotiveNames().containsKey(LOC), "a locomotive a running route drives was made a"
                 + " member of a multi-unit");
+
+            // BUT A CENTRAL STATION MULTI-UNIT'S LIST, which changes nothing, is shown while the route drives a member
+            // (RSA30-C8): only the dialog that can change a multi-unit asks
+            model.newMM2Locomotive(CS_UNIT, 65);
+
+            model.changeLocAddress(CS_UNIT, 65, org.traincontrol.marklin.MarklinLocomotive.decoderType.MULTI_UNIT);
+
+            final org.traincontrol.base.Locomotive centralStations = model.getLocByName(CS_UNIT);
+
+            java.util.Map<String, Double> members = new java.util.HashMap<>();
+
+            members.put(LOC, 1.0);
+
+            centralStations.setModelMultiUnitLocomotives(members);
+
+            said = askAndClose(() -> window.changeLinkedLocomotives(centralStations));
+
+            assertNotNull(said, "a Central Station multi-unit's list was not shown");
+
+            assertNotEquals(said, refusal, "a Central Station multi-unit's list, which changes nothing, was refused while a"
+                + " route drives a member (RSA30-C8)");
+
+            // AND WHILE AUTONOMY IS BUSY - staging stands in for a run here, as the model counts it among them
+            model.getAutoLayout().setStagingInProgress(true);
+
+            try
+            {
+                assertTrue(model.isAutonomyRunning(), "precondition: the model does not read autonomy as busy");
+
+                said = askAndClose(() -> window.changeLinkedLocomotives(centralStations));
+
+                assertNotNull(said, "a Central Station multi-unit's list was not shown while autonomy was busy");
+
+                assertNotEquals(said, I18n.t("autolayout.ui.errorCannotEditMultiUnitsWhileRunning"), "a Central Station"
+                    + " multi-unit's list, which changes nothing, was refused while autonomy was busy (RSA30-C8)");
+            }
+            finally
+            {
+                model.getAutoLayout().setStagingInProgress(false);
+            }
         }
         finally
         {
@@ -222,6 +265,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
                 try { model.deleteRoute(ROUTE); } catch (Exception ignored) { }
                 try { model.deleteLoc(UNIT); } catch (Exception ignored) { }
+                try { model.deleteLoc(CS_UNIT); } catch (Exception ignored) { }
                 try { model.deleteLoc(LOC); } catch (Exception ignored) { }
             }
 

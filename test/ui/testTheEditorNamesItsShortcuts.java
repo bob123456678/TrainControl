@@ -255,6 +255,41 @@ public class testTheEditorNamesItsShortcuts
             assertTrue(grid.getContainer().getCursor().getType() != java.awt.Cursor.CROSSHAIR_CURSOR
                 && on.getCursor().getType() != java.awt.Cursor.CROSSHAIR_CURSOR, "the pointer is still a crosshair after"
                 + " picking stopped");
+
+            // AND OUTLIVES A REDRAW OF THE DIAGRAM (RSA30-C5): an edit, Undo, the grid's key and a switch of mode each
+            // build a new diagram panel, and picking goes on through them - so the new panel shows it too
+            SwingUtilities.invokeAndWait(() -> track[0].setSelectMode(true));
+
+            final java.lang.reflect.Method redraw = LayoutEditor.class.getDeclaredMethod("drawGrid");
+
+            redraw.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    redraw.invoke(track[0]);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            final org.traincontrol.gui.LayoutGrid redrawn = (org.traincontrol.gui.LayoutGrid) gridField.get(track[0]);
+
+            assertTrue(redrawn != grid && track[0].isSelectMode(), "precondition: the redraw built no new diagram, or"
+                + " picking ended with it");
+
+            assertEquals(redrawn.getContainer().getCursor().getType(), java.awt.Cursor.CROSSHAIR_CURSOR, "after a redraw of"
+                + " the diagram the pointer is an arrow while a drag still picks (RSA30-C5)");
+
+            SwingUtilities.invokeAndWait(() -> track[0].setSelectMode(false));
+
+            assertTrue(redrawn.getContainer().getCursor().getType() != java.awt.Cursor.CROSSHAIR_CURSOR, "the pointer is"
+                + " still a crosshair after picking stopped, on a redrawn diagram");
         }
         finally
         {

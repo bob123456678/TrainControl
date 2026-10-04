@@ -4316,6 +4316,19 @@ public class Layout
      */
     public boolean configureAndLockPath(List<Edge> path, Locomotive loc)
     {
+        return configureAndLockPath(path, loc, null);
+    }
+
+    /**
+     * `configureAndLockPath`, keeping the run's reversal answer with the claim (RSA30-C3): see `copyItWillStandOn`.
+     *
+     * @param path the path
+     * @param loc the locomotive
+     * @param reversals the run's reversal policy, or null for autonomy's
+     * @return whether the path was locked
+     */
+    private boolean configureAndLockPath(List<Edge> path, Locomotive loc, ReversalPolicy reversals)
+    {
         // Lock the path and send the accessory commands under the Layout monitor.  Holding it here is
         // fine - path locking must be atomic - but the validation wait below must NOT hold it, so other
         // locomotives' path checks are not blocked for the (possibly multi-second, scales with path size -
@@ -4367,6 +4380,12 @@ public class Layout
             // check and the claim can be pulled apart by another thread doing its own check in between
             // - which is exactly what let two trains past a cap of one.
             this.takingPath.put(loc, path);
+
+            // AND THE RUN'S REVERSAL ANSWER WITH IT (RSA30-C3), so the copy the train will stand on is known while its
+            // route is set.  Kept only from the hand-over, the label read the turning copy this claim reserves, and
+            // showed the train the wrong way round until it set off.  Here, past the refusals above, so a duplicate
+            // dispatch that loses writes nothing over the winner's.
+            this.runPolicies.put(loc, java.util.Optional.ofNullable(reversals));
 
             try
             {
@@ -9295,6 +9314,16 @@ public class Layout
             this.control.logf("autolayout.errorLocomotiveNotAtPathStart", loc.getName());
             return false;
         }
+
+        // A ROUTE THAT ENDS WHERE IT STARTS - a lap - is refused (RSA30-C2).  Run, its arrival took the train off the
+        // station it had just reached, leaving it on no Point with that station's exit guard green under it; and in
+        // non-atomic mode the release behind it freed the station while the train was still on its way there.  No door
+        // offers one; a timetable read from a file can carry one, and is refused at the read.
+        if (start == path.get(path.size() - 1).getEnd())
+        {
+            this.control.logf("autolayout.errorPathEndsWhereItStarts", start.getName());
+            return false;
+        }
         
         // THE SWEEP THAT STOOD HERE IS GONE (OB-166), and what follows is why it was here (D24-C3).
         //
@@ -9339,7 +9368,7 @@ public class Layout
 
         boolean result;
         
-        result = configureAndLockPath(path, loc);
+        result = configureAndLockPath(path, loc, reversals);
 
         if (!result)
         {
@@ -9376,7 +9405,6 @@ public class Layout
                 this.locomotiveMilestones.get(loc).add(start);
                 this.clearedEdges.put(loc, ConcurrentHashMap.<Edge>newKeySet());
                 this.releasedEarly.put(loc, ConcurrentHashMap.<Edge>newKeySet());
-                this.runPolicies.put(loc, java.util.Optional.ofNullable(reversals));
                 this.activeLocomotives.put(loc, path);
 
                 // Counted for real now, so the claim is given up.  Kept as a union rather than a sum
@@ -9448,6 +9476,9 @@ public class Layout
         for (int i = 0; i < path.size(); i++)
         {
             Point current = path.get(i).getEnd();
+
+            // Recorded before a turn there, and so not again at the end of this step (RSA30-C4)
+            boolean reachedBeforeTheTurn = false;
             
             if (i != path.size() - 1)
             {
@@ -9555,6 +9586,18 @@ public class Layout
                 if (isCurrentLayout()
                     && shouldReverseAt(current, path.get(path.size() - 1).getEnd(), loc, reversals))
                 {
+                    // REACHED, AND SAID SO BEFORE THE TURN (RSA30-C4): its sensor has answered.  Recorded only after the
+                    // turn, the railway placed the train a square back for the length of it, and the track diagram drew it
+                    // standing there.
+                    synchronized (this.activeLocomotives)
+                    {
+                        List<Point> reached = this.locomotiveMilestones.get(loc);
+
+                        if (reached != null) reached.add(current);
+                    }
+
+                    reachedBeforeTheTurn = true;
+
                     loc.setSpeed(0).waitForSpeedBelow(1);
 
                     this.control.logf(
@@ -9834,7 +9877,7 @@ public class Layout
                 List<Point> milestones = this.locomotiveMilestones.get(loc);
 
                 // Null if the locomotive was deleted from the database while this path was running
-                if (milestones != null)
+                if (milestones != null && !reachedBeforeTheTurn)
                 {
                     milestones.add(current);
                 }
@@ -10834,7 +10877,8 @@ public class Layout
     }
 
     /**
-     * The copy of its destination a train on its way will stand on (OB-314), or null for a train not on its way.
+     * The copy of its destination a train will stand on (OB-314) - on its way, or while its route is set (RSA30-C3) - or
+     * null for a train holding no path.
      *
      * Adam, 2026-10-03: *"the label at bottommainb shows arrival arrive facting west, not east, as if it would be
      * reversed. But on arrival, it gets fixed."*  A path to a square trains may turn at routinely ends on its TURNING copy,
@@ -10848,7 +10892,7 @@ public class Layout
      */
     public Point copyItWillStandOn(Locomotive loc)
     {
-        List<Edge> path = loc == null ? null : this.activeLocomotives.get(loc);
+        List<Edge> path = loc == null ? null : this.pathHeldBy(loc);
 
         if (path == null || path.isEmpty()) return null;
 
@@ -10874,9 +10918,10 @@ public class Layout
      */
     private boolean onlyPassing(Locomotive loc, Point point)
     {
-        List<Edge> path = this.activeLocomotives.get(loc);
-
-        if (path == null) path = this.takingPath.get(loc);
+        // THE CLAIM FIRST, through `pathHeldBy` as every reader of one train's path (RSA30-C1).  The hand-over writes the
+        // journey and then takes the claim away; read the other way round, a refresh straddling it found the train in
+        // neither, read it as standing at the station it was passing, and turned that station's exit guard red.
+        List<Edge> path = this.pathHeldBy(loc);
 
         if (path == null || path.isEmpty()) return false;
 

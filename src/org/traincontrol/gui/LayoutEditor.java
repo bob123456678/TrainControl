@@ -2773,13 +2773,20 @@ public class LayoutEditor extends PositionAwareJFrame
 
         this.selectMode = on;
 
-        // AND IT SHOWS, AS THE POINTER: a crosshair over the diagram while a drag picks (MT-661's note; Adam,
-        // 2026-10-03: "there is no indicator that we have entered this mode when control M is pressed", and "I'd
-        // rather not have text popping up, why not just change the cursor?").  Squares inherit it, the one under the
-        // pointer included; only the selection's grip keeps its own.
+        this.showWhetherADragPicks();
+    }
+
+    /**
+     * The diagram's pointer says whether a drag picks: a crosshair while it does (MT-661's note; Adam, 2026-10-03: "there
+     * is no indicator that we have entered this mode when control M is pressed", and "I'd rather not have text popping
+     * up, why not just change the cursor?").  Squares inherit it, the one under the pointer included; only the
+     * selection's grip keeps its own.  Asked again by every redraw, which builds a new panel (RSA30-C5).
+     */
+    private void showWhetherADragPicks()
+    {
         if (this.grid != null && this.grid.getContainer() != null)
         {
-            this.grid.getContainer().setCursor(on ? Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR) : null);
+            this.grid.getContainer().setCursor(this.selectMode ? Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR) : null);
         }
     }
 
@@ -5375,6 +5382,10 @@ public class LayoutEditor extends PositionAwareJFrame
                 this.ExtLayoutPanel,
                 this,
                 true, parent);
+
+            // A NEW PANEL, so it is told whether a drag picks (RSA30-C5): picking goes on through a redraw - an edit,
+            // Undo, the grid's key, a switch of mode - and the crosshair went with the old panel
+            this.showWhetherADragPicks();
 
             // One row of slack at the bottom of the scrollable area.
             //

@@ -265,7 +265,9 @@ check's errors say where it is.  Built 2026-10-02 (MT-646, MT-647).
 **Decided** (Adam, 2026-10-01: *"when a train is standing somewhere, can we show its locomotive icon on top of the
 station in the track diagram viewer, while maintaining editability? same icon as when a run is started"*): **a train
 parked with no path is drawn with the run's locomotive icon** on its station, facing the way it stands; a train waiting
-on a path it holds keeps the dot (FR-027).  Built in round 34.  **On a curve** (Adam, 2026-10-02, MT-642: *"the front of
+on a path it holds keeps the dot (FR-027).  Built in round 34.  **The dot went with OB-317** (Adam, 2026-10-03:
+*"it needs to be added to the starting path / kept where it is standing"*): a train standing still on a path it holds is
+drawn the same way, where it stands.  **On a curve** (Adam, 2026-10-02, MT-642: *"the front of
 the locomotive is cut off on curved tiles.  Rotate the icon to match the angle of the tile so it fits"*; shown three ways,
 he chose full size, and *"there should be no clip"*): the icon runs along the rail at the size a straight gives it,
 centred on the train's own road of a double curve, its front the way the train goes and its roof never pointing down,

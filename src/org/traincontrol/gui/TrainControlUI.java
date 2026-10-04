@@ -5571,7 +5571,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         }));
                 }
             }
-            catch (Exception e)
+            catch (Exception | Error e)
             {
                 // The button was disabled before the editor was asked for, so a failure here has to give
                 // it back or autonomy setup is unreachable until the application is restarted.
@@ -5579,7 +5579,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 this.editorOnItsWay = false;
 
-                if (this.model.isDebug()) this.model.log(e);
+                // AN ERROR TOO (RSA30-C6), given back and then thrown on: past a catch of exceptions only, Edit stayed
+                // greyed and every train was refused "Close the editor first" for the session, with no editor anywhere
+                if (e instanceof Error) throw (Error) e;
+
+                if (this.model.isDebug()) this.model.log((Exception) e);
             }
         });
     }
@@ -21801,7 +21805,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
-        if (this.model.isAutonomyRunning())
+        // ASKED ONLY OF THE DIALOG THAT CAN CHANGE ONE (RSA30-C8): a Central Station multi-unit's is a read-only list,
+        // and nothing is written for one - refusing it guarded nothing.
+        if (!isCSMultiUnit && this.model.isAutonomyRunning())
         {
             JOptionPane.showMessageDialog(
                 this,
@@ -21816,9 +21822,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         java.util.Set<String> involved = new java.util.LinkedHashSet<>();
 
         involved.add(l.getName());
-        involved.addAll(isCSMultiUnit ? l.getModelMultiUnitLocomotiveNames().keySet() : l.getLinkedLocomotiveNames().keySet());
+        involved.addAll(l.getLinkedLocomotiveNames().keySet());
 
-        if (refuseWhileARouteDrivesAny(this, involved)) return;
+        if (!isCSMultiUnit && refuseWhileARouteDrivesAny(this, involved)) return;
 
         if (this.model.getLocomotives().size() < 2)
         {

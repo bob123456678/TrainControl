@@ -548,6 +548,103 @@ public class testLayoutTimetable
     }
 
     /**
+     * A route that ends where it starts - a lap - is refused: kept unrunnable when a timetable is read, so the run stops
+     * there and says why, and refused by the run itself whatever door brings it (RSA30-C2).
+     *
+     * No door of the application offers one; a timetable read from a file can carry one.  Run, it left the train on no
+     * Point - the arrival took it off the station it had just reached - with that station's exit guard green under it,
+     * and in non-atomic mode freed the station while the train was still on its way there.
+     *
+     * MUTATION: take either refusal out, and this fails.
+     *
+     * @throws Exception from the layout
+     */
+    @Test(timeOut = 60000)
+    public void testALapIsRefused() throws Exception
+    {
+        // TWO STATIONS, so a train can be stood at the start
+        for (int number : new int[] {47521, 47522})
+        {
+            if (!model.isFeedbackSet(String.valueOf(number))) model.newFeedback(number, null);
+
+            model.setFeedbackState(String.valueOf(number), false);
+        }
+
+        final Layout layout = new Layout(model);
+
+        layout.createPoint("LAP_A", true, "47521");
+        layout.createPoint("LAP_B", true, "47522");
+        layout.createEdge("LAP_A", "LAP_B");
+        layout.createEdge("LAP_B", "LAP_A");
+
+        String loc = model.getLocList().get(0);
+
+        org.json.JSONObject written = anEntry(loc, "LAP_A", "LAP_B");
+
+        written.getJSONArray("path").put(new org.json.JSONObject().put("start", "LAP_B").put("end", "LAP_A"));
+
+        TimetablePath entry = TimetablePath.fromJSON(written.toString(), model, layout);
+
+        String why = org.traincontrol.util.I18n.f("autolayout.errorPathEndsWhereItStarts", "LAP_A");
+
+        assertFalse(entry.isRunnable(), "a timetable entry that ends where it starts reads as runnable (RSA30-C2)");
+
+        assertEquals(entry.whyNotRunnable(), why, "the lap is refused without saying why");
+
+        // AND THE RUN REFUSES ONE, whatever door brings it
+        final List<String> logged = java.util.Collections.synchronizedList(new ArrayList<String>());
+
+        java.util.logging.Handler tap = new java.util.logging.Handler()
+        {
+            @Override
+            public void publish(java.util.logging.LogRecord record)
+            {
+                if (record != null && record.getMessage() != null) logged.add(record.getMessage());
+            }
+
+            @Override
+            public void flush() { }
+
+            @Override
+            public void close() { }
+        };
+
+        java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).addHandler(tap);
+
+        final Locomotive train = model.getLocByName(loc);
+
+        try
+        {
+            assertTrue(layout.moveLocomotive(loc, "LAP_A", false), "precondition: could not stand the train at LAP_A");
+
+            // ON A THREAD OF ITS OWN, with a limit: refused, it returns at once; run, it would wait on a sensor nobody plays
+            final boolean[] ran = {true};
+
+            Thread run = new Thread(() -> ran[0] = layout.executePath(Arrays.asList(layout.getEdge("LAP_A", "LAP_B"),
+                layout.getEdge("LAP_B", "LAP_A")), train, 30, null));
+
+            run.setDaemon(true);
+            run.start();
+            run.join(10000);
+
+            boolean refused = !run.isAlive() && !ran[0];
+
+            if (run.isAlive()) layout.stopLocomotives();
+
+            assertTrue(refused, "a lap was run (RSA30-C2)");
+
+            assertTrue(logged.contains(why), "the run refused the lap without saying why: " + logged);
+        }
+        finally
+        {
+            java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).removeHandler(tap);
+
+            layout.moveLocomotive(null, "LAP_A", false);
+            layout.moveLocomotive(null, "LAP_B", false);
+        }
+    }
+
+    /**
      * Where a locomotive's timetable starts is the start of its first entry the railway can run.
      *
      * MUTATION: take the first entry whatever it is, and this fails.

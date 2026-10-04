@@ -272,6 +272,126 @@ public class testAutonomySimulationSanity
     }
 
     /**
+     * A train stopped to turn on its way is where it turns, not at the sensor before (RSA30-C4).
+     *
+     * The run turns a train at a reversing point it has reached - its sensor has answered - and recorded the point as
+     * reached only after the turn.  So for the length of the turn the railway placed the train a square back, and the
+     * track diagram drew it standing there (OB-317 draws a standing train where the railway says it is).
+     *
+     * A line A, M, R, B with R a reversing point; every place the railway gives while the train stands still between its
+     * start and its end.  Beside the turn at the destination, because it needs a run that completes.
+     *
+     * MUTATION: record the turning point only after the turn again, and this fails.
+     *
+     * @throws Exception on a failure to run
+     */
+    @Test
+    public void testATrainTurningOnItsWayIsWhereItTurns() throws Exception
+    {
+        final Layout layout = new Layout(model);
+
+        final MarklinLocomotive loc = model.newMM2Locomotive("C4 turner", 232);
+
+        ExecutorService watchdog = Executors.newSingleThreadExecutor();
+
+        final String[] names = {"C4 A", "C4 M", "C4 R", "C4 B"};
+
+        final java.util.Set<String> placed = java.util.Collections.synchronizedSet(new java.util.LinkedHashSet<String>());
+
+        final boolean[] sampling = {true};
+
+        Thread sampler = null;
+
+        try
+        {
+            // A RANGE NO OTHER CLASS USES: shared numbers have failed runs before (see testBothProtectingSignalsAreThrown)
+            int number = 47511;
+
+            for (String name : names)
+            {
+                String sensor = String.valueOf(number++);
+
+                if (!model.isFeedbackSet(sensor)) model.newFeedback(Integer.parseInt(sensor), null);
+
+                model.setFeedbackState(sensor, false);
+
+                layout.createPoint(name, name.equals("C4 A") || name.equals("C4 B"), sensor);
+            }
+
+            // A second for the turn, so it is long enough to be seen
+            layout.setMaxDelay(1);
+            layout.setMinDelay(1);
+            layout.setSimulate(true);
+
+            layout.getPoint("C4 R").setReversing(true);
+
+            List<Edge> path = new LinkedList<>();
+
+            path.add(layout.createEdge("C4 A", "C4 M"));
+            path.add(layout.createEdge("C4 M", "C4 R"));
+            path.add(layout.createEdge("C4 R", "C4 B"));
+
+            loc.setReversible(true);
+
+            assertTrue(layout.moveLocomotive("C4 turner", "C4 A", false), "precondition: the locomotive must be placed");
+
+            sampler = new Thread(() ->
+            {
+                while (sampling[0])
+                {
+                    org.traincontrol.automation.Point at = layout.whereTheTrainIs(loc);
+
+                    if (loc.getSpeed() == 0 && layout.getActiveLocomotives().containsKey(loc) && at != null
+                        && !"C4 A".equals(at.getName()) && !"C4 B".equals(at.getName()))
+                    {
+                        placed.add(at.getName());
+                    }
+
+                    try
+                    {
+                        Thread.sleep(1);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        return;
+                    }
+                }
+            }, "RSA30-C4 sampler");
+
+            sampler.setDaemon(true);
+            sampler.start();
+
+            Future<Boolean> run = watchdog.submit(() -> layout.executePath(path, loc, 30, null, Layout.ALWAYS_REVERSE));
+
+            try
+            {
+                assertTrue(run.get(30, TimeUnit.SECONDS), "precondition: the run reported failure rather than completing");
+            }
+            catch (TimeoutException wedged)
+            {
+                layout.stopLocomotives();
+
+                fail("precondition: the run never reached its destination");
+            }
+        }
+        finally
+        {
+            sampling[0] = false;
+
+            if (sampler != null) sampler.join(1000);
+
+            layout.stopLocomotives();
+            watchdog.shutdownNow();
+            model.deleteLoc("C4 turner");
+        }
+
+        assertFalse(placed.isEmpty(), "precondition: the train never stood still on its way, so it never turned");
+
+        assertEquals(placed, java.util.Collections.singleton("C4 R"), "standing to turn at C4 R, the train was placed at "
+            + placed + " (RSA30-C4)");
+    }
+
+    /**
      * A turn the railway makes at the destination is recorded there (IND9-B4).
      *
      * Adam, 2026-09-07: **"it should be recorded at the destination.  Otherwise, it’s just the same as

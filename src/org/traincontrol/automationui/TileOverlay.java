@@ -180,7 +180,9 @@ public class TileOverlay
     private static final double ICON_SCALE = 0.76;
 
     /**
-     * Whether the icon is only for trains that are MOVING (FR-027), the dot serving for the rest.
+     * Whether the icon is only for trains that are moving or drawn standing (FR-027), the dot serving for the rest.  Since
+     * OB-317 the run draws every train one or the other - a train standing still on its path is drawn standing - so the
+     * dot is left for a picture that cannot be read.
      *
      * Adam's "(not while stationary)". A train with an active path can be sitting still - waiting at a
      * platform, or held while another path clears - and the diagram already says where it is; what it
@@ -320,7 +322,8 @@ public class TileOverlay
     }
 
     /**
-     * @return whether the train here is parked: held by the railway with no path to run (Adam, 2026-10-01)
+     * @return whether the train here is drawn standing: held by the railway with no path to run (Adam, 2026-10-01), or
+     *         standing still on a path it holds (OB-317)
      */
     public boolean isParked()
     {

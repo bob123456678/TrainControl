@@ -448,6 +448,206 @@ public class testTheFacingMenuIsAboutTheTrainThere
             + " (OB-314)");
     }
 
+    /**
+     * While its route is set, before it sets off, a train's label already faces the way it will stand (RSA30-C3).
+     *
+     * OB-314's answer was kept beside the journey, which is written only at the hand-over, after the route's switches are
+     * set - and the claim reserves the turning copy long before.  So for the length of the route setting the label read
+     * the turning copy and showed the train the wrong way round, then turned as it set off: on the real railway, the
+     * Central Station's confirmations as well.  The answer is kept with the claim now, and read through it.
+     *
+     * The dispatch held at its hand-over, its claim taken and its route set, by holding the journeys' map's monitor; the
+     * label read on another thread, with a time limit, so a reading that waits for the hand-over fails rather than hangs.
+     *
+     * MUTATION: keep the answer only from the hand-over again, and this fails.
+     *
+     * @throws Exception from the window or the run
+     */
+    @Test
+    public void testWhileItsRouteIsSetTheLabelFacesTheWayItWillStand() throws Exception
+    {
+        final org.traincontrol.automation.Layout running = model.getAutoLayout();
+
+        assertNotNull(running, "precondition: no running railway");
+
+        // A MAY-TURN SQUARE: a turning copy and a plain copy, reached by one approach, facing different ways
+        org.traincontrol.automation.Point turning = null, plain = null, approach = null;
+
+        TileKey square = null;
+
+        for (TileKey tile : session.getReducer().getPoints().keySet())
+        {
+            if (turning != null) break;
+
+            java.util.Map<String, Side> facings = session.getStationIndex().facingsAt(tile);
+
+            for (String t : session.getStationIndex().pointNamesAt(tile))
+            {
+                org.traincontrol.automation.Point tp = running.getPoint(t);
+
+                if (tp == null || !(tp.isTerminus() || tp.isReversing()) || tp.getCurrentLocomotive() != null) continue;
+
+                for (String p : session.getStationIndex().pointNamesAt(tile))
+                {
+                    org.traincontrol.automation.Point pp = running.getPoint(p);
+
+                    if (pp == null || pp == tp || pp.isTerminus() || pp.isReversing() || pp.getCurrentLocomotive() != null)
+                    {
+                        continue;
+                    }
+
+                    if (facings.get(t) == null || facings.get(p) == null || facings.get(t) == facings.get(p)) continue;
+
+                    for (org.traincontrol.automation.Point a : running.getPoints())
+                    {
+                        if (a.getCurrentLocomotive() != null || a.isSamePlaceAs(tp) || !a.isDestination()) continue;
+
+                        if (running.getEdge(a.getName(), t) == null || running.getEdge(a.getName(), p) == null) continue;
+
+                        turning = tp;
+                        plain = pp;
+                        approach = a;
+                        square = tile;
+                        break;
+                    }
+
+                    if (turning != null) break;
+                }
+
+                if (turning != null) break;
+            }
+        }
+
+        if (turning == null) throw new SkipException("the snapshot has no free may-turn square with an approach to both copies");
+
+        String train = null;
+
+        for (String name : model.getLocList())
+        {
+            if (running.getLocomotiveLocation(model.getLocByName(name)) == null) train = name;
+        }
+
+        assertNotNull(train, "precondition: every locomotive is placed somewhere");
+
+        final org.traincontrol.base.Locomotive loc = model.getLocByName(train);
+
+        final boolean simulating = running.isSimulate();
+
+        running.setSimulate(true);
+
+        model.setFeedbackState(approach.getS88(), true);
+        model.setFeedbackState(turning.getS88(), false);
+        model.setFeedbackState(plain.getS88(), false);
+
+        assertTrue(running.moveLocomotive(train, approach.getName(), false), "precondition: could not stand " + train
+            + " on " + approach.getName());
+
+        final java.util.List<org.traincontrol.automation.Edge> path = new java.util.ArrayList<>();
+
+        path.add(running.getEdge(approach.getName(), turning.getName()));
+
+        final org.traincontrol.automation.Point askedAbout = turning;
+
+        org.traincontrol.automation.Layout.ReversalPolicy keepDirection = new org.traincontrol.automation.Layout.ReversalPolicy()
+        {
+            @Override
+            public boolean shouldReverse(org.traincontrol.base.Locomotive t, org.traincontrol.automation.Point at)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean asksAbout(org.traincontrol.automation.Point at)
+            {
+                return at == askedAbout;
+            }
+        };
+
+        java.lang.reflect.Field journeysField = org.traincontrol.automation.Layout.class.getDeclaredField("activeLocomotives");
+
+        journeysField.setAccessible(true);
+
+        final Object journeys = journeysField.get(running);
+
+        java.lang.reflect.Field takingField = org.traincontrol.automation.Layout.class.getDeclaredField("takingPath");
+
+        takingField.setAccessible(true);
+
+        final java.util.Map<?, ?> taking = (java.util.Map<?, ?>) takingField.get(running);
+
+        final TileKey where = square;
+
+        final Side[] shown = new Side[1];
+
+        Thread run = null;
+
+        try
+        {
+            synchronized (journeys)
+            {
+                run = new Thread(() -> running.executePath(path, loc, 20, null, keepDirection));
+
+                run.setDaemon(true);
+
+                run.start();
+
+                long until = System.currentTimeMillis() + 15000;
+
+                while (run.isAlive() && System.currentTimeMillis() < until && !atTheHandOver(run, taking, loc))
+                {
+                    Thread.sleep(2);
+                }
+
+                assertTrue(atTheHandOver(run, taking, loc), "precondition: the dispatch never reached its hand-over with its"
+                    + " claim taken - alive " + run.isAlive() + ", state " + run.getState() + ", claim "
+                    + taking.containsKey(loc));
+
+                Thread reading = new Thread(() -> shown[0] = session.facingOnTheRailway(where, running));
+
+                reading.setDaemon(true);
+
+                reading.start();
+
+                reading.join(5000);
+
+                assertFalse(reading.isAlive(), "reading the label waited for the hand-over");
+            }
+        }
+        finally
+        {
+            model.setFeedbackState(turning.getS88(), true);
+            model.setFeedbackState(approach.getS88(), false);
+
+            long until = System.currentTimeMillis() + 30000;
+
+            while (run != null && run.isAlive() && System.currentTimeMillis() < until) Thread.sleep(100);
+
+            running.moveLocomotive(null, turning.getName(), false);
+            running.moveLocomotive(null, plain.getName(), false);
+            running.moveLocomotive(null, approach.getName(), false);
+
+            model.setFeedbackState(turning.getS88(), false);
+
+            running.setSimulate(simulating);
+        }
+
+        java.util.Map<String, Side> facings = session.getStationIndex().facingsAt(square);
+
+        assertEquals(shown[0], facings.get(plain.getName()), "while its route to " + square + " was set, with KEEP DIRECTION,"
+            + " the label read " + shown[0] + " - the turning copy's facing - where the train will stand facing "
+            + facings.get(plain.getName()) + " (RSA30-C3)");
+    }
+
+    /** A dispatch waiting at its hand-over: its claim taken, and blocked entering the hand-over's monitor. */
+    private static boolean atTheHandOver(Thread run, java.util.Map<?, ?> taking, Object loc)
+    {
+        if (run.getState() != Thread.State.BLOCKED || !taking.containsKey(loc)) return false;
+
+        StackTraceElement[] stack = run.getStackTrace();
+
+        return stack.length > 0 && "executePathInternal".equals(stack[0].getMethodName());
+    }
+
     private static JMenuItem find(javax.swing.JMenu menu, String text)
     {
         for (int i = 0; i < menu.getItemCount(); i++)
