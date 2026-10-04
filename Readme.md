@@ -241,6 +241,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
     * Control+D (show address labels)
     * Control+K (show the grid)
     * Control+I (increase diagram by 1 row and 1 column)
+    * Control+M (select by dragging a box)
     * Control+S (name the hovered square, in the autonomy editor)
     * Control+N (show a station name on the hovered square, in the autonomy editor)
     * Control+E (set the length of the hovered piece of track, in the autonomy editor)

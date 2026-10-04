@@ -172,7 +172,8 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             // for one box and then gets out of the way, rather than leaving a mode running.
             JMenuItem oneBox = new JMenuItem(I18n.t("layout.ui.menuSelectByDragging"));
             oneBox.addActionListener(event -> edit.selectOnce());
-            oneBox.setToolTipText(I18n.t("layout.ui.tooltipSelectByDragging"));
+            oneBox.setToolTipText(I18n.t("layout.ui.tooltipSelectByDragging") + "  ("
+                + LayoutEditor.SHORTCUT_SELECT_BY_DRAGGING + ")");
             add(oneBox);
         }
         

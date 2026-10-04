@@ -2731,6 +2731,13 @@ public class LayoutEditor extends PositionAwareJFrame
     private LayoutLabel handleLabel;
 
     /**
+     * The key for Select by Dragging a Box (FR-107; Adam, 2026-10-03: "make a hotkey, with a tool tip for select by
+     * dragging a box in the track diagram editor").  M for the marquee: free in this window, and the main window's own
+     * Control+M never reaches it.
+     */
+    public static final String SHORTCUT_SELECT_BY_DRAGGING = "Control+M";
+
+    /**
      * Turns picking-by-drag on or off.
      *
      * @param on true to make a drag pick squares rather than move them
@@ -7407,6 +7414,11 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_Y)
             {
                 this.redo();
+            }
+            // SELECT BY DRAGGING A BOX, as its item on the right-click menu (FR-107)
+            else if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_M)
+            {
+                this.selectOnce();
             }
             else if (evt.getKeyCode() == KeyEvent.VK_DELETE)
             {

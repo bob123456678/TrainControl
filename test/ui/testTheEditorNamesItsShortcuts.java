@@ -116,6 +116,131 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
+     * Select by Dragging a Box has a key, named on its item in the track diagram editor's right-click menu (FR-107).
+     *
+     * Adam, 2026-10-03: *"make a hotkey, with a tool tip for select by dragging a box in the track diagram editor"*.  The
+     * item's tooltip names the key, and the key does what the item does: one box, then back to normal.
+     *
+     * MUTATION: take the key out of the editor's key handler, or its name off the item, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testSelectByDraggingABoxHasAKey() throws Exception
+    {
+        final LayoutEditor[] track = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            track[0] = new LayoutEditor(page, 30, ui, 0);
+            track[0].render();
+        });
+
+        try
+        {
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            Thread.sleep(500);
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            // A SQUARE WITH TRACK ON IT, to open the menu on
+            java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
+
+            gridField.setAccessible(true);
+
+            final org.traincontrol.gui.LayoutGrid grid = (org.traincontrol.gui.LayoutGrid) gridField.get(track[0]);
+
+            org.traincontrol.gui.LayoutLabel label = null;
+
+            org.traincontrol.base.LayoutDiagramComponent component = null;
+
+            for (int x = page.getMinx(); x <= page.getMaxx() && label == null; x++)
+            {
+                for (int y = page.getMiny(); y <= page.getMaxy() && label == null; y++)
+                {
+                    if (page.getComponent(x, y) != null && grid.getValueAt(x, y) != null)
+                    {
+                        label = grid.getValueAt(x, y);
+                        component = page.getComponent(x, y);
+                    }
+                }
+            }
+
+            assertNotNull(label, "precondition: no square with track on " + PAGE);
+
+            final org.traincontrol.gui.LayoutLabel on = label;
+
+            final org.traincontrol.base.LayoutDiagramComponent what = component;
+
+            final java.lang.reflect.Constructor<?> make = Class.forName("org.traincontrol.gui.LayoutEditorRightclickMenu")
+                .getConstructor(LayoutEditor.class, TrainControlUI.class, org.traincontrol.gui.LayoutLabel.class,
+                    org.traincontrol.base.LayoutDiagramComponent.class);
+
+            make.setAccessible(true);
+
+            final javax.swing.JPopupMenu[] menu = new javax.swing.JPopupMenu[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    menu[0] = (javax.swing.JPopupMenu) make.newInstance(track[0], ui, on, what);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            List<javax.swing.JMenuItem> items = new java.util.ArrayList<>();
+
+            collect(menu[0].getSubElements(), items);
+
+            javax.swing.JMenuItem oneBox = byText(items, I18n.t("layout.ui.menuSelectByDragging"));
+
+            assertNotNull(oneBox, "precondition: the track editor's menu has no Select by Dragging a Box");
+
+            assertTrue(oneBox.getToolTipText() != null
+                && oneBox.getToolTipText().contains(LayoutEditor.SHORTCUT_SELECT_BY_DRAGGING),
+                "Select by Dragging a Box does not name its key: " + oneBox.getToolTipText());
+
+            // AND THE KEY DOES IT
+            final java.lang.reflect.Method pressed = LayoutEditor.class.getDeclaredMethod("formKeyPressed",
+                java.awt.event.KeyEvent.class);
+
+            pressed.setAccessible(true);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    pressed.invoke(track[0], new java.awt.event.KeyEvent(track[0], java.awt.event.KeyEvent.KEY_PRESSED,
+                        System.currentTimeMillis(), java.awt.event.InputEvent.CTRL_DOWN_MASK, java.awt.event.KeyEvent.VK_M,
+                        'm'));
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            java.lang.reflect.Field once = LayoutEditor.class.getDeclaredField("selectOnce");
+
+            once.setAccessible(true);
+
+            assertTrue(once.getBoolean(track[0]), LayoutEditor.SHORTCUT_SELECT_BY_DRAGGING + " did not start Select by"
+                + " Dragging a Box");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> track[0].dispose());
+        }
+    }
+
+    /**
      * A station's right-click menu names Control+E, Control+S and Control+H on the items they do.
      *
      * @throws Exception from the event thread
