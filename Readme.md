@@ -125,11 +125,17 @@ Useful for testing, individual accessories can be directly controlled via their 
 
 **Full Autonomy**
 
-Set up on the track diagram ([user guide](Automation.md)) - an older [JSON configuration file](AutomationAPI.md) can be imported from the autonomy menu - and enable complete automation of trains using S88 sensors (at least one per station), digital switches and an initial list of locomotive locations - signals are optional ([what you need](Automation.md#what-you-need)).  TrainControl will automatically keep track of where each train is located at any given time.  You can pick destinations for specific trains, or let the system continuously execute random routes.  All state is auto-saved on exit.
+TrainControl can run your trains on its own.  In version 3.0 you set this up on the track diagram itself, in the autonomy editor.  TrainControl works out how your track connects, so there is no graph to build and no file to write.  You set up stations, directions and settings by right-clicking a square.  The setup is checked before it runs, and each problem it finds takes you to the square it is about.
 
-![A train running under autonomy on the track diagram, its route drawn ahead of it](assets/autonomy3.png?raw=true)
+You need S88 sensors, at least one per station, and digital switches.  Signals are optional ([what you need](Automation.md#what-you-need)).  Once you have placed your trains, TrainControl keeps track of where every train is.  You can send a particular train to a station, or let it keep picking destinations at random.  Everything is saved automatically when you exit.  If you set up autonomy in an older version, its [JSON configuration file](AutomationAPI.md) can be imported from the Autonomy menu.
 
-The track diagram shows each running train's route, the track it is holding, and where every train is standing.  The setup is checked as you build it, and each problem it finds opens the autonomy editor on the square it is about.  While trains are not running, you can right-click a station to place a train there, or right-click a train to send it somewhere.
+**Full guide:** [The autonomy editor: a user guide](Automation.md)
+
+![The autonomy editor: the track diagram with its stations named, a list of things to look at below it, and tools and settings on the right](assets/autonomy_editor3.png?raw=true)
+
+![A train running under autonomy on the track diagram: its route ahead in blue, the track it has passed and still holds in dark grey, and a second train standing at its station](assets/autonomy3.png?raw=true)
+
+The track diagram shows each running train's route, the track it is holding, and where every train is standing.  While trains are not running, you can right-click a station to place a train there, or right-click a train to send it somewhere.
 
 In addition to the continuous automated operation and point-to-point commands, you can also specify timetables and run your trains according to a predefined list of paths, subject to the same protections as autonomous operation.
 
