@@ -99,7 +99,7 @@ The window is titled "Autonomy Editor: *page*": the sidebar on the left, your di
 7. **`Path Type`** - `Auto` or `Manual`: whether those two tools answer for autonomy choosing a destination, or for a train you send yourself (and Return Home).
 8. **`Page Settings`** - `Exclude Page` leaves this whole page out of autonomy: its sensors stop being stations and nothing on it is driven. Put it back from `Autonomy` → `Pages with Autonomy Enabled…`.
 9. **`Visible Elements`** - `Grid` (Control+K), `Addresses` (Control+D), `Track Lengths` - each square's recorded length (Control+G) - and `Unmeasured Track`, the track with no length yet.
-10. **`Text Labels`** - what the station captions show: `Station Names`, `Parked Locs` (the train standing there), `Home Locs` (the station's home locomotive), `None`, or `Labels Only` (your own diagram text instead). Control+L steps through them.
+10. **`Text Labels`** - what the station captions show: `Station Names`, `Standing Locs` (the train standing there), `Home Locs` (the station's home locomotive), `None`, or `Labels Only` (your own diagram text instead). Control+L steps through them.
 11. **`Track Directions`** - which direction marks are drawn: `Show All`, `Restrictions only` (just the directions you have shut - the usual one), `Hide All`, or `Station Arrivals` (which sides each station takes trains from).
 12. **`Save Changes`** and **`Cancel`** - see [Saving, cancelling, and changing page](#saving-cancelling-and-changing-page).
 

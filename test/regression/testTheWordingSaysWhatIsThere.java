@@ -110,6 +110,36 @@ public class testTheWordingSaysWhatIsThere
     }
 
     /**
+     * The Text Labels choice that names the train at each station says Standing Locs, not Parked Locs (MT-657's note).
+     *
+     * Adam, 2026-10-03: *"rename parked Locs to Standing Locs"*.  The caption names whichever train stands at a station
+     * - parked there, or waiting between two runs - and "parked" said only the first.  Every language says standing;
+     * Italian's "in sosta" already did.
+     *
+     * MUTATION: put Parked Locs back in English, or the old word in any language, and this fails.
+     *
+     * @throws IOException reading a bundle
+     */
+    @Test
+    public void testTheTrainCaptionSaysStanding() throws IOException
+    {
+        String[] parked = {"Parked Locs", "Parkerede loks", "Abgestellte Loks", "Locs estacionadas", "Locs gar\u00e9es",
+            null, "Geparkeerde locs", "Zaparkowane loki"};
+
+        assertEquals(bundle("").getProperty("autosetup.ui.captionsParked"), "Standing Locs", "the Text Labels choice"
+            + " that names the train at a station is not called Standing Locs");
+
+        for (int i = 0; i < LANGS.length; i++)
+        {
+            String said = bundle(LANGS[i]).getProperty("autosetup.ui.captionsParked");
+
+            assertNotNull(said, "messages" + LANGS[i] + " has no autosetup.ui.captionsParked");
+
+            assertFalse(said.equals(parked[i]), "messages" + LANGS[i] + " still calls the train caption parked: " + said);
+        }
+    }
+
+    /**
      * No message names what is not there: One-Way Run's button, the Edit button the left-out page's label is clicked
      * instead of, a step of pairing a link that is now an item of its own, a key in the longest train's tooltip where the
      * diagram's menu shows it, and "defualt".

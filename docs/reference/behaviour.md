@@ -1776,7 +1776,8 @@ after stepping to another page each of them named a square on the page before (O
 **Control+L steps through the caption options, and text labels are one of them** (Adam, 2026-09-23,
 OB-272: *"make text labels be a dedicated setting, and hide the text labels unless it is selected.  Also,
 make control+L cycle the options"*, and asked which options: *"the dropdown's 4, plus add an option to
-the dropdown that shows the labels only"*). So the dropdown is Stations, Parked Locs, Homes, None and
+the dropdown that shows the labels only"*). So the dropdown is Stations, Standing Locs (Parked Locs until
+MT-657's note), Homes, None and
 Labels only, in that order, and the key moves to the next of the five. The text written on squares is shown under
 **Labels only** and nowhere else: choosing a caption no longer turns it on, which it has done since FR-061
 read *None* as the text switch turned off. Built 2026-09-23: Labels Only is appended after None so a remembered

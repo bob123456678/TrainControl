@@ -7034,7 +7034,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Whether the diagram draws station captions - Station Names, Parked Locs or Homes (OB-272).
+     * Whether the diagram draws station captions - Station Names, Standing Locs or Homes (OB-272).
      *
      * The grid asks this for a caption, and the editor's text switch for the writing on the diagram, so the two are
      * independent: a caption is drawn under the three caption modes whatever the switch says.
