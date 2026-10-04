@@ -1516,6 +1516,26 @@ Adam, 2026-10-03: *"make a hotkey, with a tool tip for select by dragging a box 
 
 when autonomy is started and the blue path painted for a train, the locomotive icon disappears on the starting station.  it reappears when it reaches the next milestone (s88/station) and appears normally thereafter until parking.  it needs to be added to the starting path / kept where it is standing.
 
+### OB-318 - 2026-10-04 - popup titles and file chooser buttons not always translated
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-04 - noticed while testing, not from a particular test  
+**Filed:** 2026-10-04  
+
+Adam, 2026-10-04: *"the popup titles message and input are not always translated, nor are file chooser buttons."*
+
+The titles of message and input popups ("Message", "Input") are not always in the chosen language, and neither are the buttons of the file chooser.
+
+### OB-319 - 2026-10-04 - a configuration whose setup can't be used can't be selected, so it can't be deleted
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-04 - noticed while testing, not from a particular test  
+**Filed:** 2026-10-04  
+
+Adam, 2026-10-04: *"There seems to be a bug with autonomy config management. If there is a setup cant be used, it cant be selected from the list of configs, which prevents subsequent deletion."*
+
+An autonomy configuration whose setup cannot be used cannot be selected in the list of configurations, so it cannot then be deleted.
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
