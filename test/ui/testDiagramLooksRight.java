@@ -782,11 +782,19 @@ public class testDiagramLooksRight
 
         try
         {
+            // GREY WHEN NOTHING HAS BEEN CHOSEN (Adam, 2026-10-03: "let's make gray station labels default, but blue being
+            // the optional setting to change via the existing preference")
+            TrainControlUI.getPrefs().remove(TrainControlUI.STATION_LABELS_GREY);
+
+            assertEquals(org.traincontrol.gui.StationCaption.restingFill(),
+                org.traincontrol.gui.StationCaption.PILL_GREY,
+                "with nothing chosen the station labels are not grey, which is the default now");
+
             TrainControlUI.getPrefs().putBoolean(TrainControlUI.STATION_LABELS_GREY, false);
 
             assertEquals(org.traincontrol.gui.StationCaption.restingFill(),
                 org.traincontrol.gui.StationCaption.PILL_AT_REST,
-                "the default is not the blue the request calls the default");
+                "the preference switched off and the captions are not blue, so blue cannot be chosen");
 
             assertEquals(org.traincontrol.gui.StationCaption.readableOn(
                 org.traincontrol.gui.StationCaption.restingFill()), java.awt.Color.WHITE,

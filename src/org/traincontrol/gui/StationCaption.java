@@ -55,6 +55,9 @@ public class StationCaption extends JLabel
      * and stops competing with the signals and the running path for attention.
      *
      * Light enough that the text on it goes black, which readableOn works out on its own.
+     *
+     * THE DEFAULT SINCE 2026-10-03, blue the choice (Adam: "let's make gray station labels default, but blue being the
+     * optional setting to change via the existing preference") - `TrainControlUI.stationLabelsAreGrey`.
      */
     public static final Color PILL_GREY =
         new Color(196, 198, 202, LayoutGrid.LAYOUT_STATION_OPACITY);

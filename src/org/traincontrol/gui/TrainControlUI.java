@@ -2052,7 +2052,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public static boolean stationLabelsAreGrey()
     {
-        return getPrefs().getBoolean(STATION_LABELS_GREY, false);
+        // GREY UNLESS BLUE IS CHOSEN (Adam, 2026-10-03: "let's make gray station labels default, but blue being the
+        // optional setting to change via the existing preference").  Somebody who chose blue keeps it.
+        return getPrefs().getBoolean(STATION_LABELS_GREY, true);
     }
 
     public static Preferences getPrefs()
@@ -13417,7 +13419,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.greyStationLabelsMenuItem.setToolTipText(
             I18n.t("ui.main.toolbar.tooltip.greyStationLabels"));
 
-        this.greyStationLabelsMenuItem.setSelected(prefs.getBoolean(STATION_LABELS_GREY, false));
+        // The drawing's own answer, so the menu and the labels cannot disagree about the default
+        this.greyStationLabelsMenuItem.setSelected(stationLabelsAreGrey());
 
         this.greyStationLabelsMenuItem.addActionListener(event ->
         {
