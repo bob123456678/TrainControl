@@ -259,8 +259,10 @@ public class TileOverlay
      * (Adam, 2026-10-01: "when a train is standing somewhere, can we show its locomotive icon on top of the station in
      * the track diagram viewer, while maintaining editability? same icon as when a run is started").
      *
-     * A train waiting on a path it holds keeps the dot (FR-027), so the dot still says "held on its way", and the
-     * locomotive says parked or running - the path line under a running one telling those two apart.
+     * And a train standing still on a path it holds - at its start while its route is set, or held on its way - is drawn
+     * the same, where it stands (OB-317; Adam, 2026-10-03: "it needs to be added to the starting path / kept where it is
+     * standing"): it was the dot, and the locomotive vanished from its station as its run began.  The path line under it
+     * says it holds one.
      *
      * @param facing the side of the square its front faces, or null where the railway records none
      * @return the mark
@@ -771,7 +773,8 @@ public class TileOverlay
             // is running (not while stationary)."  The dot said WHERE a train was and nothing more;
             // on a layout with several paths out at once, which of them are moving and which are
             // waiting is the thing a glance at the diagram could not answer.
-            // And where one is parked (Adam, 2026-10-01): the dot is left for a train waiting on a path it holds.
+            // And where one stands still (Adam, 2026-10-01), with a path or without (OB-317): the run marks nothing with
+            // the dot any more.
             java.awt.image.BufferedImage picture =
                 moving || parked || !ICON_ONLY_WHILE_MOVING ? trainIcon() : null;
 

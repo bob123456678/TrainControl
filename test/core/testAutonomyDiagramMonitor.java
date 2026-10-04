@@ -2464,7 +2464,9 @@ public class testAutonomyDiagramMonitor
 
         assertNull(published.get(0).get(key("main", 5, 1)), "an empty station was marked");
 
-        // HOLDING A PATH, standing still: the run's own mark, the dot - not parked
+        // HOLDING A PATH, standing still: the locomotive where it stands, facing its way, not the dot (OB-317; Adam,
+        // 2026-10-03: "when autonomy is started and the blue path painted for a train, the locomotive icon disappears on
+        // the starting station ... it needs to be added to the starting path / kept where it is standing")
         layout.active.put(train, new ArrayList<Edge>());
         layout.standingAt = west88;
 
@@ -2472,8 +2474,11 @@ public class testAutonomyDiagramMonitor
 
         TileOverlay held = published.get(published.size() - 1).get(key("main", 1, 1));
 
-        assertTrue(held != null && held.hasTrain() && !held.isParked(), "a train holding a path was marked as parked,"
-            + " or not at all: " + held);
+        assertTrue(held != null && held.hasTrain() && held.isParked() && !held.isMoving(), "a train holding a path,"
+            + " standing still at its start, is not drawn as the locomotive standing there - the icon gave way to the dot"
+            + " (OB-317): " + held);
+
+        assertEquals(held.getFacing(), Side.W, "the train standing at its start does not face the way its Point faces");
     }
 
     /** Every pixel of an image, to compare two. */
@@ -2532,19 +2537,14 @@ public class testAutonomyDiagramMonitor
         Map<TileKey, TileOverlay> picture = published.isEmpty() ? new LinkedHashMap<TileKey, TileOverlay>()
             : published.get(published.size() - 1);
 
-        for (TileKey tile : Arrays.asList(key("main", 1, 1), key("main", 5, 1)))
-        {
-            TileOverlay overlay = picture.get(tile);
+        // NOT ON THE FAR POINT OF THE ROUTE IT HAS RESERVED (RSA17-B2) - asserted below, with the far tile drawn nothing
 
-            assertFalse(overlay != null && overlay.isParked(), "a train setting its route up is drawn parked on " + tile
-                + ", a Point of the route it has reserved (RSA17-B2): " + picture);
-        }
-
-        // AND DRAWN ONCE, WAITING, WHERE IT STANDS (RSA18-C2): it was drawn nowhere for as long as its accessories took
+        // AND DRAWN ONCE, WHERE IT STANDS (RSA18-C2): it was drawn nowhere for as long as its accessories took - as the
+        // locomotive standing there, not the dot (OB-317)
         TileOverlay where = picture.get(key("main", 1, 1));
 
-        assertTrue(where != null && where.hasTrain() && !where.isParked(), "a train setting its route up is not drawn"
-            + " where it stands: " + picture);
+        assertTrue(where != null && where.hasTrain() && where.isParked() && !where.isMoving(), "a train setting its route"
+            + " up is not drawn as the locomotive standing where it stands (RSA18-C2, OB-317): " + picture);
 
         TileOverlay far = picture.get(key("main", 5, 1));
 

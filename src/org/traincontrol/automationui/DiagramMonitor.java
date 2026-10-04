@@ -548,7 +548,11 @@ public class DiagramMonitor
 
         if (tile == null) return;
 
-        TileOverlay mark = new TileOverlay(State.IDLE, true, moving, null);
+        // STANDING STILL, THE LOCOMOTIVE STANDING THERE, facing its way - not the dot (OB-317; Adam, 2026-10-03: "when
+        // autonomy is started and the blue path painted for a train, the locomotive icon disappears on the starting
+        // station ... it needs to be added to the starting path / kept where it is standing").  The path line under it
+        // says it holds a path; running, it is the run's own icon.
+        TileOverlay mark = moving ? new TileOverlay(State.IDLE, true, true, null) : TileOverlay.parked(facings.get(at.getName()));
 
         TileOverlay existing = into.get(tile);
 
