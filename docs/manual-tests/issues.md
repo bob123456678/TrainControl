@@ -1487,6 +1487,16 @@ Sending ET22-245 from TopMainR2Inter to BottomMainB, with TopMainR2 guarded by s
 
 Adam, 2026-10-03: *"when sending  et22-245 from topmainr2inter to bottommainb, and when topmainr2 is guarded by exit signal 64, that signal is set to red. It should only be set to red on arrival, not passing- but check."*
 
+### OB-316 - 2026-10-03 - signal 108 turned red running from BottomMainB to TopMainR2
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-03 - noticed while testing, not from a particular test  
+**Filed:** 2026-10-03  
+
+Running ET22-245 from BottomMainB to TopMainR2, signal 108 was turned red.  Possibly the same cause as OB-315 (a station's guard signal set red by a train that is not arriving there); to be checked with it.
+
+Adam, 2026-10-03: *"when running et22-245 from bottommainb to topmainr2, signal 108 gets turned red"*
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
