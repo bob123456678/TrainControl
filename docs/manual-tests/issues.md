@@ -1477,6 +1477,16 @@ Sending ET22-245 from TopMainR2Inter to BottomMainB, the label at BottomMainB sh
 
 Adam, 2026-10-03: *"when sending et22-245 from topmainr2inter to bottommainb, the label at bottommainb shows arrival arrive facting west, not east, as if it would be reversed. But on arrival, it gets fixed."*
 
+### OB-315 - 2026-10-03 - a passing train sets a station's guard signal red
+
+**Kind:** bug  
+**Raised from:** Adam, 2026-10-03 - noticed while testing, not from a particular test  
+**Filed:** 2026-10-03  
+
+Sending ET22-245 from TopMainR2Inter to BottomMainB, with TopMainR2 guarded by signal 64, that signal was set to red as the train went past.  A station's guard signal should turn red only when a train arrives there at the end of its journey, not when one passes through.  To be checked first: whether the route really passes TopMainR2, and what set the signal red.
+
+Adam, 2026-10-03: *"when sending  et22-245 from topmainr2inter to bottommainb, and when topmainr2 is guarded by exit signal 64, that signal is set to red. It should only be set to red on arrival, not passing- but check."*
+
 ## What has been picked up
 
 Newest first. This is a receipt for something promoted into `tests.md` - **Became** names its
