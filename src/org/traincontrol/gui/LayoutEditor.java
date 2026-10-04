@@ -2063,6 +2063,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
         // entering the mode draws what is already decided; leaving it takes the marks with it
         refreshAutonomyAnnotations();
+
+        // AND THE POINTER SAYS WHETHER A DRAG PICKS IN THIS MODE (RSA31-C4)
+        this.showWhetherADragPicks();
     }
 
     /**
@@ -2780,13 +2783,16 @@ public class LayoutEditor extends PositionAwareJFrame
      * The diagram's pointer says whether a drag picks: a crosshair while it does (MT-661's note; Adam, 2026-10-03: "there
      * is no indicator that we have entered this mode when control M is pressed", and "I'd rather not have text popping
      * up, why not just change the cursor?").  Squares inherit it, the one under the pointer included; only the
-     * selection's grip keeps its own.  Asked again by every redraw, which builds a new panel (RSA30-C5).
+     * selection's grip keeps its own.  Asked again by every redraw, which builds a new panel (RSA30-C5), and by a switch
+     * of mode: in Autonomy Setup no drag picks, so picking carried there shows the arrow until it comes back (RSA31-C4).
      */
     private void showWhetherADragPicks()
     {
         if (this.grid != null && this.grid.getContainer() != null)
         {
-            this.grid.getContainer().setCursor(this.selectMode ? Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR) : null);
+            boolean picks = this.selectMode && !this.isAutonomyMode();
+
+            this.grid.getContainer().setCursor(picks ? Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR) : null);
         }
     }
 
@@ -5798,7 +5804,7 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
                 }
             });            
           }
-          catch (RuntimeException failed)
+          catch (RuntimeException | Error failed)
           {
             // The Edit button was disabled before this window was asked for, and openLayoutEditor
             // wraps the CONSTRUCTION in a catch that hands it back - with a comment saying why: without
@@ -5807,12 +5813,19 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             // thread's default handler and left the button disabled for the session with no window to
             // show for it.
             //
-            // Same remedy, at the other end of the queue.
+            // Same remedy, at the other end of the queue.  AND FOR AN ERROR TOO (RSA31-C3), given back and then thrown on,
+            // as the constructor's catch and openLayoutEditor's do: past a catch of exceptions only, the hidden frame
+            // stayed counted and the gate shut for the session.
             parent.autonomyEditorClosed();
 
-            if (parent.getModel() != null) parent.getModel().log(failed);
+            if (failed instanceof RuntimeException && parent.getModel() != null)
+            {
+                parent.getModel().log((RuntimeException) failed);
+            }
 
             dispose();
+
+            if (failed instanceof Error) throw (Error) failed;
           }
         });
     }
@@ -6336,12 +6349,19 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
             revalidate();
             repaint();
         }
-        catch (RuntimeException failed)
+        catch (RuntimeException | Error failed)
         {
-            // A half-switched window is worse than none: it is showing one page and wired to another.
-            if (parent.getModel() != null) parent.getModel().log(failed);
+            // A half-switched window is worse than none: it is showing one page and wired to another.  An Error too, given
+            // up and then thrown on (RSA31-C3's sibling): past a catch of exceptions only, the window stayed half switched
+            // and counted as an open editor.
+            if (failed instanceof RuntimeException && parent.getModel() != null)
+            {
+                parent.getModel().log((RuntimeException) failed);
+            }
 
             confirmExitWithoutAsking();
+
+            if (failed instanceof Error) throw (Error) failed;
         }
     }
 

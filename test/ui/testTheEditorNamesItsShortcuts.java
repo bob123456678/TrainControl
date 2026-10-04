@@ -290,6 +290,44 @@ public class testTheEditorNamesItsShortcuts
 
             assertTrue(redrawn.getContainer().getCursor().getType() != java.awt.Cursor.CROSSHAIR_CURSOR, "the pointer is"
                 + " still a crosshair after picking stopped, on a redrawn diagram");
+
+            // BUT NOT IN AUTONOMY SETUP, where no drag picks (RSA31-C4): picking carried there shows the arrow, and the
+            // crosshair again on the way back, where it is still on
+            SwingUtilities.invokeAndWait(() -> track[0].setSelectMode(true));
+
+            SwingUtilities.invokeAndWait(() -> track[0].setAutonomyMode(session));
+
+            for (int i = 0; i < 20; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            Thread.sleep(300);
+
+            for (int i = 0; i < 20; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            final org.traincontrol.gui.LayoutGrid inAutonomy = (org.traincontrol.gui.LayoutGrid) gridField.get(track[0]);
+
+            assertTrue(track[0].isAutonomyMode() && track[0].isSelectMode(), "precondition: not in Autonomy Setup with"
+                + " picking carried in");
+
+            assertTrue(inAutonomy.getContainer().getCursor().getType() != java.awt.Cursor.CROSSHAIR_CURSOR, "in Autonomy"
+                + " Setup, where no drag picks, the pointer is the crosshair (RSA31-C4)");
+
+            SwingUtilities.invokeAndWait(() -> track[0].setAutonomyMode(null));
+
+            for (int i = 0; i < 20; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            Thread.sleep(300);
+
+            for (int i = 0; i < 20; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            final org.traincontrol.gui.LayoutGrid back = (org.traincontrol.gui.LayoutGrid) gridField.get(track[0]);
+
+            assertTrue(!track[0].isAutonomyMode() && track[0].isSelectMode(), "precondition: not back in the track editor"
+                + " with picking still on");
+
+            assertEquals(back.getContainer().getCursor().getType(), java.awt.Cursor.CROSSHAIR_CURSOR, "back in the track"
+                + " editor with picking still on, the pointer is not the crosshair");
+
+            SwingUtilities.invokeAndWait(() -> track[0].setSelectMode(false));
         }
         finally
         {

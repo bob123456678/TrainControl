@@ -281,7 +281,9 @@ public class testAutonomySimulationSanity
      * A line A, M, R, B with R a reversing point; every place the railway gives while the train stands still between its
      * start and its end.  Beside the turn at the destination, because it needs a run that completes.
      *
-     * MUTATION: record the turning point only after the turn again, and this fails.
+     * And the railway says so while the train turns, so the track diagram is redrawn then (RSA31-C2).
+     *
+     * MUTATION: record the turning point only after the turn again, or tell nothing at the turn's stop, and this fails.
      *
      * @throws Exception on a failure to run
      */
@@ -299,6 +301,9 @@ public class testAutonomySimulationSanity
         final java.util.Set<String> placed = java.util.Collections.synchronizedSet(new java.util.LinkedHashSet<String>());
 
         final boolean[] sampling = {true};
+
+        // WHAT THE RAILWAY TELLS WHILE THE TRAIN TURNS (RSA31-C2)
+        final boolean[] toldWhileTurning = {false};
 
         Thread sampler = null;
 
@@ -332,6 +337,21 @@ public class testAutonomySimulationSanity
             path.add(layout.createEdge("C4 R", "C4 B"));
 
             loc.setReversible(true);
+
+            // AND THE RAILWAY SAYS SO WHILE IT TURNS (RSA31-C2): the track diagram is redrawn only when the railway's
+            // callbacks fire, and none fired between the point's record and the end of the step - so a train turning
+            // alone was drawn at the sensor before, running, for the whole of its turn
+            layout.setCallback("RSA31-C2", (edges, train, flag) ->
+            {
+                org.traincontrol.automation.Point at = layout.whereTheTrainIs(loc);
+
+                if (loc.equals(train) && loc.getSpeed() == 0 && at != null && "C4 R".equals(at.getName()))
+                {
+                    toldWhileTurning[0] = true;
+                }
+
+                return null;
+            });
 
             assertTrue(layout.moveLocomotive("C4 turner", "C4 A", false), "precondition: the locomotive must be placed");
 
@@ -389,6 +409,9 @@ public class testAutonomySimulationSanity
 
         assertEquals(placed, java.util.Collections.singleton("C4 R"), "standing to turn at C4 R, the train was placed at "
             + placed + " (RSA30-C4)");
+
+        assertTrue(toldWhileTurning[0], "while the train stood at C4 R to turn, the railway told nothing that redraws the"
+            + " track diagram, so it was drawn at the sensor before, running, for the whole turn (RSA31-C2)");
     }
 
     /**

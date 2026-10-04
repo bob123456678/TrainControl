@@ -4376,16 +4376,17 @@ public class Layout
                 return false;
             }
 
+            // THE RUN'S REVERSAL ANSWER, kept with its claim (RSA30-C3) so the copy the train will stand on is known while
+            // its route is set: kept only from the hand-over, the label read the turning copy this claim reserves, and
+            // showed the train the wrong way round until it set off.  Here, past the refusals above, so a duplicate
+            // dispatch that loses writes nothing over the winner's - and BEFORE the route, so a reader that finds the
+            // route finds this answer with it, never the last run's (RSA31-C1).
+            this.runPolicies.put(loc, java.util.Optional.ofNullable(reversals));
+
             // Claimed HERE, in the same monitor that just did the counting.  Anywhere later and the
             // check and the claim can be pulled apart by another thread doing its own check in between
             // - which is exactly what let two trains past a cap of one.
             this.takingPath.put(loc, path);
-
-            // AND THE RUN'S REVERSAL ANSWER WITH IT (RSA30-C3), so the copy the train will stand on is known while its
-            // route is set.  Kept only from the hand-over, the label read the turning copy this claim reserves, and
-            // showed the train the wrong way round until it set off.  Here, past the refusals above, so a duplicate
-            // dispatch that loses writes nothing over the winner's.
-            this.runPolicies.put(loc, java.util.Optional.ofNullable(reversals));
 
             try
             {
@@ -9599,6 +9600,17 @@ public class Layout
                     && shouldReverseAt(current, path.get(path.size() - 1).getEnd(), loc, reversals))
                 {
                     loc.setSpeed(0).waitForSpeedBelow(1);
+
+                    // AND SAID SO (RSA31-C2): the track diagram is redrawn when these fire, and the next fire is the
+                    // step's end, after the turn - so a train turning with nothing else moving was drawn at the sensor
+                    // before, running, for the whole of its turn.  Now it is drawn standing where it turns.
+                    synchronized (this.activeLocomotives)
+                    {
+                        for (TriFunction<List<Edge>, Locomotive, Boolean, Void> callback : this.callbacks.values())
+                        {
+                            fireCallback(callback, path, loc, true);
+                        }
+                    }
 
                     this.control.logf(
                         "autolayout.infoIntermediateReversingForLocomotive",

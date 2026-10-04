@@ -103,6 +103,100 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
+     * A reader that finds a train's route finds the run's own reversal answer with it (RSA31-C1).
+     *
+     * Round 49 kept the answer with the claim (RSA30-C3), but wrote the route first: a reader between the two writes found
+     * the new route with the previous run's answer, and the station label read the copy the last run would have stood the
+     * train on.  The answer is written first now.
+     *
+     * The claims' map replaced by one that reads, as the route is written, the answer a reader would then find; a
+     * previous run's answer left behind, as one always is.
+     *
+     * MUTATION: write the route before the answer again, and this fails.
+     *
+     * @throws Exception from the fixture or reflection
+     */
+    @Test
+    public void testTheRouteIsNeverSeenWithoutItsAnswer() throws Exception
+    {
+        final Layout layout = oneEdge();
+
+        final Locomotive train = aTrainAtTheStart(layout);
+
+        java.lang.reflect.Field answersField = Layout.class.getDeclaredField("runPolicies");
+
+        answersField.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        final java.util.Map<Locomotive, Object> answers = (java.util.Map<Locomotive, Object>) answersField.get(layout);
+
+        // A PREVIOUS RUN'S ANSWER, still held
+        answers.put(train, java.util.Optional.of(Layout.ALWAYS_REVERSE));
+
+        final Layout.ReversalPolicy thisRuns = new Layout.ReversalPolicy()
+        {
+            @Override
+            public boolean shouldReverse(Locomotive t, org.traincontrol.automation.Point at)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean asksAbout(org.traincontrol.automation.Point at)
+            {
+                return false;
+            }
+        };
+
+        // THE CLAIMS, which read the answer the moment the route is written
+        final Object[] seen = {"nothing read"};
+
+        java.util.concurrent.ConcurrentHashMap<Locomotive, List<Edge>> claims =
+            new java.util.concurrent.ConcurrentHashMap<Locomotive, List<Edge>>()
+        {
+            @Override
+            public List<Edge> put(Locomotive key, List<Edge> value)
+            {
+                List<Edge> was = super.put(key, value);
+
+                if (train.equals(key)) seen[0] = answers.get(train);
+
+                return was;
+            }
+        };
+
+        java.lang.reflect.Field claimsField = Layout.class.getDeclaredField("takingPath");
+
+        claimsField.setAccessible(true);
+
+        java.lang.reflect.Field modifiers = java.lang.reflect.Field.class.getDeclaredField("modifiers");
+
+        modifiers.setAccessible(true);
+        modifiers.setInt(claimsField, claimsField.getModifiers() & ~java.lang.reflect.Modifier.FINAL);
+
+        claimsField.set(layout, claims);
+
+        java.lang.reflect.Method lock = Layout.class.getDeclaredMethod("configureAndLockPath", List.class, Locomotive.class,
+            Layout.ReversalPolicy.class);
+
+        lock.setAccessible(true);
+
+        boolean locked = (boolean) lock.invoke(layout, theRoute(layout), train, thisRuns);
+
+        try
+        {
+            assertTrue(locked, "precondition: the route would not lock");
+
+            assertEquals(seen[0], java.util.Optional.of(thisRuns), "as the route was written, the answer a reader would"
+                + " find with it was " + seen[0] + " - the previous run's, not this one's (RSA31-C1)");
+        }
+        finally
+        {
+            layout.unlockPath(theRoute(layout), train);
+        }
+    }
+
+    /**
      * A locomotive that has locked its route is not dispatched again while it is locking.
      */
     @Test

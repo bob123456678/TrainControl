@@ -991,6 +991,241 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
+     * An editor whose posted build - the drawing, after the frame is made - raises an Error gives Edit back and opens the
+     * gate (RSA31-C3).
+     *
+     * RSA30-C6 took Errors in `openLayoutEditor`'s catch, which covers the construction; the drawing runs later, in
+     * `render`'s posted body, whose catch took only `RuntimeException` - so the hidden frame stayed counted, Edit and Edit
+     * Autonomy Paths stayed greyed, and every train was refused "Close the editor first" for the session.
+     *
+     * Driven through the real door with a page whose size, asked by the drawing, raises an `AssertionError`.
+     *
+     * MUTATION: let `render`'s catch take exceptions only again, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAnEditorWhoseDrawingRaisesAnErrorGivesEditBack() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String> pages = null;
+
+        final String failing = "Fails to draw (RSA31-C3)";
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            pages = thePages(ui[0]);
+
+            pages.add(aPageThatFailsToDraw(failing, ui[0]), failing, failing);
+
+            final javax.swing.JComboBox list = (javax.swing.JComboBox) control(ui[0], "LayoutList");
+
+            final Object[] was = new Object[1];
+            final java.awt.event.ActionListener[][] actions = new java.awt.event.ActionListener[1][];
+            final java.awt.event.ItemListener[][] items = new java.awt.event.ItemListener[1][];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                was[0] = list.getSelectedItem();
+                actions[0] = list.getActionListeners();
+                items[0] = list.getItemListeners();
+
+                for (java.awt.event.ActionListener l : actions[0]) list.removeActionListener(l);
+                for (java.awt.event.ItemListener l : items[0]) list.removeItemListener(l);
+
+                ((javax.swing.DefaultComboBoxModel) list.getModel()).addElement(failing);
+                list.setSelectedItem(failing);
+            });
+
+            try
+            {
+                answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.FALSE, null, true));
+
+                for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+                Thread.sleep(1000);
+
+                for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+            }
+            finally
+            {
+                SwingUtilities.invokeAndWait(() ->
+                {
+                    ((javax.swing.DefaultComboBoxModel) list.getModel()).removeElement(failing);
+                    list.setSelectedItem(was[0]);
+
+                    for (java.awt.event.ActionListener l : actions[0]) list.addActionListener(l);
+                    for (java.awt.event.ItemListener l : items[0]) list.addItemListener(l);
+                });
+            }
+
+            assertEquals(editorWindows(ui[0]), 0, "an editor whose drawing raised an Error left its frame, counted as open"
+                + " (RSA31-C3)");
+
+            assertFalse(ui[0].isLayoutEditorOpen(), "the gate counts an editor whose drawing raised an Error (RSA31-C3)");
+
+            assertTrue(control(ui[0], "editLayoutButton").isEnabled()
+                && control(ui[0], "editAutonomyFromSettings").isEnabled(), "Edit or Edit Autonomy Paths is greyed after an"
+                + " editor's drawing raised an Error (RSA31-C3)");
+        }
+        finally
+        {
+            if (pages != null) pages.delete(failing);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * A page switch that raises an Error gives the window up, as one that throws an exception does (RSA31-C3's sibling).
+     *
+     * `arriveAt`'s catch took only `RuntimeException`, so an Error left the window half switched - showing one page and
+     * wired to another - and counted as an open editor for the session.
+     *
+     * The track editor opened on a page, then switched to a page whose size, asked by the drawing, raises an
+     * `AssertionError`.
+     *
+     * MUTATION: let `arriveAt`'s catch take exceptions only again, and this fails.
+     *
+     * @throws Exception from the window
+     */
+    @Test
+    public void testAPageSwitchThatRaisesAnErrorGivesTheWindowUp() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        support.LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+
+        String folderWas = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
+
+        org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String> pages = null;
+
+        final String failing = "Fails to draw on a switch (RSA31-C3)";
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+
+            ui[0] = openTheWindow();
+
+            answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.FALSE, null, true));
+
+            final org.traincontrol.gui.LayoutEditor editor = theEditor(ui[0]);
+
+            assertNotNull(editor, "precondition: the track editor did not open");
+
+            pages = thePages(ui[0]);
+
+            pages.add(aPageThatFailsToDraw(failing, ui[0]), failing, failing);
+
+            final java.lang.reflect.Method arrive = org.traincontrol.gui.LayoutEditor.class.getDeclaredMethod("arriveAt",
+                String.class, boolean.class);
+
+            arrive.setAccessible(true);
+
+            final Throwable[] thrown = new Throwable[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    arrive.invoke(editor, failing, false);
+                }
+                catch (java.lang.reflect.InvocationTargetException e)
+                {
+                    thrown[0] = e.getCause();
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            Thread.sleep(500);
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertTrue(thrown[0] instanceof AssertionError, "precondition: the switch did not raise the page's Error: "
+                + thrown[0]);
+
+            assertEquals(editorWindows(ui[0]), 0, "a page switch that raised an Error left its window, half switched and"
+                + " counted as open (RSA31-C3)");
+
+            assertTrue(control(ui[0], "editLayoutButton").isEnabled(), "Edit is greyed after a page switch raised an Error"
+                + " (RSA31-C3)");
+        }
+        finally
+        {
+            if (pages != null) pages.delete(failing);
+
+            putTheFolderBack(folderWas);
+
+            if (ui[0] != null)
+            {
+                final TrainControlUI closing = ui[0];
+
+                SwingUtilities.invokeAndWait(() -> closing.dispose());
+            }
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** The model's pages. */
+    @SuppressWarnings("unchecked")
+    private static org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String> thePages(
+        TrainControlUI ui) throws ReflectiveOperationException
+    {
+        java.lang.reflect.Field db = org.traincontrol.marklin.MarklinControlStation.class.getDeclaredField("layoutDB");
+
+        db.setAccessible(true);
+
+        return (org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String>) db.get(ui.getModel());
+    }
+
+    /** A page whose size, asked by the editor's drawing, raises an Error - asked by anything else, answers. */
+    private static org.traincontrol.base.LayoutDiagram aPageThatFailsToDraw(String name, TrainControlUI ui)
+    {
+        return new org.traincontrol.base.LayoutDiagram(name, 12, 8, null, ui.getModel())
+        {
+            @Override
+            public int getSx()
+            {
+                for (StackTraceElement step : Thread.currentThread().getStackTrace())
+                {
+                    if ("drawGrid".equals(step.getMethodName())) throw new AssertionError("an Error in the drawing");
+                }
+
+                return super.getSx();
+            }
+        };
+    }
+
+    /**
      * A Save and Continue at the track editor's switch leaves nothing to ask at a close in the switch's gap (RSA29-C2).
      *
      * RSA28-C1's other half: the track editor asks a close about its undo history, which a save kept until the switch
