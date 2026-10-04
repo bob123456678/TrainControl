@@ -117,6 +117,122 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
+     * The checkboxes under Visible Elements are evenly spaced, and spaced alike in both editors (OB-312).
+     *
+     * Adam, 2026-10-03: *"check spacing between visible elements checkboxes"*.  They were 6, 4 and 6 pixels apart: the
+     * columns built beside the form's own checkboxes left the heading's gap between them, where the form leaves 4.  Track
+     * Lengths and Show Unmeasured stay together with no gap, as Adam asked on 2026-09-16 - one subject.
+     *
+     * MUTATION: leave a heading's gap between two of the checkboxes, and this fails.
+     *
+     * @throws Exception from the event thread or reflection
+     */
+    @Test
+    public void testTheCheckboxesUnderItAreEvenlySpaced() throws Exception
+    {
+        java.util.List<String> track = checkboxGaps(false);
+        java.util.List<String> autonomy = checkboxGaps(true);
+
+        assertTrue(track.size() >= 2 && autonomy.size() >= 2, "precondition: too few checkboxes found under Visible"
+            + " Elements: " + track + ", " + autonomy);
+
+        java.util.Set<String> sizes = new java.util.TreeSet<>();
+
+        for (String gap : track) sizes.add(gap.substring(gap.lastIndexOf(' ') + 1));
+        for (String gap : autonomy) sizes.add(gap.substring(gap.lastIndexOf(' ') + 1));
+
+        assertEquals(sizes.size(), 1, "the checkboxes under Visible Elements are not evenly spaced (OB-312) - track"
+            + " editor " + track + ", autonomy editor " + autonomy);
+    }
+
+    /**
+     * The gaps between one checkbox and the next under Visible Elements, top to bottom, in one editor: "A - B: n".  Not
+     * the pair Track Lengths and Show Unmeasured, which are one subject.
+     */
+    private static java.util.List<String> checkboxGaps(final boolean autonomy) throws Exception
+    {
+        final LayoutEditor[] built = new LayoutEditor[1];
+        final java.util.List<String> out = new java.util.ArrayList<>();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            built[0] = new LayoutEditor(page, 30, ui, 0);
+            built[0].render();
+            if (autonomy) built[0].setAutonomyMode(session);
+        });
+
+        try
+        {
+            for (int pass = 0; pass < 6; pass++) SwingUtilities.invokeAndWait(() -> { });
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    Container pane = (Container) field(built[0], "formPane");
+                    JLabel heading = (JLabel) field(built[0], "toggleVisibility");
+                    Point at = SwingUtilities.convertPoint(heading.getParent(), heading.getLocation(), pane);
+
+                    java.util.List<javax.swing.JCheckBox> boxes = new java.util.ArrayList<>();
+
+                    checkboxes(pane, pane, at.x, at.y + heading.getHeight(), boxes);
+
+                    boxes.sort((a, b) -> Integer.compare(SwingUtilities.convertPoint(a.getParent(), a.getLocation(), pane).y,
+                        SwingUtilities.convertPoint(b.getParent(), b.getLocation(), pane).y));
+
+                    javax.swing.JCheckBox unmeasured = autonomy ? built[0].getAutonomyPanel().getShowUnmeasured() : null;
+
+                    for (int i = 1; i < boxes.size(); i++)
+                    {
+                        javax.swing.JCheckBox above = boxes.get(i - 1);
+                        javax.swing.JCheckBox below = boxes.get(i);
+
+                        int gap = SwingUtilities.convertPoint(below.getParent(), below.getLocation(), pane).y
+                            - (SwingUtilities.convertPoint(above.getParent(), above.getLocation(), pane).y + above.getHeight());
+
+                        // The column ends where the next control is far below it
+                        if (gap > 30) break;
+
+                        if (below == unmeasured) continue;
+
+                        out.add(above.getText() + " - " + below.getText() + ": " + gap);
+                    }
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> built[0].dispose());
+        }
+
+        return out;
+    }
+
+    private static void checkboxes(Container root, Container c, int x, int below, java.util.List<javax.swing.JCheckBox> out)
+    {
+        for (Component child : c.getComponents())
+        {
+            if (!child.isShowing()) continue;
+
+            Point at = SwingUtilities.convertPoint(child.getParent(), child.getLocation(), root);
+
+            if (child instanceof javax.swing.JCheckBox && Math.abs(at.x - x) < 40 && at.y >= below)
+            {
+                out.add((javax.swing.JCheckBox) child);
+            }
+
+            if (child instanceof Container && !(child instanceof javax.swing.JScrollPane))
+            {
+                checkboxes(root, (Container) child, x, below, out);
+            }
+        }
+    }
+
+    /**
      * The gap under Diagram Size (-1 where it is hidden), and under Visible Elements, in one editor.
      */
     private static int[] gaps(final boolean autonomy) throws Exception

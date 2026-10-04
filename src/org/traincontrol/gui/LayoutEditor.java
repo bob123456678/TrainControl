@@ -1883,7 +1883,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 // The same gap the form leaves between Text Labels and Addresses.  Stacked straight
                 // into a BoxLayout these two touched, so the pair read as one control with two lines
                 // rather than as two switches of the same kind as the one above them.
-                visibility.add(javax.swing.Box.createVerticalStrut(HEADING_GAP));
+                visibility.add(javax.swing.Box.createVerticalStrut(CHECKBOX_GAP));
 
                 visibility.add(autonomyPanel.getShowLengths());
 
@@ -4102,7 +4102,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         column.add(this.showTextCheckbox);
 
-        gapUnderTextLabels = javax.swing.Box.createVerticalStrut(HEADING_GAP);
+        gapUnderTextLabels = javax.swing.Box.createVerticalStrut(CHECKBOX_GAP);
         gapUnderTextLabels.setVisible(this.showTextCheckbox.isVisible());
 
         column.add(gapUnderTextLabels);
@@ -6798,13 +6798,20 @@ java.util.Map<String, Object> captionsToRestore = this.previousCaptionsRedo.isEm
     private static final int SIDEBAR_TABS_BEFORE_SCROLLING = 20;
 
     /**
-     * The air under a blue heading, and between the checkboxes in the visibility column.
+     * The air under a blue heading.
      *
-     * One number because Adam noticed the two were different: the form leaves this much under its own
-     * headings and between its own checkboxes, and everything added by hand beside them has to leave
-     * the same or the column reads as two columns that happen to be touching.
+     * One number because Adam noticed two were different: the form leaves this much under its own
+     * headings, and everything added by hand beside them has to leave the same or the column reads as
+     * two columns that happen to be touching.
      */
     static final int HEADING_GAP = 6;
+
+    /**
+     * The air between one checkbox and the next under Visible Elements: what the form leaves between its own two (OB-312;
+     * Adam, 2026-10-03: "check spacing between visible elements checkboxes" - the columns added beside them left the
+     * heading's gap, so they were 6, 4 and 6 apart).
+     */
+    static final int CHECKBOX_GAP = 4;
 
     /**
      * Puts the sidebar back to what is actually on screen.
