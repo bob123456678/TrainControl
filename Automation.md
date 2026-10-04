@@ -9,6 +9,7 @@ This guide takes you from a track diagram with nothing set up on it to a layout 
 - [What you need](#what-you-need)
 - [The idea in one page](#the-idea-in-one-page)
 - [Getting started](#getting-started)
+- [Setting up your railway](#setting-up-your-railway)
 - [The editor at a glance](#the-editor-at-a-glance)
 - [Saving, cancelling, and changing page](#saving-cancelling-and-changing-page)
 - [Clicking a square: which way trains may run](#clicking-a-square-which-way-trains-may-run)
@@ -81,6 +82,28 @@ The pictures in this guide are of a small demo layout: an oval with stations Ash
 ![Step 2: Autonomy, Edit Autonomy on Page, and the page to open](assets/automation/03-edit-on-page.png)
 
 Only one editor window is open at a time; any of these while it is open simply brings it forward. The editor cannot be opened while autonomy is running - stop the trains first. While it is open, the Autonomy menu is greyed except for `Documentation` and an `Open the Full Editor...` that brings it forward, and no train can be sent.
+
+---
+
+## Setting up your railway
+
+A layout is ready to run once three things are done: the diagram matches the track, the places trains should stop are stations, and the trains and track are measured. The rest is optional. Work in this order - each step relies on the one before.
+
+**3. Make the track diagram match your railway.** Autonomy knows your track only from the diagram. Every switch and every crossing has to be on it, where it really is and joined up the way the track is, each switch with its real address; and each S88 contact on the square where it really sits, with its real address. A switch left off is a junction autonomy does not know about, a crossing left off lets it send two trains over the same diamond at once, and a sensor on the wrong square stops trains in the wrong place. Do this in the track diagram editor (`Editing` → `Track Diagram`) before anything else: the setup is read from it.
+
+**4. Make a station of each sensor where trains should stop.** A sensor is not a station until you say so. Right-click each one where you want trains to stop, choose `Station (...)` → `Yes - Trains Can Stop Here`, and name it with `Rename...` (Control+S); `Bulk Tools` → `Name Everything...` visits a page's unnamed sensors in turn. Leave the rest as they are - the sensors before and after a platform, and those that follow a train through a junction, are for passing. A station at the end of a line also needs `Changing Direction` → `Trains Must Change Direction Here` (see [Example 3](#example-3-a-terminus-and-trains-that-must-turn-round)).
+
+**5. Measure your trains and your track.** Pick a unit and use it everywhere. `Bulk Tools` → `Mass Assign Train Lengths...` asks for each train's length, and `Mass Assign Lengths...` for the track's, a stretch at a time; tick `Unmeasured Track` under `Visible Elements` to see what is left. Autonomy runs without lengths, but it cannot then tell whether a train fits a station or how much track a standing train covers, and it keeps each train's whole route reserved until it arrives. [Track lengths](#track-lengths-what-they-are-for) says what each number does, and what to measure first.
+
+**6. Place your trains.** Right-click the station each train is standing at → `Add a Locomotive to Autonomy...`. From then on TrainControl keeps track of them.
+
+**7. Check, save and start.** `Things to look at` lists anything still to do. When the line under it says the setup is ready to run, press `Save Changes`, then `Start Autonomous Operation` on the strip above the track diagram.
+
+**Optional, when you want them:**
+
+- **Guard signals.** On a station's right-click menu, `Exit Guard Signal...` holds signals at red while a train stands there or is on its way, and `Entry Guard Signal...` turns them red when a train arrives. They are for the look of it and an extra layer of safety: autonomy stops trains on their sensors either way.
+- **Exclusions.** Keep trains off what they should not use: click track to make it one-way or close it (or `Trains May Depart...`); leave a whole page out with `Exclude Page`; take a station out of service with `Station (...)` → `No - Nothing Can Pass`; untick `Can Be Chosen in Full Autonomy` for a parking berth only you and Return Home will use; and keep particular trains away from a station with `Advanced Parameters...` → `Excluded Locomotives`.
+- **Advanced parameters.** A station's `Advanced Parameters...` has `Station Priority`, `Speed Multiplier` and `Unavailable While Occupied`; `Station (...)` has its `Maximum Train Length`; and `Trains May Arrive...` says which sides it takes trains from. Settings for the whole railway - delays, speeds, how many trains run at once - are on the Auto tab: see [Settings](#settings-and-what-each-one-is-for).
 
 ---
 
@@ -263,7 +286,7 @@ The simplest arrangement that runs: two stations, one train, one piece of track 
 
 **3. Name the two stations.** Right-click each of the sensor squares at A and B and choose `Rename...`. The name is what you will see in every list and every log line, and what an arrival is announced under.
 
-**4. Check both may be stopped at.** The same menu has `Station (...)`: `Yes - Trains Can Stop Here` is what a station is. Sensors that are only there to track a train through a junction are `No - Trains Can Only Pass Through`.
+**4. Make both of them stations.** The same menu has `Station (...)`: choose `Yes - Trains Can Stop Here`. A sensor is not a station until you do; sensors that are only there to track a train through a junction stay `No - Trains Can Only Pass Through`.
 
 **5. Put the train somewhere.** Right-click Station A and use `Add a Locomotive to Autonomy...`. This is a statement of fact about your railway: the train really does need to be standing at A.
 
