@@ -2958,6 +2958,10 @@ class Triage(tk.Tk):
 
         self.launched_from = note
 
+        # The commit as of THIS launch: read once when the window opened, it stayed on that commit through every rebuild
+        # after it, and a verdict said "Run against commit 4aa7b98d" for a build compiled from a later one (2026-10-03).
+        self.build = git_build()
+
         self.run_label.config(text="running - %s" % note)
 
         self._say("TrainControl started, %s.  Output: %s"
