@@ -155,3 +155,4 @@ not fix it. Name the square.
 - `regression.testNoSetupEditDuringARun`
 - `regression.testTheAutoTabWaitsForTheTrains`
 - `core.testAStopRouteStandsAlone`
+- `core.testTheFindingsAreWorkedOutOncePerEvent`

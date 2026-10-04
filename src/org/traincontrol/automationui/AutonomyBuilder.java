@@ -966,7 +966,7 @@ public class AutonomyBuilder
      * reading a running log wants: "Main 4 (eastbound, reverse)" says where the train is and what it is
      * about to do, where "Main 4 (in W, rev)" has to be decoded first.
      */
-    private String nodeName(String base, Node node)
+    private String nodeName(String base, Node node, Set<String> taken)
     {
         if (node.arrival == null || nodesFor(node.tile).size() == 1) return base;
 
@@ -977,20 +977,44 @@ public class AutonomyBuilder
         // by hand and let a neighbouring "Main" split, and two Points came out with the same name -
         // which Layout.createPoint refuses, invalidating the whole configuration rather than the one
         // square, and reporting it in terms of a Point name nothing on the diagram carries.
-        Set<String> taken = new java.util.LinkedHashSet<>(uniqueNames().values());
-
-        taken.remove(base);
-
-        if (!taken.contains(name)) return name;
+        //
+        // AGAINST THE NAMES THE CALLER WORKED OUT ONCE (speed, 2026-10-04): this worked them out again for every copy
+        // it named - every Point on the railway, sorted, per copy - which was a fifth of a click in the autonomy
+        // editor.  The square's own name is still not counted against it.
+        if (!takenBesides(taken, base, name)) return name;
 
         for (int suffix = 2; suffix < 1000; suffix++)
         {
             String candidate = name + " (" + suffix + ")";
 
-            if (!taken.contains(candidate)) return candidate;
+            if (!takenBesides(taken, base, candidate)) return candidate;
         }
 
         return name;
+    }
+
+    /**
+     * Whether a name is taken by a square other than the one called base.
+     *
+     * @param taken every square's name, from namesTaken
+     * @param base the name of the square being named
+     * @param name the name wanted
+     * @return true when another square has it
+     */
+    private static boolean takenBesides(Set<String> taken, String base, String name)
+    {
+        return !name.equals(base) && taken.contains(name);
+    }
+
+    /**
+     * Every square's name, for nodeName - worked out once by each caller from its own uniqueNames().
+     *
+     * @param names the names, from uniqueNames()
+     * @return the names as a set
+     */
+    private static Set<String> namesTaken(Map<TileKey, String> names)
+    {
+        return new java.util.HashSet<>(names.values());
     }
 
     /**
@@ -1041,6 +1065,8 @@ public class AutonomyBuilder
         // s88 - a station and its approach guards - so uniqueness is enforced here rather than assumed.
         Map<TileKey, String> names = uniqueNames();
 
+        Set<String> taken = namesTaken(names);
+
         List<ReducedPoint> points = new ArrayList<>(reducer.getPoints().values());
         Collections.sort(points, new Comparator<ReducedPoint>()
         {
@@ -1074,7 +1100,7 @@ public class AutonomyBuilder
 
                 JSONObject json = new JSONObject();
 
-                json.put("name", nodeName(names.get(point.getTile()), node));
+                json.put("name", nodeName(names.get(point.getTile()), node, taken));
 
                 // A station, unless a train arriving THIS way is not allowed to stop.  The copy still
                 // exists and still carries traffic; it is simply not somewhere a train can be sent.
@@ -1138,7 +1164,7 @@ public class AutonomyBuilder
 
                         if (copies.isEmpty()) continue;
 
-                        watching.put(nodeName(names.get(square), copies.get(0)));
+                        watching.put(nodeName(names.get(square), copies.get(0), taken));
                     }
 
                     if (watching.length() > 0) json.put("blockedBy", watching);
@@ -1343,8 +1369,8 @@ public class AutonomyBuilder
 
                     pairs.add(new String[]
                     {
-                        nodeName(names.get(edge.getStart()), from),
-                        nodeName(names.get(edge.getEnd()), to)
+                        nodeName(names.get(edge.getStart()), from, taken),
+                        nodeName(names.get(edge.getEnd()), to, taken)
                     });
                 }
             }
@@ -1544,11 +1570,15 @@ public class AutonomyBuilder
     {
         Map<String, TileKey> out = new LinkedHashMap<>();
 
-        for (Map.Entry<TileKey, String> entry : uniqueNames().entrySet())
+        Map<TileKey, String> names = uniqueNames();
+
+        Set<String> taken = namesTaken(names);
+
+        for (Map.Entry<TileKey, String> entry : names.entrySet())
         {
             for (Node node : nodesFor(entry.getKey()))
             {
-                out.put(nodeName(entry.getValue(), node), entry.getKey());
+                out.put(nodeName(entry.getValue(), node, taken), entry.getKey());
             }
         }
 
@@ -1569,11 +1599,15 @@ public class AutonomyBuilder
     {
         Map<String, String> out = new LinkedHashMap<>();
 
-        for (Map.Entry<TileKey, String> entry : uniqueNames().entrySet())
+        Map<TileKey, String> names = uniqueNames();
+
+        Set<String> taken = namesTaken(names);
+
+        for (Map.Entry<TileKey, String> entry : names.entrySet())
         {
             for (Node node : nodesFor(entry.getKey()))
             {
-                out.put(nodeName(entry.getValue(), node), entry.getValue());
+                out.put(nodeName(entry.getValue(), node, taken), entry.getValue());
             }
         }
 
@@ -1618,13 +1652,17 @@ public class AutonomyBuilder
     {
         Map<String, TilePorts.Side> out = new LinkedHashMap<>();
 
-        for (Map.Entry<TileKey, String> entry : uniqueNames().entrySet())
+        Map<TileKey, String> names = uniqueNames();
+
+        Set<String> taken = namesTaken(names);
+
+        for (Map.Entry<TileKey, String> entry : names.entrySet())
         {
             for (Node node : nodesFor(entry.getKey()))
             {
                 if (node.arrival == null) continue;
 
-                out.put(nodeName(entry.getValue(), node), facingOf(node));
+                out.put(nodeName(entry.getValue(), node, taken), facingOf(node));
             }
         }
 
@@ -1654,11 +1692,15 @@ public class AutonomyBuilder
     {
         Set<String> out = new java.util.LinkedHashSet<>();
 
-        for (Map.Entry<TileKey, String> entry : uniqueNames().entrySet())
+        Map<TileKey, String> names = uniqueNames();
+
+        Set<String> taken = namesTaken(names);
+
+        for (Map.Entry<TileKey, String> entry : names.entrySet())
         {
             for (Node node : nodesFor(entry.getKey()))
             {
-                if (node.reverse) out.add(nodeName(entry.getValue(), node));
+                if (node.reverse) out.add(nodeName(entry.getValue(), node, taken));
             }
         }
 
@@ -1686,6 +1728,7 @@ public class AutonomyBuilder
     {
         Map<String, ReducedEdge> out = new LinkedHashMap<>();
         Map<TileKey, String> names = uniqueNames();
+        Set<String> taken = namesTaken(names);
 
         for (ReducedEdge edge : reducer.getEdges())
         {
@@ -1705,7 +1748,7 @@ public class AutonomyBuilder
                 {
                     if (!to.arrivesBy(edge.getEntrySide())) continue;
 
-                    out.put(nodeName(start, from) + " -> " + nodeName(end, to), edge);
+                    out.put(nodeName(start, from, taken) + " -> " + nodeName(end, to, taken), edge);
                 }
             }
         }

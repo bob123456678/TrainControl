@@ -7067,10 +7067,137 @@ public class AutonomySession
     }
 
     /**
+     * The findings of the last check, kept for the rest of the event that asked for them (speed, 2026-10-04).
+     *
+     * One click on a switch in the autonomy editor asked for them twenty times over five events, and a track editor
+     * Save twenty-four times over seven - the findings list, then whether there are errors, then the strip, the viewer
+     * and the Run buttons, each asking again of a setup nobody had touched - and every check builds the whole
+     * configuration to inspect it.  Two thirds of the click, and of the Save, went on that.
+     *
+     * Kept for ONE EVENT: a new event always checks afresh, so nothing kept here is older than the event reading it.
+     * And within the event only while everything the check reads is as it was (whatTheCheckReads), so a gesture that
+     * changes the setup, a train, a length or a label and then asks again is answered for the change.  Off the event
+     * thread nothing is kept.
+     */
+    private java.lang.ref.WeakReference<java.awt.AWTEvent> findingsEvent;
+
+    /** What the check read when the kept findings were worked out. */
+    private List<Object> findingsKey;
+
+    /** The kept findings; copied out, so each caller's list is its own. */
+    private List<AutonomyChecks.Finding> findingsKept;
+
+    /**
+     * Everything check() reads that can change, as a key that is equal only while all of it is as it was.
+     *
+     * The graph, its reduction and the station index, each replaced whole when it changes; the setup, as its snapshot
+     * gives it; the running railway, the trains on it and those the setup places, with each one's length; and every
+     * square of every page as the diagram has it now, whose labels and signal names the check reads straight off it.
+     *
+     * @return the key
+     */
+    private List<Object> whatTheCheckReads()
+    {
+        List<Object> key = new ArrayList<>();
+
+        key.add(new Same(graph));
+        key.add(new Same(reducer));
+        key.add(new Same(stationIndex));
+        key.add(store.snapshotSetup().toString());
+
+        org.traincontrol.automation.Layout running = runningLayout == null ? null : runningLayout.get();
+
+        key.add(new Same(running));
+
+        StringBuilder trains = new StringBuilder();
+
+        for (Map.Entry<String, Object[]> train : railwayTrains().entrySet())
+        {
+            trains.append(train.getKey()).append(Arrays.deepToString(train.getValue())).append('\n');
+        }
+
+        for (Map.Entry<TileKey, String> standing : trainsWhereTheyStand().entrySet())
+        {
+            trains.append(standing.getKey()).append(' ').append(standing.getValue()).append('=')
+                .append(trainLengths == null ? null : trainLengths.apply(standing.getValue())).append('\n');
+        }
+
+        key.add(trains.toString());
+
+        StringBuilder squares = new StringBuilder();
+
+        for (LayoutDiagram page : pages)
+        {
+            key.add(new Same(page));
+
+            for (LayoutDiagramComponent square : page.getAll())
+            {
+                squares.append(square.getX()).append(',').append(square.getY()).append(' ').append(square.getType())
+                    .append(' ').append(square.getOrientation()).append(' ').append(square.getState()).append(' ')
+                    .append(square.getRawAddress()).append(' ').append(square.getLabel()).append(' ')
+                    .append(square.getAccessory() == null ? null : square.getAccessory().getName()).append('\n');
+            }
+        }
+
+        key.add(squares.toString());
+
+        return key;
+    }
+
+    /** An object in a key by identity: the same one, not an equal one. */
+    private static final class Same
+    {
+        private final Object what;
+
+        Same(Object what)
+        {
+            this.what = what;
+        }
+
+        @Override
+        public boolean equals(Object other)
+        {
+            return other instanceof Same && ((Same) other).what == what;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return System.identityHashCode(what);
+        }
+    }
+
+    /**
      * Everything wrong or worth knowing about the setup as it stands.
      * @return
      */
     public List<AutonomyChecks.Finding> check()
+    {
+        // KEPT FOR THE REST OF THE EVENT, while nothing it read has changed - see findingsEvent
+        java.awt.AWTEvent event = java.awt.EventQueue.isDispatchThread() ? java.awt.EventQueue.getCurrentEvent() : null;
+
+        if (event == null || graph == null || reducer == null) return checkAfresh();
+
+        List<Object> key = whatTheCheckReads();
+
+        if (findingsEvent == null || findingsEvent.get() != event || !key.equals(findingsKey))
+        {
+            List<AutonomyChecks.Finding> found = checkAfresh();
+
+            findingsEvent = new java.lang.ref.WeakReference<>(event);
+            findingsKey = key;
+            findingsKept = found;
+        }
+
+        return new ArrayList<>(findingsKept);
+    }
+
+    /**
+     * The check itself, worked out every time it is asked.
+     *
+     * @return the findings, most severe first
+     */
+    private List<AutonomyChecks.Finding> checkAfresh()
     {
         // Guarded because a panel builds its list in its constructor, and nothing yet forces open() to
         // have been called first - so an unopened session would throw out of a constructor, which is a
